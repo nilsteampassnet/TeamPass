@@ -1,0 +1,5294 @@
+[
+    {
+        "term": "copied",
+        "definition": "Đã sao chép",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "opened_edit_form_of",
+        "definition": "Đã mở biểu mẫu chỉnh sửa của",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_info_header",
+        "definition": "Bảng điều khiển quản trị",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_last_refresh",
+        "definition": "Làm mới lần cuối",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_view_changelog_github",
+        "definition": "Xem nhật ký thay đổi trên GitHub",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "dashboard",
+        "definition": "Bảng điều khiển",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "active_users",
+        "definition": "Người dùng hoạt động",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "online",
+        "definition": "Trực tuyến",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "blocked",
+        "definition": "Bị chặn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "total_items",
+        "definition": "Tổng số mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "shared",
+        "definition": "Chia sẻ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "personal",
+        "definition": "Cá nhân",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "total_folders",
+        "definition": "Tổng số thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "public",
+        "definition": "Công khai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "logs_24h",
+        "definition": "Nhật ký (24h)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "accesses",
+        "definition": "Truy cập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "live_activity",
+        "definition": "Hoạt động trực tiếp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_recent_activity",
+        "definition": "Không có hoạt động gần đây",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "view_all_logs",
+        "definition": "Xem tất cả nhật ký",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ago",
+        "definition": "trước",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_queue",
+        "definition": "Tác vụ trong hàng đợi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "system_last_cron",
+        "definition": "Cron Job cuối cùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "view_tasks",
+        "definition": "Xem tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "system_health",
+        "definition": "Tình trạng hệ thống",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_encryption",
+        "definition": "Hệ thống mã hóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_sessions",
+        "definition": "Phiên hoạt động",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_cron",
+        "definition": "Cron Jobs",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_unknown_files",
+        "definition": "Tệp không xác định",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_status_ok",
+        "definition": "Hoạt động bình thường",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_secure_file_missing",
+        "definition": "Thiếu tệp bảo mật",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "health_cron_delayed",
+        "definition": "Bị trễ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_accessed",
+        "definition": "đã truy cập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_created",
+        "definition": "đã tạo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_modified",
+        "definition": "đã chỉnh sửa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_deleted",
+        "definition": "đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_manual",
+        "definition": "đã thực hiện thao tác trên",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unknown",
+        "definition": "Không rõ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_teampass",
+        "definition": "Hỗ trợ phát triển TeamPass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_message",
+        "definition": "TeamPass miễn phí và mã nguồn mở. Hãy giúp chúng tôi duy trì và cải thiện!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_description",
+        "definition": "Nhà tài trợ giúp dành thời gian phát triển chuyên biệt cho bảo trì, tính năng mới và hỗ trợ cộng đồng. Hãy giúp đảm bảo TeamPass tiếp tục cung cấp quản lý mật khẩu chất lượng doanh nghiệp cho tất cả mọi người.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_github_sponsors",
+        "definition": "Tài trợ trên GitHub",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_paypal",
+        "definition": "Quyên góp qua PayPal",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_support_thank_you",
+        "definition": "Cảm ơn sự hỗ trợ của bạn!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "home",
+        "definition": "Trang chủ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_user_deleted_exists",
+        "definition": "Người dùng đã bị xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_subfolders",
+        "definition": "Không có thư mục con",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_sub_directories",
+        "definition": "Sao chép thư mục con",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "copy_items",
+        "definition": "Sao chép mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_date",
+        "definition": "Ngày xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "days_since",
+        "definition": "Số ngày kể từ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_deleted_users",
+        "definition": "Không tìm thấy người dùng đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_users_to_purge",
+        "definition": "Không có người dùng để xóa vĩnh viễn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "and_x_more_errors",
+        "definition": "... và %x% lỗi khác",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_completed",
+        "definition": "Đã xóa vĩnh viễn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purging_users",
+        "definition": "Đang xóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "starting_purge",
+        "definition": "Bắt đầu xóa vĩnh viễn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purging_in_progress",
+        "definition": "Đang xóa vĩnh viễn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_users_90days",
+        "definition": "Xóa vĩnh viễn người dùng đã xóa hơn 90 ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_users",
+        "definition": "Người dùng đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_purged_successfully",
+        "definition": "Đã xóa vĩnh viễn người dùng thành công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_purged_successfully",
+        "definition": "Đã xóa vĩnh viễn người dùng thành công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_purge_user",
+        "definition": "Bạn có chắc chắn muốn xóa vĩnh viễn người dùng này?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "transparent_key_recovery_pbkdf2_iterations",
+        "definition": "Số lần lặp PBKDF2 cho khôi phục mật khẩu minh bạch",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "transparent_key_recovery_pbkdf2_iterations_tip",
+        "definition": "Số lần lặp cho dẫn xuất khóa PBKDF2 trong khôi phục mật khẩu minh bạch. Giá trị cao hơn tăng bảo mật nhưng có thể ảnh hưởng hiệu suất. Điều chỉnh dựa trên khả năng máy chủ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_fill_in_all_required_fields",
+        "definition": "Vui lòng điền tất cả các trường bắt buộc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "an_error_occurred",
+        "definition": "Đã xảy ra lỗi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "attention_user_password_change",
+        "definition": "Mật khẩu của bạn đã thay đổi, cần mã hóa lại các mục cá nhân.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_current_password",
+        "definition": "Mật khẩu hiện tại của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ignore_this_password_is_lost",
+        "definition": "Tôi không còn nhớ mật khẩu trước đây. Tôi hiểu điều này sẽ đặt lại mật khẩu cho các mục cá nhân của tôi.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "build_missing_api_keys",
+        "definition": "Tạo khóa API còn thiếu cho người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "highlight_selected",
+        "definition": "Đánh dấu mục đã chọn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_general_info_title",
+        "definition": "Thông tin chung & đường dẫn cài đặt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_general_info_goal",
+        "definition": "Xác định nơi lưu trữ tệp và tài nguyên TeamPass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_system_title",
+        "definition": "Cài đặt hệ thống & bảo trì",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_system_goal",
+        "definition": "Kiểm soát hành vi tổng thể của hệ thống và tính khả dụng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_security_title",
+        "definition": "Bảo mật & xác thực",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_security_goal",
+        "definition": "Quản lý bảo mật, kiểm soát truy cập và chính sách mã hóa.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_users_title",
+        "definition": "Quản lý người dùng và vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_users_goal",
+        "definition": "Xác định khả năng và giới hạn của người dùng trong hệ thống.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_items_title",
+        "definition": "Quản lý mục và thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_items_goal",
+        "definition": "Kiểm soát cách tổ chức và xử lý mục mật khẩu và thư mục.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_collaboration_title",
+        "definition": "Tính năng cộng tác & nâng cao",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_collaboration_goal",
+        "definition": "Cung cấp công cụ và tính năng bổ sung cho làm việc nhóm và chức năng mở rộng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_logging_title",
+        "definition": "Ghi nhật ký & lịch sử",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_category_logging_goal",
+        "definition": "Quản lý nhật ký và theo dõi hành động người dùng để kiểm toán và truy xuất.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_previous_valide_private_key",
+        "definition": "Không có khóa riêng trước đây phù hợp với mật khẩu đã cung cấp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password_changed",
+        "definition": "Mật khẩu của bạn đã thay đổi. Vui lòng cung cấp mật khẩu trước đây để mã hóa lại các mục cá nhân. Sau khi hoàn tất, vui lòng đợi vài phút trước khi truy cập các mục cá nhân.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggested_value",
+        "definition": "Giá trị đề xuất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_folder_creation",
+        "definition": "Lỗi khi tạo thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_are_not_expected_ones",
+        "definition": "tệp không phải là tệp mong đợi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_file_integrity_check",
+        "definition": "Thực hiện kiểm tra tính toàn vẹn tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_integrity_check",
+        "definition": "Kiểm tra tính toàn vẹn tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_checkbox",
+        "definition": "Hộp kiểm mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_phone_number",
+        "definition": "Số điện thoại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_otp_secret",
+        "definition": "Khóa bí mật OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "file_not_exists",
+        "definition": "Tệp không tồn tại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "path_not_a_file",
+        "definition": "Đường dẫn không phải là tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "file_not_writable",
+        "definition": "Tệp không thể ghi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "failed_to_delete",
+        "definition": "Xóa thất bại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "successfully_deleted",
+        "definition": "Đã xóa thành công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "delete_unknown_files",
+        "definition": "Xóa tệp không xác định?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unknown_files_should_be_deleted",
+        "definition": "Nên xóa các tệp này để tránh trộn lẫn phiên bản.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "account_in_construction_please_wait_email",
+        "definition": "Tài khoản của bạn đang được tạo. Bạn sẽ nhận được email khi sẵn sàng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_selfregistered_user_belongs_to_role",
+        "definition": "Người dùng tự đăng ký thuộc vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_self_register_groups",
+        "definition": "Nhóm được phép tự đăng ký",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth_self_register_groups_tip",
+        "definition": "Danh sách nhóm được phân tách bằng dấu phẩy được phép tự đăng ký. Để trống nếu bạn muốn tắt tự đăng ký. Tự đăng ký cho phép tạo tài khoản người dùng trong Teampass mà không cần quản trị viên. Người dùng sẽ có thể đăng nhập bằng thông tin xác thực AD của họ và tự động được tạo trong Teampass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_synchronization",
+        "definition": "Đồng bộ hóa OAuth2",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_user_has_no_mail",
+        "definition": "Người dùng không có địa chỉ email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_not_exists_in_teampass",
+        "definition": "Vai trò không tồn tại trong Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "toggle_user_authentification",
+        "definition": "Chuyển đổi xác thực người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "max_parallel_tasks",
+        "definition": "Số lượng tác vụ song song tối đa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "max_parallel_tasks_tip",
+        "definition": "Tùy chọn này đặt số lượng tối đa các tác vụ Process có thể chạy đồng thời. Quan trọng là điều chỉnh số này dựa trên công suất vCPU để tránh quá tải hệ thống. Bắt đầu với con số thận trọng và điều chỉnh theo hiệu suất quan sát được.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_copied",
+        "definition": "Đã sao chép mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_updated",
+        "definition": "Đã cập nhật mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "done_tasks_history_delay_in_days",
+        "definition": "Thời gian lưu giữ lịch sử tác vụ (tính bằng ngày)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_csv_keys_generation_strategy",
+        "definition": "Chiến lược tạo khóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_csv_keys_generation_strategy_tip",
+        "definition": "Khi nhập mục, bạn có thể chọn tạo khóa mới cho mục ngay lập tức hoặc sử dụng trình quản lý tác vụ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "csv_import_success",
+        "definition": "Đã nhập tệp CSV thành công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_items_failed",
+        "definition": "Số mục thất bại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_item_creation",
+        "definition": "Lỗi khi tạo mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_no_items_to_process",
+        "definition": "Không có mục để xử lý",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_error_no_rights",
+        "definition": "Bạn không có quyền tạo thư mục khi nhập mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_minimal_complexity_target_for_folders",
+        "definition": "Mục tiêu độ phức tạp mật khẩu tối thiểu trên thư mục mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "access_right_for_roles_for_folders",
+        "definition": "Quyền truy cập cho vai trò trên thư mục mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_folders_success",
+        "definition": "Đã nhập thư mục thành công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "to_be_imported",
+        "definition": "Cần nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_wait_folders_in_construction",
+        "definition": "Vui lòng đợi, thư mục đang được xây dựng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_wait_items_in_construction",
+        "definition": "Vui lòng đợi, mục đang được xây dựng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unable_to_clear_clipboard",
+        "definition": "Không thể xóa clipboard thủ công",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_unsafe",
+        "definition": "Clipboard không thể tự động xóa, điều này không an toàn!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_clear_now",
+        "definition": "Xóa ngay bây giờ!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_clearing_failed",
+        "definition": "Xóa clipboard thất bại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_error",
+        "definition": "Lỗi clipboard",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_fetching_password",
+        "definition": "Lỗi khi lấy mật khẩu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_cleared",
+        "definition": "Đã xóa clipboard",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password_expired",
+        "definition": "Mật khẩu của bạn đã hết hạn. Vui lòng thay đổi.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_client_urlResourceOwnerDetails",
+        "definition": "URL để lấy chi tiết người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "oauth2_client_urlResourceOwnerDetails_tip",
+        "definition": "URL để lấy chi tiết người dùng. Được sử dụng để lấy chi tiết người dùng sau xác thực.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "encryptClientServer_tip",
+        "definition": "Khi bật, client mã hóa dữ liệu trước khi gửi đến server. Server chỉ lưu trữ dữ liệu đã mã hóa. Có thể tắt.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "highlight_favorites",
+        "definition": "Đánh dấu mục yêu thích",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_not_allowed_to_auth_to_teampass_app",
+        "definition": "Người dùng không được phép xác thực với ứng dụng Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_is_not_auth_with_oauth2",
+        "definition": "Người dùng không nên xác thực với Entra/Azure AD",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_page_split_view_mode",
+        "definition": "Hiển thị chi tiết mục ở chế độ xem chia trang",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_item_data",
+        "definition": "Hiển thị dữ liệu mục trong danh sách mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_item_data_tip",
+        "definition": "Cho phép hiển thị thông tin bổ sung trong danh sách mục (tên người dùng, email và url). Điều này có thể hữu ích để xem nhanh nội dung mục.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_connected_to_internet",
+        "definition": "Máy chủ đã kết nối internet",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server_not_connected_to_internet_tip",
+        "definition": "Điều này có thể dẫn đến một số chức năng không hoạt động đúng. Đặc biệt là MFA.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tools",
+        "definition": "Công cụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_config_not_compliant",
+        "definition": "Cấu hình người dùng không tuân thủ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty",
+        "definition": "Sửa mục cá nhân trống",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fix_personal_items_empty_tip",
+        "definition": "Công cụ này cho phép sửa lỗi mục cá nhân trống sau khi nâng cấp Teampass. Yêu cầu phải khôi phục bản sao của bảng teampass_items từ Teampass phiên bản 2. Bảng cần được đặt tên teampass_items_v2.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "table_not_exists",
+        "definition": "Bảng mong đợi không tồn tại. Vui lòng khôi phục từ bản sao lưu.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tools_usage_warning",
+        "definition": "Sử dụng công cụ có thể ảnh hưởng trực tiếp đến cơ sở dữ liệu. Vui lòng cẩn thận. Luôn thực hiện dump trước và xác định thời gian bảo trì.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_user",
+        "definition": "Chọn người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "replace_tenant_id",
+        "definition": "Điều chỉnh URL nhưng giữ {tenant-id} như hiện tại. Nó sẽ được thay thế trực tiếp bằng tenant ID.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "login_with_sso",
+        "definition": "Đăng nhập bằng SSO",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "folder_created",
+        "definition": "Đã tạo thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_create",
+        "definition": "Được phép tạo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_read",
+        "definition": "Được phép đọc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_update",
+        "definition": "Được phép cập nhật",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "allowed_to_delete",
+        "definition": "Được phép xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_folder_not_allowed_for_this_user",
+        "definition": "Thư mục không được phép cho người dùng này",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_api_access_info",
+        "definition": "Người dùng có thể truy cập API với cùng quyền truy cập như trong Teampass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "users_fetch_error",
+        "definition": "Có lỗi khi lấy danh sách người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_otp_secret",
+        "definition": "Không thể giải mã bí mật OTP, bí mật có đúng không?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_log_retention_delay_in_days",
+        "definition": "Thời gian lưu giữ nhật ký tác vụ (tính bằng ngày)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_log_table_size",
+        "definition": "Kích thước bảng nhật ký tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "progress",
+        "definition": "Tiến trình",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_length_by_default",
+        "definition": "Độ dài mật khẩu mặc định",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "display_warning_icons",
+        "definition": "Hiển thị biểu tượng cảnh báo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_objectclasses_attibute",
+        "definition": "Thuộc tính ObjectClasses nhóm AD",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_objectclasses_attibute_tip",
+        "definition": "ObjectClasses để sử dụng khi tìm kiếm nhóm. Nhiều objectClasses được phân tách bằng dấu phẩy (,). Ví dụ: groupOfNames,group hoặc top,posixGroup",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp",
+        "definition": "OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp_code",
+        "definition": "Mã OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enabled_otp_for_item",
+        "definition": "Bật mã OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_otp_status",
+        "definition": "Trạng thái OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "phone_number",
+        "definition": "Số điện thoại liên quan (tùy chọn)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otp_secret",
+        "definition": "Khóa bí mật OTP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_code_send_by_email",
+        "definition": "Mã MFA đã gửi qua email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_keys_downloaded",
+        "definition": "Đã tải xuống khóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_task_to_be_run",
+        "definition": "Vui lòng xác nhận tác vụ cần thực hiện",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recovery_keys_not_downloaded",
+        "definition": "Khóa khôi phục chưa được tải xuống",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_recovery_keys",
+        "definition": "Cung cấp khóa khôi phục của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "public_key",
+        "definition": "Khóa công khai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "private_key",
+        "definition": "Khóa riêng tư",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download_recovery_keys",
+        "definition": "Tải xuống khóa khôi phục của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download_recovery_keys_confirmation",
+        "definition": "Bạn sắp tải xuống khóa khôi phục. Vui lòng lưu trữ chúng ở nơi an toàn vì chúng sẽ bắt buộc trong trường hợp thảm họa.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recovery_keys_download_date",
+        "definition": "Ngày tải xuống khóa khôi phục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_not_recovered",
+        "definition": "Khóa công khai và riêng tư chưa được lưu trữ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_not_recovered_explanation",
+        "definition": "Để ngăn chặn mất mật khẩu, bạn nên lưu trữ an toàn khóa Teampass cá nhân của mình",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "get_your_recovery_keys",
+        "definition": "Lấy khóa khôi phục của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_management",
+        "definition": "Quản lý khóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "started",
+        "definition": "Đã bắt đầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "existing_valid_otv_links",
+        "definition": "Liên kết OTV hợp lệ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "feature_disabled_by_administrator",
+        "definition": "Tính năng bị quản trị viên vô hiệu hóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "shared_globaly",
+        "definition": "Chia sẻ toàn cục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_otv_subdomain",
+        "definition": "Tên miền phụ OTV",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_otv_subdomain_tip",
+        "definition": "Miền phụ chuyên dụng cho liên kết một lần. Coi URL Teampass chính của bạn là bị cô lập khỏi internet, miền phụ này có thể tiếp cận được bởi mọi người để chia sẻ mục này với ai đó bên ngoài tổ chức của bạn. Từ quan điểm bảo mật, điều này an toàn hơn nhiều. Lưu ý: Điều này yêu cầu có mục DNS cho miền phụ này trỏ đến máy chủ Teampass của bạn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previously_used_passwords",
+        "definition": "Mật khẩu đã sử dụng trước đây",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "next_passwords_were_valid_until_date",
+        "definition": "Mật khẩu tiếp theo có hiệu lực đến ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_management",
+        "definition": "Thao tác mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reload_user_cache_table",
+        "definition": "Tải lại bảng cache người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_email_to_user",
+        "definition": "Gửi email cho người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sharekey_not_ready",
+        "definition": "Sharekey chưa được tạo ... tất cả dữ liệu mục có thể chưa sẵn sàng ... vui lòng thử lại sau",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_action_not_yet_possible",
+        "definition": "Hành động chưa thể thực hiện trên mục này",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open",
+        "definition": "Mở",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum",
+        "definition": "tối đa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "updated",
+        "definition": "Đã cập nhật",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_days",
+        "definition": "Số ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_times",
+        "definition": "Số lần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open_tasks_settings",
+        "definition": "Mở cài đặt tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "extend_session_duration_by",
+        "definition": "Kéo dài thời lượng phiên theo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_session_expiration_time",
+        "definition": "Thời gian hết hạn phiên tối đa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_session_expiration_time_tip",
+        "definition": "Thời gian tối đa tính bằng phút mà phiên có thể được người dùng kéo dài",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "index_session_duration_too_long",
+        "definition": "Thời lượng phiên quá dài",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_keys_generated",
+        "definition": "Đã tạo khóa mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_creation",
+        "definition": "Tạo người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_deletion",
+        "definition": "Xóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_while_creating_file",
+        "definition": "Lỗi khi tạo tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "field",
+        "definition": "Trường",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "task_scheduling",
+        "definition": "Lập lịch tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "parameter",
+        "definition": "Tham số",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "frequency",
+        "definition": "Tần suất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "in_minutes",
+        "definition": "tính bằng phút",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "run_once",
+        "definition": "Chạy một lần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "run_weekday",
+        "definition": "Chạy vào ngày trong tuần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "monday",
+        "definition": "Thứ hai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tuesday",
+        "definition": "Thứ ba",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "wednesday",
+        "definition": "Thứ tư",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "thursday",
+        "definition": "Thứ năm",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "friday",
+        "definition": "Thứ sáu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "saturday",
+        "definition": "Thứ bảy",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sunday",
+        "definition": "Chủ nhật",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hourly",
+        "definition": "Hàng giờ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "daily",
+        "definition": "Hàng ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "monthly",
+        "definition": "Hàng tháng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "day_of_month",
+        "definition": "Ngày trong tháng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "day",
+        "definition": "Ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reset",
+        "definition": "Đặt lại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge_temporary_files",
+        "definition": "Xóa tệp tạm thời",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clean_orphan_objects",
+        "definition": "Dọn dẹp đối tượng mồ côi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maintenance_operations",
+        "definition": "Thao tác bảo trì",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maintenance_operations_tip",
+        "definition": "Thao tác bảo trì đã chọn trên cơ sở dữ liệu Teampass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_enabled",
+        "definition": "Đã bật MFA",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_disabled_for_user",
+        "definition": "Đã tắt MFA cho người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_data_not_valid",
+        "definition": "Dữ liệu không hợp lệ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_user_info_by_mail",
+        "definition": "Người dùng mới sẽ nhận email với thông tin đăng nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "login_credentials",
+        "definition": "Thông tin đăng nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_1",
+        "definition": "Xin chào #lastname#,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Thông tin đăng nhập sau được yêu cầu khi sử dụng Teampass:<ul><li>Đăng nhập: #login#</li><li>Mật khẩu: #password#</li><li>Mã mã hóa: #code#</li></ul><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_3",
+        "definition": "Xin chào #lastname#,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Mật khẩu sau được yêu cầu khi sử dụng Teampass:<br><br><b>#password#</b><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_4",
+        "definition": "Xin chào #lastname#,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Tài khoản Teampass của bạn đã hoàn toàn sẵn sàng.<br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_5",
+        "definition": "Xin chào #lastname#,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Mã sau được yêu cầu khi sử dụng Teampass:<br><br><b>#code#</b><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_user_config_6",
+        "definition": "Xin chào #lastname#,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Thông tin đăng nhập sau được yêu cầu khi sử dụng Teampass:<ul><li>Đăng nhập: #login#</li><li>Mật khẩu: #password#</li></ul><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_code_is_requested",
+        "definition": "Không yêu cầu mã.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_encryption_ongoing",
+        "definition": "Tài khoản hiện đang được mã hóa. Yêu cầu của bạn không thể tiếp tục. Vui lòng đợi cho đến khi hoàn tất.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "teampass_information",
+        "definition": "Thông tin Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_password",
+        "definition": "Hiển thị mật khẩu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys",
+        "definition": "Tạo khóa mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys_info",
+        "definition": "Bằng cách tiếp tục, bạn sẽ tạo khóa mã hóa mới cho tất cả đối tượng bạn có quyền truy cập. Điều này chỉ nên được thực hiện nếu bạn không có mật khẩu hiển thị.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_password",
+        "definition": "Chúng tôi cần bạn xác nhận mật khẩu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_keys_end",
+        "definition": "Quá trình đang diễn ra trong nền và có thể mất vài phút. Bạn có thể đóng cửa sổ này ngay bây giờ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "currently_using_version",
+        "definition": "Phiên bản hiện tại đã tải",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "git_commit_value",
+        "definition": "Giá trị git commit",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_new_job",
+        "definition": "Thêm công việc mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_cron_not_running",
+        "definition": "Cron job chưa được thiết lập. Vui lòng chỉnh sửa crontab với người dùng máy chủ của bạn (thường là www-data) bằng lệnh <code>crontab -u www-data -e</code>.<br>Hoặc nhấn nút để thử tạo tự động.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_cron_running",
+        "definition": "Cron job được thiết lập chính xác",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keys_encryption_not_ready",
+        "definition": "Lưu ý rằng khóa mật khẩu của bạn hiện đang được tạo. Vui lòng đợi thêm vài phút.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "account_not_ready",
+        "definition": "Tài khoản đang xây dựng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_label",
+        "definition": "Cung cấp nhãn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_backlog_mail",
+        "definition": "Bật gửi email tồn đọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_users_with_ad_groups",
+        "definition": "Vai trò người dùng AD được ánh xạ với nhóm AD của họ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_users_with_ad_groups_tip",
+        "definition": "Cho phép ánh xạ vai trò người dùng AD với nhóm AD của họ. Các vai trò này sẽ được thêm vào vai trò được xác định trong hồ sơ của họ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_user_auto_creation",
+        "definition": "Người dùng AD được tạo tự động",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ad_user_auto_creation_tip",
+        "definition": "Cho phép người dùng AD tự động được tạo trong Teampass khi đăng nhập lần đầu tiên. Lưu ý rằng nếu tùy chọn vai trò người dùng AD được ánh xạ với nhóm AD được bật thì họ sẽ nhận vai trò được ánh xạ với nhóm AD của họ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_guid_attibute",
+        "definition": "Thuộc tính GUID LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_guid_attibute_tip",
+        "definition": "Thuộc tính LDAP để sử dụng nhận dạng GUID của đối tượng. Ví dụ: objectGUID, objectSid, GUID, gidNumber, ...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ad_group",
+        "definition": "Nhóm AD",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mapped_with_role",
+        "definition": "Ánh xạ với vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ad_groupe_and_roles_mapping",
+        "definition": "Ánh xạ nhóm AD và vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_adgroup_mapping",
+        "definition": "Chọn vai trò để ánh xạ với nhóm AD hiện tại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_object_filter",
+        "definition": "Bộ lọc đối tượng nhóm LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_group_object_filter_tip",
+        "definition": "Bộ lọc LDAP để sử dụng tìm đối tượng nhóm. Ví dụ: (objectClass=group1)(objectClass=group2)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "upgrade_requested",
+        "definition": "Cơ sở dữ liệu Teampass chưa được cập nhật.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "upgrade_requested_more",
+        "definition": "Đã phát hiện một số không nhất quán giữa tệp và cấu hình, Quản trị viên của bạn nên thực hiện quá trình nâng cấp trước khi bạn tiếp tục.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_copying",
+        "definition": "Mục đang được sao chép",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_not_allowed_to_authenticate",
+        "definition": "Bạn không được phép xác thực",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_log",
+        "definition": "Bật nhật ký cron job",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_log_tip",
+        "definition": "Cho phép ghi lại tất cả tác vụ được thực hiện bởi cron job bên trong bảng <i>processes_log</i>. Có thể hữu ích để kiểm tra sự kiện.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "items_and_folders_statistics",
+        "definition": "Thống kê mục và thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "link",
+        "definition": "Liên kết",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_main_page",
+        "definition": "Đang tải trang chính ...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "never",
+        "definition": "Không bao giờ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "creation_date",
+        "definition": "Ngày tạo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_keys_management",
+        "definition": "Quản lý khóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sending_emails",
+        "definition": "Đang gửi email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sync_new_ldap_password",
+        "definition": "Đồng bộ mật khẩu mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_new_ldap_password_detected",
+        "definition": "Có vẻ như mật khẩu của bạn đã thay đổi và Teampass yêu cầu nó để mã hóa khóa riêng chính của bạn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_tls_certifacte_check",
+        "definition": "Kiểm tra chứng chỉ cho LDAP TLS",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_tls_certifacte_check_tip",
+        "definition": "Chỉ định chiến lược kiểm tra chứng chỉ. <a href=\"https://gist.github.com/heiglandreas/8a299a6f47a13ba463c3f2da41c679f7\" target=\"_blank\">Thông tin thêm</a>.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_otp",
+        "definition": "Tạo OTP mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generate_new_otp_informations",
+        "definition": "Thao tác này bao gồm tạo từ đầu tất cả khóa cho người dùng đã chọn. Kết quả là người dùng sẽ phải cung cấp OTP mới được tạo khi đăng nhập tiếp theo.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "html",
+        "definition": "html",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "execution_time",
+        "definition": "Thời gian thực thi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_number_of_items_to_treat",
+        "definition": "Số lượng mục tối đa để xử lý trong một chu kỳ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_number_of_items_to_treat_tip",
+        "definition": "Để đảm bảo hoàn thành script mà không timeout, có thể xác định giá trị cá nhân.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_time_script_allowed_to_run",
+        "definition": "Thời lượng tính bằng giây cho phép script chạy trong nền",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "maximum_time_script_allowed_to_run_tip",
+        "definition": "Theo mặc định, script PHP không thể chạy lâu hơn thời lượng được xác định bởi tham số max_execution_time trong tệp php.ini. Mục tiêu ở đây là xác định giá trị cao hơn để đảm bảo script thực hiện hoàn toàn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refresh_data_every_on_screen",
+        "definition": "Chu kỳ làm mới màn hình (tính bằng giây)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refresh_data_every_on_screen_tip",
+        "definition": "Khi duyệt chế độ xem tác vụ, điều này cho phép có danh sách được cập nhật.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refreshed",
+        "definition": "Đã làm mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "process_details",
+        "definition": "Chi tiết quá trình",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "created_at",
+        "definition": "Tạo lúc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "updated_at",
+        "definition": "Cập nhật lúc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "finished_at",
+        "definition": "Hoàn thành lúc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks_manager",
+        "definition": "Trình quản lý tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "tasks",
+        "definition": "Tác vụ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "task_in_progress_user_not_active",
+        "definition": "Tác vụ đang diễn ra - Người dùng không hoạt động",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_manager",
+        "definition": "Bật tác vụ nền với trình quản lý cron",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enable_tasks_manager_tip",
+        "definition": "Tùy chọn này nên được bật nếu bạn nhận thấy một số tác vụ mất nhiều thời gian. Điều này cho phép xử lý các tác vụ đó bằng công việc nền được thực hiện bởi trình quản lý cron của máy chủ. Xem tài liệu để biết thêm chi tiết.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_api_token_duration",
+        "definition": "Thời gian hết hạn token JWT (tính bằng giây)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_api_token_duration_tip",
+        "definition": "Thời gian mà token JWT được tạo có hiệu lực. Sau thời gian này, cần gửi yêu cầu authorize đến API.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_encryption_code_to_admin",
+        "definition": "Đây là mã được mã hóa mà người dùng sẽ cần khi đăng nhập. Bạn đã yêu cầu xem nó, vui lòng sao chép và chia sẻ theo cách an toàn. Mã là",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previous_password",
+        "definition": "Mật khẩu trước đây được sử dụng để kết nối với Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "icon",
+        "definition": "Biểu tượng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "icon_on_selection",
+        "definition": "Biểu tượng khi chọn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fontawesome_icon_tip",
+        "definition": "Bạn có thể chỉ định mã biểu tượng Font Awesome được chọn trong biểu tượng Miễn phí và Solid. Để trống cho biểu tượng mặc định.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_dn_attribute",
+        "definition": "Distinguished Name người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_specific_right",
+        "definition": "Quyền cụ thể của người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level",
+        "definition": "Chọn mức debug",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_client",
+        "definition": "Lệnh client",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_server",
+        "definition": "Lệnh client và phản hồi server",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_connection",
+        "definition": "Lệnh client, phản hồi server và trạng thái kết nối",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_low_level",
+        "definition": "Đầu ra dữ liệu mức thấp, tất cả thông báo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_debug_level_usage",
+        "definition": "Cài đặt này nên được đặt thành Không. Chỉ được sử dụng để debug email trong mục đích thử nghiệm. Khi bật, nó sẽ cho phép hiển thị đầu ra của lệnh email.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_temporary_login_password",
+        "definition": "Xin chào,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Quản trị viên đã thay đổi mật khẩu đăng nhập của bạn cho Teampass. Lần tới bạn kết nối với Teampass, vui lòng sử dụng mật khẩu sau:<br><br><b>#enc_code#</b><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_new_password",
+        "definition": "Mật khẩu mới của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_user_temporary_encryption_code",
+        "definition": "Hiển thị mã mã hóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_body_new_user",
+        "definition": "Xin chào,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Quản trị viên đã tạo tài khoản người dùng cho bạn trên Teampass. Lần tới bạn kết nối với Teampass, vui lòng sử dụng thông tin đăng nhập sau:<ul><li>Đăng nhập: #login#</li><li>Mật khẩu: #password#</li><li>Mã mã hóa: #code#</li></ul><br><br><br>Trân trọng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_password",
+        "definition": "Mật khẩu người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_temporary_encryption_code",
+        "definition": "Mã mã hóa người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_email_set",
+        "definition": "Chưa đăng ký email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_user_password_by_email",
+        "definition": "Quyết định xem mật khẩu đăng nhập người dùng có nên được gửi qua email không.<br>Nếu có thì nhấn nút Gửi.<br><br>Nếu không, hãy sử dụng nút Sao chép vào clipboard để gửi cho người dùng bằng phương tiện khác.<br>Trách nhiệm của bạn với tư cách Quản trị viên là cung cấp mật khẩu cho người dùng theo cách an toàn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_encryption_code_info",
+        "definition": "Thao tác này sẽ đặt lại mã mã hóa cho người dùng này.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_by_email",
+        "definition": "Gửi qua email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "filters",
+        "definition": "Bộ lọc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "show_user_password",
+        "definition": "Hiển thị mật khẩu người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "open_website",
+        "definition": "Mở trang web",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles",
+        "definition": "MFA được yêu cầu cho người dùng trong Vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_for_roles_tip",
+        "definition": "Theo mặc định, một khi phương pháp MFA được chọn, nó được bật cho tất cả người dùng. Tuy nhiên, bạn có thể chọn vai trò mà nó được mong đợi.<br>CHƯA ĐƯỢC TRIỂN KHAI",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_least_one_administrator_is_requested",
+        "definition": "Ít nhất một quản trị viên được yêu cầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_code",
+        "definition": "Mã sai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "generating_keys",
+        "definition": "Đang tạo khóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "this_may_take_time",
+        "definition": "Điều này có thể mất vài phút",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "disable_enable",
+        "definition": "Vô hiệu hóa / Kích hoạt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_disable_status",
+        "definition": "Đánh dấu hộp để vô hiệu hóa hoặc để trống để kích hoạt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "help_for_launching_items_encryption",
+        "definition": "Chúng tôi cần tạo cơ sở dữ liệu khóa cho tài khoản của bạn. Vui lòng cung cấp mã mã hóa của bạn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "managed_through_ad",
+        "definition": "Được quản lý qua AD",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "new_ldap_user_info",
+        "definition": "Vui lòng hoàn thành định nghĩa cho người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter",
+        "definition": "Bộ lọc đối tượng người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_user_object_filter_tip",
+        "definition": "Bộ lọc để sử dụng khi tìm kiếm đối tượng người dùng. Nhiều bộ lọc được phân tách bằng dấu phẩy (,). Ví dụ: (objectCategory=Person),(sAMAccountName=*)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn_tip",
+        "definition": "Giá trị này được sử dụng cộng với DN cơ sở khi tìm kiếm và tải người dùng. Nếu không có giá trị, tìm kiếm cây con sẽ bắt đầu từ DN cơ sở. Ví dụ: ou=Users ; cn=users",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_additional_user_dn",
+        "definition": "DN người dùng bổ sung",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_your_previous_password",
+        "definition": "Mật khẩu trước đây của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "admin_change_user_password_info",
+        "definition": "Thao tác này sẽ đặt lại mật khẩu hiện tại của người dùng đã chọn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "sending_email_message",
+        "definition": "Đang gửi email cho người dùng, vui lòng đợi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_your_password_info_message",
+        "definition": "Vui lòng cung cấp mật khẩu xác thực mới và xác nhận.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_to_change_password_info",
+        "definition": "Mật khẩu hiện đang sử dụng đã được tạo. Bạn cần thay đổi nó vì lý do bảo mật.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ready_to_go",
+        "definition": "Sẵn sàng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "passwords_not_the_same",
+        "definition": "Mật khẩu được cung cấp không giống nhau",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "inititialization",
+        "definition": "Khởi tạo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bad_password",
+        "definition": "Mật khẩu sai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_checks",
+        "definition": "Thực hiện kiểm tra",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "temporary_encryption_code",
+        "definition": "Mã mã hóa tạm thời của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renecyption_expected",
+        "definition": "Chúng tôi cần mã hóa lại khóa của bạn để phù hợp với đặc quyền tương ứng với tài khoản và quyền của bạn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_no_user_in_ad",
+        "definition": "Không tìm thấy người dùng trong AD!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_ad_user_expired",
+        "definition": "Người dùng đã hết hạn!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hosts",
+        "definition": "Máy chủ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_hosts_tip",
+        "definition": "Tùy chọn máy chủ là một mảng địa chỉ IP hoặc tên máy chủ nằm trên mạng của bạn phục vụ thư mục LDAP (phân tách bằng dấu phẩy). Bạn chèn nhiều máy chủ hoặc ít tùy thuộc vào rừng của bạn (với tối thiểu là một).",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "base_distiguished_name",
+        "definition": "DN cơ sở",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_bdn_tip",
+        "definition": "Distinguished name gốc (DN) để sử dụng khi chạy truy vấn đối với máy chủ thư mục. Ví dụ: o=example,c=com ; cn=users,dc=ad,dc=example,dc=com",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "username",
+        "definition": "Tên người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_username_tip",
+        "definition": "Distinguished name của người dùng mà ứng dụng sẽ sử dụng khi kết nối với máy chủ thư mục. Ví dụ: cn=administrator,cn=users,dc=ad,dc=example,dc=com ; cn=user,dc=domain,dc=name",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "settings_ldap_password_tip",
+        "definition": "Mật khẩu của người dùng được chỉ định ở trên.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "undefined",
+        "definition": "Không xác định",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_cannot_open_file",
+        "definition": "Không thể mở tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_current_psk_and_click_launch",
+        "definition": "Khi sẵn sàng, nhấp vào nút Khởi chạy",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "start",
+        "definition": "Bắt đầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_inconsistency",
+        "definition": "Đã tìm thấy dữ liệu không nhất quán. Vui lòng tải lại trang!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_code_expected",
+        "definition": "Mã một lần được yêu cầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_are_missing",
+        "definition": "Thiếu dữ liệu mong đợi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_code",
+        "definition": "Mã một lần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_personal_one_time_code",
+        "definition": "Vui lòng cung cấp Mã một lần bạn nhận được qua email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_authentification_type_to_ldap",
+        "definition": "Thay đổi loại xác thực sang LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_authentification_type_to_local",
+        "definition": "Thay đổi loại xác thực sang cơ sở dữ liệu cục bộ Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap_user_password_is_used_for_authentication",
+        "definition": "Mật khẩu người dùng trong LDAP được sử dụng để xác thực",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "local_user_password_is_used_for_authentication",
+        "definition": "Mật khẩu người dùng trong Teampass được sử dụng để xác thực",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "provide_your_current_password",
+        "definition": "Cung cấp mật khẩu hiện tại của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "current_password",
+        "definition": "Mật khẩu hiện tại",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_is_not_correct",
+        "definition": "Mật khẩu này không chính xác",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap_password_change_warning",
+        "definition": "Mật khẩu đăng nhập của bạn đã thay đổi kể từ lần kết nối cuối. Yêu cầu mã hóa lại tất cả khóa bằng mật khẩu mới này. Đối với thao tác này, vui lòng điền vào trường tiếp theo với mật khẩu ldap trước đây của bạn. Thao tác có thể mất vài phút.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "personal_items",
+        "definition": "Mục cá nhân",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "logout_on_going",
+        "definition": "Bạn sẽ được đăng xuất ngay bây giờ. Sử dụng mật khẩu mới để kết nối từ bây giờ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "fill_in_fields_and_hit_launch",
+        "definition": "Cung cấp dữ liệu mong đợi và nhấn nút Khởi chạy",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_select_a_folder",
+        "definition": "Vui lòng chọn thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_must_have_login_and_email",
+        "definition": "Người dùng phải có đăng nhập và email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_this_role_in_teampass",
+        "definition": "Người dùng có vai trò này trong Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_role_to_create",
+        "definition": "Chọn vai trò để tạo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_ldap_role_to_teampass",
+        "definition": "Bạn có thể quyết định tạo vai trò trong Teampass đến từ Active Directory của bạn. Điều này sẽ cho phép liên kết người dùng với vai trò này trong Teampass.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_user_to_role",
+        "definition": "Thêm vai trò này cho người dùng trong Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "add_user_in_teampass",
+        "definition": "Thêm người dùng trong Teampass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "synchronized",
+        "definition": "Đã đồng bộ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "output",
+        "definition": "Đầu ra",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "remove_install_folder",
+        "definition": "Thư mục cài đặt phải được xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "list_users",
+        "definition": "Liệt kê người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ldap_synchronization",
+        "definition": "Đồng bộ LDAP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "in_progress",
+        "definition": "Đang tiến hành",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_password_life_duration",
+        "definition": "Thời gian trước khi clipboard được xóa (tính bằng giây)",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_password_life_duration_tip",
+        "definition": "Cho phép xác định thời gian tính bằng giây trước khi mật khẩu được sao chép trong clipboard sẽ được xóa khỏi clipboard trình duyệt. Đặt thành 0 để vô hiệu hóa.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clipboard_will_be_cleared",
+        "definition": "Mật khẩu hiện trong clipboard. Nó sẽ sớm được xóa...",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "file_folder_not_accessible",
+        "definition": "Thư mục tệp không thể truy cập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_missing_id",
+        "definition": "Đã xảy ra lỗi. Thiếu ID ... ?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_folder_not_allowed",
+        "definition": "Thư mục đã chọn không được phép",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "all_fields_mandatory",
+        "definition": "Tất cả các trường đều bắt buộc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "history_insert_entry",
+        "definition": "Chèn vào Lịch sử",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clear_form",
+        "definition": "Xóa biểu mẫu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "info_about_history_insertion",
+        "definition": "Cảnh báo - Tính năng này cho phép bạn chèn thủ công sự kiện vào nhật ký lịch sử mục. Sau khi thêm, sẽ không thể xóa. Cũng lưu ý rằng ID tài khoản của bạn sẽ được liên kết với mục mới này.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_all",
+        "definition": "Chọn tất cả",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unselect_all",
+        "definition": "Bỏ chọn tất cả",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_data_to_display",
+        "definition": "Không có dữ liệu để hiển thị! Hoặc chưa có thư mục nào, hoặc bạn không có quyền truy cập vào chúng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "server",
+        "definition": "Máy chủ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_refreshed",
+        "definition": "Dữ liệu đã làm mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_image",
+        "definition": "Đang tải hình ảnh",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "compare_with_another_role",
+        "definition": "So sánh với vai trò khác",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "only_display_folders_to_depth",
+        "definition": "Chỉ hiển thị thư mục đến độ sâu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate_rights_to_descendants",
+        "definition": "Lan truyền quyền đến con cháu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_data",
+        "definition": "Đang tải dữ liệu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_overview_delay",
+        "definition": "Thời gian hiển thị mật khẩu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_overview_delay_tip",
+        "definition": "Cài đặt này cho phép xác định số giây mật khẩu rõ ràng sẽ được hiển thị cho người dùng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_date_showing_items_expiration",
+        "definition": "Liệt kê các mục đã hết hạn vào ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal_page_info",
+        "definition": "Trang này cho phép xác định các mục hiện đã hết hạn hoặc sắp hết hạn trong thời gian tới.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "filename",
+        "definition": "Tên tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "exported_to_file",
+        "definition": "Đã xuất ra tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "operation_progress",
+        "definition": "Thao tác đang tiến hành",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "exporting_items",
+        "definition": "Đang xuất mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_folders_to_export",
+        "definition": "Chọn thư mục để xuất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "export_format_type",
+        "definition": "Chọn loại định dạng xuất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "export_items",
+        "definition": "Xuất mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "loading_item",
+        "definition": "Đang tải mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otv_message",
+        "definition": "Bạn có thể chia sẻ mục này với người không có tài khoản Teampass. Xem một lần cho phép khách của bạn truy cập các trường cơ bản của mục này chỉ một lần mà không cần xác thực trong Teampass. Vui lòng lưu ý rằng liên kết này có hiệu lực cho đến khi một trong các cài đặt sau được đạt. Sao chép và chia sẻ liên kết bên dưới.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_sharekey_found",
+        "definition": "Không tìm thấy khóa cho tệp này và tài khoản của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "otv_link",
+        "definition": "Liên kết xem một lần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "one_time_view",
+        "definition": "Xem một lần",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "move_right_columns_separator",
+        "definition": "Di chuyển bộ phân cách cột sang phải",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "move_left_columns_separator",
+        "definition": "Di chuyển bộ phân cách cột sang trái",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "form_presents_inconsistencies",
+        "definition": "Biểu mẫu có một số không nhất quán. Vui lòng kiểm tra các trường có viền đỏ.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "download",
+        "definition": "Tải xuống",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "see",
+        "definition": "Xem",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "at_anyoneconmodify",
+        "definition": "Bất kỳ ai cũng có thể sửa đổi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "disabled",
+        "definition": "Đã vô hiệu hóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "enabled",
+        "definition": "Đã kích hoạt",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirmation_seems_wrong",
+        "definition": "Xác nhận có vẻ sai, vui lòng sửa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "i_cannot_remember",
+        "definition": "Tôi không thể nhớ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "i_cannot_remember_info",
+        "definition": "Hành động này không thể hoàn tác. Nó sẽ xóa mật khẩu được lưu trữ trong các mục cá nhân của bạn. Mục sẽ không bị xóa nhưng chỉ mật khẩu của chúng. Nếu bạn không thể nhớ khóa salt cá nhân của mình thì đây là lựa chọn duy nhất.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "user_has_psk_info",
+        "definition": "Chúng tôi đã xác định rằng bạn có một số mục cá nhân được mã hóa bằng khóa salt cá nhân cũ. Bước này nhằm mục đích mã hóa lại chúng bằng khóa riêng mới của bạn. Vui lòng cung cấp cho chúng tôi khóa salt cá nhân của bạn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files",
+        "definition": "Tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "logs",
+        "definition": "Nhật ký",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "suggestions",
+        "definition": "Đề xuất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "encryption_keys",
+        "definition": "Khóa mã hóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "clearing_old_sharekeys",
+        "definition": "Đang xóa sharekeys cũ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "hit_launch_to_start",
+        "definition": "Vui lòng nhấp vào nút Khởi chạy để bắt đầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_changed",
+        "definition": "Mật khẩu đã cập nhật",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "password_already_used",
+        "definition": "Mật khẩu đã được sử dụng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "change_login_password",
+        "definition": "Thay đổi mật khẩu đăng nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "current_password_mandatory",
+        "definition": "Mật khẩu hiện tại là bắt buộc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "objects_encryption_explanation",
+        "definition": "Teampass đã được nâng cấp lên phiên bản mới bao gồm giao thức mã hóa mới. Nó yêu cầu bạn mã hóa lại các mục cá nhân của mình. Để làm điều này, bạn cần cung cấp Khóa Salt Cá nhân (PSK) hiện tại của mình. Sau khi hoàn tất, vui lòng nhấp vào nút Khởi chạy và đợi cho đến khi quá trình đạt được bước cuối cùng. Điều này có thể mất vài phút tùy thuộc vào số lượng đối tượng.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "description_has_changed",
+        "definition": "Mô tả đã thay đổi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_folders_imported",
+        "definition": "Số thư mục đã nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_items_imported",
+        "definition": "Số mục đã nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate",
+        "definition": "Lan truyền",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "propagate_user_rights",
+        "definition": "Lan truyền quyền người dùng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "register_new_yubiko_key",
+        "definition": "Đăng ký khóa Yubiko mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "part_of_groups",
+        "definition": "Một phần của Nhóm",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "previous_value",
+        "definition": "Giá trị trước",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_previous_value",
+        "definition": "Không có giá trị trước",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_data_selected",
+        "definition": "Không có dữ liệu được chọn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "cannot_open_file",
+        "definition": "Không thể mở tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_item_found",
+        "definition": "Không tìm thấy mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "reading_file",
+        "definition": "Đang đọc tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "where_shall_items_be_created",
+        "definition": "Mục sẽ được tạo ở đâu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "target_folder",
+        "definition": "Thư mục đích",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "select_file",
+        "definition": "Chọn tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "data_type_for_import",
+        "definition": "Bắt đầu bằng cách chọn loại nguồn dữ liệu để nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "get_tips_about_importation",
+        "definition": "Nhận mẹo về nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import_new_items",
+        "definition": "Nhập mục mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "csv",
+        "definition": "CSV",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "keepass",
+        "definition": "Keepass",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "for",
+        "definition": "cho",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access",
+        "definition": "Yêu cầu quyền truy cập Mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access_message",
+        "definition": "Khi yêu cầu quyền truy cập vào mục, email sẽ được gửi đến tác giả. Tác giả sẽ chấp nhận hoặc từ chối yêu cầu bằng cách thêm bạn vào danh sách hạn chế Mục. Vui lòng xác nhận gửi yêu cầu của bạn qua email cho tác giả.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "request_access_reason",
+        "definition": "Cung cấp lý do yêu cầu của bạn cho tác giả",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_provide_reason",
+        "definition": "Vui lòng cung cấp lý do tại sao bạn muốn truy cập mục này",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "need_access",
+        "definition": "Cần quyền truy cập?",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "item_with_restricted_access",
+        "definition": "Mục với quyền truy cập hạn chế",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "remaining_emails_to_send",
+        "definition": "Email còn lại cần gửi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_flash",
+        "definition": "Quét bằng thiết bị di động của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "import",
+        "definition": "Nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "export",
+        "definition": "Xuất",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "offline",
+        "definition": "Ngoại tuyến",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "login_attempts_identified_since_last_connection",
+        "definition": "Cần chú ý. Ít nhất một lần thử đăng nhập với tài khoản của bạn đã được xác định kể từ lần kết nối thành công cuối cùng. Vui lòng kiểm tra và báo cáo cho quản trị viên địa phương nếu bạn không phải là tác giả.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "last_login_attempts",
+        "definition": "Lần thử đăng nhập cuối",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "see_detail",
+        "definition": "Xem chi tiết",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_definition",
+        "definition": "Định nghĩa vai trò",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "not_yet_implemented",
+        "definition": "Chưa được triển khai",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "2factors_expected_for_admin",
+        "definition": "Quản trị viên yêu cầu MFA để đăng nhập",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "2factors_expected_for_admin_tip",
+        "definition": "Theo mặc định, Quản trị viên phải sử dụng phương pháp MFA để đăng nhập. Nếu không bật, Quản trị viên sẽ không yêu cầu nó để đăng nhập ngay cả khi MFA được bật cho bất kỳ người dùng nào khác.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "restore_done_now_logout",
+        "definition": "Khôi phục cơ sở dữ liệu đã hoàn tất. Bạn cần ngắt kết nối ngay để làm mới biến phiên.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "backup_and_restore",
+        "definition": "Sao lưu và Khôi phục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "explanation_for_oneshot_backup",
+        "definition": "",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "explanation_for_oneshot_restore",
+        "definition": "",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_backup",
+        "definition": "Thực hiện sao lưu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "perform_restore",
+        "definition": "Thực hiện khôi phục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "backup_select",
+        "definition": "Tệp sao lưu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "choose_file",
+        "definition": "Chọn tệp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "on_the_fly",
+        "definition": "Ngay lập tức",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "scheduled",
+        "definition": "Đã lên lịch",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_on_field_encryption_change",
+        "definition": "Cảnh báo - Lưu ý rằng việc thay đổi loại mã hóa sẽ yêu cầu phân tích tất cả dữ liệu hiện có để thay đổi mã hóa trong cơ sở dữ liệu.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_while_deleting_field",
+        "definition": "Cảnh báo - Xóa trường này cũng sẽ xóa dữ liệu liên quan trong mục.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "error_could_not_update_the_field",
+        "definition": "Lỗi - Không thể cập nhật trường. Vui lòng thử lại sau khi tải lại trang.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution_while_deleting_category",
+        "definition": "Cảnh báo - Xóa thư mục này sẽ xóa tất cả trường thuộc về nó và cũng là tất cả dữ liệu liên quan đến trường.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_attention_please",
+        "definition": "Vui lòng chú ý",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "all_fields_are_required",
+        "definition": "Tất cả các trường đều bắt buộc",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "position",
+        "definition": "Vị trí",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "before",
+        "definition": "Trước",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "top",
+        "definition": "Đầu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "bottom",
+        "definition": "Cuối",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "configuration",
+        "definition": "Cấu hình",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_modified_attachments",
+        "definition": "Số tệp đính kèm đã sửa đổi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_not_encrypted",
+        "definition": "Tệp hiện chưa được mã hóa. Bạn nên thực hiện thay đổi này vì lý do bảo mật.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "files_already_encrypted",
+        "definition": "Tệp đã được mã hóa. Bạn không nên thay đổi điều này vì lý do bảo mật.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "action_to_be_performed",
+        "definition": "Hành động cần thực hiện",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "last_execution",
+        "definition": "Lần thực thi cuối",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "never_performed",
+        "definition": "Chưa bao giờ thực hiện",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "launch",
+        "definition": "Khởi chạy",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "set_of_actions",
+        "definition": "Tập hợp hành động",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "uploads",
+        "definition": "Tải lên",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "uploads_configuration",
+        "definition": "Cấu hình tải lên",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_configuration",
+        "definition": "Cấu hình email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_configuration_test",
+        "definition": "Kiểm tra cấu hình email",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_a_test_email",
+        "definition": "Gửi email kiểm tra",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "manage_emails_not_sent",
+        "definition": "Quản lý email chưa gửi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "email_send_backlog",
+        "definition": "#nb_emails# email chưa gửi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "send_waiting_emails",
+        "definition": "Gửi email đang chờ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "ip",
+        "definition": "IP",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_data_defined",
+        "definition": "Chưa xác định dữ liệu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_new_api_ip",
+        "definition": "Thêm IP mới vào danh sách trắng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "adding_new_api_key",
+        "definition": "Thêm khóa API mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "api_configuration",
+        "definition": "Cấu hình API",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "mfa_configuration",
+        "definition": "Cấu hình MFA",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "yubico_authentication_tip",
+        "definition": "Vui lòng truy cập www.yubico.com để biết thêm chi tiết.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "complexity_level_not_reached",
+        "definition": "Chưa đạt mức độ phức tạp",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "expected_complexity_level",
+        "definition": "Mức độ phức tạp mong đợi",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "your_attention_is_required",
+        "definition": "Cần chú ý của bạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "favorite",
+        "definition": "Yêu thích",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "unfavorite",
+        "definition": "Bỏ yêu thích",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "you_need_to_select_at_least_one_folder",
+        "definition": "Bạn cần chọn ít nhất một thư mục",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "no_value_defined_please_fix",
+        "definition": "Chưa xác định giá trị! Vui lòng sửa.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "apply",
+        "definition": "Áp dụng",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "from",
+        "definition": "Từ",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_by_clicking_checkbox",
+        "definition": "Vui lòng xác nhận bằng cách nhấp vào hộp kiểm",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "date_range",
+        "definition": "Khoảng ngày",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "purge",
+        "definition": "Xóa vĩnh viễn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "belong_of_deleted_folder",
+        "definition": "Thuộc thư mục đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "number_of_selected_objects",
+        "definition": "Số đối tượng đã chọn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_selection_restore",
+        "definition": "Vui lòng xác nhận khôi phục các mục đã chọn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "confirm_selection_delete",
+        "definition": "Vui lòng xác nhận xóa các mục đã chọn.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "refreshing",
+        "definition": "Đang làm mới",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "empty_list",
+        "definition": "Danh sách trống",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_folders",
+        "definition": "Thư mục đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "deleted_items",
+        "definition": "Mục đã xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "recycled_bin",
+        "definition": "Thùng rác",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "database",
+        "definition": "Cơ sở dữ liệu",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal",
+        "definition": "Gia hạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "renewal_delay",
+        "definition": "Thời gian gia hạn",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "please_confirm_deletion",
+        "definition": "Vui lòng xác nhận xóa",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "caution",
+        "definition": "Cảnh báo",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_not_exist",
+        "definition": "Vai trò này không tồn tại!",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_can_edit_any_visible_item",
+        "definition": "Vai trò có thể chỉnh sửa bất kỳ mục nào nhìn thấy",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    },
+    {
+        "term": "role_can_edit_any_visible_item_tip",
+        "definition": "Cài đặt thông thường là để hộp kiểm này không được đánh dấu. Thực sự khi được đánh dấu, nó sẽ cho phép người dùng là một phần của vai trò này chỉnh sửa bất kỳ mục nào người dùng có thể mở, dẫn đến trạng thái không an toàn. Nó chỉ nên được đánh dấu trong một khoảng thời gian cụ thể và theo nhu cầu.",
+        "context": "",
+        "term_plural": "",
+        "reference": "",
+        "comment": "",
+        "fuzzy": 0
+    }
+]
