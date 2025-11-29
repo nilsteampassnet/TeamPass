@@ -32,6 +32,7 @@ class Language {
     private $language;
     private $path;
     private $translations;
+    private $fallbackTranslations; // New property for English translations
 
     public function __construct($language = null, $path = __DIR__."/../../../../includes/language") {
         if (null === $language || empty($language) === true ) {
@@ -47,11 +48,63 @@ class Language {
     }
 
     private function loadTranslations() {
-        // Load the translations from a file or database
-        $this->translations = include $this->path."/{$this->language}.php";
+        // 1. Load Fallback (English) Translations first
+        $this->fallbackTranslations = $this->loadLanguageFile('english');
+
+        // 2. Load Primary Translations
+        // Only load if the requested language is not already English
+        if ($this->language === 'english') {
+            // If the primary language is english, use fallback as primary
+            $this->translations = $this->fallbackTranslations;
+        } else {
+            $this->translations = $this->loadLanguageFile($this->language);
+        }
     }
 
+    /**
+     * Helper function to safely load a specific language file.
+     *
+     * @param string $lang_code The code of the language file to load (e.g., 'french').
+     * @return array The array of translations, or an empty array on failure.
+     */
+    private function loadLanguageFile($lang_code) {
+        $filepath = $this->path . DIRECTORY_SEPARATOR . basename(strtolower($lang_code)) . '.php';
+        $translations = [];
+
+        if (file_exists($filepath) && is_file($filepath)) {
+            // Suppress warnings as file inclusion can be noisy, error handling is done by checking array type.
+            $result = @include $filepath;
+            if (is_array($result)) {
+                $translations = $result;
+            } else {
+                // LOGGING: Language file was included but did not return a valid array.
+            }
+        } else {
+            // LOGGING: Language file not found or inaccessible: {$filepath}
+        }
+
+        return $translations;
+    }
+
+    /**
+     * Retrieves the translation for a given key.
+     * Fallback strategy: Primary language -> English translation -> Key itself.
+     *
+     * @param string $key The translation key.
+     * @return string The translated string.
+     */
     public function get($key) {
-        return $this->translations[$key] ?? $key;
+        // 1. Check in Primary Language
+        if (isset($this->translations[$key]) && $this->translations[$key] !== "") {
+            return $this->translations[$key];
+        }
+
+        // 2. Check in Fallback (English) Language
+        if (isset($this->fallbackTranslations[$key])) {
+            return $this->fallbackTranslations[$key];
+        }
+
+        // 3. Last resort: Return the key itself
+        return $key;
     }
 }

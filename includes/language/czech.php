@@ -64,7 +64,7 @@ return array(
     'temporary_encryption_code' => 'Your temporary encryption code',
     'renecyption_expected' => 'We need to renecrypt your keys to fit the privileges corresponding to your account and rights.',
     'error_ad_user_expired' => 'User is expired!',
-    'error' => 'Error caught',
+    'error' => 'Error',
     'hosts' => 'Hosts',
     'settings_ldap_hosts_tip' => 'The hosts option is an array of IP addresses or host names located on your network that serve an LDAP directory (seprated by a comma). You insert as many servers or as little as you would like depending on your forest (with the minimum of one of course).',
     'base_distiguished_name' => 'Base DN',
@@ -1389,7 +1389,6 @@ return array(
     'number_of_used_pw' => 'Počet nových hesel, který uživatel musí zadat před znovupoužitím hesla starého.',
     'pages' => 'Stránky',
     'personal_salt_key' => 'Váš osobní klíč SALTKEY',
-    'please_update' => 'Aktualizujte prosím software a databázi!',
     'pw_hash_not_correct' => 'Hash hesla není správný',
     'readme_open' => 'Otevřít kompletní soubor README',
     'settings_ldap_domain' => 'Přípona účtu LDAP pro Vaši doménu',
@@ -1398,8 +1397,7 @@ return array(
     'settings_ldap_domain_dn' => 'Kořenové jméno LDAP (dn) Vaší domény',
     'settings_log_connections' => 'Aktivovat zápis všech uživatelských spojení do deníku',
     'users_online' => 'uživatelé/ů online',
-    'your_version' => 'Vaše verze',
-    'one_time_view_item_url_box' => 'Споделете еднократения URL с доверено лице<br><b',
+    'one_time_view_item_url_box' => 'Share a one-time-view URL with a person you trust to see the password <br><br>#URL#<br><br>This link will only be visible one time, and expires in #DAY# day(s)',
     'comment' => 'Komentář',
     'suggestion_menu' => 'Návrhy',
     'settings_ldap_bind_dn' => 'LDAP bind DN',
@@ -1464,5 +1462,6 @@ return array(
     'personal_saltkey_security_level' => 'Minimum Personal Saltkey security level',
     'settings_disable_forgot_password_link_tip' => 'Skrýt odkaz na zapomenuté heslo na domovské stránce, protože ho Teampass nespravuje',
     'newly_created_user_role' => 'Newly created user has role',
+    'config' => '',
 
 );

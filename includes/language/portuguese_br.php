@@ -6,7 +6,7 @@
  * 
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
- * the Foundation, version 3 of the License.
+ * the Free Software Foundation, version 3 of the License.
  * 
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -64,7 +64,7 @@ return array(
     'temporary_encryption_code' => 'Seu código de criptografia temporário',
     'renecyption_expected' => 'Nós precisamos regerar suas chaves para atender aos privilégios correspondentes para sua conta e direitos.',
     'error_ad_user_expired' => 'Usuário expirado!',
-    'error' => 'Erro encontrado',
+    'error' => 'Erro',
     'hosts' => 'Hosts',
     'settings_ldap_hosts_tip' => 'A opção hosts é um array de endereços IP ou host names localizados na sua rede que servem um diretório LDAP (separados por vírgulas). Você pode inserir quantos servidores você desejar de acordo com a sua floresta (no mínimo um servidor deve ser informado).',
     'base_distiguished_name' => 'DN Base',
@@ -522,7 +522,7 @@ return array(
     'error_not_allowed_to' => 'Você não tem permissão para fazer isso!',
     'request_access_ot_item' => 'Solicitar acesso ao autor',
     'email_request_access_subject' => '[Teampass] Solicitação de acesso a item',
-    'email_request_access_mail' => 'Olá #tp_item_author#,<br><br>Este é um e-mail gerado pelo gerenciador de senhas Teampass.<br><br>O usuário #tp_user# solicitou acesso ao item &apos;#tp_item#&apos;.<br><br>A requisição foi enviada com a seguinte justificativa:<br><i>\&apos;#tp_reason#\&apos;</i>Certifique-se dos direitos deste usuário antes de permitir o acesso ao Item.<br><br>Até mais!',
+    'email_request_access_mail' => 'Olá #tp_item_author#,<br><br>Este é um e-mail gerado pelo gerenciador de senhas Teampass.<br><br>O usuário #tp_user# solicitou acesso ao item &apos;#tp_item#&apos;.<br><br>A requisição foi enviada com a seguinte justificativa:<br><i>\\&apos;#tp_reason#\\&apos;</i>Certifique-se dos direitos deste usuário antes de permitir o acesso ao Item.<br><br>Até mais!',
     'nb_items_by_query' => 'Número de ítens por pesquisa ',
     'nb_items_by_query_tip' => '<span style="font-size:11px;max-width:300px;">Mais itens significa mais tempo para exibir a lista.<br />Defina para &apos;auto&apos; para deixar a ferramenta  adaptar este número, dependendo do tamanho da tela do usuário.<br />Defina para &apos;max&apos; para forçar a exibição da lista completa<br /> Defina um numero para obter a cada consulta.</span> ',
     'open_url_link' => 'Abrir em uma nova página',
@@ -1389,7 +1389,6 @@ return array(
     'number_of_used_pw' => 'Número de novas senhas que um usuário tem que utilizar antes de reutilizar uma senha antiga.',
     'pages' => 'Páginas',
     'personal_salt_key' => 'Sua SaltKey pessoal',
-    'please_update' => 'Por favor, atualize o software e o banco de dados!',
     'pw_hash_not_correct' => 'Hash de senha não está correto',
     'readme_open' => 'Abrir arquivo leia-me completo',
     'settings_ldap_domain' => 'Sufixo de conta LDAP para seu domínio',
@@ -1398,7 +1397,6 @@ return array(
     'settings_ldap_domain_dn' => 'LDAP BASE DN do seu domínio ',
     'settings_log_connections' => 'Habilitar o registro de todas as conexões de usuário no banco de dados.',
     'users_online' => 'usuários online',
-    'your_version' => 'Sua versão',
     'one_time_view_item_url_box' => 'Compartilhe uma URL de visualização única<br><br>#URL#<br><br>Este link será visível apenas uma vez e expira #DAY#',
     'comment' => 'Comentar',
     'suggestion_menu' => 'Sugestões',
@@ -1464,4 +1462,6 @@ return array(
     'personal_saltkey_security_level' => 'Nível mínimo de segurança da chave SaltKey pessoal',
     'settings_disable_forgot_password_link_tip' => 'Ocultar link de esqueci senha na página inicial pois não é gerenciado pelo Teampass',
     'newly_created_user_role' => 'Usuário recém-criado tem papel',
+    'config' => '',
+
 );
