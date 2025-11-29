@@ -1203,7 +1203,7 @@ return array(
     'server_connected_to_internet' => 'El servidor está conectado a internet',
     'server_not_connected_to_internet' => 'El servidor está conectado a internet',
     'server_not_connected_to_internet_tip' => 'Esto podría provocar que varias funcionalidades no funcionen correctamente. Especialmente MFA.',
-    'oauth' => 'OAuth',
+    'oauth' => '',
     'admin_oauth_configuration' => 'Configuración OAuth',
     'settings_oauth_mode' => 'Habilitar modo OAuth',
     'settings_oauth_mode_tip' => 'OAuth solo es posible con el proveedor Microsoft Entra (Azure AD).',
@@ -1389,7 +1389,6 @@ return array(
     'number_of_used_pw' => 'Número de contraseñas antiguas recordadas para prevenir reutilización (0 para deshabilitar)',
     'pages' => 'Páginas',
     'personal_salt_key' => 'Su clave salt personal',
-    'please_update' => '¡Por favor actualice el software y la base de datos!',
     'pw_hash_not_correct' => 'El hash de contraseña no es correcto',
     'readme_open' => 'Abrir archivo léame completo',
     'settings_ldap_domain' => 'Sufijo de cuenta LDAP para su dominio',
@@ -1398,8 +1397,7 @@ return array(
     'settings_ldap_domain_dn' => 'DN base LDAP para su dominio',
     'settings_log_connections' => 'Registrar todos los inicios de sesión de cuentas de usuario',
     'users_online' => 'usuarios en línea',
-    'your_version' => 'Su versión',
-    'one_time_view_item_url_box' => 'Споделете еднократения URL с доверено лице<br><b',
+    'one_time_view_item_url_box' => 'Share a one-time-view URL with a person you trust to see the password <br><br>#URL#<br><br>This link will only be visible one time, and expires in #DAY# day(s)',
     'comment' => 'Comentario',
     'suggestion_menu' => 'Sugerencias',
     'settings_ldap_bind_dn' => 'DN de enlace LDAP',
@@ -1464,5 +1462,6 @@ return array(
     'personal_saltkey_security_level' => 'Nivel mínimo de seguridad de Clave Salt Personal',
     'settings_disable_forgot_password_link_tip' => 'Ocultar el enlace de contraseña olvidada en la página de inicio porque no es gestionado por Teampass',
     'newly_created_user_role' => 'El usuario recién creado tiene el rol',
+    'config' => '',
 
 );
