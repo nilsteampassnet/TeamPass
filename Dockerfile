@@ -145,7 +145,7 @@ RUN rm -rf \
     .codacy.yml \
     .eslintrc \
     teampass-docker-start.sh \
-    Dockerfile.new
+    Dockerfile
 
 # Setup cron for TeamPass scheduler
 RUN echo "* * * * * php /var/www/html/sources/scheduler.php > /dev/null 2>&1" > /var/spool/cron/crontabs/nginx \
