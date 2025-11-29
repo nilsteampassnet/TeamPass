@@ -732,12 +732,12 @@ function cacheTableRefresh(): void
                 if (is_numeric($elem->title) === true) {
                     // Is this a User id?
                     $user = DB::queryFirstRow(
-                        'SELECT id, login
+                        'SELECT login
                         FROM ' . prefixTable('users') . '
                         WHERE id = %i',
                         $elem->title
                     );
-                    if (count($user) > 0) {
+                    if ($user !== null) {
                         $elem->title = $user['login'];
                     }
                 }
@@ -812,7 +812,7 @@ function cacheTableUpdate(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if ($user !== null) {
                 $elem->title = $user['login'];
             }
         }
@@ -890,7 +890,7 @@ function cacheTableAdd(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if ($user !== null) {
                 $elem->title = $user['login'];
             }
         }
