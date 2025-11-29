@@ -88,7 +88,7 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
             type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=sha-
           labels: |
             org.opencontainers.image.title=TeamPass
             org.opencontainers.image.description=Collaborative Passwords Manager
@@ -106,7 +106,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./Dockerfile.new
+          file: ./Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -196,9 +196,11 @@ jobs:
 
       - name: Pull and test image
         run: |
-          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }}
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }} php -v
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ github.ref_name }} nginx -v
+          FULL_SHA="${{ github.sha }}"
+          SHORT_TAG="${FULL_SHA:0:7}"
+          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG"
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG" php -v
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHORT_TAG" nginx -v
 
       - name: Test docker-compose
         run: |

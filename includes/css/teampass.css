@@ -335,3 +335,20 @@
 .dark-mode {
     scrollbar-color: #3b3b3b #555;
 }
+
+/**
+ * blink_me
+ *
+ * CSS rule to make an element blink by changing its opacity repeatedly.
+ */
+.blink_me {
+    /* Define the animation: 1 second, linear timing, infinite loop */
+    animation: blinker 1s linear infinite;
+}
+
+@keyframes blinker {
+    /* At 50% of the animation cycle, reduce the opacity to 30% */
+    50% {
+        opacity: 0.5;
+    }
+}

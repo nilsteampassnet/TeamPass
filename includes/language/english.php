@@ -29,6 +29,8 @@
  */
 
 return array(
+    'get_personal_items_migration_status' => 'Get personal items migration status',
+    'admin_tasks_status' => 'Tasks status',
     'utils' => 'Utilities',
     'copied' => 'Copied',
     'opened_edit_form_of' => 'Opened edit form of',
@@ -1226,7 +1228,6 @@ return array(
     'users_online' => 'users online',
     'user_alarm_no_function' => 'This user has no roles assigned!',
     'yes' => 'Yes',
-    'your_version' => 'Your version',
     'one_time_view_item_url_box' => 'Share a one-time-view URL with a person you trust to see the password <br><br>#URL#<br><br>This link will only be visible one time, and expires #DAY#',
     'settings_api' => 'API access enabled',
     'settings_api_tip' => 'The Application Programming Interface allows software developers to access password items in JSON format over the network.',
