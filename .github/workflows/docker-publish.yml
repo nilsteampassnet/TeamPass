@@ -196,11 +196,11 @@ jobs:
 
       - name: Pull and test image
         run: |
-          SHORT_SHA=${{ github.sha }}
-          SHORT_TAG=${SHORT_SHA:0:7}
-          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }}
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }} php -v
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{ SHORT_TAG }} nginx -v
+          FULL_SHA="${{ github.sha }}"
+          SHORT_TAG="${FULL_SHA:0:7}"
+          docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}}
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}} php -v
+          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:${{SHORT_TAG}} nginx -v
 
       - name: Test docker-compose
         run: |
