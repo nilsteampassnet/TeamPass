@@ -1228,7 +1228,7 @@ return array(
     'users_online' => 'users online',
     'user_alarm_no_function' => 'This user has no roles assigned!',
     'yes' => 'Yes',
-    'one_time_view_item_url_box' => 'Share a one-time-view URL with a person you trust to see the password <br><br>#URL#<br><br>This link will only be visible one time, and expires #DAY#',
+    'one_time_view_item_url_box' => 'Share a one-time-view URL with a person you trust to see the password <br><br>#URL#<br><br>This link will only be visible one time, and expires in #DAY# day(s)',
     'settings_api' => 'API access enabled',
     'settings_api_tip' => 'The Application Programming Interface allows software developers to access password items in JSON format over the network.',
     'settings_api_keys_list' => 'API key list',
