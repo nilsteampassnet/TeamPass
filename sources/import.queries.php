@@ -126,8 +126,6 @@ $inputData = dataSanitizer(
 );
 
 
-$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
 // Build query
 switch ($inputData['type']) {
     //Check if import CSV file format is what expected
@@ -145,6 +143,7 @@ switch ($inputData['type']) {
         }
 
         //load full tree
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title'); 
         $tree->rebuild();
         $tree = $tree->getDescendants();
 
@@ -888,7 +887,7 @@ switch ($inputData['type']) {
             'decode'
         );
         $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $destinationFolderId = filter_var($receivedParameters['folder_id'], FILTER_SANITIZE_NUMBER_INT);
+        $destinationFolderId = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
 
         // Get filename from database
         $data = DB::queryFirstRow(
@@ -1115,11 +1114,11 @@ switch ($inputData['type']) {
         );
 
         // get destination folder informations
-        $destinationFolderInfos = getFolderComplexity((int) $destinationFolderId, $session->get('user-personal_folders'));
+        $destinationFolderInfos = getFolderComplexity((int) $destinationFolderId,);
         $arrFolders[$destinationFolderId] = [
             'id' => (int) $destinationFolderId,
             'level' => 1,
-            'isPF' => false,
+            'isPF' => $destinationFolderInfos['importPF'],
         ];
         $startPathLevel = 1;
 
@@ -1138,7 +1137,8 @@ switch ($inputData['type']) {
                 is_null($parentId) ? 0 : (int) $parentId,
                 $folder['level'],
                 $startPathLevel,
-                (int) $destinationFolderInfos['levelPwComplexity']
+                (int) $destinationFolderInfos['levelPwComplexity'],
+                (bool) $destinationFolderInfos['importPF']
             );
 
             // manage parent
@@ -1148,9 +1148,6 @@ switch ($inputData['type']) {
                 'isPF' => $destinationFolderInfos['importPF'],
             ];
         }
-        //rebuild full tree
-        $tree->rebuild();
-
 
         echo prepareExchangedData(
             array(
@@ -1183,8 +1180,9 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $$inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
-        $$inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
+        $inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
+        
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
@@ -1221,6 +1219,7 @@ switch ($inputData['type']) {
                 $cryptedStuff['objectKey'] = '';
             }
             $post_password = $cryptedStuff['encrypted'];
+            $folderId = isset($post_folders[$item['parentFolderId']]['id']) ? (int)$post_folders[$item['parentFolderId']]['id'] : 0;
 
             //ADD item
             DB::insert(
@@ -1231,9 +1230,9 @@ switch ($inputData['type']) {
                     'pw' => $cryptedStuff['encrypted'],
                     'pw_iv' => '',
                     'url' => substr($item['URL'], 0, 500),
-                    'id_tree' => isset($post_folders[$item['parentFolderId']]['id']) ? (int)$post_folders[$item['parentFolderId']]['id'] : 0,
+                    'id_tree' => $folderId,
                     'login' => substr($item['UserName'], 0, 500),
-                    'anyone_can_modify' => $$inputData['editAll'],
+                    'anyone_can_modify' => $inputData['editAll'],
                     'encryption_type' => 'teampass_aes',
                     'inactif' => 0,
                     'restricted_to' => '',
@@ -1252,8 +1251,18 @@ switch ($inputData['type']) {
                 $cryptedStuff['objectKey'],
             );
 
+            // Create new task for the new item
+            storeTask(
+                'new_item',
+                $session->get('user-id'),
+                0,
+                (int) $folderId,
+                (int) $newId,
+                $cryptedStuff['objectKey'],
+            );
+
             //if asked, anyone in role can modify
-            if ($$inputData['editRole'] === 1) {
+            if ($inputData['editRole'] === 1) {
                 foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
@@ -1277,9 +1286,6 @@ switch ($inputData['type']) {
                 )
             );
 
-            // Add item to cache table
-            updateCacheTable('add_value', (int) $newId);
-
             // prepare return
             $returnedItems[] = array(
                 'title' => substr(stripslashes($item['Title']), 0, 500),
@@ -1300,6 +1306,38 @@ switch ($inputData['type']) {
         );
 
         break;
+
+    case 'keepass_finalize':
+        // Check KEY and rights
+        if ($inputData['key'] !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Reload cache for user
+        updateCacheTable('reload', NULL);
+        
+        // Rebuild full tree
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree->rebuild();
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
+
+
     }
 
 
@@ -1312,9 +1350,10 @@ switch ($inputData['type']) {
  * @param integer $folderLevel
  * @param integer $startPathLevel
  * @param integer $levelPwComplexity
+ * @param bool $isPersonalFolder
  * @return integer
  */
-function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $levelPwComplexity)
+function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $levelPwComplexity, $isPersonalFolder = false)
 {
     $session = SessionManager::getSession();
 
@@ -1338,6 +1377,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
                 'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
                 'nlevel' => (int) $folderLevel,
                 'categories' => '',
+                'personal_folder' => $isPersonalFolder,
             )
         );
         $id = DB::insertId();
@@ -1402,22 +1442,15 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
  * getFolderComplexity
  *
  * @param int $folderId
- * @param boolean $isFolderPF
  *
  * @return array
 */
-function getFolderComplexity($folderId, $isFolderPF)
+function getFolderComplexity($folderId)
 {
     // If destination is not ROOT then get the complexity level
-    if ($isFolderPF === true) {
-        return [
-            'levelPwComplexity' => 50,
-            'startPathLevel' => 1,
-            'importPF' => true
-        ];
-    } elseif ($folderId > 0) {
+    if ($folderId > 0) {
         $data = DB::queryFirstRow(
-            'SELECT m.valeur as value, t.nlevel as nlevel
+            'SELECT m.valeur as value, t.nlevel as nlevel, t.personal_folder as persoFolder
             FROM '.prefixTable('misc').' as m
             INNER JOIN '.prefixTable('nested_tree').' as t ON (m.intitule = t.id)
             WHERE m.type = %s AND m.intitule = %s',
@@ -1427,7 +1460,7 @@ function getFolderComplexity($folderId, $isFolderPF)
         return [
             'levelPwComplexity' => $data['value'],
             'startPathLevel' => $data['nlevel'],
-            'importPF' => false
+            'importPF' => (bool) $data['persoFolder'],
         ];
     }
     return [

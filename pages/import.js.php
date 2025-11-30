@@ -946,6 +946,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (debugJavascript === true) {
                         console.info("Now creating folders")
                     }
+
                     $.post(
                         "sources/import.queries.php", {
                             type: "keepass_create_folders",
@@ -1063,39 +1064,51 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     } else {
                                         // THis is the end.
                                         // Table of items to import is empty
+                                        $.post(
+                                            "sources/import.queries.php", {
+                                                type: "keepass_finalize",
+                                                key: '<?php echo $session->get('key'); ?>'
+                                            },
+                                            function(data) {
+                                                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                                                if (debugJavascript === true) {
+                                                    console.log(data);
+                                                }
 
-                                        // Show results
-                                        $('#import-feedback-result').append($resultsList);
-                                        $('#import-feedback-progress').addClass('hidden');
-                                        $('#import-feedback div, #import-feedback-result').removeClass('hidden');
-                                        $('#import-feedback-progress-text').html('');
-                                        
-                                        // Show
-                                        toastr.remove();
-                                        toastr.success(
-                                            '<?php echo $lang->get('done'); ?>',
-                                            data.message, {
-                                                timeOut: 2000,
-                                                progressBar: true
+                                                // Show results
+                                                $('#import-feedback-result').append($resultsList);
+                                                $('#import-feedback-progress').addClass('hidden');
+                                                $('#import-feedback div, #import-feedback-result').removeClass('hidden');
+                                                $('#import-feedback-progress-text').html('');
+                                                
+                                                // Show
+                                                toastr.remove();
+                                                toastr.success(
+                                                    '<?php echo $lang->get('done'); ?>',
+                                                    data.message, {
+                                                        timeOut: 2000,
+                                                        progressBar: true
+                                                    }
+                                                );
+
+                                                // Clear form
+                                                $('.keepass-setup').addClass('hidden');
+                                                $('#keepass-items-number, #keepass-items-list').html('');
+                                                $('#import-keepass-attach-pickfile-keepass-text').text('');
+                                                $('.import-keepass-cb').iCheck('uncheck');
+
+                                                store.update(
+                                                    'teampassApplication',
+                                                    function(teampassApplication) {
+                                                        teampassApplication.uploadType = '';
+                                                        teampassApplication.uploadedFileId = '';
+                                                    }
+                                                );
+
+                                                // restart time expiration counter
+                                                ProcessInProgress = false;
                                             }
                                         );
-
-                                        // Clear form
-                                        $('.keepass-setup').addClass('hidden');
-                                        $('#keepass-items-number, #keepass-items-list').html('');
-                                        $('#import-keepass-attach-pickfile-keepass-text').text('');
-                                        $('.import-keepass-cb').iCheck('uncheck');
-
-                                        store.update(
-                                            'teampassApplication',
-                                            function(teampassApplication) {
-                                                teampassApplication.uploadType = '';
-                                                teampassApplication.uploadedFileId = '';
-                                            }
-                                        );
-
-                                        // restart time expiration counter
-                                        ProcessInProgress = false;
                                     }
                                     
                                     return dfd.promise();

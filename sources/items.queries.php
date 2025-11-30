@@ -5044,7 +5044,7 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             $inputData['folderId'],
         );
-
+        
         if ($checkRights['error'] || !$checkRights['edit']) {
             echo (string) prepareExchangedData(
                 array(
