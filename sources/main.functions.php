@@ -2826,85 +2826,44 @@ function storeUsersShareKey(
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
-    
-    // $onlyForUser is only dynamically set by external calls
-    if ($onlyForUser === true || (int) $post_folder_is_personal === 1) {
-        // For personal items, create sharekeys for the owner user and TP_USER         
-        $userIds = [$userId, TP_USER_ID];
 
-        // Get public keys for all target users
-        $users = DB::query(
-            'SELECT id, public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id IN %li
-            AND public_key != ""',
-            $userIds
-        );
-
-        if (empty($users) === false) {
-            if (empty($objectKey) === false) {
-                // Single object key
-                foreach ($users as $user) {
-                    insertOrUpdateSharekey(
-                        prefixTable($object_name),
-                        (int) $post_object_id,
-                        (int) $user['id'],
-                        encryptUserObjectKey($objectKey, $user['public_key'])
-                    );
-                }
-            } else if (count($objectKeyArray) > 0) {
-                // Multiple object keys
-                foreach ($users as $user) {
-                    foreach ($objectKeyArray as $object) {
-                        insertOrUpdateSharekey(
-                            prefixTable($object_name),
-                            (int) $object['objectId'],
-                            (int) $user['id'],
-                            encryptUserObjectKey($object['objectKey'], $user['public_key'])
-                        );
-                    }
-                }
+    // Create sharekey for each user
+    $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+    if ($all_users_except_id !== -1) {
+        array_push($user_ids, (int) $all_users_except_id);
+    }
+    $users = DB::query(
+        'SELECT id, public_key
+        FROM ' . prefixTable('users') . '
+        WHERE id NOT IN %li
+        AND public_key != ""',
+        $user_ids
+    );
+    foreach ($users as $user) {
+        // Insert in DB the new object key for this item by user
+        if (count($objectKeyArray) === 0) {
+            if (WIP === true) {
+                error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
             }
-        }
-    } else {
-        // Create sharekey for each user
-        $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
-        if ($all_users_except_id !== -1) {
-            array_push($user_ids, (int) $all_users_except_id);
-        }
-        $users = DB::query(
-            'SELECT id, public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id NOT IN %li
-            AND public_key != ""',
-            $user_ids
-        );
-        foreach ($users as $user) {
-            // Insert in DB the new object key for this item by user
-            if (count($objectKeyArray) === 0) {
+            
+            insertOrUpdateSharekey(
+                prefixTable($object_name),
+                $post_object_id,
+                (int) $user['id'],
+                encryptUserObjectKey($objectKey, $user['public_key'])
+            );
+        } else {
+            foreach ($objectKeyArray as $object) {
                 if (WIP === true) {
-                    error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
+                    error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
                 }
                 
                 insertOrUpdateSharekey(
                     prefixTable($object_name),
-                    $post_object_id,
+                    (int) $object['objectId'],
                     (int) $user['id'],
-                    encryptUserObjectKey($objectKey, $user['public_key'])
+                    encryptUserObjectKey($object['objectKey'], $user['public_key'])
                 );
-            } else {
-                foreach ($objectKeyArray as $object) {
-                    if (WIP === true) {
-                        error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
-                    }
-                    
-                    insertOrUpdateSharekey(
-                        prefixTable($object_name),
-                        (int) $object['objectId'],
-                        (int) $user['id'],
-                        encryptUserObjectKey($object['objectKey'], $user['public_key'])
-                    );
-                }
             }
         }
     }
