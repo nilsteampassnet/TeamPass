@@ -1932,7 +1932,7 @@ function changePrivateKeyEncryptionPassword(
     $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
-    
+    error_log($post_current_code." -- ".$post_new_code);
     if (empty($post_new_code) === true) {
         // no user password
         return prepareExchangedData(
@@ -1958,7 +1958,20 @@ function changePrivateKeyEncryptionPassword(
             // We need to encrypt it with his real password
             $privateKey = decryptPrivateKey($post_current_code, $userData['private_key']);
             $hashedPrivateKey = encryptPrivateKey($post_new_code, $privateKey);
-
+            if (strlen($privateKey) === 0) {
+                $privateKey = decryptPrivateKey($post_new_code, $userData['private_key']);
+                if (strlen($privateKey) === 0) {
+                    // IT's ok
+                    return prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => '',
+                        ),
+                        'encode'
+                    );
+                }
+            }
+            
             // Should fail here to avoid break user private key.
             if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {

@@ -1664,6 +1664,8 @@ function finalizeAuthentication(
             prefixTable('users'),
             [
                 'pw' => $passwordManager->hashPassword($passwordClear),
+                'otp_provided' => 1,
+                'special' => 'none',
             ],
             'id = %i',
             $userInfo['id']
@@ -1676,6 +1678,8 @@ function finalizeAuthentication(
             prefixTable('users'),
             [
                 'pw' => $passwordManager->hashPassword($passwordClear),
+                'otp_provided' => 1,
+                'special' => 'none',
             ],
             'id = %i',
             $userInfo['id']

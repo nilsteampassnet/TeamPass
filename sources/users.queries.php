@@ -2293,6 +2293,7 @@ if (null !== $post_type) {
                 'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
                 'created_at' => time(),
                 'personal_items_migrated' => 1,
+                'otp_provided' => 1,
             );
 
             // Add transparent recovery fields if available
@@ -2321,7 +2322,6 @@ if (null !== $post_type) {
                 prefixTable('api'),
                 array(
                     'type' => 'user',
-                    //'label' => $newUserId,
                     'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
                     'timestamp' => time(),
                     'user_id' => $newUserId,
@@ -2365,7 +2365,7 @@ if (null !== $post_type) {
                     $emailSettings
                 );
             }
-
+            
             echo prepareExchangedData(
                 array(
                     'error' => false,
