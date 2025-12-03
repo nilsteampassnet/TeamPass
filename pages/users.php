@@ -128,6 +128,39 @@ foreach ($treeDesc as $t) {
     }
 }
 
+// Should we show the new user form?
+$showNewUser = $request->query->get('action') === 'new';
+
+// Is there any deleted account?
+/**
+ * count_deleted_users
+ *
+ * Counts the number of users who are disabled (deleted) in the database.
+ * Assumes the database connection is established and the table is {teampass_users}.
+ *
+ * @param void
+ * @return int The count of disabled users.
+ */
+function count_deleted_users() : int
+{
+    // Table is teampass_users with the prefix {teampass_users} in MeekroDB context.
+    // 'disabled = 1' indicates a deleted/disabled user account.
+    return (int)DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
+}
+
+$deleted_users_count = count_deleted_users();
+
+// Prepare the CSS class for blinking and the badge for the count.
+$blink_class = '';
+$count_badge_html = '';
+
+if ($deleted_users_count > 0) {
+    // Add the blinking class if there are deleted users
+    $blink_class = 'blink_me';
+
+    // Create the badge HTML with the count
+    $count_badge_html = ' <span class="badge badge-danger ml-1">' . $deleted_users_count . '</span>';
+}
 ?>
 
 <!-- Content Header (Page header) -->
@@ -170,13 +203,14 @@ foreach ($treeDesc as $t) {
                             <i class="fa-solid fa-plug mr-2"></i>' . $lang->get('oauth2_synchronization') . '
                         </button>' : '';
                                     ?>
-                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2" data-action="deleted-users">
-                            <i class="fa-solid fa-user-xmark mr-2"></i><?php echo $lang->get('deleted_users'); ?>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2 <?php echo $blink_class; ?>" data-action="deleted-users">
+                            <i class="fa-solid fa-user-xmark mr-2"></i><?php echo $lang->get('deleted_users'); ?><?php echo $count_badge_html; ?>
+                        </button>
                     </h3>
                 </div>
 
                 <!-- /.card-header -->
-                <div class="card-body form user-content with-header-menu" id="users-list" data-content="refresh">
+                <div class="card-body form user-content with-header-menu <?php echo $showNewUser ? 'hidden' : '';?>" id="users-list" data-content="refresh">
                     <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><span class="ml-2 pointer"><?php echo $lang->get('display_warning_icons');?></span></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
@@ -356,7 +390,7 @@ foreach ($treeDesc as $t) {
     </div>
 
     <!-- USER FORM -->
-    <div class="row hidden extra-form user-content" id="row-form" data-content="new" data-content-alternative="edit">
+    <div class="row <?php echo $showNewUser ? '' : 'hidden';?> extra-form user-content" id="row-form" data-content="new" data-content-alternative="edit">
         <div class="col-12">
             <div class="card card-primary">
                 <div class="card-header">

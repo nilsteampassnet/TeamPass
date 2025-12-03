@@ -1,0 +1,133 @@
+version: "3.8"
+
+# ============================================
+# TeamPass Docker Compose Configuration
+# ============================================
+
+services:
+  # ----------------------------------------
+  # TeamPass Application
+  # ----------------------------------------
+  teampass:
+    image: teampass/teampass:${TEAMPASS_VERSION:-latest}
+    container_name: teampass-app
+    restart: unless-stopped
+
+    environment:
+      # Database configuration
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-teampass}
+      DB_USER: ${DB_USER:-teampass}
+      DB_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD is required}
+      DB_PREFIX: ${DB_PREFIX:-teampass_}
+
+      # Installation mode
+      INSTALL_MODE: ${INSTALL_MODE:-manual}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@teampass.local}
+      ADMIN_PWD: ${ADMIN_PWD:-}
+      TEAMPASS_URL: ${TEAMPASS_URL:-http://localhost}
+
+      # PHP configuration
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+      PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-100M}
+      PHP_MAX_EXECUTION_TIME: ${PHP_MAX_EXECUTION_TIME:-120}
+
+    volumes:
+      # Persistent data
+      - teampass-sk:/var/www/html/sk
+      - teampass-files:/var/www/html/files
+      - teampass-upload:/var/www/html/upload
+
+    ports:
+      - "${TEAMPASS_PORT:-8080}:80"
+
+    networks:
+      - teampass-network
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    labels:
+      - "com.teampass.description=TeamPass Application"
+      - "com.teampass.version=${TEAMPASS_VERSION:-latest}"
+
+  # ----------------------------------------
+  # MariaDB Database
+  # ----------------------------------------
+  db:
+    image: mariadb:${MARIADB_VERSION:-11.2}
+    container_name: teampass-db
+    restart: unless-stopped
+
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Error: MARIADB_ROOT_PASSWORD is required}
+      MARIADB_DATABASE: ${DB_NAME:-teampass}
+      MARIADB_USER: ${DB_USER:-teampass}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD is required}
+      MARIADB_AUTO_UPGRADE: "1"
+      MARIADB_INITDB_SKIP_TZINFO: "1"
+
+    volumes:
+      - teampass-db:/var/lib/mysql
+      - ../../docker/mariadb/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
+
+    networks:
+      - teampass-network
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_allowed_packet=64M
+      - --innodb_buffer_pool_size=256M
+
+    labels:
+      - "com.teampass.description=TeamPass Database"
+
+# ----------------------------------------
+# Networks
+# ----------------------------------------
+networks:
+  teampass-network:
+    driver: bridge
+    labels:
+      - "com.teampass.network=main"
+
+# ----------------------------------------
+# Volumes
+# ----------------------------------------
+volumes:
+  teampass-sk:
+    driver: local
+    labels:
+      - "com.teampass.volume=saltkey"
+
+  teampass-files:
+    driver: local
+    labels:
+      - "com.teampass.volume=files"
+
+  teampass-upload:
+    driver: local
+    labels:
+      - "com.teampass.volume=upload"
+
+  teampass-db:
+    driver: local
+    labels:
+      - "com.teampass.volume=database"

@@ -542,7 +542,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <a href="#" data-name="admin" class="nav-link', $get['page'] === 'admin' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-info"></i>
                         <p>
-                            ' . $lang->get('admin_main') . '
+                            ' . $lang->get('dashboard') . '
                         </p>
                         </a>
                     </li>
@@ -550,7 +550,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <a href="#" class="nav-link">
                             <i class="nav-icon fa-solid fa-wrench"></i>
                             <p>
-                                ' . $lang->get('admin_settings') . '
+                                ' . $lang->get('settings') . '
                                 <i class="fa-solid fa-angle-left right"></i>
                             </p>
                         </a>
@@ -685,7 +685,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
                         <i class="nav-icon fa-solid fa-cubes"></i>
-                        <p>' . $lang->get('admin_views') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        <p>' . $lang->get('utils') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
@@ -1254,6 +1254,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <script type="text/javascript" src="./plugins/datatables/plugins/select.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
         <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <link rel="stylesheet" href="includes/css/admin-dashboard.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {

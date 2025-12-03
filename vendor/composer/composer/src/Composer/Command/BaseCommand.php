@@ -26,6 +26,7 @@ use Composer\Plugin\PreCommandRunEvent;
 use Composer\Package\Version\VersionParser;
 use Composer\Plugin\PluginEvents;
 use Composer\Advisory\Auditor;
+use Composer\Advisory\AuditConfig;
 use Composer\Util\Platform;
 use Symfony\Component\Console\Completion\CompletionInput;
 use Symfony\Component\Console\Completion\CompletionSuggestions;
@@ -215,10 +216,8 @@ abstract class BaseCommand extends Command
 
     /**
      * @inheritDoc
-     *
-     * @return void
      */
-    protected function initialize(InputInterface $input, OutputInterface $output)
+    protected function initialize(InputInterface $input, OutputInterface $output): void
     {
         // initialize a plugin-enabled Composer instance, either local or global
         $disablePlugins = $input->hasParameterOption('--no-plugins');
@@ -260,6 +259,7 @@ abstract class BaseCommand extends Command
             'COMPOSER_MINIMAL_CHANGES' => ['minimal-changes'],
             'COMPOSER_WITH_DEPENDENCIES' => ['with-dependencies'],
             'COMPOSER_WITH_ALL_DEPENDENCIES' => ['with-all-dependencies'],
+            'COMPOSER_NO_SECURITY_BLOCKING' => ['no-security-blocking'],
         ];
         foreach ($envOptions as $envName => $optionNames) {
             foreach ($optionNames as $optionName) {
@@ -296,7 +296,6 @@ abstract class BaseCommand extends Command
      *
      * @param  mixed    $config either a configuration array or a filename to read from, if null it will read from
      *                          the default filename
-     * @return Composer
      */
     protected function createComposerInstance(InputInterface $input, IOInterface $io, $config = null, ?bool $disablePlugins = null, ?bool $disableScripts = null): Composer
     {
@@ -467,5 +466,42 @@ abstract class BaseCommand extends Command
         }
 
         return $val;
+    }
+
+    /**
+     * Creates an AuditConfig from the Config object, optionally overriding security blocking based on input options
+     *
+     * @internal
+     */
+    protected function createAuditConfig(Config $config, InputInterface $input): AuditConfig
+    {
+        // Handle both --audit and --no-audit flags
+        if ($input->hasOption('audit')) {
+            $audit = (bool) $input->getOption('audit');
+        } else {
+            $audit = !($input->hasOption('no-audit') && $input->getOption('no-audit'));
+        }
+        $auditFormat = $input->hasOption('audit-format') ? $this->getAuditFormat($input) : Auditor::FORMAT_SUMMARY;
+
+        $auditConfig = AuditConfig::fromConfig($config, $audit, $auditFormat);
+
+        if ($input->hasOption('no-security-blocking') && $input->getOption('no-security-blocking')) {
+            $auditConfig = new AuditConfig(
+                $auditConfig->audit,
+                $auditConfig->auditFormat,
+                $auditConfig->auditAbandoned,
+                false, // blockInsecure
+                $auditConfig->blockAbandoned,
+                $auditConfig->ignoreUnreachable,
+                $auditConfig->ignoreListForAudit,
+                $auditConfig->ignoreListForBlocking,
+                $auditConfig->ignoreSeverityForAudit,
+                $auditConfig->ignoreSeverityForBlocking,
+                $auditConfig->ignoreAbandonedForAudit,
+                $auditConfig->ignoreAbandonedForBlocking
+            );
+        }
+
+        return $auditConfig;
     }
 }

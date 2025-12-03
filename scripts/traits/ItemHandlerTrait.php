@@ -32,7 +32,7 @@ trait ItemHandlerTrait {
         if (LOG_TASKS=== true) $this->logger->log('Processing generateUserPasswordKeys : '.print_r($arguments, true), 'DEBUG');
         // Generate keys for user passwords   
         storeUsersShareKey(
-            prefixTable('sharekeys_items'),
+            'sharekeys_items',
             0,
             (int) $arguments['item_id'],
             (string) (array_key_exists('pwd', $arguments) === true ? $arguments['pwd'] : (array_key_exists('object_key', $arguments) === true ? $arguments['object_key'] : '')),
@@ -52,7 +52,7 @@ trait ItemHandlerTrait {
         if (LOG_TASKS=== true) $this->logger->log('Processing generateUserFileKeys : '.print_r($taskData, true), 'DEBUG');
         foreach($taskData['files_keys'] as $file) {
             storeUsersShareKey(
-                prefixTable('sharekeys_files'),
+                'sharekeys_files',
                 0,
                 (int) $file['object_id'],
                 (string) $file['object_key'],
@@ -74,7 +74,7 @@ trait ItemHandlerTrait {
         foreach($arguments['fields_keys'] as $field) {
             $this->logger->log('Processing generateUserFieldKeys for: ' . $field['object_id'], 'DEBUG');
             storeUsersShareKey(
-                prefixTable('sharekeys_fields'),
+                'sharekeys_fields',
                 0,
                 (int) $field['object_id'],
                 (string) $field['object_key'],
@@ -93,7 +93,7 @@ trait ItemHandlerTrait {
      */
     private function handleItemCopy($arguments) {
         storeUsersShareKey(
-            prefixTable('sharekeys_items'),
+            'sharekeys_items',
             0,
             $arguments['item_id'],
             $arguments['object_key'] ?? '',
@@ -111,7 +111,7 @@ trait ItemHandlerTrait {
      */
     private function handleItemUpdateCreateKeys($arguments) {
         storeUsersShareKey(
-            prefixTable('sharekeys_items'),
+            'sharekeys_items',
             0,
             (int) $arguments['item_id'],
             (string) (array_key_exists('pwd', $arguments) === true ? $arguments['pwd'] : (array_key_exists('object_key', $arguments) === true ? $arguments['object_key'] : '')),
@@ -129,7 +129,7 @@ trait ItemHandlerTrait {
     private function handleFieldUpdateCreateKeys($arguments) {
         foreach ($arguments['fields_keys'] ?? [] as $field) {
             storeUsersShareKey(
-                prefixTable('sharekeys_items'),
+                'sharekeys_items',
                 0,
                 $field['object_id'],
                 $field['object_key'],

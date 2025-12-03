@@ -59,13 +59,25 @@ class BaseController
     public function getQueryStringParams()
     {
         $request = symfonyRequest::createFromGlobals();
+        
+        // Priority 1: JSON body
+        if ($request->getContentTypeFormat() === 'json') {
+            return $request->toArray();
+        }
+        
+        // Priority 2: POST form data
+        if ($request->getMethod() === 'POST' && $request->request->count() > 0) {
+            return $this->sanitizeUrl($request->request->all());
+        }
+        
+        // Priority 3: Query string
         $queryString = $request->getQueryString();
-        if ($request->getContentTypeFormat() != 'application/json') {
+        if (!empty($queryString)) {
             parse_str(html_entity_decode($queryString), $query);
             return $this->sanitizeUrl($query);
         }
-
-        return $request->toArray();
+        
+        return [];
     }
 
     /**

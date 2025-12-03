@@ -2431,13 +2431,11 @@ function continueReEncryptingUserSharekeysStep10(
         
         // Save the key in DB
         if ($post_self_change === false) {
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_items'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
+                (int) $record['id'],
+                (int) $post_user_id,
+                $share_key_for_item
             );
         } else {
             // Get itemIncrement from selected user
@@ -2461,13 +2459,11 @@ function continueReEncryptingUserSharekeysStep10(
                         $currentUserKey['increment_id']
                     );
                 } else {
-                    DB::insert(
+                    insertOrUpdateSharekey(
                         prefixTable('sharekeys_items'),
-                        array(
-                            'object_id' => (int) $record['id'],
-                            'user_id' => (int) $post_user_id,
-                            'share_key' => $share_key_for_item,
-                        )
+                        (int) $record['id'],
+                        (int) $post_user_id,
+                        $share_key_for_item
                     );
                 }
             }
@@ -2529,13 +2525,11 @@ function continueReEncryptingUserSharekeysStep20(
 
         // Save the key in DB
         if ($post_self_change === false) {
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_logs'),
-                array(
-                    'object_id' => (int) $record['increment_id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
+                (int) $record['increment_id'],
+                (int) $post_user_id,
+                $share_key_for_item
             );
         } else {
             // Get itemIncrement from selected user
@@ -2616,13 +2610,11 @@ function continueReEncryptingUserSharekeysStep30(
 
         // Save the key in DB
         if ($post_self_change === false) {
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_fields'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
+                (int) $record['id'],
+                (int) $post_user_id,
+                $share_key_for_item
             );
         } else {
             // Get itemIncrement from selected user
@@ -2702,13 +2694,11 @@ function continueReEncryptingUserSharekeysStep40(
 
         // Save the key in DB
         if ($post_self_change === false) {
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_suggestions'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
+                (int) $record['id'],
+                (int) $post_user_id,
+                $share_key_for_item
             );
         } else {
             // Get itemIncrement from selected user
@@ -2788,13 +2778,11 @@ function continueReEncryptingUserSharekeysStep50(
 
         // Save the key in DB
         if ($post_self_change === false) {
-            DB::insert(
+            insertOrUpdateSharekey(
                 prefixTable('sharekeys_files'),
-                array(
-                    'object_id' => (int) $record['id'],
-                    'user_id' => (int) $post_user_id,
-                    'share_key' => $share_key_for_item,
-                )
+                (int) $record['id'],
+                (int) $post_user_id,
+                $share_key_for_item
             );
         } else {
             // Get itemIncrement from selected user
@@ -2881,13 +2869,11 @@ function continueReEncryptingUserSharekeysStep60(
 
             // Save the key in DB
             if ($post_self_change === false) {
-                DB::insert(
+                insertOrUpdateSharekey(
                     prefixTable('sharekeys_items'),
-                    array(
-                        'object_id' => (int) $record['id'],
-                        'user_id' => (int) $post_user_id,
-                        'share_key' => $share_key_for_item,
-                    )
+                    (int) $record['id'],
+                    (int) $post_user_id,
+                    $share_key_for_item
                 );
             } else {
                 // Get itemIncrement from selected user
@@ -3013,14 +2999,12 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                         $record['id']
                     );
 
-                    // Insert in DB the new object key for this item by user
-                    DB::insert(
+                    // Insert in DB the new object key for this item by user                    
+                    insertOrUpdateSharekey(
                         prefixTable('sharekeys_items'),
-                        array(
-                            'object_id' => (int) $record['id'],
-                            'user_id' => (int) $post_user_id,
-                            'share_key' => encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key']),
-                        )
+                        (int) $record['id'],
+                        (int) $post_user_id,
+                        encryptUserObjectKey($cryptedStuff['objectKey'], $userInfo['public_key'])
                     );
 
 
@@ -3058,13 +3042,11 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                         );
 
                         // Save key
-                        DB::insert(
+                        insertOrUpdateSharekey(
                             prefixTable('sharekeys_files'),
-                            array(
-                                'object_id' => (int) $record2['id'],
-                                'user_id' => (int) $session->get('user-id'),
-                                'share_key' => encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key')),
-                            )
+                            (int) $record2['id'],
+                            (int) $session->get('user-id'),
+                            encryptUserObjectKey($encryptedFile['objectKey'], $session->get('user-public_key'))
                         );
 
                         // Unlink original file

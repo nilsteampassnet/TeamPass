@@ -255,7 +255,7 @@ function db_error_handler(array $params): void
  * @param string|array $groupesVisiblesUser  [description]
  * @param string|array $groupesInterditsUser [description]
  * @param string       $isAdmin              [description]
- * @param string       $idFonctions          [description]
+ * @param string|null       $idFonctions          [description]
  *
  * @return bool
  */
@@ -263,7 +263,7 @@ function identifyUserRights(
     $groupesVisiblesUser,
     $groupesInterditsUser,
     $isAdmin,
-    $idFonctions,
+    ?string $idFonctions,
     $SETTINGS
 ) {
     $session = SessionManager::getSession();
@@ -272,9 +272,7 @@ function identifyUserRights(
     // Check if user is ADMINISTRATOR    
     (int) $isAdmin === 1 ?
         identAdmin(
-            $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */
-            $tree
+            $idFonctions ?? ''
         )
         :
         identUser(
@@ -302,12 +300,10 @@ function identifyUserRights(
  * Identify administrator.
  *
  * @param string $idFonctions Roles of user
- * @param array  $SETTINGS    Teampass settings
- * @param object $tree        Tree of folders
  *
  * @return bool
  */
-function identAdmin($idFonctions, $SETTINGS, $tree)
+function identAdmin(string $idFonctions)
 {
     
     $session = SessionManager::getSession();
@@ -330,7 +326,7 @@ function identAdmin($idFonctions, $SETTINGS, $tree)
     $session->set('user-accessible_folders', $groupesVisibles);
 
     // get complete list of ROLES
-    $tmp = explode(';', $idFonctions);
+    $tmp = array_filter(explode(';', $idFonctions !== null ? $idFonctions : ''));
     $rows = DB::query(
         'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'
@@ -736,12 +732,12 @@ function cacheTableRefresh(): void
                 if (is_numeric($elem->title) === true) {
                     // Is this a User id?
                     $user = DB::queryFirstRow(
-                        'SELECT id, login
+                        'SELECT login
                         FROM ' . prefixTable('users') . '
                         WHERE id = %i',
                         $elem->title
                     );
-                    if (count($user) > 0) {
+                    if ($user !== null) {
                         $elem->title = $user['login'];
                     }
                 }
@@ -816,7 +812,7 @@ function cacheTableUpdate(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if ($user !== null) {
                 $elem->title = $user['login'];
             }
         }
@@ -894,7 +890,7 @@ function cacheTableAdd(?int $ident = null): void
                 WHERE id = %i',
                 $elem->title
             );
-            if (count($user) > 0) {
+            if ($user !== null) {
                 $elem->title = $user['login'];
             }
         }
@@ -1051,7 +1047,7 @@ function prepareSendingEmail(
             'created_at' => time(),
             'process_type' => 'send_email',
             'arguments' => json_encode([
-                'subject' => $subject,
+                'subject' => html_entity_decode($subject, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
                 'receivers' => $email,
                 'body' => $body,
                 'receiver_name' => $receiverName,
@@ -2822,7 +2818,7 @@ function storeUsersShareKey(
     // Delete existing entries for this object
     if ($deleteAll === true) {
         DB::delete(
-            $object_name,
+            prefixTable($object_name),
             'object_id = %i',
             $post_object_id
         );
@@ -2830,102 +2826,79 @@ function storeUsersShareKey(
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
-    
-    // $onlyForUser is only dynamically set by external calls
-    if ($onlyForUser === true || (int) $post_folder_is_personal === 1) {
-        // For personal items, create sharekeys for the owner user and TP_USER         
-        $userIds = [$userId, TP_USER_ID];
 
-        // Get public keys for all target users
-        $users = DB::query(
-            'SELECT id, public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id IN %li
-            AND public_key != ""',
-            $userIds
-        );
-
-        if (empty($users) === false) {
-            if (empty($objectKey) === false) {
-                // Single object key
-                foreach ($users as $user) {
-                    DB::insert(
-                        $object_name,
-                        [
-                            'object_id' => (int) $post_object_id,
-                            'user_id' => (int) $user['id'],
-                            'share_key' => encryptUserObjectKey(
-                                $objectKey,
-                                $user['public_key']
-                            ),
-                        ]
-                    );
-                }
-            } else if (count($objectKeyArray) > 0) {
-                // Multiple object keys
-                foreach ($users as $user) {
-                    foreach ($objectKeyArray as $object) {
-                        DB::insert(
-                            $object_name,
-                            [
-                                'object_id' => (int) $object['objectId'],
-                                'user_id' => (int) $user['id'],
-                                'share_key' => encryptUserObjectKey(
-                                    $object['objectKey'],
-                                    $user['public_key']
-                                ),
-                            ]
-                        );
-                    }
-                }
+    // Create sharekey for each user
+    $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+    if ($all_users_except_id !== -1) {
+        array_push($user_ids, (int) $all_users_except_id);
+    }
+    $users = DB::query(
+        'SELECT id, public_key
+        FROM ' . prefixTable('users') . '
+        WHERE id NOT IN %li
+        AND public_key != ""',
+        $user_ids
+    );
+    foreach ($users as $user) {
+        // Insert in DB the new object key for this item by user
+        if (count($objectKeyArray) === 0) {
+            if (WIP === true) {
+                error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
             }
-        }
-    } else {
-        // Create sharekey for each user
-        $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
-        if ($all_users_except_id !== -1) {
-            array_push($user_ids, (int) $all_users_except_id);
-        }
-        $users = DB::query(
-            'SELECT id, public_key
-            FROM ' . prefixTable('users') . '
-            WHERE id NOT IN %li
-            AND public_key != ""',
-            $user_ids
-        );
-        //DB::debugmode(false);
-        foreach ($users as $user) {
-            // Insert in DB the new object key for this item by user
-            if (count($objectKeyArray) === 0) {
-                if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id'] . ' - ' . $objectKey);
-                DB::insert(
-                    $object_name,
-                    [
-                        'object_id' => $post_object_id,
-                        'user_id' => (int) $user['id'],
-                        'share_key' => encryptUserObjectKey(
-                            $objectKey,
-                            $user['public_key']
-                        ),
-                    ]
+            
+            insertOrUpdateSharekey(
+                prefixTable($object_name),
+                $post_object_id,
+                (int) $user['id'],
+                encryptUserObjectKey($objectKey, $user['public_key'])
+            );
+        } else {
+            foreach ($objectKeyArray as $object) {
+                if (WIP === true) {
+                    error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                }
+                
+                insertOrUpdateSharekey(
+                    prefixTable($object_name),
+                    (int) $object['objectId'],
+                    (int) $user['id'],
+                    encryptUserObjectKey($object['objectKey'], $user['public_key'])
                 );
-            } else {
-                foreach ($objectKeyArray as $object) {
-                    if (WIP === true) error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id'] . ' - ' . $object['objectKey']);
-                    DB::insert(
-                        $object_name,
-                        [
-                            'object_id' => (int) $object['objectId'],
-                            'user_id' => (int) $user['id'],
-                            'share_key' => encryptUserObjectKey(
-                                $object['objectKey'],
-                                $user['public_key']
-                            ),
-                        ]
-                    );
-                }
             }
         }
+    }
+}
+
+/**
+ * Insert or update sharekey for a user
+ * Handles duplicate key errors gracefully
+ * 
+ * @param string $tableName Table name (with prefix)
+ * @param int $objectId Object ID
+ * @param int $userId User ID
+ * @param string $shareKey Encrypted share key
+ * @return bool Success status
+ */
+function insertOrUpdateSharekey(
+    string $tableName,
+    int $objectId,
+    int $userId,
+    string $shareKey
+): bool {
+    try {
+        DB::query(
+            'INSERT INTO ' . $tableName . ' 
+            (object_id, user_id, share_key) 
+            VALUES (%i, %i, %s)
+            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
+            $objectId,
+            $userId,
+            $shareKey
+        );
+        return true;
+    } catch (Exception $e) {
+        error_log('TEAMPASS Error - insertOrUpdateSharekey: ' . $e->getMessage());
+        return false;
     }
 }
 

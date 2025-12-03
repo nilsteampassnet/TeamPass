@@ -1,0 +1,170 @@
+version: "3.8"
+
+# ============================================
+# TeamPass with SSL Reverse Proxy
+# ============================================
+# This configuration includes an nginx-proxy with Let's Encrypt support
+# for automatic SSL certificate generation and renewal
+
+services:
+  # ----------------------------------------
+  # Nginx Reverse Proxy
+  # ----------------------------------------
+  nginx-proxy:
+    image: nginxproxy/nginx-proxy:alpine
+    container_name: teampass-nginx-proxy
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+      - "443:443"
+
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs:ro
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+
+    networks:
+      - teampass-network
+
+    labels:
+      - "com.github.jrcs.letsencrypt_nginx_proxy_companion.nginx_proxy"
+
+    environment:
+      ENABLE_IPV6: "true"
+
+  # ----------------------------------------
+  # Let's Encrypt Companion
+  # ----------------------------------------
+  letsencrypt:
+    image: nginxproxy/acme-companion
+    container_name: teampass-letsencrypt
+    restart: unless-stopped
+
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - nginx-certs:/etc/nginx/certs:rw
+      - nginx-vhost:/etc/nginx/vhost.d
+      - nginx-html:/usr/share/nginx/html
+      - letsencrypt-acme:/etc/acme.sh
+
+    networks:
+      - teampass-network
+
+    depends_on:
+      - nginx-proxy
+
+    environment:
+      DEFAULT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@example.com}
+
+  # ----------------------------------------
+  # TeamPass Application
+  # ----------------------------------------
+  teampass:
+    image: teampass/teampass:${TEAMPASS_VERSION:-latest}
+    container_name: teampass-app
+    restart: unless-stopped
+
+    environment:
+      # Proxy configuration
+      VIRTUAL_HOST: ${VIRTUAL_HOST:-teampass.example.com}
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_HOST: ${LETSENCRYPT_HOST:-teampass.example.com}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@example.com}
+
+      # Database configuration
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-teampass}
+      DB_USER: ${DB_USER:-teampass}
+      DB_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD is required}
+      DB_PREFIX: ${DB_PREFIX:-teampass_}
+
+      # Installation mode
+      INSTALL_MODE: ${INSTALL_MODE:-manual}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@teampass.local}
+      ADMIN_PWD: ${ADMIN_PWD:-}
+      TEAMPASS_URL: https://${VIRTUAL_HOST:-teampass.example.com}
+
+      # PHP configuration
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-512M}
+      PHP_UPLOAD_MAX_FILESIZE: ${PHP_UPLOAD_MAX_FILESIZE:-100M}
+
+    volumes:
+      - teampass-sk:/var/www/html/sk
+      - teampass-files:/var/www/html/files
+      - teampass-upload:/var/www/html/upload
+
+    networks:
+      - teampass-network
+
+    depends_on:
+      db:
+        condition: service_healthy
+      nginx-proxy:
+        condition: service_started
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ----------------------------------------
+  # MariaDB Database
+  # ----------------------------------------
+  db:
+    image: mariadb:${MARIADB_VERSION:-11.2}
+    container_name: teampass-db
+    restart: unless-stopped
+
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD:?Error: MARIADB_ROOT_PASSWORD is required}
+      MARIADB_DATABASE: ${DB_NAME:-teampass}
+      MARIADB_USER: ${DB_USER:-teampass}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Error: DB_PASSWORD is required}
+      MARIADB_AUTO_UPGRADE: "1"
+      MARIADB_INITDB_SKIP_TZINFO: "1"
+
+    volumes:
+      - teampass-db:/var/lib/mysql
+      - ../../docker/mariadb/custom.cnf:/etc/mysql/conf.d/custom.cnf:ro
+
+    networks:
+      - teampass-network
+
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_allowed_packet=64M
+
+networks:
+  teampass-network:
+    driver: bridge
+
+volumes:
+  teampass-sk:
+    driver: local
+  teampass-files:
+    driver: local
+  teampass-upload:
+    driver: local
+  teampass-db:
+    driver: local
+  nginx-certs:
+    driver: local
+  nginx-vhost:
+    driver: local
+  nginx-html:
+    driver: local
+  letsencrypt-acme:
+    driver: local

@@ -15,7 +15,6 @@ namespace Composer\Command;
 use Composer\IO\IOInterface;
 use Composer\Package\AliasPackage;
 use Composer\Package\BasePackage;
-use Composer\Package\Locker;
 use Composer\Package\Version\VersionBumper;
 use Composer\Pcre\Preg;
 use Composer\Util\Filesystem;
@@ -83,6 +82,7 @@ EOT
     }
 
     /**
+     * @internal
      * @param string[] $packagesFilter
      * @throws \Seld\JsonLint\ParsingException
      */
@@ -91,7 +91,8 @@ EOT
         bool $devOnly,
         bool $noDevOnly,
         bool $dryRun,
-        array $packagesFilter
+        array $packagesFilter,
+        string $devOnlyFlagHint = '--dev-only'
     ): int {
         /** @readonly */
         $composerJsonPath = Factory::getComposerFile();
@@ -138,7 +139,7 @@ EOT
             $contents = $composerJson->read();
             if (!isset($contents['type'])) {
                 $io->writeError('<warning>If your package is not a library, you can explicitly specify the "type" by using "composer config type project".</warning>');
-                $io->writeError('<warning>Alternatively you can use --dev-only to only bump dependencies within "require-dev".</warning>');
+                $io->writeError('<warning>Alternatively you can use '.$devOnlyFlagHint.' to only bump dependencies within "require-dev".</warning>');
             }
             unset($contents);
         }
@@ -154,7 +155,7 @@ EOT
 
         if (count($packagesFilter) > 0) {
             // support proxied args from the update command that contain constraints together with the package names
-            $packagesFilter = array_map(function ($constraint) {
+            $packagesFilter = array_map(static function ($constraint) {
                 return Preg::replace('{[:= ].+}', '', $constraint);
             }, $packagesFilter);
             $pattern = BasePackage::packageNamesToRegexp(array_unique(array_map('strtolower', $packagesFilter)));

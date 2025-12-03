@@ -16,9 +16,7 @@ use Composer\DependencyResolver\Request;
 use Composer\Package\AliasPackage;
 use Composer\Package\CompletePackageInterface;
 use Composer\Package\Loader\RootPackageLoader;
-use Composer\Package\Locker;
 use Composer\Package\PackageInterface;
-use Composer\Package\Version\VersionBumper;
 use Composer\Package\Version\VersionSelector;
 use Composer\Pcre\Preg;
 use Composer\Repository\RepositorySet;
@@ -71,10 +69,7 @@ class RequireCommand extends BaseCommand
     /** @var bool */
     private $dependencyResolutionCompleted = false;
 
-    /**
-     * @return void
-     */
-    protected function configure()
+    protected function configure(): void
     {
         $this
             ->setName('require')
@@ -94,6 +89,7 @@ class RequireCommand extends BaseCommand
                 new InputOption('no-install', null, InputOption::VALUE_NONE, 'Skip the install step after updating the composer.lock file.'),
                 new InputOption('no-audit', null, InputOption::VALUE_NONE, 'Skip the audit step after updating the composer.lock file (can also be set via the COMPOSER_NO_AUDIT=1 env var).'),
                 new InputOption('audit-format', null, InputOption::VALUE_REQUIRED, 'Audit output format. Must be "table", "plain", "json", or "summary".', Auditor::FORMAT_SUMMARY, Auditor::FORMATS),
+                new InputOption('no-security-blocking', null, InputOption::VALUE_NONE, 'Allows installing packages with security advisories or that are abandoned (can also be set via the COMPOSER_NO_SECURITY_BLOCKING=1 env var).'),
                 new InputOption('update-no-dev', null, InputOption::VALUE_NONE, 'Run the dependency update with the --no-dev option.'),
                 new InputOption('update-with-dependencies', 'w', InputOption::VALUE_NONE, 'Allows inherited dependencies to be updated, except those that are root requirements (can also be set via the COMPOSER_WITH_DEPENDENCIES=1 env var).'),
                 new InputOption('update-with-all-dependencies', 'W', InputOption::VALUE_NONE, 'Allows all inherited dependencies to be updated, including those that are root requirements (can also be set via the COMPOSER_WITH_ALL_DEPENDENCIES=1 env var).'),
@@ -447,6 +443,7 @@ EOT
         $authoritative = $input->getOption('classmap-authoritative') || $composer->getConfig()->get('classmap-authoritative');
         $apcuPrefix = $input->getOption('apcu-autoloader-prefix');
         $apcu = $apcuPrefix !== null || $input->getOption('apcu-autoloader') || $composer->getConfig()->get('apcu-autoloader');
+        $minimalChanges = $input->getOption('minimal-changes') || $composer->getConfig()->get('update-with-minimal-changes');
 
         $updateAllowTransitiveDependencies = Request::UPDATE_ONLY_LISTED;
         $flags = '';
@@ -484,9 +481,8 @@ EOT
             ->setPlatformRequirementFilter($this->getPlatformRequirementFilter($input))
             ->setPreferStable($input->getOption('prefer-stable'))
             ->setPreferLowest($input->getOption('prefer-lowest'))
-            ->setAudit(!$input->getOption('no-audit'))
-            ->setAuditFormat($this->getAuditFormat($input))
-            ->setMinimalUpdate($input->getOption('minimal-changes'))
+            ->setAuditConfig($this->createAuditConfig($composer->getConfig(), $input))
+            ->setMinimalUpdate($minimalChanges)
         ;
 
         // if no lock is present, or the file is brand new, we do not do a
@@ -544,7 +540,7 @@ EOT
 
             if (Preg::isMatch('{^dev-(?!main$|master$|trunk$|latest$)}', $requirements[$packageName])) {
                 $this->getIO()->warning('Version '.$requirements[$packageName].' looks like it may be a feature branch which is unlikely to keep working in the long run and may be in an unstable state');
-                if ($this->getIO()->isInteractive() && !$this->getIO()->askConfirmation('Are you sure you want to use this constraint (<comment>Y</comment>) or would you rather abort (<comment>n</comment>) the whole operation [<comment>Y,n</comment>]? ')) {
+                if ($this->getIO()->isInteractive() && !$this->getIO()->askConfirmation('Are you sure you want to use this constraint (<comment>y</comment>) or would you rather abort (<comment>n</comment>) the whole operation [<comment>y,n</comment>]? ')) {
                     $this->revertComposerFile();
 
                     return 1;
@@ -556,7 +552,7 @@ EOT
             $this->updateFile($this->json, $requirements, $requireKey, $removeKey, $sortPackages);
             if ($locker->isLocked() && $composer->getConfig()->get('lock')) {
                 $stabilityFlags = RootPackageLoader::extractStabilityFlags($requirements, $composer->getPackage()->getMinimumStability(), []);
-                $locker->updateHash($this->json, function (array $lockData) use ($stabilityFlags) {
+                $locker->updateHash($this->json, static function (array $lockData) use ($stabilityFlags) {
                     foreach ($stabilityFlags as $packageName => $flag) {
                         $lockData['stability-flags'][$packageName] = $flag;
                     }

@@ -24,6 +24,7 @@ return array(
     'def43f6c87e4f8dfd0c9e1b1bab14fe8' => $vendorDir . '/symfony/polyfill-iconv/bootstrap.php',
     '0d59ee240a4cd96ddbb4ff164fccea4d' => $vendorDir . '/symfony/polyfill-php73/bootstrap.php',
     '23c18046f52bef3eea034657bafda50f' => $vendorDir . '/symfony/polyfill-php81/bootstrap.php',
+    '9d2b9fc6db0f153a0a149fefb182415e' => $vendorDir . '/symfony/polyfill-php84/bootstrap.php',
     'b46ad4fe52f4d1899a2951c7e6ea56b0' => $vendorDir . '/voku/portable-utf8/bootstrap.php',
     'a2317519146f89bafaee186bdfa8e099' => $vendorDir . '/dominikb/composer-license-checker/src/helpers.php',
     'decc78cc4436b1292c6c0d151b19445c' => $vendorDir . '/phpseclib/phpseclib/phpseclib/bootstrap.php',

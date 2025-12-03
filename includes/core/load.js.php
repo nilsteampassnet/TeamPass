@@ -1271,10 +1271,10 @@ if (
                         $('#dialog-admin-change-user-password-do-show-password').iCheck('uncheck');                        
                         $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('generate_new_keys_end'); ?>');
                         // Show warning
-                        // Enable buttons
-                        $('#dialog-admin-change-user-password-close').removeAttr('disabled');
                         toastr.remove();
                     }
+
+                    $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').removeAttr('disabled');
                 }
             );
         }

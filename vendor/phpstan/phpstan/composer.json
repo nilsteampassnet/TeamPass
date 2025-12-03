@@ -16,6 +16,11 @@
 	"autoload": {
 		"files": ["bootstrap.php"]
 	},
+    "source": {
+        "type": "",
+        "url": "",
+        "reference": ""
+    },
 	"support": {
 		"issues": "https://github.com/phpstan/phpstan/issues",
 		"forum": "https://github.com/phpstan/phpstan/discussions",
