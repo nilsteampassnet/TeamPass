@@ -203,17 +203,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Remove progress toast
             $('.toast').remove();
         },
-        /*'createdRow': function( row, data, dataIndex ) {
-            var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
-            $(row).addClass(newClasses);
-        }*/
     });
-
-    oTable.on( 'xhr', function () {
-        console.log( 'Table redrawn' );
-        //Table.ajax.reload( null, false )
-    } );   
-     
 
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"]').iCheck({
@@ -1538,6 +1528,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     timeOut: 1000
                                 }
                             );
+
+                            // Update counter
+                            update_deleted_users_button(data.deleted_accounts_count);
                         }
                     }
                 );
