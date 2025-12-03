@@ -2161,7 +2161,6 @@ function generateOneTimeCode(
                     'error' => false,
                     'message' => '',
                     'code' => $password,
-                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                 ),
                 'encode'
             );
@@ -3140,7 +3139,7 @@ function getUserInfo(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, keys_recovery_time, personal_items_migrated
+            'SELECT special, auth_type, is_ready_for_usage, ongoing_process_id, otp_provided, personal_items_migrated
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_user_id

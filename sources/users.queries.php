@@ -2283,7 +2283,6 @@ if (null !== $post_type) {
                     'message' => '',
                     'user_id' => $newUserId,
                     'user_code' => $password,
-                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                     'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                 ),
                 'encode'
