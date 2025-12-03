@@ -476,36 +476,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         
         // send back the random key
         $return = $dataReceived['randomstring'];
-
-        // Send email
-        if (
-            isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
-            && (int) $sessionAdmin !== 1
-        ) {
-            // get all Admin users
-            $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
-            if (DB::count() > 0) {
-                // Add email to table
-                prepareSendingEmail(
-                    $lang->get('email_subject_on_user_login'),
-                    str_replace(
-                        [
-                            '#tp_user#',
-                            '#tp_date#',
-                            '#tp_time#',
-                        ],
-                        [
-                            ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
-                            date($SETTINGS['date_format'], (int) time()),
-                            date($SETTINGS['time_format'], (int) time()),
-                        ],
-                        $lang->get('email_body_on_user_login')
-                    ),
-                    $val['email'],
-                    $lang->get('administrator')
-                );
-            }
-        }
         
         // Ensure Complexity levels are translated
         defineComplexity();
