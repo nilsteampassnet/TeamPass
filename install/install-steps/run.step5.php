@@ -678,21 +678,16 @@ class DatabaseInstaller
         DB::query(
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users` (
             `id` int(12) NOT null AUTO_INCREMENT,
-            `login` varchar(500) NOT NULL,
-            `pw` varchar(400) NOT NULL,
-            `groupes_visibles` varchar(1000) NOT NULL,
+            `login` varchar(250) NOT NULL,
+            `pw` varchar(250) NOT NULL,
             `derniers` text NULL DEFAULT NULL,
             `key_tempo` varchar(100) NULL DEFAULT NULL,
             `last_pw_change` varchar(30) NULL DEFAULT NULL,
             `last_pw` text NULL DEFAULT NULL,
             `admin` tinyint(1) NOT null DEFAULT '0',
-            `fonction_id` varchar(1000) NULL DEFAULT NULL,
-            `groupes_interdits` varchar(1000) NULL DEFAULT NULL,
             `last_connexion` varchar(30) NULL DEFAULT NULL,
             `gestionnaire` int(11) NOT null DEFAULT '0',
-            `email` varchar(300) NOT NULL DEFAULT 'none',
-            `favourites` varchar(1000) NULL DEFAULT NULL,
-            `latest_items` varchar(1000) NULL DEFAULT NULL,
+            `email` varchar(250) NOT NULL DEFAULT 'none',
             `personal_folder` int(1) NOT null DEFAULT '0',
             `disabled` tinyint(1) NOT null DEFAULT '0',
             `can_create_root_folder` tinyint(1) NOT null DEFAULT '0',
@@ -703,18 +698,18 @@ class DatabaseInstaller
             `lastname` varchar(100) NULL DEFAULT NULL,
             `session_end` varchar(30) NULL DEFAULT NULL,
             `isAdministratedByRole` tinyint(5) NOT null DEFAULT '0',
-            `psk` varchar(400) NULL DEFAULT NULL,
+            `psk` varchar(250) NULL DEFAULT NULL,
             `ga` varchar(50) NULL DEFAULT NULL,
             `ga_temporary_code` VARCHAR(20) NOT NULL DEFAULT 'none',
-            `avatar` varchar(1000) NULL DEFAULT NULL,
-            `avatar_thumb` varchar(1000) NULL DEFAULT NULL,
+            `avatar` varchar(250) NULL DEFAULT NULL,
+            `avatar_thumb` varchar(250) NULL DEFAULT NULL,
             `upgrade_needed` BOOLEAN NOT NULL DEFAULT FALSE,
             `treeloadstrategy` varchar(30) NOT null DEFAULT 'full',
             `can_manage_all_users` tinyint(1) NOT NULL DEFAULT '0',
             `usertimezone` VARCHAR(50) NOT NULL DEFAULT 'not_defined',
             `agses-usercardid` VARCHAR(50) NOT NULL DEFAULT '0',
             `encrypted_psk` text NULL DEFAULT NULL,
-            `user_ip` varchar(400) NOT null DEFAULT 'none',
+            `user_ip` varchar(50) NOT null DEFAULT 'none',
             `user_ip_lastdate` varchar(50) NULL DEFAULT NULL,
             `yubico_user_key` varchar(100) NOT null DEFAULT 'none',
             `yubico_user_id` varchar(100) NOT null DEFAULT 'none',
@@ -724,11 +719,10 @@ class DatabaseInstaller
             `private_key_backup` TEXT NULL DEFAULT NULL,
             `key_integrity_hash` VARCHAR(64) NULL DEFAULT NULL,
             `special` VARCHAR(250) NOT NULL DEFAULT 'none',
-            `auth_type` VARCHAR(200) NOT NULL DEFAULT 'local',
+            `auth_type` VARCHAR(50) NOT NULL DEFAULT 'local',
             `is_ready_for_usage` BOOLEAN NOT NULL DEFAULT FALSE,
             `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)',
             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
-            `roles_from_ad_groups` varchar(1000) NULL DEFAULT NULL,
             `ongoing_process_id` VARCHAR(100) NULL DEFAULT NULL,
             `mfa_enabled` tinyint(1) NOT null DEFAULT '1',
             `created_at` varchar(30) NULL DEFAULT NULL,
@@ -1493,6 +1487,76 @@ class DatabaseInstaller
                     FOREIGN KEY (`user_id`)
                     REFERENCES `" . $this->inputData['tablePrefix'] . "users`(`id`)
                     ON DELETE CASCADE
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table users_groups
+    private function users_groups()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_groups` (
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `group_id` text NOT NULL,
+                PRIMARY KEY (`increment_id`),
+                KEY `USER` (`user_id`)
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table users_roles
+    private function users_roles()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_roles` (
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `role_id` text NOT NULL,
+                PRIMARY KEY (`increment_id`),
+                KEY `USER` (`user_id`)
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table users_groups_forbidden
+    private function users_groups_forbidden()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_groups_forbidden` (
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `group_id` text NOT NULL,
+                PRIMARY KEY (`increment_id`),
+                KEY `USER` (`user_id`)
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table users_favorites
+    private function users_favorites()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_favorites` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `item_id` text NOT NULL,
+            PRIMARY KEY (`increment_id`),
+            KEY `USER` (`user_id`)
+            ) CHARSET=utf8;"
+        );
+    }
+
+    // Create table users_latest_items
+    private function users_latest_items()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_latest_items` (
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `item_id` text NOT NULL,
+                PRIMARY KEY (`increment_id`),
+                KEY `USER` (`user_id`)
             ) CHARSET=utf8;"
         );
     }

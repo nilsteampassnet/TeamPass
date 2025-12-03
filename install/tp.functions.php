@@ -249,6 +249,50 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
 }
 
 /**
+ * Checks if a column exists in a table and deletes it if it does.
+ *
+ * @param string $dbname      The name of the table to check (e.g., 'teampass_users').
+ * @param string $columnName  The name of the column to delete.
+ *
+ * @return bool
+ */
+function deleteColumnIfExists($dbname, $columnName)
+{
+    global $db_link;
+    $exists = false;
+
+    // 1. Check if the column exists
+    // We use SHOW COLUMNS FROM to list all columns in the table
+    $columns = mysqli_query($db_link, "SHOW COLUMNS FROM `$dbname`");
+
+    // Loop through the columns returned by the query
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ((string) $col['Field'] === $columnName) {
+            $exists = true;
+            break; // Column found, we can stop the loop
+        }
+    }
+
+    // 2. Delete the column if it exists
+    if ($exists) {
+        // Use ALTER TABLE DROP COLUMN to remove the column
+        // We use backticks (`) around $dbname and $columnName for safety
+        return mysqli_query($db_link, "ALTER TABLE `$dbname` DROP COLUMN `$columnName`");
+    }
+
+    // Return false if the column did not exist or the operation was not executed
+    return false;
+}
+
+function columnExists($db_link, $table, $column) {
+    $result = mysqli_query(
+        $db_link,
+        "SHOW COLUMNS FROM `$table` LIKE '$column'"
+    );
+    return mysqli_num_rows($result) > 0;
+}
+
+/**
  * Modify a column
  *
  * @param string $tableName  DB
