@@ -168,10 +168,60 @@ class DatabaseInstaller
         }
     }
 
+    // Vérifier et forcer l'utilisation du moteur InnoDB
+    private function checkAndSetInnoDBEngine()
+    {
+        // Vérifier si InnoDB est disponible
+        $engines = DB::query("SHOW ENGINES");
+        $innodbAvailable = false;
+        $innodbDefault = false;
+        
+        foreach ($engines as $engine) {
+            if (strtolower($engine['Engine']) === 'innodb') {
+                $innodbAvailable = true;
+                if (in_array(strtolower($engine['Support']), ['default', 'yes'])) {
+                    $innodbDefault = (strtolower($engine['Support']) === 'default');
+                    break;
+                }
+            }
+        }
+        
+        if (!$innodbAvailable) {
+            throw new Exception('InnoDB storage engine is not available. TeamPass requires InnoDB for proper operation.');
+        }
+        
+        // Récupérer le moteur par défaut actuel
+        $defaultEngine = DB::queryFirstRow("SELECT @@default_storage_engine AS engine");
+        $currentEngine = strtolower($defaultEngine['engine']);
+        
+        // Si le moteur par défaut n'est pas InnoDB, le définir pour cette session
+        if ($currentEngine !== 'innodb') {
+            DB::query("SET default_storage_engine = InnoDB");
+            
+            // Log pour information
+            error_log("TeamPass Installation: Changed default storage engine from {$currentEngine} to InnoDB");
+        }
+        
+        return [
+            'innodb_available' => $innodbAvailable,
+            'innodb_default' => $innodbDefault,
+            'previous_engine' => $currentEngine,
+            'changed' => ($currentEngine !== 'innodb'),
+            'success' => true,
+        ];
+    }
+
+
     // Force UTF8
     private function utf8()
     {
-        DB::query("ALTER DATABASE %b DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci", $this->inputData['dbName']);
+        DB::query(
+            "ALTER DATABASE %b DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 
+            $this->inputData['dbName']
+        );
+        
+        // Configurer la connexion actuelle
+        DB::query("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
     }
 
     // Create table defuse_passwords
@@ -184,7 +234,7 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `password` text NOT NULL,
                 PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -197,7 +247,7 @@ class DatabaseInstaller
                 `item_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -212,7 +262,7 @@ class DatabaseInstaller
                 `share_key` text NOT NULL,
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
         // Indexes exist?
@@ -246,7 +296,7 @@ class DatabaseInstaller
                 `share_key` text NOT NULL,
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
         // Indexes exist?
@@ -347,7 +397,7 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
             INDEX items_perso_id_idx (`perso`, `id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -366,7 +416,7 @@ class DatabaseInstaller
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             PRIMARY KEY (`increment_id`),
             INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
         // Indexes exist?
@@ -401,7 +451,7 @@ class DatabaseInstaller
             `updated_at` varchar(255) NULL DEFAULT NULL,
             `is_encrypted` tinyint(1) NOT NULL DEFAULT '0',
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
         // include constants
@@ -654,7 +704,7 @@ class DatabaseInstaller
             KEY `nested_tree_nright` (`nright`),
             KEY `nested_tree_nlevel` (`nlevel`),
             KEY `personal_folder_idx` (`personal_folder`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -668,7 +718,7 @@ class DatabaseInstaller
             `fonction_id` int(12) NOT NULL,
             `authorized` tinyint(1) NOT null DEFAULT '0',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -734,7 +784,7 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             UNIQUE KEY `login` (`login`),
             KEY `idx_last_pw_change` (`last_pw_change`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
         require_once __DIR__.'/../../includes/config/include.php';
@@ -886,7 +936,7 @@ class DatabaseInstaller
             `content` longblob DEFAULT NULL,
             `confirmed` INT(1) NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -911,7 +961,7 @@ class DatabaseInstaller
             `url` text NULL DEFAULT NULL,
             `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -927,7 +977,7 @@ class DatabaseInstaller
                 `complexity` INT(5) NOT null DEFAULT '0',
                 `creator_id` int(11) NOT null DEFAULT '0',
                 PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
         // Vérifier si le rôle par défaut existe
@@ -959,7 +1009,7 @@ class DatabaseInstaller
             `folder_id` int(12) NOT NULL,
             `type` varchar(5) NOT NULL DEFAULT 'R',
             KEY `role_id_idx` (`role_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -975,7 +1025,7 @@ class DatabaseInstaller
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1130,7 +1180,7 @@ class DatabaseInstaller
             `is_mandatory` tinyint(1) NOT NULL DEFAULT '0',
             `regex` varchar(255) NULL default '',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1147,7 +1197,7 @@ class DatabaseInstaller
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             `is_mandatory` BOOLEAN NOT NULL DEFAULT FALSE ,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1186,7 +1236,7 @@ class DatabaseInstaller
             PRIMARY KEY (`increment_id`),
             KEY `USER` (`user_id`),
             KEY `idx_api_timestamp` (`timestamp`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1206,7 +1256,7 @@ class DatabaseInstaller
             `time_limit` varchar(100) DEFAULT NULL,
             `shared_globaly` INT(1) NOT NULL DEFAULT '0',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1227,7 +1277,7 @@ class DatabaseInstaller
             `suggestion_type` varchar(10) NOT NULL default 'new',
             `encryption_type` varchar(20) NOT NULL default 'not_set',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1252,7 +1302,7 @@ class DatabaseInstaller
             `perso` tinyint(1) NOT NULL default '0',
             `restricted_to` varchar(200) DEFAULT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1290,7 +1340,7 @@ class DatabaseInstaller
             `user_id` int(12) NOT NULL,
             `timestamp` varchar(50) NOT NULL DEFAULT 'none',
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1319,7 +1369,7 @@ class DatabaseInstaller
             `user_id` int(12) NOT NULL,
             `folders` longtext DEFAULT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1341,7 +1391,7 @@ class DatabaseInstaller
             `error_message` TEXT NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (finished_at)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
         // Vérifier si l'index existe dans la table
@@ -1383,7 +1433,7 @@ class DatabaseInstaller
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (`finished_at`),
             INDEX idx_progress (`is_in_progress`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1401,7 +1451,7 @@ class DatabaseInstaller
             `treated_objects` varchar(20) DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX idx_created_at (`created_at`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1416,7 +1466,7 @@ class DatabaseInstaller
             `ldap_group_label` VARCHAR(255) NOT NULL,
             PRIMARY KEY (`increment_id`),
             KEY `ROLE` (`role_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1433,7 +1483,7 @@ class DatabaseInstaller
             `phone_number` varchar(25) NOT NULL,
             PRIMARY KEY (`increment_id`),
             KEY `ITEM` (`item_id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1449,7 +1499,7 @@ class DatabaseInstaller
             `unlock_at` TIMESTAMP NULL DEFAULT NULL,
             `unlock_code` VARCHAR(50) NULL DEFAULT NULL,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1469,7 +1519,7 @@ class DatabaseInstaller
             `folder_id` INT(12) NULL DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `imported_at` INT(12) NULL DEFAULT NULL
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1487,7 +1537,7 @@ class DatabaseInstaller
                     FOREIGN KEY (`user_id`)
                     REFERENCES `" . $this->inputData['tablePrefix'] . "users`(`id`)
                     ON DELETE CASCADE
-            ) CHARSET=utf8;"
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1498,24 +1548,13 @@ class DatabaseInstaller
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_groups` (
                 `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                 `user_id` int(12) NOT NULL,
-                `group_id` text NOT NULL,
+                `group_id` int(12) NOT NULL,
+                `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (`increment_id`),
-                KEY `USER` (`user_id`)
-            ) CHARSET=utf8;"
-        );
-    }
-
-    // Create table users_roles
-    private function users_roles()
-    {
-        DB::query(
-            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_roles` (
-                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-                `user_id` int(12) NOT NULL,
-                `role_id` text NOT NULL,
-                PRIMARY KEY (`increment_id`),
-                KEY `USER` (`user_id`)
-            ) CHARSET=utf8;"
+                UNIQUE KEY `user_group_unique` (`user_id`, `group_id`),
+                KEY `user_idx` (`user_id`),
+                KEY `group_idx` (`group_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1526,10 +1565,32 @@ class DatabaseInstaller
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_groups_forbidden` (
                 `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                 `user_id` int(12) NOT NULL,
-                `group_id` text NOT NULL,
+                `group_id` int(12) NOT NULL,
+                `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (`increment_id`),
-                KEY `USER` (`user_id`)
-            ) CHARSET=utf8;"
+                UNIQUE KEY `user_group_unique` (`user_id`, `group_id`),
+                KEY `user_idx` (`user_id`),
+                KEY `group_idx` (`group_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table users_roles
+    private function users_roles()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_roles` (
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `role_id` int(12) NOT NULL,
+                `source` enum('manual','ad','ldap','oauth2') NOT NULL DEFAULT 'manual',
+                `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`increment_id`),
+                UNIQUE KEY `user_role_source_unique` (`user_id`, `role_id`, `source`),
+                KEY `user_idx` (`user_id`),
+                KEY `role_idx` (`role_id`),
+                KEY `source_idx` (`source`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1538,12 +1599,15 @@ class DatabaseInstaller
     {
         DB::query(
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_favorites` (
-            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
-            `user_id` int(12) NOT NULL,
-            `item_id` text NOT NULL,
-            PRIMARY KEY (`increment_id`),
-            KEY `USER` (`user_id`)
-            ) CHARSET=utf8;"
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+                `user_id` int(12) NOT NULL,
+                `item_id` int(12) NOT NULL,
+                `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (`increment_id`),
+                UNIQUE KEY `user_item_unique` (`user_id`, `item_id`),
+                KEY `user_idx` (`user_id`),
+                KEY `item_idx` (`item_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
 
@@ -1554,10 +1618,15 @@ class DatabaseInstaller
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "users_latest_items` (
                 `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                 `user_id` int(12) NOT NULL,
-                `item_id` text NOT NULL,
+                `item_id` int(12) NOT NULL,
+                `accessed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
                 PRIMARY KEY (`increment_id`),
-                KEY `USER` (`user_id`)
-            ) CHARSET=utf8;"
+                UNIQUE KEY `user_item_unique` (`user_id`, `item_id`),
+                KEY `user_idx` (`user_id`),
+                KEY `item_idx` (`item_id`),
+                KEY `accessed_idx` (`accessed_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
+
 }

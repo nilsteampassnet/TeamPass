@@ -67,7 +67,7 @@ git pull
 ./upload/
 ./install/
 ```
-* In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8"`
+* In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8mb4"`
 * In file `/includes/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
 * Browse to `Teampass`
 

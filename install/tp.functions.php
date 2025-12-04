@@ -52,7 +52,7 @@ function handleSecurefileConstant()
 
         // Ensure DB is read as UTF8
         if (defined('DB_ENCODING') === false) {
-            define('DB_ENCODING', "utf8");
+            define('DB_ENCODING', "utf8mb4");
         }
 
         // Now create new file
@@ -748,4 +748,27 @@ function recursiveChmodForInstall(
 
     // Everything seemed to work out well, return true
     return true;
+}
+
+function migrateToUtf8mb4()
+{
+    // Récupérer toutes les tables du préfixe
+    $tables = DB::query(
+        "SELECT TABLE_NAME 
+        FROM information_schema.TABLES 
+        WHERE TABLE_SCHEMA = %s 
+        AND TABLE_NAME LIKE %s",
+        DB_NAME,
+        DB_PREFIX . '%'
+    );
+    
+    foreach ($tables as $table) {
+        $tableName = $table['TABLE_NAME'];
+        
+        // Convertir la table en utf8mb4
+        DB::query(
+            "ALTER TABLE `%l` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+            $tableName
+        );
+    }
 }
