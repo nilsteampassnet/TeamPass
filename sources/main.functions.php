@@ -2501,7 +2501,11 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
             // Password already works, just update timestamp
             DB::update(
                 prefixTable('users'),
-                ['last_pw_change' => time()],
+                [
+                    'last_pw_change' => time(),
+                    'otp_provided' => 1,
+                    'special' => 'none',
+                ],
                 'id = %i',
                 $userId
             );

@@ -555,102 +555,12 @@ if (null !== $post_type) {
                         'id = %i',
                         $userId
                     );
-
-                    /*
-                    // delete user api
-                    DB::delete(
-                        prefixTable('api'),
-                        'user_id = %i',
-                        $userId
-                    );
-                    
-                    // Delete cache
-                    DB::delete(
-                        prefixTable('cache'),
-                        'author = %i',
-                        $userId
-                    );
-
-                    // delete personal folder and subfolders
-                    $data = DB::queryFirstRow(
-                        'SELECT id FROM ' . prefixTable('nested_tree') . '
-                        WHERE title = %s AND personal_folder = %i',
-                        $userId,
-                        '1'
-                    );
-
-                    // Delete tokens
-                    DB::delete(
-                        prefixTable('tokens'),
-                        'user_id = %i',
-                        $userId
-                    );
-
-                    // Delete private keys
-                    DB::delete(
-                        prefixTable('user_private_keys'),
-                        'user_id = %i',
-                        $userId
-                    );
-
-                    // Get through each subfolder
-                    if (!empty($data['id'])) {
-                        $folders = $tree->getDescendants($data['id'], true);
-                        foreach ($folders as $folder) {
-                            // delete folder
-                            DB::delete(prefixTable('nested_tree'), 'id = %i AND personal_folder = %i', $folder->id, '1');
-                            // delete items & logs
-                            $items = DB::query(
-                                'SELECT id FROM ' . prefixTable('items') . '
-                                WHERE id_tree=%i AND perso = %i',
-                                $folder->id,
-                                '1'
-                            );
-                            foreach ($items as $item) {
-                                // Delete item
-                                DB::delete(prefixTable('items'), 'id = %i', $item['id']);
-                                // log
-                                DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
-                            }
-                        }
-                        // rebuild tree
-                        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-                        $tree->rebuild();
-                    }
-
-                    // Delete objects keys
-                    deleteUserObjetsKeys((int) $userId, $SETTINGS);
-
-
-                    // Delete any process related to user
-                    $processes = DB::query(
-                        'SELECT increment_id
-                        FROM ' . prefixTable('background_tasks') . '
-                        WHERE JSON_EXTRACT(arguments, "$.new_user_id") = %i',
-                        $userId
-                    );
-                    $process_id = -1;
-                    foreach ($processes as $process) {
-                        // Delete task
-                        DB::delete(
-                            prefixTable('background_subtasks'),
-                            'task_id = %i',
-                            $process['increment_id']
-                        );
-                        $process_id = $process['increment_id'];
-                    }
-                    // Delete main process
-                    if ($process_id > -1) {
-                        DB::delete(
-                            prefixTable('background_tasks'),
-                            'increment_id = %i',
-                            $process_id
-                        );
-                    }
-                    */
                     
                     // update LOG
                     logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+
+                    // Count deleted users
+                    $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
 
                     DB::commit();
 
@@ -659,6 +569,7 @@ if (null !== $post_type) {
                         array(
                             'error' => false,
                             'message' => '',
+                            'deleted_accounts_count' => $deletedAccountsCount,
                         ),
                         'encode'
                     );
@@ -2293,6 +2204,7 @@ if (null !== $post_type) {
                 'is_ready_for_usage' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 0 : 1,
                 'created_at' => time(),
                 'personal_items_migrated' => 1,
+                'otp_provided' => 1,
             );
 
             // Add transparent recovery fields if available
@@ -2321,7 +2233,6 @@ if (null !== $post_type) {
                 prefixTable('api'),
                 array(
                     'type' => 'user',
-                    //'label' => $newUserId,
                     'value' => encryptUserObjectKey(base64_encode(uniqidReal(39)), $userKeys['public_key']),
                     'timestamp' => time(),
                     'user_id' => $newUserId,
@@ -2365,14 +2276,13 @@ if (null !== $post_type) {
                     $emailSettings
                 );
             }
-
+            
             echo prepareExchangedData(
                 array(
                     'error' => false,
                     'message' => '',
                     'user_id' => $newUserId,
                     'user_code' => $password,
-                    'visible_otp' => ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT,
                     'post_action' => isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 ? 'prepare_tasks' : 'encrypt_keys',
                 ),
                 'encode'

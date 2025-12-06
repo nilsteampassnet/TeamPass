@@ -83,7 +83,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Initialization
     var userDidAChange = false,
         userTemporaryCode = '',
-        constVisibleOTP = false,
         userClipboard,
         ProcessInProgress = false,
         debugJavascript = false;
@@ -203,17 +202,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // Remove progress toast
             $('.toast').remove();
         },
-        /*'createdRow': function( row, data, dataIndex ) {
-            var newClasses = $(data[6]).filter('#row-class-' + dataIndex).val();
-            $(row).addClass(newClasses);
-        }*/
     });
-
-    oTable.on( 'xhr', function () {
-        console.log( 'Table redrawn' );
-        //Table.ajax.reload( null, false )
-    } );   
-     
 
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"]').iCheck({
@@ -527,26 +516,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $("#warningModalBody").html('<b><?php echo $lang->get('encryption_keys'); ?> - ' +
                 stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
                 '... <?php echo $lang->get('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
-
-            // If expected, show the OPT to the admin
-            if (constVisibleOTP === true) {
-                toastr.info(
-                    '<?php echo $lang->get('show_encryption_code_to_admin');?> <div><input class="form-control form-item-control flex-nowrap" value="' + userTemporaryCode + '" readonly></div>'
-                    + '<br /><button type="button" class="btn clear"><?php echo $lang->get('close');?></button>',
-                    '<?php echo $lang->get('information'); ?>',
-                    {
-                        extendedTimeOut: 0,
-                        timeOut: 0,
-                        tapToDismiss: false,
-                        newestOnTop: true,
-                        preventDuplicates: true,
-                        onHidden: (toast) => {
-                            // prevent against multiple occurances (#3305)
-                            constVisibleOTP = false;
-                        },
-                    }
-                );
-            }
 
             var data = {
                 action: step,
@@ -1538,6 +1507,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                     timeOut: 1000
                                 }
                             );
+
+                            // Update counter
+                            update_deleted_users_button(data.deleted_accounts_count);
                         }
                     }
                 );
@@ -3073,7 +3045,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 if (debugJavascript === true) console.log(data);
                 userTemporaryCode = data.user_code;
-                constVisibleOTP = data.visible_otp;
 
                 if (data.error !== false) {
                     // Show error
@@ -3124,7 +3095,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             const data_otc = {
                 error: false,
                 code: userTemporaryCode,
-                visible_otp: <?php echo ADMIN_VISIBLE_OTP_ON_LDAP_IMPORT;?>  // Pas besoin de montrer le OTP car il est déjà fourni
             };
 
             // Passer directement à la création des tâches
@@ -3196,18 +3166,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         );
                     } else {
                         // show message to user
-                        // If expected, show the OPT to the admin
-                        if (data_otc.visible_otp === 1) {
-                            showModalDialogBox(
-                                '#warningModal',
-                                '<i class="fa-solid fa-user-secret mr-2"></i><?php echo $lang->get('your_attention_is_required'); ?>',
-                                '<?php echo $lang->get('show_encryption_code_to_admin'); ?>' +
-                                '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + data_otc.code + '" readonly></div>',
-                                '',
-                                '<?php echo $lang->get('close'); ?>'
-                            );
-                        }
-
 
                         // Now close in progress toast
                         $('.close-toastr-progress').closest('.toast').remove();

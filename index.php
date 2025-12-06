@@ -337,10 +337,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
                 <!-- Right navbar links -->
                 <ul class="navbar-nav ml-auto">
-                    <span class="fa-stack infotip pointer hidden mr-2" title="<?php echo $lang->get('get_your_recovery_keys'); ?>" id="open_user_keys_management" style="vertical-align: top;">
-                        <i class="fa-solid fa-circle text-danger fa-stack-2x"></i>
-                        <i class="fa-solid fa-bell fa-shake fa-stack-1x fa-inverse"></i>
-                    </span>
                     <!-- Messages Dropdown Menu -->
                     <li class="nav-item dropdown">
                         <div class="dropdown show">

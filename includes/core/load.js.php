@@ -312,7 +312,6 @@ if (
                                 teampassUser.auth_type = data.queryResults.auth_type;
                                 teampassUser.is_ready_for_usage = data.queryResults.is_ready_for_usage;
                                 teampassUser.ongoing_process_id = data.queryResults.ongoing_process_id;
-                                teampassUser.keys_recovery_time = data.queryResults.keys_recovery_time;
                                 teampassUser.personal_items_migrated = data.queryResults.personal_items_migrated;
                             }
                         );
@@ -391,21 +390,6 @@ if (
                             $('#dialog-ldap-user-change-password-info')
                                 .html('<i class="icon fa-solid fa-info mr-2"></i>' + info_message)
                                 .removeClass('hidden');
-                        } else if (typeof data.queryResults !== 'undefined' && data.queryResults.keys_recovery_time === null && store.get('teampassUser').user_admin === 0) {
-                            // User has not yet recovered his keys
-                            $('#open_user_keys_management').removeClass('hidden');
-
-                            // if profile page, then show warning
-                            if (window.location.href.indexOf('page=profile') > -1) {
-                                $('#keys_not_recovered').removeClass('hidden');
-                                $('#profile-keys_download-date').text('<?php echo $lang->get('none'); ?>');
-                            }
-
-                            // handle button click redirection to profile page
-                            $("#open_user_keys_management").on('click', function(event) {
-                                event.preventDefault();
-                                document.location.href = "index.php?page=profile&tab=keys";
-                            });
                         }
                         
                         
@@ -726,29 +710,6 @@ if (
                                 '</div>' +
                             '</div>' +
                         '</div>' +
-                        '<div class="row mt-2<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1  ? '' : ' hidden'; ?>">' +
-                            '<h6><?php echo $lang->get('provide_recovery_keys'); ?></h6>' +
-                            '<div class="input-group mb-2">' +
-                                '<div class="input-group-prepend">' +
-                                    '<span class="input-group-text"><?php echo $lang->get('public_key'); ?></span>' +
-                                '</div>' +
-                                '<textarea rows="1" id="recovery-public-key" class="form-control form-item-control"></textarea>' +
-                            '</div>' +
-                            '<div class="input-group mb-2">' +
-                                '<div class="input-group-prepend">' +
-                                    '<span class="input-group-text"><?php echo $lang->get('private_key'); ?></span>' +
-                                '</div>' +
-                                '<textarea rows="2" id="recovery-private-key" class="form-control form-item-control"></textarea>' +
-                            '</div>' +
-                        '</div>' +
-                        '<div class="row mt-2<?php echo isset($SETTINGS['enable_pf_feature']) === true && (int) $SETTINGS['enable_pf_feature'] === 1  ? '' : ' hidden'; ?>">' +
-                            '<div class="alert" id="confirm-no-recovery-keys-div">' +
-                                '<div class="form-check">' +
-                                    '<input type="checkbox" class="form-check-input" id="confirm-no-recovery-keys">' +
-                                    '<label class="form-check-label ml-1" for="confirm-no-recovery-keys"><?php echo $lang->get('no_recovery_keys'); ?></label>' +
-                                '</div>' +
-                            '</div>' +
-                        '</div>' +
                     '</div>',
                     '<?php echo $lang->get('perform'); ?>',
                     '<?php echo $lang->get('close'); ?>'
@@ -766,25 +727,11 @@ if (
                     .click(function(e) {
                         e.preventDefault();
                     });
-                $('#confirm-no-recovery-keys').click(function(e) {
-                    //e.preventDefault();
-                    if ($(this).prop('checked') === true) {
-                        $('#confirm-no-recovery-keys-div').addClass('alert-danger');
-                    } else {
-                        $('#confirm-no-recovery-keys-div').removeClass('alert-danger');
-                    }
-                });
-                $('#recovery-public-key, #recovery-private-key').focusout(function(e) {
-                    e.preventDefault();
-                    if ($('#recovery-public-key').val() !== '' && $('#recovery-private-key').val() !== '') {
-                        $('#confirm-no-recovery-keys-div').removeClass('alert-danger');
-                        $('#confirm-no-recovery-keys').prop('checked', false);
-                    }
-                });
 
                 // Manage click on button PERFORM
                 $(document).on('click', '#warningModalButtonAction', function() {
                     // On PERFORM click
+                    $('#encryption-otp').removeClass('alert-danger');
                     if ($('#warningModalButtonAction').attr('data-button-confirm') === 'false') {
                         $("#new-encryption-div").removeClass('hidden');
                         $('#warningModalButtonAction')
@@ -794,13 +741,9 @@ if (
                     } else if ($('#warningModalButtonAction').attr('data-button-confirm') === 'true') {
                         // As reencryption relies on user's password
                         // ensure we have it
-                        if (($('#recovery-public-key').val() === '' || $('#recovery-private-key').val() === '') && $('#confirm-no-recovery-keys').prop('checked') === false
-                        ) {
+                        if ($('#encryption-otp').val() === '') {
                             // No user password provided
-                            $('#warningModalButtonAction')
-                                .html('<?php echo $lang->get('perform'); ?>')
-                                .attr('data-button-confirm', 'false');
-                            
+                            $('#encryption-otp').addClass('alert-danger');                            
                         } else {
                             // We have the password, start reencryption
                             $('#warningModalButtonAction')
@@ -848,6 +791,13 @@ if (
                                                 progressBar: true
                                             }
                                         );
+
+                                        // Refresh buttons
+                                        $('#warningModalButtonClose').removeClass('disabled');
+                                        $('#warningModalButtonAction')
+                                            .removeClass('disabled')
+                                            .html('<?php echo $lang->get('perform'); ?>');
+                                        $('#warningModalButtonClose').addClass('disabled');
                                     } else {
                                         $("#new-encryption-div").after('<div><?php echo $lang->get('generate_new_keys_end'); ?></div>');
                                         // Show warning
