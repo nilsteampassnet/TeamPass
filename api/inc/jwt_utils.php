@@ -152,7 +152,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
 
     // Retrieve user's public key and encrypted private key from database
     $userInfo = DB::queryfirstrow(
-        "SELECT u.public_key, u.key_tempo, a.encrypted_private_key
+        "SELECT u.public_key, a.encrypted_private_key, a.session_key AS key_tempo
         FROM " . prefixTable('users') . " AS u
         INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id = u.id)
         WHERE u.id = %i",
@@ -166,7 +166,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     }
 
     // Validate key_tempo matches (security check - ensures session is still valid)
-    if ($userInfo['key_tempo'] !== $keyTempo) {
+    if (($userInfo['key_tempo']) !== $keyTempo) {
         // Session invalid or expired
         error_log('[API] get_user_keys: Invalid key_tempo for user ID ' . $userId);
         return null;

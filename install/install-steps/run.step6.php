@@ -411,7 +411,7 @@ define("DB_PASSWD", "' . str_replace('$', '\$', $encryptedPassword) . '");
 define("DB_NAME", "' . $this->inputData['dbName'] . '");
 define("DB_PREFIX", "' . $this->inputData['tablePrefix'] . '");
 define("DB_PORT", "' . $this->inputData['dbPort'] . '");
-define("DB_ENCODING", "utf8");
+define("DB_ENCODING", "'.DB_ENCODING ?? 'utf8mb4'.'");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 //define("DB_SSL", array(

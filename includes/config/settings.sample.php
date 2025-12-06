@@ -6,7 +6,7 @@ define("DB_PASSWD", "");
 define("DB_NAME", "");
 define("DB_PREFIX", "");
 define("DB_PORT", "");
-define("DB_ENCODING", "utf8");
+define("DB_ENCODING", "utf8mb4");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 //define("DB_SSL", array(

@@ -52,7 +52,7 @@ function handleSecurefileConstant()
 
         // Ensure DB is read as UTF8
         if (defined('DB_ENCODING') === false) {
-            define('DB_ENCODING', "utf8");
+            define('DB_ENCODING', "utf8mb4");
         }
 
         // Now create new file
@@ -246,6 +246,50 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
     }
 
     return false;
+}
+
+/**
+ * Checks if a column exists in a table and deletes it if it does.
+ *
+ * @param string $dbname      The name of the table to check (e.g., 'teampass_users').
+ * @param string $columnName  The name of the column to delete.
+ *
+ * @return bool
+ */
+function deleteColumnIfExists($dbname, $columnName)
+{
+    global $db_link;
+    $exists = false;
+
+    // 1. Check if the column exists
+    // We use SHOW COLUMNS FROM to list all columns in the table
+    $columns = mysqli_query($db_link, "SHOW COLUMNS FROM `$dbname`");
+
+    // Loop through the columns returned by the query
+    while ($col = mysqli_fetch_assoc($columns)) {
+        if ((string) $col['Field'] === $columnName) {
+            $exists = true;
+            break; // Column found, we can stop the loop
+        }
+    }
+
+    // 2. Delete the column if it exists
+    if ($exists) {
+        // Use ALTER TABLE DROP COLUMN to remove the column
+        // We use backticks (`) around $dbname and $columnName for safety
+        return mysqli_query($db_link, "ALTER TABLE `$dbname` DROP COLUMN `$columnName`");
+    }
+
+    // Return false if the column did not exist or the operation was not executed
+    return false;
+}
+
+function columnExists($db_link, $table, $column) {
+    $result = mysqli_query(
+        $db_link,
+        "SHOW COLUMNS FROM `$table` LIKE '$column'"
+    );
+    return mysqli_num_rows($result) > 0;
 }
 
 /**
@@ -704,4 +748,38 @@ function recursiveChmodForInstall(
 
     // Everything seemed to work out well, return true
     return true;
+}
+
+function migrateDBtoUtf8()
+{
+    DB::query(
+        "ALTER DATABASE %b DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 
+        DB_NAME
+    );
+    
+    // Configurer la connexion actuelle
+    DB::query("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+}
+
+function migrateToUtf8mb4()
+{
+    // Récupérer toutes les tables du préfixe
+    $tables = DB::query(
+        "SELECT TABLE_NAME 
+        FROM information_schema.TABLES 
+        WHERE TABLE_SCHEMA = %s 
+        AND TABLE_NAME LIKE %s",
+        DB_NAME,
+        DB_PREFIX . '%'
+    );
+    
+    foreach ($tables as $table) {
+        $tableName = $table['TABLE_NAME'];
+        
+        // Convertir la table en utf8mb4
+        DB::query(
+            "ALTER TABLE `%l` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+            $tableName
+        );
+    }
 }

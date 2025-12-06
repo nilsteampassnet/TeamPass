@@ -755,11 +755,6 @@ function performPostLoginTasks(
     if (!empty($returnKeys['roles_db_update'])) {
         $finalUpdateData = array_merge($finalUpdateData, $returnKeys['roles_db_update']);
     }
-    
-    // Merge fonction_id conversion if needed
-    if (strpos($userInfo['fonction_id'] ?? '', ';') !== false) {
-        $finalUpdateData['fonction_id'] = $userInfo['fonction_id'];
-    }
 
     DB::update(
         prefixTable('users'),
@@ -1349,7 +1344,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
         
         // Get and handle user groups
-        $userGroupsData = getUserGroups($userADInfos, $ldapHandler, $SETTINGS);
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS);
         handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
         
         // Finalize authentication
@@ -1512,7 +1507,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
  * @param array $SETTINGS Teampass settings
  * @return array User groups
  */
-function getUserGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
     
@@ -1550,7 +1545,6 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
         // Get user groups from AD
         $user_ad_groups = [];
         foreach($groups as $group) {
-            //print_r($group);
             // get relation role id for AD group
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id
@@ -1559,47 +1553,30 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
                 $group
             );
             if (DB::count() > 0) {
-                array_push($user_ad_groups, $role['role_id']); 
+                array_push($user_ad_groups, (int) $role['role_id']); 
             }
         }
         
-        // save
+        // Save AD roles in users_roles table with source='ad'
         if (count($user_ad_groups) > 0) {
-            $user_ad_groups = implode(';', $user_ad_groups);
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => $user_ad_groups,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = $user_ad_groups;
+            setUserRoles((int) $userInfo['id'], $user_ad_groups, 'ad');
+            
+            // Update userInfo array for session (format with semicolons for compatibility)
+            $userInfo['roles_from_ad_groups'] = implode(';', $user_ad_groups);
         } else {
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => null,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = [];
+            // Remove all AD roles
+            removeUserRolesBySource((int) $userInfo['id'], 'ad');
+            
+            $userInfo['roles_from_ad_groups'] = '';
         }
     } else {
-        // Delete all user's AD groups
-        DB::update(
-            prefixTable('users'),
-            [
-                'roles_from_ad_groups' => null,
-            ],
-            'id = %i',
-            $userInfo['id']
-        );
+        // Delete all user's AD roles
+        removeUserRolesBySource((int) $userInfo['id'], 'ad');
+        
+        $userInfo['roles_from_ad_groups'] = '';
     }
 }
+
 
 /**
  * Permits to finalize the authentication process.
@@ -1625,7 +1602,6 @@ function finalizeAuthentication(
 
     // Use the new hashed password if migration was successful
     $hashedPassword = $result['hashedPassword'];
-    
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
         // Case where user has never been connected then erase current pwd with the ldap's one
@@ -2251,14 +2227,9 @@ class initialChecks {
     public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
         $session = SessionManager::getSession();
     
-        // Get user info from DB
-        $data = DB::queryFirstRow(
-            'SELECT u.*, a.value AS api_key
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-            WHERE login = %s AND deleted_at IS NULL',
-            $login
-        );
+        // Get user info from DB with all related data
+        $data = getUserCompleteData($login);
+        
         $dataUserCount = DB::count();
         
         // User doesn't exist then return error

@@ -5081,3 +5081,410 @@ function createUserMigrationSubTasks($processId, $nbItemsToTreat): void
         )
     );
 }
+
+/**
+ * Add or update an item in user's latest items list (max 20, FIFO)
+ * 
+ * @param int $userId User ID
+ * @param int $itemId Item ID to add
+ * @return void
+ */
+function updateUserLatestItems(int $userId, int $itemId): void
+{
+    // 1. Insert or update the item with current timestamp
+    DB::query(
+        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at)
+        VALUES (%i, %i, NOW())
+        ON DUPLICATE KEY UPDATE accessed_at = NOW()',
+        $userId,
+        $itemId
+    );
+    
+    // 2. Keep only the 20 most recent items (delete older ones)
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_latest_items') . '
+        WHERE user_id = %i
+        AND increment_id NOT IN (
+            SELECT increment_id FROM (
+                SELECT increment_id 
+                FROM ' . prefixTable('users_latest_items') . '
+                WHERE user_id = %i
+                ORDER BY accessed_at DESC
+                LIMIT 20
+            ) AS keep_items
+        )',
+        $userId,
+        $userId
+    );
+}
+
+/**
+ * Get complete user data with all relational tables
+ * 
+ * @param string $login User login
+ * @param int|null $userId User ID (alternative to login)
+ * @return array|null User data or null if not found
+ */
+function getUserCompleteData($login = null, $userId = null)
+{
+    if (empty($login) && empty($userId)) {
+        return null;
+    }
+    
+    // Build WHERE clause
+    if (!empty($login)) {
+        $whereClause = 'u.login = %s AND u.deleted_at IS NULL';
+        $whereParam = $login;
+    } else {
+        $whereClause = 'u.id = %i AND u.deleted_at IS NULL';
+        $whereParam = $userId;
+    }
+    
+    // Get user with all related data
+    $data = DB::queryFirstRow(
+        'SELECT u.*, 
+         a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
+         GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+         GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
+         GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
+         GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
+        LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+        LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+        LEFT JOIN ' . prefixTable('users_favorites') . ' AS uf ON (u.id = uf.user_id)
+        LEFT JOIN ' . prefixTable('users_latest_items') . ' AS ul ON (u.id = ul.user_id)
+        WHERE ' . $whereClause . '
+        GROUP BY u.id',
+        $whereParam
+    );
+    
+    // Ensure empty strings instead of NULL for concatenated fields
+    if ($data) {
+        $data['groupes_visibles'] = $data['groupes_visibles'] ?? '';
+        $data['groupes_interdits'] = $data['groupes_interdits'] ?? '';
+        $data['fonction_id'] = $data['fonction_id'] ?? '';
+        $data['roles_from_ad_groups'] = $data['roles_from_ad_groups'] ?? '';
+        $data['favourites'] = $data['favourites'] ?? '';
+        $data['latest_items'] = $data['latest_items'] ?? '';
+    }
+    
+    return $data;
+}
+
+
+
+
+// ----------------------
+// Users Groups
+// ----------------------
+/**
+ * Add a group to user's accessible groups
+ */
+function addUserGroup(int $userId, int $groupId): void
+{
+    DB::query(
+        'INSERT IGNORE INTO ' . prefixTable('users_groups') . ' (user_id, group_id)
+        VALUES (%i, %i)',
+        $userId,
+        $groupId
+    );
+}
+
+/**
+ * Remove a group from user's accessible groups
+ */
+function removeUserGroup(int $userId, int $groupId): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_groups') . '
+        WHERE user_id = %i AND group_id = %i',
+        $userId,
+        $groupId
+    );
+}
+
+/**
+ * Replace all user's groups with a new list
+ * 
+ * @param int $userId User ID
+ * @param array $groupIds Array of group IDs
+ */
+function setUserGroups(int $userId, array $groupIds): void
+{
+    // Delete all existing groups
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+        $userId
+    );
+    
+    // Insert new groups
+    foreach ($groupIds as $groupId) {
+        if (!empty($groupId) && is_numeric($groupId)) {
+            addUserGroup($userId, (int) $groupId);
+        }
+    }
+}
+
+/**
+ * Get all user's accessible groups
+ * 
+ * @return array Array of group IDs
+ */
+function getUserGroups(int $userId): array
+{
+    $result = DB::query(
+        'SELECT group_id FROM ' . prefixTable('users_groups') . ' 
+        WHERE user_id = %i ORDER BY group_id',
+        $userId
+    );
+    return array_column($result, 'group_id');
+}
+// --<
+
+// ----------------------
+// Users Groups Forbidden
+// ----------------------
+/**
+ * Add a forbidden group to user
+ */
+function addUserForbiddenGroup(int $userId, int $groupId): void
+{
+    DB::query(
+        'INSERT IGNORE INTO ' . prefixTable('users_groups_forbidden') . ' (user_id, group_id)
+        VALUES (%i, %i)',
+        $userId,
+        $groupId
+    );
+}
+
+/**
+ * Remove a forbidden group from user
+ */
+function removeUserForbiddenGroup(int $userId, int $groupId): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_groups_forbidden') . '
+        WHERE user_id = %i AND group_id = %i',
+        $userId,
+        $groupId
+    );
+}
+
+/**
+ * Replace all user's forbidden groups
+ */
+function setUserForbiddenGroups(int $userId, array $groupIds): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_groups_forbidden') . ' WHERE user_id = %i',
+        $userId
+    );
+    
+    foreach ($groupIds as $groupId) {
+        if (!empty($groupId) && is_numeric($groupId)) {
+            addUserForbiddenGroup($userId, (int) $groupId);
+        }
+    }
+}
+
+/**
+ * Get all user's forbidden groups
+ */
+function getUserForbiddenGroups(int $userId): array
+{
+    $result = DB::query(
+        'SELECT group_id FROM ' . prefixTable('users_groups_forbidden') . ' 
+        WHERE user_id = %i ORDER BY group_id',
+        $userId
+    );
+    return array_column($result, 'group_id');
+}
+// ---<
+
+// ----------------------
+// Users Roles
+// ----------------------
+/**
+ * Add a role to user
+ * 
+ * @param string $source 'manual', 'ad', 'ldap', 'oauth2'
+ */
+function addUserRole(int $userId, int $roleId, string $source = 'manual'): void
+{
+    DB::query(
+        'INSERT IGNORE INTO ' . prefixTable('users_roles') . ' (user_id, role_id, source)
+        VALUES (%i, %i, %s)',
+        $userId,
+        $roleId,
+        $source
+    );
+}
+
+/**
+ * Remove a role from user
+ */
+function removeUserRole(int $userId, int $roleId, string $source = 'manual'): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_roles') . '
+        WHERE user_id = %i AND role_id = %i AND source = %s',
+        $userId,
+        $roleId,
+        $source
+    );
+}
+
+/**
+ * Remove all roles of a specific source
+ */
+function removeUserRolesBySource(int $userId, string $source): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_roles') . '
+        WHERE user_id = %i AND source = %s',
+        $userId,
+        $source
+    );
+}
+
+/**
+ * Replace all user's roles for a specific source
+ * 
+ * @param string $source 'manual', 'ad', 'ldap', 'oauth2'
+ */
+function setUserRoles(int $userId, array $roleIds, string $source = 'manual'): void
+{
+    // Delete existing roles for this source
+    removeUserRolesBySource($userId, $source);
+    
+    // Insert new roles
+    foreach ($roleIds as $roleId) {
+        if (!empty($roleId) && is_numeric($roleId)) {
+            addUserRole($userId, (int) $roleId, $source);
+        }
+    }
+}
+
+/**
+ * Get all user's roles by source
+ * 
+ * @param string|null $source Filter by source, null = all sources
+ */
+function getUserRoles(int $userId, ?string $source = null): array
+{
+    if ($source !== null) {
+        $result = DB::query(
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' 
+            WHERE user_id = %i AND source = %s ORDER BY role_id',
+            $userId,
+            $source
+        );
+    } else {
+        $result = DB::query(
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' 
+            WHERE user_id = %i ORDER BY role_id',
+            $userId
+        );
+    }
+    return array_column($result, 'role_id');
+}
+// ---<
+
+// ----------------------
+// Users Favorites
+// ----------------------
+/**
+ * Add an item to user's favorites
+ */
+function addUserFavorite(int $userId, int $itemId): void
+{
+    DB::query(
+        'INSERT IGNORE INTO ' . prefixTable('users_favorites') . ' (user_id, item_id)
+        VALUES (%i, %i)',
+        $userId,
+        $itemId
+    );
+}
+
+/**
+ * Remove an item from user's favorites
+ */
+function removeUserFavorite(int $userId, int $itemId): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_favorites') . '
+        WHERE user_id = %i AND item_id = %i',
+        $userId,
+        $itemId
+    );
+}
+
+/**
+ * Toggle favorite (add if not exists, remove if exists)
+ */
+function toggleUserFavorite(int $userId, int $itemId): bool
+{
+    $exists = DB::queryFirstRow(
+        'SELECT increment_id FROM ' . prefixTable('users_favorites') . '
+        WHERE user_id = %i AND item_id = %i',
+        $userId,
+        $itemId
+    );
+    
+    if ($exists) {
+        removeUserFavorite($userId, $itemId);
+        return false; // Removed
+    } else {
+        addUserFavorite($userId, $itemId);
+        return true; // Added
+    }
+}
+
+/**
+ * Replace all user's favorites
+ */
+function setUserFavorites(int $userId, array $itemIds): void
+{
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_favorites') . ' WHERE user_id = %i',
+        $userId
+    );
+    
+    foreach ($itemIds as $itemId) {
+        if (!empty($itemId) && is_numeric($itemId)) {
+            addUserFavorite($userId, (int) $itemId);
+        }
+    }
+}
+
+/**
+ * Get all user's favorites
+ */
+function getUserFavorites(int $userId): array
+{
+    $result = DB::query(
+        'SELECT item_id FROM ' . prefixTable('users_favorites') . ' 
+        WHERE user_id = %i ORDER BY created_at DESC',
+        $userId
+    );
+    return array_column($result, 'item_id');
+}
+
+/**
+ * Check if item is in user's favorites
+ */
+function isUserFavorite(int $userId, int $itemId): bool
+{
+    $result = DB::queryFirstRow(
+        'SELECT increment_id FROM ' . prefixTable('users_favorites') . '
+        WHERE user_id = %i AND item_id = %i',
+        $userId,
+        $itemId
+    );
+    return !empty($result);
+}
+// ---<
