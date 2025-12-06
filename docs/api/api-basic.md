@@ -148,3 +148,20 @@ Warning:
 | PARAMETERS | 'label'=is a string<br>'folder_id'=is the parent folder id<br>'password'=is a string<br>'description'=is a string<br>'login'=is a string<br>'email'=is a string<br>'url'=is a string<br>'icon'=fontawesome icon code<br>'anyone_can_modify'=is a boolean|
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item created successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "658"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+
+
+### Find items by URL
+
+> :memo: **Note:** Find any item using its URL
+
+Warning:
+* All fields are mandaotry
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/findByUrl |
+| Type | POST |
+| URL | `<Teampass url>/api/index.php/item/findByUrl?url=https://example.com |
+| PARAMETERS | 'url'=is a string|
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 123,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Example Login",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "user@example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_id": "5"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |

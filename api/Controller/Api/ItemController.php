@@ -357,5 +357,126 @@ class ItemController extends BaseController
             );
         }
     }
-    //end getAction() 
+    //end getAction()
+
+    /**
+ * Find items by URL
+ * Searches for items matching a specific URL
+ *
+ * @param array $userData User data from JWT token
+ * @return void
+ */
+public function findByUrlAction(array $userData): void
+{
+    $request = symfonyRequest::createFromGlobals();
+    $requestMethod = $request->getMethod();
+    $strErrorDesc = $responseData = $strErrorHeader = '';
+
+    // Get parameters
+    $arrQueryStringParams = $this->getQueryStringParams();
+
+    if (strtoupper($requestMethod) === 'GET') {
+        // Check if URL parameter is provided
+        if (isset($arrQueryStringParams['url']) === false || empty($arrQueryStringParams['url']) === true) {
+            $this->sendOutput(
+                json_encode(['error' => 'URL parameter is mandatory']),
+                ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
+            );
+            return;
+        }
+
+        // Prepare user's accessible folders
+        /*if (empty($userData['folders_list']) === false) {
+            $userData['folders_list'] = explode(',', $userData['folders_list']);
+        } else {
+            $userData['folders_list'] = [];
+        }*/
+
+        // Build SQL constraint for accessible folders
+        $sql_constraint = ' AND (i.id_tree IN (' . $userData['folders_list'] . ')';
+        if (!empty($userData['restricted_items_list'])) {
+            $sql_constraint .= ' OR i.id IN (' . $userData['restricted_items_list'] . ')';
+        }
+        $sql_constraint .= ')';
+
+        // Decode URL if needed
+        $searchUrl = urldecode($arrQueryStringParams['url']);
+
+        try {
+            // Get user's private key from database
+            $userPrivateKey = $this->getUserPrivateKey($userData);
+            if ($userPrivateKey === null) {
+                $strErrorDesc = 'Invalid session or user keys not found';
+                $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+            } else {
+                // Query items with the specific URL
+                $rows = DB::query(
+                    'SELECT i.id, i.label, i.login, i.url, i.id_tree
+                    FROM ' . prefixTable('items') . ' AS i
+                    WHERE i.url LIKE %s' . $sql_constraint . '
+                    ORDER BY i.label ASC',
+                    $searchUrl."%"
+                );
+
+                $ret = [];
+                foreach ($rows as $row) {
+                    // Get user's sharekey for this item
+                    $shareKey = DB::queryfirstrow(
+                        'SELECT share_key
+                        FROM ' . prefixTable('sharekeys_items') . '
+                        WHERE user_id = %i AND object_id = %i',
+                        $userData['id'],
+                        $row['id']
+                    );
+
+                    // Skip if no sharekey found (user doesn't have access)
+                    if (DB::count() === 0) {
+                        continue;
+                    }
+
+                    // Build response
+                    array_push(
+                        $ret,
+                        [
+                            'id' => (int) $row['id'],
+                            'label' => $row['label'],
+                            'login' => $row['login'],
+                            'url' => $row['url'],
+                            'folder_id' => (int) $row['id_tree'],
+                        ]
+                    );
+                }
+
+                if (!empty($ret)) {
+                    $responseData = json_encode($ret);
+                } else {
+                    $strErrorDesc = 'No items found with this URL';
+                    $strErrorHeader = 'HTTP/1.1 204 No Content';
+                }
+            }
+        } catch (Error $e) {
+            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+        }
+    } else {
+        $strErrorDesc = 'Method not supported';
+        $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+    }
+
+    // Send output
+    if (empty($strErrorDesc) === true) {
+        $this->sendOutput(
+            $responseData,
+            ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+        );
+    } else {
+        $this->sendOutput(
+            json_encode(['error' => $strErrorDesc]),
+            ['Content-Type: application/json', $strErrorHeader]
+        );
+    }
+}
+//end findByUrlAction()
+
+
 }
