@@ -1545,7 +1545,6 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
         // Get user groups from AD
         $user_ad_groups = [];
         foreach($groups as $group) {
-            //print_r($group);
             // get relation role id for AD group
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id
@@ -1554,47 +1553,30 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
                 $group
             );
             if (DB::count() > 0) {
-                array_push($user_ad_groups, $role['role_id']); 
+                array_push($user_ad_groups, (int) $role['role_id']); 
             }
         }
         
-        // save
+        // Save AD roles in users_roles table with source='ad'
         if (count($user_ad_groups) > 0) {
-            $user_ad_groups = implode(';', $user_ad_groups);
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => $user_ad_groups,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = $user_ad_groups;
+            setUserRoles((int) $userInfo['id'], $user_ad_groups, 'ad');
+            
+            // Update userInfo array for session (format with semicolons for compatibility)
+            $userInfo['roles_from_ad_groups'] = implode(';', $user_ad_groups);
         } else {
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => null,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = [];
+            // Remove all AD roles
+            removeUserRolesBySource((int) $userInfo['id'], 'ad');
+            
+            $userInfo['roles_from_ad_groups'] = '';
         }
     } else {
-        // Delete all user's AD groups
-        DB::update(
-            prefixTable('users'),
-            [
-                'roles_from_ad_groups' => null,
-            ],
-            'id = %i',
-            $userInfo['id']
-        );
+        // Delete all user's AD roles
+        removeUserRolesBySource((int) $userInfo['id'], 'ad');
+        
+        $userInfo['roles_from_ad_groups'] = '';
     }
 }
+
 
 /**
  * Permits to finalize the authentication process.
@@ -1620,7 +1602,6 @@ function finalizeAuthentication(
 
     // Use the new hashed password if migration was successful
     $hashedPassword = $result['hashedPassword'];
-    
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
         // Case where user has never been connected then erase current pwd with the ldap's one
