@@ -73,12 +73,13 @@ class AuthModel
             // case where it is a user api key
             // Check if user exists
             $userInfo = getUserCompleteData($inputData['login']);
-            if (null === $userInfo) {
-                return ["error" => "Login failed.", "info" => "apikey : Not valid"];
+
+            if ($userInfo === null) {
+                return ["error" => "Login failed.", "info" => "Credentials not valid"];
             }
 
             // Check if user is enabled
-            if ((int) $userInfo['enabled'] === 0) {
+            if ((int) $userInfo['api_enabled'] === 0) {
                 return ["error" => "Login failed.", "info" => "User not allowed to use API"];
             }
             
@@ -90,20 +91,20 @@ class AuthModel
                 $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
 
                 // check API key
-                if ($inputData['apikey'] !== base64_decode(decryptUserObjectKey($userInfo['user_api_key'], $privateKeyClear))) {
-                    return ["error" => "Login failed.", "apikey" => "Not valid"];
+                if ($inputData['apikey'] !== base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyClear))) {
+                    return ["error" => "Login failed.", "info" => "API Key not valid"];
                 }
 
                 // Update user's key_tempo
                 $keyTempo = bin2hex(random_bytes(16));
-                DB::update(
+                /*DB::update(
                     prefixTable('users'),
                     [
                         'key_tempo' => $keyTempo,
                     ],
                     'id = %i',
                     $userInfo['id']
-                );
+                );*/
 
                 // Generate a unique session key for this API session (256 bits / 32 bytes)
                 // This key will be stored in the JWT and used to decrypt the private key
@@ -126,6 +127,7 @@ class AuthModel
                     [
                         'encrypted_private_key' => $encryptedPrivateKey,
                         'session_key_salt' => $sessionKeySalt,
+                        'session_key' => $keyTempo,
                         'timestamp' => time(),
                     ],
                     'user_id = %i',
@@ -156,14 +158,14 @@ class AuthModel
                     (int) $userInfo['can_create_root_folder'],
                     (int) $userInfo['can_manage_all_users'],
                     (string) $userInfo['fonction_id'],
-                    (string) $userInfo['user_api_allowed_folders'],
-                    (int) $userInfo['allowed_to_create'],
-                    (int) $userInfo['allowed_to_read'],
-                    (int) $userInfo['allowed_to_update'],
-                    (int) $userInfo['allowed_to_delete'],
+                    (string) $userInfo['api_allowed_folders'],
+                    (int) $userInfo['api_allowed_to_create'],
+                    (int) $userInfo['api_allowed_to_read'],
+                    (int) $userInfo['api_allowed_to_update'],
+                    (int) $userInfo['api_allowed_to_delete'],
                 );
             } else {
-                return ["error" => "Login failed.", "info" => "password : Not valid"];
+                return ["error" => "Login failed.", "info" => "Credentials not valid"];
             }
         }
     }
