@@ -5081,3 +5081,96 @@ function createUserMigrationSubTasks($processId, $nbItemsToTreat): void
         )
     );
 }
+
+/**
+ * Add or update an item in user's latest items list (max 20, FIFO)
+ * 
+ * @param int $userId User ID
+ * @param int $itemId Item ID to add
+ * @return void
+ */
+function updateUserLatestItems(int $userId, int $itemId): void
+{
+    // 1. Insert or update the item with current timestamp
+    DB::query(
+        'INSERT INTO ' . prefixTable('users_latest_items') . ' (user_id, item_id, accessed_at)
+        VALUES (%i, %i, NOW())
+        ON DUPLICATE KEY UPDATE accessed_at = NOW()',
+        $userId,
+        $itemId
+    );
+    
+    // 2. Keep only the 20 most recent items (delete older ones)
+    DB::query(
+        'DELETE FROM ' . prefixTable('users_latest_items') . '
+        WHERE user_id = %i
+        AND increment_id NOT IN (
+            SELECT increment_id FROM (
+                SELECT increment_id 
+                FROM ' . prefixTable('users_latest_items') . '
+                WHERE user_id = %i
+                ORDER BY accessed_at DESC
+                LIMIT 20
+            ) AS keep_items
+        )',
+        $userId,
+        $userId
+    );
+}
+
+/**
+ * Get complete user data with all relational tables
+ * 
+ * @param string $login User login
+ * @param int|null $userId User ID (alternative to login)
+ * @return array|null User data or null if not found
+ */
+function getUserCompleteData($login = null, $userId = null)
+{
+    if (empty($login) && empty($userId)) {
+        return null;
+    }
+    
+    // Build WHERE clause
+    if (!empty($login)) {
+        $whereClause = 'u.login = %s AND u.deleted_at IS NULL';
+        $whereParam = $login;
+    } else {
+        $whereClause = 'u.id = %i AND u.deleted_at IS NULL';
+        $whereParam = $userId;
+    }
+    
+    // Get user with all related data
+    $data = DB::queryFirstRow(
+        'SELECT u.*, 
+         a.value AS api_key,
+         GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+         GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
+         GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
+         GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
+        LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+        LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+        LEFT JOIN ' . prefixTable('users_favorites') . ' AS uf ON (u.id = uf.user_id)
+        LEFT JOIN ' . prefixTable('users_latest_items') . ' AS ul ON (u.id = ul.user_id)
+        WHERE ' . $whereClause . '
+        GROUP BY u.id',
+        $whereParam
+    );
+    
+    // Ensure empty strings instead of NULL for concatenated fields
+    if ($data) {
+        $data['groupes_visibles'] = $data['groupes_visibles'] ?? '';
+        $data['groupes_interdits'] = $data['groupes_interdits'] ?? '';
+        $data['fonction_id'] = $data['fonction_id'] ?? '';
+        $data['roles_from_ad_groups'] = $data['roles_from_ad_groups'] ?? '';
+        $data['favourites'] = $data['favourites'] ?? '';
+        $data['latest_items'] = $data['latest_items'] ?? '';
+    }
+    
+    return $data;
+}

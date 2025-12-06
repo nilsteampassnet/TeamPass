@@ -454,26 +454,13 @@ if (null !== $post_type) {
                         //Actualize the variable
                         $session->set('user-nb_roles', $session->get('user-nb_roles') + 1);
 
-                        // get some data
-                        $data_tmp = DB::queryFirstRow(
-                            'SELECT fonction_id FROM '.prefixTable('users').' WHERE id = %s',
-                            $session->get('user-id')
-                        );
+                        // Add new role to user in users_roles table
+                        addUserRole($session->get('user-id'), $role_id, 'manual');
 
-                        // add new role to user
-                        $tmp = $data_tmp['fonction_id'] . (substr($data_tmp['fonction_id'], -1) == ';' ? $role_id : ';' . $role_id);
-                        $session->set('user-roles', str_replace(';;', ';', $tmp));
-
-                        // store in DB
-                        DB::update(
-                            prefixTable('users'),
-                            [
-                                'fonction_id' => $session->get('user-roles'),
-                            ],
-                            'id = %i',
-                            $session->get('user-id')
-                        );
-                        $session->set('user-roles_array', explode(';', $session->get('user-roles')));
+                        // Update session with new roles
+                        $userRoles = getUserRoles($session->get('user-id'), 'manual');
+                        $session->set('user-roles', implode(';', $userRoles));
+                        $session->set('user-roles_array', $userRoles);
 
                         $return['new_role_id'] = $role_id;
                     }
@@ -568,29 +555,12 @@ if (null !== $post_type) {
             //Actualize the variable
             $session->set('user-nb_roles', $session->get('user-nb_roles') - 1);
 
-            // parse all users to remove this role
-            $rows = DB::query(
-                'SELECT id, fonction_id FROM '.prefixTable('users').'
-                ORDER BY id ASC'
+            // Parse all users to remove this role from users_roles table
+            DB::query(
+                'DELETE FROM ' . prefixTable('users_roles') . '
+                WHERE role_id = %i',
+                $post_roleId
             );
-            foreach ($rows as $record) {
-                $tab = explode(';', $record['fonction_id']);
-                $key = array_search($post_roleId, $tab);
-                if ($key !== false) {
-                    // remove the deleted role id
-                    unset($tab[$key]);
-
-                    // store new list of functions
-                    DB::update(
-                        prefixTable('users'),
-                        [
-                            'fonction_id' => rtrim(implode(';', $tab), ';'),
-                        ],
-                        'id = %i',
-                        $record['id']
-                    );
-                }
-            }
 
             // ensure categories are set
             handleFoldersCategories(

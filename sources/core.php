@@ -393,10 +393,21 @@ if (
 /* LOAD INFORMATION CONCERNING USER */
 if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
     // query on user
-    $data = DB::queryFirstRow(
-        'SELECT login, admin, gestionnaire, can_manage_all_users, groupes_visibles, groupes_interdits, fonction_id, last_connexion, roles_from_ad_groups, auth_type, last_pw_change, deleted_at FROM ' . prefixTable('users') . ' WHERE id=%i',
+    $data =DB::queryFirstRow(
+        'SELECT u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.last_connexion, u.auth_type, u.last_pw_change, u.deleted_at,
+        GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+        GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
+        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+        LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+        WHERE u.id = %s
+        GROUP BY u.id',
         $session->get('user-id')
     );
+    
     //Check if user has been deleted or unlogged
     if (empty($data) === true || (isset($data['deleted_at']) && $data['deleted_at'] !== null)) {
         // erase session table
@@ -438,8 +449,8 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
 
         // get access rights
         identifyUserRights(
-            $data['groupes_visibles'],
-            $data['groupes_interdits'],
+            $data['groupes_visibles'] ?? [],
+            $data['groupes_interdits'] ?? [],
             $data['admin'],
             is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
             $SETTINGS

@@ -451,6 +451,12 @@ if ($needsMigration) {
     modifyColumn($pre . 'users', 'psk', "psk", "VARCHAR(250);");
     modifyColumn($pre . 'users', 'user_ip', "user_ip", "VARCHAR(50);");
     modifyColumn($pre . 'users', 'auth_type', "auth_type", "VARCHAR(50);");
+
+    // Migrate DB to expected encoding
+    migrateDBtoUtf8();
+
+    // Migrate Tables to expected encoding
+    migrateToUtf8mb4();
 }
 // --< END MIGRATION USERS
 

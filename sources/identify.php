@@ -755,11 +755,6 @@ function performPostLoginTasks(
     if (!empty($returnKeys['roles_db_update'])) {
         $finalUpdateData = array_merge($finalUpdateData, $returnKeys['roles_db_update']);
     }
-    
-    // Merge fonction_id conversion if needed
-    if (strpos($userInfo['fonction_id'] ?? '', ';') !== false) {
-        $finalUpdateData['fonction_id'] = $userInfo['fonction_id'];
-    }
 
     DB::update(
         prefixTable('users'),
@@ -1349,7 +1344,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
         
         // Get and handle user groups
-        $userGroupsData = getUserGroups($userADInfos, $ldapHandler, $SETTINGS);
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS);
         handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
         
         // Finalize authentication
@@ -1512,7 +1507,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
  * @param array $SETTINGS Teampass settings
  * @return array User groups
  */
-function getUserGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
     
@@ -2251,14 +2246,9 @@ class initialChecks {
     public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
         $session = SessionManager::getSession();
     
-        // Get user info from DB
-        $data = DB::queryFirstRow(
-            'SELECT u.*, a.value AS api_key
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-            WHERE login = %s AND deleted_at IS NULL',
-            $login
-        );
+        // Get user info from DB with all related data
+        $data = getUserCompleteData($login);
+        
         $dataUserCount = DB::count();
         
         // User doesn't exist then return error

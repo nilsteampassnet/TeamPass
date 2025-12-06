@@ -750,6 +750,17 @@ function recursiveChmodForInstall(
     return true;
 }
 
+function migrateDBtoUtf8()
+{
+    DB::query(
+        "ALTER DATABASE %b DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci", 
+        DB_NAME
+    );
+    
+    // Configurer la connexion actuelle
+    DB::query("SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci");
+}
+
 function migrateToUtf8mb4()
 {
     // Récupérer toutes les tables du préfixe
