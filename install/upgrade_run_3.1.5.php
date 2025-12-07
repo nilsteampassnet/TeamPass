@@ -85,6 +85,13 @@ $error = [];
 
 //--->BEGIN 3.1.5
 
+// Do init checks
+$columnNeedsPasswordMigrationExists = DB::queryFirstRow(
+    "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = '" . $pre . "usersusers'
+    AND COLUMN_NAME = 'needs_password_migration'"
+);
+
 // Add new columns to users table
 $columns_to_add = [
     [
@@ -106,6 +113,11 @@ $columns_to_add = [
         'table' => 'users',
         'column' => 'personal_items_migrated',
         'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)' AFTER `is_ready_for_usage`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'needs_password_migration',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `needs_password_migration` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indicates if user password needs migration to new hashing system (0=no, 1=yes)' AFTER `personal_items_migrated`"
     ]
 ];
 
@@ -459,6 +471,17 @@ if ($needsMigration) {
     migrateToUtf8mb4();
 }
 // --< END MIGRATION USERS
+
+// Mark all local users as needing migration
+// Users authenticated via LDAP or OAuth2 don't need migration
+if (empty($columnNeedsPasswordMigrationExists)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "users` 
+        SET `needs_password_migration` = 1
+        WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '')"
+    );
+}
 
 //---<END 3.1.5
 
