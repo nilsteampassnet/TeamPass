@@ -22,7 +22,15 @@ TeamPass had an architectural design flaw since its early versions: user authent
 
 ## Migration Strategy
 
-We implemented **Strategy 1: Transparent Migration with Dual Verification** to ensure zero downtime and automatic migration.
+We implemented **Strategy 1: Transparent Migration with Dual Verification + Immediate Hash Update** to ensure zero downtime and automatic migration.
+
+### Migration happens in ONE login
+
+When a legacy user logs in:
+1. Password verified with sanitized version (old hash in DB)
+2. **Immediately**: Re-hash the raw password and save to DB
+3. User is migrated in real-time during login
+4. Next login: Works directly with raw password
 
 ### How it works
 
@@ -30,9 +38,13 @@ We implemented **Strategy 1: Transparent Migration with Dual Verification** to e
 2. **Dual verification on login:**
    - First attempt: Verify with raw password (new behavior) ✅
    - If fails: Try with sanitized password (legacy behavior) ⚠️
-   - If legacy succeeds: Mark user with `needs_password_migration` flag
-3. **Automatic migration** - Users are automatically migrated on next successful login
-4. **No user action required** - Migration is completely transparent
+   - If legacy succeeds: **Immediate migration happens**
+3. **Automatic migration on first login:**
+   - Re-hash the raw password entered by user
+   - Save new hash to database
+   - Mark migration as complete (`needs_password_migration = 0`)
+4. **Next login:** User authenticates directly with raw password (no more dual verification needed)
+5. **No user action required** - Migration is completely transparent
 
 ## Database Changes
 
@@ -67,8 +79,10 @@ WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '');
 
 1. **sources/identify.php**
    - Removed password sanitization in `identifyUser()` (line 219)
-   - Implemented dual verification in `checkCredentials()` (lines 2135-2202)
-   - Added automatic migration flag setting
+   - Implemented dual verification in `checkCredentials()` (lines 2135-2210)
+   - **Automatic password hash migration:** Re-hashes raw password and saves to DB
+   - Sets `needs_password_migration = 0` when migration completes
+   - Migration happens **immediately** on first successful login
 
 2. **api/Model/AuthModel.php**
    - Changed password sanitization from `trim|escape` to `trim` only (line 63)
