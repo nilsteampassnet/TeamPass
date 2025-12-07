@@ -827,10 +827,7 @@ function performPostLoginTasks(
 
     // Send email notification if enabled
     $lang = new Language($session->get('user-language') ?? 'english');
-    if (
-        isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true
-        && (int) $userInfo['admin'] !== 1
-    ) {
+    if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
         // get all Admin users
         $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
         if (DB::count() > 0) {
