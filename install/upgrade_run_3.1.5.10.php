@@ -58,24 +58,39 @@ $dbPrefix = DB_PREFIX;
 
 // Execute migration
 if ($post_nb === '1') {
-    // Step 1: Add needs_password_migration column to users table
+    // Step 1: Check if needs_password_migration column already exists
     try {
-        DB::queryRaw(
-            "ALTER TABLE `" . $dbPrefix . "users`
-            ADD COLUMN IF NOT EXISTS `needs_password_migration` TINYINT(1) DEFAULT 0
-            AFTER `pw`"
+        $columnExists = DB::queryFirstRow(
+            "SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = '" . $dbPrefix . "users'
+            AND COLUMN_NAME = 'needs_password_migration'"
         );
 
-        // Mark all local users as needing migration
-        // Users authenticated via LDAP or OAuth2 don't need migration
-        DB::queryRaw(
-            "UPDATE `" . $dbPrefix . "users`
-            SET `needs_password_migration` = 1
-            WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '')"
-        );
+        if (empty($columnExists)) {
+            // Column doesn't exist - this is the first run of this migration
+            // Add the column
+            DB::queryRaw(
+                "ALTER TABLE `" . $dbPrefix . "users`
+                ADD COLUMN `needs_password_migration` TINYINT(1) DEFAULT 0
+                AFTER `pw`"
+            );
+
+            // Mark all local users as needing migration
+            // Only done on first run when column is created
+            // Users authenticated via LDAP or OAuth2 don't need migration
+            DB::queryRaw(
+                "UPDATE `" . $dbPrefix . "users`
+                SET `needs_password_migration` = 1
+                WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '')"
+            );
+        }
+        // If column already exists, skip the migration (already done)
+        // This ensures idempotency - script can be run multiple times safely
 
         echo '[{"finish":"1", "msg":"", "error":""}]';
     } catch (Exception $e) {
-        echo '[{"finish":"1", "msg":"", "error":"Error adding needs_password_migration column: ' . addslashes($e->getMessage()) . '"}]';
+        echo '[{"finish":"1", "msg":"", "error":"Error during password migration setup: ' . addslashes($e->getMessage()) . '"}]';
     }
 }
