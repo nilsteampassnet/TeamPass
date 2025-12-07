@@ -2144,10 +2144,19 @@ function checkCredentials($passwordClear, $userInfo): array
 
         if ($resultSanitized['status'] === true && $passwordManager->verifyPassword($resultSanitized['hashedPassword'], $passwordSanitized) === true) {
             // Password is correct with sanitized password (legacy behavior)
-            // Mark user for password migration
+            // This means the user's hash in DB was created with the sanitized version
+            // We need to MIGRATE: re-hash the RAW password and save it
+
+            // Re-hash the raw (non-sanitized) password
+            $newHash = $passwordManager->hashPassword($passwordClear);
+
+            // Update user with new hash and mark migration as COMPLETE (0 = done)
             DB::update(
                 prefixTable('users'),
-                ['needs_password_migration' => 1],
+                [
+                    'pw' => $newHash,
+                    'needs_password_migration' => 0  // 0 = migration completed
+                ],
                 'id = %i',
                 $userInfo['id']
             );
@@ -2157,7 +2166,7 @@ function checkCredentials($passwordClear, $userInfo): array
             logEvents(
                 $configManager->getAllSettings(),
                 'user_password',
-                'legacy_sanitized_password_detected',
+                'password_migrated_from_sanitized',
                 (string) $userInfo['id'],
                 stripslashes($userInfo['login'] ?? ''),
                 ''
@@ -2165,8 +2174,8 @@ function checkCredentials($passwordClear, $userInfo): array
 
             return [
                 'authenticated' => true,
-                'migrated' => $resultSanitized['migratedUser'],
-                'needs_password_reset' => true // Flag to notify user
+                'migrated' => true,  // User was just migrated
+                'password_updated' => true  // Password hash was updated
             ];
         }
     }
