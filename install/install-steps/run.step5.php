@@ -1233,6 +1233,7 @@ class DatabaseInstaller
             `allowed_to_delete` int(1) NOT NULL DEFAULT '0',
             `encrypted_private_key` TEXT NULL,
             `session_key_salt` VARCHAR(64) NULL,
+            `session_key` varchar(64) NULL,
             PRIMARY KEY (`increment_id`),
             KEY `USER` (`user_id`),
             KEY `idx_api_timestamp` (`timestamp`)

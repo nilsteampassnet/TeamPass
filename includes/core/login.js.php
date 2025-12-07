@@ -777,7 +777,7 @@ declare(strict_types=1);
         // Base64 encode sensitive data
         const sharedData = {
             ...data,
-            pw: btoa(unescape(encodeURIComponent(data.pw))),
+            pw: btoa(data.pw),
             ...oauth2Info
         };
         
@@ -959,7 +959,7 @@ declare(strict_types=1);
                     } else if (data.initial_url !== '' && data.initial_url !== null) {
                         window.location.href = data.initial_url;
                     } else {
-                        window.location.href = './index.php?page=items';
+                        //window.location.href = './index.php?page=items';
                     }
                 }
 

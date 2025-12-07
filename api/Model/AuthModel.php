@@ -64,7 +64,7 @@ class AuthModel
                 'apikey' => 'trim|escape|strip_tags',
             ]
         );
-
+error_log(print_r($inputData, true));
         // Check apikey and credentials
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true || empty($inputData['password']) === true) {
             // case where it is a generic key

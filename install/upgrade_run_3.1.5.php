@@ -118,6 +118,11 @@ $columns_to_add = [
         'table' => 'users',
         'column' => 'needs_password_migration',
         'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `needs_password_migration` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indicates if user password needs migration to new hashing system (0=no, 1=yes)' AFTER `personal_items_migrated`"
+    ],
+    [
+        'table' => 'api',
+        'column' => 'session_key',
+        'query' => "ALTER TABLE `" . $pre . "api` ADD COLUMN `session_key` VARCHAR(64) NULL"
     ]
 ];
 

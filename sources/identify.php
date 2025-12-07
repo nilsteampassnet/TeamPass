@@ -140,7 +140,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
     $session = SessionManager::getSession();
-
+    
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -164,7 +164,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if (isset($dataReceived['pw'])) {
         $dataReceived['pw'] = base64_decode($dataReceived['pw']);
     }
-
+    
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
     if(
         isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
@@ -221,7 +221,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     );
     $username = $userCredentials['username'];
     $passwordClear = $userCredentials['passwordClear'];
-
+    
     // DO initial checks
     $userInitialData = identifyDoInitialChecks(
         $SETTINGS,
@@ -290,7 +290,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ]);
         return false;
     }
-
+    
     // Is oauth2 user exists?
     $userOauth2 = checkOauth2User(
         (array) $SETTINGS,
@@ -334,29 +334,22 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-
-    // If user was migrated, then return error to force user to wait
-    if ($authResult['migrated'] === true && (int) $userInfo['admin'] !== 1) {
-        echo prepareExchangedData(
-            [
-                'value' => '',
-                'error' => true,
-                'message' => $lang->get('user_encryption_ongoing'),
-            ],
-            'encode'
-        );
-        return false;
+    
+    // If password was migrated, then update private key
+    if ($authResult['password_migrated'] === true) {
+        $userInfo['private_key'] = $authResult['private_key_reencrypted'];
     }
-
+    
     // Check if MFA is required
-    if ((isOneVarOfArrayEqualToValue(
-                [
-                    (int) $SETTINGS['yubico_authentication'],
-                    (int) $SETTINGS['google_authentication'],
-                    (int) $SETTINGS['duo']
-                ],
-                1
-            ) === true)
+    if ((
+        isOneVarOfArrayEqualToValue(
+            [
+                (int) $SETTINGS['yubico_authentication'],
+                (int) $SETTINGS['google_authentication'],
+                (int) $SETTINGS['duo']
+            ],
+            1
+        ) === true)
         && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
         || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
     ) {
@@ -2120,12 +2113,11 @@ function checkCredentials($passwordClear, $userInfo): array
         (int) $userInfo['id'],
         (bool) $userInfo['admin']
     );
-
+    
     if ($result['status'] === true && $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === true) {
         // Password is correct with raw password (new behavior)
         return [
             'authenticated' => true,
-            'migrated' => $result['migratedUser']
         ];
     }
 
@@ -2149,13 +2141,17 @@ function checkCredentials($passwordClear, $userInfo): array
 
             // Re-hash the raw (non-sanitized) password
             $newHash = $passwordManager->hashPassword($passwordClear);
-
+            
+            $userCurrentPrivateKey = decryptPrivateKey($passwordSanitized, $userInfo['private_key']);
+            $newUserPrivateKey = encryptPrivateKey($passwordClear, $userCurrentPrivateKey);
+            
             // Update user with new hash and mark migration as COMPLETE (0 = done)
             DB::update(
                 prefixTable('users'),
                 [
                     'pw' => $newHash,
-                    'needs_password_migration' => 0  // 0 = migration completed
+                    'needs_password_migration' => 0,  // 0 = migration completed
+                    'private_key' => $newUserPrivateKey,
                 ],
                 'id = %i',
                 $userInfo['id']
@@ -2174,8 +2170,8 @@ function checkCredentials($passwordClear, $userInfo): array
 
             return [
                 'authenticated' => true,
-                'migrated' => true,  // User was just migrated
-                'password_updated' => true  // Password hash was updated
+                'password_migrated' => true,
+                'private_key_reencrypted' => $newUserPrivateKey,
             ];
         }
     }
@@ -2183,7 +2179,6 @@ function checkCredentials($passwordClear, $userInfo): array
     // Password is not correct with either method
     return [
         'authenticated' => false,
-        'migrated' => false
     ];
 }
 

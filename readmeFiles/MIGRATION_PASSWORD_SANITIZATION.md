@@ -22,7 +22,7 @@ TeamPass had an architectural design flaw since its early versions: user authent
 
 ## Migration Strategy
 
-We implemented **Strategy 1: Transparent Migration with Dual Verification + Immediate Hash Update** to ensure zero downtime and automatic migration.
+We implemented **Strategy: Transparent Migration with Dual Verification + Immediate Hash Update** to ensure zero downtime and automatic migration.
 
 ### Migration happens in ONE login
 
@@ -71,45 +71,6 @@ WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '');
 - Subsequent runs: Detects existing column and skips marking
 - This ensures already migrated users are never reset
 
-## Code Changes
-
-### Backend (PHP)
-
-#### ✅ Fixed Files:
-
-1. **sources/identify.php**
-   - Removed password sanitization in `identifyUser()` (line 219)
-   - Implemented dual verification in `checkCredentials()` (lines 2135-2210)
-   - **Automatic password hash migration:** Re-hashes raw password and saves to DB
-   - Sets `needs_password_migration = 0` when migration completes
-   - Migration happens **immediately** on first successful login
-
-2. **api/Model/AuthModel.php**
-   - Changed password sanitization from `trim|escape` to `trim` only (line 63)
-
-3. **sources/main.queries.php**
-   - Removed sanitization for password changes (lines 256-257, 275, 297-298, 308, 719, 754, 802)
-
-4. **sources/tools.queries.php**
-   - Removed sanitization for private key decryption (line 451)
-
-5. **sources/export.queries.php**
-   - Removed sanitization for PDF passwords (lines 112, 698+)
-
-### Frontend (JavaScript)
-
-#### ✅ Fixed Files:
-
-1. **includes/core/login.js.php**
-   - Removed `sanitizeString()` calls on passwords (lines 316-317)
-
-2. **pages/profile.js.php**
-   - Removed `DOMPurify.sanitize()` on password change (line 473)
-
-3. **pages/items.js.php**
-   - Removed `DOMPurify.sanitize()` on item passwords (lines 1871, 1873, 1980)
-   - **Note:** Item passwords must be stored exactly as entered!
-
 ## Impact on Authentication Methods
 
 ### Local Authentication (Teampass Database)
@@ -125,26 +86,6 @@ WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '');
 
 ### API Authentication
 ✅ **Fixed** - JWT generation now works with unsanitized passwords
-
-## Testing Checklist
-
-### Manual Testing Required
-
-- [ ] Local user with simple password (e.g., `password123`)
-- [ ] Local user with special characters (e.g., `P@ss<word>&123`)
-- [ ] Password change for existing user
-- [ ] New user registration
-- [ ] LDAP authentication with special characters
-- [ ] API authentication with JWT
-- [ ] Password reset flow
-- [ ] Item password storage and retrieval
-- [ ] PDF export with password protection
-
-### Automated Testing
-
-Currently, TeamPass does not have a formal test suite. Consider adding:
-- Unit tests for password verification
-- Integration tests for authentication flow
 
 ## Rollback Plan
 
@@ -162,25 +103,6 @@ If issues occur, you can rollback by:
    ```
 
 Note: This will restore the sanitization bug, but existing users will continue to work.
-
-## Migration Timeline
-
-### Phase 1: Deployment (Week 1)
-- Deploy version 3.1.5.10
-- Monitor authentication logs
-- All users marked for migration
-
-### Phase 2: Gradual Migration (Weeks 2-8)
-- Users automatically migrate on login
-- Monitor `needs_password_migration` flag
-
-### Phase 3: Monitoring (Months 2-3)
-- Check for users who haven't logged in
-- Optionally send notifications to inactive users
-
-### Phase 4: Cleanup (Month 4+)
-- Once all active users migrated, can remove dual verification code
-- Remove `needs_password_migration` column
 
 ## Monitoring
 
@@ -251,9 +173,3 @@ ORDER BY date DESC;
 - OWASP Password Storage Cheat Sheet
 - PHP password_hash() documentation
 - NIST Digital Identity Guidelines (SP 800-63B)
-
-## Credits
-
-**Issue identified by:** TeamPass community feedback on API authentication failures
-**Solution designed by:** Claude Code AI Assistant
-**Implementation:** Automated migration with zero downtime approach
