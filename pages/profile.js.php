@@ -469,7 +469,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
 
         var data = {
-            'new_pw': DOMPurify.sanitize($('#profile-password').val()),
+            // IMPORTANT: Do NOT sanitize passwords (fix 3.1.5.10)
+            'new_pw': $('#profile-password').val(),
             'complexity': $('#profile-password-complex').val(),
             "change_request": 'user_decides_to_change_password',
             "user_id": store.get('teampassUser').user_id,

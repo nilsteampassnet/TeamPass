@@ -250,10 +250,11 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
                 );
             }
 
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
             return changeUserAuthenticationPassword(
                 (int) $session->get('user-id'),
-                (string) filter_var($dataReceived['old_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['new_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) $dataReceived['old_password'],
+                (string) $dataReceived['new_password'],
                 $SETTINGS
             );
 
@@ -269,9 +270,9 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
                     (int) $session->get('user-id')
                 );
             }
-            
-            // Users passwords are html escaped
-            $userPassword = filter_var($dataReceived['current_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $userPassword = $dataReceived['current_password'];
 
             // Get current user hash
             $userHash = DB::queryFirstRow(
@@ -293,17 +294,18 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
 
             return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
                 (int) $session->get('user-id'),
-                filter_var($dataReceived['previous_password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                filter_var($userPassword)
+                $dataReceived['previous_password'],
+                $userPassword
             );
 
         /*
          * test_current_user_password_is_correct
          */
         case 'test_current_user_password_is_correct'://action_password
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
             return isUserPasswordCorrect(
                 (int) $session->get('user-id'),
-                (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) $dataReceived['password'],
                 (string) filter_var($dataReceived['otp'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
@@ -713,8 +715,8 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
          */
         case 'change_private_key_encryption_password'://action_key
 
-            // Users passwords are html escaped
-            $newPassword = filter_var($dataReceived['new_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $newPassword = $dataReceived['new_code'];
 
             // Get current user hash
             $userHash = DB::queryFirstRow(
@@ -748,8 +750,8 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
          */
         case 'user_new_keys_generation'://action_key
 
-            // Users passwords are html escaped
-            $userPassword = filter_var($dataReceived['user_pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $userPassword = $dataReceived['user_pwd'];
 
             // Don't generate new user password -> verify it
             if ($dataReceived['generate_user_new_password'] !== true) {
@@ -796,8 +798,8 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
         case 'user_recovery_keys_download'://action_key
             // Validate user password on local and LDAP accounts before download
             if ($session->get('user-auth_type') !== 'oauth2') {
-                // Users passwords are html escaped
-                $userPassword = filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+                // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+                $userPassword = $dataReceived['password'];
 
                 // Get current user hash
                 $userHash = DB::queryFirstRow(
