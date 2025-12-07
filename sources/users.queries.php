@@ -243,9 +243,9 @@ if (null !== $post_type) {
             $new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
             $domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
-            $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
-            $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT) ?? [];
+            $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT) ?? [];
+            $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT) ?? [];
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
             $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -274,25 +274,17 @@ if (null !== $post_type) {
                 );
                 break;
             }
-            // Check if user already exists (active user)
-            $data = DB::query(
-                'SELECT id, fonction_id, groupes_interdits, groupes_visibles
-                FROM ' . prefixTable('users') . '
-                WHERE login = %s
-                AND deleted_at IS NULL',
-                $login
-            );
-
-            // Check if a soft-deleted user with this login exists
-            $deletedUser = DB::queryFirstRow(
+            // Check if user exists (active or soft-deleted)
+            $existingUser = DB::queryFirstRow(
                 'SELECT id, login, deleted_at
                 FROM ' . prefixTable('users') . '
-                WHERE login LIKE %s
-                AND deleted_at IS NOT NULL',
+                WHERE (login = %s AND deleted_at IS NULL)
+                OR (login LIKE %s AND deleted_at IS NOT NULL)',
+                $login,
                 $login . '_deleted_%'
             );
 
-            if (DB::count() === 0 && empty($deletedUser) === true) {
+            if (is_null($existingUser)) {
                 // Generate pwd
                 $password = generateQuickPassword();
 
@@ -330,9 +322,6 @@ if (null !== $post_type) {
                         'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
                         'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
                         'user_language' => $SETTINGS['default_language'],
-                        'fonction_id' => is_null($groups) === true ? '' : implode(';', $groups),
-                        'groupes_interdits' => is_null($forbidden_flds) === true ? '' : implode(';', $forbidden_flds),
-                        'groupes_visibles' => is_null($allowed_flds) === true ? '' : implode(';', $allowed_flds),
                         'isAdministratedByRole' => $is_administrated_by,
                         'encrypted_psk' => '',
                         'last_pw_change' => time(),
@@ -348,6 +337,12 @@ if (null !== $post_type) {
                     )
                 );
                 $new_user_id = DB::insertId();
+
+                // Add Groups and Roles
+                setUserRoles($new_user_id, $groups, 'manual');
+                setUserGroups($new_user_id, $allowed_flds);
+                setUserForbiddenGroups($new_user_id, $forbidden_flds);
+
                 // Create personnal folder
                 if ((int) $has_personal_folder === 1) {
                     DB::insert(
@@ -696,15 +691,10 @@ if (null !== $post_type) {
             }
             
             // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_id = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user
-            $rowUser = DB::queryFirstRow(
-                'SELECT *
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_id
-            );
+            $rowUser = getUserCompleteData(null, $post_id);
 
             // Is this user allowed to do this?
             if (
@@ -950,26 +940,27 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
-            $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_email = filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
-            $post_lastname = filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_name = filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
-            $post_is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
-            $post_is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
-            $post_is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
-            $post_has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_id = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_login = (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_email = (string) filter_var($dataReceived['email'], FILTER_SANITIZE_EMAIL);
+            $post_lastname = (string) filter_var($dataReceived['lastname'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_name = (string) filter_var($dataReceived['name'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_is_admin = (int) filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_manager = (int) filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_hr = (int) filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_read_only = (int) filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
+            $post_has_personal_folder = (int) filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
+            $post_is_administrated_by = (string) filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
             $post_allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
-            $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
-            $post_mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
+            $post_root_level = (int) filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
+            $post_mfa_enabled = (int) filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to modify
             $data_user = DB::queryFirstRow(
-                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole FROM ' . prefixTable('users') . '
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole 
+                FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
             );
@@ -1001,21 +992,25 @@ if (null !== $post_type) {
             $action_to_perform_after = '';
             
             // Exclude roles from AD - PR #3635
-            $adRoles = DB::query(
-                'SELECT roles_from_ad_groups
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_id
-            )[0]['roles_from_ad_groups'];
+            $adRolesResult = DB::query(
+                'SELECT role_id
+                FROM ' . prefixTable('users_roles') . '
+                WHERE user_id = %i AND source = %s',
+                $post_id,
+                'ad'
+            );
+            $adRoles = array_column($adRolesResult, 'role_id');
+
             $fonctions = [];
             if (!is_null($post_groups) && !empty($adRoles)) {
                 foreach ($post_groups as $post_group) {
-                    if (!in_array($post_group, explode(';', $adRoles))) {
+                    if (!in_array($post_group, $adRoles)) {
                         $fonctions[] = $post_group;
                     }
                 }
             }
             $post_groups = empty($fonctions) === true ? $post_groups : $fonctions;
+
 
             // Build array of update
             $changeArray = array(
@@ -1029,9 +1024,6 @@ if (null !== $post_type) {
                 'read_only' => empty($post_is_read_only) === true ? 0 : $post_is_read_only,
                 'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
                 'user_language' => $SETTINGS['default_language'],
-                'fonction_id' => is_null($post_groups) === true ? '' : implode(';', array_unique($post_groups)),
-                'groupes_interdits' => is_null($post_forbidden_flds) === true ? '' : implode(';', array_unique($post_forbidden_flds)),
-                'groupes_visibles' => is_null($post_allowed_flds) === true ? '' : implode(';', array_unique($post_allowed_flds)),
                 'isAdministratedByRole' => $post_is_administrated_by,
                 'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
                 'mfa_enabled' => empty($post_mfa_enabled) === true ? 0 : $post_mfa_enabled,
@@ -1134,15 +1126,46 @@ if (null !== $post_type) {
                         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
                         $tree->rebuild();
                     }
+
+                    // Delete Roles
+                    DB::delete(
+                        prefixTable('users_roles'),
+                        'user_id = %i',
+                        $post_id
+                    );
+
+                    // Delete Groups
+                    DB::delete(
+                        prefixTable('users_groups'),
+                        'user_id = %i',
+                        $post_id
+                    );
+                    DB::delete(
+                        prefixTable('users_groups_forbidden'),
+                        'user_id = %i',
+                        $post_id
+                    );
+
+                    // Delete Latest items
+                    DB::delete(
+                        prefixTable('users_latest_items'),
+                        'user_id = %i',
+                        $post_id
+                    );
+
+                    // Delete favorites
+                    DB::delete(
+                        prefixTable('users_favorites'),
+                        'user_id = %i',
+                        $post_id
+                    );
+
+
                     // update LOG
                     logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
                 } else {
                     // Get old data about user
-                    $oldData = DB::queryFirstRow(
-                        'SELECT * FROM ' . prefixTable('users') . '
-                        WHERE id = %i',
-                        $post_id
-                    );
+                    $oldData = getUserCompleteData(null, $post_id);
 
                     // update SESSION
                     if ($session->get('user-id') === $post_id) {
@@ -1166,6 +1189,11 @@ if (null !== $post_type) {
                         'id = %i',
                         $post_id
                     );
+
+                    // Add Groups and Roles
+                    setUserRoles($post_id, $post_groups, 'manual');
+                    setUserGroups($post_id, $post_allowed_flds);
+                    setUserForbiddenGroups($post_id, $post_forbidden_flds);
 
                     // CLear cache tree for this user to force tree
                     DB::delete(
@@ -1268,7 +1296,7 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+            $post_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
             $arrData = array();
 
@@ -1276,12 +1304,7 @@ if (null !== $post_type) {
             $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
             // get User info
-            $rowUser = DB::queryFirstRow(
-                'SELECT id, login, name, lastname, email, disabled, fonction_id, groupes_interdits, groupes_visibles, isAdministratedByRole, avatar_thumb, roles_from_ad_groups
-                FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $post_id
-            );
+            $rowUser = getUserCompleteData(null, $post_id);
 
             // get rights
             $arrFolders = [];
@@ -1379,8 +1402,8 @@ if (null !== $post_type) {
             break;
 
         /*
-         * GET LIST OF USERS
-         */
+        * GET LIST OF USERS
+        */
         case 'get_list_of_users_for_sharing':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -1405,38 +1428,62 @@ if (null !== $post_type) {
 
             $arrUsers = [];
 
+            // Requête adaptée avec les nouvelles tables relationnelles
             if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-can_manage_all_users') === 0) {
                 $rows = DB::query(
-                    'SELECT *
-                    FROM ' . prefixTable('users') . '
-                    WHERE admin = %i AND isAdministratedByRole IN %ls AND deleted_at IS NULL and disabled = %i',
+                    'SELECT u.*,
+                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    FROM ' . prefixTable('users') . ' AS u
+                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+                    WHERE u.admin = %i AND u.isAdministratedByRole IN %ls AND u.deleted_at IS NULL AND u.disabled = %i
+                    GROUP BY u.id',
                     0,
                     array_filter($session->get('user-roles_array')),
                     0
                 );
             } else {
                 $rows = DB::query(
-                    'SELECT *
-                    FROM ' . prefixTable('users') . '
-                    WHERE admin = %i AND deleted_at IS NULL and disabled = %i',
+                    'SELECT u.*,
+                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    FROM ' . prefixTable('users') . ' AS u
+                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+                    WHERE u.admin = %i AND u.deleted_at IS NULL AND u.disabled = %i
+                    GROUP BY u.id',
                     0,
                     0
                 );
             }
 
             foreach ($rows as $record) {
+                // Assurer que les champs sont des chaînes vides si NULL
+                $record['fonction_id'] = $record['fonction_id'] ?? '';
+                $record['groupes_visibles'] = $record['groupes_visibles'] ?? '';
+                $record['groupes_interdits'] = $record['groupes_interdits'] ?? '';
+                
                 // Get roles
                 $groups = [];
                 $groupIds = [];
-                foreach (explode(';', $record['fonction_id']) as $group) {
-                    $tmp = DB::queryFirstRow(
-                        'SELECT id, title FROM ' . prefixTable('roles_title') . '
-                        WHERE id = %i',
-                        $group
-                    );
-                    if ($tmp !== null) {
-                        array_push($groups, $tmp['title']);
-                        array_push($groupIds, $tmp['id']);
+                if (!empty($record['fonction_id'])) {
+                    foreach (explode(';', $record['fonction_id']) as $group) {
+                        if (!empty($group)) {
+                            $tmp = DB::queryFirstRow(
+                                'SELECT id, title FROM ' . prefixTable('roles_title') . '
+                                WHERE id = %i',
+                                $group
+                            );
+                            if ($tmp !== null) {
+                                array_push($groups, $tmp['title']);
+                                array_push($groupIds, $tmp['id']);
+                            }
+                        }
                     }
                 }
 
@@ -1450,27 +1497,35 @@ if (null !== $post_type) {
                 // Get Allowed folders
                 $foldersAllowed = [];
                 $foldersAllowedIds = [];
-                foreach (explode(';', $record['groupes_visibles']) as $role) {
-                    $tmp = DB::queryFirstRow(
-                        'SELECT id, title FROM ' . prefixTable('nested_tree') . '
-                        WHERE id = %i',
-                        $role
-                    );
-                    array_push($foldersAllowed, $tmp !== null ? $tmp['title'] : $lang->get('none'));
-                    array_push($foldersAllowedIds, $tmp !== null ? $tmp['id'] : -1);
+                if (!empty($record['groupes_visibles'])) {
+                    foreach (explode(';', $record['groupes_visibles']) as $role) {
+                        if (!empty($role)) {
+                            $tmp = DB::queryFirstRow(
+                                'SELECT id, title FROM ' . prefixTable('nested_tree') . '
+                                WHERE id = %i',
+                                $role
+                            );
+                            array_push($foldersAllowed, $tmp !== null ? $tmp['title'] : $lang->get('none'));
+                            array_push($foldersAllowedIds, $tmp !== null ? $tmp['id'] : -1);
+                        }
+                    }
                 }
 
                 // Get denied folders
                 $foldersForbidden = [];
                 $foldersForbiddenIds = [];
-                foreach (explode(';', $record['groupes_interdits']) as $role) {
-                    $tmp = DB::queryFirstRow(
-                        'SELECT id, title FROM ' . prefixTable('nested_tree') . '
-                        WHERE id = %i',
-                        $role
-                    );
-                    array_push($foldersForbidden, $tmp !== null ? $tmp['title'] : $lang->get('none'));
-                    array_push($foldersForbiddenIds, $tmp !== null ? $tmp['id'] : -1);
+                if (!empty($record['groupes_interdits'])) {
+                    foreach (explode(';', $record['groupes_interdits']) as $role) {
+                        if (!empty($role)) {
+                            $tmp = DB::queryFirstRow(
+                                'SELECT id, title FROM ' . prefixTable('nested_tree') . '
+                                WHERE id = %i',
+                                $role
+                            );
+                            array_push($foldersForbidden, $tmp !== null ? $tmp['title'] : $lang->get('none'));
+                            array_push($foldersForbiddenIds, $tmp !== null ? $tmp['id'] : -1);
+                        }
+                    }
                 }
 
                 // Store
@@ -1483,7 +1538,7 @@ if (null !== $post_type) {
                         'login' => $record['login'],
                         'groups' => implode(', ', $groups),
                         'groupIds' => $groupIds,
-                        'managedBy' => $managedBy=== null ? $lang->get('administrator') : $managedBy['title'],
+                        'managedBy' => $managedBy === null ? $lang->get('administrator') : $managedBy['title'],
                         'managedById' => $managedBy === null ? 0 : $managedBy['id'],
                         'foldersAllowed' => implode(', ', $foldersAllowed),
                         'foldersAllowedIds' => $foldersAllowedIds,
@@ -1509,9 +1564,10 @@ if (null !== $post_type) {
 
             break;
 
-            /*
-         * UPDATE USERS RIGHTS BY SHARING
-         */
+
+        /*
+        * UPDATE USERS RIGHTS BY SHARING
+        */
         case 'update_users_rights_sharing':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -1602,14 +1658,29 @@ if (null !== $post_type) {
                         || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
                         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
                     ) {
-                        // update user
+                        // Update user roles in users_roles table
+                        $roleIds = array_filter(
+                            explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
+                        );
+                        setUserRoles((int) $dest_user_id, $roleIds, 'manual');
+                        
+                        // Update allowed folders in users_groups table
+                        $allowedFolders = array_filter(
+                            explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
+                        );
+                        setUserGroups((int) $dest_user_id, $allowedFolders);
+                        
+                        // Update forbidden folders in users_groups_forbidden table
+                        $forbiddenFolders = array_filter(
+                            explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
+                        );
+                        setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
+                        
+                        // Update other user fields in users table
                         DB::update(
                             prefixTable('users'),
                             array(
-                                'fonction_id' => str_replace(",", ";", (string) $inputData['user_functions']),
                                 'isAdministratedByRole' => $inputData['user_managedby'],
-                                'groupes_visibles' => $inputData['user_fldallowed'],
-                                'groupes_interdits' => $inputData['user_fldforbid'],
                                 'gestionnaire' => $inputData['user_manager'],
                                 'read_only' => $inputData['user_readonly'],
                                 'can_create_root_folder' => $inputData['user_rootfolder'],
@@ -1632,6 +1703,7 @@ if (null !== $post_type) {
             );
 
             break;
+
 
             /*
          * UPDATE USER PROFILE
@@ -2027,12 +2099,8 @@ if (null !== $post_type) {
                 $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
                 if (null !== $userLogin) {
                     // Get his ID
-                    $userInfo = DB::queryFirstRow(
-                        'SELECT id, login, fonction_id, auth_type
-                        FROM ' . prefixTable('users') . '
-                        WHERE login = %s',
-                        $userLogin
-                    );
+                    $userInfo = getUserCompleteData($userLogin);
+                    
                     // Loop on all user attributes
                     $tmp = [
                         'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
@@ -2190,9 +2258,6 @@ if (null !== $post_type) {
                 'gestionnaire' => '0',
                 'can_manage_all_users' => '0',
                 'personal_folder' => (int) $SETTINGS['enable_pf_feature'] === 1 ? 1 : 0,
-                'fonction_id' => implode(';', $post_roles),
-                'groupes_interdits' => '',
-                'groupes_visibles' => '',
                 'last_pw_change' => time(),
                 'user_language' => $SETTINGS['default_language'],
                 'encrypted_psk' => '',
@@ -2220,7 +2285,10 @@ if (null !== $post_type) {
                 prefixTable('users'),
                 $userData
             );
-            $newUserId = DB::insertId();
+            $newUserId = DB::insertId();            
+
+            // Add Groups and Roles
+            setUserRoles($newUserId, $post_roles, 'manual');
 
             // Handle private key
             insertPrivateKeyWithCurrentFlag(
@@ -2429,15 +2497,25 @@ if (null !== $post_type) {
                 $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
                 if (null !== $userLogin) {
                     //error_log(print_r($oAuthUser,true));
-                    // Get his ID
+                    // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
-                        'SELECT id, login, fonction_id, auth_type
+                        'SELECT id, login, auth_type
                         FROM ' . prefixTable('users') . '
                         WHERE login = %s',
                         $userLogin
                     );
-                    // Get array of groups
-                    $userGroupsInTeampass = explode(';', (string) is_null($userInfo) ? '' : $userInfo['fonction_id']);
+                    
+                    // Get user's roles from users_roles table (all sources)
+                    $userGroupsInTeampass = [];
+                    if ($userInfo !== null) {
+                        $userRoles = DB::query(
+                            'SELECT role_id FROM ' . prefixTable('users_roles') . '
+                            WHERE user_id = %i',
+                            $userInfo['id']
+                        );
+                        $userGroupsInTeampass = array_column($userRoles, 'role_id');
+                    }
+                    
                     // Loop on all user attributes
                     $userADInfos = [
                         'userInTeampass' => isset($userInfo) ? (int) $userInfo['id'] : 0,
@@ -2488,6 +2566,7 @@ if (null !== $post_type) {
             );
 
             break;
+
 
         /*
          * CHANGE USER DISABLE
@@ -3378,6 +3457,39 @@ function purgeDeletedUserById($userId): array
                 $process_id
             );
         }
+
+        // Delete Roles
+        DB::delete(
+            prefixTable('users_roles'),
+            'user_id = %i',
+            $userId
+        );
+
+        // Delete Groups
+        DB::delete(
+            prefixTable('users_groups'),
+            'user_id = %i',
+            $userId
+        );
+        DB::delete(
+            prefixTable('users_groups_forbidden'),
+            'user_id = %i',
+            $userId
+        );
+
+        // Delete Latest items
+        DB::delete(
+            prefixTable('users_latest_items'),
+            'user_id = %i',
+            $userId
+        );
+
+        // Delete favorites
+        DB::delete(
+            prefixTable('users_favorites'),
+            'user_id = %i',
+            $userId
+        );
         
         // Log de la purge
         logEvents(

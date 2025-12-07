@@ -3361,14 +3361,9 @@ switch ($inputData['type']) {
                     SessionManager::specificOpsOnSessionArray('user-latest_items', 'pop');
                 }
                 SessionManager::specificOpsOnSessionArray('user-latest_items', 'unshift', $dataItem['id']);
-                // update DB
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'latest_items' => implode(';', $session->get('user-latest_items')),
-                    ),
-                    'id=' . $session->get('user-id')
-                );
+                
+                // Store in DB this item as lastest item seen
+                updateUserLatestItems($session->get('user-id'), (int) $dataItem['id']);
             }
 
             // get list of roles
@@ -3390,11 +3385,14 @@ switch ($inputData['type']) {
                     )
                 );
                 $rows2 = DB::query(
-                    'SELECT id, login, fonction_id, email, name, lastname
-                    FROM ' . prefixTable('users') . '
-                    WHERE fonction_id LIKE %s',
-                    '%' . $record['role_id'] . '%'
+                    'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname, ur.role_id AS fonction_id
+                    FROM ' . prefixTable('users') . ' AS u
+                    INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+                    WHERE ur.role_id = %i AND ur.source = %s',
+                    $record['role_id'],
+                    'manual'
                 );
+                
                 foreach ($rows2 as $record2) {
                     foreach (explode(';', $record2['fonction_id']) as $role) {
                         if (
@@ -4663,9 +4661,13 @@ switch ($inputData['type']) {
                 )
             );
             $rows2 = DB::query(
-                'SELECT id, login, fonction_id, email, name, lastname
-                FROM ' . prefixTable('users') . '
-                WHERE admin = 0 AND fonction_id is not null'
+                'SELECT u.id, u.login, u.email, u.name, u.lastname,
+                GROUP_CONCAT(DISTINCT ur.role_id ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+                FROM ' . prefixTable('users') . ' AS u
+                INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+                WHERE u.admin = 0 AND ur.source = %s
+                GROUP BY u.id',
+                'manual'
             );
             foreach ($rows2 as $record2) {
                 foreach (explode(';', $record2['fonction_id']) as $role) {

@@ -8,11 +8,11 @@ By default, ssl is not enabled but if you require it, you will need to perform n
 - Open in edition mode the file `./includes/config/settings.php`
 - Find
 ```
-define("DB_ENCODING", "utf8");
+define("DB_ENCODING", "utf8mb4");
 ```
 - Replace by
 ```
-define("DB_ENCODING", "utf8");
+define("DB_ENCODING", "utf8mb4");
 define("DB_SSL", array(
     "key" => "",
     "cert" => "",

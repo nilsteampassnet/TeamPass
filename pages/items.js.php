@@ -1865,11 +1865,12 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             userDidAChange = false;
             userUploadedFile = false;
 
+            // IMPORTANT: Do NOT sanitize passwords - they must be stored exactly as entered (fix 3.1.5.10)
             var data = {
                 'item_id': store.get('teampassItem').id,
-                'new_pwd': DOMPurify.sanitize($('#form-item-server-password').val()),
+                'new_pwd': $('#form-item-server-password').val(),
                 'ssh_root': DOMPurify.sanitize($('#form-item-server-login').val()),
-                'ssh_pwd': DOMPurify.sanitize($('#form-item-server-old-password').val()),
+                'ssh_pwd': $('#form-item-server-old-password').val(),
                 'user_id': <?php echo $session->get('user-id'); ?>,
             }
 
@@ -1975,7 +1976,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         var data = {
             'label': DOMPurify.sanitize($('#form-item-suggestion-label').val()),
             'login': DOMPurify.sanitize($('#form-item-suggestion-login').val()),
-            'password': DOMPurify.sanitize($('#form-item-suggestion-password').val()),
+            // IMPORTANT: Do NOT sanitize passwords - they must be stored exactly as entered (fix 3.1.5.10)
+            'password': $('#form-item-suggestion-password').val(),
             'email': DOMPurify.sanitize($('#form-item-suggestion-email').val()),
             'url': DOMPurify.sanitize($('#form-item-suggestion-url').val()),
             'description': DOMPurify.sanitize($('#form-item-suggestion-description').summernote('code'), {USE_PROFILES: {html: true}}),

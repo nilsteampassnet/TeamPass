@@ -311,9 +311,10 @@ declare(strict_types=1);
             }
 
             // Prepare data
+            // IMPORTANT: Do NOT sanitize passwords (fix 3.1.5.10)
             var data = {
-                "new_pw": sanitizeString($("#new-user-password").val()),
-                "current_pw": sanitizeString($("#current-user-password").val()),
+                "new_pw": $("#new-user-password").val(),
+                "current_pw": $("#current-user-password").val(),
                 "complexity": $('#new-user-password-complexity-level').val(),
                 "change_request": 'reset_user_password_expected',
                 "user_id": store.get('teampassUser').user_id,
@@ -776,7 +777,7 @@ declare(strict_types=1);
         // Base64 encode sensitive data
         const sharedData = {
             ...data,
-            pw: btoa(unescape(encodeURIComponent(data.pw))),
+            pw: btoa(data.pw),
             ...oauth2Info
         };
         
@@ -958,7 +959,7 @@ declare(strict_types=1);
                     } else if (data.initial_url !== '' && data.initial_url !== null) {
                         window.location.href = data.initial_url;
                     } else {
-                        window.location.href = './index.php?page=items';
+                        //window.location.href = './index.php?page=items';
                     }
                 }
 

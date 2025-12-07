@@ -85,6 +85,13 @@ $error = [];
 
 //--->BEGIN 3.1.5
 
+// Do init checks
+$columnNeedsPasswordMigrationExists = DB::queryFirstRow(
+    "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_NAME = '" . $pre . "usersusers'
+    AND COLUMN_NAME = 'needs_password_migration'"
+);
+
 // Add new columns to users table
 $columns_to_add = [
     [
@@ -106,6 +113,16 @@ $columns_to_add = [
         'table' => 'users',
         'column' => 'personal_items_migrated',
         'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `personal_items_migrated` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Personal items migrated to sharekeys system (0=not migrated, 1=migrated)' AFTER `is_ready_for_usage`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'needs_password_migration',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `needs_password_migration` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Indicates if user password needs migration to new hashing system (0=no, 1=yes)' AFTER `personal_items_migrated`"
+    ],
+    [
+        'table' => 'api',
+        'column' => 'session_key',
+        'query' => "ALTER TABLE `" . $pre . "api` ADD COLUMN `session_key` VARCHAR(64) NULL"
     ]
 ];
 
@@ -117,14 +134,16 @@ foreach ($columns_to_add as $column_info) {
     }
 }
 
-
+// --->
 // Drop previous index
 $tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_suggestions', 'sharekeys_logs'];
 foreach ($tables as $table) {
     mysqli_query($db_link, "DROP INDEX IF EXISTS `idx_object_user` ON `{$pre}{$table}`");
 }
+// ---<
 
 
+// --->
 // Add indexes on tables
 $indexes_to_add = [    
     [
@@ -192,9 +211,10 @@ foreach ($indexes_to_add as $index_config) {
         }
     }
 }
+// ---<
 
-
-// Add new settings for transparent recovery
+// --->
+// Add new settings
 $settings = [
     ['transparent_key_recovery_enabled', '1'],
     ['transparent_key_recovery_pbkdf2_iterations', '100000'],
@@ -210,6 +230,262 @@ foreach ($settings as $setting) {
             "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', '" . $setting[0] . "', '" . $setting[1] . "')"
         );
     }
+}
+// ---<
+
+// --> 
+// REWORK USERS TABLE
+$needsMigration = columnExists($db_link, $pre . 'users', 'groupes_visibles') ||
+                  columnExists($db_link, $pre . 'users', 'groupes_interdits') ||
+                  columnExists($db_link, $pre . 'users', 'fonction_id') ||
+                  columnExists($db_link, $pre . 'users', 'roles_from_ad_groups') ||
+                  columnExists($db_link, $pre . 'users', 'favourites') ||
+                  columnExists($db_link, $pre . 'users', 'latest_items');
+
+if ($needsMigration) {
+    // Table users_groups (remplace groupes_visibles)
+    mysqli_query(
+        $db_link,
+        'CREATE TABLE IF NOT EXISTS `' . $pre . 'users_groups` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `group_id` int(12) NOT NULL,
+            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `user_group_unique` (`user_id`, `group_id`),
+            KEY `user_idx` (`user_id`),
+            KEY `group_idx` (`group_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+    );
+
+    // Table users_groups_forbidden (remplace groupes_interdits)
+    mysqli_query(
+        $db_link,
+        'CREATE TABLE IF NOT EXISTS `' . $pre . 'users_groups_forbidden` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `group_id` int(12) NOT NULL,
+            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `user_group_unique` (`user_id`, `group_id`),
+            KEY `user_idx` (`user_id`),
+            KEY `group_idx` (`group_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+    );
+
+    // Table users_roles (remplace fonction_id ET roles_from_ad_groups)
+    mysqli_query(
+        $db_link,
+        'CREATE TABLE IF NOT EXISTS `' . $pre . 'users_roles` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `role_id` int(12) NOT NULL,
+            `source` enum(\'manual\',\'ad\',\'ldap\',\'oauth2\') NOT NULL DEFAULT \'manual\',
+            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `user_role_source_unique` (`user_id`, `role_id`, `source`),
+            KEY `user_idx` (`user_id`),
+            KEY `role_idx` (`role_id`),
+            KEY `source_idx` (`source`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+    );
+
+    // Table users_favorites (remplace favourites)
+    mysqli_query(
+        $db_link,
+        'CREATE TABLE IF NOT EXISTS `' . $pre . 'users_favorites` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `item_id` int(12) NOT NULL,
+            `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `user_item_unique` (`user_id`, `item_id`),
+            KEY `user_idx` (`user_id`),
+            KEY `item_idx` (`item_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+    );
+
+    // Table users_latest_items (remplace latest_items)
+    mysqli_query(
+        $db_link,
+        'CREATE TABLE IF NOT EXISTS `' . $pre . 'users_latest_items` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `item_id` int(12) NOT NULL,
+            `accessed_at` timestamp DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `user_item_unique` (`user_id`, `item_id`),
+            KEY `user_idx` (`user_id`),
+            KEY `item_idx` (`item_id`),
+            KEY `accessed_idx` (`accessed_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+    );
+
+    // Migrate data from Users to Tables
+    // Get all users
+    $result = mysqli_query(
+        $db_link,
+        'SELECT id, groupes_visibles, groupes_interdits, fonction_id, roles_from_ad_groups, favourites, latest_items 
+        FROM `' . $pre . 'users`'
+    );
+
+    if ($result) {
+        while ($user = mysqli_fetch_assoc($result)) {
+            $user_id = (int) $user['id'];
+            
+            // ----------------------------------------
+            // 1. Migrate groupes_visibles → users_groups
+            // ----------------------------------------
+            if (!empty($user['groupes_visibles'])) {
+                $groups = explode(';', $user['groupes_visibles']);
+                foreach ($groups as $group_id) {
+                    $group_id = trim($group_id);
+                    if (!empty($group_id) && is_numeric($group_id)) {
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_groups` 
+                            (user_id, group_id) 
+                            VALUES (' . $user_id . ', ' . (int) $group_id . ')'
+                        );
+                    }
+                }
+            }
+            
+            // ----------------------------------------
+            // 2. Migrate groupes_interdits → users_groups_forbidden
+            // ----------------------------------------
+            if (!empty($user['groupes_interdits'])) {
+                $forbidden_groups = explode(';', $user['groupes_interdits']);
+                foreach ($forbidden_groups as $group_id) {
+                    $group_id = trim($group_id);
+                    if (!empty($group_id) && is_numeric($group_id)) {
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_groups_forbidden` 
+                            (user_id, group_id) 
+                            VALUES (' . $user_id . ', ' . (int) $group_id . ')'
+                        );
+                    }
+                }
+            }
+            
+            // ----------------------------------------
+            // 3. Migrate fonction_id → users_roles (source='manual')
+            // ----------------------------------------
+            if (!empty($user['fonction_id'])) {
+                $roles = explode(';', $user['fonction_id']);
+                foreach ($roles as $role_id) {
+                    $role_id = trim($role_id);
+                    if (!empty($role_id) && is_numeric($role_id)) {
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_roles` 
+                            (user_id, role_id, source) 
+                            VALUES (' . $user_id . ', ' . (int) $role_id . ', \'manual\')'
+                        );
+                    }
+                }
+            }
+            
+            // ----------------------------------------
+            // 4. Migrate roles_from_ad_groups → users_roles (source='ad')
+            // ----------------------------------------
+            if (!empty($user['roles_from_ad_groups'])) {
+                $ad_roles = explode(';', $user['roles_from_ad_groups']);
+                foreach ($ad_roles as $role_id) {
+                    $role_id = trim($role_id);
+                    if (!empty($role_id) && is_numeric($role_id)) {
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_roles` 
+                            (user_id, role_id, source) 
+                            VALUES (' . $user_id . ', ' . (int) $role_id . ', \'ad\')'
+                        );
+                    }
+                }
+            }
+            
+            // ----------------------------------------
+            // 5. Migrate favourites → users_favorites
+            // ----------------------------------------
+            if (!empty($user['favourites'])) {
+                $favorites = explode(';', $user['favourites']);
+                foreach ($favorites as $item_id) {
+                    $item_id = trim($item_id);
+                    if (!empty($item_id) && is_numeric($item_id)) {
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_favorites` 
+                            (user_id, item_id) 
+                            VALUES (' . $user_id . ', ' . (int) $item_id . ')'
+                        );
+                    }
+                }
+            }
+            
+            // ----------------------------------------
+            // 6. Migrate latest_items → users_latest_items
+            // ----------------------------------------
+            if (!empty($user['latest_items'])) {
+                $latest = explode(';', $user['latest_items']);
+                // On inverse l'ordre pour que le plus récent ait le timestamp le plus récent
+                $latest = array_reverse($latest);
+                $counter = 0;
+                foreach ($latest as $item_id) {
+                    $item_id = trim($item_id);
+                    if (!empty($item_id) && is_numeric($item_id)) {
+                        // On ajoute un décalage de secondes pour préserver l'ordre
+                        mysqli_query(
+                            $db_link,
+                            'INSERT IGNORE INTO `' . $pre . 'users_latest_items` 
+                            (user_id, item_id, accessed_at) 
+                            VALUES (' . $user_id . ', ' . (int) $item_id . ', 
+                            DATE_SUB(NOW(), INTERVAL ' . $counter . ' SECOND))'
+                        );
+                        $counter++;
+                    }
+                }
+            }
+        }
+        mysqli_free_result($result);
+    }
+
+
+    // Delete columns
+    deleteColumnIfExists($pre . 'users', 'groupes_visibles');
+    deleteColumnIfExists($pre . 'users', 'fonction_id');
+    deleteColumnIfExists($pre . 'users', 'groupes_interdits');
+    deleteColumnIfExists($pre . 'users', 'favourites');
+    deleteColumnIfExists($pre . 'users', 'latest_items');
+    deleteColumnIfExists($pre . 'users', 'roles_from_ad_groups');
+
+    // Alter table users
+    modifyColumn($pre . 'users', 'avatar', "avatar", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'avatar_thumb', "avatar_thumb", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'login', "login", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'pw', "pw", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'email', "email", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'psk', "psk", "VARCHAR(250);");
+    modifyColumn($pre . 'users', 'user_ip', "user_ip", "VARCHAR(50);");
+    modifyColumn($pre . 'users', 'auth_type', "auth_type", "VARCHAR(50);");
+
+    // Migrate DB to expected encoding
+    migrateDBtoUtf8();
+
+    // Migrate Tables to expected encoding
+    migrateToUtf8mb4();
+}
+// --< END MIGRATION USERS
+
+// Mark all local users as needing migration
+// Users authenticated via LDAP or OAuth2 don't need migration
+if (empty($columnNeedsPasswordMigrationExists)) {
+    mysqli_query(
+        $db_link,
+        "UPDATE `" . $pre . "users` 
+        SET `needs_password_migration` = 1
+        WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '')"
+    );
 }
 
 //---<END 3.1.5

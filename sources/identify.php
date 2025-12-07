@@ -140,7 +140,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
     $session = SessionManager::getSession();
-
+    
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -164,7 +164,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     if (isset($dataReceived['pw'])) {
         $dataReceived['pw'] = base64_decode($dataReceived['pw']);
     }
-
+    
     // Check if Duo auth is in progress and pass the pw and login back to the standard login process
     if(
         isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
@@ -209,17 +209,19 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    // prepare variables    
+    // prepare variables
+    // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
+    // Sanitization was removed to fix authentication issues (see upgrade 3.1.5.10)
     $userCredentials = identifyGetUserCredentials(
         $SETTINGS,
         (string) $server['PHP_AUTH_USER'],
         (string) $server['PHP_AUTH_PW'],
-        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        (string) $dataReceived['pw'], // No more sanitization
         (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     $username = $userCredentials['username'];
     $passwordClear = $userCredentials['passwordClear'];
-
+    
     // DO initial checks
     $userInitialData = identifyDoInitialChecks(
         $SETTINGS,
@@ -288,7 +290,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ]);
         return false;
     }
-
+    
     // Is oauth2 user exists?
     $userOauth2 = checkOauth2User(
         (array) $SETTINGS,
@@ -332,29 +334,22 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         return false;
     }
-
-    // If user was migrated, then return error to force user to wait
-    if ($authResult['migrated'] === true && (int) $userInfo['admin'] !== 1) {
-        echo prepareExchangedData(
-            [
-                'value' => '',
-                'error' => true,
-                'message' => $lang->get('user_encryption_ongoing'),
-            ],
-            'encode'
-        );
-        return false;
+    
+    // If password was migrated, then update private key
+    if ($authResult['password_migrated'] === true) {
+        $userInfo['private_key'] = $authResult['private_key_reencrypted'];
     }
-
+    
     // Check if MFA is required
-    if ((isOneVarOfArrayEqualToValue(
-                [
-                    (int) $SETTINGS['yubico_authentication'],
-                    (int) $SETTINGS['google_authentication'],
-                    (int) $SETTINGS['duo']
-                ],
-                1
-            ) === true)
+    if ((
+        isOneVarOfArrayEqualToValue(
+            [
+                (int) $SETTINGS['yubico_authentication'],
+                (int) $SETTINGS['google_authentication'],
+                (int) $SETTINGS['duo']
+            ],
+            1
+        ) === true)
         && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
         || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
     ) {
@@ -754,11 +749,6 @@ function performPostLoginTasks(
     // Merge role-based permissions update if needed
     if (!empty($returnKeys['roles_db_update'])) {
         $finalUpdateData = array_merge($finalUpdateData, $returnKeys['roles_db_update']);
-    }
-    
-    // Merge fonction_id conversion if needed
-    if (strpos($userInfo['fonction_id'] ?? '', ';') !== false) {
-        $finalUpdateData['fonction_id'] = $userInfo['fonction_id'];
     }
 
     DB::update(
@@ -1349,7 +1339,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
         
         // Get and handle user groups
-        $userGroupsData = getUserGroups($userADInfos, $ldapHandler, $SETTINGS);
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS);
         handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
         
         // Finalize authentication
@@ -1512,7 +1502,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
  * @param array $SETTINGS Teampass settings
  * @return array User groups
  */
-function getUserGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
     
@@ -1550,7 +1540,6 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
         // Get user groups from AD
         $user_ad_groups = [];
         foreach($groups as $group) {
-            //print_r($group);
             // get relation role id for AD group
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id
@@ -1559,47 +1548,30 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
                 $group
             );
             if (DB::count() > 0) {
-                array_push($user_ad_groups, $role['role_id']); 
+                array_push($user_ad_groups, (int) $role['role_id']); 
             }
         }
         
-        // save
+        // Save AD roles in users_roles table with source='ad'
         if (count($user_ad_groups) > 0) {
-            $user_ad_groups = implode(';', $user_ad_groups);
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => $user_ad_groups,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = $user_ad_groups;
+            setUserRoles((int) $userInfo['id'], $user_ad_groups, 'ad');
+            
+            // Update userInfo array for session (format with semicolons for compatibility)
+            $userInfo['roles_from_ad_groups'] = implode(';', $user_ad_groups);
         } else {
-            DB::update(
-                prefixTable('users'),
-                [
-                    'roles_from_ad_groups' => null,
-                ],
-                'id = %i',
-                $userInfo['id']
-            );
-
-            $userInfo['roles_from_ad_groups'] = [];
+            // Remove all AD roles
+            removeUserRolesBySource((int) $userInfo['id'], 'ad');
+            
+            $userInfo['roles_from_ad_groups'] = '';
         }
     } else {
-        // Delete all user's AD groups
-        DB::update(
-            prefixTable('users'),
-            [
-                'roles_from_ad_groups' => null,
-            ],
-            'id = %i',
-            $userInfo['id']
-        );
+        // Delete all user's AD roles
+        removeUserRolesBySource((int) $userInfo['id'], 'ad');
+        
+        $userInfo['roles_from_ad_groups'] = '';
     }
 }
+
 
 /**
  * Permits to finalize the authentication process.
@@ -1625,7 +1597,6 @@ function finalizeAuthentication(
 
     // Use the new hashed password if migration was successful
     $hashedPassword = $result['hashedPassword'];
-    
     if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
         // 2 cases are managed here:
         // Case where user has never been connected then erase current pwd with the ldap's one
@@ -2133,6 +2104,8 @@ function duoMFAPerform(
 function checkCredentials($passwordClear, $userInfo): array
 {
     $passwordManager = new PasswordManager();
+
+    // Strategy 1: Try with raw password (new behavior, correct way)
     // Migrate password if needed
     $result = $passwordManager->migratePassword(
         $userInfo['pw'],
@@ -2140,18 +2113,72 @@ function checkCredentials($passwordClear, $userInfo): array
         (int) $userInfo['id'],
         (bool) $userInfo['admin']
     );
-
-    if ($result['status'] === false || $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === false) {
-        // Password is not correct
+    
+    if ($result['status'] === true && $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === true) {
+        // Password is correct with raw password (new behavior)
         return [
-            'authenticated' => false,
-            'migrated' => false
+            'authenticated' => true,
         ];
     }
 
+    // Strategy 2: Try with sanitized password (legacy behavior for backward compatibility)
+    // This handles users who registered before fix 3.1.5.10
+    $passwordSanitized = filter_var($passwordClear, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    // Only try sanitized version if it's different from the raw password
+    if ($passwordSanitized !== $passwordClear) {
+        $resultSanitized = $passwordManager->migratePassword(
+            $userInfo['pw'],
+            $passwordSanitized,
+            (int) $userInfo['id'],
+            (bool) $userInfo['admin']
+        );
+
+        if ($resultSanitized['status'] === true && $passwordManager->verifyPassword($resultSanitized['hashedPassword'], $passwordSanitized) === true) {
+            // Password is correct with sanitized password (legacy behavior)
+            // This means the user's hash in DB was created with the sanitized version
+            // We need to MIGRATE: re-hash the RAW password and save it
+
+            // Re-hash the raw (non-sanitized) password
+            $newHash = $passwordManager->hashPassword($passwordClear);
+            
+            $userCurrentPrivateKey = decryptPrivateKey($passwordSanitized, $userInfo['private_key']);
+            $newUserPrivateKey = encryptPrivateKey($passwordClear, $userCurrentPrivateKey);
+            
+            // Update user with new hash and mark migration as COMPLETE (0 = done)
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $newHash,
+                    'needs_password_migration' => 0,  // 0 = migration completed
+                    'private_key' => $newUserPrivateKey,
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            // Log the migration event
+            $configManager = new ConfigManager();
+            logEvents(
+                $configManager->getAllSettings(),
+                'user_password',
+                'password_migrated_from_sanitized',
+                (string) $userInfo['id'],
+                stripslashes($userInfo['login'] ?? ''),
+                ''
+            );
+
+            return [
+                'authenticated' => true,
+                'password_migrated' => true,
+                'private_key_reencrypted' => $newUserPrivateKey,
+            ];
+        }
+    }
+
+    // Password is not correct with either method
     return [
-        'authenticated' => true,
-        'migrated' => $result['migratedUser']
+        'authenticated' => false,
     ];
 }
 
@@ -2251,14 +2278,9 @@ class initialChecks {
     public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
         $session = SessionManager::getSession();
     
-        // Get user info from DB
-        $data = DB::queryFirstRow(
-            'SELECT u.*, a.value AS api_key
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-            WHERE login = %s AND deleted_at IS NULL',
-            $login
-        );
+        // Get user info from DB with all related data
+        $data = getUserCompleteData($login);
+        
         $dataUserCount = DB::count();
         
         // User doesn't exist then return error

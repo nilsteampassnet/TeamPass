@@ -447,7 +447,8 @@ case 'perform_fix_pf_items-step3':
             'decode'
         );
         $userId = filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT);
-        $userPwd = filter_var($dataReceived['userPassword'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+        $userPwd = $dataReceived['userPassword'];
 
         // Get user info
         $userInfo = DB::queryFirstRow(

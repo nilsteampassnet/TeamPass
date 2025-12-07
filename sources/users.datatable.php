@@ -107,10 +107,11 @@ foreach ($titles as $title) {
 
 $html = '';
 //Columns name
-$aColumns = ['id', 'login', 'name', 'lastname', 'admin', 'read_only', 'gestionnaire', 'isAdministratedByRole', 'can_manage_all_users', 'can_create_root_folder', 'personal_folder', 'email', 'ga', 'fonction_id', 'mfa_enabled'];
+$aColumns = ['u.id', 'u.login', 'u.name', 'u.lastname', 'u.admin', 'u.read_only', 'u.gestionnaire', 'u.isAdministratedByRole', 'u.can_manage_all_users', 'u.can_create_root_folder', 'u.personal_folder', 'u.email', 'u.ga', 'fonction_id', 'u.mfa_enabled'];
 $aSortTypes = ['asc', 'desc'];
 //init SQL variables
 $sWhere = $sOrder = $sLimit = '';
+
 /* BUILD QUERY */
 // Paging
 $sLimit = '';
@@ -145,7 +146,7 @@ if ($order && in_array($order['dir'], $aSortTypes)) {
 */
 
 // exclude any deleted user
-$sWhere = ' WHERE deleted_at IS NULL AND id NOT IN (9999991,9999997,9999998,9999999)';
+$sWhere = ' WHERE u.deleted_at IS NULL AND u.id NOT IN (9999991,9999997,9999998,9999999)';
 
 $letter = $request->query->filter('letter', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $searchValue = isset($params['search']) && isset($params['search']['value']) ? filter_var($params['search']['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
@@ -164,9 +165,6 @@ if ($letter !== '' && $letter !== 'None') {
     $sWhere .= ')';
 }
 
-
-
-
 // enlarge the query in case of Manager
 if ((int) $session->get('user-admin') === 0
     && (int) $session->get('user-can_manage_all_users') === 0
@@ -174,26 +172,36 @@ if ((int) $session->get('user-admin') === 0
     $sWhere .= ' AND ';
     $arrUserRoles = array_filter($session->get('user-roles_array'));
     if (count($arrUserRoles) > 0) {
-        $sWhere .= 'isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
+        $sWhere .= 'u.isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
     }
 }
 
+// Base query with LEFT JOIN (all roles sources)
+$baseQuery = 'FROM '.prefixTable('users').' AS u
+    LEFT JOIN '.prefixTable('users_roles').' AS ur ON (u.id = ur.user_id)';
+
+// Count total records
 $rows = DB::query(
-    'SELECT *
-    FROM '.prefixTable('users').
-    $sWhere
+    'SELECT u.id '.$baseQuery.$sWhere.' GROUP BY u.id'
 );
-$iTotal = DB::count();
+$iTotal = count($rows);
+
+// Get paginated data with all fields
 $rows = DB::query(
-    'SELECT *,
+    'SELECT u.*,
+        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
         CASE
-            WHEN pw LIKE "$2y$10$%" THEN 1
+            WHEN u.pw LIKE "$2y$10$%" THEN 1
             ELSE 0
         END AS pw_passwordlib
-    FROM '.prefixTable('users').
+    '.$baseQuery.
     $sWhere.
+    ' GROUP BY u.id '.
+    $sOrder.
     $sLimit
 );
+
 
 // Output
 $sOutput = '{';
