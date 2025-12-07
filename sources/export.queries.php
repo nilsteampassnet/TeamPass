@@ -108,7 +108,8 @@ $post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 $post_idTree = filter_input(INPUT_POST, 'idTree', FILTER_SANITIZE_NUMBER_INT);
 $post_idsList = filter_input(INPUT_POST, 'idsList', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_file = filter_input(INPUT_POST, 'file', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+// IMPORTANT: Passwords (even PDF passwords) should NOT be sanitized (fix 3.1.5.10)
+$post_pdf_password = filter_input(INPUT_POST, 'pdf_password', FILTER_UNSAFE_RAW);
 $post_number = filter_input(INPUT_POST, 'number', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_file_link = filter_input(INPUT_POST, 'file_link', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -695,7 +696,8 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $inputData['password'] = (string) $dataReceived['password'];
             $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             
@@ -839,7 +841,8 @@ if (null !== $post_type) {
                 'decode'
             );
 
-            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $inputData['password'] = (string) $dataReceived['password'];
             $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['idsList'] = filter_var_array($dataReceived['idsList'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['idsListRemaining'] = filter_var_array($dataReceived['idsListRemaining'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -968,7 +971,8 @@ if (null !== $post_type) {
 
             $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['password'] = (string) filter_var($dataReceived['password'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
+            $inputData['password'] = (string) $dataReceived['password'];
             
             // Load includes
             include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';

@@ -209,12 +209,14 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    // prepare variables    
+    // prepare variables
+    // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
+    // Sanitization was removed to fix authentication issues (see upgrade 3.1.5.10)
     $userCredentials = identifyGetUserCredentials(
         $SETTINGS,
         (string) $server['PHP_AUTH_USER'],
         (string) $server['PHP_AUTH_PW'],
-        (string) filter_var($dataReceived['pw'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+        (string) $dataReceived['pw'], // No more sanitization
         (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     $username = $userCredentials['username'];
@@ -2133,6 +2135,8 @@ function duoMFAPerform(
 function checkCredentials($passwordClear, $userInfo): array
 {
     $passwordManager = new PasswordManager();
+
+    // Strategy 1: Try with raw password (new behavior, correct way)
     // Migrate password if needed
     $result = $passwordManager->migratePassword(
         $userInfo['pw'],
@@ -2141,17 +2145,60 @@ function checkCredentials($passwordClear, $userInfo): array
         (bool) $userInfo['admin']
     );
 
-    if ($result['status'] === false || $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === false) {
-        // Password is not correct
+    if ($result['status'] === true && $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === true) {
+        // Password is correct with raw password (new behavior)
         return [
-            'authenticated' => false,
-            'migrated' => false
+            'authenticated' => true,
+            'migrated' => $result['migratedUser']
         ];
     }
 
+    // Strategy 2: Try with sanitized password (legacy behavior for backward compatibility)
+    // This handles users who registered before fix 3.1.5.10
+    $passwordSanitized = filter_var($passwordClear, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    // Only try sanitized version if it's different from the raw password
+    if ($passwordSanitized !== $passwordClear) {
+        $resultSanitized = $passwordManager->migratePassword(
+            $userInfo['pw'],
+            $passwordSanitized,
+            (int) $userInfo['id'],
+            (bool) $userInfo['admin']
+        );
+
+        if ($resultSanitized['status'] === true && $passwordManager->verifyPassword($resultSanitized['hashedPassword'], $passwordSanitized) === true) {
+            // Password is correct with sanitized password (legacy behavior)
+            // Mark user for password migration
+            DB::update(
+                prefixTable('users'),
+                ['needs_password_migration' => 1],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            // Log the migration event
+            $configManager = new ConfigManager();
+            logEvents(
+                $configManager->getAllSettings(),
+                'user_password',
+                'legacy_sanitized_password_detected',
+                (string) $userInfo['id'],
+                stripslashes($userInfo['login'] ?? ''),
+                ''
+            );
+
+            return [
+                'authenticated' => true,
+                'migrated' => $resultSanitized['migratedUser'],
+                'needs_password_reset' => true // Flag to notify user
+            ];
+        }
+    }
+
+    // Password is not correct with either method
     return [
-        'authenticated' => true,
-        'migrated' => $result['migratedUser']
+        'authenticated' => false,
+        'migrated' => false
     ];
 }
 

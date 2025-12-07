@@ -49,6 +49,8 @@ class AuthModel
     public function getUserAuth(string $login, string $password, string $apikey): array
     {
         // Sanitize
+        // IMPORTANT: Password should NOT be escaped/sanitized - treat as opaque binary data
+        // Only trim whitespace which is safe and expected (fix 3.1.5.10)
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
         $inputData = dataSanitizer(
             [
@@ -58,7 +60,7 @@ class AuthModel
             ],
             [
                 'login' => 'trim|escape|strip_tags',
-                'password' => 'trim|escape',
+                'password' => 'trim', // Only trim, NO escape/sanitization
                 'apikey' => 'trim|escape|strip_tags',
             ]
         );
