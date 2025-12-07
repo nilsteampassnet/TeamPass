@@ -54,6 +54,11 @@ SET `needs_password_migration` = 1
 WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '');
 ```
 
+**Important:** The upgrade script is **idempotent**:
+- First run: Creates column and marks users
+- Subsequent runs: Detects existing column and skips marking
+- This ensures already migrated users are never reset
+
 ## Code Changes
 
 ### Backend (PHP)
