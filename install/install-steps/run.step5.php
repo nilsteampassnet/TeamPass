@@ -211,6 +211,28 @@ class DatabaseInstaller
         ];
     }
 
+    // Migrate to utf8mb4
+    private function migrateToUtf8mb4() {
+        // Récupérer toutes les tables du préfixe
+        $tables = DB::query(
+            "SELECT TABLE_NAME 
+            FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA = %s 
+            AND TABLE_NAME LIKE %s
+            AND TABLE_TYPE = 'BASE TABLE'",
+            $this->inputData['dbName'],
+            $this->inputData['tablePrefix'] . '%'
+        );
+        
+        foreach ($tables as $table) {
+            $tableName = $table['TABLE_NAME'];
+            
+            // Convertir la table en utf8mb4
+            DB::query(
+                "ALTER TABLE `" . $tableName . "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+            );
+        }
+    }
 
     // Force UTF8
     private function utf8()
