@@ -211,6 +211,28 @@ class DatabaseInstaller
         ];
     }
 
+    // Migrate to utf8mb4
+    private function migrateToUtf8mb4() {
+        // Récupérer toutes les tables du préfixe
+        $tables = DB::query(
+            "SELECT TABLE_NAME 
+            FROM information_schema.TABLES 
+            WHERE TABLE_SCHEMA = %s 
+            AND TABLE_NAME LIKE %s
+            AND TABLE_TYPE = 'BASE TABLE'",
+            $this->inputData['dbName'],
+            $this->inputData['tablePrefix'] . '%'
+        );
+        
+        foreach ($tables as $table) {
+            $tableName = $table['TABLE_NAME'];
+            
+            // Convertir la table en utf8mb4
+            DB::query(
+                "ALTER TABLE `" . $tableName . "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+            );
+        }
+    }
 
     // Force UTF8
     private function utf8()
@@ -808,7 +830,6 @@ class DatabaseInstaller
                 'admin'                  => 1,
                 'gestionnaire'           => 0,
                 'personal_folder'        => 0,
-                'groupes_visibles'       => 0,
                 'email'                  => $this->installConfig['adminEmail'],
                 'encrypted_psk'          => '',
                 'last_pw_change'         => time(),
@@ -839,19 +860,14 @@ class DatabaseInstaller
                 'id'                     => API_USER_ID,
                 'login'                  => 'API',
                 'pw'                     => '',
-                'groupes_visibles'       => '',
                 'derniers'               => '',
                 'key_tempo'              => '',
                 'last_pw_change'         => '',
                 'last_pw'                => '',
                 'admin'                  => 1,
-                'fonction_id'            => '',
-                'groupes_interdits'      => '',
                 'last_connexion'         => '',
                 'gestionnaire'           => 0,
                 'email'                  => '',
-                'favourites'             => '',
-                'latest_items'           => '',
                 'personal_folder'        => 0,
                 'is_ready_for_usage'     => 1,
                 'otp_provided'           => 0,
@@ -870,19 +886,14 @@ class DatabaseInstaller
                 'id'                     => OTV_USER_ID,
                 'login'                  => 'OTV',
                 'pw'                     => '',
-                'groupes_visibles'       => '',
                 'derniers'               => '',
                 'key_tempo'              => '',
                 'last_pw_change'         => '',
                 'last_pw'                => '',
                 'admin'                  => 1,
-                'fonction_id'            => '',
-                'groupes_interdits'      => '',
                 'last_connexion'         => '',
                 'gestionnaire'           => 0,
                 'email'                  => '',
-                'favourites'             => '',
-                'latest_items'           => '',
                 'personal_folder'        => 0,
                 'is_ready_for_usage'     => 1,
                 'otp_provided'           => 0,

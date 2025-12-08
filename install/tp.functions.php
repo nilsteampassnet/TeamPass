@@ -768,7 +768,8 @@ function migrateToUtf8mb4()
         "SELECT TABLE_NAME 
         FROM information_schema.TABLES 
         WHERE TABLE_SCHEMA = %s 
-        AND TABLE_NAME LIKE %s",
+        AND TABLE_NAME LIKE %s
+        AND TABLE_TYPE = 'BASE TABLE'",
         DB_NAME,
         DB_PREFIX . '%'
     );
@@ -778,8 +779,7 @@ function migrateToUtf8mb4()
         
         // Convertir la table en utf8mb4
         DB::query(
-            "ALTER TABLE `%l` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
-            $tableName
+            "ALTER TABLE `" . $tableName . "` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
         );
     }
 }
