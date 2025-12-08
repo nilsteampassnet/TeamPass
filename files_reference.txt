@@ -129,7 +129,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 04f757e3e280f15022e29a0cee107050
+includes/config/include.php 04bbdad92890f7005c42c8e81ffe2e27
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 934bb3620ca168e9a9814920604f597b
@@ -376,8 +376,8 @@ install/install-steps/run.step1.php a60c2e61f765e9ebafc7b3f8ea0aaf51
 install/install-steps/run.step2.php 39bc0e5714cc404bbd60297f62ad2910
 install/install-steps/run.step3.php aedae1cc4680f8e48c524530a001d753
 install/install-steps/run.step4.php 9769f64928708599889a574e122eab0c
-install/install-steps/run.step5.php 1086f7e15b97e3d3333deb05bdf08b0c
-install/install-steps/run.step6.php 7533eb1dcb626cba7afb6d7415e935a8
+install/install-steps/run.step5.php a1ce27d8392ed3bed5aa13229a4549c8
+install/install-steps/run.step6.php 2abdf46e83c7cc8b5703bcae77679460
 install/install.php 79dea4155acc861977f957303257982f
 install/js/aes.min.js deaf035d40420d4ce6d4018e0bd63801
 install/js/crypt/aes.class.php 5b86d5679c54610bdbcc9d337ab174d1
@@ -389,7 +389,7 @@ install/libs/SecureHandler.php 3e557baed8735b5515b77e3d5eba5812
 install/libs/SplClassLoader.php 2f4cb25488ca347f22d85445fc326b37
 install/libs/aesctr.php 55082d6316daf9c3a92490e8e81f3343
 install/migrate_users_to_v3.php 45eef9251e02a78ded52bd2567c86eb9
-install/tp.functions.php 04a90da4b4d9be9886cfbd699b7db5b6
+install/tp.functions.php 23b85221605e9ce765fbb0129af8d82f
 install/upgrade.php d2208c91f72aac093899c8f85aa7a115
 install/upgrade_ajax.php 679fe36b5beaf5e9d4a191fd8301a1eb
 install/upgrade_operations.php e58d949c6daaa033fb80c26b02630810
@@ -403,7 +403,7 @@ install/upgrade_run_3.0.0_users.php 18947ff884fc3cbb9b8150de5df31ac3
 install/upgrade_run_3.0.php 913364c82444e392f36cb6ed58c0b403
 install/upgrade_run_3.1.5.php e834b879c05627d15add957f509bdca0
 install/upgrade_run_3.1.php d0038bd9dd8bceceed4df0274b60b374
-install/upgrade_scripts_manager.php e0f38f0ebfe22edb75a67960d586b5e6
+install/upgrade_scripts_manager.php 6872ec2ee9b489db942bf2a6e284a35f
 licences/LICENSE_COMPLIANCE_REPORT.md 9b2b77eca6b849c9fe031d6825eb67f8
 licences/compliance-checker.php ffcf4feaaaddfdc403add618b764d7a3
 licences/javascript-dependencies.json fabb546020f1b6a8caf0d13538c50729
