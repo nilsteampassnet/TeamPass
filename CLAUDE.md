@@ -293,7 +293,82 @@ class ItemController extends BaseController {
 - `GET /api/item/get?id=123` - Get single item
 - `GET /api/item/inFolders?folders=[1,2,3]` - Items in folders
 - `POST /api/item/create` - Create item
+- `GET /api/item/getOtp?id=123` - Get current TOTP/MFA code for an item
 - `GET /api/folder/listFolders` - List accessible folders
+
+### OTP/TOTP Endpoint
+
+The `getOtp` endpoint allows retrieving the current 6-digit TOTP (Time-based One-Time Password) code for items that have OTP enabled.
+
+**Endpoint:** `GET /api/item/getOtp`
+
+**Parameters:**
+- `id` (required): The item ID for which to retrieve the OTP code
+
+**Authentication:**
+- Requires valid JWT token with `allowed_to_read` permission
+- User must have access to the folder containing the item
+
+**Response (Success - 200 OK):**
+```json
+{
+  "otp_code": "123456",
+  "expires_in": 25,
+  "item_id": 123
+}
+```
+
+**Response Fields:**
+- `otp_code`: The current 6-digit TOTP code
+- `expires_in`: Number of seconds until the code expires
+- `item_id`: The ID of the item
+
+**Error Responses:**
+
+- `400 Bad Request`: Item ID is missing
+  ```json
+  {"error": "Item id is mandatory"}
+  ```
+
+- `403 Forbidden`: Access denied or OTP not enabled
+  ```json
+  {"error": "Access denied to this item"}
+  ```
+  or
+  ```json
+  {"error": "OTP is not enabled for this item"}
+  ```
+
+- `404 Not Found`: Item or OTP configuration not found
+  ```json
+  {"error": "Item not found"}
+  ```
+  or
+  ```json
+  {"error": "OTP not configured for this item"}
+  ```
+
+- `500 Internal Server Error`: Decryption or generation failure
+  ```json
+  {"error": "Failed to decrypt OTP secret"}
+  ```
+  or
+  ```json
+  {"error": "Failed to generate OTP code: [error details]"}
+  ```
+
+**Example Usage:**
+```bash
+curl -X GET "https://your-teampass.com/api/item/getOtp?id=123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Implementation Details:**
+- OTP secrets are stored encrypted in the `items_otp` table
+- Secrets are decrypted using the application's master encryption key (Defuse Crypto)
+- TOTP codes are generated using the OTPHP library
+- Codes are 6 digits and expire every 30 seconds (standard TOTP behavior)
+- The endpoint checks both folder-level and item-level permissions
 
 ## Security Considerations
 

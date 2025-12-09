@@ -2197,7 +2197,7 @@ if (null !== $post_type) {
             }
             // Check if user already exists
             $data = DB::query(
-                'SELECT id, fonction_id, groupes_interdits, groupes_visibles
+                'SELECT id
                 FROM ' . prefixTable('users') . '
                 WHERE login = %s',
                 $post_login
