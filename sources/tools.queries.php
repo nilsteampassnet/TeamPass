@@ -379,8 +379,8 @@ case 'perform_fix_pf_items-step3':
             LIMIT 1',
             TP_USER_ID
         );
-        
-        //* CAN BE COMMENTED OUT FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
+        /*
+        // CAN BE COMMENTED OUT FOR DEV PURPOSE ; THIS SHOULD BE KEPT IN NORMAL CASE
         if (!empty($currentUserKey)) {
             // Decrypt itemkey with user key
             // use old password to decrypt private_key
@@ -399,6 +399,7 @@ case 'perform_fix_pf_items-step3':
                 break;
             }
         }
+        */
         
         //Show done
         echo prepareExchangedData(

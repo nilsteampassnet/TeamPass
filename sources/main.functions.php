@@ -407,7 +407,7 @@ function identUser(
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
     $noAccessFolders = convertToArray($noAccessFolders);
-    $userRoles = convertToArray($userRoles);
+    $userRoles = convertToArray($userRoles) ?? [];
     $allowedFolders = convertToArray($allowedFolders);
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
