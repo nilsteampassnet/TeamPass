@@ -479,4 +479,130 @@ public function findByUrlAction(array $userData): void
 //end findByUrlAction()
 
 
+    /**
+     * Get OTP/TOTP code for an item
+     * Retrieves the current 6-digit TOTP code for an item with OTP enabled
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function getOtpAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = '';
+        $responseData = '';
+        $strErrorHeader = '';
+
+        // get parameters
+        $arrQueryStringParams = $this->getQueryStringParams();
+
+        if (strtoupper($requestMethod) === 'GET') {
+            // Check if item ID is provided
+            if (!isset($arrQueryStringParams['id']) || empty($arrQueryStringParams['id'])) {
+                $this->sendOutput(
+                    json_encode(['error' => 'Item id is mandatory']),
+                    ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
+                );
+                return;
+            }
+
+            $itemId = (int) $arrQueryStringParams['id'];
+
+            try {
+                // Load config
+                loadClasses('DB');
+
+                // Load item basic info to check folder access
+                $itemInfo = DB::queryFirstRow(
+                    'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+                    $itemId
+                );
+
+                if (DB::count() === 0) {
+                    $strErrorDesc = 'Item not found';
+                    $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                } else {
+                    // Check if user has access to the folder
+                    $userFolders = !empty($userData['folders_list']) ? explode(',', $userData['folders_list']) : [];
+                    $hasAccess = in_array((string) $itemInfo['id_tree'], $userFolders, true);
+
+                    // Also check restricted items if applicable
+                    if (!$hasAccess && !empty($userData['restricted_items_list'])) {
+                        $restrictedItems = explode(',', $userData['restricted_items_list']);
+                        $hasAccess = in_array((string) $itemId, $restrictedItems, true);
+                    }
+
+                    if (!$hasAccess) {
+                        $strErrorDesc = 'Access denied to this item';
+                        $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                    } else {
+                        // Load OTP data
+                        $otpData = DB::queryFirstRow(
+                            'SELECT secret, enabled FROM ' . prefixTable('items_otp') . ' WHERE item_id = %i',
+                            $itemId
+                        );
+
+                        if (DB::count() === 0) {
+                            $strErrorDesc = 'OTP not configured for this item';
+                            $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                        } elseif ((int) $otpData['enabled'] !== 1) {
+                            $strErrorDesc = 'OTP is not enabled for this item';
+                            $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                        } else {
+                            // Decrypt the secret
+                            $decryptedSecret = cryption(
+                                $otpData['secret'],
+                                '',
+                                'decrypt'
+                            );
+
+                            if (isset($decryptedSecret['string']) && !empty($decryptedSecret['string'])) {
+                                // Generate OTP code using OTPHP library
+                                try {
+                                    $otp = \OTPHP\TOTP::createFromSecret($decryptedSecret['string']);
+                                    $otpCode = $otp->now();
+                                    $otpExpiresIn = $otp->expiresIn();
+
+                                    $responseData = json_encode([
+                                        'otp_code' => $otpCode,
+                                        'expires_in' => $otpExpiresIn,
+                                        'item_id' => $itemId
+                                    ]);
+                                } catch (\RuntimeException $e) {
+                                    $strErrorDesc = 'Failed to generate OTP code: ' . $e->getMessage();
+                                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                                }
+                            } else {
+                                $strErrorDesc = 'Failed to decrypt OTP secret';
+                                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                            }
+                        }
+                    }
+                }
+            } catch (\Error $e) {
+                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end getOtpAction()
+
+
 }
