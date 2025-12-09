@@ -411,11 +411,13 @@ public function findByUrlAction(array $userData): void
             } else {
                 // Query items with the specific URL
                 $rows = DB::query(
-                    'SELECT i.id, i.label, i.login, i.url, i.id_tree
-                    FROM ' . prefixTable('items') . ' AS i
-                    WHERE i.url LIKE %s' . $sql_constraint . '
-                    ORDER BY i.label ASC',
-                    $searchUrl."%"
+                    "SELECT i.id, i.label, i.login, i.url, i.id_tree, 
+                            CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
+                    FROM " . prefixTable('items') . " AS i
+                    LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
+                    WHERE i.url LIKE %s" . $sql_constraint . "
+                    ORDER BY i.label ASC",
+                    "%".$searchUrl."%"
                 );
 
                 $ret = [];
@@ -443,6 +445,7 @@ public function findByUrlAction(array $userData): void
                             'login' => $row['login'],
                             'url' => $row['url'],
                             'folder_id' => (int) $row['id_tree'],
+                            'has_otp' => (int) $row['has_otp'],
                         ]
                     );
                 }
