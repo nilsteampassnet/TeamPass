@@ -58,7 +58,7 @@ $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
-if ($uri[0] === 'authorize') {
+if (isset($uri[0]) && $uri[0] === 'authorize') {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
         require API_ROOT_PATH . "/Controller/Api/AuthController.php";
