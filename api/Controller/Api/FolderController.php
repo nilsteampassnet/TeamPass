@@ -141,5 +141,76 @@ class FolderController extends BaseController
             );
         }
     }
-    //end createFolderAction() 
+    //end createFolderAction()
+
+    /**
+     * Get list of writable folders
+     *
+     * @return void
+     */
+    public function writableFoldersAction(array $userData)
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
+
+        if (strtoupper($requestMethod) === 'GET') {
+            try {
+                // Get user's roles from JWT
+                $userRoles = !empty($userData['roles']) ? explode(',', $userData['roles']) : [];
+
+                if (empty($userRoles)) {
+                    $this->sendOutput(
+                        json_encode([]),
+                        ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                    );
+                    return;
+                }
+
+                // Get all folders with type 'W' for the user's roles
+                // Group by folder_id to handle multiple roles on the same folder
+                $rows = DB::query(
+                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title
+                    FROM ' . prefixTable('roles_values') . ' AS rv
+                    INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON rv.folder_id = nt.id
+                    WHERE rv.role_id IN %li
+                    GROUP BY rv.folder_id, nt.title
+                    HAVING FIND_IN_SET("W", types) > 0
+                    ORDER BY nt.title ASC',
+                    $userRoles
+                );
+
+                $writableFolders = [];
+                foreach ($rows as $row) {
+                    $writableFolders[] = [
+                        'id' => (int) $row['folder_id'],
+                        'label' => $row['title']
+                    ];
+                }
+
+                $responseData = json_encode($writableFolders);
+
+            } catch (Error $e) {
+                $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end writableFoldersAction()
 }
