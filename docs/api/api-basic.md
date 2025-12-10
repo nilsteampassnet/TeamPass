@@ -165,3 +165,19 @@ Warning:
 | PARAMETERS | 'url'=is a string|
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
 | Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 123,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Example Login",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "user@example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_id": "5"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+
+
+### Get writable folders
+
+> :memo: **Note:** Returns a list of folders where the user has write access (type 'W') based on their roles
+
+This endpoint retrieves all folders where the user has write access through their assigned roles. A folder is considered writable if at least one of the user's roles has type 'W' in the `teampass_roles_values` table. If a folder has multiple access types across different roles and one of them is 'W', it will be included in the results (as 'W' is considered the most restrictive access level).
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | folder/writableFolders |
+| Type | GET |
+| URL | `<Teampass url>/api/index.php/folder/writableFolders` |
+| PARAMETERS | None |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of folders with write access in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 15,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Production Servers"<br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 28,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Development Environment"<br>&nbsp;&nbsp;}<br>]<br><br>**Notes:**<br>- The list only includes folders where at least one of the user's roles has type 'W'<br>- If the user has no roles or no writable folders, an empty array is returned<br>- Results are ordered alphabetically by folder label |
