@@ -272,3 +272,19 @@ curl -X PUT '<Teampass url>/api/index.php/item/update' \
   ```json
   {"error": "Failed to update item: [error details]"}
   ```
+
+
+### Get writable folders
+
+> :memo: **Note:** Returns a list of folders where the user has write access (type 'W') based on their roles
+
+This endpoint retrieves all folders where the user has write access through their assigned roles. A folder is considered writable if at least one of the user's roles has type 'W' in the `teampass_roles_values` table. If a folder has multiple access types across different roles and one of them is 'W', it will be included in the results (as 'W' is considered the most restrictive access level).
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | folder/writableFolders |
+| Type | GET |
+| URL | `<Teampass url>/api/index.php/folder/writableFolders` |
+| PARAMETERS | None |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An array of folders with write access in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 15,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Production Servers",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 0<br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Web Servers",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 15<br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 28,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Development Environment",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 0<br>&nbsp;&nbsp;}<br>]<br><br>**Response fields:**<br>- `id`: Folder ID<br>- `label`: Folder name/title<br>- `level`: Hierarchical level (0 = root, 1 = first level, etc.) - use this for indentation in the UI<br>- `parent_id`: ID of the parent folder (0 for root folders)<br><br>**Notes:**<br>- The list only includes folders where at least one of the user's roles has type 'W'<br>- If the user has no roles or no writable folders, an empty array is returned<br>- Results are ordered by hierarchical level first, then alphabetically by folder label<br>- The `level` and `parent_id` fields allow proper tree structure reconstruction |
