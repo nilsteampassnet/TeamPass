@@ -88,6 +88,7 @@ function folderAction(array $actions, array $userData): void
 
 function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
+    error_log(print_r($userData, true));
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
         return true;
     } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'listFolders', 'writableFolders']) === true && $userData['allowed_to_read'] === 1) {

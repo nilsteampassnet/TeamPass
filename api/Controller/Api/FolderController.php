@@ -156,31 +156,15 @@ class FolderController extends BaseController
 
         if (strtoupper($requestMethod) === 'GET') {
             try {
-                // Get user's roles from JWT (roles are semicolon-separated)
-                $userRoles = !empty($userData['roles']) ? explode(';', $userData['roles']) : [];
-
-                if (empty($userRoles)) {
-                    $this->sendOutput(
-                        json_encode([]),
-                        ['Content-Type: application/json', 'HTTP/1.1 200 OK']
-                    );
-                    return;
-                }
-
-                // Get all folders with type 'W' for the user's roles
-                // Group by folder_id to handle multiple roles on the same folder
-                // Include nlevel and parent_id for hierarchical display with indentation
+                $userFolders = !empty($userData['folders_list']) ? explode(',', $userData['folders_list']) : [];
                 $rows = DB::query(
-                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title, nt.nlevel, nt.parent_id
-                    FROM ' . prefixTable('roles_values') . ' AS rv
-                    INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON rv.folder_id = nt.id
-                    WHERE rv.role_id IN %li
-                    GROUP BY rv.folder_id, nt.title, nt.nlevel, nt.parent_id
-                    HAVING FIND_IN_SET("W", types) > 0
+                    'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
+                    FROM ' . prefixTable('nested_tree') . ' AS nt
+                    WHERE nt.id IN %li
+                    GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
                     ORDER BY nt.nlevel ASC, nt.title ASC',
-                    $userRoles
+                    $userFolders
                 );
-
                 $writableFolders = [];
                 foreach ($rows as $row) {
                     $writableFolders[] = [

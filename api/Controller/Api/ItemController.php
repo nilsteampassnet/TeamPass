@@ -166,10 +166,10 @@ class ItemController extends BaseController
             && isset($arrQueryStringParams['folder_id']) === true
             && isset($arrQueryStringParams['password']) === true
             && isset($arrQueryStringParams['login']) === true
-            && isset($arrQueryStringParams['email']) === true
-            && isset($arrQueryStringParams['url']) === true
-            && isset($arrQueryStringParams['tags']) === true
-            && isset($arrQueryStringParams['anyone_can_modify']) === true
+            //&& isset($arrQueryStringParams['email']) === true
+            //&& isset($arrQueryStringParams['url']) === true
+            //&& isset($arrQueryStringParams['tags']) === true
+            //&& isset($arrQueryStringParams['anyone_can_modify']) === true
         ) {
             //
             if (in_array($arrQueryStringParams['folder_id'], $userData['folders_list']) === false && $userData['user_can_create_root_folder'] === 0) {
@@ -240,13 +240,13 @@ class ItemController extends BaseController
                             (int) $arrQueryStringParams['folder_id'],
                             (string) $arrQueryStringParams['label'],
                             (string) $arrQueryStringParams['password'],
-                            (string) $arrQueryStringParams['description'],
+                            (string) $arrQueryStringParams['description'] ?? '',
                             (string) $arrQueryStringParams['login'],
-                            (string) $arrQueryStringParams['email'],
-                            (string) $arrQueryStringParams['url'],
-                            (string) $arrQueryStringParams['tags'],
-                            (string) $arrQueryStringParams['anyone_can_modify'],
-                            (string) $arrQueryStringParams['icon'],
+                            (string) $arrQueryStringParams['email'] ?? '',
+                            (string) $arrQueryStringParams['url'] ?? '' ,
+                            (string) $arrQueryStringParams['tags'] ?? '',
+                            (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
+                            (string) $arrQueryStringParams['icon'] ?? '',
                             (int) $userData['id'],
                             (string) $userData['username'],
                         );
