@@ -156,8 +156,8 @@ class FolderController extends BaseController
 
         if (strtoupper($requestMethod) === 'GET') {
             try {
-                // Get user's roles from JWT
-                $userRoles = !empty($userData['roles']) ? explode(',', $userData['roles']) : [];
+                // Get user's roles from JWT (roles are semicolon-separated)
+                $userRoles = !empty($userData['roles']) ? explode(';', $userData['roles']) : [];
 
                 if (empty($userRoles)) {
                     $this->sendOutput(
@@ -169,14 +169,15 @@ class FolderController extends BaseController
 
                 // Get all folders with type 'W' for the user's roles
                 // Group by folder_id to handle multiple roles on the same folder
+                // Include nlevel for hierarchical display with indentation
                 $rows = DB::query(
-                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title
+                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title, nt.nlevel
                     FROM ' . prefixTable('roles_values') . ' AS rv
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON rv.folder_id = nt.id
                     WHERE rv.role_id IN %li
-                    GROUP BY rv.folder_id, nt.title
+                    GROUP BY rv.folder_id, nt.title, nt.nlevel
                     HAVING FIND_IN_SET("W", types) > 0
-                    ORDER BY nt.title ASC',
+                    ORDER BY nt.nlevel ASC, nt.title ASC',
                     $userRoles
                 );
 
@@ -184,7 +185,8 @@ class FolderController extends BaseController
                 foreach ($rows as $row) {
                     $writableFolders[] = [
                         'id' => (int) $row['folder_id'],
-                        'label' => $row['title']
+                        'label' => $row['title'],
+                        'level' => (int) $row['nlevel']
                     ];
                 }
 
