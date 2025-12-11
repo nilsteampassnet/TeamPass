@@ -169,13 +169,13 @@ class FolderController extends BaseController
 
                 // Get all folders with type 'W' for the user's roles
                 // Group by folder_id to handle multiple roles on the same folder
-                // Include nlevel for hierarchical display with indentation
+                // Include nlevel and parent_id for hierarchical display with indentation
                 $rows = DB::query(
-                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title, nt.nlevel
+                    'SELECT rv.folder_id, GROUP_CONCAT(DISTINCT rv.type) as types, nt.title, nt.nlevel, nt.parent_id
                     FROM ' . prefixTable('roles_values') . ' AS rv
                     INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON rv.folder_id = nt.id
                     WHERE rv.role_id IN %li
-                    GROUP BY rv.folder_id, nt.title, nt.nlevel
+                    GROUP BY rv.folder_id, nt.title, nt.nlevel, nt.parent_id
                     HAVING FIND_IN_SET("W", types) > 0
                     ORDER BY nt.nlevel ASC, nt.title ASC',
                     $userRoles
@@ -186,7 +186,8 @@ class FolderController extends BaseController
                     $writableFolders[] = [
                         'id' => (int) $row['folder_id'],
                         'label' => $row['title'],
-                        'level' => (int) $row['nlevel']
+                        'level' => (int) $row['nlevel'],
+                        'parent_id' => (int) $row['parent_id']
                     ];
                 }
 
