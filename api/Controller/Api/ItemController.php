@@ -608,4 +608,136 @@ public function findByUrlAction(array $userData): void
     //end getOtpAction()
 
 
+    /**
+     * Update an existing item
+     * Updates an item based upon provided parameters and item ID
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function updateAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $strErrorHeader = $responseData = '';
+
+        if (strtoupper($requestMethod) === 'PUT' || strtoupper($requestMethod) === 'POST') {
+            // Check if user is allowed to update items
+            if ((int) $userData['allowed_to_update'] !== 1) {
+                $strErrorDesc = 'User is not allowed to update items';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                // Prepare user's accessible folders
+                if (empty($userData['folders_list']) === false) {
+                    $userData['folders_list'] = explode(',', $userData['folders_list']);
+                } else {
+                    $userData['folders_list'] = [];
+                }
+
+                // Get parameters
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                // Check that the parameters are indeed an array before using them
+                if (is_array($arrQueryStringParams)) {
+                    // Check if item ID is provided
+                    if (!isset($arrQueryStringParams['id']) || empty($arrQueryStringParams['id'])) {
+                        $strErrorDesc = 'Item ID is mandatory';
+                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                    } else {
+                        $itemId = (int) $arrQueryStringParams['id'];
+
+                        try {
+                            // Load item info to check access rights
+                            $itemInfo = DB::queryFirstRow(
+                                'SELECT id, id_tree, label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                                $itemId
+                            );
+
+                            if (DB::count() === 0) {
+                                $strErrorDesc = 'Item not found';
+                                $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                            } else {
+                                // Check if user has access to the folder
+                                $hasAccess = in_array((string) $itemInfo['id_tree'], $userData['folders_list'], true);
+
+                                // Also check restricted items if applicable
+                                if (!$hasAccess && !empty($userData['restricted_items_list'])) {
+                                    $restrictedItems = explode(',', $userData['restricted_items_list']);
+                                    $hasAccess = in_array((string) $itemId, $restrictedItems, true);
+                                }
+
+                                if (!$hasAccess) {
+                                    $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } else {
+                                    // Validate at least one field to update is provided
+                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id'];
+                                    $hasUpdateField = false;
+                                    foreach ($updateableFields as $field) {
+                                        if (isset($arrQueryStringParams[$field])) {
+                                            $hasUpdateField = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!$hasUpdateField) {
+                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id)';
+                                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                                    } else {
+                                        // Get user's private key for password encryption/decryption
+                                        $userPrivateKey = $this->getUserPrivateKey($userData);
+                                        if ($userPrivateKey === null) {
+                                            $strErrorDesc = 'Invalid session or user keys not found';
+                                            $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                                        } else {
+                                            // Update the item
+                                            $itemModel = new ItemModel();
+                                            $ret = $itemModel->updateItem(
+                                                $itemId,
+                                                $arrQueryStringParams,
+                                                $userData,
+                                                $userPrivateKey
+                                            );
+
+                                            if ($ret['error'] === true) {
+                                                $strErrorDesc = $ret['error_message'];
+                                                $strErrorHeader = $ret['error_header'];
+                                            } else {
+                                                $responseData = json_encode($ret);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Error $e) {
+                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                        }
+                    }
+                } else {
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end updateAction()
+
+
 }

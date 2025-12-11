@@ -8,7 +8,7 @@
 - [x] Authentication
 - [x] Items - list with criteria
 - [x] Items - get item info
-- [ ] Items - edit an item
+- [x] Items - edit an item
 - [x] Folders - create new
 - [x] Items - create new
 
@@ -167,17 +167,108 @@ Warning:
 | Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 123,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Example Login",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "user@example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_id": "5"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
 
 
-### Get writable folders
+### Update an existing item
 
-> :memo: **Note:** Returns a list of folders where the user has write access (type 'W') based on their roles
+> :memo: **Note:** Updates an existing item based upon provided parameters and item ID
 
-This endpoint retrieves all folders where the user has write access through their assigned roles. A folder is considered writable if at least one of the user's roles has type 'W' in the `teampass_roles_values` table. If a folder has multiple access types across different roles and one of them is 'W', it will be included in the results (as 'W' is considered the most restrictive access level).
+The update endpoint allows partial updates - you only need to provide the fields you want to modify. All other fields will remain unchanged.
+
+**Important:**
+* Item ID is mandatory
+* At least one field to update must be provided
+* User must have update permissions (`allowed_to_update`)
+* User must have access to the item's folder
+* If changing the folder_id, user must have access to the target folder
+* Password complexity rules are enforced if updating the password
+* When password is updated, share keys are automatically regenerated
+
+**Available fields to update:**
+* `label` - Item label/title
+* `password` - Item password (will be encrypted)
+* `description` - Item description
+* `login` - Login username
+* `email` - Email address
+* `url` - Website URL
+* `tags` - Comma-separated list of tags (replaces existing tags)
+* `anyone_can_modify` - Boolean (0 or 1)
+* `icon` - FontAwesome icon code
+* `folder_id` - Move item to a different folder
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | folder/writableFolders |
-| Type | GET |
-| URL | `<Teampass url>/api/index.php/folder/writableFolders` |
-| PARAMETERS | None |
+| Criteria | item/update |
+| Type | PUT or POST |
+| URL | `<Teampass url>/api/index.php/item/update` |
+| PARAMETERS | **Required:**<br>'id'=item ID to update<br><br>**Optional (at least one required):**<br>'label'=new label (string)<br>'password'=new password (string)<br>'description'=new description (string)<br>'login'=new login (string)<br>'email'=new email (string)<br>'url'=new URL (string)<br>'tags'=comma-separated tags (string)<br>'anyone_can_modify'=boolean (0 or 1)<br>'icon'=FontAwesome icon code (string)<br>'folder_id'=target folder ID (integer) |
 | HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of folders with write access in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 15,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Production Servers",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 0<br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Web Servers",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 15<br>&nbsp;&nbsp;},<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 28,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Development Environment",<br>&nbsp;&nbsp;&nbsp;&nbsp;"level": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"parent_id": 0<br>&nbsp;&nbsp;}<br>]<br><br>**Response fields:**<br>- `id`: Folder ID<br>- `label`: Folder name/title<br>- `level`: Hierarchical level (0 = root, 1 = first level, etc.) - use this for indentation in the UI<br>- `parent_id`: ID of the parent folder (0 for root folders)<br><br>**Notes:**<br>- The list only includes folders where at least one of the user's roles has type 'W'<br>- If the user has no roles or no writable folders, an empty array is returned<br>- Results are ordered by hierarchical level first, then alphabetically by folder label<br>- The `level` and `parent_id` fields allow proper tree structure reconstruction |
+| Return | Success response in json format.<br>Example:<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item updated successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"item_id": 123<br>} |
+
+**Example: Update only the password**
+```bash
+curl -X PUT '<Teampass url>/api/index.php/item/update' \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "password": "NewSecurePassword123!"
+  }'
+```
+
+**Example: Update multiple fields**
+```bash
+curl -X PUT '<Teampass url>/api/index.php/item/update' \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "label": "Updated Label",
+    "login": "newuser@example.com",
+    "url": "https://newsite.example.com",
+    "tags": "production,important"
+  }'
+```
+
+**Example: Move item to different folder**
+```bash
+curl -X PUT '<Teampass url>/api/index.php/item/update' \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "folder_id": 456
+  }'
+```
+
+**Error Responses:**
+
+- `400 Bad Request`: Missing item ID or no fields to update
+  ```json
+  {"error": "Item ID is mandatory"}
+  ```
+  or
+  ```json
+  {"error": "At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id)"}
+  ```
+
+- `403 Forbidden`: Access denied or insufficient permissions
+  ```json
+  {"error": "User is not allowed to update items"}
+  ```
+  or
+  ```json
+  {"error": "Access denied to this item"}
+  ```
+  or
+  ```json
+  {"error": "Access denied to the target folder"}
+  ```
+
+- `404 Not Found`: Item not found
+  ```json
+  {"error": "Item not found"}
+  ```
+
+- `500 Internal Server Error`: Server-side error during update
+  ```json
+  {"error": "Failed to update item: [error details]"}
+  ```

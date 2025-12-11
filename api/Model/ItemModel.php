@@ -495,4 +495,197 @@ class ItemModel
         }
         return false;
     }
+
+    /**
+     * Main function to update an existing item in the database.
+     * It handles data validation, password encryption, folder permission checks,
+     * and updates the item with the provided fields.
+     *
+     * @param int $itemId The ID of the item to update
+     * @param array $params Array of parameters to update
+     * @param array $userData User data from JWT token
+     * @param string $userPrivateKey User's private key for encryption
+     * @return array Returns success or error response
+     */
+    public function updateItem(
+        int $itemId,
+        array $params,
+        array $userData,
+        string $userPrivateKey
+    ): array
+    {
+        try {
+            include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Load config
+            $configManager = new ConfigManager();
+            $SETTINGS = $configManager->getAllSettings();
+
+            // Load current item data
+            $currentItem = DB::queryFirstRow(
+                'SELECT * FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+
+            if (DB::count() === 0) {
+                return [
+                    'error' => true,
+                    'error_message' => 'Item not found',
+                    'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            // Prepare update data
+            $updateData = [];
+            $passwordKey = null;
+            $newPassword = null;
+
+            // Handle folder_id change
+            if (isset($params['folder_id'])) {
+                $newFolderId = (int) $params['folder_id'];
+
+                // Check if user has access to the new folder
+                if (!in_array((string) $newFolderId, $userData['folders_list'], true)) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied to the target folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                $updateData['id_tree'] = $newFolderId;
+            }
+
+            // Handle label update
+            if (isset($params['label'])) {
+                $updateData['label'] = filter_var($params['label'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle description update
+            if (isset($params['description'])) {
+                $updateData['description'] = $params['description'];
+            }
+
+            // Handle login update
+            if (isset($params['login'])) {
+                $updateData['login'] = filter_var($params['login'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle email update
+            if (isset($params['email'])) {
+                $updateData['email'] = filter_var($params['email'], FILTER_SANITIZE_EMAIL);
+            }
+
+            // Handle url update
+            if (isset($params['url'])) {
+                $updateData['url'] = filter_var($params['url'], FILTER_SANITIZE_URL);
+            }
+
+            // Handle icon update
+            if (isset($params['icon'])) {
+                $updateData['fa_icon'] = filter_var($params['icon'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle anyone_can_modify update
+            if (isset($params['anyone_can_modify'])) {
+                $updateData['anyone_can_modify'] = (int) $params['anyone_can_modify'];
+            }
+
+            // Handle password update
+            if (isset($params['password']) && !empty($params['password'])) {
+                $newPassword = $params['password'];
+
+                // Validate password length
+                if (strlen($newPassword) > $SETTINGS['pwd_maximum_length']) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Password is too long (max allowed is ' . $SETTINGS['pwd_maximum_length'] . ' characters)',
+                        'error_header' => 'HTTP/1.1 400 Bad Request',
+                    ];
+                }
+
+                // Get folder ID for complexity check
+                $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
+
+                // Get folder settings
+                $itemInfos = $this->getFolderSettings((int) $folderId);
+
+                // Check password complexity
+                $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
+
+                // Encrypt password
+                $cryptedData = $this->encryptPassword($newPassword);
+                $passwordKey = $cryptedData['passwordKey'];
+                $updateData['pw'] = $cryptedData['encrypted'];
+                $updateData['pw_len'] = strlen($newPassword);
+                $updateData['complexity_level'] = $this->getPasswordComplexityLevel($newPassword);
+            }
+
+            // Update the item
+            if (!empty($updateData)) {
+                $updateData['updated_at'] = time();
+
+                DB::update(
+                    prefixTable('items'),
+                    $updateData,
+                    'id = %i',
+                    $itemId
+                );
+            }
+
+            // Handle tags update
+            if (isset($params['tags'])) {
+                // Delete existing tags
+                DB::delete(
+                    prefixTable('tags'),
+                    'item_id = %i',
+                    $itemId
+                );
+
+                // Add new tags
+                $this->addTags($itemId, $params['tags']);
+            }
+
+            // If password was updated, update share keys
+            if ($passwordKey !== null) {
+                // Get folder ID (either new or current)
+                $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
+
+                // Get folder settings
+                $itemInfos = $this->getFolderSettings((int) $folderId);
+
+                // Update share keys for all users with access
+                storeUsersShareKey(
+                    'sharekeys_items',
+                    (int) $itemInfos['personal_folder'],
+                    $itemId,
+                    $passwordKey,
+                    false,
+                    true,
+                    [],
+                    -1,
+                    $userData['id']
+                );
+            }
+
+            // Log the update
+            $label = isset($updateData['label']) ? $updateData['label'] : $currentItem['label'];
+            logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
+
+            // Success response
+            return [
+                'error' => false,
+                'message' => 'Item updated successfully',
+                'item_id' => $itemId,
+            ];
+
+        } catch (Exception $e) {
+            // Error response
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 500 Internal Server Error',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
 }
