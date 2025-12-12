@@ -688,4 +688,68 @@ class ItemModel
             ];
         }
     }
+
+    /**
+     * Main function to delete an existing item in the database.
+     *
+     * @param int $itemId The ID of the item to delete
+     * @param array $userData User data from JWT token
+     * @return array Returns success or error response
+     */
+    public function deleteItem(
+        int $itemId,
+        array $userData
+    ): array
+    {
+        try {
+            include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Load config
+            $configManager = new ConfigManager();
+            $SETTINGS = $configManager->getAllSettings();
+
+            // Load current item data
+            $currentItem = DB::queryFirstRow(
+                'SELECT * FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+
+            if (DB::count() === 0) {
+                return [
+                    'error' => true,
+                    'error_message' => 'Item not found',
+                    'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            // delete item consists in disabling it
+            DB::update(
+                prefixTable('items'),
+                array(
+                    'inactif' => '1',
+                    'deleted_at' => time(),
+                ),
+                'id = %i',
+                $itemId
+            );
+
+            logItems($SETTINGS, $itemId, $currentItem['label'], $userData['id'], 'at_delete', $userData['username']);
+
+            // Success response
+            return [
+                'error' => false,
+                'message' => 'Item deleted successfully',
+                'item_id' => $itemId,
+            ];
+
+        } catch (Exception $e) {
+            // Error response
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 500 Internal Server Error',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
+
 }
