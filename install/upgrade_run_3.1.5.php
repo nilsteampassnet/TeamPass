@@ -187,6 +187,12 @@ $indexes_to_add = [
         'index' => 'idx_unique_object_user',
         'columns' => 'object_id, user_id',
         'unique' => true
+    ],
+    [
+        'table' => 'items_otp',
+        'index' => 'unique_item_id ',
+        'columns' => 'item_id',
+        'unique' => true
     ]
 ];
 foreach ($indexes_to_add as $index_config) {

@@ -49,9 +49,11 @@ class ItemModel
     {
         // Get items
         $rows = DB::query(
-            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso, t.title as folder_label
+            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
+            t.title as folder_label, io.secret as otp_secret
             FROM ' . prefixTable('items') . ' AS i
-            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) '.
+            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
+            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) '.
             $sqlExtra . 
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
@@ -102,6 +104,16 @@ class ItemModel
                 }
             }
 
+            // Get TOTP
+            if (empty($row['otp_secret']) === false) {
+                $decryptedTotp = cryption(
+                    $row['otp_secret'],
+                    '',
+                    'decrypt'
+                );
+                $row['otp_secret'] = $decryptedTotp['string'];
+            }
+
             array_push(
                 $ret,
                 [
@@ -119,6 +131,7 @@ class ItemModel
                     'id_tree' => (int) $row['id_tree'],
                     'folder_label' => $row['folder_label'],
                     'path' => empty($path) === true ? '' : $path,
+                    'totp' => $row['otp_secret'],
                 ]
             );
         }
@@ -144,7 +157,8 @@ class ItemModel
         string $anyone_can_modify,
         string $icon,
         int $userId,
-        string $username
+        string $username,
+        string $totp
     ) : array
     {
         try {
@@ -155,7 +169,7 @@ class ItemModel
             $SETTINGS = $configManager->getAllSettings();
 
             // Step 1: Prepare data and sanitize inputs
-            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon);
+            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon, $totp);
             $this->validateData($data); // Step 2: Validate the data
 
             // Step 3: Validate password rules (length, emptiness)
@@ -210,11 +224,12 @@ class ItemModel
      * @param string $tags - Tags for categorizing the item
      * @param string $anyone_can_modify - Permission to allow modifications by others
      * @param string $icon - Icon representing the item
+     * @param string $totp - Token for OTP
      * @return array - Returns the prepared data
      */
     private function prepareData(
         int $folderId, string $label, string $password, string $description, string $login, 
-        string $email, string $url, string $tags, string $anyone_can_modify, string $icon
+        string $email, string $url, string $tags, string $anyone_can_modify, string $icon, string $totp
     ) : array {
         return [
             'folderId' => $folderId,
@@ -227,6 +242,7 @@ class ItemModel
             'anyoneCanModify' => $anyone_can_modify,
             'url' => $url,
             'icon' => $icon,
+            'totp' => $totp,
         ];
     }
 
@@ -249,6 +265,7 @@ class ItemModel
             'anyoneCanModify' => 'trim|escape',
             'url' => 'trim|escape',
             'icon' => 'trim|escape',
+            'totp' => 'trim|escape',
         ];
 
         $inputData = dataSanitizer($data, $filters);
@@ -373,6 +390,8 @@ class ItemModel
      */
     private function insertNewItem(array $data, string $password, array $itemInfos) : int
     {
+        include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
         DB::insert(
             prefixTable('items'),
             [
@@ -397,7 +416,29 @@ class ItemModel
             ]
         );
 
-        return DB::insertId();
+        $newItemId = DB::insertId();
+
+        // Handle TOTP if provided
+        if (empty($data['totp']) === true) {
+            $encryptedSecret = cryption(
+                $data['totp'],
+                '',
+                'encrypt'
+            );
+
+            DB::insert(
+                prefixTable('items_otp'),
+                array(
+                    'item_id' => $newItemId,
+                    'secret' => $encryptedSecret['string'],
+                    'phone_number' => '',
+                    'timestamp' => time(),
+                    'enabled' => 1,
+                )
+            );
+        }
+
+        return $newItemId;
     }
 
     /**
@@ -620,9 +661,9 @@ class ItemModel
                 $updateData['pw_len'] = strlen($newPassword);
                 $updateData['complexity_level'] = $this->getPasswordComplexityLevel($newPassword);
             }
-
+            
             // Update the item
-            if (!empty($updateData)) {
+            if (!empty($updateData) || (isset($params['totp']) === true && empty($params['totp']) === false)) {
                 $updateData['updated_at'] = time();
 
                 DB::update(
@@ -631,6 +672,26 @@ class ItemModel
                     'id = %i',
                     $itemId
                 );
+
+                // Handle TOTP update
+                if (isset($params['totp']) === true && empty($params['totp']) === false) {
+                    $encryptedSecret = cryption(
+                        $params['totp'],
+                        '',
+                        'encrypt'
+                    );
+                    
+                    DB::insertUpdate(
+                        prefixTable('items_otp'),
+                        [
+                            'item_id' => $itemId,
+                            'secret' => $encryptedSecret['string'],
+                            'phone_number' => '',
+                            'timestamp' => time(),
+                            'enabled' => 1,
+                        ]
+                    );
+                }
             }
 
             // Handle tags update

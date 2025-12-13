@@ -249,6 +249,7 @@ class ItemController extends BaseController
                             (string) $arrQueryStringParams['icon'] ?? '',
                             (int) $userData['id'],
                             (string) $userData['username'],
+                            (string) $userData['totp'],
                         );
                         $responseData = json_encode($ret);
                     }
@@ -672,7 +673,7 @@ class ItemController extends BaseController
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
-                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id'];
+                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp'];
                                     $hasUpdateField = false;
                                     foreach ($updateableFields as $field) {
                                         if (isset($arrQueryStringParams[$field])) {
@@ -682,7 +683,7 @@ class ItemController extends BaseController
                                     }
 
                                     if (!$hasUpdateField) {
-                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id)';
+                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp)';
                                         $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                                     } else {
                                         // Get user's private key for password encryption/decryption

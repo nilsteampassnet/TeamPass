@@ -1494,6 +1494,7 @@ class DatabaseInstaller
             `enabled` tinyint(1) NOT NULL DEFAULT 0,
             `phone_number` varchar(25) NOT NULL,
             PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `unique_item_id ` (`item_id`),
             KEY `ITEM` (`item_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
