@@ -2246,7 +2246,7 @@ if (null !== $post_type) {
             
             // We need to create his keys with transparent recovery support
             $userKeys = generateUserKeys($password, $SETTINGS);
-
+            
             // Prepare user data for insertion
             $userData = array(
                 'login' => $post_login,
