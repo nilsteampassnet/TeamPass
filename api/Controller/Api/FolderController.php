@@ -141,5 +141,79 @@ class FolderController extends BaseController
             );
         }
     }
-    //end createFolderAction() 
+    //end createFolderAction()
+
+    /**
+     * Get list of writable folders
+     *
+     * @return void
+     */
+    public function writableFoldersAction(array $userData)
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
+
+        if (strtoupper($requestMethod) === 'GET') {
+            try {
+                $userFolders = !empty($userData['folders_list']) ? explode(',', $userData['folders_list']) : [];
+                $rows = DB::query(
+                    'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
+                    FROM ' . prefixTable('nested_tree') . ' AS nt
+                    LEFT JOIN ' . prefixTable('nested_tree') . ' AS personal 
+                        ON personal.personal_folder = 1 
+                        AND personal.title = %s
+                    WHERE nt.id IN %li
+                    AND (
+                        nt.personal_folder = 0
+                        OR (
+                            personal.id IS NOT NULL
+                            AND nt.nleft >= personal.nleft 
+                            AND nt.nright <= personal.nright
+                        )
+                    )
+                    GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
+                    ORDER BY nt.nlevel ASC, nt.title ASC',
+                    $userData['id'],
+                    $userFolders
+                );
+
+                $userId = (string) $userData['id'];
+                $username = $userData['username'];
+                $writableFolders = [];
+                foreach ($rows as $row) {
+                    $writableFolders[] = [
+                        'id' => (int) $row['folder_id'],
+                        'label' => $row['title'] === $userId ? $username : $row['title'],
+                        'level' => (int) $row['nlevel'],
+                        'parent_id' => (int) $row['parent_id'],
+                        'first_position' => $row['title'] === $userId ? 1 : 0,
+                    ];
+                }
+
+                $responseData = json_encode($writableFolders);
+
+            } catch (Error $e) {
+                $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end writableFoldersAction()
 }

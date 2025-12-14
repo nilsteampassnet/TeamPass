@@ -240,15 +240,16 @@ class ItemController extends BaseController
                             (int) $arrQueryStringParams['folder_id'],
                             (string) $arrQueryStringParams['label'],
                             (string) $arrQueryStringParams['password'],
-                            (string) $arrQueryStringParams['description'],
+                            (string) $arrQueryStringParams['description'] ?? '',
                             (string) $arrQueryStringParams['login'],
-                            (string) $arrQueryStringParams['email'],
-                            (string) $arrQueryStringParams['url'],
-                            (string) $arrQueryStringParams['tags'],
-                            (string) $arrQueryStringParams['anyone_can_modify'],
-                            (string) $arrQueryStringParams['icon'],
+                            (string) $arrQueryStringParams['email'] ?? '',
+                            (string) $arrQueryStringParams['url'] ?? '' ,
+                            (string) $arrQueryStringParams['tags'] ?? '',
+                            (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
+                            (string) $arrQueryStringParams['icon'] ?? '',
                             (int) $userData['id'],
                             (string) $userData['username'],
+                            (string) $userData['totp'],
                         );
                         $responseData = json_encode($ret);
                     }
@@ -360,126 +361,127 @@ class ItemController extends BaseController
     //end getAction()
 
     /**
- * Find items by URL
- * Searches for items matching a specific URL
- *
- * @param array $userData User data from JWT token
- * @return void
- */
-public function findByUrlAction(array $userData): void
-{
-    $request = symfonyRequest::createFromGlobals();
-    $requestMethod = $request->getMethod();
-    $strErrorDesc = $responseData = $strErrorHeader = '';
+     * Find items by URL
+     * Searches for items matching a specific URL
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function findByUrlAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
 
-    // Get parameters
-    $arrQueryStringParams = $this->getQueryStringParams();
+        // Get parameters
+        $arrQueryStringParams = $this->getQueryStringParams();
 
-    if (strtoupper($requestMethod) === 'GET') {
-        // Check if URL parameter is provided
-        if (isset($arrQueryStringParams['url']) === false || empty($arrQueryStringParams['url']) === true) {
-            $this->sendOutput(
-                json_encode(['error' => 'URL parameter is mandatory']),
-                ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
-            );
-            return;
-        }
-
-        // Prepare user's accessible folders
-        /*if (empty($userData['folders_list']) === false) {
-            $userData['folders_list'] = explode(',', $userData['folders_list']);
-        } else {
-            $userData['folders_list'] = [];
-        }*/
-
-        // Build SQL constraint for accessible folders
-        $sql_constraint = ' AND (i.id_tree IN (' . $userData['folders_list'] . ')';
-        if (!empty($userData['restricted_items_list'])) {
-            $sql_constraint .= ' OR i.id IN (' . $userData['restricted_items_list'] . ')';
-        }
-        $sql_constraint .= ')';
-
-        // Decode URL if needed
-        $searchUrl = urldecode($arrQueryStringParams['url']);
-
-        try {
-            // Get user's private key from database
-            $userPrivateKey = $this->getUserPrivateKey($userData);
-            if ($userPrivateKey === null) {
-                $strErrorDesc = 'Invalid session or user keys not found';
-                $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
-            } else {
-                // Query items with the specific URL
-                $rows = DB::query(
-                    "SELECT i.id, i.label, i.login, i.url, i.id_tree, 
-                            CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
-                    FROM " . prefixTable('items') . " AS i
-                    LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
-                    WHERE i.url LIKE %s" . $sql_constraint . "
-                    ORDER BY i.label ASC",
-                    "%".$searchUrl."%"
+        if (strtoupper($requestMethod) === 'GET') {
+            // Check if URL parameter is provided
+            if (isset($arrQueryStringParams['url']) === false || empty($arrQueryStringParams['url']) === true) {
+                $this->sendOutput(
+                    json_encode(['error' => 'URL parameter is mandatory']),
+                    ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
                 );
+                return;
+            }
 
-                $ret = [];
-                foreach ($rows as $row) {
-                    // Get user's sharekey for this item
-                    $shareKey = DB::queryfirstrow(
-                        'SELECT share_key
-                        FROM ' . prefixTable('sharekeys_items') . '
-                        WHERE user_id = %i AND object_id = %i',
-                        $userData['id'],
-                        $row['id']
+            // Prepare user's accessible folders
+            /*if (empty($userData['folders_list']) === false) {
+                $userData['folders_list'] = explode(',', $userData['folders_list']);
+            } else {
+                $userData['folders_list'] = [];
+            }*/
+
+            // Build SQL constraint for accessible folders
+            $sql_constraint = ' AND (i.id_tree IN (' . $userData['folders_list'] . ')';
+            if (!empty($userData['restricted_items_list'])) {
+                $sql_constraint .= ' OR i.id IN (' . $userData['restricted_items_list'] . ')';
+            }
+            $sql_constraint .= ')';
+
+            // Decode URL if needed
+            $searchUrl = urldecode($arrQueryStringParams['url']);
+
+            try {
+                // Get user's private key from database
+                $userPrivateKey = $this->getUserPrivateKey($userData);
+                if ($userPrivateKey === null) {
+                    $strErrorDesc = 'Invalid session or user keys not found';
+                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                } else {
+                    // Query items with the specific URL
+                    $rows = DB::query(
+                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, 
+                                CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
+                        FROM " . prefixTable('items') . " AS i
+                        LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
+                        WHERE i.url LIKE %s" . $sql_constraint . "
+                            AND i.deleted_at IS NULL
+                        ORDER BY i.label ASC",
+                        "%".$searchUrl."%"
                     );
 
-                    // Skip if no sharekey found (user doesn't have access)
-                    if (DB::count() === 0) {
-                        continue;
+                    $ret = [];
+                    foreach ($rows as $row) {
+                        // Get user's sharekey for this item
+                        $shareKey = DB::queryfirstrow(
+                            'SELECT share_key
+                            FROM ' . prefixTable('sharekeys_items') . '
+                            WHERE user_id = %i AND object_id = %i',
+                            $userData['id'],
+                            $row['id']
+                        );
+
+                        // Skip if no sharekey found (user doesn't have access)
+                        if (DB::count() === 0) {
+                            continue;
+                        }
+
+                        // Build response
+                        array_push(
+                            $ret,
+                            [
+                                'id' => (int) $row['id'],
+                                'label' => $row['label'],
+                                'login' => $row['login'],
+                                'url' => $row['url'],
+                                'folder_id' => (int) $row['id_tree'],
+                                'has_otp' => (int) $row['has_otp'],
+                            ]
+                        );
                     }
 
-                    // Build response
-                    array_push(
-                        $ret,
-                        [
-                            'id' => (int) $row['id'],
-                            'label' => $row['label'],
-                            'login' => $row['login'],
-                            'url' => $row['url'],
-                            'folder_id' => (int) $row['id_tree'],
-                            'has_otp' => (int) $row['has_otp'],
-                        ]
-                    );
+                    if (!empty($ret)) {
+                        $responseData = json_encode($ret);
+                    } else {
+                        $strErrorDesc = 'No items found with this URL';
+                        $strErrorHeader = 'HTTP/1.1 204 No Content';
+                    }
                 }
-
-                if (!empty($ret)) {
-                    $responseData = json_encode($ret);
-                } else {
-                    $strErrorDesc = 'No items found with this URL';
-                    $strErrorHeader = 'HTTP/1.1 204 No Content';
-                }
+            } catch (Error $e) {
+                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
-        } catch (Error $e) {
-            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
-            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
         }
-    } else {
-        $strErrorDesc = 'Method not supported';
-        $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
-    }
 
-    // Send output
-    if (empty($strErrorDesc) === true) {
-        $this->sendOutput(
-            $responseData,
-            ['Content-Type: application/json', 'HTTP/1.1 200 OK']
-        );
-    } else {
-        $this->sendOutput(
-            json_encode(['error' => $strErrorDesc]),
-            ['Content-Type: application/json', $strErrorHeader]
-        );
+        // Send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
     }
-}
-//end findByUrlAction()
+    //end findByUrlAction()
 
 
     /**
@@ -606,6 +608,240 @@ public function findByUrlAction(array $userData): void
         }
     }
     //end getOtpAction()
+
+
+    /**
+     * Update an existing item
+     * Updates an item based upon provided parameters and item ID
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function updateAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $strErrorHeader = $responseData = '';
+
+        if (strtoupper($requestMethod) === 'PUT' || strtoupper($requestMethod) === 'POST') {
+            // Check if user is allowed to update items
+            if ((int) $userData['allowed_to_update'] !== 1) {
+                $strErrorDesc = 'User is not allowed to update items';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                // Prepare user's accessible folders
+                if (empty($userData['folders_list']) === false) {
+                    $userData['folders_list'] = explode(',', $userData['folders_list']);
+                } else {
+                    $userData['folders_list'] = [];
+                }
+
+                // Get parameters
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                // Check that the parameters are indeed an array before using them
+                if (is_array($arrQueryStringParams)) {
+                    // Check if item ID is provided
+                    if (!isset($arrQueryStringParams['id']) || empty($arrQueryStringParams['id'])) {
+                        $strErrorDesc = 'Item ID is mandatory';
+                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                    } else {
+                        $itemId = (int) $arrQueryStringParams['id'];
+
+                        try {
+                            // Load item info to check access rights
+                            $itemInfo = DB::queryFirstRow(
+                                'SELECT id, id_tree, label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                                $itemId
+                            );
+
+                            if (DB::count() === 0) {
+                                $strErrorDesc = 'Item not found';
+                                $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                            } else {
+                                // Check if user has access to the folder
+                                $hasAccess = in_array((string) $itemInfo['id_tree'], $userData['folders_list'], true);
+
+                                // Also check restricted items if applicable
+                                if (!$hasAccess && !empty($userData['restricted_items_list'])) {
+                                    $restrictedItems = explode(',', $userData['restricted_items_list']);
+                                    $hasAccess = in_array((string) $itemId, $restrictedItems, true);
+                                }
+
+                                if (!$hasAccess) {
+                                    $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } else {
+                                    // Validate at least one field to update is provided
+                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp'];
+                                    $hasUpdateField = false;
+                                    foreach ($updateableFields as $field) {
+                                        if (isset($arrQueryStringParams[$field])) {
+                                            $hasUpdateField = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (!$hasUpdateField) {
+                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp)';
+                                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                                    } else {
+                                        // Get user's private key for password encryption/decryption
+                                        $userPrivateKey = $this->getUserPrivateKey($userData);
+                                        if ($userPrivateKey === null) {
+                                            $strErrorDesc = 'Invalid session or user keys not found';
+                                            $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                                        } else {
+                                            // Update the item
+                                            $itemModel = new ItemModel();
+                                            $ret = $itemModel->updateItem(
+                                                $itemId,
+                                                $arrQueryStringParams,
+                                                $userData,
+                                                $userPrivateKey
+                                            );
+
+                                            if ($ret['error'] === true) {
+                                                $strErrorDesc = $ret['error_message'];
+                                                $strErrorHeader = $ret['error_header'];
+                                            } else {
+                                                $responseData = json_encode($ret);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Error $e) {
+                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                        }
+                    }
+                } else {
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end updateAction()
+
+
+    /**
+     * Delete an existing item
+     * Updates an item based upon provided parameters and item ID
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function deleteAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $strErrorHeader = $responseData = '';
+
+        if (strtoupper($requestMethod) === 'DELETE') {
+            // Check if user is allowed to delete items
+            if ((int) $userData['allowed_to_delete'] !== 1) {
+                $strErrorDesc = 'User is not allowed to delete items';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                // Get parameters
+                $arrQueryStringParams = $this->getQueryStringParams();
+                
+                // Check that the parameters are indeed an array before using them
+                if (is_array($arrQueryStringParams)) {
+                    // Check if item ID is provided
+                    if (!isset($arrQueryStringParams['id']) || empty($arrQueryStringParams['id'])) {
+                        $strErrorDesc = 'Item ID is mandatory';
+                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                    } else {
+                        $itemId = (int) $arrQueryStringParams['id'];
+                        
+                        try {
+                            // Load item info to check access rights
+                            $itemInfo = DB::queryFirstRow(
+                                'SELECT id, id_tree, label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                                $itemId
+                            );
+
+                            if (DB::count() === 0) {
+                                $strErrorDesc = 'Item not found';
+                                $strErrorHeader = 'HTTP/1.1 404 Not Found';
+                            } else {
+                                // Check if user has access to the folder
+                                $userFolders = explode(',', $userData['folders_list']) ?? [];
+                                $hasAccess = in_array((string) $itemInfo['id_tree'], $userFolders, true);
+
+                                // Also check restricted items if applicable
+                                if (!$hasAccess && !empty($userData['restricted_items_list'])) {
+                                    $restrictedItems = explode(',', $userData['restricted_items_list']) ?? [];
+                                    $hasAccess = in_array((string) $itemId, $restrictedItems, true);
+                                }
+
+                                if (!$hasAccess) {
+                                    $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } else {
+                                    // delete the item
+                                    $itemModel = new ItemModel();
+                                    $ret = $itemModel->deleteItem(
+                                        $itemId,
+                                        $userData
+                                    );
+
+                                    if ($ret['error'] === true) {
+                                        $strErrorDesc = $ret['error_message'];
+                                        $strErrorHeader = $ret['error_header'];
+                                    } else {
+                                        $responseData = json_encode($ret);
+                                    }
+                                }
+                            }
+                        } catch (Error $e) {
+                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                        }
+                    }
+                } else {
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end deleteAction()
 
 
 }

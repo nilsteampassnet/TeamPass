@@ -49,9 +49,11 @@ class ItemModel
     {
         // Get items
         $rows = DB::query(
-            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso, t.title as folder_label
+            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
+            t.title as folder_label, io.secret as otp_secret
             FROM ' . prefixTable('items') . ' AS i
-            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) '.
+            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
+            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) '.
             $sqlExtra . 
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
@@ -102,6 +104,16 @@ class ItemModel
                 }
             }
 
+            // Get TOTP
+            if (empty($row['otp_secret']) === false) {
+                $decryptedTotp = cryption(
+                    $row['otp_secret'],
+                    '',
+                    'decrypt'
+                );
+                $row['otp_secret'] = $decryptedTotp['string'];
+            }
+
             array_push(
                 $ret,
                 [
@@ -119,6 +131,7 @@ class ItemModel
                     'id_tree' => (int) $row['id_tree'],
                     'folder_label' => $row['folder_label'],
                     'path' => empty($path) === true ? '' : $path,
+                    'totp' => $row['otp_secret'],
                 ]
             );
         }
@@ -144,7 +157,8 @@ class ItemModel
         string $anyone_can_modify,
         string $icon,
         int $userId,
-        string $username
+        string $username,
+        string $totp
     ) : array
     {
         try {
@@ -155,7 +169,7 @@ class ItemModel
             $SETTINGS = $configManager->getAllSettings();
 
             // Step 1: Prepare data and sanitize inputs
-            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon);
+            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon, $totp);
             $this->validateData($data); // Step 2: Validate the data
 
             // Step 3: Validate password rules (length, emptiness)
@@ -210,11 +224,12 @@ class ItemModel
      * @param string $tags - Tags for categorizing the item
      * @param string $anyone_can_modify - Permission to allow modifications by others
      * @param string $icon - Icon representing the item
+     * @param string $totp - Token for OTP
      * @return array - Returns the prepared data
      */
     private function prepareData(
         int $folderId, string $label, string $password, string $description, string $login, 
-        string $email, string $url, string $tags, string $anyone_can_modify, string $icon
+        string $email, string $url, string $tags, string $anyone_can_modify, string $icon, string $totp
     ) : array {
         return [
             'folderId' => $folderId,
@@ -227,6 +242,7 @@ class ItemModel
             'anyoneCanModify' => $anyone_can_modify,
             'url' => $url,
             'icon' => $icon,
+            'totp' => $totp,
         ];
     }
 
@@ -249,6 +265,7 @@ class ItemModel
             'anyoneCanModify' => 'trim|escape',
             'url' => 'trim|escape',
             'icon' => 'trim|escape',
+            'totp' => 'trim|escape',
         ];
 
         $inputData = dataSanitizer($data, $filters);
@@ -373,6 +390,8 @@ class ItemModel
      */
     private function insertNewItem(array $data, string $password, array $itemInfos) : int
     {
+        include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
         DB::insert(
             prefixTable('items'),
             [
@@ -397,7 +416,29 @@ class ItemModel
             ]
         );
 
-        return DB::insertId();
+        $newItemId = DB::insertId();
+
+        // Handle TOTP if provided
+        if (empty($data['totp']) === true) {
+            $encryptedSecret = cryption(
+                $data['totp'],
+                '',
+                'encrypt'
+            );
+
+            DB::insert(
+                prefixTable('items_otp'),
+                array(
+                    'item_id' => $newItemId,
+                    'secret' => $encryptedSecret['string'],
+                    'phone_number' => '',
+                    'timestamp' => time(),
+                    'enabled' => 1,
+                )
+            );
+        }
+
+        return $newItemId;
     }
 
     /**
@@ -495,4 +536,281 @@ class ItemModel
         }
         return false;
     }
+
+    /**
+     * Main function to update an existing item in the database.
+     * It handles data validation, password encryption, folder permission checks,
+     * and updates the item with the provided fields.
+     *
+     * @param int $itemId The ID of the item to update
+     * @param array $params Array of parameters to update
+     * @param array $userData User data from JWT token
+     * @param string $userPrivateKey User's private key for encryption
+     * @return array Returns success or error response
+     */
+    public function updateItem(
+        int $itemId,
+        array $params,
+        array $userData,
+        string $userPrivateKey
+    ): array
+    {
+        try {
+            include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Load config
+            $configManager = new ConfigManager();
+            $SETTINGS = $configManager->getAllSettings();
+
+            // Load current item data
+            $currentItem = DB::queryFirstRow(
+                'SELECT * FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+
+            if (DB::count() === 0) {
+                return [
+                    'error' => true,
+                    'error_message' => 'Item not found',
+                    'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            // Prepare update data
+            $updateData = [];
+            $passwordKey = null;
+            $newPassword = null;
+
+            // Handle folder_id change
+            if (isset($params['folder_id'])) {
+                $newFolderId = (int) $params['folder_id'];
+
+                // Check if user has access to the new folder
+                if (!in_array((string) $newFolderId, $userData['folders_list'], true)) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied to the target folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                $updateData['id_tree'] = $newFolderId;
+            }
+
+            // Handle label update
+            if (isset($params['label'])) {
+                $updateData['label'] = filter_var($params['label'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle description update
+            if (isset($params['description'])) {
+                $updateData['description'] = $params['description'];
+            }
+
+            // Handle login update
+            if (isset($params['login'])) {
+                $updateData['login'] = filter_var($params['login'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle email update
+            if (isset($params['email'])) {
+                $updateData['email'] = filter_var($params['email'], FILTER_SANITIZE_EMAIL);
+            }
+
+            // Handle url update
+            if (isset($params['url'])) {
+                $updateData['url'] = filter_var($params['url'], FILTER_SANITIZE_URL);
+            }
+
+            // Handle icon update
+            if (isset($params['icon'])) {
+                $updateData['fa_icon'] = filter_var($params['icon'], FILTER_SANITIZE_STRING);
+            }
+
+            // Handle anyone_can_modify update
+            if (isset($params['anyone_can_modify'])) {
+                $updateData['anyone_can_modify'] = (int) $params['anyone_can_modify'];
+            }
+
+            // Handle password update
+            if (isset($params['password']) && !empty($params['password'])) {
+                $newPassword = $params['password'];
+
+                // Validate password length
+                if (strlen($newPassword) > $SETTINGS['pwd_maximum_length']) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Password is too long (max allowed is ' . $SETTINGS['pwd_maximum_length'] . ' characters)',
+                        'error_header' => 'HTTP/1.1 400 Bad Request',
+                    ];
+                }
+
+                // Get folder ID for complexity check
+                $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
+
+                // Get folder settings
+                $itemInfos = $this->getFolderSettings((int) $folderId);
+
+                // Check password complexity
+                $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
+
+                // Encrypt password
+                $cryptedData = $this->encryptPassword($newPassword);
+                $passwordKey = $cryptedData['passwordKey'];
+                $updateData['pw'] = $cryptedData['encrypted'];
+                $updateData['pw_len'] = strlen($newPassword);
+                $updateData['complexity_level'] = $this->getPasswordComplexityLevel($newPassword);
+            }
+            
+            // Update the item
+            if (!empty($updateData) || (isset($params['totp']) === true && empty($params['totp']) === false)) {
+                $updateData['updated_at'] = time();
+
+                DB::update(
+                    prefixTable('items'),
+                    $updateData,
+                    'id = %i',
+                    $itemId
+                );
+
+                // Handle TOTP update
+                if (isset($params['totp']) === true && empty($params['totp']) === false) {
+                    $encryptedSecret = cryption(
+                        $params['totp'],
+                        '',
+                        'encrypt'
+                    );
+                    
+                    DB::insertUpdate(
+                        prefixTable('items_otp'),
+                        [
+                            'item_id' => $itemId,
+                            'secret' => $encryptedSecret['string'],
+                            'phone_number' => '',
+                            'timestamp' => time(),
+                            'enabled' => 1,
+                        ]
+                    );
+                }
+            }
+
+            // Handle tags update
+            if (isset($params['tags'])) {
+                // Delete existing tags
+                DB::delete(
+                    prefixTable('tags'),
+                    'item_id = %i',
+                    $itemId
+                );
+
+                // Add new tags
+                $this->addTags($itemId, $params['tags']);
+            }
+
+            // If password was updated, update share keys
+            if ($passwordKey !== null) {
+                // Get folder ID (either new or current)
+                $folderId = isset($updateData['id_tree']) ? $updateData['id_tree'] : $currentItem['id_tree'];
+
+                // Get folder settings
+                $itemInfos = $this->getFolderSettings((int) $folderId);
+
+                // Update share keys for all users with access
+                storeUsersShareKey(
+                    'sharekeys_items',
+                    (int) $itemInfos['personal_folder'],
+                    $itemId,
+                    $passwordKey,
+                    false,
+                    true,
+                    [],
+                    -1,
+                    $userData['id']
+                );
+            }
+
+            // Log the update
+            $label = isset($updateData['label']) ? $updateData['label'] : $currentItem['label'];
+            logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
+
+            // Success response
+            return [
+                'error' => false,
+                'message' => 'Item updated successfully',
+                'item_id' => $itemId,
+            ];
+
+        } catch (Exception $e) {
+            // Error response
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 500 Internal Server Error',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Main function to delete an existing item in the database.
+     *
+     * @param int $itemId The ID of the item to delete
+     * @param array $userData User data from JWT token
+     * @return array Returns success or error response
+     */
+    public function deleteItem(
+        int $itemId,
+        array $userData
+    ): array
+    {
+        try {
+            include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Load config
+            $configManager = new ConfigManager();
+            $SETTINGS = $configManager->getAllSettings();
+
+            // Load current item data
+            $currentItem = DB::queryFirstRow(
+                'SELECT * FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+
+            if (DB::count() === 0) {
+                return [
+                    'error' => true,
+                    'error_message' => 'Item not found',
+                    'error_header' => 'HTTP/1.1 404 Not Found',
+                ];
+            }
+
+            // delete item consists in disabling it
+            DB::update(
+                prefixTable('items'),
+                array(
+                    'inactif' => '1',
+                    'deleted_at' => time(),
+                ),
+                'id = %i',
+                $itemId
+            );
+
+            logItems($SETTINGS, $itemId, $currentItem['label'], $userData['id'], 'at_delete', $userData['username']);
+
+            // Success response
+            return [
+                'error' => false,
+                'message' => 'Item deleted successfully',
+                'item_id' => $itemId,
+            ];
+
+        } catch (Exception $e) {
+            // Error response
+            return [
+                'error' => true,
+                'error_header' => 'HTTP/1.1 500 Internal Server Error',
+                'error_message' => $e->getMessage(),
+            ];
+        }
+    }
+
 }

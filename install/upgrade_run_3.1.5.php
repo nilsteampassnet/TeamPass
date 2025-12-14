@@ -92,6 +92,41 @@ $columnNeedsPasswordMigrationExists = DB::queryFirstRow(
     AND COLUMN_NAME = 'needs_password_migration'"
 );
 
+// --->
+// Clean duplicate entries in items_otp table - keep only the most recent one
+$duplicates = DB::query(
+    'SELECT item_id, COUNT(*) as count
+    FROM ' . prefixTable('items_otp') . '
+    GROUP BY item_id
+    HAVING count > 1'
+);
+if (count($duplicates) > 0) {
+    foreach ($duplicates as $duplicate) {
+        // Get the most recent entry (highest timestamp) for this item_id
+        $keepEntry = DB::queryFirstRow(
+            'SELECT increment_id
+            FROM ' . prefixTable('items_otp') . '
+            WHERE item_id = %i
+            ORDER BY timestamp DESC
+            LIMIT 1',
+            $duplicate['item_id']
+        );
+        
+        if ($keepEntry !== null) {
+            // Delete all other entries for this item_id
+            DB::query(
+                'DELETE FROM ' . prefixTable('items_otp') . '
+                WHERE item_id = %i
+                AND increment_id != %i',
+                $duplicate['item_id'],
+                $keepEntry['increment_id']
+            );
+        }
+    }
+}
+// ---<
+
+
 // Add new columns to users table
 $columns_to_add = [
     [
@@ -186,6 +221,12 @@ $indexes_to_add = [
         'table' => 'sharekeys_logs',
         'index' => 'idx_unique_object_user',
         'columns' => 'object_id, user_id',
+        'unique' => true
+    ],
+    [
+        'table' => 'items_otp',
+        'index' => 'unique_item_id',
+        'columns' => 'item_id',
         'unique' => true
     ]
 ];

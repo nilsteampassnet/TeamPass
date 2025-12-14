@@ -1,167 +1,913 @@
 <!-- docs/api/api-basic.md -->
 
-> :warning: **Warning:** API are still in development.
+# Teampass API Documentation
 
-## Progress
+## Table of Contents
 
-- [x] Global API structure
-- [x] Authentication
-- [x] Items - list with criteria
-- [x] Items - get item info
-- [ ] Items - edit an item
-- [x] Folders - create new
-- [x] Items - create new
+1. [Generalities](#generalities)
+   - [Apache Configuration](#apache-configuration)
+   - [Teampass Setup](#teampass-setup)
+   - [Request Structure](#request-structure)
+2. [Authentication](#authentication)
+   - [Get JWT Token](#authorize)
+3. [Items Endpoints](#items-endpoints)
+   - [List items in folders](#list-items-folders)
+   - [Get item by ID](#get-item-id)
+   - [Search by label](#get-item-label)
+   - [Search by description](#get-item-description)
+   - [Search by URL](#find-item-url)
+   - [Get OTP code](#get-otp)
+   - [Create an item](#create-item)
+   - [Update an item](#update-item)
+   - [Delete an item](#delete-item)
+4. [Folders Endpoints](#folders-endpoints)
+   - [List accessible folders](#list-folders)
+   - [Create a folder](#create-folder)
+5. [Error Handling](#error-handling)
+6. [Best Practices](#best-practices)
+7. [Complete Workflow Example](#example-workflow)
 
+---
 
-## Generalities
+## Generalities {#generalities}
 
-Teampass v3 comes with an API permitting several operations on items and users.\
-Its usage relies on a JWT token generated on demand.
-Queries via API are possible until this token is valid.\
-API is by default disabled. 
+Teampass v3 comes with an API permitting several operations on items and folders.
 
-> The usage of the API requires <mark>a valid account and a valid API key</mark>.
+**Key Features:**
+- JWT token-based authentication
+- API disabled by default
+- Requires a valid account and API key
 
-## Define _LimitRequestFieldsize_ directive in Apache settings
+> ⚠️ **Prerequisites**: API usage requires <mark>a valid account and a valid API key</mark>.
 
-Before starting using Teampass API, it is requested to change the default value _LimitRequestFieldsize_ directive in Apache settings.
+### Apache Configuration {#apache-configuration}
+
+Before starting using Teampass API, it is requested to change the default value `LimitRequestFieldSize` directive in Apache settings.
+
 This directive defines the limit on the allowed size of an HTTP request-header field below the normal input buffer size compiled with the server.
 
-> Set `LimitRequestFieldSize 200000` in _apache2.conf_ file.
+> 📝 **Required Configuration**: Set `LimitRequestFieldSize 200000` in `apache2.conf` file.
 
-## Setup API in Teampass
+### Teampass Setup {#teampass-setup}
 
-Once enabled, the default auth token is set for a duration of 60 seconds. You can adapt this value to your needs.
+1. Enable API in the administration interface
+2. Set the token validity duration (default: 60 seconds)
+3. Create an API key
 
-You need to create an API key.
+> 💡 **Tip**: Provide a descriptive label for each API key to identify its usage context.
 
-> :bulb: **Tip:** Provide a label for each key so that you know in what context it is used.
+### Request Structure {#request-structure}
 
+**Base URL:** `<Teampass URL>/api/index.php/<action criteria>`
 
-## API usage
+**Response Format:** JSON
 
-The base API url is: `<Teampass url>/api/index.php/<action criteria>`
+**Authentication:** Bearer Token in `Authorization` header
 
-### Authorize
+---
 
-> :memo: **Note:** Returns the JWT token requested for next API queries
+## Authentication {#authentication}
 
-| Info | Description |
-| ---- | ----------- |
-| Criteria | authorize |
-| Type | POST |
-| URL | `<Teampass url>/api/index.php/authorize` |
-| BODY | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"apikey": "_generated api key in Teampass_",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "_teampass user login_",<br>&nbsp;&nbsp;&nbsp;&nbsp;"password": "_user password_"<br>} |
-| Return | A token valid for a specific duration.<br>Return format is:<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;"token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."<br>} |
+### Get JWT Token {#authorize}
 
-### List items in folders
-
-> :memo: **Note:** Returns a list of items belonging to the provided folders (taking into account the user access rights)
+> 📋 Returns the JWT token required for subsequent API queries
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/inFolders |
-| Type | GET |
-| URL | `<Teampass url>/api/index.php/item/inFolders?folders=[590,12]` |
-| PARAMETERS | folders=[<folder_id>,<folder_id>] |
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of items in json format.<br>Example:<br>[<br>&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 1027,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Teampass production",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "Use for administration",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Ajdh-652Syw-625sWW-Ca18",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "tpAdmin",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "nils@teampass.net",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 54,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": null,<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0<br>&nbsp;&nbsp;}<br>] |
+| **Endpoint** | `authorize` |
+| **Method** | POST |
+| **URL** | `<Teampass URL>/api/index.php/authorize` |
+| **Content-Type** | `application/json` |
 
-### Get item data by ID
+**Request Body (JSON):**
+```json
+{
+  "apikey": "your-generated-api-key",
+  "login": "teampass-user-login",
+  "password": "user-password"
+}
+```
 
-> :memo: **Note:** Returns the item definition based upon its ID (taking into account the user access rights)
+**Response (success):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Authentication successful, token generated |
+| 401 | Invalid credentials |
+| 403 | API disabled or invalid API key |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X POST "https://your-teampass.com/api/index.php/authorize" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "apikey": "your-api-key",
+    "login": "username",
+    "password": "password"
+  }'
+```
+
+---
+
+## Items Endpoints {#items-endpoints}
+
+### List items in folders {#list-items-folders}
+
+> 📋 Returns a list of items belonging to the provided folders (taking into account the user access rights)
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/get |
-| Type | GET |
-| URL | `<Teampass url>/api/index.php/item/get?id=2052` |
-| PARAMETERS | id=<item_id> |
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id":2053,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label":"new object for #3500 v3",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description":"<p>bla bla</p>",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd":"SK^dsf123s_6A}]V$t^]",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login":"Me",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no":2,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon":"",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif":0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso":0<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 670,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "MACHINES",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": "issue3317>issue 3325>ITI 2>PROD"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/inFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/inFolders?folders=[590,12]` |
+| **Parameters** | `folders`: array of folder IDs (format: [id1,id2,...]) |
+| **Headers** | `Authorization: Bearer <token>` |
 
-### Get item data by LABEL
+**Response (success):**
+```json
+[
+  {
+    "id": 1027,
+    "label": "Teampass production",
+    "description": "Use for administration",
+    "pwd": "Ajdh-652Syw-625sWW-Ca18",
+    "url": "https://teampass.net",
+    "login": "tpAdmin",
+    "email": "nils@teampass.net",
+    "viewed_no": 54,
+    "fa_icon": null,
+    "inactif": 0,
+    "perso": 0
+  }
+]
+```
 
-> :memo: **Note:** Returns an item list definition based upon its LABEL (taking into account the user access rights)
+**Response Codes:**
 
-This query accepts an optional parameter called `like` that permits to perform a search on the field `label`.
-If `like=1` then you can add in parameter `label` the symbol `%` to refine the search.
+| Code | Description |
+| ---- | ----------- |
+| 200 | List returned successfully |
+| 400 | Missing or invalid folders parameter |
+| 401 | Invalid or expired token |
+| 403 | Access denied to requested folders |
 
-Example:
-* `label="%some text"` will search for all labels finishing by `some text`.
-* `label="%some text%"` will search for all labels containing `some text`.
-* `label="some text%"` will search for all labels starting by `some text`.
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2,3]" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Get item by ID {#get-item-id}
+
+> 📋 Returns the item definition based upon its ID (taking into account the user access rights)
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/get |
-| Type | GET |
-| URL | `<Teampass url>/api/index.php/item/get?label="some text"&like=0` |
-| PARAMETERS | label="some text"&like=<O or 1> |
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 21,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Voici un é1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 13,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;},<br>&nbsp;&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1 - 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "EwS5jc+S}Y6x",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 4,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/get` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/get?id=2052` |
+| **Parameters** | `id`: item ID (required) |
+| **Headers** | `Authorization: Bearer <token>` |
 
-### Get item data by DESCRIPTION
+**Response (success):**
+```json
+{
+  "id": 2053,
+  "label": "new object for #3500 v3",
+  "description": "<p>bla bla</p>",
+  "pwd": "SK^dsf123s_6A}]V$t^]",
+  "url": "",
+  "login": "Me",
+  "email": "",
+  "viewed_no": 2,
+  "fa_icon": "",
+  "inactif": 0,
+  "perso": 0,
+  "id_tree": 670,
+  "folder_label": "MACHINES",
+  "path": "issue3317>issue 3325>ITI 2>PROD"
+}
+```
 
-> :memo: **Note:** Returns an item list definition based upon its DESCRIPTION (taking into account the user access rights)
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Unique item ID |
+| `label` | string | Item label |
+| `description` | string | Description (may contain HTML) |
+| `pwd` | string | Password (decrypted according to rights) |
+| `url` | string | Associated URL |
+| `login` | string | Login identifier |
+| `email` | string | Email address |
+| `viewed_no` | integer | Number of views |
+| `fa_icon` | string | Custom FontAwesome icon |
+| `inactif` | integer | Inactive item (0/1) |
+| `perso` | integer | Personal item (0/1) |
+| `id_tree` | integer | Parent folder ID |
+| `folder_label` | string | Parent folder name |
+| `path` | string | Full folder path |
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Item returned successfully |
+| 400 | Missing id parameter |
+| 401 | Invalid or expired token |
+| 403 | Access denied to this item |
+| 404 | Item not found |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/get?id=123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Search by label {#get-item-label}
+
+> 📋 Returns an item list definition based upon its LABEL (taking into account the user access rights)
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/get |
-| Type | GET |
-| URL | `<Teampass url>/api/index.php/item/get?description="some text"&like=0` |
-| PARAMETERS | description="some text"&like=<O or 1> |
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 21,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "Voici un é1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 13,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;},<br>&nbsp;&nbsp;&nbsp;{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 22,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "bug 1 - 1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"description": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"pwd": "EwS5jc+S}Y6x",<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"email": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"viewed_no": 4,<br>&nbsp;&nbsp;&nbsp;&nbsp;"fa_icon": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"inactif": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"perso": 0,<br>&nbsp;&nbsp;&nbsp;&nbsp;"id_tree": 1,<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_label": "F1",<br>&nbsp;&nbsp;&nbsp;&nbsp;"path": ""<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/get` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/get?label="some text"&like=0` |
+| **Parameters** | `label`: text to search (required)<br>`like`: search mode (0=exact, 1=pattern with %) |
+| **Headers** | `Authorization: Bearer <token>` |
 
-### Add a new folder
+**Search patterns with `like=1`:**
 
-> :memo: **Note:** Creates a new folder based upon provided parameters
+| Pattern | Result |
+| ------- | ------ |
+| `label="%text"` | Labels ending with "text" |
+| `label="%text%"` | Labels containing "text" |
+| `label="text%"` | Labels starting with "text" |
 
-Warning:
-* `parent_id` must be valid.
-* `complexity` must be one of the values: 0 (Weak) ; 20 (Medium) ; 38 (Strong) ; 48 (Heavy) ; 60 (Very heavy).
-* `access_rights` must be one of the values: R (Read) ; W (Write) ; ND (No deletion) ; NE (No edit) ; NDNE (No deletion and No edit).
+**Response (success):**
+```json
+[
+  {
+    "id": 21,
+    "label": "bug 1",
+    "description": "",
+    "pwd": "Voici un é1",
+    "url": "",
+    "login": "",
+    "email": "",
+    "viewed_no": 13,
+    "fa_icon": "",
+    "inactif": 0,
+    "perso": 0,
+    "id_tree": 1,
+    "folder_label": "F1",
+    "path": ""
+  }
+]
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Results returned successfully (empty array if no results) |
+| 400 | Missing label parameter |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/get?label=%25production%25&like=1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Search by description {#get-item-description}
+
+> 📋 Returns an item list definition based upon its DESCRIPTION (taking into account the user access rights)
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | folder/create |
-| Type | POST |
-| URL | `<Teampass url>/api/index.php/folder/create?title=Folder created from API 1&parent_id=934&complexity=0&duration&create_auth_without&edit_auth_without&icon=fa-cubes&icon_selected&access_rights=NDNE` |
-| PARAMETERS | 'title'=is a string<br>'parent_id'=is the parent folder id<br>'complexity'=<0, 20 38, 48, 60><br>'duration'=is the expiration delay in minutes<br>'create_auth_without'=item can be created even if password strengh not enougth<br>'edit_auth_without'=item can be updated even if password strengh not enougth<br>'icon'=fontawesome icon code<br>'icon_selected'=fontawesome icon code on folder selection<br>'access_rights'=<R, W, ND, NE, NDNE> |
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "148"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/get` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/get?description="some text"&like=0` |
+| **Parameters** | `description`: text to search (required)<br>`like`: search mode (0=exact, 1=pattern with %) |
+| **Headers** | `Authorization: Bearer <token>` |
 
+**Response (success):**
+```json
+[
+  {
+    "id": 21,
+    "label": "bug 1",
+    "description": "some text",
+    "pwd": "Voici un é1",
+    "url": "",
+    "login": "",
+    "email": "",
+    "viewed_no": 13,
+    "fa_icon": "",
+    "inactif": 0,
+    "perso": 0,
+    "id_tree": 1,
+    "folder_label": "F1",
+    "path": ""
+  }
+]
+```
 
-### Add a new item
+**Response Codes:**
 
-> :memo: **Note:** Creates a new item based upon provided parameters
+| Code | Description |
+| ---- | ----------- |
+| 200 | Results returned successfully |
+| 400 | Missing description parameter |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
 
-Warning:
-* All fields are mandaotry
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/get?description=%25server%25&like=1" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Search by URL {#find-item-url}
+
+> 📋 Find items by URL (taking into account the user access rights)
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/create |
-| Type | POST |
-| URL | `<Teampass url>/api/index.php/item/create?label=item created from API 6&folder_id=934&password=$LjPRGBAJa8x8!qqGKc$@pvYtY5NY^k*GES3FHLeW%2o%23&description=Ceci est une déscription simple.&login=monLogin&email=mon@email.fr&url=https://teampass.readthedocs.io/en/latest/api/api-write/&tags=api,test&anyone_can_modify=0&icon=fa-solid fa-start text-orange` |
-| PARAMETERS | 'label'=is a string<br>'folder_id'=is the parent folder id<br>'password'=is a string<br>'description'=is a string<br>'login'=is a string<br>'email'=is a string<br>'url'=is a string<br>'icon'=fontawesome icon code<br>'anyone_can_modify'=is a boolean|
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item created successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"newId": "658"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/findByUrl` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/findByUrl?url=https://example.com` |
+| **Parameters** | `url`: URL to search (required) |
+| **Headers** | `Authorization: Bearer <token>` |
 
+**Response (success):**
+```json
+[
+  {
+    "id": 123,
+    "label": "Example Login",
+    "login": "user@example.com",
+    "url": "https://example.com",
+    "folder_id": 5,
+    "has_otp": 1
+  }
+]
+```
 
-### Find items by URL
+**Response Fields:**
 
-> :memo: **Note:** Find any item using its URL
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Item ID |
+| `label` | string | Label |
+| `login` | string | Login identifier |
+| `url` | string | URL |
+| `folder_id` | integer | Parent folder ID |
+| `has_otp` | integer | OTP enabled (0/1) |
 
-Warning:
-* All fields are mandaotry
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Results returned successfully |
+| 400 | Missing url parameter |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/findByUrl?url=https://example.com" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Get OTP code {#get-otp}
+
+> 📋 Returns the current TOTP (Time-based One-Time Password) code for an item with OTP enabled
 
 | Info | Description |
 | ---- | ----------- |
-| Criteria | item/findByUrl |
-| Type | POST |
-| URL | `<Teampass url>/api/index.php/item/findByUrl?url=https://example.com |
-| PARAMETERS | 'url'=is a string|
-| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
-| Return | An array of item attributes in json format.<br>Example:<br>[{<br>&nbsp;&nbsp;&nbsp;&nbsp;"id": 123,<br>&nbsp;&nbsp;&nbsp;&nbsp;"label": "Example Login",<br>&nbsp;&nbsp;&nbsp;&nbsp;"login": "user@example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"url": "https://example.com"<br>&nbsp;&nbsp;&nbsp;&nbsp;"folder_id": "5"<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;] |
+| **Endpoint** | `item/getOtp` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/getOtp?id=123` |
+| **Parameters** | `id`: item ID (required) |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+{
+  "otp_code": "123456",
+  "expires_in": 25,
+  "item_id": 123
+}
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `otp_code` | string | 6-digit TOTP code |
+| `expires_in` | integer | Seconds until code expires |
+| `item_id` | integer | Item ID |
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | OTP code generated successfully |
+| 400 | Missing item ID |
+| 403 | Access denied or OTP not enabled for this item |
+| 404 | Item or OTP configuration not found |
+| 500 | Decryption or generation failure |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Create an item {#create-item}
+
+> 📋 Creates a new item based upon provided parameters
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/create` |
+| **Method** | POST |
+| **URL** | `<Teampass URL>/api/index.php/item/create` |
+| **Content-Type** | `application/json` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Request Body (JSON):**
+```json
+{
+  "label": "My new item",
+  "folder_id": 5,
+  "password": "SecureP@ss123",
+  "description": "Item description",
+  "login": "username",
+  "email": "user@example.com",
+  "url": "https://example.com",
+  "tags": "api,test,production",
+  "anyone_can_modify": 0,
+  "icon": "fa-solid fa-key"
+}
+```
+
+**Body Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `label` | string | ✅ | Item label |
+| `folder_id` | integer | ✅ | Parent folder ID |
+| `password` | string | ✅ | Password (will be encrypted) |
+| `description` | string | ❌ | Detailed description |
+| `login` | string | ❌ | Login identifier |
+| `email` | string | ❌ | Email address |
+| `url` | string | ❌ | Associated URL |
+| `tags` | string | ❌ | Comma-separated tags |
+| `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
+| `icon` | string | ❌ | FontAwesome icon code |
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "Item created successfully",
+  "newId": "658"
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Item created successfully |
+| 400 | Missing or invalid parameters |
+| 401 | Invalid token or expired session |
+| 403 | Create permission denied or access denied to folder |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X POST "https://your-teampass.com/api/index.php/item/create" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "label": "My new item",
+    "folder_id": 5,
+    "password": "SecureP@ss123",
+    "description": "Item created via API",
+    "login": "apiuser",
+    "email": "api@example.com",
+    "url": "https://example.com",
+    "tags": "api,test",
+    "anyone_can_modify": 0,
+    "icon": "fa-solid fa-key"
+  }'
+```
+
+---
+
+### Update an item {#update-item}
+
+> 📋 Updates an existing item based upon provided parameters and item ID
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/update` |
+| **Method** | PUT |
+| **URL** | `<Teampass URL>/api/index.php/item/update` |
+| **Content-Type** | `application/json` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Request Body (JSON):**
+```json
+{
+  "id": 123,
+  "label": "Updated label",
+  "password": "NewSecureP@ss456",
+  "description": "Updated description"
+}
+```
+
+**Body Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `id` | integer | ✅ | Item ID to update |
+| `label` | string | ❌ | New label |
+| `password` | string | ❌ | New password |
+| `description` | string | ❌ | New description |
+| `login` | string | ❌ | New login identifier |
+| `email` | string | ❌ | New email address |
+| `url` | string | ❌ | New URL |
+| `tags` | string | ❌ | New tags (comma-separated) |
+| `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
+| `icon` | string | ❌ | New FontAwesome icon code |
+| `folder_id` | integer | ❌ | Move to new folder |
+| `totp` | string | ❌ | TOTP/OTP secret |
+
+> ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "Item updated successfully",
+  "item_id": "123"
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Item updated successfully |
+| 400 | Missing ID or no fields to update |
+| 401 | Invalid session or user keys not found |
+| 403 | Update permission denied or access denied |
+| 404 | Item not found |
+| 422 | HTTP method not supported |
+| 500 | Server error |
+
+**Example - Update password and description:**
+```bash
+curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "password": "NewSecureP@ss456",
+    "description": "Updated description"
+  }'
+```
+
+**Example - Move to another folder:**
+```bash
+curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123,
+    "folder_id": 5
+  }'
+```
+
+---
+
+### Delete an item {#delete-item}
+
+> 📋 Deletes an existing item based upon its ID
+
+> ⚠️ **Warning**: This action is irreversible!
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/delete` |
+| **Method** | DELETE |
+| **URL** | `<Teampass URL>/api/index.php/item/delete` |
+| **Content-Type** | `application/json` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Request Body (JSON):**
+```json
+{
+  "id": 123
+}
+```
+
+**Body Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `id` | integer | ✅ | Item ID to delete |
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "Item deleted successfully",
+  "item_id": "123"
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Item deleted successfully |
+| 400 | Missing ID or inconsistent data |
+| 403 | Delete permission denied or access denied |
+| 404 | Item not found |
+| 422 | HTTP method not supported (must be DELETE) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X DELETE "https://your-teampass.com/api/index.php/item/delete" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": 123
+  }'
+```
+
+---
+
+## Folders Endpoints {#folders-endpoints}
+
+### List accessible folders {#list-folders}
+
+> 📋 Returns the list of folders accessible to the authenticated user
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/listFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/folder/listFolders` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Production",
+    "parent_id": 0,
+    "nlevel": 0,
+    "personal_folder": 0
+  },
+  {
+    "id": 2,
+    "title": "Servers",
+    "parent_id": 1,
+    "nlevel": 1,
+    "personal_folder": 0
+  }
+]
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Unique folder ID |
+| `title` | string | Folder name |
+| `parent_id` | integer | Parent folder ID (0 for root) |
+| `nlevel` | integer | Depth level in tree |
+| `personal_folder` | integer | Personal folder (0/1) |
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List returned successfully |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
+### Create a folder {#create-folder}
+
+> 📋 Creates a new folder based upon provided parameters
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/create` |
+| **Method** | POST |
+| **URL** | `<Teampass URL>/api/index.php/folder/create` |
+| **Content-Type** | `application/json` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Request Body (JSON):**
+```json
+{
+  "title": "New folder",
+  "parent_id": 1,
+  "complexity": 38,
+  "duration": 0,
+  "create_auth_without": 0,
+  "edit_auth_without": 0,
+  "icon": "fa-folder",
+  "icon_selected": "fa-folder-open",
+  "access_rights": "W"
+}
+```
+
+**Body Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `title` | string | ✅ | Folder name |
+| `parent_id` | integer | ✅ | Parent folder ID (0 for root if authorized) |
+| `complexity` | integer | ❌ | Complexity level: 0 (Weak), 20 (Medium), 38 (Strong), 48 (Heavy), 60 (Very heavy) |
+| `duration` | integer | ❌ | Expiration delay in minutes (0 = no expiration) |
+| `create_auth_without` | integer | ❌ | Allow creation even if complexity insufficient (0/1) |
+| `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
+| `icon` | string | ❌ | FontAwesome icon code (closed state) |
+| `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
+| `access_rights` | string | ❌ | Access type: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit) |
+
+**Possible values for `complexity`:**
+
+| Value | Level |
+| ----- | ----- |
+| 0 | Weak |
+| 20 | Medium |
+| 38 | Strong |
+| 48 | Heavy |
+| 60 | Very heavy |
+
+**Possible values for `access_rights`:**
+
+| Value | Description |
+| ----- | ----------- |
+| R | Read only |
+| W | Read and write |
+| ND | No deletion |
+| NE | No edit |
+| NDNE | No deletion and no edit |
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "",
+  "newId": "148"
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Folder created successfully |
+| 400 | Missing or invalid parameters |
+| 401 | Invalid token or expired session |
+| 403 | Create permission denied |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X POST "https://your-teampass.com/api/index.php/folder/create" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "New folder",
+    "parent_id": 1,
+    "complexity": 38,
+    "duration": 0,
+    "create_auth_without": 0,
+    "edit_auth_without": 0,
+    "icon": "fa-folder",
+    "icon_selected": "fa-folder-open",
+    "access_rights": "W"
+  }'
+```
+
+---
+
+## Error Handling {#error-handling}
+
+All API endpoints may return the following standard HTTP error codes:
+
+| HTTP Code | Description |
+| --------- | ----------- |
+| 200 | Request processed successfully |
+| 400 | Missing or invalid parameters |
+| 401 | Invalid, expired JWT token or insufficient permissions |
+| 403 | User doesn't have permission to perform the action |
+| 404 | Resource not found or API is disabled |
+| 422 | HTTP method not supported |
+| 500 | Internal server error |
+
+**Error Response Format:**
+```json
+{
+  "error": "Error description message"
+}
+```
+
+**Or:**
+```json
+{
+  "error": true,
+  "message": "Error description message"
+}
+```
+
+---
+
+## Best Practices {#best-practices}
+
+### Security
+
+1. **Token Management**
+   - Store JWT tokens securely
+   - Refresh tokens before expiration
+   - Never share tokens in plain text
+
+2. **API Keys**
+   - Never commit API keys to version control
+   - Use environment variables
+   - Create separate API keys per usage context
+
+3. **HTTPS**
+   - Always use HTTPS in production
+   - Avoid API requests over unsecured connections
+
+### Performance
+
+1. **Rate Limiting**
+   - Respect request frequency limits
+   - Implement retry mechanism with exponential backoff
+   - Avoid intensive API call loops
+
+2. **Caching**
+   - Cache responses when appropriate
+   - Respect data validity durations
+
+### Development
+
+1. **Parameter Encoding**
+   - Properly encode all URL parameters
+   - Use JSON for complex request bodies
+   - Handle special characters in passwords
+
+2. **Error Handling**
+   - Always check HTTP response codes
+   - Implement robust error handling
+   - Log errors for debugging
+
+3. **Permissions**
+   - Verify the account has necessary permissions
+   - Test with different access right levels
