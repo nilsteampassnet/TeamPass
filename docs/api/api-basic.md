@@ -11,10 +11,10 @@
 - [x] Items - find by URL
 - [x] Items - get OTP code
 - [x] Items - create new
+- [x] Items - update an item
+- [x] Items - delete an item
 - [x] Folders - list accessible folders
 - [x] Folders - create new
-- [ ] Items - edit an item
-- [ ] Items - delete an item
 
 
 ## Generalities
@@ -240,6 +240,95 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create?label=My%20Ite
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
+### Update an existing item
+
+> :memo: **Note:** Updates an existing item based upon provided parameters and item ID
+
+**Warning:**
+* User must have update permission
+* Item ID is mandatory
+* At least one field to update must be provided
+* User must have access to the folder containing the item
+
+**Updateable fields:**
+- `label` - Item label/title
+- `password` - Item password
+- `description` - Item description
+- `login` - Login/username
+- `email` - Email address
+- `url` - URL/website
+- `tags` - Tags (comma-separated)
+- `anyone_can_modify` - Allow anyone to modify (0 or 1)
+- `icon` - FontAwesome icon code
+- `folder_id` - Move item to another folder
+- `totp` - TOTP/OTP secret
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/update |
+| Type | PUT or POST |
+| URL | `<Teampass url>/api/index.php/item/update` |
+| PARAMETERS | id=<item_id> (mandatory)<br>Any of the updateable fields listed above |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An object with update result in json format.<br>Example:<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item updated successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"item_id": "123"<br>} |
+
+**Error Responses:**
+
+- `400 Bad Request`: Item ID missing or no fields to update provided
+- `401 Unauthorized`: Invalid session or user keys not found
+- `403 Forbidden`: User not allowed to update items or access denied to this item
+- `404 Not Found`: Item not found
+- `422 Unprocessable Entity`: HTTP method not supported
+- `500 Internal Server Error`: Server-side error occurred
+
+**Example - Update password and description:**
+
+```bash
+curl -X PUT "https://your-teampass.com/api/index.php/item/update?id=123&password=NewSecureP@ss456&description=Updated%20description" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Example - Move item to another folder:**
+
+```bash
+curl -X PUT "https://your-teampass.com/api/index.php/item/update?id=123&folder_id=5" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Delete an item
+
+> :memo: **Note:** Deletes an existing item based upon its ID
+
+**Warning:**
+* User must have delete permission
+* Item ID is mandatory
+* User must have access to the folder containing the item
+* This action is irreversible
+
+| Info | Description |
+| ---- | ----------- |
+| Criteria | item/delete |
+| Type | DELETE |
+| URL | `<Teampass url>/api/index.php/item/delete?id=123` |
+| PARAMETERS | id=<item_id> (mandatory) |
+| HEADER | {<br>&nbsp;&nbsp;&nbsp;&nbsp;"Authorization": "Bearer _token received from authorize step_"<br>} |
+| Return | An object with deletion result in json format.<br>Example:<br>{<br>&nbsp;&nbsp;&nbsp;&nbsp;"error": false,<br>&nbsp;&nbsp;&nbsp;&nbsp;"message": "Item deleted successfully",<br>&nbsp;&nbsp;&nbsp;&nbsp;"item_id": "123"<br>} |
+
+**Error Responses:**
+
+- `400 Bad Request`: Item ID is missing or data not consistent
+- `403 Forbidden`: User not allowed to delete items or access denied to this item
+- `404 Not Found`: Item not found
+- `422 Unprocessable Entity`: HTTP method not supported (must be DELETE)
+- `500 Internal Server Error`: Server-side error occurred
+
+**Example:**
+
+```bash
+curl -X DELETE "https://your-teampass.com/api/index.php/item/delete?id=123" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
 ## Folders endpoints
 
 ### List accessible folders
@@ -320,7 +409,7 @@ Error responses are returned in JSON format:
 
 ## Example Workflow
 
-Here's a complete example workflow demonstrating how to authenticate and retrieve items:
+Here's a complete example workflow demonstrating CRUD operations with the API:
 
 ```bash
 # 1. Authenticate and get JWT token
@@ -336,15 +425,31 @@ TOKEN=$(curl -X POST "https://your-teampass.com/api/index.php/authorize" \
 curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
   -H "Authorization: Bearer $TOKEN"
 
-# 3. Get items from specific folders
-curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2,3]" \
+# 3. Create a new item
+ITEM_ID=$(curl -X POST "https://your-teampass.com/api/index.php/item/create?label=API%20Test&folder_id=5&password=SecureP@ss123&description=Created%20via%20API&login=apiuser&email=api@example.com&url=https://example.com&tags=api,test&anyone_can_modify=0" \
+  -H "Authorization: Bearer $TOKEN" | jq -r '.newId')
+
+# 4. Get the created item
+curl -X GET "https://your-teampass.com/api/index.php/item/get?id=$ITEM_ID" \
   -H "Authorization: Bearer $TOKEN"
 
-# 4. Search for items by URL
+# 5. Update the item
+curl -X PUT "https://your-teampass.com/api/index.php/item/update?id=$ITEM_ID&password=NewSecureP@ss456&description=Updated%20via%20API" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 6. Search for items by URL
 curl -X GET "https://your-teampass.com/api/index.php/item/findByUrl?url=https://example.com" \
   -H "Authorization: Bearer $TOKEN"
 
-# 5. Get OTP code for an item
+# 7. Get OTP code for an item (if OTP is enabled)
 curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 8. Get items from specific folders
+curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2,3]" \
+  -H "Authorization: Bearer $TOKEN"
+
+# 9. Delete the item (use with caution!)
+curl -X DELETE "https://your-teampass.com/api/index.php/item/delete?id=$ITEM_ID" \
   -H "Authorization: Bearer $TOKEN"
 ```
