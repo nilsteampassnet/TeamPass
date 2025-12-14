@@ -2486,10 +2486,10 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
  */
 function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
 {
-    // Check if password was changed recently (< 30s) to avoid duplicate processing
+    // Check if password was changed recently (< 20s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
-        if ($timeSinceChange < 30) { // 30 seconds
+        if ($timeSinceChange < 20) { // 20 seconds
             return true; // Already processed
         }
     }
