@@ -4197,6 +4197,14 @@ switch ($inputData['type']) {
                     }
 
                     // Get Expiration date
+                    $sql = 'SELECT date FROM ' . prefixTable('log_items') 
+                        . " WHERE action = 'at_creation' AND id_item=" . $record['id']
+                        . ' union all SELECT date FROM '. prefixTable('log_items') 
+                        . " WHERE action = 'at_modification' AND raison = 'at_pw'
+                        AND id_item=" . $record['id'] . " ORDER BY date DESC LIMIT 1";
+                    $record['date'] = DB::queryFirstRow($sql)['date'];
+
+                    // Check if item is expired
                     $expired_item = 0;
                     if (
                         (int) $SETTINGS['activate_expiration'] === 1
