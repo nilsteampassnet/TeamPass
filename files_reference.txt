@@ -115,6 +115,7 @@ docs/install/installation.md 8b61c24c30a81834bf4f507283cd42bd
 docs/install/upgrade.md f76d4f776141dd29e09373ba49fc74cf
 docs/manage/settings.md 800f2560760590c4aad1d67abe93c0ab
 docs/manage/tasks.md 4efb9b8830a2af5d771763e4834906c6
+docs/misc/extension.md e04c472b9eb16e526761a27e52815c7a
 docs/misc/session-management.md 03e143b010f3afeee594bca4d712b0f6
 docs/misc/tips.md d9122abba0ab1336d1b6382280ea4834
 docs/misc/troubleshooting.md 8c3f7b60c733ca9800960030a8405021
@@ -129,7 +130,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 20b62c6b7589bb474e8ba1a10d2aaee3
+includes/config/include.php 2629925b854f94b05bb26252855a8ecc
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 934bb3620ca168e9a9814920604f597b
@@ -376,7 +377,7 @@ install/install-steps/run.step1.php a60c2e61f765e9ebafc7b3f8ea0aaf51
 install/install-steps/run.step2.php 39bc0e5714cc404bbd60297f62ad2910
 install/install-steps/run.step3.php aedae1cc4680f8e48c524530a001d753
 install/install-steps/run.step4.php 9769f64928708599889a574e122eab0c
-install/install-steps/run.step5.php cfe052a7c2bc0b49c235fe01bc04662c
+install/install-steps/run.step5.php 457dbfabdd1c7d6e9116ea5a4285a1e0
 install/install-steps/run.step6.php 2abdf46e83c7cc8b5703bcae77679460
 install/install.php 79dea4155acc861977f957303257982f
 install/js/aes.min.js deaf035d40420d4ce6d4018e0bd63801
@@ -401,7 +402,7 @@ install/upgrade_run_3.0.0_passwords.php 98203db5122b4a024299aeec871582cc
 install/upgrade_run_3.0.0_suggestions.php e51236045f5e097c6b8eb36922625e75
 install/upgrade_run_3.0.0_users.php 18947ff884fc3cbb9b8150de5df31ac3
 install/upgrade_run_3.0.php 913364c82444e392f36cb6ed58c0b403
-install/upgrade_run_3.1.5.php 992048e9674a5af3ce1ef3eba2573366
+install/upgrade_run_3.1.5.php ab760d172e9a069be1d53c3133f12ef1
 install/upgrade_run_3.1.php d0038bd9dd8bceceed4df0274b60b374
 install/upgrade_scripts_manager.php 6872ec2ee9b489db942bf2a6e284a35f
 licences/LICENSE_COMPLIANCE_REPORT.md 9b2b77eca6b849c9fe031d6825eb67f8
@@ -3726,11 +3727,11 @@ sources/fields.queries.php b87431dfa9e381fc79013c985157ec9e
 sources/find.queries.php 457483011f5ede0131c4a22b26ff1093
 sources/folders.class.php 36519946dae9a7e969294a13c82abd0e
 sources/folders.queries.php bf627a6db5572263c6cc558cd10da74b
-sources/identify.php 97f5d1b72ccc870f1407ffe392ab306b
+sources/identify.php 2571d4da3c97ab4baf2aa6f51335bba9
 sources/import.queries.php f41a777fa9571bef3e5e63b299b94692
 sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 sources/items.logs.php 3b9eaeb8fa7a487161bfbfd771aa7c4b
-sources/items.queries.php 21f56f947e67ef826d99e043da0e4566
+sources/items.queries.php 7e9b8575698e169111343bb5dc8b0dcd
 sources/ldap.queries.php 8347f492f841663828410a9a72e829ac
 sources/logs.datatables.php 762156d1ffdbe9970d232e8a2c9764ed
 sources/main.functions.php ec6f1d8ce7ff6834f33125d6f5729bb0
