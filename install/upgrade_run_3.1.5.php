@@ -138,7 +138,26 @@ foreach ($columns_to_add as $column_info) {
 // Drop previous index
 $tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_suggestions', 'sharekeys_logs'];
 foreach ($tables as $table) {
-    mysqli_query($db_link, "DROP INDEX IF EXISTS `idx_object_user` ON `{$pre}{$table}`");
+    $result = mysqli_query($db_link, "SHOW INDEX FROM `{$pre}{$table}`");
+    if ($result && $result->num_rows > 0) {
+        $index_found = false;
+        while ($row = $result->fetch_assoc()) {
+            if ($row['Key_name'] === "idx_object_user") {
+                if (mysqli_query($db_link, "DROP INDEX `idx_object_user` ON `{$pre}{$table}`")) {
+                    echo "Index 'idx_object_user' dropped successfully on {$pre}{$table}\n";
+                } else {
+                    echo "Error dropping index on {$pre}{$table}: " . mysqli_error($db_link) . "\n";
+                }
+                $index_found = true;
+                break;
+            }
+        }
+        if (!$index_found) {
+            echo "{$pre}{$table} not found index 'idx_object_user'.\n";
+        }
+    } else {
+        echo "Error executing SHOW INDEX query on {$pre}{$table}: " . mysqli_error($db_link) . "\n";
+    }
 }
 // ---<
 
