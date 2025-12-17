@@ -140,7 +140,6 @@ $tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_
 foreach ($tables as $table) {
 	$result = mysqli_query($db_link, "SHOW INDEX FROM `{$pre}{$table}`");
     if ($result->num_rows > 0) {
-        $index_found = false;
         while ($row = $result->fetch_assoc()) {
             if ($row['Key_name'] === "idx_object_user") {
                 mysqli_query($db_link, "DROP INDEX `idx_object_user` ON `{$pre}{$table}`");
