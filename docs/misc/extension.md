@@ -45,7 +45,7 @@ The Teampass extension currently offers the following features:
 
 #### License Verification
 - 🔍 **Automatic validation**: Verification with Teampass license server
-- ⏳ **Grace period**: 5 days in case of license server unavailability
+- ⏳ **Grace period**: In case of license server unavailability
 - 🎯 **Status indicator**: Colored badge (🟢 valid, 🔴 invalid, 🟠 not verified)
 
 ### 🚧 Coming Soon
@@ -161,7 +161,7 @@ The license server can return different response codes:
 
 #### Principle
 
-To avoid blocking users in case of temporary license server outage, the extension includes a **5-day grace period**.
+To avoid blocking users in case of temporary license server outage, the extension includes a **grace period**.
 
 #### Activation Conditions
 
@@ -232,7 +232,7 @@ The "Current Status" section displays:
 **Solution**:
 - ⏳ Wait a few minutes and try again
 - 🔄 Click on "Test License" in the Options page
-- ✅ If the badge is orange (🟠), you're in the grace period (5 days)
+- ✅ If the badge is orange (🟠), you're in the grace period
 
 #### "Invalid License" or "Expired License" Message
 
