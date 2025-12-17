@@ -6,6 +6,7 @@
 - [Upgrade](install/upgrade.md)
 - [Information](install/encryption.md)
 - [Extra](install/extra-settings.md)
+- [Extension](misc/extension.md)
 - **Features**
 - [Authentication](features/authentication.md)
 - [Items](features/items.md)
