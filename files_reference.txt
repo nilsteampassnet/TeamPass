@@ -130,7 +130,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 409dbb82bbfb09029c3ab90c4dcf25b5
+includes/config/include.php 442c020505a237c8217a7d2d6f4fc21e
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 934bb3620ca168e9a9814920604f597b
@@ -402,7 +402,7 @@ install/upgrade_run_3.0.0_passwords.php 98203db5122b4a024299aeec871582cc
 install/upgrade_run_3.0.0_suggestions.php e51236045f5e097c6b8eb36922625e75
 install/upgrade_run_3.0.0_users.php 18947ff884fc3cbb9b8150de5df31ac3
 install/upgrade_run_3.0.php 913364c82444e392f36cb6ed58c0b403
-install/upgrade_run_3.1.5.php 432a1df3c92e088c7491c3a17b2e8ef1
+install/upgrade_run_3.1.5.php 766e251cfca05a2b22a1fd4141f34ba4
 install/upgrade_run_3.1.php d0038bd9dd8bceceed4df0274b60b374
 install/upgrade_scripts_manager.php 6872ec2ee9b489db942bf2a6e284a35f
 licences/LICENSE_COMPLIANCE_REPORT.md 9b2b77eca6b849c9fe031d6825eb67f8
