@@ -273,15 +273,15 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             stripslashes($username)
         );
 
-    // Anti-bruteforce log
-    addFailedAuthentication($username, getClientIpServer());
+        // Anti-bruteforce log
+        addFailedAuthentication($username, getClientIpServer());
 
-    echo prepareExchangedData(
-        $userLdap['array'],
-        'encode'
-    );
-    return false;
-}
+        echo prepareExchangedData(
+            $userLdap['array'],
+            'encode'
+        );
+        return false;
+    }
 
     if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
         // Add failed authentication log
