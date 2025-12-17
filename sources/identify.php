@@ -263,16 +263,26 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $sessionPwdAttempts
     );
     if ($userLdap['error'] === true) {
-        // Add failed authentication log
+        // Log LDAP/AD failed authentication into teampass_log_system
+        logEvents(
+            $SETTINGS,
+            'failed_auth',
+            'password_is_not_correct',
+            '',
+            stripslashes($username),
+            stripslashes($username)
+        );
+
+        // Anti-bruteforce log
         addFailedAuthentication($username, getClientIpServer());
 
-        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
         echo prepareExchangedData(
             $userLdap['array'],
             'encode'
         );
         return false;
     }
+
     if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer());
@@ -322,6 +332,8 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check user and password
     $authResult = checkCredentials($passwordClear, $userInfo);
     if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
+        // Log failure (wrong password on existing account) into teampass_log_system
+        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer());
         echo prepareExchangedData(

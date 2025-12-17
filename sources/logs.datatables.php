@@ -545,7 +545,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
-    $sWhere->add('l.type = %s', 'failed_auth');
+    $sWhere->add('l.type IN %ls', ['failed_auth', 'user_connection']);
+    $sWhere->add('l.label IN %ls', ['password_is_not_correct', 'user_not_exists']);
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(

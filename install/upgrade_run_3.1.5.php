@@ -173,7 +173,19 @@ foreach ($columns_to_add as $column_info) {
 // Drop previous index
 $tables = ['sharekeys_items', 'sharekeys_fields', 'sharekeys_files', 'sharekeys_suggestions', 'sharekeys_logs'];
 foreach ($tables as $table) {
-    mysqli_query($db_link, "DROP INDEX IF EXISTS `idx_object_user` ON `{$pre}{$table}`");
+    $check_index = mysqli_query($db_link, "
+        SELECT INDEX_NAME 
+        FROM information_schema.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+        AND TABLE_NAME = `{$pre}{$table}`
+        AND INDEX_NAME = `idx_object_user`
+        LIMIT 1
+    ");
+
+    // If index exists then drop it
+    if (mysqli_num_rows($check_index) > 0) {
+        mysqli_query($db_link, "DROP INDEX `idx_object_user` ON `{$pre}{$table}`");
+    }
 }
 // ---<
 
