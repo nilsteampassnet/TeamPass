@@ -64,7 +64,7 @@ The following features are planned for upcoming releases:
 
 ### Prerequisites
 
-- **Teampass 3.x** installed and configured
+- **Teampass 3.1.5.15 minimum installed and configured
 - **API enabled** in Teampass settings
 - **HTTPS connection** (required for security)
 - **Valid API key** generated in Teampass
@@ -125,7 +125,7 @@ After installation:
 
 ### General Principle
 
-Starting from version 1.1.0, the Teampass extension verifies the validity of your license with the official license server (`https://licence.teampass.net`).
+Starting from version 1.1.0, the Teampass extension verifies the validity of your license with the official license server.
 
 ### How Verification Works
 
@@ -178,9 +178,8 @@ The grace period is activated only in these cases:
 
 #### Duration and Behavior
 
-- **Duration**: 5 days (432,000,000 milliseconds)
 - **Counter**: Starts from the last successful verification
-- **Expiration**: After 5 days without successful verification, access is blocked
+- **Expiration**: After a period without successful verification, access is blocked
 - **Reset**: As soon as a verification succeeds, the counter is reset to zero
 
 #### Storage
@@ -247,10 +246,7 @@ The "Current Status" section displays:
 2. Check your license on the Teampass website
 3. Contact Teampass support if necessary
 
-#### Access Blocked After 5 Days
-
-**Cause**:
-- Grace period expired without successful verification
+#### Access Blocked
 
 **Solution**:
 1. Check your internet connection
