@@ -101,7 +101,8 @@ The following features are planned for upcoming releases:
 5. **Navigate** to the extracted folder and select the `manifest.json` file
 6. ✅ Extension is installed!
 
-⚠️ **Firefox Note**: The extension will be uninstalled on browser restart in developer mode. For permanent installation, the extension must be signed by Mozilla or installed from their official store. It will be the case after a test period.
+⚠️ **Firefox Note**: The extension will be uninstalled on browser restart in developer mode. After a test period, the extension will be signed by Mozilla or installed from their official store.
+
 
 ### Initial Configuration
 
