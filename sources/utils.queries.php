@@ -137,11 +137,10 @@ if (null !== $post_type) {
                         'at_pw :'
                     );
 
-                    $rows = secureOutput($rows, ['login']);
-
                     $id_managed = '';
                     $i = 1;
                     foreach ($rows as $record) {
+                        $record = secureOutput($record, ['login']);
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {
@@ -172,9 +171,6 @@ if (null !== $post_type) {
                                         $SETTINGS
                                     );
                                 }
-
-                                // Sanitize login
-                                $userLoginSafe = htmlspecialchars($userInfo['login'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
                                 $full_listing[$i] = array(
                                     'id' => $record['id'],
