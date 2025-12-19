@@ -137,7 +137,7 @@ if (null !== $post_type) {
                         'at_pw :'
                     );
 
-                    $rows = secureOutput($userInfo, ['login']);
+                    $rows = secureOutput($rows, ['login']);
 
                     $id_managed = '';
                     $i = 1;
