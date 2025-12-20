@@ -109,7 +109,7 @@ function clearTasksHistory(): void
     DB::query(
         'DELETE s
          FROM ' . prefixTable('background_subtasks') . ' s
-         INNER JOIN ' . prefixTable('background_tasks') . ' t ON t.id = s.task_id
+         INNER JOIN ' . prefixTable('background_tasks') . ' t ON t.increment_id = s.task_id
          WHERE t.finished_at > 0
            AND t.finished_at < %i',
         $threshold
