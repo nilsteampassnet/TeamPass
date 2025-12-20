@@ -47,6 +47,7 @@ header('Cache-Control: no-cache, must-revalidate');
 function doLog(string $status, string $job, int $enable_tasks_log = 0, ?int $id = null, ?int $treated_objects = null): int
 {
     clearTasksLog();
+    clearTasksHistory();
 
     // is log enabled?
     if ((int) $enable_tasks_log === 1) {
