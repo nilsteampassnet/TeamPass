@@ -293,6 +293,7 @@ class ItemController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = '';
         $sqlExtra = '';
+        $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
         $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].')';
@@ -311,9 +312,10 @@ class ItemController extends BaseController
                 $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
-                $sqlExtra = ' WHERE i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['label'] : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $sqlExtra = ' WHERE i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
             } else if (isset($arrQueryStringParams['description']) === true) {
-                // build sql where clause by LABEL
+                // build sql where clause by DESCRIPTION
                 $sqlExtra = ' WHERE i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
             } else {
                 // Send error
@@ -333,7 +335,7 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, 0, $userPrivateKey, $userData['id']);
+                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id']);
                     $responseData = json_encode($arrItems);
                 }
             } catch (Error $e) {

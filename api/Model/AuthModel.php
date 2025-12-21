@@ -165,6 +165,7 @@ class AuthModel
                     (int) $userInfo['api_allowed_to_read'],
                     (int) $userInfo['api_allowed_to_update'],
                     (int) $userInfo['api_allowed_to_delete'],
+                    (int) $SETTINGS['api_token_duration'] ?? 60,
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "Credentials not valid"];
