@@ -692,6 +692,16 @@ class ItemModel
                         ]
                     );
                 }
+            } else if (empty($updateData)) {
+                // Check if an entry exists for TOTP in items_otp table
+                // IF yes delete it
+                if (isset($params['totp']) === true && empty($params['totp']) === true) {
+                    DB::delete(
+                        prefixTable('items_otp'),
+                        'item_id = %i',
+                        $itemId
+                    );
+                }
             }
 
             // Handle tags update
