@@ -327,6 +327,8 @@ switch ($inputData['type']) {
                 break;
             }
 
+            $row = secureStringWithAntiXss($row, $antiXss);
+
             // CLean data
             $label    = cleanInput($row['Label']);
             $login    = cleanInput($row['Login']);

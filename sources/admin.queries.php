@@ -2931,6 +2931,7 @@ case 'get_live_activity':
         LIMIT 10',
         $timestamp5min
     );
+    $activities = secureOutput($activities, ['login']);
     
     $activityList = array();
     

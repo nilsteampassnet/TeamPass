@@ -176,13 +176,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label', 'name', 'lastname']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '],(string) $record['label']).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -249,13 +250,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label']).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.(string) $record['login'].'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -322,13 +324,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.$record['label'].'", ';
         //col3
-        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).'"';
+        $sOutput .= '"'.$record['login'].'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -393,11 +396,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
         $get_item_in_list = true;
+        $record = secureOutput($record, ['login', 'label', 'name', 'lastname']);
         $sOutput_item = '[';
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.(string) $record['login'].'", ';
         //col3
         if ($record['label'] === 'at_user_added') {
             $cell = $lang->get('user_creation');
@@ -427,7 +431,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                     WHERE u.id = %i',
                     $record['field_1']
             );
-            $sOutput_item .= ', "'.(empty($info['name']) === false ? htmlspecialchars(stripslashes((string) $info['name'].' '.$info['lastname']), ENT_QUOTES) : 'Removed user ('.$record['field_1'].')').'" ';
+            $info = secureOutput($record, ['login', 'name', 'lastname']);
+            $sOutput_item .= ', "'.(empty($info['name']) === false ? $info['name'].' '.$info['lastname'] : 'Removed user ('.$record['field_1'].')').'" ';
         } else {
             $sOutput_item .= ', "" ';
         }
@@ -495,25 +500,26 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'name', 'label', 'lastname']);
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col3
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['id']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.$record['id'].'", ';
         //col3
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim((string) $record['label']).'", ';
         //col2
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim((string) $record['folder']).'", ';
         //col2
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
+        $sOutput_item .= '"'.trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']", ';
         //col4
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim($lang->get($record['action'])).'", ';
         //col5
         if ($record['perso'] === 1) {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
+            $sOutput_item .= '"'.trim($lang->get('yes')).'"';
         } else {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'"';
+            $sOutput_item .= '"'.trim($lang->get('no')).'"';
         }
 
         //Finish the line
@@ -657,13 +663,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'name', 'label', 'lastname']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -726,6 +733,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'name', 'label', 'lastname']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-id=\"'.$record['item_id'].'\">", ';
@@ -735,9 +743,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m'.'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
         //col5 - TAGS
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).' ['.$record['item_id'].']"';
+        $sOutput .= '"'.(string) $record['label'].' ['.$record['item_id'].']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -799,11 +807,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'name', 'label', 'lastname']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-id=\"'.$record['id'].'\">", ';
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
         //col3
         if ($record['admin'] === '1') {
             $user_role = $lang->get('god');
@@ -893,7 +902,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3
-        //$sOutput .= '"'.($record['updated_at'] === '' ? '-' : date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['updated_at'])).'", ';
         $sOutput .= '"<div class=\"progress mt-2\"><div class=\"progress-bar\" style=\"width: '.$subtaskProgress.'\">'.$subtaskProgress.'</div></div>", ';
         //col4
         $sOutput .= '"'.$record['process_type'].'", ';
@@ -905,6 +913,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                 WHERE id = %i',
                 json_decode($record['arguments'], true)['new_user_id']
             );
+            $data_user = secureOutput($data_user, ['name', 'lastname']);
             $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
         } elseif ($record['process_type'] === 'send_email') {
             $sOutput .= '"'.json_decode($record['arguments'], true)['receiver_name'].'", ';
@@ -1019,6 +1028,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                 $newUserId
             );
             if (DB::count() > 0) {
+                $data_user = secureOutput($data_user, ['name', 'lastname']);
                 $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
                 $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
             } else {
@@ -1035,6 +1045,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                 $user
             );
             if (DB::count() > 0) {
+                $data_user = secureOutput($data_user, ['name', 'lastname']);
                 $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
                 $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
             } else {
@@ -1056,7 +1067,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 }
 
 // deepcode ignore XSS: data comes from database. Before being stored it is clean with feature antiXss->xss_clean
-echo (string) $sOutput;
+echo (string) stripslashes($sOutput);
 
 
 

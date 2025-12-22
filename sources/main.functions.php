@@ -5130,6 +5130,9 @@ function getUserCompleteData($login = null, $userId = null)
     if (empty($login) && empty($userId)) {
         return null;
     }
+
+    // Load AntiXSS
+    $antiXss = new AntiXss();
     
     // Build WHERE clause
     if (!empty($login)) {
@@ -5172,7 +5175,7 @@ function getUserCompleteData($login = null, $userId = null)
         $data['latest_items'] = $data['latest_items'] ?? '';
     }
     
-    return $data;
+    return $data;//secureOutput($data, $antiXss);
 }
 
 
@@ -5488,3 +5491,58 @@ function isUserFavorite(int $userId, int $itemId): bool
     return !empty($result);
 }
 // ---<
+
+/**
+ * Clean a string, array or object using AntiXss library
+ * @param mixed $data Data to treat (string, array, object)
+ * @param AntiXss $antiXss Library instance
+ * @return mixed
+ */
+function secureStringWithAntiXss($data, AntiXss $antiXss) {
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $data[$key] = secureStringWithAntiXss($value, $antiXss);
+        }
+    } elseif (is_object($data)) {
+        foreach ($data as $key => $value) {
+            $data->$key = secureStringWithAntiXss($value, $antiXss);
+        }
+    } elseif (is_string($data)) {
+        $data = $antiXss->xss_clean($data);
+    }
+    
+    return $data;
+}
+
+/**
+ * Clean output data to prevent XSS attacks
+ * * @param mixed $data Data to clean (string, array)
+ * @param array $fieldsToSecure List of fields to secure in case of array input
+ * @return mixed
+ */
+function secureOutput($data, array $fieldsToSecure = []) {
+    // If we pass an array, we clean only the specified fields
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            
+            // If the value is an array, we go deeper
+            if (is_array($value)) {
+                $data[$key] = secureOutput($value, $fieldsToSecure);
+                continue;
+            }
+
+            // We clean only the specified fields
+            if (in_array($key, $fieldsToSecure, true) && is_string($value)) {
+                $data[$key] = htmlspecialchars($value, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            }
+        }
+        return $data;
+    }
+
+    // If it's a string, we clean it entirely
+    if (is_string($data)) {
+        return htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    return $data;
+}
