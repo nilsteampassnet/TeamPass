@@ -1463,5 +1463,6 @@ return array(
     'settings_disable_forgot_password_link_tip' => 'Conseil : Masquer le lien « Mot de passe oublié »',
     'newly_created_user_role' => 'Rôle de l&apos;utilisateur créé',
     'config' => 'Configuration',
-
+    'ldap_account_disabled' => 'Compte AD désactivé',
+    'ldap_account_expired'  => 'Compte AD expiré',
 );
