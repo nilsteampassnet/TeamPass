@@ -46,7 +46,24 @@ class BackgroundTasksHandler {
         $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
         $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 600;
         $this->batchSize = $settings['task_batch_size'] ?? 50;
-        $this->maxTimeBeforeRemoval = isset($settings['history_duration']) ? ($settings['history_duration'] * 24 * 3600) : (15 * 24 * 3600);
+        // Tasks history retention (seconds)
+        // Prefer new setting `tasks_history_delay` (stored in seconds in DB),
+        // fallback to legacy `history_duration` (days) if present, otherwise 15 days.
+        $historyDelay = 0;
+
+        if (isset($settings['tasks_history_delay']) === true) {
+            $historyDelay = (int) $settings['tasks_history_delay'];
+        } elseif (isset($settings['history_duration']) === true) {
+            $historyDelay = (int) $settings['history_duration'] * 86400;
+        }
+
+        // Safety: if for any reason it is stored in days, convert to seconds.
+        if ($historyDelay > 0 && $historyDelay < 86400) {
+            $historyDelay = $historyDelay * 86400;
+        }
+
+$this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
+
     }
 
     /**
@@ -118,10 +135,11 @@ class BackgroundTasksHandler {
         DB::query(
             'DELETE t, st FROM ' . prefixTable('background_tasks') . ' t
             INNER JOIN ' . prefixTable('background_subtasks') . ' st ON (t.increment_id = st.task_id)
-            WHERE t.finished_at < %i 
-            AND t.status = %s',
+            WHERE t.finished_at > 0
+              AND t.finished_at < %i
+              AND t.status = %s',
             time() - $this->maxTimeBeforeRemoval,
-            "failed"
+            'failed'
         );
     }
 
@@ -270,7 +288,7 @@ class BackgroundTasksHandler {
         //    and that are not in progress
         $tasks = DB::query(
             'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
-            WHERE status = %s AND is_in_progress = %i AND finished_at < %s',
+            WHERE status = %s AND is_in_progress = %i AND finished_at < %i',
             'completed',
             -1,
             $cutoffTimestamp

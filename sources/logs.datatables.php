@@ -939,7 +939,16 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
-    $sWhere->add('finished_at != ""');
+    $sWhere->add('p.finished_at > 0');
+    
+    $historyDelay = isset($SETTINGS['tasks_history_delay']) === true ? (int) $SETTINGS['tasks_history_delay'] : 0;
+    if ($historyDelay > 0 && $historyDelay < 86400) {
+        $historyDelay = $historyDelay * 86400;
+    }
+    if ($historyDelay > 0) {
+        $threshold = time() - $historyDelay;
+        $sWhere->add('p.finished_at >= %i', $threshold);
+    }
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(
