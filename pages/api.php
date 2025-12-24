@@ -82,7 +82,42 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
+// Get FQDN and API Key settings
+$browserFqdn = getDomainFromSettingsUrl($SETTINGS['cpassman_url'] ?? '');
 
+/**
+ * Extract the domain name (host) from the application URL setting.
+ * * @param string $url The URL string to parse, typically from $SETTINGS['passman_url'].
+ * @return string The extracted domain name (host) or an empty string if invalid.
+ */
+function getDomainFromSettingsUrl(string $url): string
+{
+    if (empty($url)) {
+        return 'localhost';
+    }
+
+    // Ensure protocol exists for parse_url to work correctly
+    if (strpos($url, 'http') !== 0 && strpos($url, '//') !== 0) {
+        $url = 'http://' . $url;
+    }
+
+    $parsedUrl = parse_url($url);
+    $host = isset($parsedUrl['host']) ? strtolower(trim($parsedUrl['host'], '.')) : 'localhost';
+
+    // Special handling for localhost to get the subfolder name (e.g., "TeamPass")
+    if (in_array($host, ['localhost', '127.0.0.1', '::1'])) {
+        $path = isset($parsedUrl['path']) ? trim($parsedUrl['path'], '/') : '';
+        if (!empty($path)) {
+            $segments = explode('/', $path);
+            // Check if the first segment is a directory and not the script name itself
+            if (!empty($segments[0]) && strpos($segments[0], '.php') === false) {
+                return $segments[0];
+            }
+        }
+    }
+
+    return $host;
+}
 ?>
 
 <!-- Content Header (Page header) -->
@@ -111,7 +146,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <!-- form start -->
                     <div class='card-body'>
 
-                        <div class='row mb-5'>
+                        <div class='row mb-2'>
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_api'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -123,7 +158,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </div>
                         </div>
 
-                        <div class='row mb-5'>
+                        <div class='row mb-3'>
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_api_token_duration'); ?>
                                 <small id='passwordHelpBlock' class='form-text text-muted'>
@@ -137,18 +172,21 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo $lang->get('settings_api_keys_list'); ?></a>
+                                <a class="nav-link active" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#extension" role="tab" aria-controls="extension"><?php echo $lang->get('browser_extension'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#keys" role="tab" aria-controls="keys"><?php echo $lang->get('settings_api_keys_list'); ?></a>
                             </li>
                             <!--<li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#ips" role="tab" aria-controls="ips"><?php echo $lang->get('api_whitelist_ips'); ?></a>
                             </li>-->
-                            <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>
-                            </li>
                         </ul>
 
                         <div class="tab-content">
-                            <div class="tab-pane fade show active" id="keys" role="tabpanel" aria-labelledby="keys-tab">
+                            <div class="tab-pane fade show" id="keys" role="tabpanel" aria-labelledby="keys-tab">
                                 <small id="passwordHelpBlock" class="form-text text-muted mt-4">
                                     <?php echo $lang->get('settings_api_keys_list_tip'); ?>
                                 </small>
@@ -275,7 +313,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                             </div>
                             
-                            <div class="tab-pane fade show" id="users" role="tabpanel" aria-labelledby="keys-tab">
+                            <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="keys-tab">
                                 <div class="row mb-4 mt-4">
                                     <div class="col-6 text-muted">
                                         <?php echo $lang->get('users_api_access_info'); ?>
@@ -333,6 +371,39 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </div>
 
                                 </div>
+                            </div>
+
+                            <div class="tab-pane fade show" id="extension" role="tabpanel" aria-labelledby="extension-tab">
+                                <div class='col-12 mt-2'>
+                                    <div class="alert alert-info" role="alert">
+                                        <?php echo $lang->get('browser_extension_instructions'); ?>
+                                    </div>
+                                </div>
+
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo $lang->get('browser_extension_fqdn'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo $lang->get('browser_extension_fqdn_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                    <input type='text' class='form-control form-control-sm' id='browser_extension_fqdn' value='<?php echo isset($SETTINGS['browser_extension_fqdn']) === true ? (string) $SETTINGS['browser_extension_fqdn'] : $browserFqdn; ?>'>
+                                    </div>
+                                </div>
+                                
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-6'>
+                                        <?php echo $lang->get('browser_extension_key'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo $lang->get('browser_extension_key_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-6'>
+                                    <input type='text' class='form-control form-control-sm' disabled="disabled" id='browser_extension_key' value='<?php echo isset($SETTINGS['browser_extension_key']) === true ? (string) $SETTINGS['browser_extension_key'] : 'Please upgrade'; ?>'>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 

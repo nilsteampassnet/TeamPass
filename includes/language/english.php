@@ -29,6 +29,12 @@
  */
 
 return array(
+    'browser_extension_instructions' => 'This interface allows you to establish a secure link between your browser and your TeamPass instance. This setup is mandatory for the extension to communicate with the API in a fluid and protected manner.<br>To complete the pairing process, please provide the following two parameters:<br><ul><li><b>FQDN (Fully Qualified Domain Name)</b>: This is the unique address of your TeamPass server (e.g., mypasswords.com or localhost/TeamPass). This address allows the extension to identify exactly where to send search requests and retrieve your credentials.</li><li><b>Browser Extension Key</b>: This key acts as a unique and private authentication token. It ensures that only your browser extension is authorized to query your database. For optimal security, we recommend using a long, randomly generated string.</li></ul>Security Note: Never share your extension key. If you suspect your connection has been compromised, you can generate a new key here, which will instantly reset the extensions access. Share the new key with browser extension owner only to update the license server.',
+    'browser_extension_key' => 'Browser Extension Key',
+    'browser_extension_key_tip' => 'This key is used by the browser extension to authenticate to your Teampass instance.',
+    'browser_extension_fqdn' => 'FQDN',
+    'browser_extension_fqdn_tip' => 'Fully Qualified Domain Name (FQDN) of your Teampass instance. It is used by the browser extension to connect to your Teampass server.',
+    'browser_extension' => 'Browser Extension',
     'get_personal_items_migration_status' => 'Get personal items migration status',
     'admin_tasks_status' => 'Tasks status',
     'utils' => 'Utilities',

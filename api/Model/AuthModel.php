@@ -146,10 +146,12 @@ class AuthModel
                 // Log user
                 logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
 
+error_log("Creating JWT for user ".$inputData['login']." with email: ".$userInfo['email']);
                 // create JWT with session key
                 return $this->createUserJWT(
                     (int) $userInfo['id'],
                     (string) $inputData['login'],
+                    (string) $userInfo['email'],
                     (int) $userInfo['personal_folder'],
                     (string) implode(",", $ret['folders']),
                     (string) implode(",", $ret['items']),
@@ -189,6 +191,7 @@ class AuthModel
      *
      * @param integer $id
      * @param string $login
+     * @param string $email
      * @param integer $pf_enabled
      * @param string $folders
      * @param string $items
@@ -209,6 +212,7 @@ class AuthModel
     private function createUserJWT(
         int $id,
         string $login,
+        string $email,
         int $pf_enabled,
         string $folders,
         string $items,
@@ -223,7 +227,7 @@ class AuthModel
         int $allowed_to_create,
         int $allowed_to_read,
         int $allowed_to_update,
-        int $allowed_to_delete,
+        int $allowed_to_delete
     ): array
     {
         // Load config
@@ -249,6 +253,7 @@ class AuthModel
             'allowed_to_read' => $allowed_to_read,
             'allowed_to_update' => $allowed_to_update,
             'allowed_to_delete' => $allowed_to_delete,
+            'email' => $email,
         ];
 
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
