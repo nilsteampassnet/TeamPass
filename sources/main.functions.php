@@ -3664,7 +3664,7 @@ function getUsersWithRoles(
         $rows = DB::query(
             'SELECT u.id,
                     GROUP_CONCAT(
-                        DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END
+                        CASE WHEN ur.source = \'manual\' THEN ur.role_id END
                         ORDER BY ur.role_id SEPARATOR ";"
                     ) AS fonction_id
              FROM ' . prefixTable('users') . ' AS u
@@ -5153,7 +5153,7 @@ function getUserCompleteData($login = null, $userId = null)
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
          GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
          GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = \'manual\' THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
          GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
          GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
          GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
