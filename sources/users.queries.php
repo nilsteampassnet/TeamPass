@@ -408,13 +408,6 @@ if (null !== $post_type) {
                         array_unique(array_merge($groups, [(int) $new_role_id])),
                         'manual'
                     );
-                        prefixTable('users'),
-                        array(
-                            'fonction_id' => is_int($new_role_id),
-                        ),
-                        'id=%i',
-                        $new_user_id
-                    );
                     // rebuild tree
                     $tree->rebuild();
                 }
