@@ -370,6 +370,8 @@ if (null !== $post_type) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
+                            'fa_icon' => 'fas fa-folder',
+                            'fa_icon_selected' => 'fas fa-folder-open',
                             'categories' => '',
                         )
                     );
@@ -401,7 +403,11 @@ if (null !== $post_type) {
                         )
                     );
                     // Add the new user to this role
-                    DB::update(
+                    setUserRoles(
+                        $new_user_id,
+                        array_unique(array_merge($groups, [(int) $new_role_id])),
+                        'manual'
+                    );
                         prefixTable('users'),
                         array(
                             'fonction_id' => is_int($new_role_id),
