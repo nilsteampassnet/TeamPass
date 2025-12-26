@@ -370,6 +370,7 @@ if (null !== $post_type) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
+                            'categories' => '',
                         )
                     );
                     $new_folder_id = DB::insertId();
