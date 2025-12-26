@@ -3662,14 +3662,21 @@ function getUsersWithRoles(
     foreach ($roles as $role) {
         // loop on users and check if user has this role
         $rows = DB::query(
-            'SELECT id, fonction_id
-            FROM ' . prefixTable('users') . '
-            WHERE id != %i AND admin = 0 AND fonction_id IS NOT NULL AND fonction_id != ""',
+            'SELECT u.id,
+                    GROUP_CONCAT(
+                        DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END
+                        ORDER BY ur.role_id SEPARATOR ";"
+                    ) AS fonction_id
+             FROM ' . prefixTable('users') . ' AS u
+             LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON ur.user_id = u.id
+             WHERE u.id != %i AND u.admin = 0
+             GROUP BY u.id
+             HAVING fonction_id IS NOT NULL AND fonction_id != ""',
             $session->get('user-id')
         );
         foreach ($rows as $user) {
-            $userRoles = is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? explode(';', $user['fonction_id']) : [];
-            if (in_array($role, $userRoles, true) === true) {
+            $userRoles = empty($user['fonction_id']) ? [] : array_map('intval', explode(';', (string) $user['fonction_id']));
+            if (in_array((int) $role, $userRoles, true) === true) {
                 array_push($arrUsers, $user['id']);
             }
         }
