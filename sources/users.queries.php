@@ -546,7 +546,6 @@ if (null !== $post_type) {
                             'deleted_at' => $timestamp,
                             'disabled' => 1,
                             'special' => 'none',
-                            'auth_type' => 'none'
                         ),
                         'id = %i',
                         $userId
