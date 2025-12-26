@@ -316,6 +316,7 @@ if (null !== $post_type) {
                         'lastname' => $lastname,
                         'pw' => $hashedPassword,
                         'email' => $email,
+                        'auth_type' => 'local',
                         'admin' => empty($is_admin) === true ? 0 : $is_admin,
                         'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
                         'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
