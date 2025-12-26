@@ -3662,14 +3662,21 @@ function getUsersWithRoles(
     foreach ($roles as $role) {
         // loop on users and check if user has this role
         $rows = DB::query(
-            'SELECT id, fonction_id
-            FROM ' . prefixTable('users') . '
-            WHERE id != %i AND admin = 0 AND fonction_id IS NOT NULL AND fonction_id != ""',
+            'SELECT u.id,
+                    GROUP_CONCAT(
+                        CASE WHEN ur.source = \'manual\' THEN ur.role_id END
+                        ORDER BY ur.role_id SEPARATOR ";"
+                    ) AS fonction_id
+             FROM ' . prefixTable('users') . ' AS u
+             LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON ur.user_id = u.id
+             WHERE u.id != %i AND u.admin = 0
+             GROUP BY u.id
+             HAVING fonction_id IS NOT NULL AND fonction_id != ""',
             $session->get('user-id')
         );
         foreach ($rows as $user) {
-            $userRoles = is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? explode(';', $user['fonction_id']) : [];
-            if (in_array($role, $userRoles, true) === true) {
+            $userRoles = empty($user['fonction_id']) ? [] : array_map('intval', explode(';', (string) $user['fonction_id']));
+            if (in_array((int) $role, $userRoles, true) === true) {
                 array_push($arrUsers, $user['id']);
             }
         }
@@ -5146,7 +5153,7 @@ function getUserCompleteData($login = null, $userId = null)
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
          GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
          GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = \'manual\' THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
          GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
          GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
          GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
