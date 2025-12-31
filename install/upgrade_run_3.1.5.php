@@ -548,6 +548,12 @@ if (empty($columnNeedsPasswordMigrationExists)) {
     );
 }
 
+// Update treeloadstrategy default value
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "users` SET `treeloadstrategy` = 'full' WHERE `treeloadstrategy` = 'sequential';"
+);
+
 // -->
 
 

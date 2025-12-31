@@ -427,24 +427,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         </div>
                                     </div>
                                 <?php endif; /* disable_user_edit_language */
-                                if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') : ?>
-                                    <div class="form-group">
-                                        <label class="col-sm-10 control-label"><?php echo $lang->get('tree_load_strategy'); ?></label>
-                                        <div class="col-sm-10">
-                                            <select class="form-control" id="profile-user-treeloadstrategy">
-                                                
-                                                <option value="sequential" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'sequential' ? ' selected' : '';?>>
-                                                    <?php echo $lang->get('sequential'); ?>
-                                                </option>
-                                                
-                                                <option value="full" <?php echo $session->has('user-tree_load_strategy') && $session->get('user-tree_load_strategy') && null !== $session->get('user-tree_load_strategy') && $session->get('user-tree_load_strategy') === 'full' ? ' selected' : '';?>>
-                                                    <?php echo $lang->get('full'); ?>
-                                                </option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                <?php endif; /* disable_user_edit_tree_load_strategy */ ?>
-
+                                ?>
                                     <div class="form-group">
                                         <label class="col-sm-10 control-label"><?php echo $lang->get('items_page_split_view_mode'); ?></label>
                                         <div class="col-sm-10">
