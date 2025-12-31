@@ -522,7 +522,7 @@ return array(
     'error_not_allowed_to' => '¡No tiene permiso para hacer eso!',
     'request_access_ot_item' => 'Solicitar acceso para modificar',
     'email_request_access_subject' => 'Tiene una solicitud para habilitar el acceso a su elemento de contraseña',
-    'email_request_access_mail' => 'Hola,<br><br>Este es un correo generado por el gestor de contraseñas Teampass.<br><br>El usuario #tp_user# ha solicitado acceso al elemento de contraseña \&apos;#tp_item#\&apos;.<br><br>La solicitud viene con la siguiente justificación:<br><i>\&apos;#tp_reason#\&apos;</i><br><br>Por favor revise esta solicitud y confirme que autorizará el acceso.<br><br>Saludos.',
+    'email_request_access_mail' => 'Hola,<br><br>Este es un correo generado por el gestor de contraseñas Teampass.<br><br>El usuario #tp_user# ha solicitado acceso al elemento de contraseña \\&apos;#tp_item#\\&apos;.<br><br>La solicitud viene con la siguiente justificación:<br><i>\\&apos;#tp_reason#\\&apos;</i><br><br>Por favor revise esta solicitud y confirme que autorizará el acceso.<br><br>Saludos.',
     'nb_items_by_query' => 'Número de elementos a recuperar por consulta',
     'nb_items_by_query_tip' => 'Introduzca el número de elementos a recuperar por solicitud al servidor. Múltiples solicitudes más pequeñas pueden funcionar mejor que menos solicitudes más grandes. Otras opciones: &apos;auto&apos; - ajustado al tamaño de la ventana de visualización del usuario. &apos;max&apos; - para cargar todo a la vez.',
     'open_url_link' => 'Abrir en una nueva ventana',
@@ -1463,5 +1463,13 @@ return array(
     'settings_disable_forgot_password_link_tip' => 'Ocultar el enlace de contraseña olvidada en la página de inicio porque no es gestionado por Teampass',
     'newly_created_user_role' => 'El usuario recién creado tiene el rol',
     'config' => '',
+    'browser_extension_instructions' => 'This interface allows you to establish a secure link between your browser and your TeamPass instance. This setup is mandatory for the extension to communicate with the API in a fluid and protected manner.<br>Security Note: Never share your extension key. If you suspect your connection has been compromised, you can generate a new key here, which will instantly reset the extensions access. Share the new key with the browser extension owner only to update the license server (nils@teampass.net).',
+    'browser_extension_key' => 'Browser Extension Key',
+    'browser_extension_key_tip' => 'This key acts as a unique and private authentication token. It ensures that only a valid user is authorized to query your FQDN licence.',
+    'browser_extension_fqdn' => 'FQDN (Fully Qualified Domain Name)',
+    'browser_extension_fqdn_tip' => 'This is the unique address of your TeamPass server (e.g., mypasswords.com or localhost/TeamPass). This address allows the extension to identify exactly the licence owner.',
+    'browser_extension' => '',
+    'ldap_account_disabled' => 'AD account disabled',
+    'ldap_account_enabled' => 'AD account enabled',
 
 );

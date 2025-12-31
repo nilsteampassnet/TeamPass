@@ -316,6 +316,7 @@ if (null !== $post_type) {
                         'lastname' => $lastname,
                         'pw' => $hashedPassword,
                         'email' => $email,
+                        'auth_type' => 'local',
                         'admin' => empty($is_admin) === true ? 0 : $is_admin,
                         'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
                         'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
@@ -370,6 +371,9 @@ if (null !== $post_type) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
+                            'fa_icon' => 'fas fa-folder',
+                            'fa_icon_selected' => 'fas fa-folder-open',
+                            'categories' => '',
                         )
                     );
                     $new_folder_id = DB::insertId();
@@ -400,13 +404,10 @@ if (null !== $post_type) {
                         )
                     );
                     // Add the new user to this role
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'fonction_id' => is_int($new_role_id),
-                        ),
-                        'id=%i',
-                        $new_user_id
+                    setUserRoles(
+                        $new_user_id,
+                        array_unique(array_merge($groups, [(int) $new_role_id])),
+                        'manual'
                     );
                     // rebuild tree
                     $tree->rebuild();
@@ -545,7 +546,6 @@ if (null !== $post_type) {
                             'deleted_at' => $timestamp,
                             'disabled' => 1,
                             'special' => 'none',
-                            'auth_type' => 'none'
                         ),
                         'id = %i',
                         $userId
@@ -2059,8 +2059,12 @@ if (null !== $post_type) {
                 'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
             );
 
+            $adStatusAttributes = array('useraccountcontrol', 'accountexpires', 'accountExpires');
+            $adQueryAttributes = array_values(array_unique(array_merge($adUsedAttributes, $adStatusAttributes)));
+
             try {
                 $results = $connection->query()
+                    ->select($adQueryAttributes)
                     ->rawfilter($SETTINGS['ldap_user_object_filter'])
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
@@ -2104,8 +2108,12 @@ if (null !== $post_type) {
                     // Loop on all user attributes
                     $tmp = [
                         'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
-                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
-                    ];
+                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,
+                        // LDAP/AD status flags (null = unknown / attribute not available)
+                        'ldapAccountDisabled' => null,
+                        'ldapAccountExpired' => null,
+                        'ldapAccountExpiresAt' => null,
+                    ];                        
                     foreach ($adUsedAttributes as $userAttribute) {
                         if (isset($adUser[$userAttribute]) === true) {
                             if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
@@ -2127,6 +2135,67 @@ if (null !== $post_type) {
                             }
                         }
                     }
+                                // -------------------------------------------------------
+            // LDAP/AD: Determine if the account is disabled
+            // - Active Directory: userAccountControl bit 0x2 (UF_ACCOUNTDISABLE)
+            // -------------------------------------------------------
+            $uacRaw = null;
+            if (isset($adUser['useraccountcontrol'][0]) === true) {
+                $uacRaw = $adUser['useraccountcontrol'][0];
+            } elseif (isset($adUser['userAccountControl'][0]) === true) {
+                $uacRaw = $adUser['userAccountControl'][0];
+            }
+            if ($uacRaw !== null && is_numeric($uacRaw)) {
+                $uac = (int) $uacRaw;
+                $tmp['ldapAccountDisabled'] = (($uac & 2) === 2) ? 1 : 0;
+            }
+
+            // -------------------------------------------------------
+            // LDAP/AD: Determine if the account is expired
+            // - Active Directory: accountExpires is a Windows FILETIME
+            //   (100ns since 1601-01-01). 0 or 9223372036854775807 = never expires.
+            // - OpenLDAP shadowAccount: shadowExpire is days since 1970-01-01 (optional fallback).
+            // -------------------------------------------------------
+            $expiresRaw = null;
+            if (isset($adUser['accountexpires'][0]) === true) {
+                $expiresRaw = $adUser['accountexpires'][0];
+            } elseif (isset($adUser['accountExpires'][0]) === true) {
+                $expiresRaw = $adUser['accountExpires'][0];
+            }
+
+            if ($expiresRaw !== null) {
+                $expiresRawStr = trim((string) $expiresRaw);
+
+                // "never expires" values
+                if ($expiresRawStr !== '' &&
+                    $expiresRawStr !== '0' &&
+                    $expiresRawStr !== '9223372036854775807' &&
+                    $expiresRawStr !== '18446744073709551615'
+                ) {
+                    if (is_numeric($expiresRawStr)) {
+                        $filetime = (int) $expiresRawStr;
+                        if ($filetime > 0) {
+                            // FILETIME -> Unix seconds
+                            $unix = (int) (intdiv($filetime, 10000000) - 11644473600);
+                            $tmp['ldapAccountExpiresAt'] = $unix;
+                            $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                        }
+                    }
+                } else {
+                    $tmp['ldapAccountExpired'] = 0;
+                    $tmp['ldapAccountExpiresAt'] = null;
+                }
+            } elseif (isset($adUser['shadowexpire'][0]) === true && is_numeric($adUser['shadowexpire'][0])) {
+                // Fallback for shadowAccount directories (days since epoch)
+                $shadowDays = (int) $adUser['shadowexpire'][0];
+                if ($shadowDays > 0) {
+                    $unix = $shadowDays * 86400;
+                    $tmp['ldapAccountExpiresAt'] = $unix;
+                    $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                } else {
+                    $tmp['ldapAccountExpired'] = 0;
+                }
+            }
                     array_push($adUsersToSync, $tmp);
                 }
             }

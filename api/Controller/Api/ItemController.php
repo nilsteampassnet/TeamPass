@@ -78,7 +78,7 @@ class ItemController extends BaseController
 
         if (strtoupper($requestMethod) === 'GET') {
             // define WHERE clause
-            $sqlExtra = '';
+            $sqlExtra = 'WHERE i.deleted_at IS NULL';
             if (empty($userData['folders_list']) === false) {
                 $userData['folders_list'] = explode(',', $userData['folders_list']);
             } else {
@@ -96,7 +96,7 @@ class ItemController extends BaseController
                 // build sql where clause
                 if (!empty($foldersList)) {
                     // build sql where clause
-                    $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
+                    $sqlExtra .= ' AND i.id_tree IN ('.$foldersList.')';
                 } else {
                     // Send error
                     $this->sendOutput(
@@ -292,7 +292,7 @@ class ItemController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = '';
-        $sqlExtra = '';
+        $sqlExtra = 'WHERE i.deleted_at IS NULL';
         $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
@@ -309,14 +309,14 @@ class ItemController extends BaseController
             // SQL where clause with item id
             if (isset($arrQueryStringParams['id']) === true) {
                 // build sql where clause by ID
-                $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+                $sqlExtra .= ' AND i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
-                $sqlExtra = ' WHERE i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $sqlExtra .= ' AND i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
                 $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
-                $sqlExtra = ' WHERE i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
+                $sqlExtra .= ' AND i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
             } else {
                 // Send error
                 $this->sendOutput(

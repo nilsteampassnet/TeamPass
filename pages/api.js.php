@@ -604,5 +604,101 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     });
 
+    
+
+    // Handle the copy in clipboard button for api key
+    $(document).on('click', '#copy-extension-key', function() {
+        const apiKey = $('#browser_extension_key').val();
+        navigator.clipboard.writeText(apiKey).then(function() {
+            // Display message.
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        }, function(err) {
+            // nothing
+        });
+    });
+
+    // Handle generate new extension key
+    $(document).on('click', '#generate-extension-key', function() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        // generate a token
+        $.post(
+            'sources/main.queries.php', {
+                type: 'generate_token',
+                type_category: 'action_system',
+                size: 64,
+                capital: true,
+                secure: false,
+                numeric: true,
+                symbols: false,
+                lowercase: true,
+                unique_names: false,
+                reason: 'extension_key_generation',
+                duration: 10,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+
+                // Update key value
+                $('#browser_extension_key').val(data.token);
+
+                // Store in DB
+                var data = {
+                    "field": 'browser_extension_key',
+                    "value": data.token,
+                }
+                $.post(
+                    "sources/admin.queries.php", {
+                        type: "save_option_change",
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        // Handle server answer
+                        try {
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                        } catch (e) {
+                            // error
+                            toastr.remove();
+                            toastr.error(
+                                '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                                '', {
+                                    closeButton: true,
+                                    positionClass: 'toast-bottom-right'
+                                }
+                            );
+                            return false;
+                        }
+                        if (debugJavascript === true) {
+                            console.log('Response from server:');
+                            console.log(data);
+                        }
+                        if (data.error === false) {
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('saved'); ?>',
+                                '', {
+                                    timeOut: 2000,
+                                    progressBar: true
+                                }
+                            );
+                        }
+                    }
+                );
+            }
+        );
+    });
+
     //]]>
 </script>

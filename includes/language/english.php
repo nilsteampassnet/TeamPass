@@ -29,6 +29,12 @@
  */
 
 return array(
+    'browser_extension' => 'Browser Extension',
+    'browser_extension_instructions' => 'This interface allows you to establish a secure link between your browser and your TeamPass instance. This setup is mandatory for the extension to communicate with the API in a fluid and protected manner.<br>Security Note: Never share your extension key. If you suspect your connection has been compromised, you can generate a new key here, which will instantly reset the extensions access. Share the new key with the browser extension owner only to update the license server (nils@teampass.net).',
+    'browser_extension_key' => 'Browser Extension Key',
+    'browser_extension_key_tip' => 'This key acts as a unique and private authentication token. It ensures that only a valid user is authorized to query your FQDN licence.',
+    'browser_extension_fqdn' => 'FQDN (Fully Qualified Domain Name)',
+    'browser_extension_fqdn_tip' => 'This is the unique address of your TeamPass server (e.g., mypasswords.com or localhost/TeamPass). This address allows the extension to identify exactly the licence owner.',
     'get_personal_items_migration_status' => 'Get personal items migration status',
     'admin_tasks_status' => 'Tasks status',
     'utils' => 'Utilities',
@@ -1454,4 +1460,6 @@ return array(
     'enable_http_request_login' => 'Automatic login using http header credentials',
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
+    'ldap_account_disabled' => 'AD account disabled',
+    'ldap_account_expired'  => 'AD account expired',
 );

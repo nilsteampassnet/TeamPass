@@ -278,7 +278,8 @@ $settings = [
     ['transparent_key_recovery_enabled', '1'],
     ['transparent_key_recovery_pbkdf2_iterations', '100000'],
     ['transparent_key_recovery_integrity_check', '1'],
-    ['transparent_key_recovery_max_age_days', '730']
+    ['transparent_key_recovery_max_age_days', '730'],
+    ['browser_extension_key', generateSecureToken(64)],
 ];
 
 foreach ($settings as $setting) {
@@ -546,6 +547,9 @@ if (empty($columnNeedsPasswordMigrationExists)) {
         WHERE (`auth_type` = 'local' OR `auth_type` IS NULL OR `auth_type` = '')"
     );
 }
+
+// -->
+
 
 //---<END 3.1.5
 
