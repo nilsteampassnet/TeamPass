@@ -1957,7 +1957,7 @@ function changePrivateKeyEncryptionPassword(
     $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
-    error_log($post_current_code." -- ".$post_new_code);
+    //error_log($post_current_code." -- ".$post_new_code);
     if (empty($post_new_code) === true) {
         // no user password
         return prepareExchangedData(

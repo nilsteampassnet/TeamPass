@@ -805,7 +805,7 @@ switch ($inputData['type']) {
                 ];
 
                 error_log(
-                    'SQL Error during import | increment_id: ' . $item['increment_id'] .
+                    'TEAMPASS Error - SQL Error during import | increment_id: ' . $item['increment_id'] .
                     ' | Message: ' . $e->getMessage() .
                     ' | StackTrace: ' . $e->getTraceAsString()
                 );
