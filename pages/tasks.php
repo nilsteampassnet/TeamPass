@@ -310,7 +310,7 @@ catch (Exception $e) {
                                         <h5><i class="fa-solid fa-calendar-days mr-2"></i><?php echo $lang->get('done_tasks_history_delay_in_days'); ?></h5>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 604800; ?>'>
+                                            <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 7; ?>'>
                                         </div>
                                     </div>
 
