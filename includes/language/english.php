@@ -1460,4 +1460,6 @@ return array(
     'enable_http_request_login' => 'Automatic login using http header credentials',
     'duration_login_attempt' => 'Seconds till auto login:',
     'newly_created_user_role' => 'Newly created user has role',
+    'ldap_account_disabled' => 'AD account disabled',
+    'ldap_account_expired'  => 'AD account expired',
 );

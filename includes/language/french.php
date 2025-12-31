@@ -1469,5 +1469,7 @@ return array(
     'browser_extension_fqdn' => 'FQDN (Nom de Domaine Pleinement Qualifié)',
     'browser_extension_fqdn_tip' => 'Il s&apos;agit de l&apos;adresse unique de votre serveur TeamPass (ex : mypasswords.com ou localhost/TeamPass). Cette adresse permet à l&apos;extension d&apos;identifier précisément le détenteur de la licence.',
     'browser_extension' => 'Extension pour navigateurs',
+    'ldap_account_disabled' => 'Compte AD désactivé',
+    'ldap_account_enabled' => 'Compte AD actif',
 
 );
