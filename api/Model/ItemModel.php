@@ -58,7 +58,7 @@ class ItemModel
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
         );
-
+        
         $ret = [];
         foreach ($rows as $row) {
             $userKey = DB::queryfirstrow(

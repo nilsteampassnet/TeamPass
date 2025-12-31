@@ -393,14 +393,18 @@ function getDomainFromSettingsUrl(string $url): string
                                 </div>
                                 
                                 <div class='row mt-2 mb-2'>
-                                    <div class='col-6'>
+                                    <div class='col-5'>
                                         <?php echo $lang->get('browser_extension_key'); ?>
                                         <small id='passwordHelpBlock' class='form-text text-muted'>
                                             <?php echo $lang->get('browser_extension_key_tip'); ?>
                                         </small>
                                     </div>
-                                    <div class='col-6'>
-                                    <input type='text' class='form-control form-control-sm' disabled="disabled" id='browser_extension_key' value='<?php echo isset($SETTINGS['browser_extension_key']) === true ? (string) $SETTINGS['browser_extension_key'] : 'Please upgrade'; ?>'>
+                                    <div class='col-5'>
+                                        <input type='text' class='form-control form-control-sm' disabled="disabled" id='browser_extension_key' value='<?php echo isset($SETTINGS['browser_extension_key']) === true ? (string) $SETTINGS['browser_extension_key'] : 'Please upgrade'; ?>'>
+                                    </div>
+                                    <div class='col-2'>
+                                        <button class="btn btn-sm btn-primary ml-1" id="copy-extension-key"><i class="fa-regular fa-copy pointer"></i></button>
+                                        <button class="btn btn-sm btn-primary ml-1" id="generate-extension-key"><i class="fa-solid fa-rotate pointer"></i></button>
                                     </div>
                                 </div>
 

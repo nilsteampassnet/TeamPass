@@ -146,7 +146,6 @@ class AuthModel
                 // Log user
                 logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
 
-error_log("Creating JWT for user ".$inputData['login']." with email: ".$userInfo['email']);
                 // create JWT with session key
                 return $this->createUserJWT(
                     (int) $userInfo['id'],

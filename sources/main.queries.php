@@ -957,6 +957,29 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
             return '[{"token" : "' . $token . '"}]';
+        
+
+        /*
+         * Generates a TOKEN
+         */
+        case 'generate_token'://action_system
+            $token = GenerateCryptKey(
+                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
+                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false
+            );
+
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'token' => $token,
+                ),
+                'encode'
+            );
 
         /*
         * Default case
