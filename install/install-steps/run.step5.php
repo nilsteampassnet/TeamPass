@@ -673,7 +673,8 @@ class DatabaseInstaller
             array('admin', 'transparent_key_recovery_enabled', '1'),
             array('admin', 'transparent_key_recovery_pbkdf2_iterations', '100000'),
             array('admin', 'transparent_key_recovery_integrity_check', '1'),
-            array('admin', 'transparent_key_recovery_max_age_days', '730')
+            array('admin', 'transparent_key_recovery_max_age_days', '730'),
+            array('admin', 'browser_extension_key', generateSecureToken(64))
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting

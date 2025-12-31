@@ -549,18 +549,7 @@ if (empty($columnNeedsPasswordMigrationExists)) {
 }
 
 // -->
-// EXTENSION - BROWSER KEY
-/**
- * Generates a cryptographically secure hexadecimal token.
- * * @param int $length The length of the token to generate (must be even).
- * @return string The generated hexadecimal token.
- */
-function generateSecureToken(int $length = 64): string
-{
-    // random_bytes returns bytes, so we take half the length for bin2hex
-    return bin2hex(random_bytes($length / 2));
-}
-// --< 
+
 
 //---<END 3.1.5
 
