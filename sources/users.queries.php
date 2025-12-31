@@ -316,6 +316,7 @@ if (null !== $post_type) {
                         'lastname' => $lastname,
                         'pw' => $hashedPassword,
                         'email' => $email,
+                        'auth_type' => 'local',
                         'admin' => empty($is_admin) === true ? 0 : $is_admin,
                         'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
                         'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
@@ -370,6 +371,9 @@ if (null !== $post_type) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
+                            'fa_icon' => 'fas fa-folder',
+                            'fa_icon_selected' => 'fas fa-folder-open',
+                            'categories' => '',
                         )
                     );
                     $new_folder_id = DB::insertId();
@@ -400,13 +404,10 @@ if (null !== $post_type) {
                         )
                     );
                     // Add the new user to this role
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'fonction_id' => is_int($new_role_id),
-                        ),
-                        'id=%i',
-                        $new_user_id
+                    setUserRoles(
+                        $new_user_id,
+                        array_unique(array_merge($groups, [(int) $new_role_id])),
+                        'manual'
                     );
                     // rebuild tree
                     $tree->rebuild();
@@ -545,7 +546,6 @@ if (null !== $post_type) {
                             'deleted_at' => $timestamp,
                             'disabled' => 1,
                             'special' => 'none',
-                            'auth_type' => 'none'
                         ),
                         'id = %i',
                         $userId
