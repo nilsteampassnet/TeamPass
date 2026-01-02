@@ -1464,7 +1464,7 @@ return array(
     'newly_created_user_role' => 'Rôle de l&apos;utilisateur créé',
     'config' => 'Configuration',
     'browser_extension_instructions' => 'Cette interface vous permet d&apos;établir une liaison sécurisée entre votre navigateur et votre instance TeamPass. Cette configuration est obligatoire pour que l&apos;extension puisse communiquer avec l&apos;API de manière fluide et protégée.<br>Note de sécurité : Ne partagez jamais votre clé d&apos;extension. Si vous soupçonnez que votre connexion a été compromise, vous pouvez générer une nouvelle clé ici ; cela réinitialisera instantanément les accès de l&apos;extension. Transmettez la nouvelle clé exclusivement au propriétaire de l&apos;extension afin de mettre à jour le serveur de licences (nils@teampass.net)."',
-    'browser_extension_key' => 'Clé de l&apos;extension pour navigatur',
+    'browser_extension_key' => 'Clé de l&apos;extension pour navigateur',
     'browser_extension_key_tip' => 'Cette clé agit comme un jeton d&apos;authentification unique et privé. Elle assure que seul un utilisateur légitime est autorisé à communiquer avec l&apos;API liée à votre nom de domaine (FQDN).',
     'browser_extension_fqdn' => 'FQDN (Nom de Domaine Pleinement Qualifié)',
     'browser_extension_fqdn_tip' => 'Il s&apos;agit de l&apos;adresse unique de votre serveur TeamPass (ex : mypasswords.com ou localhost/TeamPass). Cette adresse permet à l&apos;extension d&apos;identifier précisément le détenteur de la licence.',
