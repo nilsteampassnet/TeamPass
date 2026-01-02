@@ -1487,7 +1487,7 @@ return array(
     'bck_instance_key_copied' => 'Clé d\'instance copiée dans le presse-papier.',
     'bck_instance_key_copy_failed' => 'Impossible de copier la clé d\'instance.',
     'bck_instance_key_not_set' => 'La clé d\'instance n\'est pas définie.',
-        'bck_scheduled_title' => 'Sauvegardes planifiées (base de données)',
+    'bck_scheduled_title' => 'Sauvegardes planifiées (base de données)',
     'bck_scheduled_enabled' => 'Activer les sauvegardes planifiées',
     'bck_scheduled_frequency' => 'Fréquence',
     'bck_frequency_daily' => 'Quotidienne',
