@@ -35,6 +35,7 @@ use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\NestedTree\NestedTree;
+use voku\helper\AntiXSS;
 
 // Load functions
 require_once 'main.functions.php';
@@ -44,6 +45,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
+$antiXss = new AntiXSS();
 
 // Load config
 $configManager = new ConfigManager();
@@ -138,6 +140,7 @@ if (null !== $post_type) {
                     $id_managed = '';
                     $i = 1;
                     foreach ($rows as $record) {
+                        $record = secureOutput($record, ['login']);
                         $restricted_users_array = explode(';', $record['restricted_to']);
                         //exclude all results except the first one returned by query
                         if (empty($id_managed) || $id_managed != $record['id']) {

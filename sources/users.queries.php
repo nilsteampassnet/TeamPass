@@ -40,6 +40,7 @@ use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
+use voku\helper\AntiXSS;
 
 // Load functions
 require_once 'main.functions.php';
@@ -49,6 +50,7 @@ loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
+$antiXss = new AntiXSS();
 
 // Load config
 $configManager = new ConfigManager();
@@ -87,18 +89,37 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
 
+// Prepare POST variables
+$data = [
+    'type' => $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'data' => $request->request->filter('data', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'key' => $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS),
+    'action' => $request->request->filter('action', '', FILTER_SANITIZE_SPECIAL_CHARS),
+];
+
+$filters = [
+    'type' => 'trim|escape',
+    'data' => 'trim|escape',
+    'key' => 'trim|escape',
+    'action' => 'trim|escape',
+];
+
+$inputData = dataSanitizer(
+    $data,
+    $filters
+);
+
 // Prepare post variables
-$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
-$isprofileupdate = filter_input(INPUT_POST, 'isprofileupdate', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$inputData['key'] = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$inputData['type'] = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$inputData['data'] = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
 $password_do_not_change = 'do_not_change';
 
 
 //Load Tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-if (null !== $post_type) {
+if (null !== $inputData['type']) {
 
     // List of post types allowed to all users
     $all_users_can_access = [
@@ -109,9 +130,9 @@ if (null !== $post_type) {
 
     // decrypt and retrieve data in JSON format
     $dataReceived = [];
-    if (!empty($post_data)) {
+    if (!empty($inputData['data'])) {
         $dataReceived = prepareExchangedData(
-            $post_data,
+            $inputData['data'],
             'decode'
         );
     }
@@ -122,7 +143,7 @@ if (null !== $post_type) {
         (int) $session->get('user-can_manage_all_users') !== 1) {
 
         // Administrative type requested -> deny
-        if (!in_array($post_type, $all_users_can_access)) {
+        if (!in_array($inputData['type'], $all_users_can_access)) {
             echo prepareExchangedData(
                 array(
                     'error' => true,
@@ -140,7 +161,7 @@ if (null !== $post_type) {
     // For administrative types only, do additional check whether user is manager 
     // and $dataReceived['user_id'] is defined to ensure that this manager can
     // modify this user account.
-    if (!in_array($post_type, $all_users_can_access) &&
+    if (!in_array($inputData['type'], $all_users_can_access) &&
         (int) $session->get('user-admin') !== 1 && !empty($dataReceived['user_id'])) {
 
         // Get info about user to modify
@@ -192,13 +213,13 @@ if (null !== $post_type) {
         }
     }
 
-    switch ($post_type) {
+    switch ($inputData['type']) {
         /*
          * ADD NEW USER
          */
         case 'add_new_user':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -483,7 +504,7 @@ if (null !== $post_type) {
          */
         case 'delete_user':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -670,7 +691,7 @@ if (null !== $post_type) {
          */
         case 'get_user_info':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -695,6 +716,9 @@ if (null !== $post_type) {
 
             // Get info about user
             $rowUser = getUserCompleteData(null, $post_id);
+
+            // Secure some fields
+            $rowUser = secureOutput($rowUser, ['login', 'email', 'lastname', 'name']);
 
             // Is this user allowed to do this?
             if (
@@ -919,7 +943,7 @@ if (null !== $post_type) {
          */
         case 'store_user_changes':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1231,7 +1255,7 @@ if (null !== $post_type) {
          */
         case 'is_login_available':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1275,7 +1299,7 @@ if (null !== $post_type) {
          */
         case 'user_folders_rights':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1406,7 +1430,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_users_for_sharing':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1570,7 +1594,7 @@ if (null !== $post_type) {
         */
         case 'update_users_rights_sharing':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1710,7 +1734,7 @@ if (null !== $post_type) {
          */
         case 'user_profile_update':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1858,7 +1882,7 @@ if (null !== $post_type) {
             //CASE where refreshing table
         case 'save_user_change':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1995,7 +2019,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_users_in_ldap':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2231,7 +2255,7 @@ if (null !== $post_type) {
          */
         case 'add_user_from_ad':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2432,7 +2456,7 @@ if (null !== $post_type) {
          */
         case 'change_user_auth_type':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2503,7 +2527,7 @@ if (null !== $post_type) {
         */
         case 'get_list_of_users_in_oauth2':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2642,7 +2666,7 @@ if (null !== $post_type) {
          */
         case 'manage_user_disable_status':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2735,7 +2759,7 @@ if (null !== $post_type) {
 
         case "create_new_user_tasks":
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2843,7 +2867,7 @@ if (null !== $post_type) {
         */
         case 'get_generate_keys_progress':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2916,7 +2940,7 @@ if (null !== $post_type) {
          */
         case "get_user_infos":
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2960,7 +2984,7 @@ if (null !== $post_type) {
         
         case "reset_antibruteforce":
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2986,7 +3010,7 @@ if (null !== $post_type) {
         
         case "list_deleted_users":
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3012,7 +3036,7 @@ if (null !== $post_type) {
         
         case "purge_user":
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3050,7 +3074,7 @@ if (null !== $post_type) {
 
         case 'get_purgeable_users':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3115,7 +3139,7 @@ if (null !== $post_type) {
 
         case 'purge_users_batch':            
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -3192,7 +3216,7 @@ if (null !== $post_type) {
 
         case 'restore_user':
             // Check KEY
-            if ($post_key !== $session->get('key')) {
+            if ($inputData['key'] !== $session->get('key')) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
