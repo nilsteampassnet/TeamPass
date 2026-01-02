@@ -1462,7 +1462,7 @@ return array(
     'newly_created_user_role' => 'Newly created user has role',
     'ldap_account_disabled' => 'AD account disabled',
     'ldap_account_expired'  => 'AD account expired',
-        'bck_scheduled_title' => 'Scheduled database backups',
+    'bck_scheduled_title' => 'Scheduled database backups',
     'bck_scheduled_enabled' => 'Enable scheduled backups',
     'bck_scheduled_frequency' => 'Frequency',
     'bck_frequency_daily' => 'Daily',
