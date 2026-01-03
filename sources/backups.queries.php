@@ -807,7 +807,24 @@ case 'scheduled_save_settings':
                 );
                 break;
             }
-        
+            
+            // Put TeamPass in maintenance mode for the whole restore workflow.
+            // Intentionally NOT disabled at the end: admin must validate the instance after restore.
+            try {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => '1',
+                        'updated_at' => time(),
+                    ),
+                    'intitule = %s AND type= %s',
+                    'maintenance_mode',
+                    'admin'
+                );
+            } catch (Throwable $ignored) {
+                // Best effort
+            }
+
             // Decrypt and retrieve data in JSON format
             $dataReceived = prepareExchangedData(
                 $post_data,
@@ -1447,6 +1464,36 @@ if (!empty($errors)) {
                 if (is_string($post_backupFile) && $post_backupFile !== '' && file_exists($post_backupFile) === true) {
                     @unlink($post_backupFile);
                 }
+
+            // Ensure maintenance mode stays enabled after restore (dump may have restored it to 0).
+            try {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => '1',
+                        'updated_at' => time(),
+                    ),
+                    'intitule = %s AND type= %s',
+                    'maintenance_mode',
+                    'admin'
+                );
+            } catch (Throwable $ignored) {
+                // Best effort
+            }
+
+// Cleanup: after a DB restore, the SQL dump may re-import a running database_backup task
+// (is_in_progress=1) that becomes a "ghost" in Task Manager.
+try {
+    DB::delete(
+        prefixTable('background_tasks'),
+        'process_type=%s AND is_in_progress=%i',
+        'database_backup',
+        1
+    );
+} catch (Throwable $ignored) {
+    // Best effort: ignore if table does not exist yet / partial restore / schema mismatch
+}
+
 // Finalize: clear lock/session state and log duration (best effort)
 $ctx = $session->get('restore-context');
 $scope = is_array($ctx) ? (string) ($ctx['scope'] ?? '') : '';
