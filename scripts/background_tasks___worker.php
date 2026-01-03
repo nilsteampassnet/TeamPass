@@ -90,30 +90,188 @@ class TaskWorker {
                 case 'migrate_user_personal_items':
                     $this->migratePersonalItems($this->taskData);
                     break;
+                case 'database_backup':
+                    $this->handleDatabaseBackup($this->taskData);
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
 
             // Mark the task as completed
-            $this->completeTask();
+            try {
+                $this->completeTask();
+            } catch (Throwable $e) {
+                $this->handleTaskFailure($e);
+            }
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             $this->handleTaskFailure($e);
         }
+
     }
-    
+    /**
+     * Perform a scheduled database backup (encrypted) into files/backups.
+     */
+    private function handleDatabaseBackup(array $taskData): void
+    {
+        require_once __DIR__ . '/../sources/backup.functions.php';
+
+        // Default target dir: <path_to_files_folder>/backups
+        $baseFilesDir = (string)($this->settings['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+        $targetDir = rtrim($baseFilesDir, '/') . '/backups';
+
+        // Allow override via task arguments (optional)
+        if (!empty($taskData['output_dir']) && is_string($taskData['output_dir'])) {
+            $targetDir = rtrim($taskData['output_dir'], '/');
+        }
+
+        if (!is_dir($targetDir)) {
+            if (!@mkdir($targetDir, 0770, true) && !is_dir($targetDir)) {
+                throw new Exception('Cannot create backup target dir: ' . $targetDir);
+            }
+        }
+        if (!is_writable($targetDir)) {
+            throw new Exception('Backup target dir is not writable: ' . $targetDir);
+        }
+
+        // Use stored encryption key (same as UI)
+        $encryptionKey = (string)($this->settings['bck_script_passkey'] ?? '');
+        if ($encryptionKey === '') {
+            throw new Exception('Missing encryption key (bck_script_passkey).');
+        }
+
+        $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
+            'output_dir' => $targetDir,
+            'filename_prefix' => 'scheduled-',
+        ]);
+
+        if (($res['success'] ?? false) !== true) {
+            throw new Exception($res['message'] ?? 'Backup failed');
+        }
+
+        // Store a tiny summary for the task completion "arguments" field (no secrets)
+        $this->taskData['backup_file'] = $res['filename'] ?? '';
+        $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
+        $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
+
+        // Retention purge (scheduled backups only)
+        $backupSource = (string)($taskData['source'] ?? '');
+        $backupDir = (string)($taskData['output_dir'] ?? '');   // from task arguments (reliable)
+        if ($backupDir === '') {
+            $backupDir = (string)($targetDir ?? '');            // fallback if you have it
+        }
+
+        // keep for debug/trace
+        $this->taskData['output_dir'] = $backupDir;
+
+        if ($backupSource === 'scheduler' && $backupDir !== '') {
+            $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+            $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
+
+            $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
+            $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+
+            if (LOG_TASKS === true) {
+                $this->logger->log("database_backup: purge retention={$days}d dir={$backupDir} deleted={$deleted}", 'INFO');
+            }
+        }
+
+        // If launched by scheduler, update scheduler status in teampass_misc
+        if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
+            $this->updateSchedulerState('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
+        }
+
+        if (LOG_TASKS === true) {
+            $this->logger->log(
+                'database_backup: created ' . ($this->taskData['backup_file'] ?? '') . ' (' . $this->taskData['backup_size_bytes'] . ' bytes)',
+                'INFO'
+            );
+        }
+    }
+
     /**
      * Mark the task as completed in the database.
      * This method updates the task status to 'completed' and sets the finished_at timestamp.
      * 
      * @return void
      */
+    private function updateSchedulerState(string $status, string $message): void
+    {
+        $this->upsertMiscSetting('bck_scheduled_last_status', $status);
+        $this->upsertMiscSetting('bck_scheduled_last_message', mb_substr($message, 0, 500));
+        $this->upsertMiscSetting('bck_scheduled_last_completed_at', (string)time());
+    }
+
+    private function upsertMiscSetting(string $key, string $value): void
+    {
+        $table = prefixTable('misc');
+
+        $exists = (int)DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
+            'settings',
+            $key
+        );
+
+        if ($exists > 0) {
+            DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
+        } else {
+            DB::insert($table, ['type' => 'settings', 'intitule' => $key, 'valeur' => $value]);
+        }
+    }
+
+    private function getMiscSetting(string $key, string $default = ''): string
+    {
+        $table = prefixTable('misc');
+
+        $val = DB::queryFirstField(
+            'SELECT valeur FROM ' . $table . ' WHERE type = %s AND intitule = %s LIMIT 1',
+            'settings',
+            $key
+        );
+
+        if ($val === null || $val === false || $val === '') {
+            return $default;
+        }
+
+        return (string) $val;
+    }
+
+    private function purgeOldScheduledBackups(string $dir, int $retentionDays): int
+    {
+        if ($retentionDays <= 0) {
+            return 0; // 0 => désactivé
+        }
+
+        if (!is_dir($dir)) {
+            return 0;
+        }
+
+        $cutoff = time() - ($retentionDays * 86400);
+        $deleted = 0;
+
+        foreach (glob(rtrim($dir, '/') . '/scheduled-*.sql') as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+
+            $mtime = @filemtime($file);
+            if ($mtime !== false && $mtime < $cutoff) {
+                if (@unlink($file)) {
+                    $deleted++;
+                }
+            }
+        }
+
+        return $deleted;
+    }
+
     private function completeTask() {
         // Prepare data for updating the task status
         $updateData = [
             'is_in_progress' => -1,
             'finished_at' => time(),
-            'status' => 'completed'
+            'status' => 'completed',
+            'error_message' => null,   // <-- on efface toute erreur précédente
         ];
 
         // Prepare anonimzation of arguments
@@ -137,6 +295,14 @@ class TaskWorker {
                     'author' => $this->taskData['author'],
                 ]
             );
+        } elseif ($this->processType === 'database_backup') {
+            $arguments = json_encode(
+                [
+                    'file' => $this->taskData['backup_file'] ?? '',
+                    'size_bytes' => $this->taskData['backup_size_bytes'] ?? 0,
+                    'encrypted' => $this->taskData['backup_encrypted'] ?? false,
+                ]
+            );
         } else {
             $arguments = '';
         }
@@ -155,6 +321,7 @@ class TaskWorker {
             'increment_id = %i',
             $this->taskId
         );
+
         if (LOG_TASKS=== true) $this->logger->log('Finishing task: ' . $this->taskId, 'DEBUG');
     }
 
@@ -166,7 +333,7 @@ class TaskWorker {
      * @param Exception $e The exception that occurred during task processing.
      * @return void
      */
-    private function handleTaskFailure(Exception $e) {
+    private function handleTaskFailure(Throwable $e) {
         DB::update(
             prefixTable('background_tasks'),
             [
@@ -179,6 +346,15 @@ class TaskWorker {
             $this->taskId
         );
         $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+    // Purge retention even on failure (safe: only scheduled-*.sql)
+        $backupDir = (string)($this->taskData['output_dir'] ?? '');
+        if ($backupDir !== '' && is_dir($backupDir)) {
+        $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+        $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
+
+        $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
+        $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+        }
     }
 
     /**
@@ -288,6 +464,9 @@ $processType = $argv[2];
 $taskData = $argv[3] ?? null;
 if ($taskData) {
     $taskData = json_decode($taskData, true);
+    if (!is_array($taskData)) {
+        $taskData = [];
+    }
 } else {
     $taskData = [];
 }
