@@ -3,30 +3,9 @@
 declare(strict_types=1);
 
 /**
- * Teampass - a collaborative passwords manager.
- * ---
- * This file is part of the TeamPass project.
- * 
- * TeamPass is free software: you can redistribute it and/or modify it
- * under the terms of the GNU General Public License as published by
- * the Free Software Foundation, version 3 of the License.
- * 
- * TeamPass is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
- * Certain components of this file may be under different licenses. For
- * details, see the `licenses` directory or individual file headers.
- * ---
- * @file      french.php
- * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
- * @license   GPL-3.0
- * @see       https://www.teampass.net
+ * Teampass - Backup helper functions
+ * This file provides reusable functions for database backup creation
+ * (manual UI + scheduled/background tasks).
  */
 
 if (!function_exists('tpCreateDatabaseBackup')) {
@@ -56,12 +35,73 @@ if (!function_exists('tpCreateDatabaseBackup')) {
     {
         // Ensure required dependencies are loaded
         $mainFunctionsPath = __DIR__ . '/main.functions.php';
-        if (!function_exists('GenerateCryptKey') && is_file($mainFunctionsPath)) {
+        if ((!function_exists('GenerateCryptKey') || !function_exists('prefixTable')) && is_file($mainFunctionsPath)) {
             require_once $mainFunctionsPath;
         }
         if (function_exists('loadClasses') && !class_exists('DB')) {
             loadClasses('DB');
         }
+
+        // Enable maintenance mode for the whole backup operation, then restore previous value at the end.
+        // This is best-effort: a failure to toggle maintenance must not break the backup itself.
+        $__tpMaintenanceGuard = new class() {
+            private $prev = null;
+            private $changed = false;
+
+            public function __construct()
+            {
+                try {
+                    $row = DB::queryFirstRow(
+                        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE intitule=%s AND type=%s',
+                        'maintenance_mode',
+                        'admin'
+                    );
+
+                    if (is_array($row) && array_key_exists('valeur', $row)) {
+                        $this->prev = (string) $row['valeur'];
+                    }
+
+                    // Only toggle if it was not already enabled
+                    if ($this->prev !== '1') {
+                        DB::update(
+                            prefixTable('misc'),
+                            array(
+                                'valeur' => '1',
+                                'updated_at' => time(),
+                            ),
+                            'intitule = %s AND type= %s',
+                            'maintenance_mode',
+                            'admin'
+                        );
+                        $this->changed = true;
+                    }
+                } catch (Throwable $ignored) {
+                    // ignore
+                }
+            }
+
+            public function __destruct()
+            {
+                if ($this->changed !== true) {
+                    return;
+                }
+
+                try {
+                    DB::update(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => (string) ($this->prev ?? '0'),
+                            'updated_at' => time(),
+                        ),
+                        'intitule = %s AND type= %s',
+                        'maintenance_mode',
+                        'admin'
+                    );
+                } catch (Throwable $ignored) {
+                    // ignore
+                }
+            }
+        };
 
         $outputDir = $options['output_dir'] ?? ($SETTINGS['path_to_files_folder'] ?? '');
         $prefix = (string)($options['filename_prefix'] ?? '');
