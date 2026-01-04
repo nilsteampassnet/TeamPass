@@ -322,6 +322,10 @@ class ItemModel
      */
     private function checkPasswordComplexity(string $password, array $itemInfos) : void
     {
+        if ($itemInfos['folderId'] <= 0 || is_int($itemInfos['folderId']) === false || isset($itemInfos['folderId']) === false) {
+            throw new Exception('Invalid folder ID for complexity check');
+        }
+        
         $folderComplexity = DB::queryFirstRow(
             'SELECT valeur
             FROM ' . prefixTable('misc') . '

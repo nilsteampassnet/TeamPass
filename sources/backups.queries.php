@@ -268,7 +268,7 @@ $post_data = filter_input(
             readfile($fpReal);
             exit;
 
-//CASE adding a new function
+        //CASE adding a new function
         case 'onthefly_backup':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -458,7 +458,7 @@ $post_data = filter_input(
             );
             break;
 
-case 'scheduled_save_settings':
+        case 'scheduled_save_settings':
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
                 echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
                 break;
@@ -1226,7 +1226,7 @@ if ($isStartRestore === true) {
 
                 // Remove original encrypted file ONLY for legacy uploaded one-shot restore
                 if ($deleteEncryptedAfterDecrypt === true) {
-                    fileDelete($serverPath);
+                    fileDelete($serverPath, $SETTINGS);
 
                     // Delete operation record
                     if ($legacyOperationId !== null) {

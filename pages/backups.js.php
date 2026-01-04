@@ -1176,7 +1176,7 @@ var tpScheduled = {
   saveSettings: function() {
     tpScheduled.hideAlert();
     var payload = {
-      enabled: $('#scheduled-enabled').is(':checked') ? 1 : 0,
+      enabled: $('#backup-scheduled-enabled_input').val(),
       frequency: $('#scheduled-frequency').val(),
       time: $('#scheduled-time').val(),
       dow: parseInt($('#scheduled-dow').val(), 10),
@@ -1184,6 +1184,7 @@ var tpScheduled = {
       retention_days: parseInt($('#scheduled-retention').val(), 10),
       output_dir: $('#scheduled-output-dir').val()
     };
+    console.log(payload)
 
     tpScheduled.ajax('scheduled_save_settings', payload, function(r) {
       if (!r || r.error) {

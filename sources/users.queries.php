@@ -2565,7 +2565,8 @@ if (null !== $post_type) {
                 // Is user in Teampass ?
                 $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
                 if (null !== $userLogin) {
-                    //error_log(print_r($oAuthUser,true));
+                    if (WIP) error_log(print_r($oAuthUser,true));
+                    
                     // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
                         'SELECT id, login, auth_type

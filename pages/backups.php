@@ -239,74 +239,99 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                             </div>
 
                             <div class="tab-pane fade" id="scheduled" role="tabpanel" aria-labelledby="scheduled-tab">
-<div class="alert alert-info mt-3" id="scheduled-restore-info" style="display:none;">
-                                    <i class="fas fa-info-circle"></i>
+                                <div class="alert alert-info mt-3" id="scheduled-restore-info" style="display:none;">
+                                    <i class="fa-solid fa-info-circle"></i>
                                     <?php echo sprintf($lang->get('bck_restore_scheduled_info'), '<b>' . $lang->get('on_the_fly') . '</b>', '<b>' . $lang->get('bck_instance_encryption_key') . '</b>'); ?>
                                 </div>
                                 <div class="row">
                                     <div class="col-12 col-lg-6">
                                         <div class="card mt-3">
                                             <div class="card-header">
+                                                <i class="fa-solid fa-cog mr-2"></i>
                                                 <strong><?php echo $lang->get('bck_scheduled_title'); ?></strong>
                                             </div>
                                             <div class="card-body">
 
                                                 <div id="scheduled-alert" class="alert d-none" role="alert"></div>
 
-                                                <div class="form-check form-switch mb-3">
-                                                    <input class="form-check-input" type="checkbox" id="scheduled-enabled">
-                                                    <label class="form-check-label" for="scheduled-enabled">
+                                                <div class="row mb-4">
+                                                    <div class="col-9">
                                                         <?php echo $lang->get('bck_scheduled_enabled'); ?>
-                                                    </label>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end">
+                                                        <div class="toggle toggle-modern" id="backup-scheduled-enabled" data-toggle-on="<?php echo isset($SETTINGS['backup-scheduled-enabled']) && (int) $SETTINGS['backup-scheduled-enabled'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="backup-scheduled-enabled_input" value="<?php echo isset($SETTINGS['backup-scheduled-enabled']) && (int) $SETTINGS['backup-scheduled-enabled'] === 1 ? '1' : '0'; ?>">
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label class="form-label" for="scheduled-frequency"><?php echo $lang->get('bck_scheduled_frequency'); ?></label>
-                                                    <select class="form-select" id="scheduled-frequency">
-                                                        <option value="daily"><?php echo $lang->get('bck_frequency_daily'); ?></option>
-                                                        <option value="weekly"><?php echo $lang->get('bck_frequency_weekly'); ?></option>
-                                                        <option value="monthly"><?php echo $lang->get('bck_frequency_monthly'); ?></option>
-                                                    </select>
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="scheduled-frequency"><?php echo $lang->get('bck_scheduled_frequency'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <select class="form-control form-control-sm" id="scheduled-frequency">
+                                                            <option value="daily"><?php echo $lang->get('bck_frequency_daily'); ?></option>
+                                                            <option value="weekly"><?php echo $lang->get('bck_frequency_weekly'); ?></option>
+                                                            <option value="monthly"><?php echo $lang->get('bck_frequency_monthly'); ?></option>
+                                                        </select>
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label class="form-label" for="scheduled-time"><?php echo $lang->get('bck_scheduled_time'); ?></label>
-                                                    <input class="form-control" type="time" id="scheduled-time" value="02:00">
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="scheduled-time"><?php echo $lang->get('bck_scheduled_time'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="time" id="scheduled-time" value="02:00">
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3 d-none" id="scheduled-weekly-wrap">
-                                                    <label class="form-label" for="scheduled-dow"><?php echo $lang->get('bck_scheduled_dow'); ?></label>
-                                                    <select class="form-select" id="scheduled-dow">
-                                                        <option value="1"><?php echo $lang->get('monday'); ?></option>
-                                                        <option value="2"><?php echo $lang->get('tuesday'); ?></option>
-                                                        <option value="3"><?php echo $lang->get('wednesday'); ?></option>
-                                                        <option value="4"><?php echo $lang->get('thursday'); ?></option>
-                                                        <option value="5"><?php echo $lang->get('friday'); ?></option>
-                                                        <option value="6"><?php echo $lang->get('saturday'); ?></option>
-                                                        <option value="7"><?php echo $lang->get('sunday'); ?></option>
-                                                    </select>
+                                                <div class="row mb-3 d-none" id="scheduled-weekly-wrap">
+                                                    <div class="col-6">
+                                                        <label class="form-text" for="scheduled-dow"><?php echo $lang->get('bck_scheduled_dow'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <select class="form-control form-control-sm" id="scheduled-dow">
+                                                            <option value="1"><?php echo $lang->get('monday'); ?></option>
+                                                            <option value="2"><?php echo $lang->get('tuesday'); ?></option>
+                                                            <option value="3"><?php echo $lang->get('wednesday'); ?></option>
+                                                            <option value="4"><?php echo $lang->get('thursday'); ?></option>
+                                                            <option value="5"><?php echo $lang->get('friday'); ?></option>
+                                                            <option value="6"><?php echo $lang->get('saturday'); ?></option>
+                                                            <option value="7"><?php echo $lang->get('sunday'); ?></option>
+                                                        </select>
+                                                    </div>
                                                 </div>
 
                                                 <div class="mb-3 d-none" id="scheduled-monthly-wrap">
-                                                    <label class="form-label" for="scheduled-dom"><?php echo $lang->get('bck_scheduled_dom'); ?></label>
-                                                    <input class="form-control" type="number" min="1" max="31" id="scheduled-dom" value="1">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="scheduled-dom"><?php echo $lang->get('bck_scheduled_dom'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="1" max="31" id="scheduled-dom" value="1">
+                                                    </div>
                                                 </div>
 
-                                                <div class="mb-3">
-                                                    <label class="form-label" for="scheduled-retention"><?php echo $lang->get('bck_scheduled_retention_days'); ?></label>
-                                                    <input class="form-control" type="number" min="1" max="3650" id="scheduled-retention" value="30">
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="scheduled-retention"><?php echo $lang->get('bck_scheduled_retention_days'); ?></label>                                                    
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="1" max="3650" id="scheduled-retention" value="30">
+                                                    </div>
                                                 </div>
 
                                                 <div class="mb-3">
                                                     <label class="form-label" for="scheduled-output-dir"><?php echo $lang->get('bck_scheduled_output_dir'); ?></label>
                                                     <input class="form-control" type="text" id="scheduled-output-dir" placeholder="/path/to/files/backups">
-                                                    <div class="form-text"><?php echo $lang->get('bck_scheduled_output_dir_help'); ?></div>
+                                                    <small class="form-text text-muted mt-4">
+                                                        <?php echo $lang->get('bck_scheduled_output_dir_help'); ?>
+                                                    </small>
                                                 </div>
 
                                                 <div class="d-flex gap-2">
                                                     <button type="button" class="btn btn-primary" id="scheduled-save-btn"><?php echo $lang->get('bck_scheduled_save'); ?></button>
-                                                    <button type="button" class="btn btn-secondary" id="scheduled-run-btn"><?php echo $lang->get('bck_scheduled_run_now'); ?></button>
-                                                    <button type="button" class="btn btn-outline-secondary" id="scheduled-refresh-btn"><?php echo $lang->get('bck_scheduled_refresh'); ?></button>
+                                                    <button type="button" class="btn btn-secondary ml-2" id="scheduled-run-btn"><?php echo $lang->get('bck_scheduled_run_now'); ?></button>
+                                                    <button type="button" class="btn btn-outline-secondary ml-2" id="scheduled-refresh-btn"><?php echo $lang->get('bck_scheduled_refresh'); ?></button>
                                                 </div>
 
                                             </div>
@@ -314,6 +339,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
                                         <div class="card mt-3">
                                             <div class="card-header">
+                                                <i class="fa-solid fa-eye mr-2"></i>
                                                 <strong><?php echo $lang->get('bck_scheduled_status'); ?></strong>
                                             </div>
                                             <div class="card-body">
@@ -331,8 +357,9 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                     <div class="col-12 col-lg-6">
                                         <div class="card mt-3">
                                             <div class="card-header d-flex align-items-center">
+                                                <i class="fa-solid fa-rectangle-list mr-2"></i>
                                                 <strong><?php echo $lang->get('bck_scheduled_backups_list'); ?></strong>
-</div>
+                                            </div>
                                             <div class="card-body">
                                             <div class="alert alert-info py-2 px-3 mb-3">
                                                 <button type="button" class="btn btn-link p-0 tp-copy-instance-key" data-toggle="tooltip" title="<?php echo $lang->get('bck_instance_key_copy_tooltip'); ?>" aria-label="<?php echo $lang->get('bck_instance_key_copy_tooltip'); ?>"><i class="fas fa-info-circle"></i></button>
