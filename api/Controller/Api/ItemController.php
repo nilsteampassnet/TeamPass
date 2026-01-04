@@ -249,7 +249,7 @@ class ItemController extends BaseController
                             (string) $arrQueryStringParams['icon'] ?? '',
                             (int) $userData['id'],
                             (string) $userData['username'],
-                            (string) $userData['totp'],
+                            (string) $userData['totp'] ?? '',
                         );
                         $responseData = json_encode($ret);
                     }
