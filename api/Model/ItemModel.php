@@ -179,7 +179,7 @@ class ItemModel
             $itemInfos = $this->getFolderSettings($folderId);
 
             // Step 5: Ensure the password meets folder complexity requirements
-            $this->checkPasswordComplexity($password, $itemInfos);
+            $this->checkPasswordComplexity($password, array_merge($itemInfos, ['folderId' => $folderId]));
 
             // Step 6: Check for duplicates in the system
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
