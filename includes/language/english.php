@@ -22,7 +22,7 @@
  * @file      english.php
  * ---
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009 - 2023 Teampass.net
+ * @copyright 2009 - 2026 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
  * @see       https://www.teampass.net
@@ -1537,4 +1537,14 @@ return array(
     'bck_instance_key_copied' => 'Instance key copied to clipboard.',
     'bck_instance_key_copy_failed' => 'Failed to copy instance key.',
     'bck_instance_key_not_set' => 'Instance key is not set.',
+    'bck_exclusive_users_title' => 'Sessions actives détectées',
+    'bck_exclusive_users_desc' => 'Cette opération est bloquée tant que d’autres utilisateurs sont connectés. Déconnecte-les d’abord (tu es exclu).',
+    'bck_exclusive_users_connected' => 'Opération bloquée : d’autres utilisateurs sont actuellement connectés.',
+    'bck_exclusive_disconnect_all' => 'Déconnecter tout le monde',
+    'bck_exclusive_continue' => 'Continuer',
+    'bck_exclusive_users_title' => 'Active sessions detected',
+    'bck_exclusive_users_desc' => 'This operation is blocked while other users are connected. Please disconnect them first (you are excluded).',
+    'bck_exclusive_users_connected' => 'Operation blocked: other users are currently connected.',
+    'bck_exclusive_disconnect_all' => 'Disconnect all',
+    'bck_exclusive_continue' => 'Continue',
 );
