@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      backups.js.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -541,6 +541,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (action === 'onthefly-backup') {
             // PERFORM ONE BACKUP
             if ($('#onthefly-backup-key').val() !== '') {
+                tpExclusiveUsers.ensure(function() {
 // Show cog
                 tpProgressToast.show('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
@@ -599,6 +600,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     }
                 );
 
+                });
+
+                return;
+
             }
         } else if (action === 'onthefly-restore') {
             // PERFORM A RESTORE
@@ -609,6 +614,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             toastr.error("<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
                             return false;
                         }
+                tpExclusiveUsers.ensure(function() {
                 // Pre-check: don't lock UI until we are sure the backup can be decrypted.
                 // This prevents the "stuck" progress modal when the key is wrong.
                 tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_checking_key')); ?> <i class="fas fa-circle-notch fa-spin"></i>');
@@ -757,6 +763,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Start restoration
                 restoreDatabase(0, '', 0);
+                });
+
+                return;
             }
         }
     });
@@ -936,7 +945,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         var overrideKey = $('#scheduled-restore-override-key').val() || '';
-        tpScheduledRestoreStart(serverFile, overrideKey);
+        tpExclusiveUsers.ensure(function() {
+            tpScheduledRestoreStart(serverFile, overrideKey);
+        });
     });
 
 
@@ -1393,7 +1404,17 @@ var tpScheduled = {
 
     $('#scheduled-frequency').on('change', tpScheduled.toggleFreqUI);
     $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
-    $('#scheduled-run-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.runNow(); });
+    $('#scheduled-run-btn').on('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof tpExclusiveUsers !== 'undefined' && tpExclusiveUsers && typeof tpExclusiveUsers.ensure === 'function') {
+            tpExclusiveUsers.ensure(function() {
+                tpScheduled.runNow();
+            });
+        } else {
+            tpScheduled.runNow();
+        }
+    });
     $(document).on('click', '#scheduled-refresh-btn', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.refreshAll(); });
 
 
@@ -1420,6 +1441,187 @@ var tpScheduled = {
     }
   }
 };
+
+/**
+ * Strict mode: ensure no other users are connected before starting backup/restore
+ * (reuse the same design/components as Utilities > Database > Logged-in users)
+ */
+var tpExclusiveUsers = {
+    currentUserId: <?php echo (int) $session->get('user-id'); ?>,
+    oTable: null,
+    pendingCallback: null,
+
+    initTable: function () {
+        var self = this;
+
+        if (self.oTable !== null) {
+            return;
+        }
+
+        self.oTable = $('#tp-connected-users-table').DataTable({
+            'retrieve': true,
+            'paging': true,
+            'sPaginationType': 'listbox',
+            'searching': true,
+            'order': [[1, 'asc']],
+            'info': true,
+            'processing': false,
+            'serverSide': true,
+            'responsive': true,
+            'stateSave': true,
+            'autoWidth': true,
+            'ajax': {
+                url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=users_logged_in'
+            },
+            'language': {
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+            },
+            'preDrawCallback': function () {
+                toastr.remove();
+                toastr.info('<?php echo addslashes($lang->get('loading_data')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            },
+            'drawCallback': function () {
+                toastr.remove();
+                toastr.success('<?php echo addslashes($lang->get('done')); ?>', '', { timeOut: 800 });
+                self.refreshContinueState();
+            },
+            'columnDefs': [
+                {
+                    'width': '80px',
+                    'targets': 0,
+                    'render': function (data, type, row, meta) {
+                        var uid = $(data).data('id');
+                        if (uid === self.currentUserId) {
+                            return '';
+                        }
+                        // Disconnect Icon (same as Utilities > Database)
+                        return '<i class="far fa-trash-alt text-danger tp-exclusive-kick-user" data-id="' + uid + '"></i>';
+                    }
+                },
+                {
+                    // 0 = action, 1 = user, 2 = role, 3 = connected since
+                    'targets': [1],
+                    'render': function (data, type, row, meta) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        if (typeof decodeHtmlEntities === "function") { return decodeHtmlEntities(data); } var txt=document.createElement("textarea"); txt.innerHTML=data; return txt.value;
+                    }
+                }
+            ],
+            'rowCallback': function (row, data) {
+                // Hide current admin from the list (excluded from strict mode)
+                var uid = $(data[0]).data('id');
+                if (uid === self.currentUserId) {
+                    $(row).hide();
+                }
+            }
+        });
+    },
+
+    check: function (cb) {
+        $.post(
+            "sources/backups.queries.php",
+            {
+                type: "check_connected_users",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function (data) {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                cb(data || { error: true });
+            }
+        );
+    },
+
+    refreshContinueState: function () {
+        this.check(function (r) {
+            var count = parseInt((r && r.connected_count) ? r.connected_count : 0, 10);
+            $('#tp-connected-users-continue').prop('disabled', count > 0);
+        });
+    },
+
+    openModal: function (cb) {
+        this.pendingCallback = cb;
+        this.initTable();
+        this.oTable.ajax.reload();
+        $('#tp-connected-users-modal').modal('show');
+        this.refreshContinueState();
+    },
+
+    ensure: function (cb) {
+        var self = this;
+
+        self.check(function (r) {
+            var count = parseInt((r && r.connected_count) ? r.connected_count : 0, 10);
+
+            // In doubt, be strict: show modal
+            if (!r || r.error) {
+                self.openModal(cb);
+                return;
+            }
+
+            if (count > 0) {
+                self.openModal(cb);
+                return;
+            }
+
+            cb();
+        });
+    }
+};
+
+// UI handlers for strict mode modal
+$(document).on('click', '#tp-connected-users-refresh', function () {
+    if (tpExclusiveUsers.oTable) {
+        tpExclusiveUsers.oTable.ajax.reload();
+    }
+    tpExclusiveUsers.refreshContinueState();
+});
+
+$(document).on('click', '.tp-exclusive-kick-user', function () {
+    var uid = $(this).data('id');
+
+    $.post(
+        "sources/users.queries.php",
+        {
+            type: "disconnect_user",
+            user_id: uid,
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function () {
+            if (tpExclusiveUsers.oTable) {
+                tpExclusiveUsers.oTable.ajax.reload();
+            }
+            tpExclusiveUsers.refreshContinueState();
+        }
+    );
+});
+
+$(document).on('click', '#tp-connected-users-disconnect-all', function () {
+    $.post(
+        "sources/users.queries.php",
+        {
+            type: "disconnect_users_logged_in",
+            exclude_user_id: tpExclusiveUsers.currentUserId,
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function () {
+            if (tpExclusiveUsers.oTable) {
+                tpExclusiveUsers.oTable.ajax.reload();
+            }
+            tpExclusiveUsers.refreshContinueState();
+        }
+    );
+});
+
+$(document).on('click', '#tp-connected-users-continue', function () {
+    var cb = tpExclusiveUsers.pendingCallback;
+    tpExclusiveUsers.pendingCallback = null;
+    $('#tp-connected-users-modal').modal('hide');
+    if (typeof cb === 'function') {
+        cb();
+    }
+});
 
 function loadDiskUsage() {
     if (!$('#tp-disk-usage').length) return;
