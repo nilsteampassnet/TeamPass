@@ -21,7 +21,7 @@
  * ---
  * @file      background_tasks___worker.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -139,6 +139,44 @@ class TaskWorker {
         if ($encryptionKey === '') {
             throw new Exception('Missing encryption key (bck_script_passkey).');
         }
+
+// Auto-disconnect connected users before running a scheduled backup.
+// Exclude the user who enqueued the task (manual run), if provided.
+try {
+    if (function_exists('loadClasses') && !class_exists('DB')) {
+        loadClasses('DB');
+    }
+    $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
+    $now = time();
+
+    if ($excludeUserId > 0) {
+        $connectedUsers = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+            $now,
+            $excludeUserId
+        );
+    } else {
+        $connectedUsers = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
+            $now
+        );
+    }
+
+    foreach ($connectedUsers as $u) {
+        DB::update(
+            prefixTable('users'),
+            [
+                'key_tempo' => '',
+                'timestamp' => '',
+                'session_end' => '',
+            ],
+            'id = %i',
+            (int) $u['id']
+        );
+    }
+} catch (Throwable $ignored) {
+    // Best effort only - do not block backups if disconnection cannot be done
+}
 
         $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
             'output_dir' => $targetDir,
