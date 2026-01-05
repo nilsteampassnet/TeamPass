@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      backups.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -472,6 +472,43 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 .tp-restore-progress-track { position: relative; overflow: visible; }
 .tp-restore-progress-cat { position: absolute; top: -18px; left: 2%; transform: translateX(-50%); font-size: 18px; }
 </style>
+
+<!-- Strict mode: Connected users modal -->
+<div class="modal fade" id="tp-connected-users-modal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><?php echo $lang->get('bck_exclusive_users_title'); ?></h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning mb-3">
+                    <?php echo $lang->get('bck_exclusive_users_desc'); ?>
+                </div>
+
+                <table id="tp-connected-users-table" class="table table-striped table-sm" style="width:100%">
+                    <thead>
+                        <tr>
+                            <th style="width:80px;"></th>
+                            <th><?php echo $lang->get('user'); ?></th>
+                            <th><?php echo $lang->get('role'); ?></th>
+                            <th><?php echo $lang->get('login_time'); ?></th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                <button type="button" class="btn btn-default" id="tp-connected-users-refresh"><?php echo $lang->get('refresh'); ?></button>
+                <button type="button" class="btn btn-danger" id="tp-connected-users-disconnect-all">
+                    <i class="far fa-trash-alt"></i> <?php echo $lang->get('bck_exclusive_disconnect_all'); ?>
+                </button>
+                <button type="button" class="btn btn-primary" id="tp-connected-users-continue" disabled>
+                    <?php echo $lang->get('bck_exclusive_continue'); ?>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Restore progress modal (locks UI during restore) -->
 <div class="modal fade" id="tp-restore-progress-modal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
