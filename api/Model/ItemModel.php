@@ -638,39 +638,22 @@ class ItemModel
                 $updateData['id_tree'] = $newFolderId;
             }
 
-            // Handle label update
-            if (isset($params['label'])) {
-                $updateData['label'] = filter_var($params['label'], FILTER_SANITIZE_STRING);
-            }
-
-            // Handle description update
-            if (isset($params['description'])) {
-                $updateData['description'] = $params['description'];
-            }
-
-            // Handle login update
-            if (isset($params['login'])) {
-                $updateData['login'] = filter_var($params['login'], FILTER_SANITIZE_STRING);
-            }
-
-            // Handle email update
-            if (isset($params['email'])) {
-                $updateData['email'] = filter_var($params['email'], FILTER_SANITIZE_EMAIL);
-            }
-
-            // Handle url update
-            if (isset($params['url'])) {
-                $updateData['url'] = filter_var($params['url'], FILTER_SANITIZE_URL);
-            }
-
-            // Handle icon update
-            if (isset($params['icon'])) {
-                $updateData['fa_icon'] = filter_var($params['icon'], FILTER_SANITIZE_STRING);
-            }
-
-            // Handle anyone_can_modify update
-            if (isset($params['anyone_can_modify'])) {
-                $updateData['anyone_can_modify'] = (int) $params['anyone_can_modify'];
+            $fieldsDefinitions = [
+                'label'             => ['db_key' => 'label', 'type' => 'string'],
+                'description'       => ['db_key' => 'description', 'type' => 'string'],
+                'login'             => ['db_key' => 'login', 'type' => 'string'],
+                'email'             => ['db_key' => 'email', 'type' => 'string'],
+                'url'               => ['db_key' => 'url', 'type' => 'string'],
+                'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
+                'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int']
+            ];
+            foreach ($fieldsDefinitions as $paramKey => $def) {
+                if (isset($params[$paramKey])) {
+                    $updateData[$def['db_key']] = match($def['type']) {
+                        'int'   => (int) $params[$paramKey],
+                        default => $params[$paramKey],
+                    };
+                }
             }
 
             // Handle password update

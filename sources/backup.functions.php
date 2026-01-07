@@ -400,12 +400,7 @@ if (function_exists('tpPrepareFileWithDefuseNormalized') === false) {
         }
 
         try {
-            // Some versions accept $SETTINGS as 5th parameter, others don't.
-            try {
-                $ret = prepareFileWithDefuse($mode, $sourceFile, $destFile, $encryptionKey, $SETTINGS);
-            } catch (\ArgumentCountError $e) {
-                $ret = prepareFileWithDefuse($mode, $sourceFile, $destFile, $encryptionKey);
-            }
+            $ret = prepareFileWithDefuse($mode, $sourceFile, $destFile, $encryptionKey);
 
             if ($ret === true) {
                 return ['success' => true, 'message' => ''];

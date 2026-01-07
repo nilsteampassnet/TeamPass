@@ -5175,8 +5175,6 @@ function getUserCompleteData($login = null, $userId = null)
         $data['favourites'] = $data['favourites'] ?? '';
         $data['latest_items'] = $data['latest_items'] ?? '';
     }
-
-    if (WIP) error_log(print_r($data, true));
     
     return $data;
 }
