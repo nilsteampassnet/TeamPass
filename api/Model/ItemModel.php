@@ -50,7 +50,7 @@ class ItemModel
         // Get items
         $rows = DB::query(
             'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
-            t.title as folder_label, io.secret as otp_secret
+            t.title as folder_label, io.secret as otp_secret, i.favicon_url
             FROM ' . prefixTable('items') . ' AS i
             LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
             LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) '.
@@ -132,6 +132,7 @@ class ItemModel
                     'folder_label' => $row['folder_label'],
                     'path' => empty($path) === true ? '' : $path,
                     'totp' => $row['otp_secret'],
+                    'favicon_url' => $row['favicon_url'],
                 ]
             );
         }
@@ -146,30 +147,26 @@ class ItemModel
      * item creation, and post-insertion tasks (like logging, sharing, and tagging).
      */
     public function addItem(
-        int $folderId,
-        string $label,
-        string $password,
-        string $description,
-        string $login,
-        string $email,
-        string $url,
-        string $tags,
-        string $anyone_can_modify,
-        string $icon,
-        int $userId,
-        string $username,
-        string $totp
+        array $arrItemParams
     ) : array
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Extract parameters
+            $folderId = (int) $arrItemParams['folder_id'];
+            $label = (string) $arrItemParams['label'];
+            $password = (string) $arrItemParams['password'];
+            $tags = (string) $arrItemParams['tags'] ?? '';
+            $userId = (int) $arrItemParams['id'];
+            $username = (string) $arrItemParams['username'];
 
             // Load config
             $configManager = new ConfigManager();
             $SETTINGS = $configManager->getAllSettings();
 
             // Step 1: Prepare data and sanitize inputs
-            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon, $totp);
+            $data = $this->prepareData($arrItemParams);
             $this->validateData($data); // Step 2: Validate the data
 
             // Step 3: Validate password rules (length, emptiness)
@@ -188,6 +185,11 @@ class ItemModel
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
+
+            // Generate favicon URL if URL is provided and favicon_url is empty
+            if (empty($data['url']) === false) {
+                $data['favicon_url'] = $this->getFaviconUrl($data['url']);
+            }
 
             // Step 8: Insert the new item into the database
             $newID = $this->insertNewItem($data, $password, $itemInfos);
@@ -213,36 +215,70 @@ class ItemModel
     }
 
     /**
+     * Generate favicon URL using Google service
+     * 
+     * @param string $url Website URL
+     * @return string|null Favicon URL
+     */
+    private function getFaviconUrl(string $url): ?string
+    {
+        try {
+            $parsedUrl = parse_url($url);
+            if (!isset($parsedUrl['host'])) {
+                return null;
+            }
+            
+            $domain = $parsedUrl['host'];
+            
+            // Quick DNS validation (very fast, ~50-100ms)
+            if (!$this->isValidDomain($domain)) {
+                return null;
+            }
+            
+            // Google's service handles the rest gracefully
+            return 'https://www.google.com/s2/favicons?domain=' . $domain . '&sz=32';
+            
+        } catch (Exception $e) {
+            // Silent fail
+            error_log('Favicon URL generation failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Validate domain using DNS lookup only
+     * Very fast check (~50ms) without HTTP overhead
+     * 
+     * @param string $domain Domain to validate
+     * @return bool True if domain has valid DNS records
+     */
+    private function isValidDomain(string $domain): bool
+    {
+        // Check for A or AAAA DNS records
+        return checkdnsrr($domain, 'A') || checkdnsrr($domain, 'AAAA');
+    }
+
+    /**
      * Prepares the data array for processing by combining all inputs.
-     * @param int $folderId - Folder ID where the item is stored
-     * @param string $label - Label or title of the item
-     * @param string $password - Password associated with the item
-     * @param string $description - Description of the item
-     * @param string $login - Login associated with the item
-     * @param string $email - Email linked to the item
-     * @param string $url - URL for the item
-     * @param string $tags - Tags for categorizing the item
-     * @param string $anyone_can_modify - Permission to allow modifications by others
-     * @param string $icon - Icon representing the item
-     * @param string $totp - Token for OTP
+     * @param array $arrItemParams - Array of item parameters
      * @return array - Returns the prepared data
      */
     private function prepareData(
-        int $folderId, string $label, string $password, string $description, string $login, 
-        string $email, string $url, string $tags, string $anyone_can_modify, string $icon, string $totp
+        array $arrItemParams
     ) : array {
         return [
-            'folderId' => $folderId,
-            'label' => $label,
-            'password' => $password,
-            'description' => $description,
-            'login' => $login,
-            'email' => $email,
-            'tags' => $tags,
-            'anyoneCanModify' => $anyone_can_modify,
-            'url' => $url,
-            'icon' => $icon,
-            'totp' => $totp,
+            'folderId' => (int) $arrItemParams['folder_id'],
+            'label' => (string) $arrItemParams['label'],
+            'password' => (string) $arrItemParams['password'],
+            'description' => (string) $arrItemParams['description'] ?? '',
+            'login' => (string) $arrItemParams['login'] ?? '',
+            'email' => (string) $arrItemParams['email'] ?? '',
+            'tags' => (string) $arrItemParams['tags'] ?? '',
+            'anyoneCanModify' => (int) $arrItemParams['anyone_can_modify'] ?? '0',
+            'url' => (string) $arrItemParams['url'] ?? '',
+            'icon' => (string) $arrItemParams['icon'] ?? '',
+            'totp' => (string) $arrItemParams['totp'] ?? '',
+            'favicon_url' => '',
         ];
     }
 
@@ -417,6 +453,7 @@ class ItemModel
                 'fa_icon' => $data['icon'],
                 'item_key' => uniqidReal(50),
                 'created_at' => time(),
+                'favicon_url' => $data['favicon_url'],
             ]
         );
 

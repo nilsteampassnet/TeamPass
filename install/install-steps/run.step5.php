@@ -412,6 +412,7 @@ class DatabaseInstaller
             `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             `fa_icon` varchar(100) DEFAULT NULL,
+            `favicon_url` VARCHAR(500) NULL DEFAULT NULL,
             `item_key` varchar(500) NOT NULL DEFAULT '-1',
             `created_at` varchar(30) NULL,
             `updated_at` varchar(30) NULL,
