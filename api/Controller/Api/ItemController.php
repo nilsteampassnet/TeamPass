@@ -201,7 +201,8 @@ class ItemController extends BaseController
     /**
      * Manage case Add
      *
-     * @param array $userData
+     * @param array $userData User data from JWT token
+     * @return void
      */
     public function createAction(array $userData)
     {
@@ -234,22 +235,27 @@ class ItemController extends BaseController
                         $strErrorDesc = $arrCheck['strErrorDesc'];
                         $strErrorHeader = $arrCheck['strErrorHeader'];
                     } else {
+                        // Prepare array of item parameters
+                        $arrItemParams = [
+                            'folder_id' => (int) $arrQueryStringParams['folder_id'],
+                            'label' => (string) $arrQueryStringParams['label'],
+                            'password' => (string) $arrQueryStringParams['password'],
+                            'description' => (string) $arrQueryStringParams['description'] ?? '',
+                            'login' => (string) $arrQueryStringParams['login'],
+                            'email' => (string) $arrQueryStringParams['email'] ?? '',
+                            'url' => (string) $arrQueryStringParams['url'] ?? '',
+                            'tags' => (string) $arrQueryStringParams['tags'] ?? '',
+                            'anyone_can_modify' => (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
+                            'icon' => (string) $arrQueryStringParams['icon'] ?? '',
+                            'id' => (int) $userData['id'],
+                            'username' => (string) $userData['username'],
+                            'totp' => (string) $userData['totp'] ?? '',
+                        ];
+
                         // launch
                         $itemModel = new ItemModel();
                         $ret = $itemModel->addItem(
-                            (int) $arrQueryStringParams['folder_id'],
-                            (string) $arrQueryStringParams['label'],
-                            (string) $arrQueryStringParams['password'],
-                            (string) $arrQueryStringParams['description'] ?? '',
-                            (string) $arrQueryStringParams['login'],
-                            (string) $arrQueryStringParams['email'] ?? '',
-                            (string) $arrQueryStringParams['url'] ?? '' ,
-                            (string) $arrQueryStringParams['tags'] ?? '',
-                            (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
-                            (string) $arrQueryStringParams['icon'] ?? '',
-                            (int) $userData['id'],
-                            (string) $userData['username'],
-                            (string) $userData['totp'] ?? '',
+                            $arrItemParams
                         );
                         $responseData = json_encode($ret);
                     }
@@ -414,7 +420,7 @@ class ItemController extends BaseController
                 } else {
                     // Query items with the specific URL
                     $rows = DB::query(
-                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, 
+                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url,
                                 CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
                         FROM " . prefixTable('items') . " AS i
                         LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
@@ -450,12 +456,14 @@ class ItemController extends BaseController
                                 'url' => $row['url'],
                                 'folder_id' => (int) $row['id_tree'],
                                 'has_otp' => (int) $row['has_otp'],
+                                'favicon_url' => (string) $row['favicon_url'],
                             ]
                         );
                     }
 
                     if (!empty($ret)) {
                         $responseData = json_encode($ret);
+                        error_log($responseData);
                     } else {
                         $strErrorDesc = 'No items found with this URL';
                         $strErrorHeader = 'HTTP/1.1 204 No Content';

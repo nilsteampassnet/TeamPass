@@ -158,6 +158,11 @@ $columns_to_add = [
         'table' => 'api',
         'column' => 'session_key',
         'query' => "ALTER TABLE `" . $pre . "api` ADD COLUMN `session_key` VARCHAR(64) NULL"
+    ],
+    [
+        'table' => 'items',
+        'column' => 'favicon_url',
+        'query' => "ALTER TABLE `" . $pre . "items` ADD COLUMN `favicon_url` VARCHAR(500) NULL DEFAULT NULL AFTER `fa_icon`"
     ]
 ];
 
