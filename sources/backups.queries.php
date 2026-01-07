@@ -228,7 +228,15 @@ $post_data = filter_input(
             $get_file = filter_input(INPUT_GET, 'file', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $get_file = basename((string) $get_file);
 
-            if ($get_file === '' || strpos($get_file, 'scheduled-') !== 0 || strtolower(pathinfo($get_file, PATHINFO_EXTENSION)) !== 'sql') {
+            // Safety check: only .sql files allowed
+            $extension = pathinfo($get_file, PATHINFO_EXTENSION);
+            if (is_string($extension) === false || strtolower($extension) !== 'sql') {
+                header('HTTP/1.1 400 Bad Request');
+                exit;
+            }
+
+            // Safety check: only scheduled-*.sql files allowed
+            if ($get_file === '' || strpos($get_file, 'scheduled-') !== 0) {
                 header('HTTP/1.1 400 Bad Request');
                 exit;
             }
@@ -245,12 +253,28 @@ $post_data = filter_input(
                 exit;
             }
 
-            // Stream file
-            @set_time_limit(0);
-            $size = (int) @filesize($fpReal);
+            /**
+             * Stream file with proper error handling
+             * Removes output buffers, sets execution time limit, and validates file
+             *
+             * @param string $fpReal Real file path
+             * @return int File size in bytes, 0 if file doesn't exist
+             */
+            // Set unlimited execution time if function is available and not disabled
+            if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
+                set_time_limit(0);
+            }
+
+            // Get file size with proper validation
+            $size = 0;
+            if (file_exists($fpReal) && is_readable($fpReal)) {
+                $size = (int) filesize($fpReal);
+            }
+
+            // Clear all output buffers
             if (function_exists('ob_get_level')) {
                 while (ob_get_level() > 0) {
-                    @ob_end_clean();
+                    ob_end_clean();
                 }
             }
 
@@ -592,8 +616,15 @@ $post_data = filter_input(
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
             $fp = rtrim($dir, '/') . '/' . $file;
 
-            if (is_file($fp)) {
-                @unlink($fp);
+
+            if (file_exists($fp) && is_file($fp)) {
+                if (is_writable($fp)) {
+                    if (unlink($fp) === false) {
+                        error_log("TeamPass - Failed to delete file: {$fp}");
+                    }
+                } else {
+                    error_log("TeamPass - File is not writable, cannot delete: {$fp}");
+                }
             }
 
             echo prepareExchangedData(['error' => false], 'encode');
@@ -883,78 +914,85 @@ $post_data = filter_input(
             // Chunked upload fields (can be absent when restoring from an existing server file)
             $post_offset = (int) ($dataReceived['offset'] ?? 0);
             $post_totalSize = (int) ($dataReceived['totalSize'] ?? 0);
-// Restore session + concurrency lock management.
-// - We keep a token in session to allow chunked restore even while DB is being replaced.
-// - We also block starting a second restore in the same session (double click / 2 tabs).
-$clearRestoreState = static function ($session): void {
-                $tmp = (string) ($session->get('restore-temp-file') ?? '');
-                if ($tmp !== '' && file_exists($tmp) === true && strpos(basename($tmp), 'defuse_temp_restore_') === 0) {
-                    @unlink($tmp);
+
+            // Restore session + concurrency lock management.
+            // - We keep a token in session to allow chunked restore even while DB is being replaced.
+            // - We also block starting a second restore in the same session (double click / 2 tabs).
+            $clearRestoreState = static function ($session): void {
+                            $tmp = (string) ($session->get('restore-temp-file') ?? '');
+                            if ($tmp !== '' && file_exists($tmp) === true && strpos(basename($tmp), 'defuse_temp_restore_') === 0 && is_file($tmp)) {
+                                if (is_writable($tmp)) {
+                                    if (unlink($tmp) === false) {
+                                        error_log("TeamPass: Failed to delete file: {$tmp}");
+                                    }
+                                } else {
+                                    error_log("TeamPass: File is not writable, cannot delete: {$tmp}");
+                                }
+                            }
+                            $session->set('restore-temp-file', '');
+                $session->set('restore-token', '');
+                $session->set('restore-settings', []);
+                $session->set('restore-context', []);
+                $session->set('restore-in-progress', false);
+                $session->set('restore-in-progress-ts', 0);
+                $session->set('restore-start-ts', 0);
+            };
+
+            $nowTs = time();
+            $inProgress = (bool) ($session->get('restore-in-progress') ?? false);
+            $lastTs = (int) ($session->get('restore-in-progress-ts') ?? 0);
+
+            // Auto-release stale lock (e.g. client crashed / browser closed)
+            if ($inProgress === true && $lastTs > 0 && ($nowTs - $lastTs) > 3600) {
+                $clearRestoreState($session);
+                $inProgress = false;
+                $lastTs = 0;
+            }
+
+            $sessionRestoreToken = (string) ($session->get('restore-token') ?? '');
+            $isStartRestore = (empty($post_clearFilename) === true && (int) $post_offset === 0);
+
+            if ($isStartRestore === true) {
+                if ($inProgress === true && $sessionRestoreToken !== '') {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => 'A restore is already in progress in this session. Please wait for it to complete (or logout/login to reset).',
+                        ),
+                        'encode'
+                    );
+                    break;
                 }
-                $session->set('restore-temp-file', '');
-    $session->set('restore-token', '');
-    $session->set('restore-settings', []);
-    $session->set('restore-context', []);
-    $session->set('restore-in-progress', false);
-    $session->set('restore-in-progress-ts', 0);
-    $session->set('restore-start-ts', 0);
-};
 
-$nowTs = time();
-$inProgress = (bool) ($session->get('restore-in-progress') ?? false);
-$lastTs = (int) ($session->get('restore-in-progress-ts') ?? 0);
+                $sessionRestoreToken = bin2hex(random_bytes(16));
+                $session->set('restore-token', $sessionRestoreToken);
+                $session->set('restore-settings', $SETTINGS);
+                $session->set('restore-in-progress', true);
+                $session->set('restore-in-progress-ts', $nowTs);
+                $session->set('restore-start-ts', $nowTs);
+                $session->set('restore-context', []);
+            } else {
+                // Restore continuation must provide the correct token
+                if ($restoreToken === '' || $sessionRestoreToken === '' || !hash_equals($sessionRestoreToken, $restoreToken)) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => 'Restore session expired. Please restart the restore process.',
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
 
-// Auto-release stale lock (e.g. client crashed / browser closed)
-if ($inProgress === true && $lastTs > 0 && ($nowTs - $lastTs) > 3600) {
-    $clearRestoreState($session);
-    $inProgress = false;
-    $lastTs = 0;
-}
+                // Update activity timestamp (keeps the lock alive)
+                $session->set('restore-in-progress', true);
+                $session->set('restore-in-progress-ts', $nowTs);
+                if ((int) ($session->get('restore-start-ts') ?? 0) === 0) {
+                    $session->set('restore-start-ts', $nowTs);
+                }
+            }
 
-$sessionRestoreToken = (string) ($session->get('restore-token') ?? '');
-$isStartRestore = (empty($post_clearFilename) === true && (int) $post_offset === 0);
-
-if ($isStartRestore === true) {
-    if ($inProgress === true && $sessionRestoreToken !== '') {
-        echo prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'A restore is already in progress in this session. Please wait for it to complete (or logout/login to reset).',
-            ),
-            'encode'
-        );
-        break;
-    }
-
-    $sessionRestoreToken = bin2hex(random_bytes(16));
-    $session->set('restore-token', $sessionRestoreToken);
-    $session->set('restore-settings', $SETTINGS);
-    $session->set('restore-in-progress', true);
-    $session->set('restore-in-progress-ts', $nowTs);
-    $session->set('restore-start-ts', $nowTs);
-    $session->set('restore-context', []);
-} else {
-    // Restore continuation must provide the correct token
-    if ($restoreToken === '' || $sessionRestoreToken === '' || !hash_equals($sessionRestoreToken, $restoreToken)) {
-        echo prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => 'Restore session expired. Please restart the restore process.',
-            ),
-            'encode'
-        );
-        break;
-    }
-
-    // Update activity timestamp (keeps the lock alive)
-    $session->set('restore-in-progress', true);
-    $session->set('restore-in-progress-ts', $nowTs);
-    if ((int) ($session->get('restore-start-ts') ?? 0) === 0) {
-        $session->set('restore-start-ts', $nowTs);
-    }
-}
-
-$batchSize = 500;
+            $batchSize = 500;
             $errors = array(); // Collect potential errors
         
             // Check if the offset is greater than the total size
@@ -1049,33 +1087,33 @@ $batchSize = 500;
                         break;
                     }
                 
-// Log restore start once (best effort)
-if ($isStartRestore === true) {
-    $sizeBytes = (int) @filesize($serverPath);
-    $session->set(
-        'restore-context',
-        array(
-            'scope' => $post_serverScope,
-            'backup' => $bn,
-            'size_bytes' => $sizeBytes,
-        )
-    );
+                    // Log restore start once (best effort)
+                    if ($isStartRestore === true) {
+                        $sizeBytes = (int) @filesize($serverPath);
+                        $session->set(
+                            'restore-context',
+                            array(
+                                'scope' => $post_serverScope,
+                                'backup' => $bn,
+                                'size_bytes' => $sizeBytes,
+                            )
+                        );
 
-    try {
-        $msg = 'dataBase restore started (scope=' . $post_serverScope . ', file=' . $bn . ')';
-        logEvents(
-            $SETTINGS,
-            'admin_action',
-            $msg,
-            (string) $session->get('user-id'),
-            $session->get('user-login')
-        );
-    } catch (Throwable $ignored) {
-        // ignore logging errors during restore
-    }
-}
+                        try {
+                            $msg = 'dataBase restore started (scope=' . $post_serverScope . ', file=' . $bn . ')';
+                            logEvents(
+                                $SETTINGS,
+                                'admin_action',
+                                $msg,
+                                (string) $session->get('user-id'),
+                                $session->get('user-login')
+                            );
+                        } catch (Throwable $ignored) {
+                            // ignore logging errors during restore
+                        }
+                    }
 
-} else {
+                } else {
                     // LEGACY: restore from uploaded on-the-fly backup identified by its misc.increment_id
                     if (empty($post_backupFile) === true || ctype_digit((string) $post_backupFile) === false) {
                         echo prepareExchangedData(

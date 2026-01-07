@@ -100,11 +100,11 @@ class TaskWorker {
             // Mark the task as completed
             try {
                 $this->completeTask();
-            } catch (Throwable $e) {
+            } catch (Exception $e) {
                 $this->handleTaskFailure($e);
             }
 
-        } catch (Throwable $e) {
+        } catch (Exception $e) {
             $this->handleTaskFailure($e);
         }
 
@@ -158,7 +158,7 @@ class TaskWorker {
         $backupSource = (string)($taskData['source'] ?? '');
         $backupDir = (string)($taskData['output_dir'] ?? '');   // from task arguments (reliable)
         if ($backupDir === '') {
-            $backupDir = (string)($targetDir ?? '');            // fallback if you have it
+            $backupDir = (string) $targetDir;
         }
 
         // keep for debug/trace
