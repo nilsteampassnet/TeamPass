@@ -463,7 +463,6 @@ class ItemController extends BaseController
 
                     if (!empty($ret)) {
                         $responseData = json_encode($ret);
-                        error_log($responseData);
                     } else {
                         $strErrorDesc = 'No items found with this URL';
                         $strErrorHeader = 'HTTP/1.1 204 No Content';

@@ -50,14 +50,16 @@ class ItemModel
         // Get items
         $rows = DB::query(
             'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
-            t.title as folder_label, io.secret as otp_secret, i.favicon_url
+            t.title as folder_label, io.secret as otp_secret, i.favicon_url, i.anyone_can_modify,
+            GROUP_CONCAT(tg.tag SEPARATOR ", ") as tags
             FROM ' . prefixTable('items') . ' AS i
             LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
-            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) '.
+            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) 
+            LEFT JOIN ' . prefixTable('tags') . ' as tg ON (tg.item_id = i.id)'.
             $sqlExtra . 
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
-        );
+        ); 
         
         $ret = [];
         foreach ($rows as $row) {
@@ -133,6 +135,8 @@ class ItemModel
                     'path' => empty($path) === true ? '' : $path,
                     'totp' => $row['otp_secret'],
                     'favicon_url' => $row['favicon_url'],
+                    'tags' => $row['tags'],
+                    'anyone_can_modify' => $row['anyone_can_modify'],
                 ]
             );
         }
@@ -727,7 +731,7 @@ class ItemModel
                     );
                 }
             }
-
+            
             // Handle tags update
             if (isset($params['tags'])) {
                 // Delete existing tags

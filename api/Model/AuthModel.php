@@ -168,6 +168,7 @@ class AuthModel
                     (int) $userInfo['api_allowed_to_delete'],
                     (int) $SETTINGS['api_token_duration'] ?? 60,
                     (int) $SETTINGS['pwd_maximum_length'] ?? 60,
+                    (int) $SETTINGS['maintenance_mode'] ?? 0,
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "Credentials not valid"];
@@ -209,6 +210,7 @@ class AuthModel
      * @param integer $allowed_to_delete
      * @param integer $api_token_duration
      * @param integer $pwd_maximum_length
+     * @param integer $maintenance_mode
      * @return array
      */
     private function createUserJWT(
@@ -231,7 +233,8 @@ class AuthModel
         int $allowed_to_update,
         int $allowed_to_delete,
         int $api_token_duration,
-        int $pwd_maximum_length
+        int $pwd_maximum_length,
+        int $maintenance_mode
     ): array
     {
         // Load config
@@ -260,6 +263,7 @@ class AuthModel
             'email' => $email,
             'api_token_duration' => $api_token_duration,
             'pwd_maximum_length' => $pwd_maximum_length,
+            'maintenance_mode' => $maintenance_mode,
         ];
 
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
