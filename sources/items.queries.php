@@ -1045,12 +1045,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id=%i AND l.action = %s',
-            $inputData['itemId'],
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['itemId']
         );
 
         // Always check what rights user has on requested folder
@@ -1151,9 +1152,10 @@ switch ($inputData['type']) {
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
-                INNER JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
+                LEFT JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item AND l.action = %s)
+                LEFT JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
                 WHERE i.id=%i',
+                'at_creation',
                 $inputData['itemId']
             );
 
@@ -2086,13 +2088,14 @@ switch ($inputData['type']) {
 
             // Reload new values
             $dataItem = DB::queryFirstRow(
-                'SELECT *
-                FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-                WHERE i.id = %i AND l.action = %s',
-                $inputData['itemId'],
-                'at_creation'
-            );
+                'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
+            FROM ' . prefixTable('items') . ' as i
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['itemId']
+        );
             // Reload History
             $history = '';
             $rows = DB::query(
@@ -2677,12 +2680,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id = %i AND l.action = %s',
-            $inputData['id'],
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['id']
         );
 
         // Notification
@@ -5911,12 +5915,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id=%i AND l.action = %s',
-            $item_id,
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $item_id
         );
         // check that actual user can access this item
         $restrictionActive = true;

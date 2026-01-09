@@ -3367,10 +3367,10 @@ function changeUserLDAPAuthenticationPassword(
                 }
                 // Get one itemKey from current user
                 $currentUserKey = DB::queryFirstRow(
-                    'SELECT ski.share_key, ski.increment_id, l.id_user
+                    'SELECT ski.share_key, ski.increment_id
                     FROM ' . prefixTable('sharekeys_items') . ' AS ski
-                    INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-                    WHERE ski.user_id = %i
+                    INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
+                    WHERE ski.user_id = %i AND ski.share_key != ""
                     ORDER BY RAND()
                     LIMIT 1',
                     $post_user_id
@@ -3527,10 +3527,9 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
         if ($privateKey !== null) {
             // Select one personal item share_key to test decryption
             $currentUserItemKey = DB::queryFirstRow(
-                'SELECT si.share_key, si.increment_id, l.id_user, i.perso
+                'SELECT si.share_key, si.increment_id, i.perso
                 FROM ' . prefixTable('sharekeys_items') . ' AS si
-                INNER JOIN ' . prefixTable('log_items') . ' AS l ON si.object_id = l.id_item
-                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = l.id_item
+                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = si.object_id
                 WHERE si.user_id = %i AND i.perso = 1 AND si.share_key != ""
                 ORDER BY RAND()
                 LIMIT 1',

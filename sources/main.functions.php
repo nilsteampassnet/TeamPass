@@ -694,15 +694,18 @@ function cacheTableRefresh(): void
     // truncate table
     DB::query('TRUNCATE TABLE ' . prefixTable('cache'));
     // reload date
-    $rows = DB::query(
-        'SELECT *
-        FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        AND l.action = %s
-        AND i.inactif = %i',
-        'at_creation',
-        0
-    );
+        $rows = DB::query(
+            'SELECT i.*,
+                IFNULL(l.id_user, 0) AS id_user,
+                IFNULL(l.date, 0) AS date
+            FROM ' . prefixTable('items') . ' as i
+            LEFT JOIN ' . prefixTable('log_items') . ' as l
+                ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.inactif = %i',
+            'at_creation',
+            0
+        );
+
     foreach ($rows as $record) {
         if (empty($record['id_tree']) === false) {
             // Get all TAGS
@@ -858,13 +861,14 @@ function cacheTableAdd(?int $ident = null): void
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
-        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
+        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url,
+            IFNULL(l.date, 0) AS date
         FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        WHERE i.id = %i
-        AND l.action = %s',
-        $ident,
-        'at_creation'
+        LEFT JOIN ' . prefixTable('log_items') . ' as l
+            ON (l.id_item = i.id AND l.action = %s)
+        WHERE i.id = %i',
+        'at_creation',
+        $ident
     );
     // Get all TAGS
     $tags = '';
