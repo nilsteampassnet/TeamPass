@@ -988,7 +988,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.(is_null($record['error_message']) ? '' : addslashes($record['error_message'])).'", ';
+        $errMsg = is_null($record['error_message']) ? '' : (string) $record['error_message'];
+        $errMsg = preg_replace('/\r\n|\r|\n/', ' ', $errMsg);
+        $sOutput .= json_encode($errMsg, JSON_UNESCAPED_UNICODE).', ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3

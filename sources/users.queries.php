@@ -664,6 +664,79 @@ if (null !== $post_type) {
                 );
             }
             break;
+            
+        case 'disconnect_users_logged_in':
+            // Admin only + key check
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Exclude current admin by default (or explicit exclude_user_id)
+            $excludeUserId = (int) filter_input(INPUT_POST, 'exclude_user_id', FILTER_SANITIZE_NUMBER_INT);
+            if ($excludeUserId === 0 && null !== $session->get('user-id')) {
+                $excludeUserId = (int) $session->get('user-id');
+            }
+
+            $now = time();
+
+            try {
+                // Select IDs first to avoid multi-row update locking issues
+                if ($excludeUserId > 0) {
+                    $rows = DB::query(
+                        'SELECT id
+                         FROM ' . prefixTable('users') . '
+                         WHERE session_end >= %i AND id != %i',
+                        $now,
+                        $excludeUserId
+                    );
+                } else {
+                    $rows = DB::query(
+                        'SELECT id
+                         FROM ' . prefixTable('users') . '
+                         WHERE session_end >= %i',
+                        $now
+                    );
+                }
+
+                // Disconnect each user one by one (same logic as disconnect_user)
+                foreach ($rows as $row) {
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'timestamp' => '',
+                            'key_tempo' => '',
+                            'session_end' => '',
+                        ),
+                        'id = %i',
+                        (int) $row['id']
+                    );
+                }
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => $lang->get('done'),
+                    ),
+                    'encode'
+                );
+            } catch (\Throwable $e) {
+                // Prevent 500: return a controlled error (optionally log server-side)
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error'),
+                    ),
+                    'encode'
+                );
+            }
+            break;
 
         /*
          * Get user info
