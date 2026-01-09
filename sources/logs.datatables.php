@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      logs.datatables.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -758,6 +758,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
+    // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
+    // A user is considered 'API connected' while their last API token is still valid.
+    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 0);
+    $apiConnectedAfter = time() - ($apiTokenDuration + 600);
+
     // Filtering
     $sWhere = new WhereClause('AND');
     if ($searchValue !== '') {        
@@ -768,6 +773,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
     $subclause2 = $sWhere->addClause('OR');
     $subclause2->add('session_end >= %i', time());
+    $subclause2->add(
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = '.prefixTable('users').'.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
+        'api',
+        'user_connection',
+        $apiConnectedAfter
+    );
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(
@@ -780,10 +791,18 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT *
+    $sql = 'SELECT *,
+        (
+            SELECT MAX(ls.date)
+            FROM '.prefixTable('log_system').' ls
+            WHERE ls.qui = '.prefixTable('users').'.id
+                AND ls.type = %s
+                AND ls.label = %s
+                AND ls.date >= %i
+        ) AS api_last_connection
     FROM '.prefixTable('users').'
     WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $params = ['api', 'user_connection', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
@@ -814,10 +833,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
-        $time_diff = time() - (int) $record['timestamp'];
+        $connectedSince = (int) $record['timestamp'];
+        if ((int) $record['session_end'] < time() && !empty($record['api_last_connection'])) {
+            $connectedSince = (int) $record['api_last_connection'];
+        }
+        $time_diff = time() - $connectedSince;
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
-        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
+        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m", ';
+        //col5 (API connected)
+        $apiConnected = !empty($record['api_last_connection']) ? 1 : 0;
+        $sOutput .= '"'.$apiConnected.'" ';
         //Finish the line
         $sOutput .= '],';
     }
