@@ -760,7 +760,10 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
     // A user is considered 'API connected' while their last API token is still valid.
-    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 0);
+    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 3600); // Default 1 hour
+    if ($apiTokenDuration < 60) {
+        $apiTokenDuration = 3600; // Minimum 1 hour for safety
+    }
     $apiConnectedAfter = time() - ($apiTokenDuration + 600);
 
     // Filtering

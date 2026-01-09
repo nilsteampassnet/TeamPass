@@ -127,7 +127,7 @@ if (count($duplicates) > 0) {
 // ---<
 
 
-// Add new columns to users table
+// Add new columns to tables
 $columns_to_add = [
     [
         'table' => 'users',
@@ -251,6 +251,12 @@ $indexes_to_add = [
         'index' => 'unique_item_id',
         'columns' => 'item_id',
         'unique' => true
+    ],
+    [
+        'table' => 'log_system',
+        'index' => 'idx_log_api_user_connection ',
+        'columns' => 'qui, type, label, date DESC',
+        'unique' => false
     ]
 ];
 foreach ($indexes_to_add as $index_config) {
