@@ -17,7 +17,7 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-> Copyright © 2009-2025, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2026, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
