@@ -642,6 +642,11 @@ class ItemModel
                 $updateData['id_tree'] = $newFolderId;
             }
 
+            // Generate favicon URL if URL is provided and favicon_url is empty
+            if (empty($currentItem['url']) === false) {
+                $updateData['favicon_url'] = $this->getFaviconUrl($currentItem['url']);
+            }
+
             $fieldsDefinitions = [
                 'label'             => ['db_key' => 'label', 'type' => 'string'],
                 'description'       => ['db_key' => 'description', 'type' => 'string'],
@@ -649,7 +654,8 @@ class ItemModel
                 'email'             => ['db_key' => 'email', 'type' => 'string'],
                 'url'               => ['db_key' => 'url', 'type' => 'string'],
                 'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
-                'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int']
+                'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
+                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
             ];
             foreach ($fieldsDefinitions as $paramKey => $def) {
                 if (isset($params[$paramKey])) {
