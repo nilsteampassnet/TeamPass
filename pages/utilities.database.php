@@ -134,6 +134,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <th><?php echo $lang->get('user'); ?></th>
                                             <th><?php echo $lang->get('role'); ?></th>
                                             <th><?php echo $lang->get('login_time'); ?></th>
+                                        
+                                            <th class="text-center text-nowrap" style="min-width:48px;">API</th>
                                         </tr>
                                     </thead>
                                 </table>

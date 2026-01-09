@@ -928,7 +928,8 @@ class DatabaseInstaller
             `label` text NOT NULL,
             `qui` varchar(255) NOT NULL,
             `field_1` varchar(250) DEFAULT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            KEY `idx_log_api_user_connection` (qui, type, label, date DESC)
             ) CHARSET=utf8;'
         );
     }
