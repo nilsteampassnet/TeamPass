@@ -1533,5 +1533,10 @@ Path: %s',
     'bck_instance_key_copied' => 'Instance key copied to clipboard.',
     'bck_instance_key_copy_failed' => 'Failed to copy instance key.',
     'bck_instance_key_not_set' => 'Instance key is not set.',
+    'bck_exclusive_users_title' => 'Active sessions detected',
+    'bck_exclusive_users_desc' => 'This operation is blocked while other users are connected. Please disconnect them first (you are excluded).',
+    'bck_exclusive_users_connected' => 'Operation blocked: other users are currently connected.',
+    'bck_exclusive_disconnect_all' => 'Disconnect all',
+    'bck_exclusive_continue' => 'Continue',
 
 );
