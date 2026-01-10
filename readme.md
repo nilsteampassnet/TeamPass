@@ -116,7 +116,7 @@ For traditional server installations without Docker:
 - [Docker Installation](DOCKER.md) - Complete Docker deployment guide
 - [Docker Migration](DOCKER-MIGRATION.md) - Upgrade from older versions
 - [Official Documentation](https://documentation.teampass.net) - Full user and admin guides
-- [API Documentation](https://documentation.teampass.net/api/) - REST API reference
+- [API Documentation](https://documentation.teampass.net/#/api/api-basic) - REST API reference
 
 ## Languages
 
