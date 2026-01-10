@@ -775,36 +775,38 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
     }
     $subclause2 = $sWhere->addClause('OR');
-    $subclause2->add('session_end >= %i', time());
+    $subclause2->add('u.session_end >= %i', time());
     $subclause2->add(
-        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = '.prefixTable('users').'.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = u.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
         'api',
         'user_connection',
         $apiConnectedAfter
     );
 
-    // Get the total number of records
+    // Get the total number of records - use alias 'u'
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-        FROM '.prefixTable('users').'
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+        FROM '.prefixTable('users').' u
+        WHERE %l',
+        $sWhere
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT *,
-        (
-            SELECT MAX(ls.date)
-            FROM '.prefixTable('log_system').' ls
-            WHERE ls.qui = '.prefixTable('users').'.id
-                AND ls.type = %s
-                AND ls.label = %s
-                AND ls.date >= %i
-        ) AS api_last_connection
-    FROM '.prefixTable('users').'
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
+    $sql = 'SELECT u.*,
+        api_conn.last_api_date AS api_last_connection
+    FROM '.prefixTable('users').' u
+    LEFT JOIN (
+        SELECT qui, MAX(date) as last_api_date
+        FROM '.prefixTable('log_system').'
+        WHERE type = %s
+            AND label = %s
+            AND date >= %i
+        GROUP BY qui
+    ) api_conn ON api_conn.qui = u.id
+    WHERE %l
+    ORDER BY %l %l
+    LIMIT %i, %i';
+
     $params = ['api', 'user_connection', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records

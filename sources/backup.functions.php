@@ -48,15 +48,8 @@ if (!function_exists('tpCreateDatabaseBackup')) {
      *                              - flush_every_inserts (int) default: 200
      *                              - include_tables (array<string>) default: [] (empty => all)
      *                              - exclude_tables (array<string>) default: [] (empty => none)
-     *
-     * @return array{
-     *   success: bool,
-     *   filename: string,
-     *   filepath: string,
-     *   encrypted: bool,
-     *   size_bytes: int,
-     *   message: string
-     * }
+     * @return array
+     * @psalm-return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string}
      */
     function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', array $options = []): array
     {
@@ -71,6 +64,7 @@ if (!function_exists('tpCreateDatabaseBackup')) {
 
         // Enable maintenance mode for the whole backup operation, then restore previous value at the end.
         // This is best-effort: a failure to toggle maintenance must not break the backup itself.
+        /** @scrutinizer ignore-unused */
         $__tpMaintenanceGuard = new class() {
             private $prev = null;
             private $changed = false;
@@ -261,8 +255,19 @@ if (!function_exists('tpCreateDatabaseBackup')) {
                 fflush($handle);
             }
         } catch (Throwable $e) {
-            fclose($handle);
-            @unlink($filepath);
+            if (is_resource($handle)) {
+                fclose($handle);
+            }
+
+            $errorMessage = 'Backup failed: ' . $e->getMessage();
+
+            // Suppression sécurisée sans @
+            if (file_exists($filepath)) {
+                $deleted = unlink($filepath);
+                if ($deleted === false) {
+                    $errorMessage .= ' (Note: Temporary backup file could not be deleted from disk)';
+                }
+            }
 
             return [
                 'success' => false,
@@ -270,7 +275,7 @@ if (!function_exists('tpCreateDatabaseBackup')) {
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Backup failed: ' . $e->getMessage(),
+                'message' => $errorMessage,
             ];
         }
 
@@ -282,7 +287,9 @@ if (!function_exists('tpCreateDatabaseBackup')) {
             $tmpPath = rtrim($outputDir, '/') . '/defuse_temp_' . $filename;
 
             if (!function_exists('prepareFileWithDefuse')) {
-                @unlink($filepath);
+                if (file_exists($filepath)) {
+                    unlink($filepath);
+                }
                 return [
                     'success' => false,
                     'filename' => $filename,
@@ -295,10 +302,13 @@ if (!function_exists('tpCreateDatabaseBackup')) {
 
             $ret = prepareFileWithDefuse('encrypt', $filepath, $tmpPath, $encryptionKey);
 
-            // prepareFileWithDefuse usually returns true on success, otherwise message/false
             if ($ret !== true) {
-                @unlink($filepath);
-                @unlink($tmpPath);
+                if (file_exists($filepath)) {
+                    unlink($filepath);
+                }
+                if (file_exists($tmpPath)) {
+                    unlink($tmpPath);
+                }
                 return [
                     'success' => false,
                     'filename' => $filename,
@@ -310,9 +320,15 @@ if (!function_exists('tpCreateDatabaseBackup')) {
             }
 
             // Replace original with encrypted version
-            @unlink($filepath);
-            if (!@rename($tmpPath, $filepath)) {
-                @unlink($tmpPath);
+            if (file_exists($filepath)) {
+                unlink($filepath);
+            }
+            
+            // On vérifie le succès de rename() sans @
+            if (is_file($tmpPath) && !rename($tmpPath, $filepath)) {
+                if (file_exists($tmpPath)) {
+                    unlink($tmpPath);
+                }
                 return [
                     'success' => false,
                     'filename' => $filename,
@@ -326,14 +342,21 @@ if (!function_exists('tpCreateDatabaseBackup')) {
             $encrypted = true;
         }
 
-        $size = (int) (@filesize($filepath) ?: 0);
+        // Gestion de filesize sans @
+        $size = 0;
+        if (is_file($filepath)) {
+            $size = filesize($filepath);
+            if ($size === false) {
+                $size = 0;
+            }
+        }
 
         return [
             'success' => true,
             'filename' => $filename,
             'filepath' => $filepath,
             'encrypted' => $encrypted,
-            'size_bytes' => $size,
+            'size_bytes' => (int) $size,
             'message' => '',
         ];
     }
@@ -392,8 +415,7 @@ if (function_exists('tpPrepareFileWithDefuseNormalized') === false) {
         string $mode,
         string $sourceFile,
         string $destFile,
-        string $encryptionKey,
-        array $SETTINGS = []
+        string $encryptionKey
     ): array {
         if (function_exists('prepareFileWithDefuse') === false) {
             return ['success' => false, 'message' => 'prepareFileWithDefuse() is not available'];
@@ -404,12 +426,6 @@ if (function_exists('tpPrepareFileWithDefuseNormalized') === false) {
 
             if ($ret === true) {
                 return ['success' => true, 'message' => ''];
-            }
-
-            if (is_array($ret)) {
-                $hasError = !empty($ret['error']);
-                $msg = tpSafeUtf8String((string)($ret['message'] ?? $ret['details'] ?? $ret['error'] ?? ''));
-                return ['success' => !$hasError, 'message' => $msg];
             }
 
             if (is_string($ret)) {
@@ -444,11 +460,11 @@ if (function_exists('tpDefuseDecryptWithCandidates') === false) {
             }
 
             // Ensure we start from a clean slate.
-            if (is_file($decryptedFile)) {
-                @unlink($decryptedFile);
+            if (is_file($decryptedFile) && !unlink($decryptedFile)) {
+                // Nothing to do, try next key
             }
 
-            $r = tpPrepareFileWithDefuseNormalized('decrypt', $encryptedFile, $decryptedFile, $k, $SETTINGS);
+            $r = tpPrepareFileWithDefuseNormalized('decrypt', $encryptedFile, $decryptedFile, $k);
             if (!empty($r['success'])) {
                 return ['success' => true, 'message' => '', 'key_used' => $k];
             }

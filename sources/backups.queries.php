@@ -229,8 +229,8 @@ $post_data = filter_input(
             $get_file = basename((string) $get_file);
 
             // Safety check: only .sql files allowed
-            $extension = pathinfo($get_file, PATHINFO_EXTENSION);
-            if (is_string($extension) === false || strtolower($extension) !== 'sql') {
+            $extension = (string) pathinfo($get_file, PATHINFO_EXTENSION);
+            if (strtolower($extension) !== 'sql') {
                 header('HTTP/1.1 400 Bad Request');
                 exit;
             }
