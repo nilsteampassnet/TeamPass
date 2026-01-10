@@ -160,6 +160,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
     }
 
+    // Sanitize input data
+    $toClean = [
+        'login' => 'trim|escape',
+    ];
+    $dataReceived = sanitizeData($dataReceived, $toClean);
+
     // Base64 decode sensitive data
     if (isset($dataReceived['pw'])) {
         $dataReceived['pw'] = base64_decode($dataReceived['pw']);

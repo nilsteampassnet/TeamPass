@@ -5496,3 +5496,29 @@ function isUserFavorite(int $userId, int $itemId): bool
     return !empty($result);
 }
 // ---<
+
+/**
+ * Sanitizes specific fields from a data array using a mapping of fields and filters.
+ *
+ * @param array $rawData The source array containing raw input data.
+ * @param array $inputsDefinition Associative array mapping field names to their filters (e.g., ['login' => 'trim|escape']).
+ * @return array The original array merged with the sanitized values.
+ */
+function sanitizeData(array $rawData, array $inputsDefinition): array
+{
+    $fieldsToProcess = [];
+    $filters = [];
+
+    // Extract only the values we want to sanitize based on the definition
+    foreach ($inputsDefinition as $field => $filter) {
+        $fieldsToProcess[$field] = isset($rawData[$field]) ? $rawData[$field] : '';
+        $filters[$field] = $filter;
+    }
+
+    // Perform sanitization and merge back into the original data set
+    // This ensures non-sanitized fields remain untouched
+    return array_merge(
+        $rawData,
+        dataSanitizer($fieldsToProcess, $filters)
+    );
+}

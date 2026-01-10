@@ -1522,16 +1522,25 @@ function cleanOutput(&$value)
  *
  * @param string $value The string to clean.
  *
- * @return string The cleaned string.
+ * @return string The cleaned and sanitized string.
  */
 function cleanInput($value): string
 {
-    return stripEmojis(
+    // 1. Original processing
+    $value = stripEmojis(
         cleanString(
-            html_entity_decode($value, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+            html_entity_decode((string) $value, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
             true
         )
     );
+
+    // 2. Security sanitization (XSS protection)
+    $sanitized = dataSanitizer(
+        ['val' => $value],
+        ['val' => 'trim|escape']
+    );
+
+    return (string) $sanitized['val'];
 }
 
 /**
