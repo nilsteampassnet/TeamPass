@@ -169,7 +169,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     if (($userInfo['key_tempo']) !== $keyTempo) {
         // Session invalid or expired
         error_log('[API] get_user_keys: Invalid key_tempo (' . $keyTempo.') for user ID ' . $userId);
-        //return null;
+        return null;
     }
 
     // Check if encrypted private key exists

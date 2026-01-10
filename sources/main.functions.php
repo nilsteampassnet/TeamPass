@@ -5522,3 +5522,65 @@ function sanitizeData(array $rawData, array $inputsDefinition): array
         dataSanitizer($fieldsToProcess, $filters)
     );
 }
+
+
+// <--
+/**
+ * Get or regenerate temporary key based on lifetime
+ * Creates a new key if current one is older than lifetime, otherwise returns existing key
+ * 
+ * @param int $userId User ID
+ * @param int $lifetimeSeconds Key lifetime in seconds (default: 3600 = 1 hour)
+ * 
+ * @return string Valid temporary key (existing or newly generated)
+ */
+function getOrRotateKeyTempo(int $userId, int $lifetimeSeconds = 3600): string
+{
+    $userData = DB::queryFirstRow(
+        'SELECT key_tempo, key_tempo_created_at FROM %l WHERE id=%i',
+        prefixTable('users'),
+        $userId
+    );
+    
+    // No key exists or no timestamp - generate new one
+    if (!$userData || empty($userData['key_tempo']) || $userData['key_tempo_created_at'] === null) {
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Check if key is expired
+    $age = time() - (int)$userData['key_tempo_created_at'];
+    
+    if ($age > $lifetimeSeconds) {
+        // Key expired - generate new one
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Key still valid - return existing
+    return $userData['key_tempo'];
+}
+
+/**
+ * Generate a new temporary key with timestamp
+ * 
+ * @param int $userId User ID
+ * 
+ * @return string Generated key
+ */
+function generateNewKeyTempo(int $userId): string
+{
+    $keyTempo = bin2hex(random_bytes(16));
+    $createdAt = time();
+    
+    DB::update(
+        prefixTable('users'),
+        [
+            'key_tempo' => $keyTempo,
+            'key_tempo_created_at' => $createdAt
+        ],
+        'id=%i',
+        $userId
+    );
+    
+    return $keyTempo;
+}
+// -->

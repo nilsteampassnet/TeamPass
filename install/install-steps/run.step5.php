@@ -756,6 +756,7 @@ class DatabaseInstaller
             `pw` varchar(250) NOT NULL,
             `derniers` text NULL DEFAULT NULL,
             `key_tempo` varchar(100) NULL DEFAULT NULL,
+            `key_tempo_created_at` INT(12) DEFAULT NULL,
             `last_pw_change` varchar(30) NULL DEFAULT NULL,
             `last_pw` text NULL DEFAULT NULL,
             `admin` tinyint(1) NOT null DEFAULT '0',

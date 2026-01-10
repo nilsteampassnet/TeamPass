@@ -542,7 +542,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // PERFORM ONE BACKUP
             if ($('#onthefly-backup-key').val() !== '') {
                 tpExclusiveUsers.ensure(function() {
-// Show cog
+                // Show cog
                 tpProgressToast.show('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
 
                 // Prepare data
@@ -1404,6 +1404,7 @@ var tpScheduled = {
 
     $('#scheduled-frequency').on('change', tpScheduled.toggleFreqUI);
     $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
+    $('#scheduled-run-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.runNow(); });
     $('#scheduled-run-btn').on('click', function(e){
         e.preventDefault();
         e.stopPropagation();
@@ -1499,13 +1500,18 @@ var tpExclusiveUsers = {
                     }
                 },
                 {
-                    // 0 = action, 1 = user, 2 = role, 3 = connected since
-                    'targets': [1],
+                    /// 0 = action, 1 = user, 2 = role, 3 = connected since, 4 = API
+                    'targets': 4,
+                    'orderable': false,
+                    'searchable': false,
+                    'className': 'text-center',
+                    'width': '48px',
                     'render': function (data, type, row, meta) {
                         if (type !== 'display') {
                             return data;
                         }
-                        if (typeof decodeHtmlEntities === "function") { return decodeHtmlEntities(data); } var txt=document.createElement("textarea"); txt.innerHTML=data; return txt.value;
+                        const isApi = (data === 1 || data === '1' || data === true || data === 'true');
+                        return isApi ? '<i class="fas fa-circle text-success" title="API"></i>' : '';
                     }
                 }
             ],

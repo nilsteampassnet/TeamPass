@@ -98,15 +98,7 @@ class AuthModel
                 }
 
                 // Update user's key_tempo
-                $keyTempo = bin2hex(random_bytes(16));
-                /*DB::update(
-                    prefixTable('users'),
-                    [
-                        'key_tempo' => $keyTempo,
-                    ],
-                    'id = %i',
-                    $userInfo['id']
-                );*/
+                $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
 
                 // Generate a unique session key for this API session (256 bits / 32 bytes)
                 // This key will be stored in the JWT and used to decrypt the private key

@@ -163,6 +163,11 @@ $columns_to_add = [
         'table' => 'items',
         'column' => 'favicon_url',
         'query' => "ALTER TABLE `" . $pre . "items` ADD COLUMN `favicon_url` VARCHAR(500) NULL DEFAULT NULL AFTER `fa_icon`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'key_tempo_created_at',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_tempo_created_at` INT(12) DEFAULT NULL AFTER `key_tempo`"
     ]
 ];
 

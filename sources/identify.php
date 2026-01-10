@@ -635,7 +635,7 @@ function buildUserSession(
 
     // Good practice: reset PHPSESSID and key after successful authentication
     $session->migrate();
-    $session->set('key', generateQuickPassword(30, false));
+    $session->set('key', bin2hex(random_bytes(16)));
 
     // Save account in SESSION - Basic user info
     $session->set('user-login', stripslashes($username));
@@ -752,6 +752,7 @@ function performPostLoginTasks(
     // Update table - Final user update in database
     $finalUpdateData = [
         'key_tempo' => $session->get('key'),
+        'key_tempo_created_at' => time(),
         'last_connexion' => time(),
         'timestamp' => time(),
         'disabled' => 0,
