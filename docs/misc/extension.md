@@ -74,6 +74,8 @@ The following features are planned for upcoming releases:
 
 ### For Administrators
 
+> 🎫 **Commercial License Required** > Use of this extension requires a valid commercial license. To obtain a license and register your instance, please contact nils@teampass.net.
+
 Before users can install and use the browser extension, administrators must configure the server-side settings in Teampass.
 
 #### Server Configuration
@@ -119,13 +121,10 @@ This interface establishes a secure link between browsers and your TeamPass inst
 
 #### For Google Chrome
 
-1. **Download** the extension ZIP file from the Teampass releases page
-2. **Extract** the ZIP contents to a folder of your choice
-3. **Open Chrome** and navigate to: `chrome://extensions/`
-4. **Enable** "Developer mode" (upper right corner)
-5. **Click** on "Load unpacked"
-6. **Select** the extracted folder
-7. ✅ Extension is installed!
+The easiest way to install the extension is via the Chrome Web Store:
+1. Go to the [Teampass Extension page](https://chromewebstore.google.com/detail/cnlomomlocpdfojipnpkhhndpdbcolfn?utm_source=item-share-cb).
+2. Click on "Add to Chrome".
+3. Confirm the installation in the pop-up window.
 
 #### For Microsoft Edge
 
@@ -138,13 +137,10 @@ This interface establishes a secure link between browsers and your TeamPass inst
 
 #### For Mozilla Firefox
 
-1. **Download** and **extract** the ZIP file
-2. **Open Firefox** and navigate to: `about:debugging#/runtime/this-firefox`
-3. **Click** on "Load Temporary Add-on..."
-4. **Navigate** to the extracted folder and select the `manifest.json` file
-5. ✅ Extension is installed!
-
-⚠️ **Firefox Note**: The extension will be uninstalled on browser restart in developer mode. For permanent installation, the extension must be signed by Mozilla or installed from their official store. It will be the case after a test period.
+The easiest way to install the extension is via the Firefox Add-ons store:
+1. Go to the [Teampass Extension page](https://addons.mozilla.org/fr/firefox/addon/teampass-password-manager/).
+2. Click on "Add to Firefox".
+3. Confirm the installation in the pop-up window.
 
 ### Initial Configuration
 
@@ -168,7 +164,7 @@ After installation:
 
 ### General Principle
 
-Starting from version 1.1.0, the Teampass extension verifies the validity of your license with the official license server.
+The Teampass extension verifies the validity of your license with the official license server.
 
 ### How Verification Works
 
