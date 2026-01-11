@@ -4,7 +4,7 @@ Official extension for Chrome, Firefox, and Edge browsers enabling seamless inte
 
 ⚠️ **Note**: Currently in testing phase.
 
-**Written for version**: 1.4.12
+**Written for version**: 1.4.24
 
 ---
 
@@ -44,6 +44,7 @@ The Teampass extension currently offers the following features:
 - 🎨 **Modern interface**: Clean and minimalist design with Font Awesome
 - 🔔 **Toast notifications**: Non-intrusive visual feedback
 - 📊 **Counter badge**: Number of available credentials for current site
+- 🌍 **Multilingual support** (English, French, German, Spanish)
 
 #### License Verification
 - 🔍 **Automatic validation**: Verification with Teampass license server
@@ -54,7 +55,6 @@ The Teampass extension currently offers the following features:
 
 The following features are planned for upcoming releases:
 
-- 🌍 **Multilingual support** (French, German, Spanish)
 - ⌨️ **Customizable keyboard shortcuts**
 - ⭐ **Favorites** for quick access
 - 🔍 **Global search** (not just by URL)
@@ -66,7 +66,7 @@ The following features are planned for upcoming releases:
 
 ### Prerequisites
 
-- **Teampass 3.1.5.17 minimum** installed and configured
+- **Teampass 3.1.5.23 minimum** installed and configured
 - **API enabled** in Teampass settings
 - **HTTPS connection** (required for security)
 - **Valid API key** generated in Teampass

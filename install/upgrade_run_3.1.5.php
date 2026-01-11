@@ -259,7 +259,7 @@ $indexes_to_add = [
     ],
     [
         'table' => 'log_system',
-        'index' => 'idx_log_api_user_connection ',
+        'index' => 'idx_log_api_user_connection',
         'columns' => 'qui, type(20), label(30), date DESC',
         'unique' => false
     ]
