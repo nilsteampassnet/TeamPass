@@ -21,7 +21,7 @@
  * ---
  * @file      run.step5.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -756,6 +756,7 @@ class DatabaseInstaller
             `pw` varchar(250) NOT NULL,
             `derniers` text NULL DEFAULT NULL,
             `key_tempo` varchar(100) NULL DEFAULT NULL,
+            `key_tempo_created_at` INT(12) DEFAULT NULL,
             `last_pw_change` varchar(30) NULL DEFAULT NULL,
             `last_pw` text NULL DEFAULT NULL,
             `admin` tinyint(1) NOT null DEFAULT '0',
@@ -928,7 +929,8 @@ class DatabaseInstaller
             `label` text NOT NULL,
             `qui` varchar(255) NOT NULL,
             `field_1` varchar(250) DEFAULT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            KEY `idx_log_api_user_connection` (qui, type(20), label(30), date DESC)
             ) CHARSET=utf8;'
         );
     }

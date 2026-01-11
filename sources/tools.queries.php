@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      tools.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -371,10 +371,10 @@ case 'perform_fix_pf_items-step3':
         // Checking that this pwd cannot decrypt an item sharekey        
         // Get one itemKey from current user
         $currentUserKey = DB::queryFirstRow(
-            'SELECT ski.share_key, ski.increment_id AS increment_id, l.id_user
+            'SELECT ski.share_key, ski.increment_id AS increment_id
             FROM ' . prefixTable('sharekeys_items') . ' AS ski
-            INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-            WHERE ski.user_id = %i
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
+            WHERE ski.user_id = %i AND ski.share_key != ""
             ORDER BY RAND()
             LIMIT 1',
             TP_USER_ID
@@ -476,10 +476,10 @@ case 'perform_fix_pf_items-step3':
         // Checking that this pwd cannot decrypt an item sharekey        
         // Get one itemKey from current user
         $currentUserKey = DB::queryFirstRow(
-            'SELECT ski.share_key, ski.increment_id AS increment_id, l.id_user
+            'SELECT ski.share_key, ski.increment_id AS increment_id
             FROM ' . prefixTable('sharekeys_items') . ' AS ski
-            INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-            WHERE ski.user_id = %i
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
+            WHERE ski.user_id = %i AND ski.share_key != ""
             ORDER BY RAND()
             LIMIT 1',
             $userId

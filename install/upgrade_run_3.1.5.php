@@ -21,7 +21,7 @@
  * ---
  * @file      upgrade_run_3.1.5.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -127,7 +127,7 @@ if (count($duplicates) > 0) {
 // ---<
 
 
-// Add new columns to users table
+// Add new columns to tables
 $columns_to_add = [
     [
         'table' => 'users',
@@ -163,6 +163,11 @@ $columns_to_add = [
         'table' => 'items',
         'column' => 'favicon_url',
         'query' => "ALTER TABLE `" . $pre . "items` ADD COLUMN `favicon_url` VARCHAR(500) NULL DEFAULT NULL AFTER `fa_icon`"
+    ],
+    [
+        'table' => 'users',
+        'column' => 'key_tempo_created_at',
+        'query' => "ALTER TABLE `" . $pre . "users` ADD COLUMN `key_tempo_created_at` INT(12) DEFAULT NULL AFTER `key_tempo`"
     ]
 ];
 
@@ -251,6 +256,12 @@ $indexes_to_add = [
         'index' => 'unique_item_id',
         'columns' => 'item_id',
         'unique' => true
+    ],
+    [
+        'table' => 'log_system',
+        'index' => 'idx_log_api_user_connection',
+        'columns' => 'qui, type(20), label(30), date DESC',
+        'unique' => false
     ]
 ];
 foreach ($indexes_to_add as $index_config) {

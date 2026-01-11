@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      identify.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -159,6 +159,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->get('key')
         );
     }
+
+    // Sanitize input data
+    $toClean = [
+        'login' => 'trim|escape',
+    ];
+    $dataReceived = sanitizeData($dataReceived, $toClean);
 
     // Base64 decode sensitive data
     if (isset($dataReceived['pw'])) {
@@ -629,7 +635,7 @@ function buildUserSession(
 
     // Good practice: reset PHPSESSID and key after successful authentication
     $session->migrate();
-    $session->set('key', generateQuickPassword(30, false));
+    $session->set('key', bin2hex(random_bytes(16)));
 
     // Save account in SESSION - Basic user info
     $session->set('user-login', stripslashes($username));
@@ -746,6 +752,7 @@ function performPostLoginTasks(
     // Update table - Final user update in database
     $finalUpdateData = [
         'key_tempo' => $session->get('key'),
+        'key_tempo_created_at' => time(),
         'last_connexion' => time(),
         'timestamp' => time(),
         'disabled' => 0,

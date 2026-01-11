@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      index.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -81,7 +81,7 @@ $session = SessionManager::getSession();
 
 // Random encryption key
 if ($session->get('key') === null)
-    $session->set('key', generateQuickPassword(30, false));
+    $session->set('key', bin2hex(random_bytes(16)));
 
 $request = SymfonyRequest::createFromGlobals();
 $configManager = new ConfigManager();

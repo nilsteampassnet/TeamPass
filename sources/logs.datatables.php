@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      logs.datatables.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -758,6 +758,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
+    // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
+    // A user is considered 'API connected' while their last API token is still valid.
+    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 3600); // Default 1 hour
+    if ($apiTokenDuration < 60) {
+        $apiTokenDuration = 3600; // Minimum 1 hour for safety
+    }
+    $apiConnectedAfter = time() - ($apiTokenDuration + 600);
+
     // Filtering
     $sWhere = new WhereClause('AND');
     if ($searchValue !== '') {        
@@ -767,23 +775,39 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
     }
     $subclause2 = $sWhere->addClause('OR');
-    $subclause2->add('session_end >= %i', time());
+    $subclause2->add('u.session_end >= %i', time());
+    $subclause2->add(
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = u.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
+        'api',
+        'user_connection',
+        $apiConnectedAfter
+    );
 
-    // Get the total number of records
+    // Get the total number of records - use alias 'u'
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-        FROM '.prefixTable('users').'
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+        FROM '.prefixTable('users').' u
+        WHERE %l',
+        $sWhere
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT *
-    FROM '.prefixTable('users').'
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $sql = 'SELECT u.*,
+        api_conn.last_api_date AS api_last_connection
+    FROM '.prefixTable('users').' u
+    LEFT JOIN (
+        SELECT qui, MAX(date) as last_api_date
+        FROM '.prefixTable('log_system').'
+        WHERE type = %s
+            AND label = %s
+            AND date >= %i
+        GROUP BY qui
+    ) api_conn ON api_conn.qui = u.id
+    WHERE %l
+    ORDER BY %l %l
+    LIMIT %i, %i';
+
+    $params = ['api', 'user_connection', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
@@ -814,10 +838,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
-        $time_diff = time() - (int) $record['timestamp'];
+        $connectedSince = (int) $record['timestamp'];
+        if ((int) $record['session_end'] < time() && !empty($record['api_last_connection'])) {
+            $connectedSince = (int) $record['api_last_connection'];
+        }
+        $time_diff = time() - $connectedSince;
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
-        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
+        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m", ';
+        //col5 (API connected)
+        $apiConnected = !empty($record['api_last_connection']) ? 1 : 0;
+        $sOutput .= '"'.$apiConnected.'" ';
         //Finish the line
         $sOutput .= '],';
     }
@@ -988,7 +1019,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.(is_null($record['error_message']) ? '' : addslashes($record['error_message'])).'", ';
+        $errMsg = is_null($record['error_message']) ? '' : (string) $record['error_message'];
+        $errMsg = preg_replace('/\r\n|\r|\n/', ' ', $errMsg);
+        $sOutput .= json_encode($errMsg, JSON_UNESCAPED_UNICODE).', ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3

@@ -184,6 +184,21 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
 
+    # Add MariaDB service to allow the entrypoint to succeed
+    services:
+      db:
+        image: mariadb:11.2
+        env:
+          MARIADB_ROOT_PASSWORD: root_password
+          MARIADB_DATABASE: teampass
+          MARIADB_USER: teampass
+          MARIADB_PASSWORD: teampass_password
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -200,13 +215,26 @@ jobs:
           SHORT_TAG="${FULL_SHA:0:7}"
           SHA_SHORT_TAG="sha-$SHORT_TAG"
           docker pull ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHA_SHORT_TAG"
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHA_SHORT_TAG" php -v
-          docker run --rm ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHA_SHORT_TAG" nginx -v
+          
+          # Run container within the GitHub Actions service network
+          # Pass required DB environment variables to satisfy the entrypoint
+          docker run --rm \
+            --network ${{ job.container.network }} \
+            -e DB_HOST=db \
+            -e DB_USER=teampass \
+            -e DB_PASSWORD=teampass_password \
+            -e DB_NAME=teampass \
+            ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHA_SHORT_TAG" php -v
 
-      - name: Test docker-compose
+      - name: Test nginx version
         run: |
-          cd docker/docker-compose
-          cp .env.example .env
-          sed -i 's/DB_PASSWORD=.*/DB_PASSWORD=test123/' .env
-          sed -i 's/MARIADB_ROOT_PASSWORD=.*/MARIADB_ROOT_PASSWORD=roottest123/' .env
-          docker-compose config
+          FULL_SHA="${{ github.sha }}"
+          SHORT_TAG="${FULL_SHA:0:7}"
+          SHA_SHORT_TAG="sha-$SHORT_TAG"
+          docker run --rm \
+            --network ${{ job.container.network }} \
+            -e DB_HOST=db \
+            -e DB_USER=teampass \
+            -e DB_PASSWORD=teampass_password \
+            -e DB_NAME=teampass \
+            ${{ env.IMAGE_NAME_DOCKERHUB }}:"$SHA_SHORT_TAG" nginx -v

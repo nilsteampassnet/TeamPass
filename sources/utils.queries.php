@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      utils.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -118,21 +118,21 @@ if (null !== $post_type) {
                 if (in_array($id, $session->get('user-forbiden_personal_folders')) === false && in_array($id, $session->get('user-accessible_folders')) === true) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso,
-                        i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv
-                        l.date as date,
-                        n.renewal_period as renewal_period
-                        FROM '.prefixTable('items').' as i
-                        INNER JOIN '.prefixTable('nested_tree').' as n ON (i.id_tree = n.id)
-                        INNER JOIN '.prefixTable('log_items').' as l ON (i.id = l.id_item)
+                            i.label as label, i.description as description, i.pw as pw, i.login as login, i.pw_iv as pw_iv,
+                            IFNULL(l.date, 0) as date,
+                            n.renewal_period as renewal_period
+                        FROM ' . prefixTable('items') . ' as i
+                        INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
+                        LEFT JOIN ' . prefixTable('log_items') . ' as l
+                            ON (i.id = l.id_item AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s)))
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
-                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %ss))
                         ORDER BY i.label ASC, l.date DESC',
-                        0,
-                        $id,
                         'at_creation',
                         'at_modification',
-                        'at_pw :'
+                        'at_pw :%',
+                        0,
+                        $id
                     );
 
                     $id_managed = '';

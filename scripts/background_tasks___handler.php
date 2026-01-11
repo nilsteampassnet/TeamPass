@@ -21,7 +21,7 @@
  * ---
  * @file      background_tasks___handler.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -62,7 +62,7 @@ class BackgroundTasksHandler {
             $historyDelay = $historyDelay * 86400;
         }
 
-$this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
+        $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
 
     }
 
@@ -78,7 +78,7 @@ $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
 
         try {
             $this->cleanupStaleTasks();
-            $this->handleScheduledDatabaseBackup();   // <--- NEW
+            $this->handleScheduledDatabaseBackup();
             $this->processTaskBatches();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
@@ -477,6 +477,7 @@ $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
         $this->cleanMultipleItemsEdition();
         $this->handleItemTokensExpiration();
         $this->cleanOldFinishedTasks();
+        $this->cleanOldImportFiles();
     }
 
     /**
@@ -546,6 +547,153 @@ $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
         );
     
         if (LOG_TASKS=== true) $this->logger->log('Old finished tasks cleaned: ' . count($taskIds), 'INFO');
+    }
+
+    /**
+     * Clean old temporary import files that were not deleted after failed imports
+     * Removes files older than a specified threshold from both filesystem and database
+     *
+     * @return void
+     */
+    private function cleanOldImportFiles(): void
+    {
+        try {
+            // Define threshold for old files (1 hour by default)
+            $thresholdTimestamp = time() - (1 * 3600);
+            
+            // Statistics for logging
+            $stats = [
+                'total_found' => 0,
+                'files_deleted' => 0,
+                'db_entries_deleted' => 0,
+                'errors' => 0
+            ];
+
+            // Retrieve all temp_file entries from database
+            $tempFiles = DB::query(
+                'SELECT increment_id, intitule, valeur 
+                FROM %l 
+                WHERE type = %s',
+                'teampass_misc',
+                'temp_file'
+            );
+
+            $stats['total_found'] = count($tempFiles);
+
+            if (empty($tempFiles)) {
+                if (LOG_TASKS=== true) $this->logger->log('TeamPass Background Task: No temporary import files found in database', 'INFO');
+                return;
+            }
+
+            foreach ($tempFiles as $fileEntry) {
+                $entryId = (int) $fileEntry['increment_id'];
+                $timestamp = (int) $fileEntry['intitule'];
+                $fileName = (string) $fileEntry['valeur'];
+
+                // Validate timestamp format
+                if ($timestamp <= 0) {
+                    if (LOG_TASKS=== true) $this->logger->log("TeamPass Background Task: Invalid timestamp for temp_file entry ID {$entryId}: {$timestamp}", 'INFO');
+                    $stats['errors']++;
+                    continue;
+                }
+
+                // Check if file is old enough to be deleted
+                if ($timestamp > $thresholdTimestamp) {
+                    // File is still recent, skip deletion
+                    continue;
+                }
+
+                // Construct full file path
+                $filePath = './files/' . $fileName;
+
+                // Attempt to delete file from filesystem
+                $fileDeleted = $this->deleteImportFile($filePath, $entryId);
+                
+                if ($fileDeleted) {
+                    $stats['files_deleted']++;
+                }
+
+                // Delete database entry regardless of file deletion result
+                // (file might already be deleted manually)
+                try {
+                    DB::delete(
+                        'teampass_misc',
+                        'increment_id = %i',
+                        $entryId
+                    );
+                    $stats['db_entries_deleted']++;
+                } catch (Exception $e) {
+                    if (LOG_TASKS=== true) $this->logger->log(
+                        "TeamPass Background Task: Failed to delete temp_file entry ID {$entryId} from database: " . $e->getMessage(),
+                        'INFO'
+                    );
+                    $stats['errors']++;
+                }
+            }
+
+            // Log final statistics
+            if (LOG_TASKS=== true) $this->logger->log(
+                sprintf(
+                    'TeamPass Background Task: Import files cleanup completed - Found: %d, Files deleted: %d, DB entries deleted: %d, Errors: %d',
+                    $stats['total_found'],
+                    $stats['files_deleted'],
+                    $stats['db_entries_deleted'],
+                    $stats['errors']
+                )
+                , 'INFO'
+            );
+
+        } catch (Exception $e) {
+            if (LOG_TASKS=== true) $this->logger->log(
+                "TeamPass Background Task: Critical error in cleanOldImportFiles(): " . $e->getMessage(),
+                'INFO'
+            );
+        }
+    }
+
+    /**
+     * Delete a single import file with proper error handling
+     *
+     * @param string $filePath Path to the file to delete
+     * @param int $entryId Database entry ID (for logging purposes)
+     * @return bool True if file was deleted successfully or doesn't exist, false on error
+     */
+    private function deleteImportFile(string $filePath, int $entryId): bool
+    {
+        // Check if file exists
+        if (!file_exists($filePath)) {
+            // File already deleted or never existed, consider as success
+            return true;
+        }
+
+        // Verify it's actually a file (not a directory)
+        if (!is_file($filePath)) {
+            if (LOG_TASKS=== true) $this->logger->log(
+                "TeamPass Background Task: Path is not a file (entry ID {$entryId}): {$filePath}",
+                'INFO'
+            );
+            return false;
+        }
+
+        // Check write permissions
+        if (!is_writable($filePath)) {
+            if (LOG_TASKS=== true) $this->logger->log(
+                "TeamPass Background Task: File is not writable, cannot delete (entry ID {$entryId}): {$filePath}",
+                'INFO'
+            );
+            return false;
+        }
+
+        // Attempt deletion
+        if (unlink($filePath) === false) {
+            if (LOG_TASKS=== true) $this->logger->log(
+                "TeamPass Background Task: Failed to delete file (entry ID {$entryId}): {$filePath}",
+                'INFO'
+            );
+            return false;
+        }
+
+        return true;
     }
 }
 

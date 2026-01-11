@@ -17,7 +17,7 @@ Teampass is a Collaborative Passwords Manager solution installed On-Premise.
 [![Build Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/build.png?b=master)](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/build-status/master)
 [![Code Intelligence Status](https://scrutinizer-ci.com/g/nilsteampassnet/TeamPass/badges/code-intelligence.svg?b=master)](https://scrutinizer-ci.com/code-intelligence)
 
-> Copyright © 2009-2025, [Nils Laumaillé](Nils@Teampass.net)
+> Copyright © 2009-2026, [Nils Laumaillé](Nils@Teampass.net)
 
 <!-- MDTOC maxdepth:2 firsth1:0 numbering:0 flatten:0 bullets:1 updateOnSave:1 -->
 
@@ -116,7 +116,7 @@ For traditional server installations without Docker:
 - [Docker Installation](DOCKER.md) - Complete Docker deployment guide
 - [Docker Migration](DOCKER-MIGRATION.md) - Upgrade from older versions
 - [Official Documentation](https://documentation.teampass.net) - Full user and admin guides
-- [API Documentation](https://documentation.teampass.net/api/) - REST API reference
+- [API Documentation](https://documentation.teampass.net/#/api/api-basic) - REST API reference
 
 ## Languages
 

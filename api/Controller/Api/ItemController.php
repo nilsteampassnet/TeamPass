@@ -15,7 +15,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -463,7 +463,6 @@ class ItemController extends BaseController
 
                     if (!empty($ret)) {
                         $responseData = json_encode($ret);
-                        error_log($responseData);
                     } else {
                         $strErrorDesc = 'No items found with this URL';
                         $strErrorHeader = 'HTTP/1.1 204 No Content';

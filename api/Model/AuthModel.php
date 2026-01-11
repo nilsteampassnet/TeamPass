@@ -23,7 +23,7 @@
  *
  * @file      AuthModel.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -98,15 +98,7 @@ class AuthModel
                 }
 
                 // Update user's key_tempo
-                $keyTempo = bin2hex(random_bytes(16));
-                /*DB::update(
-                    prefixTable('users'),
-                    [
-                        'key_tempo' => $keyTempo,
-                    ],
-                    'id = %i',
-                    $userInfo['id']
-                );*/
+                $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
 
                 // Generate a unique session key for this API session (256 bits / 32 bytes)
                 // This key will be stored in the JWT and used to decrypt the private key
@@ -168,6 +160,7 @@ class AuthModel
                     (int) $userInfo['api_allowed_to_delete'],
                     (int) $SETTINGS['api_token_duration'] ?? 60,
                     (int) $SETTINGS['pwd_maximum_length'] ?? 60,
+                    (int) $SETTINGS['maintenance_mode'] ?? 0,
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "Credentials not valid"];
@@ -209,6 +202,7 @@ class AuthModel
      * @param integer $allowed_to_delete
      * @param integer $api_token_duration
      * @param integer $pwd_maximum_length
+     * @param integer $maintenance_mode
      * @return array
      */
     private function createUserJWT(
@@ -231,7 +225,8 @@ class AuthModel
         int $allowed_to_update,
         int $allowed_to_delete,
         int $api_token_duration,
-        int $pwd_maximum_length
+        int $pwd_maximum_length,
+        int $maintenance_mode
     ): array
     {
         // Load config
@@ -260,6 +255,7 @@ class AuthModel
             'email' => $email,
             'api_token_duration' => $api_token_duration,
             'pwd_maximum_length' => $pwd_maximum_length,
+            'maintenance_mode' => $maintenance_mode,
         ];
 
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];

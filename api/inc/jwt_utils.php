@@ -15,7 +15,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -169,7 +169,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     if (($userInfo['key_tempo']) !== $keyTempo) {
         // Session invalid or expired
         error_log('[API] get_user_keys: Invalid key_tempo (' . $keyTempo.') for user ID ' . $userId);
-        //return null;
+        return null;
     }
 
     // Check if encrypted private key exists

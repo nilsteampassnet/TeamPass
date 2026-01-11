@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      backups.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -229,8 +229,8 @@ $post_data = filter_input(
             $get_file = basename((string) $get_file);
 
             // Safety check: only .sql files allowed
-            $extension = pathinfo($get_file, PATHINFO_EXTENSION);
-            if (is_string($extension) === false || strtolower($extension) !== 'sql') {
+            $extension = (string) pathinfo($get_file, PATHINFO_EXTENSION);
+            if (strtolower($extension) !== 'sql') {
                 header('HTTP/1.1 400 Bad Request');
                 exit;
             }
@@ -630,6 +630,26 @@ $post_data = filter_input(
             echo prepareExchangedData(['error' => false], 'encode');
             break;
 
+        case 'check_connected_users':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
+
+            $excludeUserId = (int) filter_input(INPUT_POST, 'exclude_user_id', FILTER_SANITIZE_NUMBER_INT);
+            if ($excludeUserId === 0 && null !== $session->get('user-id')) {
+                $excludeUserId = (int) $session->get('user-id');
+            }
+
+            $connectedCount = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+                time(),
+                $excludeUserId
+            );
+
+            echo prepareExchangedData(['error' => false, 'connected_count' => $connectedCount], 'encode');
+            break;
+
         case 'scheduled_run_now':
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
                 echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
@@ -658,7 +678,7 @@ $post_data = filter_input(
                 [
                     'created_at' => (string)$now,
                     'process_type' => 'database_backup',
-                    'arguments' => json_encode(['output_dir' => $dir, 'source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                    'arguments' => json_encode(['output_dir' => $dir, 'source' => 'scheduler', 'initiator_user_id' => (int) $session->get('user-id')], JSON_UNESCAPED_SLASHES),
                     'is_in_progress' => 0,
                     'status' => 'new',
                 ]

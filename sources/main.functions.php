@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      main.functions.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -694,15 +694,18 @@ function cacheTableRefresh(): void
     // truncate table
     DB::query('TRUNCATE TABLE ' . prefixTable('cache'));
     // reload date
-    $rows = DB::query(
-        'SELECT *
-        FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        AND l.action = %s
-        AND i.inactif = %i',
-        'at_creation',
-        0
-    );
+        $rows = DB::query(
+            'SELECT i.*,
+                IFNULL(l.id_user, 0) AS id_user,
+                IFNULL(l.date, 0) AS date
+            FROM ' . prefixTable('items') . ' as i
+            LEFT JOIN ' . prefixTable('log_items') . ' as l
+                ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.inactif = %i',
+            'at_creation',
+            0
+        );
+
     foreach ($rows as $record) {
         if (empty($record['id_tree']) === false) {
             // Get all TAGS
@@ -858,13 +861,14 @@ function cacheTableAdd(?int $ident = null): void
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
-        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
+        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url,
+            IFNULL(l.date, 0) AS date
         FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        WHERE i.id = %i
-        AND l.action = %s',
-        $ident,
-        'at_creation'
+        LEFT JOIN ' . prefixTable('log_items') . ' as l
+            ON (l.id_item = i.id AND l.action = %s)
+        WHERE i.id = %i',
+        'at_creation',
+        $ident
     );
     // Get all TAGS
     $tags = '';
@@ -5492,3 +5496,91 @@ function isUserFavorite(int $userId, int $itemId): bool
     return !empty($result);
 }
 // ---<
+
+/**
+ * Sanitizes specific fields from a data array using a mapping of fields and filters.
+ *
+ * @param array $rawData The source array containing raw input data.
+ * @param array $inputsDefinition Associative array mapping field names to their filters (e.g., ['login' => 'trim|escape']).
+ * @return array The original array merged with the sanitized values.
+ */
+function sanitizeData(array $rawData, array $inputsDefinition): array
+{
+    $fieldsToProcess = [];
+    $filters = [];
+
+    // Extract only the values we want to sanitize based on the definition
+    foreach ($inputsDefinition as $field => $filter) {
+        $fieldsToProcess[$field] = isset($rawData[$field]) ? $rawData[$field] : '';
+        $filters[$field] = $filter;
+    }
+
+    // Perform sanitization and merge back into the original data set
+    // This ensures non-sanitized fields remain untouched
+    return array_merge(
+        $rawData,
+        dataSanitizer($fieldsToProcess, $filters)
+    );
+}
+
+
+// <--
+/**
+ * Get or regenerate temporary key based on lifetime
+ * Creates a new key if current one is older than lifetime, otherwise returns existing key
+ * 
+ * @param int $userId User ID
+ * @param int $lifetimeSeconds Key lifetime in seconds (default: 3600 = 1 hour)
+ * 
+ * @return string Valid temporary key (existing or newly generated)
+ */
+function getOrRotateKeyTempo(int $userId, int $lifetimeSeconds = 3600): string
+{
+    $userData = DB::queryFirstRow(
+        'SELECT key_tempo, key_tempo_created_at FROM %l WHERE id=%i',
+        prefixTable('users'),
+        $userId
+    );
+    
+    // No key exists or no timestamp - generate new one
+    if (!$userData || empty($userData['key_tempo']) || $userData['key_tempo_created_at'] === null) {
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Check if key is expired
+    $age = time() - (int)$userData['key_tempo_created_at'];
+    
+    if ($age > $lifetimeSeconds) {
+        // Key expired - generate new one
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Key still valid - return existing
+    return $userData['key_tempo'];
+}
+
+/**
+ * Generate a new temporary key with timestamp
+ * 
+ * @param int $userId User ID
+ * 
+ * @return string Generated key
+ */
+function generateNewKeyTempo(int $userId): string
+{
+    $keyTempo = bin2hex(random_bytes(16));
+    $createdAt = time();
+    
+    DB::update(
+        prefixTable('users'),
+        [
+            'key_tempo' => $keyTempo,
+            'key_tempo_created_at' => $createdAt
+        ],
+        'id=%i',
+        $userId
+    );
+    
+    return $keyTempo;
+}
+// -->
