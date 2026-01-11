@@ -310,18 +310,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
                 'body': '<?php echo $lang->get('email_body_new_user');?>',
                 'pre_replace' : {
-                    '#code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                     '#login#' : store.get('teampassUser').admin_new_user_login,
                     '#password#' : store.get('teampassUser').admin_new_user_password,
-                }
-            }
-        } else {
-            var data = {
-                'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
-                'body': '<?php echo $lang->get('email_body_temporary_encryption_code');?>',
-                'pre_replace' : {
-                    '#enc_code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                 }
             }
         }
