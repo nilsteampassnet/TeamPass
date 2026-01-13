@@ -187,7 +187,16 @@ try {
             throw new Exception($res['message'] ?? 'Backup failed');
         }
 
-        // Store a tiny summary for the task completion "arguments" field (no secrets)
+        
+// Best effort: write metadata sidecar next to the backup file
+try {
+    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
+    }
+} catch (Throwable $ignored) {
+    // do not block backups if metadata cannot be written
+}
+// Store a tiny summary for the task completion "arguments" field (no secrets)
         $this->taskData['backup_file'] = $res['filename'] ?? '';
         $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
         $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
@@ -296,7 +305,9 @@ try {
             if ($mtime !== false && $mtime < $cutoff) {
                 if (@unlink($file)) {
                     $deleted++;
-                }
+                    // Also remove metadata sidecar if present
+                    @unlink($file . '.meta.json');
+}
             }
         }
 
