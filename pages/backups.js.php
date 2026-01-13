@@ -41,7 +41,8 @@ require_once __DIR__.'/../sources/main.functions.php';
 loadClasses();
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
-$lang = new Language($session->get('user-language') ?? 'english');
+$userLanguage = $session->get('user-language');
+$lang = new Language(($userLanguage !== null && $userLanguage !== '') ? $userLanguage : 'english');
 
 if ($session->get('key') === null) {
     die('Hacking attempt...');
@@ -645,14 +646,9 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
                         } else {
                             // Do NOT store the key in DB. It is only used to encrypt/decrypt the backup.
                             tpProgressToast.hide();
-                            // SHOW LINK
-                            $('#onthefly-backup-progress')
-                                .removeClass('hidden')
-                                .html('<div class="alert alert-success alert-dismissible ml-2">' +
-                                    '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                                    '<h5><i class="icon fa fa-check mr-2"></i><?php echo addslashes($lang->get('done')); ?></h5>' +
-                                    '<i class="fas fa-file-download mr-2"></i><a href="' + data.download + '"><?php echo addslashes($lang->get('pdf_download')); ?></a>' +
-                                    '</div>');
+                            // No inline green alert here (bottom-right toast + server list refresh are enough)
+                            $('#onthefly-backup-progress').addClass('hidden').empty();
+
 
                             // Refresh on-the-fly server backups list (new file is stored in <files>)
                             try { loadOnTheFlyServerBackups(); } catch (e) {}
