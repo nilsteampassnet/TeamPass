@@ -1534,5 +1534,6 @@ return array(
     'bck_restore_incompatible_version_body' => 'This backup was created with an incompatible version or the database schema is not aligned. Restore has been blocked.',
     'bck_restore_backup_version' => 'Backup TeamPass version',
     'bck_restore_expected_version' => 'Expected TeamPass version',
+    'bck_restore_legacy_no_metadata' => 'This backup is in legacy format and does not include compatibility metadata. Restore cannot be verified and has been blocked.',
     'bck_restore_missing_schema_level' => 'Unable to determine schema level from metadata or filename (-sl...). Restore has been blocked.',
 );
