@@ -1537,4 +1537,11 @@ return array(
     'bck_exclusive_users_connected' => 'Opération bloquée : d’autres utilisateurs sont actuellement connectés.',
     'bck_exclusive_disconnect_all' => 'Déconnecter tout le monde',
     'bck_exclusive_continue' => 'Continuer',
+    'bck_col_teampass_version' => 'Version TeamPass',
+    'bck_version_unknown' => 'Inconnue',
+    'bck_restore_incompatible_version_title' => 'Version de backup incompatible',
+    'bck_restore_incompatible_version_body' => 'Ce backup a été créé avec une version incompatible ou le schéma de base n’est pas aligné. La restauration a été bloquée.',
+    'bck_restore_backup_version' => 'Version TeamPass du backup',
+    'bck_restore_expected_version' => 'Version TeamPass attendue',
+    'bck_restore_missing_schema_level' => 'Impossible de déterminer le niveau de schéma depuis les métadonnées ou le nom (-sl...). Restauration bloquée.',
 );
