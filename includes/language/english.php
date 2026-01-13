@@ -1528,4 +1528,11 @@ return array(
     'bck_exclusive_users_connected' => 'Operation blocked: other users are currently connected.',
     'bck_exclusive_disconnect_all' => 'Disconnect all',
     'bck_exclusive_continue' => 'Continue',
+    'bck_col_teampass_version' => 'TeamPass version',
+    'bck_version_unknown' => 'Unknown',
+    'bck_restore_incompatible_version_title' => 'Incompatible backup version',
+    'bck_restore_incompatible_version_body' => 'This backup was created with an incompatible version or the database schema is not aligned. Restore has been blocked.',
+    'bck_restore_backup_version' => 'Backup TeamPass version',
+    'bck_restore_expected_version' => 'Expected TeamPass version',
+    'bck_restore_missing_schema_level' => 'Unable to determine schema level from metadata or filename (-sl...). Restore has been blocked.',
 );
