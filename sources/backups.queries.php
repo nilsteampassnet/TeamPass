@@ -462,7 +462,17 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         
             // Prepare variables
             $encryptionKey = filter_var($dataReceived['encryptionKey'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        
+
+            // Make the process resilient to client disconnect (navigation/tab close)
+            ignore_user_abort(true);
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(0);
+            }
+            // Release session lock as we don't need to write session during the long operation
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+            
             require_once __DIR__ . '/backup.functions.php';
 
             $backupResult = tpCreateDatabaseBackup($SETTINGS, $encryptionKey);
@@ -1018,6 +1028,16 @@ case 'preflight_restore_compatibility':
     );
     break;
         case 'onthefly_restore':
+            // Make the process resilient to client disconnect (navigation/tab close)
+            ignore_user_abort(true);
+            if (function_exists('set_time_limit')) {
+                @set_time_limit(0);
+            }
+            // Release session lock as we don't need to write session during the long operation
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_write_close();
+            }
+
             // Check KEY
             if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
