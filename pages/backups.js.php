@@ -255,6 +255,67 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#tp-confirm-restore-body').html(messageHtml);
         $('#tp-confirm-restore-modal').modal('show');
     }
+// ---------------------------------------------------------------------
+// Restore compatibility (schema-level) preflight
+// ---------------------------------------------------------------------
+var tpBckVersionUnknown = "<?php echo addslashes($lang->get('bck_version_unknown')); ?>";
+var tpBckIncompatTitle = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_title')); ?>";
+var tpBckIncompatBody = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_body')); ?>";
+var tpBckBackupVersionLabel = "<?php echo addslashes($lang->get('bck_restore_backup_version')); ?>";
+var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
+var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
+
+function tpFmtTpVersion(v) {
+    v = (v || '').toString().trim();
+    return v !== '' ? v : tpBckVersionUnknown;
+}
+
+function tpShowRestoreIncompatMessage(backupVersion, expectedVersion) {
+    var msg = '<div class="mb-2">' + tpBckIncompatBody + '</div>';
+    msg += '<div><b>' + tpBckBackupVersionLabel + ':</b> ' + tpFmtTpVersion(backupVersion) + '</div>';
+    msg += '<div><b>' + tpBckExpectedVersionLabel + ':</b> ' + tpFmtTpVersion(expectedVersion) + '</div>';
+
+    // Prefer bootstrap modal if available, fallback to toast
+    try {
+        $('#tp-confirm-restore-title').text(tpBckIncompatTitle);
+        $('#tp-confirm-restore-body').html(msg);
+        $('#tp-confirm-restore-yes').hide();
+        $('#tp-confirm-restore-modal').modal('show');
+    } catch (e) {
+        tpToast('error', msg);
+    }
+}
+
+function tpPreflightRestoreCompatibility(payload, onOk) {
+    payload = payload || {};
+    $.post(
+        "sources/backups.queries.php",
+        {
+            type: "preflight_restore_compatibility",
+            data: prepareExchangedData(JSON.stringify(payload), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function (resp) {
+            var r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
+            if (!r || r.error === true) {
+                tpToast('error', (r && r.message) ? r.message : "<?php echo addslashes($lang->get('error')); ?>");
+                return;
+            }
+
+            if (r.is_compatible === true) {
+                if (typeof onOk === 'function') onOk(r);
+                return;
+            }
+
+            if ((r.reason || '') === 'LEGACY_NO_METADATA') {
+                tpToast('error', tpBckLegacyNoMeta);
+                return;
+            }
+
+            tpShowRestoreIncompatMessage(r.backup_tp_files_version || '', r.expected_tp_files_version || '');
+        }
+    );
+}
     $(document).on('click', '#tp-confirm-restore-yes', function(e) {
         e.preventDefault();
         $('#tp-confirm-restore-modal').modal('hide');
@@ -422,7 +483,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
 
             $('#onthefly-server-backups-tbody').html(
-                '<tr><td colspan="3" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
+                '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
             );
 
             $.post(
@@ -443,7 +504,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     let html = '';
                     const currentSelected = ($('#onthefly-restore-serverfile').val() || '').toString();
                     if (!data.files || data.files.length === 0) {
-                        html = '<tr><td colspan="3" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
+                        html = '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
                         $('#onthefly-server-backups-tbody').html(html);
                         return;
                     }
@@ -467,6 +528,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         html += '    </div>';
                         html += '  </td>';
                         html += '  <td>' + sz + '</td>';
+                        var tpv = (f.tp_files_version || '');
+                        html += '  <td class="text-nowrap">' + tpFmtTpVersion(tpv) + '</td>';
                         html += '  <td class="text-right text-nowrap">';
                         html += '    <div class="btn-group btn-group-sm" role="group">';
                         if (dl !== '') {
@@ -614,7 +677,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             toastr.error("<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
                             return false;
                         }
-                tpExclusiveUsers.ensure(function() {
+                // Compatibility preflight (schema-level) before any lock/maintenance
+                var pfPayload = {};
+                var pfOpId = $('#onthefly-restore-file').data('operation-id');
+                var pfServerScope = $('#onthefly-restore-server-scope').val() || '';
+                var pfServerFile = $('#onthefly-restore-serverfile').val() || '';
+                if (pfOpId !== undefined && pfOpId !== null && pfOpId !== '') {
+                    pfPayload.operation_id = pfOpId;
+                } else {
+                    pfPayload.serverScope = pfServerScope;
+                    pfPayload.serverFile = pfServerFile;
+                }
+                tpPreflightRestoreCompatibility(pfPayload, function() {
+                    tpExclusiveUsers.ensure(function() {
                 // Pre-check: don't lock UI until we are sure the backup can be decrypted.
                 // This prevents the "stuck" progress modal when the key is wrong.
                 tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_checking_key')); ?> <i class="fas fa-circle-notch fa-spin"></i>');
@@ -747,8 +822,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             // restart time expiration counter
                             ProcessInProgress = false; 
                         }
-                    });
-                }
+	                    });
+	                }
 
                 function updateProgressBar(offset, totalSize) {
                     // Show progress to user
@@ -761,9 +836,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     ensureLockStarted(percentage);
                 }
 
-                // Start restoration
-                restoreDatabase(0, '', 0);
-                });
+	                // Start restoration
+	                restoreDatabase(0, '', 0);
+	            });
+	        });
 
                 return;
             }
@@ -945,8 +1021,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         var overrideKey = $('#scheduled-restore-override-key').val() || '';
-        tpExclusiveUsers.ensure(function() {
+        // Compatibility preflight (schema-level) before any lock/maintenance
+        tpPreflightRestoreCompatibility({ serverScope: 'scheduled', serverFile: serverFile }, function() {
+            tpExclusiveUsers.ensure(function() {
             tpScheduledRestoreStart(serverFile, overrideKey);
+        });
         });
     });
 
@@ -1243,6 +1322,7 @@ var tpScheduled = {
         tr.append($dateTd);
 
         tr.append($('<td/>').addClass('text-nowrap').text(tpScheduled.fmtBytes(f.size_bytes)));
+        tr.append($('<td/>').addClass('text-nowrap').text(tpFmtTpVersion(f.tp_files_version || '')));
 
         var dl = (f.download || '');
         var $cell = $('<td/>').addClass('text-right text-nowrap');
