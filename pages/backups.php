@@ -221,12 +221,13 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     <tr>
                                                         <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_date'); ?></th>
                                                         <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_size'); ?></th>
+                                                        <th class="text-nowrap"><?php echo $lang->get('bck_col_teampass_version'); ?></th>
                                                         <th class="text-right text-nowrap"><?php echo $lang->get('bck_onthefly_col_action'); ?></th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="onthefly-server-backups-tbody">
                                                     <tr>
-                                                        <td colspan="3" class="text-muted"><?php echo $lang->get('bck_onthefly_loading'); ?></td>
+                                                        <td colspan="4" class="text-muted"><?php echo $lang->get('bck_onthefly_loading'); ?></td>
                                                     </tr>
                                                 </tbody>
                                             </table>
@@ -373,6 +374,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                             <tr>
                                                                 <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_date'); ?></th>
                                                                 <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_size'); ?></th>
+                                                                <th class="text-nowrap"><?php echo $lang->get('bck_col_teampass_version'); ?></th>
                                                                 <th class="text-right text-nowrap"><?php echo $lang->get('bck_onthefly_col_action'); ?></th>
                                                             </tr>
                                                         </thead>
