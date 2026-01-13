@@ -448,20 +448,28 @@ if (
     && empty($post_type_upload) === false
     && $post_type_upload === 'import_items_from_csv'
 ) {
-    rename(
-        $filePath,
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName
-    );
+    // Preserve schema token from original filename for restore compatibility checks
+// Example: "scheduled-...-sl1768126101.sql" => store "...-sl1768126101"
+$schemaSuffix = '';
+if (!empty($fileName) && preg_match('/-sl(\d+)(?:\D|$)/', (string) $fileName, $m) === 1) {
+    $schemaSuffix = '-sl' . (string) $m[1];
+}
+$finalFileName = $newFileName . $schemaSuffix;
 
-    // Add in DB
-    DB::insert(
-        prefixTable('misc'),
-        array(
-            'type' => 'temp_file',
-            'intitule' => time(),
-            'valeur' => $newFileName,
-        )
-    );
+rename(
+    $filePath,
+    $targetDir . DIRECTORY_SEPARATOR . $finalFileName
+);
+
+// Add in DB
+DB::insert(
+    prefixTable('misc'),
+    array(
+        'type' => 'temp_file',
+        'intitule' => time(),
+        'valeur' => $finalFileName,
+    )
+);
 
     // return info
     echo prepareExchangedData(
