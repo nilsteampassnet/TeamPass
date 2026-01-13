@@ -255,6 +255,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#tp-confirm-restore-body').html(messageHtml);
         $('#tp-confirm-restore-modal').modal('show');
     }
+
+function tpGetOnTheFlyServerFile() {
+    return ($('#onthefly-restore-server-file').val() || $('#onthefly-restore-serverfile').val() || '').toString();
+}
+
 // ---------------------------------------------------------------------
 // Restore compatibility (schema-level) preflight
 // ---------------------------------------------------------------------
@@ -421,6 +426,7 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
                 // If deleted file was selected for restore, clear selection
                 if ($('#onthefly-restore-serverfile').val() === fileName) {
                     $('#onthefly-restore-serverfile').val('');
+        $('#onthefly-restore-server-file').val('');
                     $('#onthefly-restore-server-scope').val('');
                     $('#onthefly-restore-server-file').val('');
                     $('#onthefly-restore-file-text').text('');
@@ -672,7 +678,7 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
             // PERFORM A RESTORE
             if ($('#onthefly-restore-key').val() !== '') {
                         const opId = $('#onthefly-restore-file').data('operation-id');
-                        const serverFile = $('#onthefly-restore-serverfile').val();
+                        const serverFile = tpGetOnTheFlyServerFile();
                         if ((opId === undefined || opId === null || opId === '') && (serverFile === undefined || serverFile === null || serverFile === '')) {
                             toastr.error("<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
                             return false;
@@ -681,7 +687,7 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
                 var pfPayload = {};
                 var pfOpId = $('#onthefly-restore-file').data('operation-id');
                 var pfServerScope = $('#onthefly-restore-server-scope').val() || '';
-                var pfServerFile = $('#onthefly-restore-serverfile').val() || '';
+                var pfServerFile = tpGetOnTheFlyServerFile();
                 if (pfOpId !== undefined && pfOpId !== null && pfOpId !== '') {
                     pfPayload.operation_id = pfOpId;
                 } else {
@@ -711,7 +717,7 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
 
                 function restoreDatabase(offset, clearFilename, totalSize) {
                     var serverScope = $('#onthefly-restore-server-scope').val() || '';
-                    var serverFile  = $('#onthefly-restore-server-file').val() || '';
+                    var serverFile  = tpGetOnTheFlyServerFile();
 
                     var opId = $('#onthefly-restore-file').data('operation-id') || 0;
 
@@ -1133,6 +1139,7 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
         var myData = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
         $('#onthefly-restore-file').data('operation-id', myData.operation_id);
         $('#onthefly-restore-serverfile').val('');
+        $('#onthefly-restore-server-file').val('');
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
@@ -1243,7 +1250,9 @@ var tpScheduled = {
       var s = r.settings || {};
       tpScheduled.tz = s.timezone || 'UTC';
 
-      $('#scheduled-enabled').prop('checked', parseInt(s.enabled || 0, 10) === 1);
+      var enabledVal = (parseInt(s.enabled || 0, 10) === 1) ? '1' : '0';
+      $('#backup-scheduled-enabled_input').val(enabledVal);
+      try { $('#backup-scheduled-enabled').attr('data-toggle-on', enabledVal === '1' ? 'true' : 'false'); } catch (e) {}
       $('#scheduled-frequency').val(s.frequency || 'daily');
       $('#scheduled-time').val(s.time || '02:00');
       $('#scheduled-dow').val(String(s.dow || 1));
