@@ -12,7 +12,7 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ * a
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
  * 
@@ -1543,6 +1543,8 @@ return array(
     'bck_restore_incompatible_version_body' => 'Ce backup a été créé avec une version incompatible ou le schéma de base n’est pas aligné. La restauration a été bloquée.',
     'bck_restore_backup_version' => 'Version TeamPass du backup',
     'bck_restore_expected_version' => 'Version TeamPass attendue',
-    'bck_restore_legacy_no_metadata' => 'Ce backup est au format legacy et ne contient pas les métadonnées de compatibilité. La restauration ne peut pas être vérifiée et a été bloquée.',
     'bck_restore_missing_schema_level' => 'Impossible de déterminer le niveau de schéma depuis les métadonnées ou le nom (-sl...). Restauration bloquée.',
+    'bck_upload_max_file_size' => 'Taille maximale du fichier : %s.',
+    'bck_upload_error_file_too_large' => 'Le fichier sélectionné est trop volumineux. Taille maximale autorisée : %s. Augmentez la valeur "upload_maxfilesize" dans TeamPass et vérifiez les limites PHP (upload_max_filesize, post_max_size).',
+    'bck_upload_error_file_extension' => 'Type de fichier non autorisé. Formats acceptés : .sql, .sql.gz, .gz, .zip.',
 );
