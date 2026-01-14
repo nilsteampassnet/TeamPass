@@ -1038,6 +1038,9 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
 $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
     ? $SETTINGS['upload_maxfilesize'] . 'mb'
     : $SETTINGS['upload_maxfilesize'];
+
+$maxFileSizeDisplay = strtoupper((string) $maxFileSize);
+$maxFileSizeDisplay = preg_replace('/\s*(MB|GB)$/', ' $1', $maxFileSizeDisplay);
 ?>
 
     let toastrElement;
@@ -1139,20 +1142,51 @@ $maxFileSize = (strrpos($SETTINGS['upload_maxfilesize'], 'mb') === false)
     });
 
     uploader_restoreDB.bind("Error", function(up, err) {
-        //var myData = prepareExchangedData(err, "decode", "<?php echo $session->get('key'); ?>");
+        // Improve UX by providing a clearer, localized message for common Plupload errors
+        var rawMsg = (err && err.message) ? String(err.message) : '';
+        var code = (err && typeof err.code !== 'undefined') ? err.code : null;
+
+        var msg = rawMsg;
+
+        // Plupload codes: FILE_SIZE_ERROR = -600, FILE_EXTENSION_ERROR = -601
+        var isFileSizeError = (typeof plupload !== 'undefined' && code === plupload.FILE_SIZE_ERROR) || code === -600;
+        var isFileExtError = (typeof plupload !== 'undefined' && code === plupload.FILE_EXTENSION_ERROR) || code === -601;
+
+        if (isFileSizeError) {
+            msg = "<?php echo addslashes(sprintf($lang->get('bck_upload_error_file_too_large'), $maxFileSizeDisplay)); ?>";
+        } else if (isFileExtError) {
+            msg = "<?php echo addslashes($lang->get('bck_upload_error_file_extension')); ?>";
+        }
+
+        // Inline feedback (restore block)
         $("#onthefly-restore-progress")
             .removeClass('hidden')
             .html('<div class="alert alert-danger alert-dismissible ml-2">' +
                 '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                '<h5><i class="icon fas fa-ban mr-2"></i><?php echo addslashes($lang->get('done')); ?></h5>' +
-                '' + err.message +
+                '<h5><i class="icon fas fa-ban mr-2"></i><?php echo addslashes($lang->get('error')); ?></h5>' +
+                simplePurifier(msg) +
                 '</div>');
-                up.refresh(); // Reposition Flash/Silverlight
+
+        // Bottom-right toaster (consistent with the rest of the page)
+        toastr.remove();
+        toastr.error(
+            msg,
+            "<?php echo addslashes($lang->get('error')); ?>",
+            {timeOut: 8000, progressBar: true}
+        );
+
+        up.refresh(); // Reposition Flash/Silverlight
     });
 
     uploader_restoreDB.init();
 
-    //]]>
+    // Display the upload limit (from TeamPass setting "upload_maxfilesize") near the file picker
+    if ($('#onthefly-restore-upload-hint').length === 0) {
+        $('#onthefly-restore-file').after(
+            '<small id="onthefly-restore-upload-hint" class="form-text text-muted mt-1 ml-1"><?php echo addslashes(sprintf($lang->get('bck_upload_max_file_size'), $maxFileSizeDisplay)); ?></small>'
+        );
+    }
+//]]>
 /**
  * Scheduled backups UI
  */
