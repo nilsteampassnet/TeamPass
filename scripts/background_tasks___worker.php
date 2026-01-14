@@ -324,7 +324,7 @@ try {
         ];
 
         // Prepare anonimzation of arguments
-        if ($this->processType === 'send_mail') {
+        if ($this->processType === 'send_email') {
             $arguments = json_encode(
                 [
                     'email' => $this->taskData['receivers'],
