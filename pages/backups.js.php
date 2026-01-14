@@ -1523,7 +1523,6 @@ var tpScheduled = {
 
     $('#scheduled-frequency').on('change', tpScheduled.toggleFreqUI);
     $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
-    $('#scheduled-run-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.runNow(); });
     $('#scheduled-run-btn').on('click', function(e){
         e.preventDefault();
         e.stopPropagation();
