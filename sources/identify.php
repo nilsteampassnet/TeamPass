@@ -139,7 +139,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
-    $session = SessionManager::getSession();
     
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
