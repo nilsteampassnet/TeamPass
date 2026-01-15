@@ -1401,12 +1401,15 @@ var tpScheduled = {
     }
 
     tpScheduled.ajax('scheduled_save_settings', payload, function(r) {
-      if (!r || r.error) {
+    if (!r || r.error) {
         tpScheduled.showAlert('danger', (r && r.message) ? r.message : 'Save failed');
         return;
-      }
-      tpScheduled.showAlert('success', 'Saved. Next run will be recomputed.');
-      tpScheduled.loadSettings();
+    }
+
+    tpScheduled.showAlert('success', 'Saved. Next run will be recomputed.');
+    tpToast('success', '<?php echo addslashes($lang->get('saved')); ?>', '', { timeOut: 1200 });
+
+    tpScheduled.loadSettings();
     });
   },
 
