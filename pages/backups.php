@@ -355,7 +355,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </div>
                                                 </div>
 
-                                                <div class="d-flex gap-2">
+<div class="d-flex gap-2">
                                                     <button type="button" class="btn btn-primary" id="scheduled-save-btn">
                                                         <?php echo $lang->get('bck_scheduled_save'); ?>
                                                     </button>
