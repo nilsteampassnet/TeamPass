@@ -541,6 +541,9 @@ try {
                     'last_purge_at' => (int) tpGetSettingsValue('bck_scheduled_last_purge_at', '0'),
                     'last_purge_deleted' => (int) tpGetSettingsValue('bck_scheduled_last_purge_deleted', '0'),
 
+                    'email_report_enabled' => (int) tpGetSettingsValue('bck_scheduled_email_report_enabled', '0'),
+                    'email_report_only_failures' => (int) tpGetSettingsValue('bck_scheduled_email_report_only_failures', '0'),
+
                     'timezone' => tpGetAdminTimezoneName(),
                 ],
             ], 'encode');
@@ -641,6 +644,17 @@ try {
             $enabled = (int)($dataReceived['enabled'] ?? 0);
             $enabled = ($enabled === 1) ? 1 : 0;
 
+
+            $emailReportEnabled = (int)($dataReceived['email_report_enabled'] ?? 0);
+            $emailReportEnabled = ($emailReportEnabled === 1) ? 1 : 0;
+
+            $emailReportOnlyFailures = (int)($dataReceived['email_report_only_failures'] ?? 0);
+            $emailReportOnlyFailures = ($emailReportOnlyFailures === 1) ? 1 : 0;
+
+            if ($emailReportEnabled === 0) {
+                $emailReportOnlyFailures = 0;
+            }
+
             $frequency = (string)($dataReceived['frequency'] ?? 'daily');
             if (!in_array($frequency, ['daily', 'weekly', 'monthly'], true)) {
                 $frequency = 'daily';
@@ -691,6 +705,9 @@ try {
             tpUpsertSettingsValue('bck_scheduled_dom', (string)$dom);
             tpUpsertSettingsValue('bck_scheduled_output_dir', $dirReal);
             tpUpsertSettingsValue('bck_scheduled_retention_days', (string)$retentionDays);
+            tpUpsertSettingsValue('bck_scheduled_email_report_enabled', (string)$emailReportEnabled);
+            tpUpsertSettingsValue('bck_scheduled_email_report_only_failures', (string)$emailReportOnlyFailures);
+
 
             // Force re-init of next_run_at so handler recomputes cleanly
             tpUpsertSettingsValue('bck_scheduled_next_run_at', '0');
