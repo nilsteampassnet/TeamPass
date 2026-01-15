@@ -74,7 +74,7 @@ The following features are planned for upcoming releases:
 
 ### For Administrators
 
-> 🎫 **Commercial License Required** > Use of this extension requires a valid commercial license. To obtain a license and register your instance, please contact nils@teampass.net.
+> 🎫 **Commercial License Required** - Use of this extension requires a valid commercial license. To obtain a license and register your instance, please contact nils@teampass.net.
 
 Before users can install and use the browser extension, administrators must configure the server-side settings in Teampass.
 
@@ -128,12 +128,10 @@ The easiest way to install the extension is via the Chrome Web Store:
 
 #### For Microsoft Edge
 
-1. **Download** and **extract** the ZIP file
-2. **Open Edge** and navigate to: `edge://extensions/`
-3. **Enable** "Developer mode" (lower left corner)
-4. **Click** on "Load unpacked"
-5. **Select** the extracted folder
-6. ✅ Extension is installed!
+The easiest way to install the extension is via the Edge Web Store:
+1. Go to the [Teampass Extension page](https://microsoftedge.microsoft.com/addons/detail/teampass-password-manager/adgkighfbpgjgoldhcdjjjhceicdemem).
+2. Click on "Add to Edge".
+3. Confirm the installation in the pop-up window.
 
 #### For Mozilla Firefox
 
