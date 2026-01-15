@@ -1228,10 +1228,75 @@ var tpScheduled = {
     $('#scheduled-weekly-wrap').toggleClass('d-none', f !== 'weekly');
     $('#scheduled-monthly-wrap').toggleClass('d-none', f !== 'monthly');
   },
-  
+
+  // Helpers for Teampass "toggle" widgets (div + hidden input)
+  isTruthy: function(v) {
+    return (v === 1 || v === '1' || v === true || v === 'true' || v === 'on' || v === 'yes');
+  },
+
+  norm01: function(v) {
+    return tpScheduled.isTruthy(v) ? '1' : '0';
+  },
+
+  applyToggleState: function(toggleId, on) {
+    var $t = $('#' + toggleId);
+    var $i = $('#' + toggleId + '_input');
+    var val = on ? '1' : '0';
+
+    if ($i.length) $i.val(val);
+    try { $t.attr('data-toggle-on', on ? 'true' : 'false'); } catch (e) {}
+
+    // Try common toggle plugins used in Teampass (keep it resilient)
+    try {
+      if (typeof $t.toggles === 'function') {
+        try { $t.toggles(on); } catch (e1) { $t.toggles({on: on}); }
+      }
+    } catch (e) {}
+
+    try { if (typeof $t.bootstrapSwitch === 'function') { $t.bootstrapSwitch('state', on, true); } } catch (e) {}
+    try { if (typeof $t.bootstrapToggle === 'function') { $t.bootstrapToggle(on ? 'on' : 'off'); } } catch (e) {}
+
+    // Fallback: update common classes
+    try { $t.toggleClass('on', on).toggleClass('off', !on).toggleClass('active', on); } catch (e) {}
+  },
+
+  bindToggleFix: function(toggleId, afterFn) {
+    var $t = $('#' + toggleId);
+    var $i = $('#' + toggleId + '_input');
+    if (!$t.length || !$i.length) return;
+
+    // Capture previous state before click (mousedown happens before click)
+    $t.on('mousedown', function() {
+      $t.data('tp_prev_state', tpScheduled.norm01($i.val()));
+    });
+
+    $t.on('click', function() {
+      setTimeout(function() {
+        var prev = $t.data('tp_prev_state');
+        var now = tpScheduled.norm01($i.val());
+
+        // Some toggle implementations update the UI but not the hidden input.
+        // If value didn't change, invert it.
+        if (prev === now) {
+          now = (prev === '1') ? '0' : '1';
+          $i.val(now);
+        } else {
+          $i.val(now);
+        }
+
+        if (typeof afterFn === 'function') afterFn(now);
+      }, 0);
+    });
+  },
+
   toggleEmailUI: function() {
-    var enabled = ($('#scheduled-email-report-enabled_input').val() === '1');
+    var enabled = tpScheduled.isTruthy($('#scheduled-email-report-enabled_input').val());
     $('#scheduled-email-report-only-failures-wrap').toggleClass('d-none', !enabled);
+
+    // If email reports are disabled, force only-failures off for consistency
+    if (!enabled) {
+      tpScheduled.applyToggleState('scheduled-email-report-only-failures', false);
+    }
   },
 
 
@@ -1287,8 +1352,7 @@ var tpScheduled = {
       tpScheduled.tz = s.timezone || 'UTC';
 
       var enabledVal = (parseInt(s.enabled || 0, 10) === 1) ? '1' : '0';
-      $('#backup-scheduled-enabled_input').val(enabledVal);
-      try { $('#backup-scheduled-enabled').attr('data-toggle-on', enabledVal === '1' ? 'true' : 'false'); } catch (e) {}
+      tpScheduled.applyToggleState('backup-scheduled-enabled', enabledVal === '1');
       $('#scheduled-frequency').val(s.frequency || 'daily');
       $('#scheduled-time').val(s.time || '02:00');
       $('#scheduled-dow').val(String(s.dow || 1));
@@ -1299,12 +1363,10 @@ var tpScheduled = {
       tpScheduled.toggleFreqUI();
 
       var emailEnabledVal = (parseInt(s.email_report_enabled || 0, 10) === 1) ? '1' : '0';
-      $('#scheduled-email-report-enabled_input').val(emailEnabledVal);
-      try { $('#scheduled-email-report-enabled').attr('data-toggle-on', emailEnabledVal === '1' ? 'true' : 'false'); } catch (e) {}
+      tpScheduled.applyToggleState('scheduled-email-report-enabled', emailEnabledVal === '1');
 
       var onlyFailuresVal = (parseInt(s.email_report_only_failures || 0, 10) === 1) ? '1' : '0';
-      $('#scheduled-email-report-only-failures_input').val(onlyFailuresVal);
-      try { $('#scheduled-email-report-only-failures').attr('data-toggle-on', onlyFailuresVal === '1' ? 'true' : 'false'); } catch (e) {}
+      tpScheduled.applyToggleState('scheduled-email-report-only-failures', onlyFailuresVal === '1');
 
       tpScheduled.toggleEmailUI();
 
@@ -1322,17 +1384,21 @@ var tpScheduled = {
   saveSettings: function() {
     tpScheduled.hideAlert();
     var payload = {
-      enabled: $('#backup-scheduled-enabled_input').val(),
+      enabled: tpScheduled.norm01($('#backup-scheduled-enabled_input').val()),
       frequency: $('#scheduled-frequency').val(),
       time: $('#scheduled-time').val(),
       dow: parseInt($('#scheduled-dow').val(), 10),
       dom: parseInt($('#scheduled-dom').val(), 10),
       retention_days: parseInt($('#scheduled-retention').val(), 10),
       output_dir: $('#scheduled-output-dir').val(),
-      email_report_enabled: $('#scheduled-email-report-enabled_input').val(),
-      email_report_only_failures: $('#scheduled-email-report-only-failures_input').val()
+      email_report_enabled: tpScheduled.norm01($('#scheduled-email-report-enabled_input').val()),
+      email_report_only_failures: tpScheduled.norm01($('#scheduled-email-report-only-failures_input').val())
     };
-    console.log(payload)
+
+    if (payload.email_report_enabled !== '1') {
+      payload.email_report_only_failures = '0';
+      tpScheduled.applyToggleState('scheduled-email-report-only-failures', false);
+    }
 
     tpScheduled.ajax('scheduled_save_settings', payload, function(r) {
       if (!r || r.error) {
@@ -1541,12 +1607,14 @@ var tpScheduled = {
     });
 
     $('#scheduled-frequency').on('change', tpScheduled.toggleFreqUI);
-    $('#scheduled-email-report-enabled').on('click', function() {
-      // Let the toggle plugin update the hidden input first
-      setTimeout(function(){ tpScheduled.toggleEmailUI(); }, 0);
-    });
 
-    $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
+    // Ensure toggle hidden inputs stay consistent (some toggle libs don't update them reliably)
+    tpScheduled.bindToggleFix('backup-scheduled-enabled');
+    tpScheduled.bindToggleFix('scheduled-email-report-enabled', function() {
+      tpScheduled.toggleEmailUI();
+    });
+    tpScheduled.bindToggleFix('scheduled-email-report-only-failures');
+$('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
     $('#scheduled-run-btn').on('click', function(e){
         e.preventDefault();
         e.stopPropagation();
