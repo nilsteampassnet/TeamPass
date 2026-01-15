@@ -1401,15 +1401,15 @@ var tpScheduled = {
     }
 
     tpScheduled.ajax('scheduled_save_settings', payload, function(r) {
-    if (!r || r.error) {
+      if (!r || r.error) {
         tpScheduled.showAlert('danger', (r && r.message) ? r.message : 'Save failed');
         return;
-    }
-
-    tpScheduled.showAlert('success', 'Saved. Next run will be recomputed.');
-    tpToast('success', '<?php echo addslashes($lang->get('saved')); ?>', '', { timeOut: 1200 });
-
-    tpScheduled.loadSettings();
+      }
+      tpScheduled.showAlert('success', 'Saved. Next run will be recomputed.');
+      if (typeof tpToast === 'function') {
+        tpToast('success', '<?php echo addslashes($lang->get('saved')); ?>', '', { timeOut: 1200 });
+      }
+      tpScheduled.loadSettings();
     });
   },
 
@@ -1511,9 +1511,16 @@ var tpScheduled = {
   },
 
   refreshAll: function() {
-    tpScheduled.loadSettings();
-    tpScheduled.loadFiles();
-    loadDiskUsage();
+    tpScheduled.loadSettings(function(s) {
+      if (s === null) return;
+
+      tpScheduled.loadFiles();
+      loadDiskUsage();
+
+      if (typeof tpToast === 'function') {
+        tpToast('success', '<?php echo addslashes($lang->get('refreshed')); ?>', '', { timeOut: 1200 });
+      }
+    });
   },
 
 
@@ -1629,10 +1636,8 @@ $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopProp
             tpScheduled.runNow();
         }
     });
-    $(document).on('click', '#scheduled-refresh-btn', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.refreshAll(); });
-
-
-    // Select a backup for restore (radio selector + row click)
+    $('#scheduled-refresh-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.refreshAll(); });
+// Select a backup for restore (radio selector + row click)
     $(document).on('change', '.scheduled-backup-radio', function(e) {
       e.preventDefault();
       e.stopPropagation();
