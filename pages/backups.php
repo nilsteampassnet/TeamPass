@@ -355,10 +355,16 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </div>
                                                 </div>
 
-<div class="d-flex gap-2">
-                                                    <button type="button" class="btn btn-primary" id="scheduled-save-btn"><?php echo $lang->get('bck_scheduled_save'); ?></button>
-                                                    <button type="button" class="btn btn-secondary ml-2" id="scheduled-run-btn"><?php echo $lang->get('bck_scheduled_run_now'); ?></button>
-                                                    <button type="button" class="btn btn-outline-secondary ml-2" id="scheduled-refresh-btn"><?php echo $lang->get('bck_scheduled_refresh'); ?></button>
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-primary" id="scheduled-save-btn">
+                                                        <?php echo $lang->get('bck_scheduled_save'); ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-secondary ml-2" id="scheduled-run-btn">
+                                                        <?php echo $lang->get('bck_scheduled_run_now'); ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary ml-2" id="scheduled-refresh-btn">
+                                                        <?php echo $lang->get('bck_scheduled_refresh'); ?>
+                                                    </button>
                                                 </div>
 
                                             </div>
