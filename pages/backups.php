@@ -329,7 +329,33 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </small>
                                                 </div>
 
-                                                <div class="d-flex gap-2">
+                                                
+                                                <hr class="my-4">
+
+                                                <div class="row mb-3">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_scheduled_email_report_enabled'); ?>
+                                                        <small class="form-text text-muted">
+                                                            <?php echo $lang->get('bck_scheduled_email_report_help'); ?>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end align-items-start">
+                                                        <div class="toggle toggle-modern" id="scheduled-email-report-enabled" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="scheduled-email-report-enabled_input" value="0">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-4 d-none" id="scheduled-email-report-only-failures-wrap">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_scheduled_email_report_only_failures'); ?>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end">
+                                                        <div class="toggle toggle-modern" id="scheduled-email-report-only-failures" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="scheduled-email-report-only-failures_input" value="0">
+                                                    </div>
+                                                </div>
+
+<div class="d-flex gap-2">
                                                     <button type="button" class="btn btn-primary" id="scheduled-save-btn"><?php echo $lang->get('bck_scheduled_save'); ?></button>
                                                     <button type="button" class="btn btn-secondary ml-2" id="scheduled-run-btn"><?php echo $lang->get('bck_scheduled_run_now'); ?></button>
                                                     <button type="button" class="btn btn-outline-secondary ml-2" id="scheduled-refresh-btn"><?php echo $lang->get('bck_scheduled_refresh'); ?></button>
