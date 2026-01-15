@@ -577,7 +577,6 @@ trait UserHandlerTrait {
                 'TEAMPASS - ' . $lang->get('login_credentials'),
                 (array) filter_var_array(
                     [
-                        '#code#' => cryption($arguments['new_user_code'], '','decrypt', $this->settings)['string'],
                         '#lastname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
                         '#login#' => isset($userInfo['login']) === true ? $userInfo['login'] : '',
                     ],
