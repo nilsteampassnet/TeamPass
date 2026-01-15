@@ -139,7 +139,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
-    $session = SessionManager::getSession();
     
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
@@ -1556,6 +1555,15 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
         // Get user groups from AD
         $user_ad_groups = [];
         foreach($groups as $group) {
+            // Skip invalid/corrupted group data
+            if (empty($group) || !mb_check_encoding($group, 'UTF-8') || !preg_match('/^[\x20-\x7E\x80-\xFF]+$/u', $group)) {
+                if (WIP === true) error_log('DEBUG TeamPass - LDAP: Invalid group data detected and skipped: ' . bin2hex($group));
+                continue;
+            }
+            
+            // Clean the group string
+            $group = trim($group);
+            
             // get relation role id for AD group
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id

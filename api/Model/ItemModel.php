@@ -46,16 +46,19 @@ class ItemModel
      * @return array
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
-    {
+    {error_log($sqlExtra);
         // Get items
         $rows = DB::query(
-            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
-            t.title as folder_label, io.secret as otp_secret, i.favicon_url, i.anyone_can_modify,
-            GROUP_CONCAT(tg.tag SEPARATOR ", ") as tags
-            FROM ' . prefixTable('items') . ' AS i
-            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
-            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) 
-            LEFT JOIN ' . prefixTable('tags') . ' as tg ON (tg.item_id = i.id)'.
+            "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
+                i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
+                t.title as folder_label, 
+                io.secret as otp_secret,
+                (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
+                 FROM " . prefixTable('tags') . " AS tg 
+                 WHERE tg.item_id = i.id) as tags
+            FROM " . prefixTable('items') . " AS i
+            LEFT JOIN " . prefixTable('nested_tree') . " AS t ON (t.id = i.id_tree)
+            LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
             $sqlExtra . 
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
@@ -138,6 +141,16 @@ class ItemModel
                     'tags' => $row['tags'],
                     'anyone_can_modify' => $row['anyone_can_modify'],
                 ]
+            );
+
+            // Increase viewed number
+            logItems(
+                [],
+                (int) $row['id'],
+                $row['label'] ?? '',
+                (int) $userId,
+                'at_shown',
+                ''
             );
         }
 
