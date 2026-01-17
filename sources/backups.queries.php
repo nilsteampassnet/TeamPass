@@ -210,6 +210,145 @@ $post_data = filter_input(
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 
+// ---------------------------------------------------------------------
+// Restore compatibility helpers
+// ---------------------------------------------------------------------
+// Compatibility is based on schema level (UPGRADE_MIN_DATE).
+// UI must NOT display schema_level; only TeamPass files version.
+
+function tpExpectedTpFilesVersion(): string
+{
+    if (function_exists('tpGetTpFilesVersion')) {
+        $v = (string) tpGetTpFilesVersion();
+        if ($v !== '') return $v;
+    }
+    if (defined('TP_VERSION') && defined('TP_VERSION_MINOR')) {
+        return (string) TP_VERSION . '.' . (string) TP_VERSION_MINOR;
+    }
+    return '';
+}
+
+function tpCurrentSchemaLevel(): string
+{
+    if (function_exists('tpGetSchemaLevel')) {
+        return (string) tpGetSchemaLevel();
+    }
+    if (defined('UPGRADE_MIN_DATE')) {
+        $v = (string) UPGRADE_MIN_DATE;
+        if ($v !== '' && preg_match('/^\d+$/', $v) === 1) return $v;
+    }
+    return '';
+}
+
+/**
+ * Check restore compatibility (schema level).
+ * - For server backups: reads schema_level from .meta.json when present, otherwise from "-sl<schema>" in filename.
+ * - For uploaded restore file: reads schema from "-sl<schema>" preserved in filename stored in teampass_misc.
+ *
+ * @return array{is_compatible: bool, reason: string, backup_tp_files_version: ?string, expected_tp_files_version: string}
+ */
+function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', string $serverFile = '', int $operationId = 0): array
+{
+    $expectedVersion = tpExpectedTpFilesVersion();
+    $expectedSchema = tpCurrentSchemaLevel();
+
+    $backupVersion = null;
+    $schema = '';
+
+    // Resolve target file path
+    $targetPath = '';
+    if ($operationId > 0) {
+        // Uploaded restore file (temp_file in misc)
+        $data = DB::queryFirstRow(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE increment_id = %i LIMIT 1',
+            $operationId
+        );
+        $val = isset($data['valeur']) ? (string)$data['valeur'] : '';
+        if ($val === '') {
+            return [
+                'is_compatible' => false,
+                'reason' => 'MISSING_UPLOAD_ENTRY',
+                'backup_tp_files_version' => null,
+                'expected_tp_files_version' => $expectedVersion,
+            ];
+        }
+        $bn = basename($val);
+        $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files')), '/');
+        $targetPath = $baseDir . '/' . $bn;
+
+        if (function_exists('tpParseSchemaLevelFromBackupFilename')) {
+            $schema = (string) tpParseSchemaLevelFromBackupFilename($bn);
+        }
+    } elseif ($serverFile !== '') {
+        $bn = basename($serverFile);
+        if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
+            return [
+                'is_compatible' => false,
+                'reason' => 'INVALID_FILENAME',
+                'backup_tp_files_version' => null,
+                'expected_tp_files_version' => $expectedVersion,
+            ];
+        }
+
+        $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files')), '/');
+        if ($serverScope === 'scheduled') {
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseDir = rtrim($dir, '/');
+        }
+        $targetPath = $baseDir . '/' . $bn;
+
+        if (function_exists('tpGetBackupTpFilesVersionFromMeta')) {
+            $v = (string) tpGetBackupTpFilesVersionFromMeta($targetPath);
+            if ($v !== '') $backupVersion = $v;
+        }
+        if (function_exists('tpGetBackupSchemaLevelFromMetaOrFilename')) {
+            $schema = (string) tpGetBackupSchemaLevelFromMetaOrFilename($targetPath);
+        }
+    } else {
+        return [
+            'is_compatible' => false,
+            'reason' => 'NO_TARGET',
+            'backup_tp_files_version' => null,
+            'expected_tp_files_version' => $expectedVersion,
+        ];
+    }
+
+    // If no schema could be extracted => legacy backup without meta and without -sl token
+    if ($schema === '') {
+        return [
+            'is_compatible' => false,
+            'reason' => 'LEGACY_NO_METADATA',
+            'backup_tp_files_version' => $backupVersion,
+            'expected_tp_files_version' => $expectedVersion,
+        ];
+    }
+
+    if ($expectedSchema === '' || preg_match('/^\d+$/', $expectedSchema) !== 1) {
+        return [
+            'is_compatible' => false,
+            'reason' => 'NO_EXPECTED_SCHEMA',
+            'backup_tp_files_version' => $backupVersion,
+            'expected_tp_files_version' => $expectedVersion,
+        ];
+    }
+
+    if ($schema !== $expectedSchema) {
+        return [
+            'is_compatible' => false,
+            'reason' => 'SCHEMA_MISMATCH',
+            'backup_tp_files_version' => $backupVersion,
+            'expected_tp_files_version' => $expectedVersion,
+        ];
+    }
+
+    return [
+        'is_compatible' => true,
+        'reason' => '',
+        'backup_tp_files_version' => $backupVersion,
+        'expected_tp_files_version' => $expectedVersion,
+    ];
+}
     switch ($post_type) {
         
         case 'scheduled_download_backup':
@@ -340,6 +479,14 @@ $post_data = filter_input(
             }
 
             $filename = $backupResult['filename'];
+// Write metadata sidecar (<backup>.meta.json) for fast listings / migration safety
+try {
+    if (function_exists('tpWriteBackupMetadata') && !empty($backupResult['filepath'])) {
+        tpWriteBackupMetadata((string)$backupResult['filepath'], '', '', ['source' => 'onthefly']);
+    }
+} catch (Throwable $ignored) {
+    // best effort
+}
         
             // Generate 2d key
             $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
@@ -393,6 +540,9 @@ $post_data = filter_input(
                     'last_completed_at' => (int) tpGetSettingsValue('bck_scheduled_last_completed_at', '0'),
                     'last_purge_at' => (int) tpGetSettingsValue('bck_scheduled_last_purge_at', '0'),
                     'last_purge_deleted' => (int) tpGetSettingsValue('bck_scheduled_last_purge_deleted', '0'),
+
+                    'email_report_enabled' => (int) tpGetSettingsValue('bck_scheduled_email_report_enabled', '0'),
+                    'email_report_only_failures' => (int) tpGetSettingsValue('bck_scheduled_email_report_only_failures', '0'),
 
                     'timezone' => tpGetAdminTimezoneName(),
                 ],
@@ -494,6 +644,17 @@ $post_data = filter_input(
             $enabled = (int)($dataReceived['enabled'] ?? 0);
             $enabled = ($enabled === 1) ? 1 : 0;
 
+
+            $emailReportEnabled = (int)($dataReceived['email_report_enabled'] ?? 0);
+            $emailReportEnabled = ($emailReportEnabled === 1) ? 1 : 0;
+
+            $emailReportOnlyFailures = (int)($dataReceived['email_report_only_failures'] ?? 0);
+            $emailReportOnlyFailures = ($emailReportOnlyFailures === 1) ? 1 : 0;
+
+            if ($emailReportEnabled === 0) {
+                $emailReportOnlyFailures = 0;
+            }
+
             $frequency = (string)($dataReceived['frequency'] ?? 'daily');
             if (!in_array($frequency, ['daily', 'weekly', 'monthly'], true)) {
                 $frequency = 'daily';
@@ -544,6 +705,9 @@ $post_data = filter_input(
             tpUpsertSettingsValue('bck_scheduled_dom', (string)$dom);
             tpUpsertSettingsValue('bck_scheduled_output_dir', $dirReal);
             tpUpsertSettingsValue('bck_scheduled_retention_days', (string)$retentionDays);
+            tpUpsertSettingsValue('bck_scheduled_email_report_enabled', (string)$emailReportEnabled);
+            tpUpsertSettingsValue('bck_scheduled_email_report_only_failures', (string)$emailReportOnlyFailures);
+
 
             // Force re-init of next_run_at so handler recomputes cleanly
             tpUpsertSettingsValue('bck_scheduled_next_run_at', '0');
@@ -584,6 +748,7 @@ $post_data = filter_input(
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
+                    'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
                     'download' => 'sources/backups.queries.php?type=scheduled_download_backup&file=' . urlencode($bn)
                         . '&key=' . urlencode((string) $session->get('key'))
                         . '&key_tmp=' . urlencode($keyTmp),
@@ -616,15 +781,36 @@ $post_data = filter_input(
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
             $fp = rtrim($dir, '/') . '/' . $file;
 
+            /**
+             * Delete a file and its associated metadata.
+             * * @param string $fp Full path to the file.
+             * @return void
+             */
+            // Check if file exists and is valid
+            if (file_exists($fp) === false || is_file($fp) === false) {
+                echo prepareExchangedData(['error' => false], 'encode');
+                break;
+            }
 
-            if (file_exists($fp) && is_file($fp)) {
-                if (is_writable($fp)) {
-                    if (unlink($fp) === false) {
-                        error_log("TeamPass - Failed to delete file: {$fp}");
-                    }
-                } else {
-                    error_log("TeamPass - File is not writable, cannot delete: {$fp}");
-                }
+            // Check permissions
+            if (is_writable($fp) === false) {
+                $errorMessage = "File is not writable, cannot delete: " . $fp;
+                if (WIP === true) error_log("TeamPass - " . $errorMessage);
+                echo prepareExchangedData(['error' => true, 'message' => $errorMessage], 'encode');
+                break;
+            }
+
+            // Attempt deletion
+            if (unlink($fp) === false) {
+                $errorMessage = "Failed to delete file: " . $fp;
+                if (WIP === true) error_log("TeamPass - " . $errorMessage);
+                echo prepareExchangedData(['error' => true, 'message' => $errorMessage], 'encode');
+                break;
+            }
+
+            // Cleanup metadata (silent fail for sidecar is acceptable)
+            if (file_exists($fp . '.meta.json')) {
+                @unlink($fp . '.meta.json');
             }
 
             echo prepareExchangedData(['error' => false], 'encode');
@@ -750,6 +936,9 @@ $post_data = filter_input(
             // Delete
             $ok = @unlink($fullPath);
 
+            // Also remove metadata sidecar if present
+            @unlink($fullPath . '.meta.json');
+
             if ($ok !== true) {
                 echo prepareExchangedData(
                     array(
@@ -815,6 +1004,7 @@ $post_data = filter_input(
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
+                    'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
                     'download' => 'sources/downloadFile.php?name=' . urlencode($bn) .
                         '&action=backup&file=' . urlencode($bn) .
                         '&type=sql&key=' . $session->get('key') .
@@ -837,6 +1027,32 @@ $post_data = filter_input(
             );
             break;
 
+case 'preflight_restore_compatibility':
+    if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+        break;
+    }
+
+    $dataReceived = prepareExchangedData($post_data, 'decode');
+    if (!is_array($dataReceived)) $dataReceived = [];
+
+    $serverScope = (string) ($dataReceived['serverScope'] ?? '');
+    $serverFile  = (string) ($dataReceived['serverFile']  ?? '');
+    $operationId = (int)    ($dataReceived['operation_id'] ?? 0);
+
+    $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId);
+
+    echo prepareExchangedData(
+        [
+            'error' => false,
+            'is_compatible' => (bool) ($chk['is_compatible'] ?? false),
+            'reason' => (string) ($chk['reason'] ?? ''),
+            'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
+            'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
+        ],
+        'encode'
+    );
+    break;
         case 'onthefly_restore':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -859,6 +1075,40 @@ $post_data = filter_input(
                 break;
             }
             
+            // Compatibility check (schema-level) BEFORE maintenance/lock and any destructive action
+            $dataEarly = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataEarly)) $dataEarly = [];
+
+            $earlyOffset = (int) ($dataEarly['offset'] ?? 0);
+            $earlyClear = (string) ($dataEarly['clearFilename'] ?? '');
+            $earlyServerScope = (string) ($dataEarly['serverScope'] ?? '');
+            $earlyServerFile  = (string) ($dataEarly['serverFile']  ?? '');
+            $earlyBackupFile  = (string) ($dataEarly['backupFile']  ?? '');
+            $earlyOperationId = (int) ($dataEarly['operation_id'] ?? 0);
+
+            // If restore is starting (first chunk), enforce schema compatibility.
+            if ($earlyOffset === 0 && $earlyClear === '') {
+                // Operation id can be passed either as operation_id or as legacy backupFile numeric id
+                if ($earlyOperationId === 0 && $earlyBackupFile !== '' && ctype_digit($earlyBackupFile)) {
+                    $earlyOperationId = (int) $earlyBackupFile;
+                }
+
+                $chk = tpCheckRestoreCompatibility($SETTINGS, $earlyServerScope, $earlyServerFile, $earlyOperationId);
+                if (($chk['is_compatible'] ?? false) !== true) {
+                    echo prepareExchangedData(
+                        [
+                            'error' => true,
+                            'error_code' => 'INCOMPATIBLE_BACKUP_SCHEMA',
+                            'reason' => (string) ($chk['reason'] ?? ''),
+                            'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
+                            'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
+                            'message' => $lang->get('bck_restore_incompatible_version_body'),
+                        ],
+                        'encode'
+                    );
+                    break;
+                }
+            }
             // Put TeamPass in maintenance mode for the whole restore workflow.
             // Intentionally NOT disabled at the end: admin must validate the instance after restore.
             try {
@@ -939,17 +1189,17 @@ $post_data = filter_input(
             // - We keep a token in session to allow chunked restore even while DB is being replaced.
             // - We also block starting a second restore in the same session (double click / 2 tabs).
             $clearRestoreState = static function ($session): void {
-                            $tmp = (string) ($session->get('restore-temp-file') ?? '');
-                            if ($tmp !== '' && file_exists($tmp) === true && strpos(basename($tmp), 'defuse_temp_restore_') === 0 && is_file($tmp)) {
-                                if (is_writable($tmp)) {
-                                    if (unlink($tmp) === false) {
-                                        error_log("TeamPass: Failed to delete file: {$tmp}");
-                                    }
-                                } else {
-                                    error_log("TeamPass: File is not writable, cannot delete: {$tmp}");
-                                }
-                            }
-                            $session->set('restore-temp-file', '');
+                $tmp = (string) ($session->get('restore-temp-file') ?? '');
+                if ($tmp !== '' && file_exists($tmp) === true && strpos(basename($tmp), 'defuse_temp_restore_') === 0 && is_file($tmp)) {
+                    if (is_writable($tmp)) {
+                        if (unlink($tmp) === false && WIP === true) {
+                            error_log("TeamPass: Failed to delete file: {$tmp}");
+                        }
+                    } else if (WIP === true) {
+                        error_log("TeamPass: File is not writable, cannot delete: {$tmp}");
+                    }
+                }
+                $session->set('restore-temp-file', '');
                 $session->set('restore-token', '');
                 $session->set('restore-settings', []);
                 $session->set('restore-context', []);
@@ -1233,7 +1483,23 @@ $post_data = filter_input(
                     if ($post_encryptionKey !== '') {
                         $keysToTry[] = (string) $post_encryptionKey;
                     }
-                }
+                
+
+                    // For uploaded restores (serverScope is empty), also try the instance key candidates.
+                    // This allows restoring scheduled backups uploaded manually (they are encrypted using bck_script_passkey).
+                    if ($post_serverScope === '' && !empty($SETTINGS['bck_script_passkey'] ?? '')) {
+                        $rawInstanceKey = (string) $SETTINGS['bck_script_passkey'];
+                        $tmp = cryption($rawInstanceKey, '', 'decrypt', $SETTINGS);
+                        $decInstanceKey = isset($tmp['string']) ? (string) $tmp['string'] : '';
+
+                        if ($decInstanceKey !== '') {
+                            $keysToTry[] = $decInstanceKey;
+                        }
+                        if ($rawInstanceKey !== '' && $rawInstanceKey !== $decInstanceKey) {
+                            $keysToTry[] = $rawInstanceKey;
+                        }
+                    }
+}
 
                 // Ensure we have at least one key
                 $keysToTry = array_values(array_unique(array_filter($keysToTry, static fn ($v) => $v !== '')));
@@ -1295,7 +1561,7 @@ $post_data = filter_input(
                         );
                     }
                 }
-// From now, restore uses the decrypted temp file
+                // From now, restore uses the decrypted temp file
                 $post_backupFile = $tmpDecrypted;
                 $session->set('restore-temp-file', $tmpDecrypted);
                 $post_clearFilename = $tmpDecrypted;
@@ -1456,48 +1722,48 @@ $post_data = filter_input(
             fclose($handle);
         
             // Handle errors if any
-if (!empty($errors)) {
-    // Abort restore: cleanup temp file and release session lock
-    if (is_string($post_backupFile) && $post_backupFile !== '' && file_exists($post_backupFile) === true
-        && strpos(basename($post_backupFile), 'defuse_temp_restore_') === 0) {
-        @unlink($post_backupFile);
-    }
+            if (!empty($errors)) {
+                // Abort restore: cleanup temp file and release session lock
+                if (is_string($post_backupFile) && $post_backupFile !== '' && file_exists($post_backupFile) === true
+                    && strpos(basename($post_backupFile), 'defuse_temp_restore_') === 0) {
+                    @unlink($post_backupFile);
+                }
 
-    $tokenForResponse = $sessionRestoreToken;
+                $tokenForResponse = $sessionRestoreToken;
 
-    // Best-effort log
-    try {
-        $ctx = $session->get('restore-context');
-        $scope = is_array($ctx) ? (string) ($ctx['scope'] ?? '') : '';
-        logEvents(
-            $SETTINGS,
-            'admin_action',
-            'dataBase restore failed' . ($scope !== '' ? ' (scope=' . $scope . ')' : ''),
-            (string) $session->get('user-id'),
-            $session->get('user-login')
-        );
-    } catch (Throwable $ignored) {
-        // ignore logging errors during restore
-    }
+                // Best-effort log
+                try {
+                    $ctx = $session->get('restore-context');
+                    $scope = is_array($ctx) ? (string) ($ctx['scope'] ?? '') : '';
+                    logEvents(
+                        $SETTINGS,
+                        'admin_action',
+                        'dataBase restore failed' . ($scope !== '' ? ' (scope=' . $scope . ')' : ''),
+                        (string) $session->get('user-id'),
+                        $session->get('user-login')
+                    );
+                } catch (Throwable $ignored) {
+                    // ignore logging errors during restore
+                }
 
-    $clearRestoreState($session);
+                $clearRestoreState($session);
 
-    echo prepareExchangedData(
-        array(
-            'error' => true,
-            'message' => 'Errors occurred during import: ' . implode('; ', ($post_serverScope === 'scheduled' ? array_map($tpSafeJsonString, $errors) : $errors)),
-            'newOffset' => $newOffset,
-            'totalSize' => $post_totalSize,
-            'clearFilename' => $post_backupFile,
-            'finished' => true,
-            'restore_token' => $tokenForResponse,
-        ),
-        'encode'
-    );
-    break;
-}
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Errors occurred during import: ' . implode('; ', ($post_serverScope === 'scheduled' ? array_map($tpSafeJsonString, $errors) : $errors)),
+                        'newOffset' => $newOffset,
+                        'totalSize' => $post_totalSize,
+                        'clearFilename' => $post_backupFile,
+                        'finished' => true,
+                        'restore_token' => $tokenForResponse,
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
-// Determine if restore is complete
+            // Determine if restore is complete
             $finished = ($isEndOfFile === true) || ($post_totalSize > 0 && $newOffset >= $post_totalSize);
 
             // Respond with the new offset
@@ -1508,7 +1774,7 @@ if (!empty($errors)) {
                     'totalSize' => $post_totalSize,
                     'clearFilename' => $post_backupFile,
                     'finished' => $finished,
-                        'restore_token' => $sessionRestoreToken,
+                    'restore_token' => $sessionRestoreToken,
                 ),
                 'encode'
             );
@@ -1523,71 +1789,70 @@ if (!empty($errors)) {
                     @unlink($post_backupFile);
                 }
 
-            // Ensure maintenance mode stays enabled after restore (dump may have restored it to 0).
-            try {
-                DB::update(
-                    prefixTable('misc'),
-                    array(
-                        'valeur' => '1',
-                        'updated_at' => time(),
-                    ),
-                    'intitule = %s AND type= %s',
-                    'maintenance_mode',
-                    'admin'
-                );
-            } catch (Throwable $ignored) {
-                // Best effort
-            }
+                // Ensure maintenance mode stays enabled after restore (dump may have restored it to 0).
+                try {
+                    DB::update(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => '1',
+                            'updated_at' => time(),
+                        ),
+                        'intitule = %s AND type= %s',
+                        'maintenance_mode',
+                        'admin'
+                    );
+                } catch (Throwable $ignored) {
+                    // Best effort
+                }
 
-// Cleanup: after a DB restore, the SQL dump may re-import a running database_backup task
-// (is_in_progress=1) that becomes a "ghost" in Task Manager.
-try {
-    DB::delete(
-        prefixTable('background_tasks'),
-        'process_type=%s AND is_in_progress=%i',
-        'database_backup',
-        1
-    );
-} catch (Throwable $ignored) {
-    // Best effort: ignore if table does not exist yet / partial restore / schema mismatch
-}
+                // Cleanup: after a DB restore, the SQL dump may re-import a running database_backup task
+                // (is_in_progress=1) that becomes a "ghost" in Task Manager.
+                try {
+                    DB::delete(
+                        prefixTable('background_tasks'),
+                        'process_type=%s AND is_in_progress=%i',
+                        'database_backup',
+                        1
+                    );
+                } catch (Throwable $ignored) {
+                    // Best effort: ignore if table does not exist yet / partial restore / schema mismatch
+                }
 
-// Finalize: clear lock/session state and log duration (best effort)
-$ctx = $session->get('restore-context');
-$scope = is_array($ctx) ? (string) ($ctx['scope'] ?? '') : '';
-$fileLabel = is_array($ctx) ? (string) ($ctx['backup'] ?? '') : '';
-$startTs = (int) ($session->get('restore-start-ts') ?? 0);
-$duration = ($startTs > 0) ? (time() - $startTs) : 0;
+                // Finalize: clear lock/session state and log duration (best effort)
+                $ctx = $session->get('restore-context');
+                $scope = is_array($ctx) ? (string) ($ctx['scope'] ?? '') : '';
+                $fileLabel = is_array($ctx) ? (string) ($ctx['backup'] ?? '') : '';
+                $startTs = (int) ($session->get('restore-start-ts') ?? 0);
+                $duration = ($startTs > 0) ? (time() - $startTs) : 0;
 
-$clearRestoreState($session);
+                $clearRestoreState($session);
 
-try {
-    $msg = 'dataBase restore completed';
-    if ($scope !== '' || $fileLabel !== '' || $duration > 0) {
-        $parts = array();
-        if ($scope !== '') {
-            $parts[] = 'scope=' . $scope;
-        }
-        if ($fileLabel !== '') {
-            $parts[] = 'file=' . $fileLabel;
-        }
-        if ($duration > 0) {
-            $parts[] = 'duration=' . $duration . 's';
-        }
-        $msg .= ' (' . implode(', ', $parts) . ')';
-    }
+                try {
+                    $msg = 'dataBase restore completed';
+                    if ($scope !== '' || $fileLabel !== '' || $duration > 0) {
+                        $parts = array();
+                        if ($scope !== '') {
+                            $parts[] = 'scope=' . $scope;
+                        }
+                        if ($fileLabel !== '') {
+                            $parts[] = 'file=' . $fileLabel;
+                        }
+                        if ($duration > 0) {
+                            $parts[] = 'duration=' . $duration . 's';
+                        }
+                        $msg .= ' (' . implode(', ', $parts) . ')';
+                    }
 
-    logEvents(
-        $SETTINGS,
-        'admin_action',
-        $msg,
-        (string) $session->get('user-id'),
-        $session->get('user-login')
-    );
-} catch (Throwable $ignored) {
-    // ignore logging errors during restore
-}
-
+                    logEvents(
+                        $SETTINGS,
+                        'admin_action',
+                        $msg,
+                        (string) $session->get('user-id'),
+                        $session->get('user-login')
+                    );
+                } catch (Throwable $ignored) {
+                    // ignore logging errors during restore
+                }
             }
             break;
     }
