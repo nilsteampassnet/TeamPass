@@ -240,16 +240,16 @@ class ItemController extends BaseController
                             'folder_id' => (int) $arrQueryStringParams['folder_id'],
                             'label' => (string) $arrQueryStringParams['label'],
                             'password' => (string) $arrQueryStringParams['password'],
-                            'description' => (string) $arrQueryStringParams['description'] ?? '',
+                            'description' => (string) ($arrQueryStringParams['description'] ?? ''),
                             'login' => (string) $arrQueryStringParams['login'],
-                            'email' => (string) $arrQueryStringParams['email'] ?? '',
-                            'url' => (string) $arrQueryStringParams['url'] ?? '',
-                            'tags' => (string) $arrQueryStringParams['tags'] ?? '',
+                            'email' => (string) ($arrQueryStringParams['email'] ?? ''),
+                            'url' => (string) ($arrQueryStringParams['url'] ?? ''),
+                            'tags' => (string) ($arrQueryStringParams['tags'] ?? ''),
                             'anyone_can_modify' => (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
                             'icon' => (string) $arrQueryStringParams['icon'] ?? '',
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
-                            'totp' => (string) $userData['totp'] ?? '',
+                            'totp' => (string) ($userData['totp'] ?? ''),
                         ];
 
                         // launch

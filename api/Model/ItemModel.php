@@ -46,7 +46,7 @@ class ItemModel
      * @return array
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
-    {error_log($sqlExtra);
+    {
         // Get items
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
@@ -375,7 +375,16 @@ class ItemModel
      */
     private function checkPasswordComplexity(string $password, array $itemInfos) : void
     {
-        if ($itemInfos['folderId'] <= 0 || is_int($itemInfos['folderId']) === false || isset($itemInfos['folderId']) === false) {
+        // Check existence first
+        if (isset($itemInfos['folderId']) === false) {
+            throw new Exception('Folder ID is missing');
+        }
+
+        // Cast to integer for strict validation
+        $folderId = (int) $itemInfos['folderId'];
+
+        // Validate value
+        if ($folderId <= 0) {
             throw new Exception('Invalid folder ID for complexity check');
         }
         
@@ -392,7 +401,7 @@ class ItemModel
         $zxcvbn = new Zxcvbn();
         $passwordStrength = $zxcvbn->passwordStrength($password);
         $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
-
+error_log('Password strength score: ' . $passwordStrengthScore . ' | Required: ' . $requested_folder_complexity);
         if ($passwordStrengthScore < $requested_folder_complexity && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
             throw new Exception('Password strength is too low');
         }
