@@ -9,6 +9,7 @@
 - [Extension](misc/extension.md)
 - **Features**
 - [Authentication](features/authentication.md)
+- [Backups](features/backups.md)
 - [Items](features/items.md)
 - [Import](features/import.md)
 - [Export](features/export.md)
