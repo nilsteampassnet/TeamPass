@@ -42,10 +42,11 @@ class ItemModel
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
+     * @param bool $showItem
      * 
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
     {
         // Get items
         $rows = DB::query(
@@ -144,14 +145,16 @@ class ItemModel
             );
 
             // Increase viewed number
-            logItems(
-                [],
-                (int) $row['id'],
-                $row['label'] ?? '',
-                (int) $userId,
-                'at_shown',
-                ''
-            );
+            if ($showItem === true) {
+                logItems(
+                    [],
+                    (int) $row['id'],
+                    $row['label'] ?? '',
+                    (int) $userId,
+                    'at_shown',
+                    ''
+                );
+            }
         }
 
         return $ret;
