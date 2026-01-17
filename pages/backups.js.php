@@ -80,6 +80,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 <script type='text/javascript'>
     //<![CDATA[
+
     // Common toastr options for this page (prevents sticky toasts and keeps UI consistent)
     function tpToast(type, message, title, options) {
         if (typeof toastr === 'undefined') return null;
@@ -246,7 +247,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Bootstrap tooltips on demand
     $(function() {
-        try { $('body').tooltip({selector:'[data-toggle="tooltip"]'}); } catch (e) {}
+        // Initialize tooltips globally on the body for dynamic elements
+        try { 
+            $('body').tooltip({
+                selector: '[data-toggle="tooltip"]',
+                boundary: 'window',
+                trigger: 'hover' // Forces trigger on hover only to avoid click issues
+            }); 
+        } catch (e) {
+            console.error("Tooltip initialization failed", e);
+        }
     });
 
     // Confirm restore modal helper
@@ -257,114 +267,114 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#tp-confirm-restore-modal').modal('show');
     }
 
-function tpGetOnTheFlyServerFile() {
-    return ($('#onthefly-restore-server-file').val() || $('#onthefly-restore-serverfile').val() || '').toString();
-}
-
-// ---------------------------------------------------------------------
-// Restore compatibility (schema-level) preflight
-// ---------------------------------------------------------------------
-var tpBckVersionUnknown = "<?php echo addslashes($lang->get('bck_version_unknown')); ?>";
-var tpBckIncompatTitle = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_title')); ?>";
-var tpBckIncompatBody = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_body')); ?>";
-var tpBckBackupVersionLabel = "<?php echo addslashes($lang->get('bck_restore_backup_version')); ?>";
-var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
-var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
-
-function tpFmtTpVersion(v) {
-    v = (v || '').toString().trim();
-    return v !== '' ? v : tpBckVersionUnknown;
-}
-
-function tpShowRestoreIncompatMessage(backupVersion, expectedVersion) {
-    var msg = '<div class="mb-2">' + tpBckIncompatBody + '</div>';
-    msg += '<div><b>' + tpBckBackupVersionLabel + ':</b> ' + tpFmtTpVersion(backupVersion) + '</div>';
-    msg += '<div><b>' + tpBckExpectedVersionLabel + ':</b> ' + tpFmtTpVersion(expectedVersion) + '</div>';
-
-    // Prefer bootstrap modal if available, fallback to toast
-    try {
-        $('#tp-confirm-restore-title').text(tpBckIncompatTitle);
-        $('#tp-confirm-restore-body').html(msg);
-        $('#tp-confirm-restore-yes').hide();
-        $('#tp-confirm-restore-modal').modal('show');
-    } catch (e) {
-        tpToast('error', msg);
-    }
-}
-
-function tpPreflightRestoreCompatibility(payload, onOk) {
-    payload = payload || {};
-    $.post(
-        "sources/backups.queries.php",
-        {
-            type: "preflight_restore_compatibility",
-            data: prepareExchangedData(JSON.stringify(payload), "encode", "<?php echo $session->get('key'); ?>"),
-            key: "<?php echo $session->get('key'); ?>"
-        },
-        function (resp) {
-            var r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
-            if (!r || r.error === true) {
-                tpToast('error', (r && r.message) ? r.message : "<?php echo addslashes($lang->get('error')); ?>");
-                return;
-            }
-
-            if (r.is_compatible === true) {
-                if (typeof onOk === 'function') onOk(r);
-                return;
-            }
-
-            if ((r.reason || '') === 'LEGACY_NO_METADATA') {
-                tpToast('error', tpBckLegacyNoMeta);
-                return;
-            }
-
-            tpShowRestoreIncompatMessage(r.backup_tp_files_version || '', r.expected_tp_files_version || '');
-        }
-    );
-}
-    $(document).on('click', '#tp-confirm-restore-yes', function(e) {
-        e.preventDefault();
-        $('#tp-confirm-restore-modal').modal('hide');
-
-        if (typeof tpConfirmRestoreCallback === 'function') {
-            var cb = tpConfirmRestoreCallback;
-            tpConfirmRestoreCallback = null;
-            cb();
-        }
-    });
-
-    // Restore key modal helper (used when a scheduled backup cannot be decrypted with the current instance key)
-    var tpRestoreKeyCallback = null;
-    function tpShowRestoreKeyModal(errorMessage, onConfirm, presetKey) {
-        tpRestoreKeyCallback = (typeof onConfirm === 'function') ? onConfirm : null;
-
-        var msg = (errorMessage || '').toString();
-        if (msg !== '') {
-            $('#tp-restore-key-modal-error').removeClass('hidden').text(msg);
-        } else {
-            $('#tp-restore-key-modal-error').addClass('hidden').text('');
-        }
-
-        $('#tp-restore-key-modal-input').val((presetKey || '').toString());
-        $('#tp-restore-key-modal').modal('show');
+    function tpGetOnTheFlyServerFile() {
+        return ($('#onthefly-restore-server-file').val() || $('#onthefly-restore-serverfile').val() || '').toString();
     }
 
-    $(document).on('click', '#tp-restore-key-modal-yes', function(e) {
-        e.preventDefault();
-        var k = ($('#tp-restore-key-modal-input').val() || '').toString();
-        if (k === '') {
-            tpToast('error', "<?php echo addslashes($lang->get('bck_restore_key_required')); ?>");
-            return;
-        }
-        $('#tp-restore-key-modal').modal('hide');
-        if (typeof tpRestoreKeyCallback === 'function') {
-            var cb = tpRestoreKeyCallback;
-            tpRestoreKeyCallback = null;
-            cb(k);
-        }
-    });
+    // ---------------------------------------------------------------------
+    // Restore compatibility (schema-level) preflight
+    // ---------------------------------------------------------------------
+    var tpBckVersionUnknown = "<?php echo addslashes($lang->get('bck_version_unknown')); ?>";
+    var tpBckIncompatTitle = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_title')); ?>";
+    var tpBckIncompatBody = "<?php echo addslashes($lang->get('bck_restore_incompatible_version_body')); ?>";
+    var tpBckBackupVersionLabel = "<?php echo addslashes($lang->get('bck_restore_backup_version')); ?>";
+    var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
+    var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
 
-// Copy instance key (scheduled note info icon)
+    function tpFmtTpVersion(v) {
+        v = (v || '').toString().trim();
+        return v !== '' ? v : tpBckVersionUnknown;
+    }
+
+    function tpShowRestoreIncompatMessage(backupVersion, expectedVersion) {
+        var msg = '<div class="mb-2">' + tpBckIncompatBody + '</div>';
+        msg += '<div><b>' + tpBckBackupVersionLabel + ':</b> ' + tpFmtTpVersion(backupVersion) + '</div>';
+        msg += '<div><b>' + tpBckExpectedVersionLabel + ':</b> ' + tpFmtTpVersion(expectedVersion) + '</div>';
+
+        // Prefer bootstrap modal if available, fallback to toast
+        try {
+            $('#tp-confirm-restore-title').text(tpBckIncompatTitle);
+            $('#tp-confirm-restore-body').html(msg);
+            $('#tp-confirm-restore-yes').hide();
+            $('#tp-confirm-restore-modal').modal('show');
+        } catch (e) {
+            tpToast('error', msg);
+        }
+    }
+
+    function tpPreflightRestoreCompatibility(payload, onOk) {
+        payload = payload || {};
+        $.post(
+            "sources/backups.queries.php",
+            {
+                type: "preflight_restore_compatibility",
+                data: prepareExchangedData(JSON.stringify(payload), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function (resp) {
+                var r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
+                if (!r || r.error === true) {
+                    tpToast('error', (r && r.message) ? r.message : "<?php echo addslashes($lang->get('error')); ?>");
+                    return;
+                }
+
+                if (r.is_compatible === true) {
+                    if (typeof onOk === 'function') onOk(r);
+                    return;
+                }
+
+                if ((r.reason || '') === 'LEGACY_NO_METADATA') {
+                    tpToast('error', tpBckLegacyNoMeta);
+                    return;
+                }
+
+                tpShowRestoreIncompatMessage(r.backup_tp_files_version || '', r.expected_tp_files_version || '');
+            }
+        );
+    }
+        $(document).on('click', '#tp-confirm-restore-yes', function(e) {
+            e.preventDefault();
+            $('#tp-confirm-restore-modal').modal('hide');
+
+            if (typeof tpConfirmRestoreCallback === 'function') {
+                var cb = tpConfirmRestoreCallback;
+                tpConfirmRestoreCallback = null;
+                cb();
+            }
+        });
+
+        // Restore key modal helper (used when a scheduled backup cannot be decrypted with the current instance key)
+        var tpRestoreKeyCallback = null;
+        function tpShowRestoreKeyModal(errorMessage, onConfirm, presetKey) {
+            tpRestoreKeyCallback = (typeof onConfirm === 'function') ? onConfirm : null;
+
+            var msg = (errorMessage || '').toString();
+            if (msg !== '') {
+                $('#tp-restore-key-modal-error').removeClass('hidden').text(msg);
+            } else {
+                $('#tp-restore-key-modal-error').addClass('hidden').text('');
+            }
+
+            $('#tp-restore-key-modal-input').val((presetKey || '').toString());
+            $('#tp-restore-key-modal').modal('show');
+        }
+
+        $(document).on('click', '#tp-restore-key-modal-yes', function(e) {
+            e.preventDefault();
+            var k = ($('#tp-restore-key-modal-input').val() || '').toString();
+            if (k === '') {
+                tpToast('error', "<?php echo addslashes($lang->get('bck_restore_key_required')); ?>");
+                return;
+            }
+            $('#tp-restore-key-modal').modal('hide');
+            if (typeof tpRestoreKeyCallback === 'function') {
+                var cb = tpRestoreKeyCallback;
+                tpRestoreKeyCallback = null;
+                cb(k);
+            }
+        });
+
+    // Copy instance key (scheduled note info icon)
     $(document).on('click', '.tp-copy-instance-key', function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -393,51 +403,50 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
         );
     });
 
-
-
-
+    // Delete on-the-fly server backup
     $(document).on('click', '.onthefly-server-backup-delete', function () {
         const fileName = $(this).data('filename');
+        console.log('Delete on-the-fly server backup:', fileName);
         if (!fileName) return;
+        
+        // Call confirm dialog
+        launchConfirmDialog(
+            "<?php echo addslashes($lang->get('del_button')); ?>", // Title
+            "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fileName + "</b>", // Message
+            function () {
+                $.post(
+                    "sources/backups.queries.php",
+                    {
+                        type: "onthefly_delete_backup",
+                        data: prepareExchangedData(JSON.stringify({ file: fileName }), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function (data) {
+                        if (tpResponseLooksLikeHtml(data)) { $('#tp-disk-usage').hide(); return; }
+                        try {
+                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                        } catch (e) {
+                            $('#tp-disk-usage').hide();
+                            return;
+                        }
+                        
+                        if (data.error === true) {
+                            toastr.error(data.message || "<?php echo addslashes($lang->get('error')); ?>");
+                            return;
+                        }
 
-        if (!confirm("<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?>\n\n" + fileName)) {
-            return;
-        }
+                        // Clean restoration fields
+                        if ($('#onthefly-restore-serverfile').val() === fileName) {
+                            $('#onthefly-restore-serverfile, #onthefly-restore-server-file, #onthefly-restore-server-scope').val('');
+                            $('#onthefly-restore-file-text, #onthefly-restore-server-selected-name').text('');
+                            $('#onthefly-restore-server-selected').hide();
+                        }
 
-        $.post(
-            "sources/backups.queries.php",
-            {
-                type: "onthefly_delete_backup",
-                data: prepareExchangedData(JSON.stringify({ file: fileName }), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
+                        toastr.success("<?php echo addslashes($lang->get('bck_onthefly_deleted')); ?>");
+                        loadOnTheFlyServerBackups();
+                    }
+                );
             },
-            function (data) {
-            if (tpResponseLooksLikeHtml(data)) { $('#tp-disk-usage').hide(); return; }
-            try {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-            } catch (e) {
-                $('#tp-disk-usage').hide();
-                return;
-            }
-                if (data.error === true) {
-                    toastr.error(data.message || "<?php echo addslashes($lang->get('error')); ?>");
-                    return;
-                }
-
-                // If deleted file was selected for restore, clear selection
-                if ($('#onthefly-restore-serverfile').val() === fileName) {
-                    $('#onthefly-restore-serverfile').val('');
-        $('#onthefly-restore-server-file').val('');
-                    $('#onthefly-restore-server-scope').val('');
-                    $('#onthefly-restore-server-file').val('');
-                    $('#onthefly-restore-file-text').text('');
-                    $('#onthefly-restore-server-selected').hide();
-                    $('#onthefly-restore-server-selected-name').text('');
-                }
-
-                toastr.success("<?php echo addslashes($lang->get('bck_onthefly_deleted')); ?>");
-                loadOnTheFlyServerBackups();
-            }
         );
     });
 
@@ -545,6 +554,8 @@ function tpPreflightRestoreCompatibility(payload, onOk) {
                             html += '      </a>';
                         }
                         html += '      <button type="button" class="btn btn-outline-danger onthefly-server-backup-delete" data-filename="' + titleName + '" title="<?php echo addslashes($lang->get('delete')); ?>" aria-label="<?php echo addslashes($lang->get('delete')); ?>" data-toggle="tooltip">';
+                        html += '        <i class="fas fa-trash"></i>';
+                        html += '      </button>';
                         html += '        <i class="fas fa-trash"></i>';
                         html += '      </button>';
                         html += '    </div>';
@@ -1468,31 +1479,43 @@ var tpScheduled = {
         }
 
         var $del = $('<button/>')
-          .attr('type', 'button')
-          .addClass('btn btn-outline-danger')
-          .attr('title', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
-          .attr('aria-label', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
-          .html('<i class="fas fa-trash"></i>')
-          .on('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!confirm("<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?>\n\n" + (f.name || ''))) return;
-            tpScheduled.ajax('scheduled_delete_backup', { file: f.name }, function(rr) {
-              if (rr && rr.error) {
-                tpScheduled.showAlert('danger', rr.message || 'Delete failed');
-                return;
-              }
-              // If the selected file was deleted, clear selection
-              if ((($('#scheduled-restore-server-file').val() || '').toString()) === (f.name || '')) {
-                $('#scheduled-restore-server-file').val('');
-                $('#scheduled-restore-selected').hide();
-                $('#scheduled-restore-selected-name').text('');
-                $('#scheduled-restore-start').prop('disabled', true);
-              }
-              tpScheduled.loadFiles();
-              tpScheduled.loadSettings();
+            .attr('type', 'button')
+            .addClass('btn btn-outline-danger')
+            .attr('title', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
+            .attr('aria-label', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
+            .html('<i class="fas fa-trash"></i>')
+            .on('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                const fileName = f.name || '';
+                // Appel de la fonction générique
+                launchConfirmDialog(
+                    "<?php echo addslashes($lang->get('del_button')); ?>",
+                    "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fileName + "</b>",
+                    function() {
+                        // --- CALLBACK DE CONFIRMATION ---
+                        tpScheduled.ajax('scheduled_delete_backup', { file: fileName }, function(rr) {
+                            if (rr && rr.error) {
+                                tpScheduled.showAlert('danger', rr.message || 'Delete failed');
+                                return;
+                            }
+                            
+                            // Nettoyage de l'interface si le fichier sélectionné est supprimé
+                            if (($('#scheduled-restore-server-file').val() || '').toString() === fileName) {
+                                $('#scheduled-restore-server-file').val('');
+                                $('#scheduled-restore-selected').hide();
+                                $('#scheduled-restore-selected-name').text('');
+                                $('#scheduled-restore-start').prop('disabled', true);
+                            }
+
+                            // Rechargement des listes
+                            tpScheduled.loadFiles();
+                            tpScheduled.loadSettings();
+                        });
+                    },
+                );
             });
-          });
 
         $grp.append($del);
         $cell.append($grp);
@@ -1613,7 +1636,7 @@ var tpScheduled = {
   init: function() {
     // load when tab is shown
     $('a[href="#scheduled"]').on('shown.bs.tab', function() {
-      tpScheduled.refreshAll();
+        tpScheduled.refreshAll();
     });
 
     $('#scheduled-frequency').on('change', tpScheduled.toggleFreqUI);
@@ -1621,10 +1644,10 @@ var tpScheduled = {
     // Ensure toggle hidden inputs stay consistent (some toggle libs don't update them reliably)
     tpScheduled.bindToggleFix('backup-scheduled-enabled');
     tpScheduled.bindToggleFix('scheduled-email-report-enabled', function() {
-      tpScheduled.toggleEmailUI();
+        tpScheduled.toggleEmailUI();
     });
     tpScheduled.bindToggleFix('scheduled-email-report-only-failures');
-$('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
+    $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.saveSettings(); });
     $('#scheduled-run-btn').on('click', function(e){
         e.preventDefault();
         e.stopPropagation();
@@ -1637,7 +1660,7 @@ $('#scheduled-save-btn').on('click', function(e){ e.preventDefault(); e.stopProp
         }
     });
     $('#scheduled-refresh-btn').on('click', function(e){ e.preventDefault(); e.stopPropagation(); tpScheduled.refreshAll(); });
-// Select a backup for restore (radio selector + row click)
+    // Select a backup for restore (radio selector + row click)
     $(document).on('change', '.scheduled-backup-radio', function(e) {
       e.preventDefault();
       e.stopPropagation();
