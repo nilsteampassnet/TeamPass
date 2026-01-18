@@ -2183,14 +2183,12 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $userPwd = $antiXss->xss_clean($userPwd);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
+
+    // Generate RSA key pair using CryptoManager (phpseclib v3)
+    $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
+
+    // Encrypt the private key with user password using AES
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
 
     $result = [
         'private_key' => base64_encode($privatekey),
@@ -2206,9 +2204,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
     // Encrypt private key with derived key (backup)
-    $cipherBackup = new Crypt_AES();
-    $cipherBackup->setPassword($derivedKey);
-    $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey);
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
@@ -2237,12 +2233,13 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
         try {
-            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+            // Decrypt using CryptoManager (phpseclib v3)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode((string) $decrypted);
         } catch (Exception $e) {
             return $e;
         }
@@ -2266,12 +2263,13 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
         try {
-            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+            // Encrypt using CryptoManager (phpseclib v3)
+            $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode($encrypted);
         } catch (Exception $e) {
             return $e->getMessage();
         }
@@ -2417,17 +2415,22 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             $SETTINGS
         );
 
-        // Decrypt private key using derived key
-        $cipher = new Crypt_AES();
-        $cipher->setPassword($derivedKey);
-        $privateKeyClear = base64_encode($cipher->decrypt(base64_decode($userInfo['private_key_backup'])));
+        // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            base64_decode($userInfo['private_key_backup']),
+            $derivedKey
+        );
+        $privateKeyClear = base64_encode($decrypted);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
         // Re-encrypt backup with derived key (refresh)
-        $cipher->setPassword($derivedKey);
-        $newPrivateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $derivedKey
+        );
+        $newPrivateKeyBackup = base64_encode($encrypted);
         
         // Update database
         DB::update(
@@ -2562,15 +2565,15 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
-    
-    // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
-    // Set it as password
-    $cipher->setPassword($objectKey);
+
+    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
+
     return [
-        'encrypted' => base64_encode($cipher->encrypt($data)),
+        'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
     ];
 }
@@ -2590,11 +2593,13 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    // Decrypt using CryptoManager (phpseclib v3)
+    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+        base64_decode($data),
+        base64_decode($key)
+    );
+
+    return base64_encode((string) $decrypted);
 }
 
 /**
@@ -2613,21 +2618,21 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     // Sanitize
     $antiXss = new AntiXSS();
     $publicKey = $antiXss->xss_clean($publicKey);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the public key
-    $decodedPublicKey = base64_decode($publicKey, true);
-    if ($decodedPublicKey === false) {
-        throw new InvalidArgumentException("Error while decoding key.");
+
+    // Encrypt using CryptoManager (phpseclib v3)
+    try {
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+            base64_decode($key),
+            $publicKey
+        );
+        if (empty($encrypted)) {  // Check if key is empty or null
+            throw new RuntimeException("Error while encrypting key.");
+        }
+        // Return
+        return base64_encode($encrypted);
+    } catch (Exception $e) {
+        throw new RuntimeException("Error while encrypting key: " . $e->getMessage());
     }
-    $rsa->loadKey($decodedPublicKey);
-    // Encrypt
-    $encrypted = $rsa->encrypt(base64_decode($key));
-    if (empty($encrypted)) {  // Check if key is empty or null
-        throw new RuntimeException("Error while encrypting key.");
-    }
-    // Return
-    return base64_encode($encrypted);
 }
 
 /**
@@ -2644,33 +2649,28 @@ function decryptUserObjectKey(string $key, string $privateKey): string
     $antiXss = new AntiXSS();
     $privateKey = $antiXss->xss_clean($privateKey);
 
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the private key
-    $decodedPrivateKey = base64_decode($privateKey, true);
-    if ($decodedPrivateKey === false) {
-        throw new InvalidArgumentException("Error while decoding private key.");
-    }
-
-    $rsa->loadKey($decodedPrivateKey);
-
-    // Decrypt
+    // Decrypt using CryptoManager with backward compatibility (phpseclib v3)
     try {
         $decodedKey = base64_decode($key, true);
         if ($decodedKey === false) {
             throw new InvalidArgumentException("Error while decoding key.");
         }
 
-        // This check is needed as decrypt() in version 2 can return false in case of error
-        $tmpValue = $rsa->decrypt($decodedKey);
-        if ($tmpValue !== false) {
-            return base64_encode($tmpValue);
+        // Use CryptoManager with automatic v1 fallback (SHA-1)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaDecrypt(
+            $decodedKey,
+            $privateKey,
+            true  // Enable legacy v1 compatibility
+        );
+
+        if (!empty($decrypted)) {
+            return base64_encode($decrypted);
         } else {
             return '';
         }
     } catch (Exception $e) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            error_log('TEAMPASS Error - decrypt - '.$e->getMessage());
         }
         return 'Exception: could not decrypt object';
     }
@@ -2690,8 +2690,8 @@ function encryptFile(string $fileInName, string $fileInPath): array
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
 
-    // Load classes
-    $cipher = new Crypt_AES();
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
 
     // Generate an object key
     $objectKey = uniqidReal(32);
@@ -2732,11 +2732,11 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-    
-    // Load classes
-    $cipher = new Crypt_AES();
+
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
     $antiXSS = new AntiXSS();
-    
+
     // Get file name
     $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
