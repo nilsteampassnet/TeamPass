@@ -46,10 +46,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "=== Testing Private Key Decryption ===\n";
 
                 $ciphertext = base64_decode($user['private_key']);
-                echo "Private key length: " . strlen($ciphertext) . " bytes\n";
+                echo "Private key length: " . strlen($ciphertext) . " bytes\n\n";
 
+                // Test with CryptoManager (v3 compatible)
+                echo "=== Testing with CryptoManager ===\n";
+                try {
+                    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                        $ciphertext,
+                        $password
+                    );
+
+                    if (strpos($decrypted, '-----BEGIN') !== false) {
+                        echo "✅✅✅ SUCCESS! Private key decrypted with CryptoManager! ✅✅✅\n";
+                        echo "Key type: RSA PRIVATE KEY\n";
+                        $lines = explode("\n", $decrypted);
+                        echo "\nFirst 3 lines:\n";
+                        for ($i = 0; $i < min(3, count($lines)); $i++) {
+                            echo "  " . $lines[$i] . "\n";
+                        }
+                    } else {
+                        echo "⚠️ CryptoManager decrypted but not PEM (length: " . strlen($decrypted) . " bytes)\n";
+                        echo "First 50 chars: " . substr($decrypted, 0, 50) . "\n";
+                    }
+                } catch (Exception $e) {
+                    echo "❌ CryptoManager failed: " . $e->getMessage() . "\n";
+                }
+
+                echo "\n";
+
+                // Test with v1 if available
                 if (class_exists('Crypt_AES')) {
-                    // Test with v1 default
+                    echo "=== Testing with phpseclib v1 ===\n";
                     $cipher = new Crypt_AES();
                     $cipher->setPassword($password);
 
@@ -57,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $decrypted = $cipher->decrypt($ciphertext);
 
                         if (strpos($decrypted, '-----BEGIN') !== false) {
-                            echo "\n✅✅✅ SUCCESS! Private key decrypted with v1 default! ✅✅✅\n";
+                            echo "✅✅✅ SUCCESS! Private key decrypted with v1 default! ✅✅✅\n";
                             echo "Key type: RSA PRIVATE KEY\n";
                             $lines = explode("\n", $decrypted);
                             echo "\nFirst 3 lines:\n";
@@ -72,7 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         echo "❌ Decryption failed: " . $e->getMessage() . "\n";
                     }
                 } else {
-                    echo "❌ phpseclib v1 not available\n";
+                    echo "=== phpseclib v1 not available ===\n";
+                    echo "(This is normal if phpseclib v3 is installed)\n";
                 }
 
             } else {
