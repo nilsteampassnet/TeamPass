@@ -13,6 +13,8 @@ ini_set('display_errors', '1');
 
 require_once __DIR__ . '/includes/config/settings.php';
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/install/tp.functions.php';
+require_once __DIR__ . '/sources/main.functions.php';
 
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\SessionManager\SessionManager;

@@ -1,49 +1,89 @@
 <?php
 /**
- * Teampass - upgrade script for phpseclib v3 migration tracking
- *
- * Adds encryption_version tracking to support progressive migration from v1 to v3
- *
- * @package TeamPass
- * @version 3.1.6.0
- * @category Upgrade
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      upgrade_run_3.1.5.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
  */
 
-declare(strict_types=1);
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
-require_once __DIR__ . '/libs/SecureHandler.php';
-session_name('teampass_session');
-session_start();
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
 $_SESSION['CPM'] = 1;
 
-require_once __DIR__ . '/../includes/language/english.php';
-require_once __DIR__ . '/../includes/config/include.php';
-require_once __DIR__ . '/../includes/config/settings.php';
-require_once __DIR__ . '/../sources/main.functions.php';
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
 
-// Database connection
+//include librairies
+require_once '../includes/language/english.php';
+require_once '../includes/config/include.php';
+require_once '../includes/config/settings.php';
+require_once 'tp.functions.php';
+require_once 'libs/aesctr.php';
+
+// DataBase
+// Test DB connexion
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
+
 $db_link = mysqli_connect(
-    DB_HOST,
-    DB_USER,
-    DB_PASSWD,
-    DB_NAME,
-    (int) DB_PORT
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
 );
-if (!$db_link) {
-    echo '[{"finish":"1", "msg":"", "error":"DB connection failed: ' . mysqli_connect_error() . '"}]';
+if ($db_link) {
+    $db_link->set_charset(DB_ENCODING);
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
     exit();
 }
 
-$pre = DB_PREFIX;
+// Load libraries
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
 
-echo "Starting phpseclib v3 migration tracking setup...\n\n";
+$error = [];
 
-// ============================================
-// STEP 1: Add encryption_version to users table
-// ============================================
-echo "Step 1: Adding encryption_version to users table...\n";
+//---------------------------------------------------------------------
+
+//--->BEGIN 3.1.6
 
 $res = addColumnIfNotExist(
     $pre . 'users',
@@ -52,22 +92,16 @@ $res = addColumnIfNotExist(
 );
 
 if ($res === false) {
-    echo "ERROR: Failed to add encryption_version to users table\n";
-    echo "MySQL Error: " . mysqli_error($db_link) . "\n";
-    mysqli_close($db_link);
-    exit(1);
+    $error[] = "Failed to add encryption_version to users table - MySQL Error: " . mysqli_error($db_link);
 }
-echo "✓ encryption_version added to users table\n\n";
 
 // Initialize all existing users to version 1 (phpseclib v1)
-echo "Initializing existing users to encryption_version=1...\n";
 mysqli_query(
     $db_link,
     "UPDATE `" . $pre . "users`
      SET encryption_version = 1
      WHERE encryption_version = 0 OR encryption_version IS NULL"
 );
-echo "✓ " . mysqli_affected_rows($db_link) . " users initialized\n\n";
 
 // ============================================
 // STEP 2: Add encryption_version to sharekeys tables
@@ -80,10 +114,7 @@ $sharekeys_tables = [
     'sharekeys_files'
 ];
 
-echo "Step 2: Adding encryption_version to sharekeys tables...\n";
-
 foreach ($sharekeys_tables as $table) {
-    echo "Processing " . $table . "...\n";
 
     $res = addColumnIfNotExist(
         $pre . $table,
@@ -92,10 +123,7 @@ foreach ($sharekeys_tables as $table) {
     );
 
     if ($res === false) {
-        echo "ERROR: Failed to add encryption_version to " . $table . "\n";
-        echo "MySQL Error: " . mysqli_error($db_link) . "\n";
-        mysqli_close($db_link);
-        exit(1);
+        $error[] = "Failed to add encryption_version to " . $table . " - MySQL Error: " . mysqli_error($db_link);
     }
 
     // Initialize existing sharekeys to version 1
@@ -105,16 +133,12 @@ foreach ($sharekeys_tables as $table) {
          SET encryption_version = 1
          WHERE encryption_version = 0 OR encryption_version IS NULL"
     );
-
-    echo "✓ " . $table . " updated (" . mysqli_affected_rows($db_link) . " rows)\n";
 }
 
-echo "\n";
 
 // ============================================
 // STEP 3: Add index for performance
 // ============================================
-echo "Step 3: Adding indexes for performance...\n";
 
 foreach ($sharekeys_tables as $table) {
     $res = checkIndexExist(
@@ -122,20 +146,12 @@ foreach ($sharekeys_tables as $table) {
         'encryption_version',
         "ADD KEY `encryption_version` (`encryption_version`)"
     );
-
-    if ($res === false) {
-        echo "WARNING: Could not add index to " . $table . " (may already exist)\n";
-    } else {
-        echo "✓ Index added to " . $table . "\n";
-    }
 }
 
-echo "\n";
 
 // ============================================
 // STEP 4: Create migration statistics table
 // ============================================
-echo "Step 4: Creating migration statistics table...\n";
 
 mysqli_query(
     $db_link,
@@ -152,13 +168,9 @@ mysqli_query(
 );
 
 if (mysqli_error($db_link)) {
-    echo "ERROR: Failed to create migration statistics table\n";
-    echo "MySQL Error: " . mysqli_error($db_link) . "\n";
+        $error[] = "Failed to create migration statistics table - MySQL Error: " . mysqli_error($db_link);
 } else {
-    echo "✓ Migration statistics table created\n\n";
-
     // Initialize statistics
-    echo "Calculating initial statistics...\n";
 
     // Users statistics
     $result = mysqli_query(
@@ -183,8 +195,6 @@ if (mysqli_error($db_link)) {
             v3_records = " . $stats['v3']
     );
 
-    echo "✓ Users: " . $stats['total'] . " total (" . $stats['v1'] . " v1, " . $stats['v3'] . " v3)\n";
-
     // Sharekeys statistics
     foreach ($sharekeys_tables as $table) {
         $result = mysqli_query(
@@ -207,17 +217,13 @@ if (mysqli_error($db_link)) {
                 v1_records = " . $stats['v1'] . ",
                 v3_records = " . $stats['v3']
         );
-
-        echo "✓ " . $table . ": " . $stats['total'] . " total (" . $stats['v1'] . " v1, " . $stats['v3'] . " v3)\n";
     }
 }
 
-echo "\n";
 
 // ============================================
 // STEP 5: Add migration setting
 // ============================================
-echo "Step 5: Adding migration setting...\n";
 
 $result = mysqli_query(
     $db_link,
@@ -231,69 +237,19 @@ if (mysqli_num_rows($result) === 0) {
         "INSERT INTO `" . $pre . "misc` (type, intitule, valeur)
          VALUES ('admin', 'phpseclib_migration_mode', 'progressive')"
     );
-    echo "✓ Migration mode setting added (default: progressive)\n";
-} else {
-    echo "✓ Migration mode setting already exists\n";
 }
 
-echo "\n";
 
-// ============================================
-// Summary
-// ============================================
-echo "=====================================\n";
-echo "Migration tracking setup completed!\n";
-echo "=====================================\n\n";
+//---<END 3.1.6
 
-echo "Next steps:\n";
-echo "1. New data will be automatically encrypted with phpseclib v3\n";
-echo "2. Old data remains encrypted with v1 (backward compatible)\n";
-echo "3. Use the batch re-encryption script to migrate existing data (optional)\n";
-echo "4. Monitor progress in teampass_encryption_migration_stats table\n\n";
 
-echo "Migration modes:\n";
-echo "- 'progressive': New data uses v3, old data stays v1 (current)\n";
-echo "- 'batch': Run batch re-encryption script\n";
-echo "- 'hybrid': Decrypt with auto-detect, re-encrypt on access with v3\n\n";
-
+// Close connection
 mysqli_close($db_link);
 
-/**
- * Helper function to add column if not exists
- */
-function addColumnIfNotExist(string $table, string $column, string $definition): bool
-{
-    global $db_link;
+// Finished
+echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($error) : '').'"}]';
 
-    $result = mysqli_query(
-        $db_link,
-        "SHOW COLUMNS FROM `" . $table . "` LIKE '" . $column . "'"
-    );
 
-    if (mysqli_num_rows($result) == 0) {
-        $sql = "ALTER TABLE `" . $table . "` ADD `" . $column . "` " . $definition;
-        return mysqli_query($db_link, $sql) !== false;
-    }
+//---< FUNCTIONS
 
-    return true; // Already exists
-}
 
-/**
- * Helper function to check if index exists
- */
-function checkIndexExist(string $table, string $index, string $definition): bool
-{
-    global $db_link;
-
-    $result = mysqli_query(
-        $db_link,
-        "SHOW INDEX FROM `" . $table . "` WHERE Key_name = '" . $index . "'"
-    );
-
-    if (mysqli_num_rows($result) == 0) {
-        $sql = "ALTER TABLE `" . $table . "` " . $definition;
-        return mysqli_query($db_link, $sql) !== false;
-    }
-
-    return true; // Already exists
-}
