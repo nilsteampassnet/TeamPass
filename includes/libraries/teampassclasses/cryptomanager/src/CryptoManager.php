@@ -76,8 +76,13 @@ class CryptoManager
                 $publicKey = $decodedKey;
             }
 
-            /** @var PublicKey $key */
             $key = PublicKeyLoader::load($publicKey);
+
+            // Ensure we have a PublicKey instance for encryption
+            if (!$key instanceof PublicKey) {
+                throw new Exception('Loaded key is not a valid RSA Public Key');
+            }
+
             return $key->encrypt($data);
         } catch (Exception $e) {
             throw new Exception('Failed to encrypt with RSA: ' . $e->getMessage());
@@ -104,8 +109,12 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
-            /** @var PrivateKey $key */
             $key = PublicKeyLoader::load($privateKey);
+
+            // Ensure we have a PrivateKey instance for decryption
+            if (!$key instanceof PrivateKey) {
+                throw new Exception('Loaded key is not a valid RSA Private Key');
+            }
 
             try {
                 // Try with SHA-256 (v3 default)
@@ -222,8 +231,12 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
-            /** @var PrivateKey $key */
             $key = PublicKeyLoader::load($privateKey);
+
+            // Ensure we have a PrivateKey instance for decryption
+            if (!$key instanceof PrivateKey) {
+                throw new Exception('Loaded key is not a valid RSA Private Key');
+            }
 
             // Use appropriate hash based on version
             if ($version === 1) {
