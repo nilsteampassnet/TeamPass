@@ -561,9 +561,26 @@ if (
     null !== ($post_type_upload)
     && $post_type_upload === 'restore_db'
 ) {
+    // Preserve schema token "-sl<schema>" from uploaded filename for restore compatibility checks.
+    // The upload handler stores the file under a random name for safety; we keep the schema token
+    // by appending it to the generated name.
+    $uploadedDiskName = basename((string) $filePath);
+
+    $schemaSuffix = '';
+    if ($uploadedDiskName !== '' && preg_match('/-sl(\d+)(?:\D|$)/', $uploadedDiskName, $m) === 1) {
+        $schemaSuffix = '-sl' . (string) $m[1];
+    }
+
+    $extUploaded = strtolower((string) pathinfo($uploadedDiskName, PATHINFO_EXTENSION));
+
+    $finalFileName = $newFileName . $schemaSuffix;
+    if ($extUploaded !== '') {
+        $finalFileName .= '.' . $extUploaded;
+    }
+
     rename(
         $filePath,
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName
+        $targetDir . DIRECTORY_SEPARATOR . $finalFileName
     );
 
     // Add in DB
@@ -572,7 +589,7 @@ if (
         array(
             'type' => 'temp_file',
             'intitule' => time(),
-            'valeur' => $newFileName,
+            'valeur' => $finalFileName,
         )
     );
 
@@ -587,7 +604,6 @@ if (
 
     exit();
 }
-
 /**
  * Handles the error output.
  *

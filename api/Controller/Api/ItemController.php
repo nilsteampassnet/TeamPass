@@ -240,16 +240,16 @@ class ItemController extends BaseController
                             'folder_id' => (int) $arrQueryStringParams['folder_id'],
                             'label' => (string) $arrQueryStringParams['label'],
                             'password' => (string) $arrQueryStringParams['password'],
-                            'description' => (string) $arrQueryStringParams['description'] ?? '',
+                            'description' => (string) ($arrQueryStringParams['description'] ?? ''),
                             'login' => (string) $arrQueryStringParams['login'],
-                            'email' => (string) $arrQueryStringParams['email'] ?? '',
-                            'url' => (string) $arrQueryStringParams['url'] ?? '',
-                            'tags' => (string) $arrQueryStringParams['tags'] ?? '',
+                            'email' => (string) ($arrQueryStringParams['email'] ?? ''),
+                            'url' => (string) ($arrQueryStringParams['url'] ?? ''),
+                            'tags' => (string) ($arrQueryStringParams['tags'] ?? ''),
                             'anyone_can_modify' => (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
                             'icon' => (string) $arrQueryStringParams['icon'] ?? '',
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
-                            'totp' => (string) $userData['totp'] ?? '',
+                            'totp' => (string) ($userData['totp'] ?? ''),
                         ];
 
                         // launch
@@ -298,6 +298,7 @@ class ItemController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = '';
+        $showItem = false;
         $sqlExtra = 'WHERE i.deleted_at IS NULL';
         $sqlLimit = 0;
         $responseData = '';
@@ -316,6 +317,7 @@ class ItemController extends BaseController
             if (isset($arrQueryStringParams['id']) === true) {
                 // build sql where clause by ID
                 $sqlExtra .= ' AND i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+                $showItem = true;
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
                 $sqlExtra .= ' AND i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
@@ -341,7 +343,7 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id']);
+                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem);
                     $responseData = json_encode($arrItems);
                 }
             } catch (Error $e) {

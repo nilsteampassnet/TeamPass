@@ -27,6 +27,7 @@
  */
 
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\Language\Language;
 require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__.'/background_tasks___functions.php';
 require_once __DIR__.'/traits/ItemHandlerTrait.php';
@@ -187,7 +188,16 @@ try {
             throw new Exception($res['message'] ?? 'Backup failed');
         }
 
-        // Store a tiny summary for the task completion "arguments" field (no secrets)
+        
+// Best effort: write metadata sidecar next to the backup file
+try {
+    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
+    }
+} catch (Throwable $ignored) {
+    // do not block backups if metadata cannot be written
+}
+// Store a tiny summary for the task completion "arguments" field (no secrets)
         $this->taskData['backup_file'] = $res['filename'] ?? '';
         $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
         $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
@@ -217,6 +227,11 @@ try {
         // If launched by scheduler, update scheduler status in teampass_misc
         if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
             $this->updateSchedulerState('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
+            try {
+                $this->queueScheduledBackupReportEmail('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
+            } catch (Throwable $ignored) {
+                // best effort only - never block the backup process
+            }
         }
 
         if (LOG_TASKS === true) {
@@ -239,6 +254,97 @@ try {
         $this->upsertMiscSetting('bck_scheduled_last_message', mb_substr($message, 0, 500));
         $this->upsertMiscSetting('bck_scheduled_last_completed_at', (string)time());
     }
+
+    private function formatBytes(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return (string)$bytes . ' B';
+        }
+
+        $units = ['KB', 'MB', 'GB', 'TB', 'PB'];
+        $i = 0;
+        $value = (float)$bytes / 1024.0;
+        while ($value >= 1024.0 && $i < count($units) - 1) {
+            $value /= 1024.0;
+            $i++;
+        }
+        return number_format($value, 1, '.', '') . ' ' . $units[$i];
+    }
+
+    private function queueScheduledBackupReportEmail(string $status, string $message): void
+    {
+        $enabled = (int)$this->getMiscSetting('bck_scheduled_email_report_enabled', '0');
+        if ($enabled !== 1) {
+            return;
+        }
+
+        $onlyFailures = (int)$this->getMiscSetting('bck_scheduled_email_report_only_failures', '0');
+        if ($onlyFailures === 1 && $status !== 'failed') {
+            return;
+        }
+
+        $admins = DB::query(
+            'SELECT login, email, user_language FROM ' . prefixTable('users') . " WHERE admin = %i AND disabled = %i AND email != ''",
+            1,
+            0
+        );
+
+        if (empty($admins)) {
+            return;
+        }
+
+        $backupFile = (string)($this->taskData['backup_file'] ?? '');
+        $sizeBytes = (int)($this->taskData['backup_size_bytes'] ?? 0);
+        $outputDir = (string)($this->taskData['output_dir'] ?? '');
+        $retentionDays = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+        $purgeDeleted = (int)$this->getMiscSetting('bck_scheduled_last_purge_deleted', '0');
+
+        $dt = date('Y-m-d H:i:s');
+
+        foreach ($admins as $a) {
+            $email = (string)($a['email'] ?? '');
+            if ($email === '') {
+                continue;
+            }
+
+            $ul = (string)($a['user_language'] ?? 'english');
+            if ($ul === '' || $ul === '0') {
+                $ul = 'english';
+            }
+
+            $lang = new Language($ul);
+
+            $subjectTpl = (string)$lang->get('email_subject_scheduled_backup_report');
+            if ($subjectTpl === '') {
+                $subjectTpl = 'Scheduled backup report: #tp_status#';
+            }
+            $bodyTpl = (string)$lang->get('email_body_scheduled_backup_report');
+            if ($bodyTpl === '') {
+                $bodyTpl = 'Hello,<br><br>Status: #tp_status#<br>Message: #tp_message#<br><br>';
+            }
+
+            $subject = str_replace(['#tp_status#'], [$status], $subjectTpl);
+
+            $body = str_replace(
+                ['#tp_status#', '#tp_datetime#', '#tp_message#', '#tp_file#', '#tp_size#', '#tp_output_dir#', '#tp_retention_days#', '#tp_purge_deleted#'],
+                [
+                    htmlspecialchars((string)$status, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$dt, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$message, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$backupFile, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars($this->formatBytes($sizeBytes), ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$outputDir, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$retentionDays, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                    htmlspecialchars((string)$purgeDeleted, ENT_QUOTES | ENT_HTML5, 'UTF-8'),
+                ],
+                $bodyTpl
+            );
+
+            $receiverName = (string)($a['login'] ?? $lang->get('administrator'));
+            prepareSendingEmail($subject, $body, $email, $receiverName);
+        }
+    }
+
 
     private function upsertMiscSetting(string $key, string $value): void
     {
@@ -296,7 +402,9 @@ try {
             if ($mtime !== false && $mtime < $cutoff) {
                 if (@unlink($file)) {
                     $deleted++;
-                }
+                    // Also remove metadata sidecar if present
+                    @unlink($file . '.meta.json');
+}
             }
         }
 
@@ -313,7 +421,7 @@ try {
         ];
 
         // Prepare anonimzation of arguments
-        if ($this->processType === 'send_mail') {
+        if ($this->processType === 'send_email') {
             $arguments = json_encode(
                 [
                     'email' => $this->taskData['receivers'],
@@ -384,6 +492,17 @@ try {
             $this->taskId
         );
         $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+
+        // If a scheduled backup failed, update scheduler state and optionally send email report (via background tasks)
+        if ($this->processType === 'database_backup' && (string)($this->taskData['source'] ?? '') === 'scheduler') {
+            try {
+                $this->updateSchedulerState('failed', $e->getMessage());
+                $this->queueScheduledBackupReportEmail('failed', $e->getMessage());
+            } catch (Throwable $ignored) {
+                // best effort only
+            }
+        }
+
     // Purge retention even on failure (safe: only scheduled-*.sql)
         $backupDir = (string)($this->taskData['output_dir'] ?? '');
         if ($backupDir !== '' && is_dir($backupDir)) {

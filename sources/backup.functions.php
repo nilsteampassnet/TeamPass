@@ -22,7 +22,7 @@ declare(strict_types=1);
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      backups.functions.php
+ * @file      backup.functions.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -147,7 +147,16 @@ if (!function_exists('tpCreateDatabaseBackup')) {
             ? GenerateCryptKey(20, false, true, true, false, true)
             : bin2hex(random_bytes(10));
 
-        $filename = $prefix . time() . '-' . $token . '.sql';
+        // Schema level token in filename (used for compatibility checks during migrations)
+$schemaLevel = '';
+if (defined('UPGRADE_MIN_DATE')) {
+    $schemaLevel = (string) UPGRADE_MIN_DATE;
+}
+if ($schemaLevel !== '' && preg_match('/^\d+$/', $schemaLevel) !== 1) {
+    $schemaLevel = '';
+}
+$schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
+$filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
         $filepath = rtrim($outputDir, '/') . '/' . $filename;
 
         $handle = @fopen($filepath, 'w+');
@@ -472,5 +481,133 @@ if (function_exists('tpDefuseDecryptWithCandidates') === false) {
         }
 
         return ['success' => false, 'message' => ($lastMsg !== '' ? $lastMsg : 'Unable to decrypt')];
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Backup metadata helpers (.meta.json sidecar) and schema token parsing
+// -----------------------------------------------------------------------------
+// NOTE: schema_level is stored for internal checks only. UI must never display schema_level.
+
+if (function_exists('tpGetTpFilesVersion') === false) {
+    function tpGetTpFilesVersion(): string
+    {
+        if (defined('TP_VERSION') && defined('TP_VERSION_MINOR')) {
+            return (string) TP_VERSION . '.' . (string) TP_VERSION_MINOR;
+        }
+        return '';
+    }
+}
+
+if (function_exists('tpGetSchemaLevel') === false) {
+    function tpGetSchemaLevel(): string
+    {
+        if (defined('UPGRADE_MIN_DATE')) {
+            $v = (string) UPGRADE_MIN_DATE;
+            if ($v !== '' && preg_match('/^\d+$/', $v) === 1) {
+                return $v;
+            }
+        }
+        return '';
+    }
+}
+
+if (function_exists('tpGetBackupMetadataPath') === false) {
+    function tpGetBackupMetadataPath(string $backupFilePath): string
+    {
+        return $backupFilePath . '.meta.json';
+    }
+}
+
+if (function_exists('tpWriteBackupMetadata') === false) {
+    /**
+     * Write backup metadata sidecar file (<backup>.meta.json).
+     *
+     * @return array{success: bool, message: string, meta_path: string}
+     */
+    function tpWriteBackupMetadata(string $backupFilePath, string $tpFilesVersion = '', string $schemaLevel = '', array $extra = []): array
+    {
+        $metaPath = tpGetBackupMetadataPath($backupFilePath);
+
+        if ($tpFilesVersion === '') {
+            $tpFilesVersion = tpGetTpFilesVersion();
+        }
+        if ($schemaLevel === '') {
+            $schemaLevel = tpGetSchemaLevel();
+        }
+
+        $payload = array_merge(
+            [
+                'tp_files_version' => $tpFilesVersion !== '' ? $tpFilesVersion : null,
+                'schema_level' => $schemaLevel !== '' ? $schemaLevel : null,
+                'created_at' => gmdate('c'),
+            ],
+            $extra
+        );
+
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            return ['success' => false, 'message' => 'Unable to encode metadata as JSON', 'meta_path' => $metaPath];
+        }
+
+        $ok = @file_put_contents($metaPath, $json, LOCK_EX);
+        if ($ok === false) {
+            return ['success' => false, 'message' => 'Unable to write metadata file', 'meta_path' => $metaPath];
+        }
+
+        return ['success' => true, 'message' => '', 'meta_path' => $metaPath];
+    }
+}
+
+if (function_exists('tpReadBackupMetadata') === false) {
+    function tpReadBackupMetadata(string $backupFilePath): array
+    {
+        $metaPath = tpGetBackupMetadataPath($backupFilePath);
+        if (!is_file($metaPath)) {
+            return [];
+        }
+        $raw = @file_get_contents($metaPath);
+        if ($raw === false || trim($raw) === '') {
+            return [];
+        }
+        $data = json_decode($raw, true);
+        return is_array($data) ? $data : [];
+    }
+}
+
+if (function_exists('tpParseSchemaLevelFromBackupFilename') === false) {
+    function tpParseSchemaLevelFromBackupFilename(string $filename): string
+    {
+        $bn = basename($filename);
+        if (preg_match('/-sl(\d+)(?:\D|$)/', $bn, $m) === 1) {
+            return (string) $m[1];
+        }
+        return '';
+    }
+}
+
+if (function_exists('tpGetBackupSchemaLevelFromMetaOrFilename') === false) {
+    function tpGetBackupSchemaLevelFromMetaOrFilename(string $backupFilePath): string
+    {
+        $meta = tpReadBackupMetadata($backupFilePath);
+        if (!empty($meta['schema_level']) && is_scalar($meta['schema_level'])) {
+            $v = (string) $meta['schema_level'];
+            if ($v !== '' && preg_match('/^\d+$/', $v) === 1) {
+                return $v;
+            }
+        }
+        $v = tpParseSchemaLevelFromBackupFilename($backupFilePath);
+        return ($v !== '' && preg_match('/^\d+$/', $v) === 1) ? $v : '';
+    }
+}
+
+if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
+    function tpGetBackupTpFilesVersionFromMeta(string $backupFilePath): string
+    {
+        $meta = tpReadBackupMetadata($backupFilePath);
+        if (!empty($meta['tp_files_version']) && is_scalar($meta['tp_files_version'])) {
+            return (string) $meta['tp_files_version'];
+        }
+        return '';
     }
 }

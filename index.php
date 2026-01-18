@@ -1167,8 +1167,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <div class="modal-body" id="warningModalBody">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" id="warningModalButtonClose"></button>
-                    <button type="button" class="btn btn-primary" id="warningModalButtonAction"></button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal" id="warningModalButtonClose" data-label-cancel="<?php echo addslashes($lang->get('cancel')); ?>"></button>
+                    <button type="button" class="btn btn-primary" id="warningModalButtonAction" data-label-confirm="<?php echo addslashes($lang->get('confirm')); ?>"></button>
                 </div>
             </div>
         </div>
