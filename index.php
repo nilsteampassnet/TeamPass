@@ -626,12 +626,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
         }
 
-        // LAPS menu
+        // LAPR menu
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="laps" class="nav-link', $get['page'] === 'laps' ? ' active' : '', '">
+                        <a href="#" data-name="lapr" class="nav-link', $get['page'] === 'lapr' ? ' active' : '', '">
                         <i class="fa-solid fa-shield-heart nav-icon"></i>
-                        <p>' . $lang->get('laps') . '</p>
+                        <p>' . $lang->get('lapr') . '</p>
                         </a>
                     </li>';
         
@@ -1330,7 +1330,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <?php
-        } elseif ($get['page'] === 'laps') {
+        } elseif ($get['page'] === 'lapr') {
             ?>
             <!-- FILESAVER -->
             <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
@@ -1501,8 +1501,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
-        } elseif ($get['page'] === 'laps') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/laps.js.php';
+        } elseif ($get['page'] === 'lapr') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/lapr.js.php';
         }
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';
