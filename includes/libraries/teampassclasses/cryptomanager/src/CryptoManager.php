@@ -191,13 +191,17 @@ class CryptoManager
             // Try phpseclib v3 first
             if (class_exists('phpseclib3\\Crypt\\AES')) {
                 $cipher = new AES($mode);
-                $cipher->setPassword($password);
 
                 // phpseclib v1 used a zero IV when not explicitly set
-                // Reproduce this behavior for backward compatibility
+                // IMPORTANT: Set IV BEFORE setPassword() because PBKDF2 doesn't set IV
+                // and setPassword() might reset internal state
                 if ($mode === 'cbc') {
                     $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
                 }
+
+                // Use PBKDF2 with same defaults as phpseclib v1 for compatibility
+                // v1 defaults: method='pbkdf2', hash='sha1', salt='phpseclib/salt', iterations=1000
+                $cipher->setPassword($password, 'pbkdf2', 'sha1', 'phpseclib/salt', 1000);
 
                 return $cipher->encrypt($data);
             }
@@ -247,13 +251,17 @@ class CryptoManager
             // Try phpseclib v3 first
             if (class_exists('phpseclib3\\Crypt\\AES')) {
                 $cipher = new AES($mode);
-                $cipher->setPassword($password);
 
                 // phpseclib v1 used a zero IV when not explicitly set
-                // Reproduce this behavior for backward compatibility
+                // IMPORTANT: Set IV BEFORE setPassword() because PBKDF2 doesn't set IV
+                // and setPassword() might reset internal state
                 if ($mode === 'cbc') {
                     $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
                 }
+
+                // Use PBKDF2 with same defaults as phpseclib v1 for compatibility
+                // v1 defaults: method='pbkdf2', hash='sha1', salt='phpseclib/salt', iterations=1000
+                $cipher->setPassword($password, 'pbkdf2', 'sha1', 'phpseclib/salt', 1000);
 
                 return $cipher->decrypt($data);
             }
