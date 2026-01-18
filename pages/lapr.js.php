@@ -22,7 +22,7 @@ declare(strict_types=1);
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      laps.js.php
+ * @file      lapr.js.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -69,7 +69,7 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('export') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('lapr') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
