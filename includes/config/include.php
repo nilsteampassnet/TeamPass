@@ -117,6 +117,7 @@ $mngPages = array(
     'uploads' => 'uploads.php',
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
+    'laps' => 'laps.php',
 );
 
 // Utilities Pages

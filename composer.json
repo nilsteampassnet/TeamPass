@@ -196,7 +196,8 @@
         "bjeavons/zxcvbn-php": "^1.0",
         "thenetworg/oauth2-azure": "^2.2",
         "symfony/console": "^6.4",
-        "composer/composer": "^2.7"
+        "composer/composer": "^2.7",
+        "phpseclib/phpseclib": "^3.0"
     },
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",

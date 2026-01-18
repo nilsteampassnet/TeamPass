@@ -211,8 +211,9 @@ class PerformChecks
                 'import', 'export', 'offline', 'process',
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
-                'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'uploads', 'oauth', 'tools'
+                'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 
+                'utilities', 'utilities.deletion', 'utilities.renewal', 'utilities.database',
+                'utilities.logs', 'tasks', 'uploads', 'oauth', 'tools', 'laps',
             ),
         );
         

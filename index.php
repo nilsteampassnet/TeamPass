@@ -625,6 +625,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
         }
+
+        // LAPS menu
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="laps" class="nav-link', $get['page'] === 'laps' ? ' active' : '', '">
+                        <i class="fa-solid fa-shield-heart nav-icon"></i>
+                        <p>' . $lang->get('laps') . '</p>
+                        </a>
+                    </li>';
         
         if (WIP === true) {
             echo '
@@ -1321,6 +1330,14 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <?php
+        } elseif ($get['page'] === 'laps') {
+            ?>
+            <!-- FILESAVER -->
+            <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <!-- PWSTRENGHT -->
+            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <?php
         }
     }
     ?>
@@ -1484,6 +1501,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
+        } elseif ($get['page'] === 'laps') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/laps.js.php';
         }
     } else {
         include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';
