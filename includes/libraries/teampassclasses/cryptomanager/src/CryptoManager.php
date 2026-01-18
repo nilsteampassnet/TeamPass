@@ -23,6 +23,8 @@ namespace TeampassClasses\CryptoManager;
 use phpseclib3\Crypt\RSA;
 use phpseclib3\Crypt\AES;
 use phpseclib3\Crypt\PublicKeyLoader;
+use phpseclib3\Crypt\RSA\PublicKey;
+use phpseclib3\Crypt\RSA\PrivateKey;
 use Exception;
 
 /**
@@ -74,6 +76,7 @@ class CryptoManager
                 $publicKey = $decodedKey;
             }
 
+            /** @var PublicKey $key */
             $key = PublicKeyLoader::load($publicKey);
             return $key->encrypt($data);
         } catch (Exception $e) {
@@ -101,6 +104,7 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
+            /** @var PrivateKey $key */
             $key = PublicKeyLoader::load($privateKey);
 
             try {
@@ -180,10 +184,10 @@ class CryptoManager
      * Load RSA key (public or private)
      *
      * @param string $key Key data (base64 encoded or plain PEM)
-     * @return mixed RSA key object
+     * @return PublicKey|PrivateKey RSA key object
      * @throws Exception
      */
-    public static function loadRSAKey(string $key)
+    public static function loadRSAKey(string $key): PublicKey|PrivateKey
     {
         try {
             // Try to decode if base64
@@ -218,6 +222,7 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
+            /** @var PrivateKey $key */
             $key = PublicKeyLoader::load($privateKey);
 
             // Use appropriate hash based on version
