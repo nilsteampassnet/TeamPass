@@ -22,7 +22,7 @@ declare(strict_types=1);
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      laps.php
+ * @file      lapr.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -66,7 +66,7 @@ $checkUserAccess = new PerformChecks(
 
 // Check user access and printing enabled
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('laps') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('lapr') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include $SETTINGS['cpassman_dir'] . '/error.php';
@@ -89,7 +89,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
-                <h1 class="m-0 text-dark"><i class="fas fa-shield-heart mr-2"></i><?php echo $lang->get('laps'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-shield-heart mr-2"></i><?php echo $lang->get('lapr'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
