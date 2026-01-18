@@ -192,6 +192,13 @@ class CryptoManager
             if (class_exists('phpseclib3\\Crypt\\AES')) {
                 $cipher = new AES($mode);
                 $cipher->setPassword($password);
+
+                // phpseclib v1 used a zero IV when not explicitly set
+                // Reproduce this behavior for backward compatibility
+                if ($mode === 'cbc') {
+                    $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
+                }
+
                 return $cipher->encrypt($data);
             }
 
@@ -241,6 +248,13 @@ class CryptoManager
             if (class_exists('phpseclib3\\Crypt\\AES')) {
                 $cipher = new AES($mode);
                 $cipher->setPassword($password);
+
+                // phpseclib v1 used a zero IV when not explicitly set
+                // Reproduce this behavior for backward compatibility
+                if ($mode === 'cbc') {
+                    $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
+                }
+
                 return $cipher->decrypt($data);
             }
 
