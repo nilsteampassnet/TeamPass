@@ -44,16 +44,33 @@ class CryptoManager
     public static function generateRSAKeyPair(int $bits = 4096): array
     {
         try {
-            // Generate the private key
-            $private = RSA::createKey($bits);
-            $public = $private->getPublicKey();
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\RSA')) {
+                $private = RSA::createKey($bits);
+                $public = $private->getPublicKey();
 
-            return [
-                'privatekey' => $private->toString('PKCS1'),
-                'publickey' => $public->toString('PKCS1'),
-                'private_key_object' => $private,
-                'public_key_object' => $public,
-            ];
+                return [
+                    'privatekey' => $private->toString('PKCS1'),
+                    'publickey' => $public->toString('PKCS1'),
+                    'private_key_object' => $private,
+                    'public_key_object' => $public,
+                ];
+            }
+
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $keys = $rsa->createKey($bits);
+
+                return [
+                    'privatekey' => $keys['privatekey'],
+                    'publickey' => $keys['publickey'],
+                    'private_key_object' => null,
+                    'public_key_object' => null,
+                ];
+            }
+
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to generate RSA key pair: ' . $e->getMessage());
         }
@@ -76,14 +93,26 @@ class CryptoManager
                 $publicKey = $decodedKey;
             }
 
-            $key = PublicKeyLoader::load($publicKey);
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\PublicKeyLoader')) {
+                $key = PublicKeyLoader::load($publicKey);
 
-            // Ensure we have a PublicKey instance for encryption
-            if (!$key instanceof PublicKey) {
-                throw new Exception('Loaded key is not a valid RSA Public Key');
+                // Ensure we have a PublicKey instance for encryption
+                if (!$key instanceof PublicKey) {
+                    throw new Exception('Loaded key is not a valid RSA Public Key');
+                }
+
+                return $key->encrypt($data);
             }
 
-            return $key->encrypt($data);
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $rsa->loadKey($publicKey);
+                return $rsa->encrypt($data);
+            }
+
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to encrypt with RSA: ' . $e->getMessage());
         }
@@ -109,25 +138,37 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
-            $key = PublicKeyLoader::load($privateKey);
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\PublicKeyLoader')) {
+                $key = PublicKeyLoader::load($privateKey);
 
-            // Ensure we have a PrivateKey instance for decryption
-            if (!$key instanceof PrivateKey) {
-                throw new Exception('Loaded key is not a valid RSA Private Key');
-            }
-
-            try {
-                // Try with SHA-256 (v3 default)
-                return $key->decrypt($data);
-            } catch (Exception $e) {
-                if (!$tryLegacy) {
-                    throw $e;
+                // Ensure we have a PrivateKey instance for decryption
+                if (!$key instanceof PrivateKey) {
+                    throw new Exception('Loaded key is not a valid RSA Private Key');
                 }
 
-                // Fallback to SHA-1 (v1 default) for backward compatibility
-                $key = $key->withHash('sha1')->withMGFHash('sha1');
-                return $key->decrypt($data);
+                try {
+                    // Try with SHA-256 (v3 default)
+                    return $key->decrypt($data);
+                } catch (Exception $e) {
+                    if (!$tryLegacy) {
+                        throw $e;
+                    }
+
+                    // Fallback to SHA-1 (v1 default) for backward compatibility
+                    $key = $key->withHash('sha1')->withMGFHash('sha1');
+                    return $key->decrypt($data);
+                }
             }
+
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $rsa->loadKey($privateKey);
+                return $rsa->decrypt($data);
+            }
+
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to decrypt with RSA: ' . $e->getMessage());
         }
@@ -135,6 +176,8 @@ class CryptoManager
 
     /**
      * Encrypt data using AES
+     *
+     * Maintains backward compatibility with phpseclib v1 encrypted data
      *
      * @param string $data Data to encrypt
      * @param string $password Password/key for encryption
@@ -145,9 +188,36 @@ class CryptoManager
     public static function aesEncrypt(string $data, string $password, string $mode = 'cbc'): string
     {
         try {
-            $cipher = new AES($mode);
-            $cipher->setPassword($password);
-            return $cipher->encrypt($data);
+            // Try phpseclib v3 first
+            if (class_exists('phpseclib3\\Crypt\\AES')) {
+                $cipher = new AES($mode);
+                $cipher->setPassword($password);
+                return $cipher->encrypt($data);
+            }
+
+            // Fallback to phpseclib v1 for backward compatibility
+            if (class_exists('Crypt_AES')) {
+                $cipher = new \Crypt_AES();
+
+                // Set mode if not CBC (CBC is default)
+                if ($mode !== 'cbc') {
+                    $modeConstants = [
+                        'ctr' => CRYPT_MODE_CTR,
+                        'ecb' => CRYPT_MODE_ECB,
+                        'cbc' => CRYPT_MODE_CBC,
+                        'cfb' => CRYPT_MODE_CFB,
+                        'ofb' => CRYPT_MODE_OFB,
+                    ];
+                    if (isset($modeConstants[$mode])) {
+                        $cipher->setMode($modeConstants[$mode]);
+                    }
+                }
+
+                $cipher->setPassword($password);
+                return $cipher->encrypt($data);
+            }
+
+            throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to encrypt with AES: ' . $e->getMessage());
         }
@@ -155,6 +225,8 @@ class CryptoManager
 
     /**
      * Decrypt data using AES
+     *
+     * Maintains backward compatibility with phpseclib v1 encrypted data
      *
      * @param string $data Encrypted data
      * @param string $password Password/key for decryption
@@ -165,9 +237,36 @@ class CryptoManager
     public static function aesDecrypt(string $data, string $password, string $mode = 'cbc'): string
     {
         try {
-            $cipher = new AES($mode);
-            $cipher->setPassword($password);
-            return $cipher->decrypt($data);
+            // Try phpseclib v3 first
+            if (class_exists('phpseclib3\\Crypt\\AES')) {
+                $cipher = new AES($mode);
+                $cipher->setPassword($password);
+                return $cipher->decrypt($data);
+            }
+
+            // Fallback to phpseclib v1 for backward compatibility
+            if (class_exists('Crypt_AES')) {
+                $cipher = new \Crypt_AES();
+
+                // Set mode if not CBC (CBC is default)
+                if ($mode !== 'cbc') {
+                    $modeConstants = [
+                        'ctr' => CRYPT_MODE_CTR,
+                        'ecb' => CRYPT_MODE_ECB,
+                        'cbc' => CRYPT_MODE_CBC,
+                        'cfb' => CRYPT_MODE_CFB,
+                        'ofb' => CRYPT_MODE_OFB,
+                    ];
+                    if (isset($modeConstants[$mode])) {
+                        $cipher->setMode($modeConstants[$mode]);
+                    }
+                }
+
+                $cipher->setPassword($password);
+                return $cipher->decrypt($data);
+            }
+
+            throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to decrypt with AES: ' . $e->getMessage());
         }
@@ -177,13 +276,39 @@ class CryptoManager
      * Create AES cipher instance with custom options
      *
      * @param string $mode AES mode (cbc, ctr, ecb, cfb, ofb, gcm)
-     * @return AES AES cipher instance
+     * @return AES|\Crypt_AES AES cipher instance
      * @throws Exception
      */
-    public static function createAESCipher(string $mode = 'cbc'): AES
+    public static function createAESCipher(string $mode = 'cbc'): object
     {
         try {
-            return new AES($mode);
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\AES')) {
+                return new AES($mode);
+            }
+
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_AES')) {
+                $cipher = new \Crypt_AES();
+
+                // Set mode if not CBC (CBC is default)
+                if ($mode !== 'cbc') {
+                    $modeConstants = [
+                        'ctr' => CRYPT_MODE_CTR,
+                        'ecb' => CRYPT_MODE_ECB,
+                        'cbc' => CRYPT_MODE_CBC,
+                        'cfb' => CRYPT_MODE_CFB,
+                        'ofb' => CRYPT_MODE_OFB,
+                    ];
+                    if (isset($modeConstants[$mode])) {
+                        $cipher->setMode($modeConstants[$mode]);
+                    }
+                }
+
+                return $cipher;
+            }
+
+            throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to create AES cipher: ' . $e->getMessage());
         }
@@ -193,10 +318,10 @@ class CryptoManager
      * Load RSA key (public or private)
      *
      * @param string $key Key data (base64 encoded or plain PEM)
-     * @return PublicKey|PrivateKey RSA key object
+     * @return PublicKey|PrivateKey|\Crypt_RSA RSA key object
      * @throws Exception
      */
-    public static function loadRSAKey(string $key): PublicKey|PrivateKey
+    public static function loadRSAKey(string $key): object
     {
         try {
             // Try to decode if base64
@@ -205,7 +330,19 @@ class CryptoManager
                 $key = $decodedKey;
             }
 
-            return PublicKeyLoader::load($key);
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\PublicKeyLoader')) {
+                return PublicKeyLoader::load($key);
+            }
+
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $rsa->loadKey($key);
+                return $rsa;
+            }
+
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to load RSA key: ' . $e->getMessage());
         }
@@ -231,21 +368,33 @@ class CryptoManager
                 $privateKey = $decodedKey;
             }
 
-            $key = PublicKeyLoader::load($privateKey);
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\PublicKeyLoader')) {
+                $key = PublicKeyLoader::load($privateKey);
 
-            // Ensure we have a PrivateKey instance for decryption
-            if (!$key instanceof PrivateKey) {
-                throw new Exception('Loaded key is not a valid RSA Private Key');
+                // Ensure we have a PrivateKey instance for decryption
+                if (!$key instanceof PrivateKey) {
+                    throw new Exception('Loaded key is not a valid RSA Private Key');
+                }
+
+                // Use appropriate hash based on version
+                if ($version === 1) {
+                    // phpseclib v1 used SHA-1
+                    $key = $key->withHash('sha1')->withMGFHash('sha1');
+                }
+                // Version 3 uses default SHA-256 (no modification needed)
+
+                return $key->decrypt($data);
             }
 
-            // Use appropriate hash based on version
-            if ($version === 1) {
-                // phpseclib v1 used SHA-1
-                $key = $key->withHash('sha1')->withMGFHash('sha1');
+            // Fallback to phpseclib v1
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $rsa->loadKey($privateKey);
+                return $rsa->decrypt($data);
             }
-            // Version 3 uses default SHA-256 (no modification needed)
 
-            return $key->decrypt($data);
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
         } catch (Exception $e) {
             throw new Exception('Failed to decrypt with RSA (version ' . $version . '): ' . $e->getMessage());
         }

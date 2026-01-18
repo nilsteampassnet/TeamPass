@@ -2241,7 +2241,12 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
             );
             return base64_encode((string) $decrypted);
         } catch (Exception $e) {
-            return $e;
+            // Log error for debugging
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - decryptPrivateKey failed: ' . $e->getMessage());
+            }
+            // Return empty string on decryption failure
+            return '';
         }
     }
     return '';
