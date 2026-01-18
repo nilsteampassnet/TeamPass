@@ -228,7 +228,9 @@ With version 1.2.0 you can now use this library to protect your API with Azure A
 ```php
 // Assuming you have already initialized the $provider
 
-// Obtain the accessToken - in this case, we are getting it from Authorization header
+// Obtain the accessToken - in this case, we are getting it from Authorization header.
+// If you're instead using a persisted access token you got from $provider->getAccessToken,
+// you'll have to feed its id token to validateAccessToken like so: $provider->validateAccessToken($accessTokenn->getIdToken());
 $headers = getallheaders();
 // Assuming you got the value of Authorization header as "Bearer [the_access_token]" we parse it
 $authorization = explode(' ', $headers['Authorization']);

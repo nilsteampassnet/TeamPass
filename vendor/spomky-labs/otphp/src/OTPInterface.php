@@ -24,15 +24,34 @@ interface OTPInterface
 
     /**
      * @param non-empty-string $secret
+     *
+     * @deprecated Deprecated since v11.4, use {@see self::withSecret()} instead
      */
     public function setSecret(string $secret): void;
 
+    /**
+     * @param non-empty-string $secret
+     */
+    public function withSecret(string $secret): self;
+
+    /**
+     * @deprecated Deprecated since v11.4, use {@see self::withDigits()} instead
+     */
     public function setDigits(int $digits): void;
+
+    public function withDigits(int $digits): self;
+
+    /**
+     * @param non-empty-string $digest
+     *
+     * @deprecated Deprecated since v11.4, use {@see self::withDigest()} instead
+     */
+    public function setDigest(string $digest): void;
 
     /**
      * @param non-empty-string $digest
      */
-    public function setDigest(string $digest): void;
+    public function withDigest(string $digest): self;
 
     /**
      * Generate the OTP at the specified input.
@@ -60,8 +79,15 @@ interface OTPInterface
 
     /**
      * @param non-empty-string $label The label of the OTP
+     *
+     * @deprecated Deprecated since v11.4, use {@see self::withLabel()} instead
      */
     public function setLabel(string $label): void;
+
+    /**
+     * @param non-empty-string $label The label of the OTP
+     */
+    public function withLabel(string $label): self;
 
     /**
      * @return non-empty-string|null The label of the OTP
@@ -75,15 +101,27 @@ interface OTPInterface
 
     /**
      * @param non-empty-string $issuer
+     *
+     * @deprecated Deprecated since v11.4, use {@see self::withIssuer()} instead
      */
     public function setIssuer(string $issuer): void;
+
+    /**
+     * @param non-empty-string $issuer
+     */
+    public function withIssuer(string $issuer): self;
 
     /**
      * @return bool If true, the issuer will be added as a parameter in the provisioning URI
      */
     public function isIssuerIncludedAsParameter(): bool;
 
+    /**
+     * @deprecated Deprecated since v11.4, use {@see self::withIssuerIncludedAsParameter()} instead
+     */
     public function setIssuerIncludedAsParameter(bool $issuer_included_as_parameter): void;
+
+    public function withIssuerIncludedAsParameter(bool $issuer_included_as_parameter): self;
 
     /**
      * @return positive-int Number of digits in the OTP
@@ -112,8 +150,15 @@ interface OTPInterface
 
     /**
      * @param non-empty-string $parameter
+     *
+     * @deprecated Deprecated since v11.4, use {@see self::withParameter()} instead
      */
     public function setParameter(string $parameter, mixed $value): void;
+
+    /**
+     * @param non-empty-string $parameter
+     */
+    public function withParameter(string $parameter, mixed $value): self;
 
     /**
      * Get the provisioning URI.

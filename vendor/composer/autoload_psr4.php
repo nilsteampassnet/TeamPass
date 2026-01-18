@@ -8,6 +8,7 @@ $baseDir = dirname($vendorDir);
 return array(
     'voku\\helper\\' => array($vendorDir . '/voku/anti-xss/src/voku/helper'),
     'voku\\' => array($vendorDir . '/voku/portable-ascii/src/voku', $vendorDir . '/voku/portable-utf8/src/voku'),
+    'phpseclib3\\' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'ZxcvbnPhp\\' => array($vendorDir . '/bjeavons/zxcvbn-php/src'),
     'TiBeN\\' => array($vendorDir . '/tiben/crontab-manager/src'),
     'TheNetworg\\OAuth2\\Client\\' => array($vendorDir . '/thenetworg/oauth2-azure/src'),
@@ -22,6 +23,7 @@ return array(
     'TeampassClasses\\FolderServices\\' => array($vendorDir . '/teampassclasses/folderservices/src'),
     'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'TeampassClasses\\EmailService\\' => array($vendorDir . '/teampassclasses/emailservice/src'),
+    'TeampassClasses\\CryptoManager\\' => array($vendorDir . '/teampassclasses/cryptomanager/src'),
     'TeampassClasses\\ConfigManager\\' => array($vendorDir . '/teampassclasses/configmanager/src'),
     'Symfony\\Polyfill\\Php84\\' => array($vendorDir . '/symfony/polyfill-php84'),
     'Symfony\\Polyfill\\Php83\\' => array($vendorDir . '/symfony/polyfill-php83'),

@@ -32,9 +32,9 @@ Or
 
 ## Contributing
 
-Requests for new features, bug fixed and all other ideas to make this project useful are welcome.
+Requests for new features, bug fixes and all other ideas to make this project useful are welcome.
 
-Please report all issues in [the repository bug tracker](hhttps://github.com/Spomky-Labs/otphp/issues).
+Please report all issues in [the repository bug tracker](https://github.com/Spomky-Labs/otphp/issues).
 
 Also make sure to [follow these best practices](.github/CONTRIBUTING.md).
 
