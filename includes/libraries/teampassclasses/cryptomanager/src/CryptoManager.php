@@ -199,6 +199,51 @@ class CryptoManager
     }
 
     /**
+     * Decrypt data using RSA private key with explicit version
+     *
+     * Uses the specified phpseclib version for decryption
+     *
+     * @param string $data Encrypted data (raw binary or base64)
+     * @param string $privateKey Private key in PKCS1 format (base64 encoded or plain)
+     * @param int $version Encryption version (1=v1/SHA-1, 3=v3/SHA-256)
+     * @return string Decrypted data
+     * @throws Exception
+     */
+    public static function rsaDecryptWithVersion(string $data, string $privateKey, int $version): string
+    {
+        try {
+            // Try to decode if base64
+            $decodedKey = base64_decode($privateKey, true);
+            if ($decodedKey !== false && self::isPEM($decodedKey)) {
+                $privateKey = $decodedKey;
+            }
+
+            $key = PublicKeyLoader::load($privateKey);
+
+            // Use appropriate hash based on version
+            if ($version === 1) {
+                // phpseclib v1 used SHA-1
+                $key = $key->withHash('sha1')->withMGFHash('sha1');
+            }
+            // Version 3 uses default SHA-256 (no modification needed)
+
+            return $key->decrypt($data);
+        } catch (Exception $e) {
+            throw new Exception('Failed to decrypt with RSA (version ' . $version . '): ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the current encryption version for new data
+     *
+     * @return int Current version (always 3 for phpseclib v3)
+     */
+    public static function getCurrentVersion(): int
+    {
+        return 3;
+    }
+
+    /**
      * Check if a string is PEM formatted
      *
      * @param string $data Data to check
