@@ -1,0 +1,13 @@
+# PHPStan baseline - Suppress known false positives
+# These warnings are for phpseclib v1 fallback code that works at runtime
+# They will disappear once phpseclib v3 is fully installed
+
+parameters:
+    ignoreErrors:
+        # phpseclib v1 classes - loaded dynamically, not via composer autoload
+        - '#Instantiated class Crypt_RSA not found#'
+        - '#Instantiated class Crypt_AES not found#'
+        - '#Class Crypt_RSA not found#'
+        - '#Class Crypt_AES not found#'
+        - '#Undefined type.*Crypt_RSA#'
+        - '#Undefined type.*Crypt_AES#'
