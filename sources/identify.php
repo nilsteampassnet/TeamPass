@@ -1203,9 +1203,13 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             }
 
             $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
-            $cipher = new Crypt_AES();
-            $cipher->setPassword($derivedKey);
-            $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+            // Encrypt private key backup using CryptoManager (phpseclib v3)
+            $privateKeyBackup = base64_encode(
+                \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey
+                )
+            );
 
             // Generate integrity hash
             $serverSecret = getServerSecret();
