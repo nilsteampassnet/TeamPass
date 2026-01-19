@@ -4451,9 +4451,9 @@ function loadClasses(string $className = ''): void
     require_once __DIR__. '/../includes/config/settings.php';
     require_once __DIR__.'/../vendor/autoload.php';
 
-    // Add phpseclib v1 to include path for backward compatibility
+    // Load phpseclib v1 autoloader for backward compatibility
     // This allows CryptoManager to fall back to v1 API for decrypting old data
-    set_include_path(get_include_path() . PATH_SEPARATOR . __DIR__ . '/../includes/libraries/phpseclibV1');
+    require_once __DIR__ . '/../includes/libraries/phpseclibV1_autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
