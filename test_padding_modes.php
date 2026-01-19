@@ -85,11 +85,14 @@ foreach ($strategies as $name => $strategy) {
     try {
         $decrypted = $strategy($decoded, $password);
 
-        echo "✓ Decryption succeeded\n";
-        echo "Decrypted length: " . strlen($decrypted) . " bytes\n";
+        if ($decrypted === false) {
+            echo "❌ Decryption returned false\n";
+        } else {
+            echo "✓ Decryption succeeded\n";
+            echo "Decrypted length: " . strlen($decrypted) . " bytes\n";
 
-        // Check if it looks like a PEM key
-        if (strpos($decrypted, '-----BEGIN') !== false) {
+            // Check if it looks like a PEM key
+            if (strpos($decrypted, '-----BEGIN') !== false) {
             echo "✅✅✅ SUCCESS! VALID PEM KEY! ✅✅✅\n";
             echo "Key type: ";
             if (strpos($decrypted, 'RSA PRIVATE KEY') !== false) {
@@ -104,9 +107,10 @@ foreach ($strategies as $name => $strategy) {
                 echo "  " . $lines[$i] . "\n";
             }
 
-        } else {
-            echo "⚠️ Decrypted but not PEM\n";
-            echo "First 50 chars: " . substr($decrypted, 0, 50) . "\n";
+            } else {
+                echo "⚠️ Decrypted but not PEM\n";
+                echo "First 50 chars: " . substr($decrypted, 0, 50) . "\n";
+            }
         }
 
     } catch (Exception $e) {
