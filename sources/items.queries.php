@@ -4451,13 +4451,15 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Get item details and its sharekey
+        // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, s.share_key AS share_key, i.id AS id,
-                    i.label AS label, i.id_tree AS id_tree
+            'SELECT i.pw AS pw, s.share_key AS share_key, s.increment_id AS sharekey_id,
+                    i.id AS id, i.label AS label, i.id_tree AS id_tree,
+                    u.public_key AS user_public_key
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-            WHERE user_id = %i AND (i.item_key = %s OR i.id = %i)',
+            INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
+            WHERE s.user_id = %i AND (i.item_key = %s OR i.id = %i)',
             $session->get('user-id'),
             $inputData['itemKey'] ?? '',
             $inputData['itemId'] ?? 0
@@ -4518,13 +4520,18 @@ switch ($inputData['type']) {
         );
 
         // Uncrypt PW if sharekey is available (empty password otherwise)
+        // Uses automatic v1→v3 migration when hybrid mode is enabled
         $pw = '';
         if (!empty($dataItem['share_key'])) {
             $pw = doDataDecryption(
                 $dataItem['pw'],
-                decryptUserObjectKey(
+                decryptUserObjectKeyWithMigration(
                     $dataItem['share_key'],
-                    $session->get('user-private_key')
+                    $session->get('user-private_key'),
+                    $dataItem['user_public_key'],
+                    (int) $dataItem['sharekey_id'],
+                    'sharekeys_items',
+                    $SETTINGS
                 )
             );
         }

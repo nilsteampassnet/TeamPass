@@ -2682,6 +2682,167 @@ function decryptUserObjectKey(string $key, string $privateKey): string
 }
 
 /**
+ * Decrypt user object key with version detection and automatic migration to v3
+ *
+ * This function decrypts a sharekey and automatically re-encrypts it with phpseclib v3
+ * if it was encrypted with v1, when hybrid migration mode is enabled.
+ *
+ * @param string $encryptedKey Base64 encoded encrypted sharekey
+ * @param string $privateKey User's private key (PEM format)
+ * @param string $publicKey User's public key (PEM format) - required for migration
+ * @param int $sharekeyId Increment ID from sharekeys_* table - required for migration
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items') - required for migration
+ * @param array $SETTINGS Application settings array
+ * @return string Base64 encoded decrypted sharekey
+ * @throws Exception
+ */
+function decryptUserObjectKeyWithMigration(
+    string $encryptedKey,
+    string $privateKey,
+    string $publicKey,
+    int $sharekeyId,
+    string $sharekeyTable,
+    array $SETTINGS
+): string {
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $privateKey = $antiXss->xss_clean($privateKey);
+
+    try {
+        $decodedKey = base64_decode($encryptedKey, true);
+        if ($decodedKey === false) {
+            throw new InvalidArgumentException("Error while decoding key.");
+        }
+
+        // Decrypt with version detection
+        $result = \TeampassClasses\CryptoManager\CryptoManager::rsaDecryptWithVersionDetection(
+            $decodedKey,
+            $privateKey
+        );
+
+        $decryptedKey = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        // Check if migration is needed (v1 was used) and hybrid mode is enabled
+        $migrationMode = $SETTINGS['phpseclib_migration_mode'] ?? 'progressive';
+
+        if ($versionUsed === 1 && $migrationMode === 'hybrid') {
+            // Trigger automatic migration to v3
+            try {
+                migrateSharekeyToV3(
+                    $sharekeyId,
+                    $sharekeyTable,
+                    $decryptedKey,
+                    $publicKey
+                );
+
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log("TEAMPASS Migration - Sharekey {$sharekeyId} in {$sharekeyTable} migrated from v1 to v3");
+                }
+            } catch (Exception $migrationError) {
+                // Log migration error but don't fail the decryption
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log("TEAMPASS Migration Error - {$sharekeyTable}:{$sharekeyId} - " . $migrationError->getMessage());
+                }
+            }
+        }
+
+        if (!empty($decryptedKey)) {
+            return base64_encode($decryptedKey);
+        } else {
+            return '';
+        }
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - decryptWithMigration - ' . $e->getMessage());
+        }
+        return 'Exception: could not decrypt object';
+    }
+}
+
+/**
+ * Migrate a sharekey from phpseclib v1 to v3 encryption
+ *
+ * Re-encrypts the sharekey with phpseclib v3 (SHA-256) and updates the database
+ *
+ * @param int $sharekeyId Increment ID from sharekeys_* table
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @param string $decryptedKey Decrypted sharekey (raw binary)
+ * @param string $publicKey User's public key (PEM format)
+ * @return void
+ * @throws Exception
+ */
+function migrateSharekeyToV3(
+    int $sharekeyId,
+    string $sharekeyTable,
+    string $decryptedKey,
+    string $publicKey
+): void {
+    // Re-encrypt with v3 (uses SHA-256 by default)
+    $reencryptedKey = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+        $decryptedKey,
+        $publicKey
+    );
+
+    // Update database with new v3 encrypted key
+    DB::update(
+        prefixTable($sharekeyTable),
+        [
+            'share_key' => base64_encode($reencryptedKey),
+            'encryption_version' => 3,
+        ],
+        'increment_id = %i',
+        $sharekeyId
+    );
+
+    // Update migration statistics
+    updateMigrationStatistics($sharekeyTable);
+}
+
+/**
+ * Update migration statistics for a sharekeys table
+ *
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @return void
+ */
+function updateMigrationStatistics(string $sharekeyTable): void
+{
+    try {
+        // Calculate current statistics
+        $stats = DB::queryFirstRow(
+            'SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN encryption_version = 1 THEN 1 ELSE 0 END) as v1,
+                SUM(CASE WHEN encryption_version = 3 THEN 1 ELSE 0 END) as v3
+             FROM ' . prefixTable($sharekeyTable)
+        );
+
+        // Update statistics table
+        DB::query(
+            'INSERT INTO ' . prefixTable('encryption_migration_stats') . '
+             (table_name, total_records, v1_records, v3_records)
+             VALUES (%s, %i, %i, %i)
+             ON DUPLICATE KEY UPDATE
+                total_records = %i,
+                v1_records = %i,
+                v3_records = %i',
+            $sharekeyTable,
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3'],
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3']
+        );
+    } catch (Exception $e) {
+        // Statistics update failed, but don't throw - this is not critical
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Statistics Error - ' . $e->getMessage());
+        }
+    }
+}
+
+/**
  * Encrypts a file.
  *
  * @param string $fileInName File name
