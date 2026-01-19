@@ -472,6 +472,73 @@ class CryptoManager
     }
 
     /**
+     * Decrypt data using RSA private key with version detection
+     *
+     * Returns both the decrypted data and the version that was used to decrypt
+     *
+     * @param string $data Encrypted data (raw binary or base64)
+     * @param string $privateKey Private key in PKCS1 format (base64 encoded or plain)
+     * @return array Array with keys: 'data' (decrypted string), 'version_used' (int: 1 or 3)
+     * @throws Exception
+     */
+    public static function rsaDecryptWithVersionDetection(string $data, string $privateKey): array
+    {
+        try {
+            // Try to decode if base64
+            $decodedKey = base64_decode($privateKey, true);
+            if ($decodedKey !== false && self::isPEM($decodedKey)) {
+                $privateKey = $decodedKey;
+            }
+
+            // Try phpseclib v3
+            if (class_exists('phpseclib3\\Crypt\\PublicKeyLoader')) {
+                $key = PublicKeyLoader::load($privateKey);
+
+                // Ensure we have a PrivateKey instance for decryption
+                if (!$key instanceof PrivateKey) {
+                    throw new Exception('Loaded key is not a valid RSA Private Key');
+                }
+
+                try {
+                    // Try with SHA-256 (v3 default)
+                    $decrypted = $key->decrypt($data);
+                    return [
+                        'data' => $decrypted,
+                        'version_used' => 3,
+                    ];
+                } catch (Exception $e) {
+                    // Fallback to SHA-1 (v1 default) for backward compatibility
+                    try {
+                        $key = $key->withHash('sha1')->withMGFHash('sha1');
+                        $decrypted = $key->decrypt($data);
+                        return [
+                            'data' => $decrypted,
+                            'version_used' => 1,  // Used v1 compatibility mode
+                        ];
+                    } catch (Exception $v1Exception) {
+                        throw new Exception('Failed to decrypt with both v3 and v1: ' . $v1Exception->getMessage());
+                    }
+                }
+            }
+
+            // Fallback to phpseclib v1 library
+            if (class_exists('Crypt_RSA')) {
+                $rsa = new \Crypt_RSA();
+                $rsa->loadKey($privateKey);
+                $decrypted = $rsa->decrypt($data);
+                return [
+                    'data' => $decrypted,
+                    'version_used' => 1,
+                ];
+            }
+
+            throw new Exception('No RSA implementation available (phpseclib v1 or v3 required)');
+        } catch (Exception $e) {
+            throw new Exception('Failed to decrypt with RSA: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Check if a string is PEM formatted
      *
      * @param string $data Data to check

@@ -4454,11 +4454,9 @@ switch ($inputData['type']) {
         // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
             'SELECT i.pw AS pw, s.share_key AS share_key, s.increment_id AS sharekey_id,
-                    i.id AS id, i.label AS label, i.id_tree AS id_tree,
-                    u.public_key AS user_public_key
+                    i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-            INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
             WHERE s.user_id = %i AND (i.item_key = %s OR i.id = %i)',
             $session->get('user-id'),
             $inputData['itemKey'] ?? '',
@@ -4528,7 +4526,7 @@ switch ($inputData['type']) {
                 decryptUserObjectKeyWithMigration(
                     $dataItem['share_key'],
                     $session->get('user-private_key'),
-                    $dataItem['user_public_key'],
+                    $session->get('user-public_key'),
                     (int) $dataItem['sharekey_id'],
                     'sharekeys_items',
                     $SETTINGS
