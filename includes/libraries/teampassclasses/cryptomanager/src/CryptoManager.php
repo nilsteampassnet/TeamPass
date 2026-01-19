@@ -247,9 +247,9 @@ class CryptoManager
      */
     public static function aesDecrypt(string $data, string $password, string $mode = 'cbc'): string
     {
-        try {
-            // Try phpseclib v3 first
-            if (class_exists('phpseclib3\\Crypt\\AES')) {
+        // Try phpseclib v3 first (with backward compatibility settings)
+        if (class_exists('phpseclib3\\Crypt\\AES')) {
+            try {
                 $cipher = new AES($mode);
 
                 // phpseclib v1 used a zero IV when not explicitly set
@@ -263,11 +263,50 @@ class CryptoManager
                 // v1 defaults: method='pbkdf2', hash='sha1', salt='phpseclib/salt', iterations=1000
                 $cipher->setPassword($password, 'pbkdf2', 'sha1', 'phpseclib/salt', 1000);
 
-                return $cipher->decrypt($data);
-            }
+                $decrypted = $cipher->decrypt($data);
 
-            // Fallback to phpseclib v1 for backward compatibility
-            if (class_exists('Crypt_AES')) {
+                // Success with v3
+                return $decrypted;
+            } catch (Exception $e) {
+                // v3 failed, try v1 fallback if available
+                // This handles data encrypted with v1 that v3 can't decrypt
+                if (class_exists('Crypt_AES')) {
+                    try {
+                        $cipher = new \Crypt_AES();
+
+                        // Set mode if not CBC (CBC is default)
+                        if ($mode !== 'cbc') {
+                            $modeConstants = [
+                                'ctr' => CRYPT_MODE_CTR,
+                                'ecb' => CRYPT_MODE_ECB,
+                                'cbc' => CRYPT_MODE_CBC,
+                                'cfb' => CRYPT_MODE_CFB,
+                                'ofb' => CRYPT_MODE_OFB,
+                            ];
+                            if (isset($modeConstants[$mode])) {
+                                $cipher->setMode($modeConstants[$mode]);
+                            }
+                        }
+
+                        $cipher->setPassword($password);
+                        $decrypted = $cipher->decrypt($data);
+
+                        // Success with v1 fallback
+                        return $decrypted;
+                    } catch (Exception $v1Exception) {
+                        // Both v3 and v1 failed
+                        throw new Exception('Failed to decrypt with AES (v3: ' . $e->getMessage() . ', v1: ' . $v1Exception->getMessage() . ')');
+                    }
+                }
+
+                // v3 failed and v1 not available
+                throw new Exception('Failed to decrypt with AES: ' . $e->getMessage());
+            }
+        }
+
+        // Fallback to phpseclib v1 if v3 not available
+        if (class_exists('Crypt_AES')) {
+            try {
                 $cipher = new \Crypt_AES();
 
                 // Set mode if not CBC (CBC is default)
@@ -286,12 +325,12 @@ class CryptoManager
 
                 $cipher->setPassword($password);
                 return $cipher->decrypt($data);
+            } catch (Exception $e) {
+                throw new Exception('Failed to decrypt with AES: ' . $e->getMessage());
             }
-
-            throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
-        } catch (Exception $e) {
-            throw new Exception('Failed to decrypt with AES: ' . $e->getMessage());
         }
+
+        throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
     }
 
     /**
