@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/includes/config/settings.php';
 require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/sources/main.functions.php';
 
 use TeampassClasses\CryptoManager\CryptoManager;
 use TeampassClasses\PasswordManager\PasswordManager;
@@ -20,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($userId && $password) {
         DB::$host = DB_HOST;
         DB::$user = DB_USER;
-        DB::$password = defuse_return_decrypted(DB_PASSWD);
+        DB::$password = defuseReturnDecrypted(DB_PASSWD);
         DB::$dbName = DB_NAME;
         DB::$port = DB_PORT;
         DB::$encoding = DB_ENCODING;
