@@ -31,7 +31,8 @@ spl_autoload_register(function ($class) {
     $file = str_replace('_', '/', $class) . '.php';
 
     // Try to load from phpseclibV1 directory
-    $phpseclibV1Path = __DIR__ . '/../phpseclibV1/' . $file;
+    // __DIR__ = includes/libraries/, so phpseclibV1 is in the same directory
+    $phpseclibV1Path = __DIR__ . '/phpseclibV1/' . $file;
 
     if (file_exists($phpseclibV1Path)) {
         require_once $phpseclibV1Path;
