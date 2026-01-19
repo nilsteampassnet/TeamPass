@@ -41,7 +41,9 @@
     },
     "autoload": {
         "psr-4": {
-            "Encryption\\Crypt\\": "install/libs/"
+            "Encryption\\Crypt\\": "install/libs/",
+            "phpseclib3\\": "vendor/phpseclib/phpseclib/phpseclib/",
+            "TeampassClasses\\CryptoManager\\": "includes/libraries/teampassclasses/cryptomanager/src/"
         }
     },
     "repositories": [
