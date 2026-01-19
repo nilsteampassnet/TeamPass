@@ -26,43 +26,46 @@ echo "Remainder / 16: " . (strlen($encrypted) % 16) . "\n\n";
 
 $password = 'D8hDEr)4T2+}';
 
-// Derive key manually
+// Derive keys manually - TEST BOTH 16 AND 32 BYTES
+$key16 = hash_pbkdf2('sha1', $password, 'phpseclib/salt', 1000, 16, true);
 $key32 = hash_pbkdf2('sha1', $password, 'phpseclib/salt', 1000, 32, true);
-echo "Derived key (32 bytes): " . bin2hex($key32) . "\n\n";
+
+echo "Derived key 16 bytes (AES-128): " . bin2hex($key16) . "\n";
+echo "Derived key 32 bytes (AES-256): " . bin2hex($key32) . "\n\n";
 
 $tests = [
-    'CBC + default padding + setKey' => function($enc, $key) {
+    'CBC + 16-byte key' => function($enc) use ($key16) {
         $cipher = new \phpseclib3\Crypt\AES('cbc');
-        $cipher->setKey($key);
+        $cipher->setKey($key16);
         $cipher->setIV(str_repeat("\0", 16));
         return $cipher->decrypt($enc);
     },
 
-    'CBC + disablePadding + setKey' => function($enc, $key) {
+    'CBC + 32-byte key' => function($enc) use ($key32) {
+        $cipher = new \phpseclib3\Crypt\AES('cbc');
+        $cipher->setKey($key32);
+        $cipher->setIV(str_repeat("\0", 16));
+        return $cipher->decrypt($enc);
+    },
+
+    'CBC + disablePadding + 16-byte key' => function($enc) use ($key16) {
         $cipher = new \phpseclib3\Crypt\AES('cbc');
         $cipher->disablePadding();
-        $cipher->setKey($key);
+        $cipher->setKey($key16);
         $cipher->setIV(str_repeat("\0", 16));
         return $cipher->decrypt($enc);
     },
 
-    'CTR + setKey' => function($enc, $key) {
+    'CTR + 16-byte key' => function($enc) use ($key16) {
         $cipher = new \phpseclib3\Crypt\AES('ctr');
-        $cipher->setKey($key);
+        $cipher->setKey($key16);
         $cipher->setIV(str_repeat("\0", 16));
         return $cipher->decrypt($enc);
     },
 
-    'CFB + setKey' => function($enc, $key) {
-        $cipher = new \phpseclib3\Crypt\AES('cfb');
-        $cipher->setKey($key);
-        $cipher->setIV(str_repeat("\0", 16));
-        return $cipher->decrypt($enc);
-    },
-
-    'OFB + setKey' => function($enc, $key) {
-        $cipher = new \phpseclib3\Crypt\AES('ofb');
-        $cipher->setKey($key);
+    'CTR + 32-byte key' => function($enc) use ($key32) {
+        $cipher = new \phpseclib3\Crypt\AES('ctr');
+        $cipher->setKey($key32);
         $cipher->setIV(str_repeat("\0", 16));
         return $cipher->decrypt($enc);
     },
@@ -75,7 +78,7 @@ foreach ($tests as $name => $test) {
     echo str_repeat('-', 70) . "\n";
 
     try {
-        $decrypted = $test($encrypted, $key32);
+        $decrypted = $test($encrypted);
 
         if (strpos($decrypted, '-----BEGIN') !== false) {
             echo "✅✅✅ SUCCESS! VALID PEM KEY! ✅✅✅\n";
