@@ -5,7 +5,7 @@
  *
  * Uses mcrypt, if available/possible, and an internal implementation, otherwise.
  *
- * PHP versions 4 and 5
+ * PHP version 5
  *
  * NOTE: Since AES.php is (for compatibility and phpseclib-historical reasons) virtually
  * just a wrapper to Rijndael.php you may consider using Rijndael.php instead of
@@ -16,16 +16,16 @@
  * it'll be null-padded to 192-bits and 192 bits will be the key length until {@link self::setKey() setKey()}
  * is called, again, at which point, it'll be recalculated.
  *
- * Since Crypt_AES extends Crypt_Rijndael, some functions are available to be called that, in the context of AES, don't
+ * Since \phpseclib3\Crypt\AES extends \phpseclib3\Crypt\Rijndael, some functions are available to be called that, in the context of AES, don't
  * make a whole lot of sense.  {@link self::setBlockLength() setBlockLength()}, for instance.  Calling that function,
  * however possible, won't do anything (AES has a fixed block length whereas Rijndael has a variable one).
  *
  * Here's a short example of how to use this library:
  * <code>
  * <?php
- *    include 'Crypt/AES.php';
+ *    include 'vendor/autoload.php';
  *
- *    $aes = new Crypt_AES();
+ *    $aes = new \phpseclib3\Crypt\AES('ctr');
  *
  *    $aes->setKey('abcdefghijklmnop');
  *
@@ -39,129 +39,78 @@
  * ?>
  * </code>
  *
- * LICENSE: Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * @category  Crypt
- * @package   Crypt_AES
  * @author    Jim Wigginton <terrafrost@php.net>
  * @copyright 2008 Jim Wigginton
  * @license   http://www.opensource.org/licenses/mit-license.html  MIT License
  * @link      http://phpseclib.sourceforge.net
  */
 
-/**
- * Include Crypt_Rijndael
- */
-if (!class_exists('Crypt_Rijndael')) {
-    include_once 'Rijndael.php';
-}
-
-/**#@+
- * @access public
- * @see self::encrypt()
- * @see self::decrypt()
- */
-/**
- * Encrypt / decrypt using the Counter mode.
- *
- * Set to -1 since that's what Crypt/Random.php uses to index the CTR mode.
- *
- * @link http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Counter_.28CTR.29
- */
-define('CRYPT_AES_MODE_CTR', CRYPT_MODE_CTR);
-/**
- * Encrypt / decrypt using the Electronic Code Book mode.
- *
- * @link http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Electronic_codebook_.28ECB.29
- */
-define('CRYPT_AES_MODE_ECB', CRYPT_MODE_ECB);
-/**
- * Encrypt / decrypt using the Code Book Chaining mode.
- *
- * @link http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Cipher-block_chaining_.28CBC.29
- */
-define('CRYPT_AES_MODE_CBC', CRYPT_MODE_CBC);
-/**
- * Encrypt / decrypt using the Cipher Feedback mode.
- *
- * @link http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Cipher_feedback_.28CFB.29
- */
-define('CRYPT_AES_MODE_CFB', CRYPT_MODE_CFB);
-/**
- * Encrypt / decrypt using the Cipher Feedback mode.
- *
- * @link http://en.wikipedia.org/wiki/Block_cipher_modes_of_operation#Output_feedback_.28OFB.29
- */
-define('CRYPT_AES_MODE_OFB', CRYPT_MODE_OFB);
-/**#@-*/
+namespace phpseclib3\Crypt;
 
 /**
  * Pure-PHP implementation of AES.
  *
- * @package Crypt_AES
  * @author  Jim Wigginton <terrafrost@php.net>
- * @access  public
  */
-class Crypt_AES extends Crypt_Rijndael
+class AES extends Rijndael
 {
-    /**
-     * The namespace used by the cipher for its constants.
-     *
-     * @see Crypt_Base::const_namespace
-     * @var string
-     * @access private
-     */
-    var $const_namespace = 'AES';
-
     /**
      * Dummy function
      *
-     * Since Crypt_AES extends Crypt_Rijndael, this function is, technically, available, but it doesn't do anything.
+     * Since \phpseclib3\Crypt\AES extends \phpseclib3\Crypt\Rijndael, this function is, technically, available, but it doesn't do anything.
      *
-     * @see Crypt_Rijndael::setBlockLength()
-     * @access public
+     * @see \phpseclib3\Crypt\Rijndael::setBlockLength()
      * @param int $length
+     * @throws \BadMethodCallException anytime it's called
      */
-    function setBlockLength($length)
+    public function setBlockLength($length)
     {
-        return;
+        throw new \BadMethodCallException('The block length cannot be set for AES.');
     }
 
     /**
      * Sets the key length
      *
-     * Valid key lengths are 128, 192, and 256.  If the length is less than 128, it will be rounded up to
-     * 128.  If the length is greater than 128 and invalid, it will be rounded down to the closest valid amount.
+     * Valid key lengths are 128, 192, and 256.  Set the link to bool(false) to disable a fixed key length
      *
-     * @see Crypt_Rijndael:setKeyLength()
-     * @access public
+     * @see \phpseclib3\Crypt\Rijndael:setKeyLength()
      * @param int $length
+     * @throws \LengthException if the key length isn't supported
      */
-    function setKeyLength($length)
+    public function setKeyLength($length)
     {
-        parent::setKeyLength($length);
-        switch ($this->key_length) {
-            case 20:
-                $this->key_length = 24;
+        switch ($length) {
+            case 128:
+            case 192:
+            case 256:
                 break;
-            case 28:
-                $this->key_length = 32;
+            default:
+                throw new \LengthException('Key of size ' . $length . ' not supported by this algorithm. Only keys of sizes 128, 192 or 256 supported');
         }
+        parent::setKeyLength($length);
+    }
+
+    /**
+     * Sets the key.
+     *
+     * Rijndael supports five different key lengths, AES only supports three.
+     *
+     * @see \phpseclib3\Crypt\Rijndael:setKey()
+     * @see setKeyLength()
+     * @param string $key
+     * @throws \LengthException if the key length isn't supported
+     */
+    public function setKey($key)
+    {
+        switch (strlen($key)) {
+            case 16:
+            case 24:
+            case 32:
+                break;
+            default:
+                throw new \LengthException('Key of size ' . strlen($key) . ' not supported by this algorithm. Only keys of sizes 16, 24 or 32 supported');
+        }
+
+        parent::setKey($key);
     }
 }
