@@ -42,7 +42,6 @@
     "autoload": {
         "psr-4": {
             "Encryption\\Crypt\\": "install/libs/",
-            "phpseclib3\\": "vendor/phpseclib/phpseclib/phpseclib/",
             "TeampassClasses\\CryptoManager\\": "includes/libraries/teampassclasses/cryptomanager/src/"
         }
     },
@@ -188,7 +187,6 @@
         "elegantweb/sanitizer": "^2.1",
         "defuse/php-encryption": "^2.4",
         "dittertp/gibberish-aes-php": "^4.0",
-        "phpseclib/phpseclib": "^3.0",
         "firebase/php-jwt": "^6.9",
         "neitanod/forceutf8": "^2.0",
         "goodby/csv": "^1.3",
@@ -206,7 +204,8 @@
         "bjeavons/zxcvbn-php": "^1.0",
         "thenetworg/oauth2-azure": "^2.2",
         "symfony/console": "^6.4",
-        "composer/composer": "^2.7"
+        "composer/composer": "^2.7",
+        "phpseclib/phpseclib": "^3.0"
     },
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",
