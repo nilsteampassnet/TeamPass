@@ -189,6 +189,7 @@
         "defuse/php-encryption": "^2.4",
         "dittertp/gibberish-aes-php": "^4.0",
         "phpseclib/phpseclib": "^3.0",
+        "phpseclib/phpseclib2_compat": "^2.0",
         "firebase/php-jwt": "^6.9",
         "neitanod/forceutf8": "^2.0",
         "goodby/csv": "^1.3",
