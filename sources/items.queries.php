@@ -1439,20 +1439,24 @@ switch ($inputData['type']) {
                             if ($dataTmpCat['encryption_type'] !== 'not_set') {
                                 // Get user sharekey for this field
                                 $userKey = DB::queryFirstRow(
-                                    'SELECT share_key
-                                    FROM ' . prefixTable('sharekeys_fields') . '
-                                    WHERE user_id = %i AND object_id = %i',
+                                    'SELECT s.share_key, s.increment_id, u.public_key
+                                    FROM ' . prefixTable('sharekeys_fields') . ' AS s
+                                    INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
+                                    WHERE s.user_id = %i AND s.object_id = %i',
                                     $session->get('user-id'),
                                     $dataTmpCat['field_item_id']
                                 );
 
-                                // Decrypt the current value
+                                // Decrypt the current value with automatic v1→v3 migration
                                 if (DB::count() > 0) {
                                     $oldVal = base64_decode(doDataDecryption(
                                         $dataTmpCat['data'],
-                                        decryptUserObjectKey(
+                                        decryptUserObjectKeyWithMigration(
                                             $userKey['share_key'],
-                                            $session->get('user-private_key')
+                                            $session->get('user-private_key'),
+                                            $userKey['public_key'],
+                                            (int) $userKey['increment_id'],
+                                            'sharekeys_fields'
                                         )
                                     ));
                                 } else {
@@ -2281,9 +2285,10 @@ switch ($inputData['type']) {
 
             // Get the ITEM object key for the user
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = %i AND object_id = %i',
+                'SELECT s.share_key, s.increment_id, u.public_key
+                FROM ' . prefixTable('sharekeys_items') . ' AS s
+                INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
+                WHERE s.user_id = %i AND s.object_id = %i',
                 $session->get('user-id'),
                 $inputData['itemId']
             );
@@ -2299,14 +2304,17 @@ switch ($inputData['type']) {
                 break;
             }
 
-            // Decrypt / Encrypt the password
+            // Decrypt / Encrypt the password with automatic v1→v3 migration
             $cryptedStuff = doDataEncryption(
                 base64_decode(
                     doDataDecryption(
                         $originalRecord['pw'],
-                        decryptUserObjectKey(
+                        decryptUserObjectKeyWithMigration(
                             $userKey['share_key'],
-                            $session->get('user-private_key')
+                            $session->get('user-private_key'),
+                            $userKey['public_key'],
+                            (int) $userKey['increment_id'],
+                            'sharekeys_items'
                         )
                     )
                 )
