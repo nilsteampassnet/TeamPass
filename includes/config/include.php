@@ -47,6 +47,7 @@ define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
 define('LOG_TO_SERVER', false);         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
+define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
 
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
@@ -65,7 +66,6 @@ define('SSH_USER_ID', '9999998');
 define('API_USER_ID', '9999999');
 define('DEFUSE_ENCRYPTION', true);
 define('TP_ENCRYPTION_NAME', 'teampass_aes');
-define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
 define('TP_DEFAULT_ICON', 'fa-solid fa-folder');
 define('TP_DEFAULT_ICON_SELECTED', 'fa-solid fa-folder-open');
 define('TP_PW_STRENGTH_1', 0);

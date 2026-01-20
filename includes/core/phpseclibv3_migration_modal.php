@@ -27,8 +27,10 @@
  */
 
 use TeampassClasses\SessionManager\SessionManager;
+use TeampassClasses\Language\Language;
 
 $session = SessionManager::getSession();
+$lang = new Language($session->get('user-language') ?? 'english');
 
 // Check if phpseclib v3 migration modal should be displayed
 $showModal = $session->get('phpseclibv3_migration_started') === true ||
@@ -55,7 +57,7 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="phpseclibv3MigrationModalLabel">
                     <i class="fas fa-shield-alt mr-2"></i>
-                    <?php echo $lang->get('phpseclibv3_migration_title') ?? 'Encryption Migration in Progress'; ?>
+                    <?php echo $lang->get('phpseclibv3_migration_title') ?>
                 </h5>
                 <!-- No close button - modal is non-closable -->
             </div>
@@ -63,16 +65,14 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
             <div class="modal-body">
                 <div class="alert alert-info" role="alert">
                     <i class="fas fa-info-circle mr-2"></i>
-                    <strong><?php echo $lang->get('phpseclibv3_migration_info_title') ?? 'Security Enhancement'; ?></strong><br>
-                    <?php echo $lang->get('phpseclibv3_migration_info_text') ??
-                        'Your encrypted data is being migrated to a more secure encryption standard (phpseclib v3 with SHA-256). ' .
-                        'This process runs in the background and will complete automatically. Please do not close this window.'; ?>
+                    <strong><?php echo $lang->get('phpseclibv3_migration_info_title'); ?></strong><br>
+                    <?php echo $lang->get('phpseclibv3_migration_info_text'); ?>
                 </div>
 
                 <!-- Progress Bar -->
                 <div class="mb-4">
                     <div class="d-flex justify-content-between mb-2">
-                        <span><strong><?php echo $lang->get('progress') ?? 'Progress'; ?>:</strong></span>
+                        <span><strong><?php echo $lang->get('progress'); ?>:</strong></span>
                         <span id="phpseclibv3-progress-percentage" class="font-weight-bold">0%</span>
                     </div>
                     <div class="progress" style="height: 35px;">
@@ -92,15 +92,15 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
                 <div class="row">
                     <div class="col-md-6">
                         <p class="mb-2">
-                            <strong><?php echo $lang->get('status') ?? 'Status'; ?>:</strong>
+                            <strong><?php echo $lang->get('status'); ?>:</strong>
                             <span id="phpseclibv3-status-text" class="ml-2 badge badge-info">
-                                <?php echo $lang->get('in_progress') ?? 'In Progress'; ?>
+                                <?php echo $lang->get('in_progress'); ?>
                             </span>
                         </p>
                     </div>
                     <div class="col-md-6">
                         <p class="mb-2">
-                            <strong><?php echo $lang->get('objects_to_migrate') ?? 'Objects to Migrate'; ?>:</strong>
+                            <strong><?php echo $lang->get('objects_to_migrate'); ?>:</strong>
                             <span id="phpseclibv3-total" class="ml-2"><?php echo number_format($totalObjects); ?></span>
                         </p>
                     </div>
@@ -109,13 +109,13 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
                 <div class="row">
                     <div class="col-md-6">
                         <p class="mb-2">
-                            <strong><?php echo $lang->get('objects_migrated') ?? 'Objects Migrated'; ?>:</strong>
+                            <strong><?php echo $lang->get('objects_migrated'); ?>:</strong>
                             <span id="phpseclibv3-completed" class="ml-2">0</span>
                         </p>
                     </div>
                     <div class="col-md-6">
                         <p class="mb-2">
-                            <strong><?php echo $lang->get('objects_remaining') ?? 'Remaining'; ?>:</strong>
+                            <strong><?php echo $lang->get('objects_remaining'); ?>:</strong>
                             <span id="phpseclibv3-remaining" class="ml-2"><?php echo number_format($totalObjects); ?></span>
                         </p>
                     </div>
@@ -129,15 +129,14 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
                 <!-- Success Message (hidden initially) -->
                 <div id="phpseclibv3-success-message" class="alert alert-success mt-3" style="display: none;" role="alert">
                     <i class="fas fa-check-circle mr-2"></i>
-                    <strong><?php echo $lang->get('phpseclibv3_migration_completed') ?? 'Migration Completed!'; ?></strong><br>
-                    <?php echo $lang->get('phpseclibv3_migration_completed_text') ??
-                        'Your encryption migration has been completed successfully. You can now continue using Teampass.'; ?>
+                    <strong><?php echo $lang->get('phpseclibv3_migration_completed'); ?></strong><br>
+                    <?php echo $lang->get('phpseclibv3_migration_completed_text'); ?>
                 </div>
 
                 <!-- Error Message (hidden initially) -->
                 <div id="phpseclibv3-error-message" class="alert alert-danger mt-3" style="display: none;" role="alert">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
-                    <strong><?php echo $lang->get('error') ?? 'Error'; ?></strong><br>
+                    <strong><?php echo $lang->get('error'); ?></strong><br>
                     <span id="phpseclibv3-error-text"></span>
                 </div>
             </div>
@@ -145,8 +144,7 @@ $totalObjects = $session->get('phpseclibv3_migration_total') ?? 0;
             <div class="modal-footer">
                 <small class="text-muted mr-auto">
                     <i class="fas fa-info-circle"></i>
-                    <?php echo $lang->get('phpseclibv3_migration_footer_note') ??
-                        'This process may take several minutes depending on the amount of data.'; ?>
+                    <?php echo $lang->get('phpseclibv3_migration_footer_note'); ?>
                 </small>
             </div>
         </div>
@@ -256,11 +254,11 @@ $(document).ready(function() {
         if (data.status === 'in_progress') {
             statusBadge.removeClass('badge-success badge-danger')
                       .addClass('badge-info')
-                      .text('<?php echo $lang->get('in_progress') ?? 'In Progress'; ?>');
+                      .text('<?php echo $lang->get('in_progress'); ?>');
         } else if (data.status === 'pending') {
             statusBadge.removeClass('badge-success badge-danger')
                       .addClass('badge-warning')
-                      .text('<?php echo $lang->get('pending') ?? 'Pending'; ?>');
+                      .text('<?php echo $lang->get('pending'); ?>');
         }
     }
 
@@ -282,7 +280,7 @@ $(document).ready(function() {
         $('#phpseclibv3-status-text')
             .removeClass('badge-info badge-warning')
             .addClass('badge-success')
-            .text('<?php echo $lang->get('completed') ?? 'Completed'; ?>');
+            .text('<?php echo $lang->get('completed'); ?>');
 
         // Update counters to show completion
         const total = parseInt($('#phpseclibv3-total').text().replace(/,/g, '')) || 0;
@@ -303,7 +301,7 @@ $(document).ready(function() {
 
             // Show success notification
             toastr.success(
-                '<?php echo $lang->get('phpseclibv3_migration_completed') ?? 'Migration completed successfully!'; ?>',
+                '<?php echo $lang->get('phpseclibv3_migration_completed'); ?>',
                 '',
                 {
                     timeOut: 5000,
@@ -328,7 +326,7 @@ $(document).ready(function() {
         $('#phpseclibv3-status-text')
             .removeClass('badge-info badge-warning')
             .addClass('badge-danger')
-            .text('<?php echo $lang->get('failed') ?? 'Failed'; ?>');
+            .text('<?php echo $lang->get('failed'); ?>');
 
         $('#phpseclibv3-spinner').hide();
         $('#phpseclibv3-error-text').text(errorMessage);
