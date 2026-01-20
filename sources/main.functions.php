@@ -5520,9 +5520,10 @@ function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTabl
         // Calculate number of batches needed
         $numBatches = (int) ceil($count / $batchSize);
 
+        // Create subtasks for each batch
+        // IMPORTANT: We don't use OFFSET anymore (always 0) because as sharekeys
+        // are migrated, they disappear from WHERE encryption_version = 1
         for ($batch = 0; $batch < $numBatches; $batch++) {
-            $offset = $batch * $batchSize;
-
             DB::insert(
                 prefixTable('background_subtasks'),
                 [
@@ -5530,7 +5531,6 @@ function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTabl
                     'task' => json_encode([
                         'step' => 'migrate_sharekeys_table',
                         'table' => $table,
-                        'offset' => $offset,
                         'limit' => $batchSize,
                         'batch' => $batch + 1,
                         'total_batches' => $numBatches,

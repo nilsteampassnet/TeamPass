@@ -225,7 +225,7 @@ $(document).ready(function() {
     function updateMigrationUI(data) {
         const completed = parseInt(data.completed) || 0;
         const total = parseInt(data.total) || migrationTotal;
-        const remaining = total - completed;
+        const remaining = parseInt(data.remaining) || 0; // Use remaining from server
         const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
 
         // Update progress bar
@@ -239,6 +239,17 @@ $(document).ready(function() {
         $('#phpseclibv3-completed').text(completed.toLocaleString());
         $('#phpseclibv3-remaining').text(remaining.toLocaleString());
         $('#phpseclibv3-total').text(total.toLocaleString());
+
+        // Debug logging (can be removed later)
+        if (console && console.log) {
+            console.log('Migration progress:', {
+                completed: completed,
+                remaining: remaining,
+                total: total,
+                percentage: percentage,
+                status: data.status
+            });
+        }
 
         // Update status badge
         const statusBadge = $('#phpseclibv3-status-text');
@@ -272,6 +283,11 @@ $(document).ready(function() {
             .removeClass('badge-info badge-warning')
             .addClass('badge-success')
             .text('<?php echo $lang->get('completed') ?? 'Completed'; ?>');
+
+        // Update counters to show completion
+        const total = parseInt($('#phpseclibv3-total').text().replace(/,/g, '')) || 0;
+        $('#phpseclibv3-completed').text(total.toLocaleString());
+        $('#phpseclibv3-remaining').text('0');
 
         $('#phpseclibv3-spinner').hide();
         $('#phpseclibv3-success-message').slideDown();

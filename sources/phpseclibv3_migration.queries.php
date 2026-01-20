@@ -67,9 +67,9 @@ switch ($type) {
         }
 
         try {
-            // Get main task status
+            // Get main task status and arguments
             $task = DB::queryFirstRow(
-                'SELECT status, is_in_progress, created_at
+                'SELECT status, is_in_progress, created_at, arguments, item_id
                  FROM ' . prefixTable('background_tasks') . '
                  WHERE increment_id = %i',
                 $taskId
@@ -80,7 +80,54 @@ switch ($type) {
                 break;
             }
 
-            // Count total subtasks
+            $userId = (int) $task['item_id'];
+            $arguments = json_decode($task['arguments'], true);
+            $sharekeysPerTable = $arguments['sharekeys_per_table'] ?? [];
+
+            // Calculate total sharekeys to migrate (from initial count)
+            $totalSharekeys = 0;
+            foreach ($sharekeysPerTable as $count) {
+                $totalSharekeys += (int) $count;
+            }
+
+            // Count sharekeys already migrated (encryption_version = 3) for this user
+            $sharekeys_tables = [
+                'sharekeys_items',
+                'sharekeys_logs',
+                'sharekeys_fields',
+                'sharekeys_files',
+                'sharekeys_suggestions'
+            ];
+
+            $migratedSharekeys = 0;
+            $remainingSharekeys = 0;
+
+            foreach ($sharekeys_tables as $table) {
+                // Count migrated (v3)
+                $v3Count = DB::queryFirstField(
+                    'SELECT COUNT(*) FROM ' . prefixTable($table) . '
+                     WHERE user_id = %i AND encryption_version = 3',
+                    $userId
+                );
+
+                // Count remaining (v1)
+                $v1Count = DB::queryFirstField(
+                    'SELECT COUNT(*) FROM ' . prefixTable($table) . '
+                     WHERE user_id = %i AND encryption_version = 1',
+                    $userId
+                );
+
+                // Only count v3 that were originally v1 (based on sharekeysPerTable)
+                $originalCount = (int) ($sharekeysPerTable[$table] ?? 0);
+                if ($originalCount > 0) {
+                    // Add to migrated count (but cap at original count to avoid over-counting)
+                    $migratedSharekeys += min((int) $v3Count, $originalCount);
+                }
+
+                $remainingSharekeys += (int) $v1Count;
+            }
+
+            // Count subtasks for status determination
             $totalSubtasks = DB::queryFirstField(
                 'SELECT COUNT(*)
                  FROM ' . prefixTable('background_subtasks') . '
@@ -88,7 +135,6 @@ switch ($type) {
                 $taskId
             );
 
-            // Count completed subtasks
             $completedSubtasks = DB::queryFirstField(
                 'SELECT COUNT(*)
                  FROM ' . prefixTable('background_subtasks') . '
@@ -96,7 +142,6 @@ switch ($type) {
                 $taskId
             );
 
-            // Count failed subtasks
             $failedSubtasks = DB::queryFirstField(
                 'SELECT COUNT(*)
                  FROM ' . prefixTable('background_subtasks') . '
@@ -127,13 +172,21 @@ switch ($type) {
                 $status = 'in_progress';
             }
 
+            // If all sharekeys are migrated, mark as completed
+            if ($remainingSharekeys === 0 && $totalSharekeys > 0) {
+                $status = 'completed';
+            }
+
             echo json_encode([
                 'status' => $status,
-                'total' => (int) $totalSubtasks,
-                'completed' => (int) $completedSubtasks,
+                'total' => (int) $totalSharekeys,
+                'completed' => (int) $migratedSharekeys,
+                'remaining' => (int) $remainingSharekeys,
                 'failed' => (int) $failedSubtasks,
                 'error_message' => $errorMessage,
                 'created_at' => (int) $task['created_at'],
+                'subtasks_total' => (int) $totalSubtasks,
+                'subtasks_completed' => (int) $completedSubtasks,
             ]);
 
         } catch (Exception $e) {
