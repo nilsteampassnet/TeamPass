@@ -5341,6 +5341,227 @@ function checkAndMigratePersonalItems($userId, $privateKeyDecrypted, $passwordCl
 }
 
 /**
+ * Check and trigger forced phpseclib v3 migration on user login
+ *
+ * This function triggers a complete migration of all user's sharekeys from
+ * phpseclib v1 (SHA-1) to v3 (SHA-256) when FORCE_PHPSECLIBV3_MIGRATION is enabled.
+ *
+ * Unlike the progressive migration (which migrates on-access), this forces
+ * migration of ALL sharekeys owned by the user at login time.
+ *
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key (base64)
+ * @param string $passwordClear Clear user password
+ * @return void
+ */
+function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecrypted, string $passwordClear): void
+{
+    // Check if forced migration is enabled
+    if (!defined('FORCE_PHPSECLIBV3_MIGRATION') || FORCE_PHPSECLIBV3_MIGRATION !== true) {
+        return; // Forced migration disabled, use progressive migration instead
+    }
+
+    $session = SessionManager::getSession();
+
+    // 1. Check if user already completed forced migration
+    $user = DB::queryFirstRow(
+        "SELECT phpseclibv3_migration_completed, phpseclibv3_migration_task_id, encryption_version, login
+         FROM " . prefixTable('users') . "
+         WHERE id = %i",
+        $userId
+    );
+
+    if ((int) $user['phpseclibv3_migration_completed'] === 1) {
+        return; // Already migrated, nothing to do
+    }
+
+    // 2. Check if user's private key is already in v3
+    // If encryption_version = 3, user keys are v3, only sharekeys need migration
+    $userKeysV3 = ((int) $user['encryption_version'] === 3);
+
+    // 3. Count sharekeys to migrate (encryption_version = 1) for this user
+    $sharekeys_tables = [
+        'sharekeys_items',
+        'sharekeys_logs',
+        'sharekeys_fields',
+        'sharekeys_files',
+        'sharekeys_suggestions'
+    ];
+
+    $totalSharekeysToMigrate = 0;
+    $sharekeysPerTable = [];
+
+    foreach ($sharekeys_tables as $table) {
+        $count = DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable($table) . "
+             WHERE user_id = %i AND encryption_version = 1",
+            $userId
+        );
+        $sharekeysPerTable[$table] = (int) $count;
+        $totalSharekeysToMigrate += (int) $count;
+    }
+
+    // 4. If no sharekeys to migrate, mark as completed
+    if ($totalSharekeysToMigrate === 0 && $userKeysV3) {
+        DB::update(
+            prefixTable('users'),
+            ['phpseclibv3_migration_completed' => 1],
+            'id = %i',
+            $userId
+        );
+        return;
+    }
+
+    // 5. Check if migration task already exists and is in progress
+    $existingTask = DB::queryFirstRow(
+        "SELECT increment_id, status FROM " . prefixTable('background_tasks') . "
+         WHERE process_type = 'phpseclibv3_migration'
+         AND item_id = %i
+         AND status IN ('pending', 'in_progress')
+         ORDER BY created_at DESC LIMIT 1",
+        $userId
+    );
+
+    if ($existingTask) {
+        // Migration already in progress
+        $session->set('phpseclibv3_migration_in_progress', true);
+        $session->set('phpseclibv3_migration_task_id', $existingTask['increment_id']);
+        $session->set('phpseclibv3_migration_total', $totalSharekeysToMigrate);
+        return;
+    }
+
+    // 6. Create migration background task
+    $taskId = createPhpseclibV3MigrationTask(
+        $userId,
+        $privateKeyDecrypted,
+        $passwordClear,
+        $sharekeysPerTable
+    );
+
+    // 7. Set session variables for UI modal
+    $session->set('phpseclibv3_migration_started', true);
+    $session->set('phpseclibv3_migration_task_id', $taskId);
+    $session->set('phpseclibv3_migration_total', $totalSharekeysToMigrate);
+
+    // Log migration start
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS phpseclibv3_migration - User ' . $userId . ' (' . $user['login'] . ') - Starting forced migration for ' . $totalSharekeysToMigrate . ' sharekeys');
+    }
+}
+
+/**
+ * Create phpseclib v3 migration background task
+ *
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key (base64)
+ * @param string $passwordClear Clear user password
+ * @param array $sharekeysPerTable Array of sharekeys count per table
+ * @return int Task ID
+ */
+function createPhpseclibV3MigrationTask(
+    int $userId,
+    string $privateKeyDecrypted,
+    string $passwordClear,
+    array $sharekeysPerTable
+): int {
+    // Create main background task
+    DB::insert(
+        prefixTable('background_tasks'),
+        [
+            'created_at' => time(),
+            'process_type' => 'phpseclibv3_migration',
+            'arguments' => json_encode([
+                'user_id' => $userId,
+                'user_pwd' => cryption($passwordClear, '', 'encrypt')['string'],
+                'user_private_key' => cryption($privateKeyDecrypted, '', 'encrypt')['string'],
+                'sharekeys_per_table' => $sharekeysPerTable,
+            ]),
+            'is_in_progress' => 0,
+            'status' => 'pending',
+            'item_id' => $userId // Use item_id to store user_id for filtering
+        ]
+    );
+
+    $taskId = DB::insertId();
+
+    // Create subtasks for each sharekeys table
+    createPhpseclibV3MigrationSubTasks($taskId, $sharekeysPerTable, NUMBER_ITEMS_IN_BATCH);
+
+    // Update user's migration status
+    DB::update(
+        prefixTable('users'),
+        [
+            'phpseclibv3_migration_task_id' => $taskId,
+        ],
+        'id = %i',
+        $userId
+    );
+
+    return $taskId;
+}
+
+/**
+ * Create subtasks for phpseclib v3 migration
+ *
+ * @param int $taskId Main task ID
+ * @param array $sharekeysPerTable Sharekeys count per table
+ * @param int $batchSize Number of sharekeys per subtask
+ * @return void
+ */
+function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTable, int $batchSize): void
+{
+    $subtaskOrder = 1;
+
+    foreach ($sharekeysPerTable as $table => $count) {
+        if ($count === 0) {
+            continue; // Skip tables with no sharekeys to migrate
+        }
+
+        // Calculate number of batches needed
+        $numBatches = (int) ceil($count / $batchSize);
+
+        for ($batch = 0; $batch < $numBatches; $batch++) {
+            $offset = $batch * $batchSize;
+
+            DB::insert(
+                prefixTable('background_subtasks'),
+                [
+                    'task_id' => $taskId,
+                    'task' => json_encode([
+                        'step' => 'migrate_sharekeys_table',
+                        'table' => $table,
+                        'offset' => $offset,
+                        'limit' => $batchSize,
+                        'batch' => $batch + 1,
+                        'total_batches' => $numBatches,
+                    ]),
+                    'is_in_progress' => 0,
+                    'status' => 'pending',
+                    'finished_at' => null,
+                    'updated_at' => time(),
+                ]
+            );
+            $subtaskOrder++;
+        }
+    }
+
+    // Add final subtask to mark migration as completed
+    DB::insert(
+        prefixTable('background_subtasks'),
+        [
+            'task_id' => $taskId,
+            'task' => json_encode([
+                'step' => 'finalize_phpseclibv3_migration',
+            ]),
+            'is_in_progress' => 0,
+            'status' => 'pending',
+            'finished_at' => null,
+            'updated_at' => time(),
+        ]
+    );
+}
+
+/**
  * Create migration task for a specific user
  * 
  * @param int $userId User ID

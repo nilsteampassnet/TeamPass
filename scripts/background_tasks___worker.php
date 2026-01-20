@@ -34,6 +34,7 @@ require_once __DIR__.'/traits/ItemHandlerTrait.php';
 require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
 require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
+require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -41,6 +42,7 @@ class TaskWorker {
     use UserHandlerTrait;
     use EmailTrait;
     use MigrateUserHandlerTrait;
+    use PhpseclibV3MigrationTrait;
 
     private $taskId;
     private $processType;
@@ -90,6 +92,9 @@ class TaskWorker {
                     break;
                 case 'migrate_user_personal_items':
                     $this->migratePersonalItems($this->taskData);
+                    break;
+                case 'phpseclibv3_migration':
+                    $this->migratePhpseclibV3($this->taskData);
                     break;
                 case 'database_backup':
                     $this->handleDatabaseBackup($this->taskData);

@@ -239,6 +239,30 @@ if (mysqli_num_rows($result) === 0) {
     );
 }
 
+// ============================================
+// STEP 6: Add forced migration tracking columns
+// ============================================
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'phpseclibv3_migration_completed',
+    "TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Forced phpseclib v3 migration status (0=not done, 1=completed)'"
+);
+
+if ($res === false) {
+    $error[] = "Failed to add phpseclibv3_migration_completed to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'phpseclibv3_migration_task_id',
+    "INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task'"
+);
+
+if ($res === false) {
+    $error[] = "Failed to add phpseclibv3_migration_task_id to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
 
 //---<END 3.1.6
 
