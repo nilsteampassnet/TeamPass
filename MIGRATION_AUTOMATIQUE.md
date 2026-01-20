@@ -128,14 +128,22 @@ TEAMPASS Migration Error - sharekeys_items:123 - Failed to encrypt with RSA: ...
 - L'item continuera à fonctionner en v1
 - La migration sera réessayée au prochain accès
 
-### Migration Manuelle (Si Nécessaire)
+## Pourquoi Pas de Migration Batch ?
 
-Pour forcer la migration de tous les items:
+**Question:** Pourquoi ne pas avoir un script qui migre tout d'un coup ?
 
-```bash
-php scripts/maintenance_reencrypt_v1_to_v3.php --dry-run --verbose  # Test
-php scripts/maintenance_reencrypt_v1_to_v3.php  # Migration complète
-```
+**Réponse:** C'est **techniquement impossible** car :
+
+1. Les clés privées des utilisateurs sont stockées **chiffrées** en base de données
+2. Le chiffrement utilise le **mot de passe** de chaque utilisateur
+3. Un script batch n'a **pas accès** aux mots de passe des utilisateurs
+4. Donc il est **impossible** de décrypter les clés privées
+
+**La seule solution viable est la migration automatique :**
+- L'utilisateur se connecte → Son mot de passe décrypte sa clé privée
+- La clé privée est en session (décryptée)
+- On peut l'utiliser pour décrypter/migrer les sharekeys
+- Transparent et sécurisé ✅
 
 ## Sécurité
 
