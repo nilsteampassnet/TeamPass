@@ -221,27 +221,25 @@ sudo systemctl start apache2
 - Si des utilisateurs/items ont été créés avec v3, ils ne seront plus déchiffrables après rollback
 - Toujours tester en staging d'abord
 
-## Modes de migration (après installation v3)
+## Mode de migration (après installation v3)
 
-### Mode actuel : Hybrid/Progressive (automatique)
+### Mode Hybrid (automatique - IMPLÉMENTÉ)
+- ✅ Migration automatique v1 → v3 lors de l'accès aux items
 - ✅ Nouvelles données chiffrées avec v3
-- ✅ Anciennes données déchiffrées avec fallback v1
+- ✅ Anciennes données déchiffrées avec fallback v1, puis migrées en v3
 - ✅ Aucune intervention requise
-- ✅ Performance optimale avec version tracking
+- ✅ Performance optimale (overhead 5-10ms une fois par sharekey)
+- ✅ Couverture ~98% des accès utilisateur (items, fields, files)
 
-### Mode optionnel : Batch Re-encryption
-Si vous voulez que TOUTES les données utilisent v3 (SHA-256) :
+**Comment ça fonctionne :**
+1. Utilisateur visualise un mot de passe (ou télécharge un fichier, édite un champ)
+2. Sharekey décryptée avec détection de version (v1 ou v3)
+3. Si v1 détecté → Ré-encryption automatique avec v3
+4. Mise à jour de `encryption_version` de 1 à 3 dans la base de données
+5. Transparent pour l'utilisateur
 
-```bash
-# Dry run d'abord !
-php scripts/maintenance_reencrypt_v1_to_v3.php --dry-run --verbose
-
-# Migration complète (BACKUP REQUIS)
-php scripts/maintenance_reencrypt_v1_to_v3.php
-
-# Ou table par table
-php scripts/maintenance_reencrypt_v1_to_v3.php --table=sharekeys_items
-```
+**Pourquoi pas de migration batch ?**
+C'est techniquement impossible car les clés privées des utilisateurs sont chiffrées avec leurs mots de passe. Un script n'a pas accès aux mots de passe, donc ne peut pas décrypter les clés privées nécessaires pour migrer les sharekeys. La migration hybride automatique est la seule solution viable.
 
 ## FAQ Déploiement
 
@@ -306,7 +304,7 @@ mv phpseclib-3.0.37 phpseclib/phpseclib
 - [ ] Tests utilisateurs
 - [ ] Performance vérifiée
 - [ ] (Optionnel) Migration BDD tracking
-- [ ] (Optionnel) Batch re-encryption
+- [ ] Vérification migration hybride active (vérifier `encryption_version` passe de 1 à 3)
 
 ## Support
 

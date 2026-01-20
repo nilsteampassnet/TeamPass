@@ -266,25 +266,30 @@ Les cas suivants n'ont **pas** été modifiés car ils sont:
    - Fréquence: Consultation rare
    - Migration: Non prioritaire
 
-Ces cas migreront naturellement au fil du temps ou peuvent utiliser le script batch si nécessaire.
+Ces cas migreront naturellement au fil du temps.
 
 ---
 
-## 🛠️ Migration Batch (Si Nécessaire)
+## ❌ Pourquoi Pas de Migration Batch ?
 
-Pour forcer la migration de tous les sharekeys restants:
+**Migration batch = Techniquement impossible**
 
-```bash
-# Dry run (test)
-php scripts/maintenance_reencrypt_v1_to_v3.php --dry-run --verbose
+La raison fondamentale :
 
-# Migration complète
-php scripts/maintenance_reencrypt_v1_to_v3.php
-
-# Par table
-php scripts/maintenance_reencrypt_v1_to_v3.php --table=sharekeys_fields
-php scripts/maintenance_reencrypt_v1_to_v3.php --table=sharekeys_files
 ```
+Pour décrypter une sharekey:
+1. Il faut la clé privée de l'utilisateur
+2. La clé privée est stockée CHIFFRÉE en BDD
+3. Le chiffrement utilise le MOT DE PASSE de l'utilisateur
+4. Un script n'a PAS accès aux mots de passe
+→ Impossible de décrypter les clés privées
+→ Impossible de migrer sans l'utilisateur connecté
+```
+
+**La migration automatique est la SEULE solution viable:**
+- Utilisateur se connecte = clé privée décryptée en session
+- On peut utiliser la clé privée pour migrer
+- Transparent, sécurisé, progressif ✅
 
 ---
 
