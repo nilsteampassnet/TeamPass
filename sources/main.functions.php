@@ -2283,6 +2283,175 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 }
 
 /**
+ * Decrypt user's private key with automatic migration from v1 to v3
+ *
+ * This function handles the migration of user private keys from phpseclib v1 (SHA-1)
+ * to v3 (SHA-256) transparently during login.
+ *
+ * Uses aesDecryptWithVersionDetection() to automatically try SHA-256 (v3) first,
+ * then fallback to SHA-1 (v1). More robust than relying on encryption_version in DB.
+ *
+ * Logic:
+ * - Try decryption with version detection (SHA-256 then SHA-1)
+ * - If v1 was used: Trigger migration to v3
+ * - If v3 was used: No migration needed
+ * - If error: Set migration_error flag
+ *
+ * @param string $userPwd User's password (clear text)
+ * @param string $userPrivateKey Encrypted private key (base64)
+ * @param int $userId User ID for migration
+ * @param int $encryptionVersion Current encryption version from DB (for logging only)
+ * @return array ['private_key_clear' => string, 'migration_error' => bool, 'needs_migration' => bool]
+ */
+function decryptPrivateKeyWithMigration(
+    string $userPwd,
+    string $userPrivateKey,
+    int $userId,
+    int $encryptionVersion
+): array {
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+
+    try {
+        // Use automatic version detection (tries SHA-256 first, then SHA-1)
+        $result = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
+            base64_decode($userPrivateKey),
+            $userPwd,
+            'cbc'
+        );
+
+        $decrypted = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        if (!empty($decrypted)) {
+            $privateKeyClear = base64_encode($decrypted);
+
+            // Check if migration is needed
+            $needsMigration = ($versionUsed === 1);
+
+            // Log if DB version doesn't match actual version used
+            if ($versionUsed !== $encryptionVersion && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration Notice - User ' . $userId . ' encryption_version mismatch: DB says ' . $encryptionVersion . ' but v' . $versionUsed . ' was used for decryption');
+            }
+
+            return [
+                'private_key_clear' => $privateKeyClear,
+                'migration_error' => false,
+                'needs_migration' => $needsMigration,
+                'version_used' => $versionUsed, // For debugging
+            ];
+        }
+
+        // Empty decrypted data
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+
+    } catch (Exception $e) {
+        // Decryption failed with both versions
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' private key decryption failed: ' . $e->getMessage());
+        }
+
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+    }
+}
+
+/**
+ * Migrate all user keys from v1 (SHA-1) to v3 (SHA-256)
+ *
+ * This function re-encrypts:
+ * - private_key (with user password)
+ * - private_key_backup (with derived key from seed, if exists)
+ *
+ * And updates encryption_version to 3 in the database.
+ *
+ * @param int $userId User ID
+ * @param string $userPwd User's password (clear text)
+ * @param string $privateKeyClear User's private key (decrypted, base64)
+ * @param array $userInfo User information from database (must include user_derivation_seed if backup exists)
+ * @return bool True if migration successful, false otherwise
+ */
+function migrateAllUserKeysToV3(
+    int $userId,
+    string $userPwd,
+    string $privateKeyClear,
+    array $userInfo
+): bool {
+    try {
+        $updateData = [];
+
+        // Re-encrypt private_key with SHA-256
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $userPwd,
+            'cbc',
+            'sha256' // v3 uses SHA-256
+        );
+        $updateData['private_key'] = base64_encode($encrypted);
+
+        // Re-encrypt private_key_backup if it exists
+        if (!empty($userInfo['private_key_backup']) && !empty($userInfo['user_derivation_seed'])) {
+            try {
+                // Derive backup key (same as before, uses SHA-256 in derivation)
+                $configManager = new ConfigManager();
+                $SETTINGS = $configManager->getAllSettings();
+                $derivedKey = deriveBackupKey(
+                    $userInfo['user_derivation_seed'],
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                // Re-encrypt backup with SHA-256
+                $encryptedBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey,
+                    'cbc',
+                    'sha256' // v3 uses SHA-256
+                );
+                $updateData['private_key_backup'] = base64_encode($encryptedBackup);
+            } catch (Exception $e) {
+                // Log error but don't fail the whole migration
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Warning - User ' . $userId . ' private_key_backup migration failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Update encryption_version to 3
+        $updateData['encryption_version'] = 3;
+
+        // Update database
+        DB::update(
+            prefixTable('users'),
+            $updateData,
+            'id = %i',
+            $userId
+        );
+
+        // Log successful migration
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Success - User ' . $userId . ' keys migrated to v3 (SHA-256)');
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Log migration error
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' - ' . $e->getMessage());
+        }
+        return false;
+    }
+}
+
+/**
  * Derives a backup encryption key from user seed and public key.
  * Uses PBKDF2 with 100k iterations for strong key derivation.
  *
