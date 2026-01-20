@@ -49,6 +49,7 @@ use TeampassClasses\Encryption\Encryption;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\CryptoManager\CryptoManager;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -2183,14 +2184,12 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $userPwd = $antiXss->xss_clean($userPwd);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
+
+    // Generate RSA key pair using CryptoManager (phpseclib v3)
+    $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
+
+    // Encrypt the private key with user password using AES
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
 
     $result = [
         'private_key' => base64_encode($privatekey),
@@ -2206,9 +2205,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
     // Encrypt private key with derived key (backup)
-    $cipherBackup = new Crypt_AES();
-    $cipherBackup->setPassword($derivedKey);
-    $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey);
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
@@ -2237,14 +2234,20 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
         try {
-            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+            // Decrypt using CryptoManager (phpseclib v3)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode((string) $decrypted);
         } catch (Exception $e) {
-            return $e;
+            // Log error for debugging
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - decryptPrivateKey failed: ' . $e->getMessage());
+            }
+            // Return empty string on decryption failure
+            return '';
         }
     }
     return '';
@@ -2266,17 +2269,186 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
         try {
-            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+            // Encrypt using CryptoManager (phpseclib v3)
+            $encrypted = CryptoManager::aesEncrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode($encrypted);
         } catch (Exception $e) {
             return $e->getMessage();
         }
     }
     return '';
+}
+
+/**
+ * Decrypt user's private key with automatic migration from v1 to v3
+ *
+ * This function handles the migration of user private keys from phpseclib v1 (SHA-1)
+ * to v3 (SHA-256) transparently during login.
+ *
+ * Uses aesDecryptWithVersionDetection() to automatically try SHA-256 (v3) first,
+ * then fallback to SHA-1 (v1). More robust than relying on encryption_version in DB.
+ *
+ * Logic:
+ * - Try decryption with version detection (SHA-256 then SHA-1)
+ * - If v1 was used: Trigger migration to v3
+ * - If v3 was used: No migration needed
+ * - If error: Set migration_error flag
+ *
+ * @param string $userPwd User's password (clear text)
+ * @param string $userPrivateKey Encrypted private key (base64)
+ * @param int $userId User ID for migration
+ * @param int $encryptionVersion Current encryption version from DB (for logging only)
+ * @return array ['private_key_clear' => string, 'migration_error' => bool, 'needs_migration' => bool]
+ */
+function decryptPrivateKeyWithMigration(
+    string $userPwd,
+    string $userPrivateKey,
+    int $userId,
+    int $encryptionVersion
+): array {
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+
+    try {
+        // Use automatic version detection (tries SHA-256 first, then SHA-1)
+        $result = CryptoManager::aesDecryptWithVersionDetection(
+            base64_decode($userPrivateKey),
+            $userPwd,
+            'cbc'
+        );
+        $decrypted = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        if (!empty($decrypted)) {
+            $privateKeyClear = base64_encode($decrypted);
+
+            // Check if migration is needed
+            $needsMigration = ($versionUsed === 1);
+
+            // Log if DB version doesn't match actual version used
+            if ($versionUsed !== $encryptionVersion && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration Notice - User ' . $userId . ' encryption_version mismatch: DB says ' . $encryptionVersion . ' but v' . $versionUsed . ' was used for decryption');
+            }
+
+            return [
+                'private_key_clear' => $privateKeyClear,
+                'migration_error' => false,
+                'needs_migration' => $needsMigration,
+                'version_used' => $versionUsed,
+            ];
+        }
+
+        // Empty decrypted data
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+
+    } catch (Exception $e) {
+        // Decryption failed with both versions
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' private key decryption failed: ' . $e->getMessage());
+        }
+
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+    }
+}
+
+/**
+ * Migrate all user keys from v1 (SHA-1) to v3 (SHA-256)
+ *
+ * This function re-encrypts:
+ * - private_key (with user password)
+ * - private_key_backup (with derived key from seed, if exists)
+ *
+ * And updates encryption_version to 3 in the database.
+ *
+ * @param int $userId User ID
+ * @param string $userPwd User's password (clear text)
+ * @param string $privateKeyClear User's private key (decrypted, base64)
+ * @param array $userInfo User information from database (must include user_derivation_seed if backup exists)
+ * @return bool True if migration successful, false otherwise
+ */
+function migrateAllUserKeysToV3(
+    int $userId,
+    string $userPwd,
+    string $privateKeyClear,
+    array $userInfo
+): bool {
+    try {
+        $updateData = [];
+
+        // Re-encrypt private_key with SHA-256
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $userPwd,
+            'cbc',
+            'sha256' // v3 uses SHA-256
+        );
+        $updateData['private_key'] = base64_encode($encrypted);
+
+        // Re-encrypt private_key_backup if it exists
+        if (!empty($userInfo['private_key_backup']) && !empty($userInfo['user_derivation_seed'])) {
+            try {
+                // Derive backup key (same as before, uses SHA-256 in derivation)
+                $configManager = new ConfigManager();
+                $SETTINGS = $configManager->getAllSettings();
+                $derivedKey = deriveBackupKey(
+                    $userInfo['user_derivation_seed'],
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                // Re-encrypt backup with SHA-256
+                $encryptedBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey,
+                    'cbc',
+                    'sha256' // v3 uses SHA-256
+                );
+                $updateData['private_key_backup'] = base64_encode($encryptedBackup);
+            } catch (Exception $e) {
+                // Log error but don't fail the whole migration
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Warning - User ' . $userId . ' private_key_backup migration failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Update encryption_version to 3
+        $updateData['encryption_version'] = 3;
+
+        // Update database
+        DB::update(
+            prefixTable('users'),
+            $updateData,
+            'id = %i',
+            $userId
+        );
+
+        // Log successful migration
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Success - User ' . $userId . ' keys migrated to v3 (SHA-256)');
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Log migration error
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' - ' . $e->getMessage());
+        }
+        return false;
+    }
 }
 
 /**
@@ -2417,17 +2589,22 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             $SETTINGS
         );
 
-        // Decrypt private key using derived key
-        $cipher = new Crypt_AES();
-        $cipher->setPassword($derivedKey);
-        $privateKeyClear = base64_encode($cipher->decrypt(base64_decode($userInfo['private_key_backup'])));
+        // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            base64_decode($userInfo['private_key_backup']),
+            $derivedKey
+        );
+        $privateKeyClear = base64_encode($decrypted);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
         // Re-encrypt backup with derived key (refresh)
-        $cipher->setPassword($derivedKey);
-        $newPrivateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $derivedKey
+        );
+        $newPrivateKeyBackup = base64_encode($encrypted);
         
         // Update database
         DB::update(
@@ -2562,15 +2739,15 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
-    
-    // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
-    // Set it as password
-    $cipher->setPassword($objectKey);
+
+    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
+
     return [
-        'encrypted' => base64_encode($cipher->encrypt($data)),
+        'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
     ];
 }
@@ -2590,11 +2767,13 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    // Decrypt using CryptoManager (phpseclib v3)
+    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+        base64_decode($data),
+        base64_decode($key)
+    );
+
+    return base64_encode((string) $decrypted);
 }
 
 /**
@@ -2613,21 +2792,21 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     // Sanitize
     $antiXss = new AntiXSS();
     $publicKey = $antiXss->xss_clean($publicKey);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the public key
-    $decodedPublicKey = base64_decode($publicKey, true);
-    if ($decodedPublicKey === false) {
-        throw new InvalidArgumentException("Error while decoding key.");
+
+    // Encrypt using CryptoManager (phpseclib v3)
+    try {
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+            base64_decode($key),
+            $publicKey
+        );
+        if (empty($encrypted)) {  // Check if key is empty or null
+            throw new RuntimeException("Error while encrypting key.");
+        }
+        // Return
+        return base64_encode($encrypted);
+    } catch (Exception $e) {
+        throw new RuntimeException("Error while encrypting key: " . $e->getMessage());
     }
-    $rsa->loadKey($decodedPublicKey);
-    // Encrypt
-    $encrypted = $rsa->encrypt(base64_decode($key));
-    if (empty($encrypted)) {  // Check if key is empty or null
-        throw new RuntimeException("Error while encrypting key.");
-    }
-    // Return
-    return base64_encode($encrypted);
 }
 
 /**
@@ -2644,37 +2823,188 @@ function decryptUserObjectKey(string $key, string $privateKey): string
     $antiXss = new AntiXSS();
     $privateKey = $antiXss->xss_clean($privateKey);
 
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the private key
-    $decodedPrivateKey = base64_decode($privateKey, true);
-    if ($decodedPrivateKey === false) {
-        throw new InvalidArgumentException("Error while decoding private key.");
-    }
-
-    $rsa->loadKey($decodedPrivateKey);
-
-    // Decrypt
+    // Decrypt using CryptoManager with backward compatibility (phpseclib v3)
     try {
         $decodedKey = base64_decode($key, true);
         if ($decodedKey === false) {
             throw new InvalidArgumentException("Error while decoding key.");
         }
 
-        // This check is needed as decrypt() in version 2 can return false in case of error
-        $tmpValue = $rsa->decrypt($decodedKey);
-        if ($tmpValue !== false) {
-            return base64_encode($tmpValue);
+        // Use CryptoManager with automatic v1 fallback (SHA-1)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaDecrypt(
+            $decodedKey,
+            $privateKey,
+            true  // Enable legacy v1 compatibility
+        );
+
+        if (!empty($decrypted)) {
+            return base64_encode($decrypted);
         } else {
             return '';
         }
     } catch (Exception $e) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            error_log('TEAMPASS Error - decrypt - '.$e->getMessage());
         }
         return 'Exception: could not decrypt object';
     }
 }
+
+/**
+ * Decrypt user object key with automatic v1→v3 migration
+ *
+ * This function decrypts a sharekey and automatically re-encrypts it with phpseclib v3
+ * if it was encrypted with v1 (detected during decryption).
+ *
+ * @param string $encryptedKey Base64 encoded encrypted sharekey
+ * @param string $privateKey User's private key (PEM format)
+ * @param string $publicKey User's public key (PEM format) - required for migration
+ * @param int $sharekeyId Increment ID from sharekeys_* table - required for migration
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items') - required for migration
+ * @return string Base64 encoded decrypted sharekey
+ * @throws Exception
+ */
+function decryptUserObjectKeyWithMigration(
+    string $encryptedKey,
+    string $privateKey,
+    string $publicKey,
+    int $sharekeyId,
+    string $sharekeyTable
+): string {
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $privateKey = $antiXss->xss_clean($privateKey);
+
+    try {
+        $decodedKey = base64_decode($encryptedKey, true);
+        if ($decodedKey === false) {
+            throw new InvalidArgumentException("Error while decoding key.");
+        }
+
+        // Decrypt with version detection
+        $result = \TeampassClasses\CryptoManager\CryptoManager::rsaDecryptWithVersionDetection(
+            $decodedKey,
+            $privateKey
+        );
+
+        $decryptedKey = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        // Automatic migration: if v1 was used, re-encrypt with v3
+        if ($versionUsed === 1) {
+            try {
+                migrateSharekeyToV3(
+                    $sharekeyId,
+                    $sharekeyTable,
+                    $decryptedKey,
+                    $publicKey
+                );
+            } catch (Exception $migrationError) {
+                // Log migration error but don't fail the decryption
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log("TEAMPASS Migration Error - {$sharekeyTable}:{$sharekeyId} - " . $migrationError->getMessage());
+                }
+            }
+        }
+
+        if (!empty($decryptedKey)) {
+            return base64_encode($decryptedKey);
+        } else {
+            return '';
+        }
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - decryptWithMigration - ' . $e->getMessage());
+        }
+        return 'Exception: could not decrypt object';
+    }
+}
+
+/**
+ * Migrate a sharekey from phpseclib v1 to v3 encryption
+ *
+ * Re-encrypts the sharekey with phpseclib v3 (SHA-256) and updates the database
+ *
+ * @param int $sharekeyId Increment ID from sharekeys_* table
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @param string $decryptedKey Decrypted sharekey (raw binary)
+ * @param string $publicKey User's public key (PEM format)
+ * @return void
+ * @throws Exception
+ */
+function migrateSharekeyToV3(
+    int $sharekeyId,
+    string $sharekeyTable,
+    string $decryptedKey,
+    string $publicKey
+): void {
+    // Re-encrypt with v3 (uses SHA-256 by default)
+    $reencryptedKey = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+        $decryptedKey,
+        $publicKey
+    );
+
+    // Update database with new v3 encrypted key
+    DB::update(
+        prefixTable($sharekeyTable),
+        [
+            'share_key' => base64_encode($reencryptedKey),
+            'encryption_version' => 3,
+        ],
+        'increment_id = %i',
+        $sharekeyId
+    );
+}
+
+/**
+ * Update migration statistics for a sharekeys table
+ *
+ * DISABLED: This function has been disabled to improve performance.
+ * It was causing slowdowns by executing COUNT queries on large tables
+ * for each item access. Statistics can be calculated manually if needed
+ * using: SELECT encryption_version, COUNT(*) FROM sharekeys_* GROUP BY encryption_version
+ *
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @return void
+ */
+/*
+function updateMigrationStatistics(string $sharekeyTable): void
+{
+    try {
+        // Calculate current statistics
+        $stats = DB::queryFirstRow(
+            'SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN encryption_version = 1 THEN 1 ELSE 0 END) as v1,
+                SUM(CASE WHEN encryption_version = 3 THEN 1 ELSE 0 END) as v3
+             FROM ' . prefixTable($sharekeyTable)
+        );
+
+        // Update statistics table
+        DB::query(
+            'INSERT INTO ' . prefixTable('encryption_migration_stats') . '
+             (table_name, total_records, v1_records, v3_records)
+             VALUES (%s, %i, %i, %i)
+             ON DUPLICATE KEY UPDATE
+                total_records = %i,
+                v1_records = %i,
+                v3_records = %i',
+            $sharekeyTable,
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3'],
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3']
+        );
+    } catch (Exception $e) {
+        // Statistics update failed, but don't throw - this is not critical
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Statistics Error - ' . $e->getMessage());
+        }
+    }
+}
+*/
 
 /**
  * Encrypts a file.
@@ -2690,8 +3020,8 @@ function encryptFile(string $fileInName, string $fileInPath): array
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
 
-    // Load classes
-    $cipher = new Crypt_AES();
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
 
     // Generate an object key
     $objectKey = uniqidReal(32);
@@ -2732,11 +3062,11 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-    
-    // Load classes
-    $cipher = new Crypt_AES();
+
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
     $antiXSS = new AntiXSS();
-    
+
     // Get file name
     $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
@@ -2896,12 +3226,13 @@ function insertOrUpdateSharekey(
     try {
         DB::query(
             'INSERT INTO ' . $tableName . ' 
-            (object_id, user_id, share_key) 
-            VALUES (%i, %i, %s)
+            (object_id, user_id, share_key, encryption_version) 
+            VALUES (%i, %i, %s, %i)
             ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
             $objectId,
             $userId,
-            $shareKey
+            $shareKey,
+            3
         );
         return true;
     } catch (Exception $e) {
@@ -4445,6 +4776,10 @@ function loadClasses(string $className = ''): void
     require_once __DIR__. '/../includes/config/include.php';
     require_once __DIR__. '/../includes/config/settings.php';
     require_once __DIR__.'/../vendor/autoload.php';
+
+    // Load phpseclib v1 autoloader for backward compatibility
+    // This allows CryptoManager to fall back to v1 API for decrypting old data
+    require_once __DIR__ . '/../includes/libraries/phpseclibV1_autoload.php';
 
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));

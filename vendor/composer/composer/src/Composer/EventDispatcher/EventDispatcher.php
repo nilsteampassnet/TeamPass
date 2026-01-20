@@ -316,10 +316,12 @@ class EventDispatcher
                     }
                     $app->setAutoExit(false);
                     $cmd = new $className($event->getName());
+                    // @phpstan-ignore method.notFound, function.alreadyNarrowedType
                     if (method_exists($app, 'addCommand')) {
                         $app->addCommand($cmd);
                     } else {
                         // Compatibility layer for symfony/console <7.4
+                        // @phpstan-ignore method.notFound
                         $app->add($cmd);
                     }
                     $app->setDefaultCommand((string) $cmd->getName(), true);
@@ -710,7 +712,9 @@ class EventDispatcher
      */
     private function makeAutoloader(Event $event, $callable): void
     {
-        assert($this->composer instanceof Composer, new \LogicException('This should only be reached with a fully loaded Composer'));
+        if (!$this->composer instanceof Composer) {
+            return;
+        }
 
         if (is_array($callable)) {
             if (is_string($callable[0])) {
