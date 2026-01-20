@@ -222,7 +222,8 @@ class CryptoManager
                         'ofb' => CRYPT_MODE_OFB,
                     ];
                     if (isset($modeConstants[$mode])) {
-                        $cipher->setMode($modeConstants[$mode]);
+                        $method = 'setMode';
+                        $cipher->$method($modeConstants[$mode]);
                     }
                 }
 
@@ -288,7 +289,8 @@ class CryptoManager
                                 'ofb' => CRYPT_MODE_OFB,
                             ];
                             if (isset($modeConstants[$mode])) {
-                                $cipher->setMode($modeConstants[$mode]);
+                                $method = 'setMode';
+                                $cipher->$method($modeConstants[$mode]);
                             }
                         }
 
@@ -323,7 +325,8 @@ class CryptoManager
                         'ofb' => CRYPT_MODE_OFB,
                     ];
                     if (isset($modeConstants[$mode])) {
-                        $cipher->setMode($modeConstants[$mode]);
+                        $method = 'setMode';
+                        $cipher->$method($modeConstants[$mode]);
                     }
                 }
 
@@ -409,7 +412,8 @@ class CryptoManager
                         'ofb' => CRYPT_MODE_OFB,
                     ];
                     if (isset($modeConstants[$mode])) {
-                        $cipher->setMode($modeConstants[$mode]);
+                        $method = 'setMode';
+                        $cipher->$method($modeConstants[$mode]);
                     }
                 }
 
