@@ -5538,6 +5538,7 @@ function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTabl
                     'is_in_progress' => 0,
                     'status' => 'pending',
                     'finished_at' => null,
+                    'created_at' => time(),
                     'updated_at' => time(),
                 ]
             );
@@ -5557,6 +5558,7 @@ function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTabl
             'status' => 'pending',
             'finished_at' => null,
             'updated_at' => time(),
+            'created_at' => time(),
         ]
     );
 }
