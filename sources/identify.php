@@ -1150,6 +1150,7 @@ function canUserGetLog(
  */
 function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = []) : array
 {
+    $updateData = [];
     if (is_null($userInfo['private_key']) === true || empty($userInfo['private_key']) === true || $userInfo['private_key'] === 'none') {
         // No keys have been generated yet
         // Create them
@@ -1194,7 +1195,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
 
     // Get encryption version (default to 1 if not set)
     $encryptionVersion = isset($userInfo['encryption_version']) ? (int) $userInfo['encryption_version'] : 1;
-
+    
     // Try to decrypt private key with migration support
     $decryptResult = decryptPrivateKeyWithMigration(
         $passwordClear,
@@ -1202,6 +1203,11 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         (int) $userInfo['id'],
         $encryptionVersion
     );
+
+    // What phpseclib version is used?
+    if ($encryptionVersion !== $decryptResult['version_used']) {
+        $updateData['encryption_version'] = $decryptResult['version_used'];
+    }
 
     // Check for migration errors
     if ($decryptResult['migration_error'] === true) {
@@ -1225,7 +1231,6 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     }
 
     $privateKeyClear = $decryptResult['private_key_clear'];
-    $updateData = [];
 
     // If migration is needed, perform it now
     if ($decryptResult['needs_migration'] === true) {
@@ -2697,7 +2702,7 @@ function shouldUserAuthWithOauth2(
                         $userKeys['public_key']
                     );
                 }*/
-                    error_log('Switch user ' . $username . ' auth_type to oauth2');
+                
                 // Update user in database:
                 DB::update(
                     prefixTable('users'),

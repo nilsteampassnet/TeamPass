@@ -49,6 +49,7 @@ use TeampassClasses\Encryption\Encryption;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\CryptoManager\CryptoManager;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -2270,7 +2271,7 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     if (empty($userPwd) === false) {
         try {
             // Encrypt using CryptoManager (phpseclib v3)
-            $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
                 $userPwd
             );
@@ -2315,12 +2316,11 @@ function decryptPrivateKeyWithMigration(
 
     try {
         // Use automatic version detection (tries SHA-256 first, then SHA-1)
-        $result = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
+        $result = CryptoManager::aesDecryptWithVersionDetection(
             base64_decode($userPrivateKey),
             $userPwd,
             'cbc'
         );
-
         $decrypted = $result['data'];
         $versionUsed = $result['version_used'];
 
@@ -2339,7 +2339,7 @@ function decryptPrivateKeyWithMigration(
                 'private_key_clear' => $privateKeyClear,
                 'migration_error' => false,
                 'needs_migration' => $needsMigration,
-                'version_used' => $versionUsed, // For debugging
+                'version_used' => $versionUsed,
             ];
         }
 

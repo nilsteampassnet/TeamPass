@@ -182,10 +182,11 @@ class CryptoManager
      * @param string $data Data to encrypt
      * @param string $password Password/key for encryption
      * @param string $mode AES mode (cbc, ctr, ecb, cfb, ofb, gcm)
+     * @param string $hashAlgorithm Hash algorithm for PBKDF2 ('sha1' for v1 compatibility, 'sha256' for v3)
      * @return string Encrypted data (raw binary)
      * @throws Exception
      */
-    public static function aesEncrypt(string $data, string $password, string $mode = 'cbc'): string
+    public static function aesEncrypt(string $data, string $password, string $mode = 'cbc', string $hashAlgorithm = 'sha1'): string
     {
         try {
             // Try phpseclib v3 first
@@ -199,14 +200,15 @@ class CryptoManager
                     $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
                 }
 
-                // Use PBKDF2 with same defaults as phpseclib v1 for compatibility
+                // Use PBKDF2 with configurable hash algorithm
                 // v1 defaults: method='pbkdf2', hash='sha1', salt='phpseclib/salt', iterations=1000
-                $cipher->setPassword($password, 'pbkdf2', 'sha1', 'phpseclib/salt', 1000);
+                // v3 uses: method='pbkdf2', hash='sha256', salt='phpseclib/salt', iterations=1000
+                $cipher->setPassword($password, 'pbkdf2', $hashAlgorithm, 'phpseclib/salt', 1000);
 
                 return $cipher->encrypt($data);
             }
 
-            // Fallback to phpseclib v1 for backward compatibility
+            // Fallback to phpseclib v1 for backward compatibility (always uses SHA-1)
             if (class_exists('Crypt_AES')) {
                 $cipher = new \Crypt_AES();
 
@@ -242,12 +244,13 @@ class CryptoManager
      * @param string $data Encrypted data
      * @param string $password Password/key for decryption
      * @param string $mode AES mode (cbc, ctr, ecb, cfb, ofb, gcm)
+     * @param string $hashAlgorithm Hash algorithm for PBKDF2 ('sha1' for v1 compatibility, 'sha256' for v3)
      * @return string Decrypted data
      * @throws Exception
      */
-    public static function aesDecrypt(string $data, string $password, string $mode = 'cbc'): string
+    public static function aesDecrypt(string $data, string $password, string $mode = 'cbc', string $hashAlgorithm = 'sha1'): string
     {
-        // Try phpseclib v3 first (with backward compatibility settings)
+        // Try phpseclib v3 first
         if (class_exists('phpseclib3\\Crypt\\AES')) {
             try {
                 $cipher = new AES($mode);
@@ -259,9 +262,10 @@ class CryptoManager
                     $cipher->setIV(str_repeat("\0", 16)); // AES block size is 16 bytes
                 }
 
-                // Use PBKDF2 with same defaults as phpseclib v1 for compatibility
+                // Use PBKDF2 with configurable hash algorithm
                 // v1 defaults: method='pbkdf2', hash='sha1', salt='phpseclib/salt', iterations=1000
-                $cipher->setPassword($password, 'pbkdf2', 'sha1', 'phpseclib/salt', 1000);
+                // v3 uses: method='pbkdf2', hash='sha256', salt='phpseclib/salt', iterations=1000
+                $cipher->setPassword($password, 'pbkdf2', $hashAlgorithm, 'phpseclib/salt', 1000);
 
                 $decrypted = $cipher->decrypt($data);
 
@@ -331,6 +335,49 @@ class CryptoManager
         }
 
         throw new Exception('No AES implementation available (phpseclib v1 or v3 required)');
+    }
+
+    /**
+     * Decrypt data using AES with automatic version detection
+     *
+     * Tries to decrypt with SHA-256 (v3) first, then falls back to SHA-1 (v1)
+     * Returns both the decrypted data and the version used for successful decryption
+     *
+     * @param string $data Encrypted data
+     * @param string $password Password/key for decryption
+     * @param string $mode AES mode (cbc, ctr, ecb, cfb, ofb, gcm)
+     * @return array ['data' => string, 'version_used' => int] where version_used is 1 or 3
+     * @throws Exception If decryption fails with both versions
+     */
+    public static function aesDecryptWithVersionDetection(string $data, string $password, string $mode = 'cbc'): array
+    {
+        // Try SHA-256 first (v3 default)
+        try {
+            $decrypted = self::aesDecrypt($data, $password, $mode, 'sha256');
+            if ($decrypted !== false && !empty($decrypted)) {
+                return [
+                    'data' => $decrypted,
+                    'version_used' => 3,
+                ];
+            }
+        } catch (Exception $e) {
+            // SHA-256 failed, will try SHA-1
+        }
+
+        // Fallback to SHA-1 (v1 compatibility)
+        try {
+            $decrypted = self::aesDecrypt($data, $password, $mode, 'sha1');
+            if ($decrypted !== false && !empty($decrypted)) {
+                return [
+                    'data' => $decrypted,
+                    'version_used' => 1,
+                ];
+            }
+        } catch (Exception $e) {
+            throw new Exception('Failed to decrypt with both v3 (SHA-256) and v1 (SHA-1): ' . $e->getMessage());
+        }
+
+        throw new Exception('AES decryption failed with both SHA-256 and SHA-1');
     }
 
     /**
