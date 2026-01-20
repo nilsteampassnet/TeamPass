@@ -185,14 +185,13 @@ trait PhpseclibV3MigrationTrait {
         $userPrivateKey = cryption($arguments['user_private_key'], '', 'decrypt')['string'];
 
         $table = $taskData['table'];
-        $offset = (int) ($taskData['offset'] ?? 0);
         $limit = (int) ($taskData['limit'] ?? 100);
         $batch = (int) ($taskData['batch'] ?? 1);
         $totalBatches = (int) ($taskData['total_batches'] ?? 1);
 
         if (LOG_TASKS === true) {
             $this->logger->log(
-                "Migrating {$table} - batch {$batch}/{$totalBatches} (offset: {$offset}, limit: {$limit})",
+                "Migrating {$table} - batch {$batch}/{$totalBatches} (limit: {$limit}, always starting from first v1 sharekey)",
                 'INFO'
             );
         }
@@ -208,15 +207,17 @@ trait PhpseclibV3MigrationTrait {
         }
 
         // Fetch sharekeys to migrate (encryption_version = 1)
+        // IMPORTANT: Always use OFFSET 0 because as we migrate sharekeys,
+        // they disappear from the WHERE encryption_version = 1 filter.
+        // So the "remaining" sharekeys are always at the beginning.
         $sharekeys = DB::query(
             'SELECT increment_id, share_key, user_id, object_id
              FROM ' . prefixTable($table) . '
              WHERE user_id = %i AND encryption_version = 1
              ORDER BY increment_id ASC
-             LIMIT %i OFFSET %i',
+             LIMIT %i',
             $userId,
-            $limit,
-            $offset
+            $limit
         );
 
         if (empty($sharekeys)) {
