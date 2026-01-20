@@ -4520,7 +4520,7 @@ switch ($inputData['type']) {
         );
 
         // Uncrypt PW if sharekey is available (empty password otherwise)
-        // Uses automatic v1→v3 migration when hybrid mode is enabled
+        // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
             $pw = doDataDecryption(
@@ -4530,8 +4530,7 @@ switch ($inputData['type']) {
                     $session->get('user-private_key'),
                     $dataItem['user_public_key'],
                     (int) $dataItem['sharekey_id'],
-                    'sharekeys_items',
-                    $SETTINGS
+                    'sharekeys_items'
                 )
             );
         }
