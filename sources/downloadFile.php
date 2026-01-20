@@ -229,10 +229,9 @@ else {
     // Try to get encrypted file info first
     $file_info = DB::queryFirstRow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-        s.share_key AS share_key, s.increment_id AS sharekey_id, u.public_key AS user_public_key
+        s.share_key AS share_key, s.increment_id AS sharekey_id
         FROM ' . prefixTable('files') . ' AS f
         INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
-        INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
         WHERE s.user_id = %i AND s.object_id = %i',
         $session->get('user-id'),
         $get_fileid
@@ -249,7 +248,7 @@ else {
             decryptUserObjectKeyWithMigration(
                 $file_info['share_key'],
                 $session->get('user-private_key'),
-                $file_info['user_public_key'],
+                $session->get('user-public_key'),
                 (int) $file_info['sharekey_id'],
                 'sharekeys_files'
             )

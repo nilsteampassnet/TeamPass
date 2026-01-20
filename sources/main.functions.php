@@ -3057,12 +3057,13 @@ function insertOrUpdateSharekey(
     try {
         DB::query(
             'INSERT INTO ' . $tableName . ' 
-            (object_id, user_id, share_key) 
-            VALUES (%i, %i, %s)
+            (object_id, user_id, share_key, encryption_version) 
+            VALUES (%i, %i, %s, %i)
             ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
             $objectId,
             $userId,
-            $shareKey
+            $shareKey,
+            3
         );
         return true;
     } catch (Exception $e) {

@@ -1439,9 +1439,8 @@ switch ($inputData['type']) {
                             if ($dataTmpCat['encryption_type'] !== 'not_set') {
                                 // Get user sharekey for this field
                                 $userKey = DB::queryFirstRow(
-                                    'SELECT s.share_key, s.increment_id, u.public_key
+                                    'SELECT s.share_key, s.increment_id
                                     FROM ' . prefixTable('sharekeys_fields') . ' AS s
-                                    INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
                                     WHERE s.user_id = %i AND s.object_id = %i',
                                     $session->get('user-id'),
                                     $dataTmpCat['field_item_id']
@@ -1454,7 +1453,7 @@ switch ($inputData['type']) {
                                         decryptUserObjectKeyWithMigration(
                                             $userKey['share_key'],
                                             $session->get('user-private_key'),
-                                            $userKey['public_key'],
+                                            $session->get('user-public_key'),
                                             (int) $userKey['increment_id'],
                                             'sharekeys_fields'
                                         )
@@ -2285,9 +2284,8 @@ switch ($inputData['type']) {
 
             // Get the ITEM object key for the user
             $userKey = DB::queryFirstRow(
-                'SELECT s.share_key, s.increment_id, u.public_key
+                'SELECT s.share_key, s.increment_id
                 FROM ' . prefixTable('sharekeys_items') . ' AS s
-                INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
                 WHERE s.user_id = %i AND s.object_id = %i',
                 $session->get('user-id'),
                 $inputData['itemId']
@@ -2312,7 +2310,7 @@ switch ($inputData['type']) {
                         decryptUserObjectKeyWithMigration(
                             $userKey['share_key'],
                             $session->get('user-private_key'),
-                            $userKey['public_key'],
+                            $session->get('user-public_key'),
                             (int) $userKey['increment_id'],
                             'sharekeys_items'
                         )

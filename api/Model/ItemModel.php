@@ -46,7 +46,7 @@ class ItemModel
      * @return array
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
-    {error_log($sqlExtra);
+    {
         // Get items
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
