@@ -2682,17 +2682,16 @@ function decryptUserObjectKey(string $key, string $privateKey): string
 }
 
 /**
- * Decrypt user object key with version detection and automatic migration to v3
+ * Decrypt user object key with automatic v1→v3 migration
  *
  * This function decrypts a sharekey and automatically re-encrypts it with phpseclib v3
- * if it was encrypted with v1, when hybrid migration mode is enabled.
+ * if it was encrypted with v1 (detected during decryption).
  *
  * @param string $encryptedKey Base64 encoded encrypted sharekey
  * @param string $privateKey User's private key (PEM format)
  * @param string $publicKey User's public key (PEM format) - required for migration
  * @param int $sharekeyId Increment ID from sharekeys_* table - required for migration
  * @param string $sharekeyTable Table name (e.g., 'sharekeys_items') - required for migration
- * @param array $SETTINGS Application settings array
  * @return string Base64 encoded decrypted sharekey
  * @throws Exception
  */
@@ -2701,8 +2700,7 @@ function decryptUserObjectKeyWithMigration(
     string $privateKey,
     string $publicKey,
     int $sharekeyId,
-    string $sharekeyTable,
-    array $SETTINGS
+    string $sharekeyTable
 ): string {
     // Sanitize
     $antiXss = new AntiXSS();
@@ -2723,11 +2721,8 @@ function decryptUserObjectKeyWithMigration(
         $decryptedKey = $result['data'];
         $versionUsed = $result['version_used'];
 
-        // Check if migration is needed (v1 was used) and hybrid mode is enabled
-        $migrationMode = $SETTINGS['phpseclib_migration_mode'] ?? 'progressive';
-
-        if ($versionUsed === 1 && $migrationMode === 'hybrid') {
-            // Trigger automatic migration to v3
+        // Automatic migration: if v1 was used, re-encrypt with v3
+        if ($versionUsed === 1) {
             try {
                 migrateSharekeyToV3(
                     $sharekeyId,
@@ -2735,10 +2730,6 @@ function decryptUserObjectKeyWithMigration(
                     $decryptedKey,
                     $publicKey
                 );
-
-                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log("TEAMPASS Migration - Sharekey {$sharekeyId} in {$sharekeyTable} migrated from v1 to v3");
-                }
             } catch (Exception $migrationError) {
                 // Log migration error but don't fail the decryption
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -2794,17 +2785,20 @@ function migrateSharekeyToV3(
         'increment_id = %i',
         $sharekeyId
     );
-
-    // Update migration statistics
-    updateMigrationStatistics($sharekeyTable);
 }
 
 /**
  * Update migration statistics for a sharekeys table
  *
+ * DISABLED: This function has been disabled to improve performance.
+ * It was causing slowdowns by executing COUNT queries on large tables
+ * for each item access. Statistics can be calculated manually if needed
+ * using: SELECT encryption_version, COUNT(*) FROM sharekeys_* GROUP BY encryption_version
+ *
  * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
  * @return void
  */
+/*
 function updateMigrationStatistics(string $sharekeyTable): void
 {
     try {
@@ -2841,6 +2835,7 @@ function updateMigrationStatistics(string $sharekeyTable): void
         }
     }
 }
+*/
 
 /**
  * Encrypts a file.
