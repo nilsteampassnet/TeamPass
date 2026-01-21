@@ -4915,8 +4915,8 @@ switch ($inputData['type']) {
     /*
      * FUNCTION
      * Launch an action when clicking on a quick icon
-     * $action = 0 => Make not favorite
-     * $action = 1 => Make favorite
+     * $action = 0 => Make favorite
+     * $action = 1 => Make not favorite
      */
     case 'action_on_quick_icon':
         // Check KEY and rights
@@ -4933,50 +4933,18 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        $inputData['action'] = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
-        $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
+        $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
-        if ((int) $inputData['action'] === 0) {
-            // Add new favourite
-            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'add');
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'favourites' => implode(';', $session->get('user-favorites')),
-                ),
-                'id = %i',
-                $session->get('user-id')
-            );
-            // Update SESSION with this new favourite
-            $data = DB::queryFirstRow(
-                'SELECT label,id_tree
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
-                $inputData['itemId']
-            );
-            SessionManager::addRemoveFromSessionAssociativeArray(
-                'user-favorites_tab',
-                [
-                    $inputData['itemId'] => [
-                        'label' => $data['label'],
-                        'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
-                    ],
-                ],
-                'add'
-            );
-        } elseif ((int) $inputData['action'] === 1) {
-            // delete from session
-            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'remove');
+        if ($action === 0) {
+            // Add to favorites
+            addUserFavorite((int) $session->get('user-id'), $itemId);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$itemId], 'add');
+        } elseif ($action === 1) {
+            // Remove from favorites
+            removeUserFavorite((int) $session->get('user-id'), $itemId);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$itemId], 'remove');
 
-            // delete from DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'favourites' => implode(';', $session->get('user-favorites')),
-                ),
-                'id = %i',
-                $session->get('user-id')
-            );
             // refresh session fav list
             if ($session->has('user-favorites_tab') && $session->has('user-favorites_tab') && null !== $session->get('user-favorites_tab')) {
                 $user_favorites_tab = $session->get('user-favorites_tab');
@@ -4988,6 +4956,9 @@ switch ($inputData['type']) {
                 }
             }
         }
+
+        $favs = getUserFavorites((int) $session->get('user-id'));
+        $session->set('user-favorites', $favs);
         break;
 
     /*
