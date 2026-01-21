@@ -5363,7 +5363,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
 
     $session = SessionManager::getSession();
 
-    // 1. Check if user already completed forced migration
+    // Check if user already completed forced migration
     $user = DB::queryFirstRow(
         "SELECT phpseclibv3_migration_completed, phpseclibv3_migration_task_id, encryption_version, login
          FROM " . prefixTable('users') . "
@@ -5375,11 +5375,31 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         return; // Already migrated, nothing to do
     }
 
-    // 2. Check if user's private key is already in v3
+    // Check if user has other background tasks in progress or pending
+    // We exclude 'user_build_cache_tree' and 'send_email' as they don't conflict
+    // We search in the JSON arguments column for "user_id":$userId
+    $existingTasks = DB::query(
+        "SELECT increment_id, process_type, arguments FROM " . prefixTable('background_tasks') . "
+         WHERE is_in_progress != -1
+         AND process_type NOT IN ('user_build_cache_tree', 'send_email')"
+    );
+
+    foreach ($existingTasks as $task) {
+        $arguments = json_decode($task['arguments'], true);
+        if (isset($arguments['user_id']) && (int) $arguments['user_id'] === $userId) {
+            // User has another task in progress, skip migration for now
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS phpseclibv3_migration - User ' . $userId . ' has other task (' . $task['process_type'] . ') in progress, skipping migration');
+            }
+            return;
+        }
+    }
+
+    // Check if user's private key is already in v3
     // If encryption_version = 3, user keys are v3, only sharekeys need migration
     $userKeysV3 = ((int) $user['encryption_version'] === 3);
 
-    // 3. Count sharekeys to migrate (encryption_version = 1) for this user
+    // Count sharekeys to migrate (encryption_version = 1) for this user
     $sharekeys_tables = [
         'sharekeys_items',
         'sharekeys_logs',
@@ -5401,7 +5421,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         $totalSharekeysToMigrate += (int) $count;
     }
 
-    // 4. If no sharekeys to migrate, mark as completed
+    // If no sharekeys to migrate, mark as completed
     if ($totalSharekeysToMigrate === 0 && $userKeysV3) {
         DB::update(
             prefixTable('users'),
@@ -5412,7 +5432,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         return;
     }
 
-    // 5. Check if migration task already exists and is in progress
+    // Check if migration task already exists and is in progress
     $existingTask = DB::queryFirstRow(
         "SELECT increment_id, status FROM " . prefixTable('background_tasks') . "
          WHERE process_type = 'phpseclibv3_migration'
@@ -5430,7 +5450,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         return;
     }
 
-    // 6. Create migration background task
+    // Create migration background task
     $taskId = createPhpseclibV3MigrationTask(
         $userId,
         $privateKeyDecrypted,
@@ -5438,7 +5458,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         $sharekeysPerTable
     );
 
-    // 7. Set session variables for UI modal
+    // Set session variables for UI modal
     $session->set('phpseclibv3_migration_started', true);
     $session->set('phpseclibv3_migration_task_id', $taskId);
     $session->set('phpseclibv3_migration_total', $totalSharekeysToMigrate);
