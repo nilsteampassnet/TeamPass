@@ -179,7 +179,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'sPaginationType': 'listbox',
         'searching': true,
         'order': [
-            [1, 'asc']
+            [0, 'desc']
         ],
         'info': true,
         'processing': false,
@@ -197,8 +197,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         },
         'columnDefs': [
             {
-                // 0 = Date, 1 = Action, 2 = User
-                'targets': [2],
+                // 0 = Date, 1 = Action, 2 = Source, 3 = User
+                'targets': [1, 2, 3],
                 'render': function (data, type, row, meta) {
                     if (type !== 'display') { return data; }
                     return decodeHtmlEntities(data);
@@ -239,7 +239,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [1, 'asc']
+                [0, 'desc']
             ],
             'info': true,
             'processing': false,
@@ -298,7 +298,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [1, 'asc']
+                [0, 'desc']
             ],
             'info': true,
             'processing': false,
@@ -356,7 +356,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [1, 'asc']
+                [0, 'desc']
             ],
             'info': true,
             'processing': false,
@@ -416,7 +416,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [1, 'asc']
+                [0, 'desc']
             ],
             'info': true,
             'processing': false,
@@ -505,6 +505,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             {
                 title: 'Action',
                 column: 'l.action'
+            },
+            {
+                title: 'API',
+                column: 'l.raison'
+            },
+            {
+                title: 'Personal',
+                column: 't.personal_folder'
             }
         ];
         $("#table-items").one("preInit.dt", function() {
@@ -525,7 +533,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'sPaginationType': 'listbox',
             'searching': true,
             'order': [
-                [1, 'asc']
+                [0, 'desc']
             ],
             'info': true,
             'processing': false,
