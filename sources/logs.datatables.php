@@ -125,7 +125,7 @@ $orderDirection = in_array($order, $aSortTypes, true) ? $order : 'DESC';
 // Start building the query and output depending on the action
 if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
+    $aColumns = ['l.date', 'l.label', 'l.field_1', 'u.login', 'u.name', 'u.lastname', 'l.qui'];
 
     // Ordering
     $orderColumn = $aColumns[0];
@@ -147,7 +147,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
+        LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
         WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
@@ -155,10 +155,10 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT l.date as date, l.label as label, l.qui as who, 
+    $sql = 'SELECT l.date as date, l.label as label, l.field_1 as field_1, l.qui as who, 
     u.login as login, u.name AS name, u.lastname AS lastname
     FROM '.prefixTable('log_system').' as l
-    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
+    LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
     WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
@@ -181,8 +181,22 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
-        //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
+        //col3 (Source)
+        $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
+        $isApi = ($field1 === 'api') || (strpos($field1, 'tp_src=api') !== false);
+        $sourceLabel = $isApi ? 'API/Extension' : 'Web';
+        $sOutput .= '"'.htmlspecialchars($sourceLabel, ENT_QUOTES).'", ';
+        //col4
+        if (!empty($record['login'])) {
+            $fullname = trim(
+                htmlspecialchars(stripslashes((string) ($record['name'] ?? '')), ENT_QUOTES) . ' ' .
+                htmlspecialchars(stripslashes((string) ($record['lastname'] ?? '')), ENT_QUOTES)
+            );
+            $loginShown = htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES);
+            $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $loginShown . ']"';
+        } else {
+            $sOutput .= '"IP: ' . htmlspecialchars((string) $record['who'], ENT_QUOTES) . '"';
+        }
         //Finish the line
         $sOutput .= '],';
     }
@@ -445,7 +459,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'items') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
-    $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
+    $aColumns = ['l.date', 'i.id', 'i.label', 't.title', 'u.login', 'l.action', 'l.raison', 't.personal_folder', 'u.name', 'u.lastname'];
 
     // Ordering
     $orderColumn = $aColumns[0];
@@ -454,10 +468,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
 
     // Filtering
-    $sWhere = new WhereClause('OR');
-    if ($searchValue !== '') {        
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere->add($column.' LIKE %ss', $searchValue);
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
 
@@ -476,7 +491,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Prepare the SQL query
     $sql = 'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
-    i.perso AS perso, l.action AS action, t.title AS folder, i.id AS id
+    l.raison AS raison, t.personal_folder AS personal_folder, l.action AS action, t.title AS folder, i.id AS id
     FROM '.prefixTable('log_items').' AS l
     INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
@@ -507,10 +522,16 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)).'", ';
         //col2
         $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
-        //col4
+        //col6
         $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
-        //col5
-        if ($record['perso'] === 1) {
+        //col7 (API / Extension)
+        if (isset($record['raison']) && strpos((string) $record['raison'], 'tp_src=api') !== false) {
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'", ';
+        } else {
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'", ';
+        }
+        //col8 (Personal folder)
+        if ((int) ($record['personal_folder'] ?? 0) === 1) {
             $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
         } else {
             $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'"';
