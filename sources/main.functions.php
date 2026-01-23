@@ -1428,16 +1428,38 @@ function logEvents(
     // Load class DB
     loadClasses('DB');
 
+    // Detect API context (official browser extension uses API)
+    $isApiContext = defined('API_ROOT_PATH')
+        || (isset($_SERVER['SCRIPT_NAME']) && strpos((string) $_SERVER['SCRIPT_NAME'], '/api/') !== false)
+        || (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/api/index.php') !== false);
+
+    // Mark API-originated connection events (extension / API) so the logs UI can distinguish sources
+    if ($type === 'user_connection' && $isApiContext) {
+        $field_1_str = $field_1 === null ? '' : (string) $field_1;
+        if (strpos($field_1_str, 'tp_src=api') === false) {
+            $field_1_str = trim($field_1_str);
+            $field_1_str = $field_1_str === '' ? 'tp_src=api' : $field_1_str . ' | tp_src=api';
+        }
+        $field_1 = $field_1_str;
+    }
+
+        try {
     DB::insert(
-        prefixTable('log_system'),
-        [
-            'type' => $type,
-            'date' => time(),
-            'label' => $label,
-            'qui' => $who,
-            'field_1' => $field_1 === null ? '' : $field_1,
-        ]
-    );
+            prefixTable('log_system'),
+            [
+                'type' => $type,
+                'date' => time(),
+                'label' => $label,
+                'qui' => $who,
+                'field_1' => $field_1 === null ? '' : $field_1,
+            ]
+        );
+    
+    } catch (\Throwable $e) {
+        // Logging must never break API or UI flows
+        return;
+    }
+
     // If SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         if ($type === 'user_mngt') {
@@ -1489,46 +1511,113 @@ function logItems(
     // Load class DB
     loadClasses('DB');
 
+    // Normalize event timestamp
+    $eventTime = is_null($time) === true ? time() : (int) $time;
+
+    // Detect API context (official browser extension uses API) and tag logs accordingly
+    $isApiContext = defined('API_ROOT_PATH')
+        || (isset($_SERVER['SCRIPT_NAME']) && strpos((string) $_SERVER['SCRIPT_NAME'], '/api/') !== false)
+        || (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/api/index.php') !== false);
+    $sourceMarker = 'tp_src=api';
+
+    if ($isApiContext) {
+        // Add marker to reason to allow UI filtering/display
+        $raison = $raison === null ? '' : (string) $raison;
+        if (strpos($raison, $sourceMarker) === false) {
+            $raison = trim($raison);
+            $raison = $raison === '' ? $sourceMarker : $raison . ' | ' . $sourceMarker;
+        }
+
+        // Avoid duplicate "shown" logs caused by multiple API calls within a short window
+        if ($action === 'at_shown') {
+            try {
+            $existing = DB::queryFirstField(
+                'SELECT id FROM ' . prefixTable('log_items') . '
+                WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
+                ORDER BY date DESC
+                LIMIT 1',
+                $item_id,
+                $id_user,
+                $action,
+                $eventTime - 5,
+                $sourceMarker
+            );
+        } catch (\Throwable $e) {
+            $existing = null; // Never block API calls because of logging
+        }
+            if (!empty($existing)) {
+                return;
+            }
+        }
+    }
+
+    $raisonForDb = $raison === null ? '' : (string) $raison;
+
     // Insert log in DB
+    try {
     DB::insert(
         prefixTable('log_items'),
         [
             'id_item' => $item_id,
-            'date' => is_null($time) === true ? time() : $time,
+            'date' => $eventTime,
             'id_user' => $id_user,
             'action' => $action,
-            'raison' => $raison,
+            'raison' => $raisonForDb,
             'old_value' => $old_value,
             'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
         ]
     );
+    
+    } catch (\Throwable $e) {
+        // Logging must never break API or UI flows
+        return;
+    }
+
     // Timestamp the last change
     if (in_array($action, ['at_creation', 'at_modifiation', 'at_delete', 'at_import'], true)) {
-        DB::update(
-            prefixTable('misc'),
-            [
-                'valeur' => time(),
-                'updated_at' => time(),
-            ],
-            'type = %s AND intitule = %s',
-            'timestamp',
-            'last_item_change'
-        );
+        try {
+            DB::update(
+                prefixTable('misc'),
+                [
+                    'valeur' => time(),
+                    'updated_at' => time(),
+                ],
+                'type = %s AND intitule = %s',
+                'timestamp',
+                'last_item_change'
+            );
+        } catch (\Throwable $e) {
+            // ignore logging-related DB errors
+        }
+    }
+
+    // Prepare reason for syslog: remove internal source marker if present
+    $raisonForSyslog = $raison;
+    if ($isApiContext && $raisonForSyslog !== null) {
+        $raisonForSyslog = preg_replace('/\s*\|\s*tp_src=api\s*$/', '', (string) $raisonForSyslog);
+        $raisonForSyslog = trim((string) $raisonForSyslog);
+        if ($raisonForSyslog === '') {
+            $raisonForSyslog = null;
+        }
     }
 
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         // Extract reason
-        $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
+        $attribute = is_null($raisonForSyslog) === true ? Array('') : explode(' : ', $raisonForSyslog);
         // Get item info if not known
         if (empty($item_label) === true) {
-            $dataItem = DB::queryFirstRow(
-                'SELECT id, id_tree, label
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
-                $item_id
-            );
-            $item_label = $dataItem['label'];
+            try {
+                $dataItem = DB::queryFirstRow(
+                    'SELECT id, id_tree, label
+                    FROM ' . prefixTable('items') . '
+                    WHERE id = %i',
+                    $item_id
+                );
+                $item_label = $dataItem['label'];
+            } catch (\Throwable $e) {
+                // ignore logging-related DB errors
+            }
         }
 
         send_syslog(
