@@ -14,8 +14,7 @@ declare(strict_types=1);
  * @author    Nils Laumaillé <nils@teampass.net>
  * @copyright 2009-2024 Teampass.net
  * @license   GPL-3.0
- * @version   GIT: <git_id>
- * @link      https://www.teampass.net
+ * @see       https://www.teampass.net
  */
 
 namespace TeampassClasses\CryptoManager;

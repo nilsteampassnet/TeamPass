@@ -102,7 +102,7 @@ abstract class OTP implements OTPInterface
         $this->setParameter('label', $label);
     }
 
-    public function withLabel(string $label): self
+    public function withLabel(string $label): static
     {
         $otp = clone $this;
         $otp->setParameter('label', $label);
@@ -120,7 +120,7 @@ abstract class OTP implements OTPInterface
         $this->setParameter('issuer', $issuer);
     }
 
-    public function withIssuer(string $issuer): self
+    public function withIssuer(string $issuer): static
     {
         $otp = clone $this;
         $otp->setParameter('issuer', $issuer);
@@ -138,7 +138,7 @@ abstract class OTP implements OTPInterface
         $this->issuer_included_as_parameter = $issuer_included_as_parameter;
     }
 
-    public function withIssuerIncludedAsParameter(bool $issuer_included_as_parameter): self
+    public function withIssuerIncludedAsParameter(bool $issuer_included_as_parameter): static
     {
         $otp = clone $this;
         $otp->issuer_included_as_parameter = $issuer_included_as_parameter;
@@ -200,7 +200,7 @@ abstract class OTP implements OTPInterface
         }
     }
 
-    public function withParameter(string $parameter, mixed $value): self
+    public function withParameter(string $parameter, mixed $value): static
     {
         $otp = clone $this;
         $otp->setParameter($parameter, $value);
@@ -213,7 +213,7 @@ abstract class OTP implements OTPInterface
         $this->setParameter('secret', $secret);
     }
 
-    public function withSecret(string $secret): self
+    public function withSecret(string $secret): static
     {
         $otp = clone $this;
         $otp->setParameter('secret', $secret);
@@ -226,7 +226,7 @@ abstract class OTP implements OTPInterface
         $this->setParameter('digits', $digits);
     }
 
-    public function withDigits(int $digits): self
+    public function withDigits(int $digits): static
     {
         $otp = clone $this;
         $otp->setParameter('digits', $digits);
@@ -239,7 +239,7 @@ abstract class OTP implements OTPInterface
         $this->setParameter('algorithm', $digest);
     }
 
-    public function withDigest(string $digest): self
+    public function withDigest(string $digest): static
     {
         $otp = clone $this;
         $otp->setParameter('algorithm', $digest);

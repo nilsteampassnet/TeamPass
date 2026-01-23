@@ -343,17 +343,17 @@
         },
         {
             "name": "composer/composer",
-            "version": "2.9.3",
-            "version_normalized": "2.9.3.0",
+            "version": "2.9.4",
+            "version_normalized": "2.9.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/composer.git",
-                "reference": "fb3bee27676fd852a8a11ebbb1de19b4dada5aba"
+                "reference": "d4225153940b7c06f0e825195bdbdc312c67d917"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/composer/zipball/fb3bee27676fd852a8a11ebbb1de19b4dada5aba",
-                "reference": "fb3bee27676fd852a8a11ebbb1de19b4dada5aba",
+                "url": "https://api.github.com/repos/composer/composer/zipball/d4225153940b7c06f0e825195bdbdc312c67d917",
+                "reference": "d4225153940b7c06f0e825195bdbdc312c67d917",
                 "shasum": ""
             },
             "require": {
@@ -395,7 +395,7 @@
                 "ext-zip": "Allows direct extraction of ZIP archives (unzip/7z binaries will be used instead if available)",
                 "ext-zlib": "Enables gzip for HTTP requests"
             },
-            "time": "2025-12-30T12:40:17+00:00",
+            "time": "2026-01-22T13:08:50+00:00",
             "bin": [
                 "bin/composer"
             ],
@@ -443,7 +443,7 @@
                 "irc": "ircs://irc.libera.chat:6697/composer",
                 "issues": "https://github.com/composer/composer/issues",
                 "security": "https://github.com/composer/composer/security/policy",
-                "source": "https://github.com/composer/composer/tree/2.9.3"
+                "source": "https://github.com/composer/composer/tree/2.9.4"
             },
             "funding": [
                 {
@@ -558,13 +558,13 @@
             "time": "2024-11-12T16:29:46+00:00",
             "type": "library",
             "extra": {
-                "branch-alias": {
-                    "dev-main": "3.x-dev"
-                },
                 "phpstan": {
                     "includes": [
                         "extension.neon"
                     ]
+                },
+                "branch-alias": {
+                    "dev-main": "3.x-dev"
                 }
             },
             "installation-source": "dist",
@@ -1544,8 +1544,8 @@
         },
         {
             "name": "ezimuel/php-secure-session",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/ezimuel/phpsecuresession",
@@ -3474,18 +3474,13 @@
             "name": "phpseclib/phpseclib",
             "version": "3.0.48",
             "version_normalized": "3.0.48.0",
-            "version": "3.0.48",
-            "version_normalized": "3.0.48.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/phpseclib/phpseclib.git",
                 "reference": "64065a5679c50acb886e82c07aa139b0f757bb89"
-                "reference": "64065a5679c50acb886e82c07aa139b0f757bb89"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/64065a5679c50acb886e82c07aa139b0f757bb89",
-                "reference": "64065a5679c50acb886e82c07aa139b0f757bb89",
                 "url": "https://api.github.com/repos/phpseclib/phpseclib/zipball/64065a5679c50acb886e82c07aa139b0f757bb89",
                 "reference": "64065a5679c50acb886e82c07aa139b0f757bb89",
                 "shasum": ""
@@ -3494,36 +3489,24 @@
                 "paragonie/constant_time_encoding": "^1|^2|^3",
                 "paragonie/random_compat": "^1.4|^2.0|^9.99.99",
                 "php": ">=5.6.1"
-                "paragonie/constant_time_encoding": "^1|^2|^3",
-                "paragonie/random_compat": "^1.4|^2.0|^9.99.99",
-                "php": ">=5.6.1"
             },
             "require-dev": {
                 "phpunit/phpunit": "*"
-                "phpunit/phpunit": "*"
             },
             "suggest": {
-                "ext-dom": "Install the DOM extension to load XML formatted public keys.",
                 "ext-dom": "Install the DOM extension to load XML formatted public keys.",
                 "ext-gmp": "Install the GMP (GNU Multiple Precision) extension in order to speed up arbitrary precision integer arithmetic operations.",
                 "ext-libsodium": "SSH2/SFTP can make use of some algorithms provided by the libsodium-php extension.",
                 "ext-mcrypt": "Install the Mcrypt extension in order to speed up a few other cryptographic operations.",
                 "ext-openssl": "Install the OpenSSL extension in order to speed up a wide variety of cryptographic operations."
-                "ext-libsodium": "SSH2/SFTP can make use of some algorithms provided by the libsodium-php extension.",
-                "ext-mcrypt": "Install the Mcrypt extension in order to speed up a few other cryptographic operations.",
-                "ext-openssl": "Install the OpenSSL extension in order to speed up a wide variety of cryptographic operations."
             },
-            "time": "2025-12-15T11:51:42+00:00",
             "time": "2025-12-15T11:51:42+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
                 "files": [
                     "phpseclib/bootstrap.php"
-                    "phpseclib/bootstrap.php"
                 ],
-                "psr-4": {
-                    "phpseclib3\\": "phpseclib/"
                 "psr-4": {
                     "phpseclib3\\": "phpseclib/"
                 }
@@ -3583,7 +3566,6 @@
             "support": {
                 "issues": "https://github.com/phpseclib/phpseclib/issues",
                 "source": "https://github.com/phpseclib/phpseclib/tree/3.0.48"
-                "source": "https://github.com/phpseclib/phpseclib/tree/3.0.48"
             },
             "funding": [
                 {
@@ -3603,12 +3585,12 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.1.33",
-            "version_normalized": "2.1.33.0",
+            "version": "2.1.36",
+            "version_normalized": "2.1.36.0",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/9e800e6bee7d5bd02784d4c6069b48032d16224f",
-                "reference": "9e800e6bee7d5bd02784d4c6069b48032d16224f",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/2132e5e2361d11d40af4c17faa16f043269a4cf3",
+                "reference": "2132e5e2361d11d40af4c17faa16f043269a4cf3",
                 "shasum": ""
             },
             "require": {
@@ -3617,7 +3599,7 @@
             "conflict": {
                 "phpstan/phpstan-shim": "*"
             },
-            "time": "2025-12-05T10:24:31+00:00",
+            "time": "2026-01-21T13:58:26+00:00",
             "bin": [
                 "phpstan",
                 "phpstan.phar"
@@ -4587,17 +4569,17 @@
         },
         {
             "name": "spomky-labs/otphp",
-            "version": "11.4.1",
-            "version_normalized": "11.4.1.0",
+            "version": "11.4.2",
+            "version_normalized": "11.4.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Spomky-Labs/otphp.git",
-                "reference": "126c99b6cbbc18992cf3fba3b87931ba4e312482"
+                "reference": "2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/126c99b6cbbc18992cf3fba3b87931ba4e312482",
-                "reference": "126c99b6cbbc18992cf3fba3b87931ba4e312482",
+                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad",
+                "reference": "2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad",
                 "shasum": ""
             },
             "require": {
@@ -4609,7 +4591,7 @@
             "require-dev": {
                 "symfony/error-handler": "^6.4|^7.0|^8.0"
             },
-            "time": "2026-01-05T13:20:36+00:00",
+            "time": "2026-01-23T10:53:01+00:00",
             "type": "library",
             "installation-source": "dist",
             "autoload": {
@@ -4644,7 +4626,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Spomky-Labs/otphp/issues",
-                "source": "https://github.com/Spomky-Labs/otphp/tree/11.4.1"
+                "source": "https://github.com/Spomky-Labs/otphp/tree/11.4.2"
             },
             "funding": [
                 {
@@ -6055,8 +6037,8 @@
             "type": "metapackage",
             "extra": {
                 "thanks": {
-                    "name": "symfony/polyfill",
-                    "url": "https://github.com/symfony/polyfill"
+                    "url": "https://github.com/symfony/polyfill",
+                    "name": "symfony/polyfill"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -6867,8 +6849,8 @@
         },
         {
             "name": "teampassclasses/configmanager",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/configmanager",
@@ -6901,8 +6883,8 @@
         },
         {
             "name": "teampassclasses/cryptomanager",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/cryptomanager",
@@ -6942,8 +6924,8 @@
         },
         {
             "name": "teampassclasses/emailservice",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/emailservice",
@@ -6979,8 +6961,8 @@
         },
         {
             "name": "teampassclasses/encryption",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/encryption",
@@ -7017,8 +6999,8 @@
         },
         {
             "name": "teampassclasses/folderservices",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/folderservices",
@@ -7054,8 +7036,8 @@
         },
         {
             "name": "teampassclasses/language",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/language",
@@ -7088,8 +7070,8 @@
         },
         {
             "name": "teampassclasses/ldapextra",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/ldapextra",
@@ -7126,8 +7108,8 @@
         },
         {
             "name": "teampassclasses/nestedtree",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/nestedtree",
@@ -7164,8 +7146,8 @@
         },
         {
             "name": "teampassclasses/oauth2controller",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/oauth2controller",
@@ -7203,8 +7185,8 @@
         },
         {
             "name": "teampassclasses/passwordmanager",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/passwordmanager",
@@ -7241,8 +7223,8 @@
         },
         {
             "name": "teampassclasses/performchecks",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/performchecks",
@@ -7279,8 +7261,8 @@
         },
         {
             "name": "teampassclasses/sessionmanager",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/sessionmanager",
@@ -7317,8 +7299,8 @@
         },
         {
             "name": "teampassclasses/superglobal",
-            "version": "dev-hotfix/fix-phpseclib",
-            "version_normalized": "dev-hotfix/fix-phpseclib",
+            "version": "dev-hotfix/update-composer-libraries",
+            "version_normalized": "dev-hotfix/update-composer-libraries",
             "dist": {
                 "type": "path",
                 "url": "includes/libraries/teampassclasses/superglobal",
