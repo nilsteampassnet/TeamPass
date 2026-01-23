@@ -357,6 +357,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </li>
                                             <?php
                                         }
+                                        
                                         // Status on users passwords migration to new encryption Symfony Password
                                         $excluded_ids = array(9999991, 9999997, 9999998, 9999999);
                                         $user_results = DB::query(
@@ -377,11 +378,47 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
                                             <span><i class="fa-solid fa-hand text-warning"></i>
-                                            Password Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
+                                            Users Password Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
                                             </span>
                                             <span>
-                                            <i class="fa-solid fa-info-circle text-primary open-info" data-info="<?php echo DB::count();?> user accounts still use the legacy encryption library and must be migrated before upgrading to version 3.2.0.<br>
-                                            To migrate: Users must either log in once or have their password updated via the Users management page.<p class='mt-2'>List of remaining users: <?php echo $logins_list;?></p>" data-size="lg" data-title="Importante notice"></i>
+                                                <i class="fa-solid fa-info-circle text-primary open-info" 
+                                                    data-target="#info-migration-user-passwords" 
+                                                    data-size="lg" 
+                                                    data-title="Important notice"></i>
+                                                <div id="info-migration-user-passwords" class="d-none">
+                                                    <?php echo DB::count(); ?> user accounts still use the legacy encryption library and must be migrated before upgrading to version 3.2.0.<br>
+                                                    To migrate: Users must either log in once or have their password updated via the Users management page.
+                                                    <p class='mt-2'>List of remaining users: <?php echo htmlspecialchars($logins_list, ENT_QUOTES, 'UTF-8'); ?></p>
+                                                </div>
+                                            </span>
+                                        </li>
+                                            <?php
+                                        }
+                                        
+                                        // Status on users passwords migration to new encryption Symfony Password
+                                        $excluded_ids = array(9999991, 9999997, 9999998, 9999999);
+                                        $user_results = DB::query(
+                                            "SELECT login 
+                                            FROM ".prefixTable('users')."
+                                            WHERE phpseclibv3_migration_completed = 0"
+                                        );
+                                        if (DB::count() > 0) {
+                                            $logins_array = array_column($user_results, 'login');
+                                            $logins_list = implode(', ', $logins_array);
+                                            ?>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span><i class="fa-solid fa-hand text-warning"></i>
+                                            Sharekeys Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
+                                            </span>
+                                            <span>
+                                                <i class="fa-solid fa-info-circle text-primary open-info" 
+                                                data-target="#info-migration-sharekeys" 
+                                                data-size="lg" 
+                                                data-title="Important notice"></i>
+                                                <div id="info-migration-sharekeys" class="d-none">
+                                                    <?php echo DB::count(); ?> user accounts still use the legacy encryption library for the sharekeys and must be migrated to rely on more secure library.
+                                                    <p class='mt-2'>List of remaining users: <?php echo htmlspecialchars($logins_list, ENT_QUOTES, 'UTF-8'); ?></p>
+                                                </div>
                                             </span>
                                         </li>
                                             <?php

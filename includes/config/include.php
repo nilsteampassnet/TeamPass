@@ -47,6 +47,7 @@ define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
 define('LOG_TO_SERVER', false);         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
+define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
 
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks

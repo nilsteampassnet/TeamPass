@@ -1551,5 +1551,18 @@ return array(
     'bck_upload_max_file_size' => 'Taille maximale du fichier : %s.',
     'bck_upload_error_file_too_large' => 'Le fichier sélectionné est trop volumineux. Taille maximale autorisée : %s. Augmentez la valeur "upload_maxfilesize" dans TeamPass et vérifiez les limites PHP (upload_max_filesize, post_max_size).',
     'bck_upload_error_file_extension' => 'Type de fichier non autorisé. Formats acceptés : .sql, .sql.gz, .gz, .zip.',
+    'phpseclibv3_migration_title' => 'Migration du chiffrement en cours',
+    'phpseclibv3_migration_info_title' => 'Amélioration de la sécurité',
+    'phpseclibv3_migration_info_text' => 'Vos données cryptées sont en cours de migration vers un standard de chiffrement plus sécurisé (phpseclib v3 avec SHA-256). Ce processus s’exécute en arrière-plan et se terminera automatiquement. Veuillez ne pas fermer cette fenêtre.',
+    'status' => 'Statut',
+    'objects_to_migrate' => 'Objets à migrer',
+    'objects_migrated' => 'Objets migrés',
+    'remaining' => 'Restant',
+    'phpseclibv3_migration_completed' => 'Migration terminée !',
+    'phpseclibv3_migration_completed_text' => 'La migration de votre chiffrement a été effectuée avec succès. Vous pouvez maintenant continuer à utiliser Teampass.',
+    'phpseclibv3_migration_footer_note' => 'Ce processus peut prendre plusieurs minutes selon la quantité de données.',
+    'pending' => 'En attente',
+    'completed' => 'Terminé',
+    'failed' => 'Échec',
 
 );

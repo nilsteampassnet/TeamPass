@@ -29,6 +29,19 @@
  */
 
 return array(
+    'phpseclibv3_migration_title' => 'Encryption Migration in Progress',
+    'phpseclibv3_migration_info_title' => 'Security Enhancement',
+    'phpseclibv3_migration_info_text' => 'Your encrypted data is being migrated to a more secure encryption standard (phpseclib v3 with SHA-256). This process runs in the background and will complete automatically. Please do not close this window.',
+    'status' => 'Status',
+    'objects_to_migrate' => 'Objects to Migrate',
+    'objects_migrated' => 'Objects Migrated',
+    'remaining' => 'Remaining',
+    'phpseclibv3_migration_completed' => 'Migration Completed!',
+    'phpseclibv3_migration_completed_text' => 'Your encryption migration has been completed successfully. You can now continue using Teampass.',
+    'phpseclibv3_migration_footer_note' => 'This process may take several minutes depending on the amount of data.',
+    'pending' => 'Pending',
+    'completed' => 'Completed',
+    'failed' => 'Failed',
     'browser_extension' => 'Browser Extension',
     'browser_extension_instructions' => 'This interface allows you to establish a secure link between your browser and your TeamPass instance. This setup is mandatory for the extension to communicate with the API in a fluid and protected manner.<br>Security Note: Never share your extension key. If you suspect your connection has been compromised, you can generate a new key here, which will instantly reset the extensions access. Share the new key with the browser extension owner only to update the license server (nils@teampass.net).',
     'browser_extension_key' => 'Browser Extension Key',

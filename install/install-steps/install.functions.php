@@ -157,14 +157,13 @@ function generateUserKeysForInstall(string $userPwd): array
     // Sanitize
     $antiXss = new AntiXSS();
     $userPwd = $antiXss->xss_clean($userPwd);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
+
+    // Generate RSA key pair using CryptoManager (phpseclib v3)
+    $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
+
+    // Encrypt the private key with user password using AES
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
+
     return [
         'private_key' => base64_encode($privatekey),
         'public_key' => base64_encode($res['publickey']),

@@ -60,7 +60,7 @@ class PhpFileParser
 
         // return early if there is no chance of matching anything in this file
         Preg::matchAllStrictGroups('{\b(?:class|interface|trait'.$extraTypes.')\s}i', $contents, $matches);
-        if ([] === $matches) {
+        if ([] === $matches[0]) {
             return [];
         }
 

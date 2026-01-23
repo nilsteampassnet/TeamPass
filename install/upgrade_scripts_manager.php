@@ -61,6 +61,7 @@ $scripts_list = array(
     array('upgrade_operations.php', 'clean_duplicate_sharekeys'),
     array('upgrade_run_3.1.5.php', 'user_id'),
     array('upgrade_operations.php', 'Transparent_recovery_migration'),
+    array('upgrade_run_3.1.6.php', 'user_id'),
 );
 $param = '';
 
