@@ -4223,11 +4223,21 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['item_key'] = (string) $record['item_key'];
                     $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                     $html_json[$record['id']]['label'] = strip_tags($record['label']);
-                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false && empty($record['description']) === false) {
-                        $html_json[$record['id']]['desc'] = mb_substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
-                    } else {
-                        $html_json[$record['id']]['desc'] = '';
+                    // Build description preview (handles both raw HTML and HTML-encoded strings)
+                    $descPreview = '';
+                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false) {
+                        $descRaw = (string) $record['description'];
+                        // Some descriptions may be stored HTML-encoded (ex: &lt;p&gt;...&lt;/p&gt;). Decode first, then strip tags.
+                        $descDecoded = html_entity_decode($descRaw, ENT_QUOTES, 'UTF-8');
+                        $descStripped = preg_replace('#<[^>]+>#', ' ', $descDecoded);
+                        // Normalize spaces (includes NBSP) and trim
+                        $descStripped = str_replace("\xC2\xA0", ' ', (string) $descStripped);
+                        $descStripped = trim(preg_replace('/\s+/', ' ', (string) $descStripped));
+                        if ($descStripped !== '') {
+                            $descPreview = mb_substr($descStripped, 0, 200);
+                        }
                     }
+                    $html_json[$record['id']]['desc'] = $descPreview;
                     $html_json[$record['id']]['login'] = $record['login'];
                     $html_json[$record['id']]['anyone_can_modify'] = (int) $record['anyone_can_modify'];
                     $html_json[$record['id']]['is_result_of_search'] = 0;
