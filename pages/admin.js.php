@@ -1685,22 +1685,21 @@ $(window).on('beforeunload', function() {
 $(document).on('click', '.open-info', function(e) {
     e.preventDefault()
     
-    const content = $(this).data('info')
-    const title = $(this).data('title') || 'Information'
-    const size = $(this).data('size') || 'lg' // sm, lg, xl
-    
-    // Update modal size
-    const modalDialog = $('#info-modal .modal-dialog')
-    modalDialog.removeClass('modal-sm modal-lg modal-xl')
-    if (size !== 'default') {
-        modalDialog.addClass('modal-' + size)
+    // Get content either from data-info or from a target ID
+    let content = $(this).data('info')
+    const target = $(this).data('target')
+    if (target) {
+        content = $(target).html()
     }
     
-    // Update modal content
+    const title = $(this).data('title') || 'Information'
+    const size = $(this).data('size') || 'lg'
+    
+    const modalDialog = $('#info-modal .modal-dialog')
+    modalDialog.removeClass('modal-sm modal-lg modal-xl').addClass('modal-' + size)
+    
     $('#info-modal-title').html('<i class="fas fa-info-circle"></i> ' + title)
     $('#info-modal-body').html(content)
-    
-    // Show modal
     $('#info-modal').modal('show')
 })
 //]]>
