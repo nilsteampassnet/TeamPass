@@ -130,6 +130,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 timeOut: 1000
                             }
                         );
+                        $('#warningModal').modal('hide');
                     }
                 );
             });
