@@ -611,3 +611,193 @@ if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
         return '';
     }
 }
+
+/**
+ * -----------------------------------------------------------------------------
+ * CLI Restore Authorization (one-shot token stored in teampass_misc)
+ * -----------------------------------------------------------------------------
+ * type    : restore_authorization_cli
+ * intitule: sha256(token)
+ * valeur  : JSON payload (status, initiator, file info, encrypted secrets)
+ *
+ * TTL fixed at 3600s (1 hour) for now.
+ */
+
+if (function_exists('tpRestoreAuthorizationCreate') === false) {
+    function tpRestoreAuthorizationCreate(
+        int $userId,
+        string $userLogin,
+        string $filePath,
+        string $serverScope,
+        string $serverFile,
+        int $operationId,
+        string $encryptionKey,
+        string $overrideKey,
+        array $compat,
+        int $ttl,
+        array $SETTINGS
+    ): array {
+        $ttl = (int) $ttl;
+        if ($ttl <= 0) {
+            $ttl = 3600;
+        }
+
+        $now = time();
+
+        try {
+            $token = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        } catch (Throwable $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+
+        $tokenHash = hash('sha256', $token);
+
+        $real = realpath($filePath);
+        $resolvedPath = ($real !== false) ? $real : $filePath;
+
+        $payload = [
+            'status' => 'pending',
+            'created_at' => $now,
+            'expires_at' => $now + $ttl,
+            'ttl' => $ttl,
+            'initiator' => [
+                'id' => $userId,
+                'login' => $userLogin,
+            ],
+            'file' => [
+                'path' => $resolvedPath,
+                'basename' => basename($resolvedPath),
+                'size' => is_file($resolvedPath) ? filesize($resolvedPath) : null,
+                'mtime' => is_file($resolvedPath) ? filemtime($resolvedPath) : null,
+            ],
+            'source' => [
+                'serverScope' => $serverScope,
+                'serverFile' => $serverFile,
+                'operation_id' => $operationId,
+            ],
+            'compat' => $compat,
+            'secrets' => [],
+        ];
+
+        if ($encryptionKey !== '') {
+            $enc = cryption($encryptionKey, '', 'encrypt', $SETTINGS);
+            $payload['secrets']['encryptionKey'] = isset($enc['string']) ? (string) $enc['string'] : '';
+        }
+
+        if ($overrideKey !== '') {
+            $enc = cryption($overrideKey, '', 'encrypt', $SETTINGS);
+            $payload['secrets']['overrideKey'] = isset($enc['string']) ? (string) $enc['string'] : '';
+        }
+
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            return ['success' => false, 'message' => 'json_encode_failed'];
+        }
+
+        // Insert token entry
+        try {
+            DB::insert(
+                prefixTable('misc'),
+                [
+                    'type' => 'restore_authorization_cli',
+                    'intitule' => $tokenHash,
+                    'valeur' => $json,
+                    'updated_at' => $now,
+                ]
+            );
+            $id = (int) DB::insertId();
+        } catch (Throwable $e) {
+            // Fallback if updated_at column does not exist
+            try {
+                DB::insert(
+                    prefixTable('misc'),
+                    [
+                        'type' => 'restore_authorization_cli',
+                        'intitule' => $tokenHash,
+                        'valeur' => $json,
+                    ]
+                );
+                $id = (int) DB::insertId();
+            } catch (Throwable $e2) {
+                return ['success' => false, 'message' => $e2->getMessage()];
+            }
+        }
+
+        return [
+            'success' => true,
+            'id' => $id,
+            'token' => $token,
+            'token_hash' => $tokenHash,
+            'expires_at' => (int) $payload['expires_at'],
+            'ttl' => $ttl,
+        ];
+    }
+}
+
+if (function_exists('tpRestoreAuthorizationFetchByHash') === false) {
+    function tpRestoreAuthorizationFetchByHash(string $tokenHash): array
+    {
+        $row = DB::queryFirstRow(
+            'SELECT increment_id, valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
+            'restore_authorization_cli',
+            $tokenHash
+        );
+
+        if (empty($row)) {
+            return ['success' => false, 'message' => 'not_found'];
+        }
+
+        $payload = json_decode((string) ($row['valeur'] ?? ''), true);
+        if (!is_array($payload)) {
+            return ['success' => false, 'message' => 'invalid_payload'];
+        }
+
+        return [
+            'success' => true,
+            'id' => (int) ($row['increment_id'] ?? 0),
+            'payload' => $payload,
+        ];
+    }
+}
+
+if (function_exists('tpRestoreAuthorizationUpdatePayload') === false) {
+    function tpRestoreAuthorizationUpdatePayload(int $id, array $payload): bool
+    {
+        $payload['updated_at'] = time();
+        $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            return false;
+        }
+
+        try {
+            DB::update(
+                prefixTable('misc'),
+                [
+                    'valeur' => $json,
+                    'updated_at' => time(),
+                ],
+                'increment_id=%i AND type=%s',
+                $id,
+                'restore_authorization_cli'
+            );
+            return true;
+        } catch (Throwable $e) {
+            // Fallback if updated_at column does not exist
+            try {
+                DB::update(
+                    prefixTable('misc'),
+                    [
+                        'valeur' => $json,
+                    ],
+                    'increment_id=%i AND type=%s',
+                    $id,
+                    'restore_authorization_cli'
+                );
+                return true;
+            } catch (Throwable $e2) {
+                return false;
+            }
+        }
+    }
+}
+

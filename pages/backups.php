@@ -200,7 +200,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                             </div>
                                             <div class="row mt-3 hidden" id="onthefly-restore-finished"></div>
                                             <div class="row mt-3">
-                                                <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo $lang->get('perform_restore'); ?></button>
+                                                <button class="btn btn-info ml-1 start" data-action="onthefly-restore"><?php echo $lang->get('prepare_restore'); ?></button>
                                             </div>
                                         </div>
                                     </div>
@@ -432,7 +432,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </div>
                                                     <div class="row mt-3 hidden" id="scheduled-restore-finished"></div>
                                                     <div class="row mt-3">
-                                                        <button type="button" class="btn btn-info ml-1" id="scheduled-restore-start" disabled><?php echo $lang->get('perform_restore'); ?></button>
+                                                        <button type="button" class="btn btn-info ml-1" id="scheduled-restore-start" disabled><?php echo $lang->get('prepare_restore'); ?></button>
                                                     </div>
                                                 </div>
 
@@ -468,7 +468,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
             <div class="modal-body" id="tp-confirm-restore-body"></div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
-                <button type="button" class="btn btn-danger" id="tp-confirm-restore-yes"><?php echo $lang->get('perform_restore'); ?></button>
+                <button type="button" class="btn btn-danger" id="tp-confirm-restore-yes"><?php echo $lang->get('prepare_restore'); ?></button>
             </div>
         </div>
     </div>
@@ -563,3 +563,47 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
         </div>
     </div>
 </div>
+
+
+<!-- CLI restore command modal -->
+    <div class="modal fade" id="tp-cli-restore-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info">
+                    <h5 class="modal-title" id="tp-cli-restore-title"><?php echo $lang->get('bck_restore_cli_title'); ?></h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-warning" id="tp-cli-restore-warnings" style="display:none;"></div>
+
+                    <p class="mb-2"><?php echo $lang->get('bck_restore_cli_prereq'); ?></p>
+	                    <div class="alert alert-info" id="tp-cli-restore-logout-info">
+	                        <?php echo $lang->get('bck_restore_cli_logout_info'); ?>
+	                    </div>
+
+                    <div class="form-group">
+                        <label for="tp-cli-restore-command" class="text-bold"><?php echo $lang->get('bck_restore_cli_command'); ?></label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="tp-cli-restore-command" readonly>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" id="tp-cli-restore-copy">
+                                    <?php echo $lang->get('bck_restore_cli_copy'); ?>
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted" id="tp-cli-restore-expires"></small>
+                    </div>
+
+                    <pre class="bg-light p-2 rounded" id="tp-cli-restore-command-raw" style="white-space: pre-wrap;"></pre>
+                </div>
+
+                <div class="modal-footer">
+	                    <button type="button" class="btn btn-danger" id="tp-cli-restore-logout"><?php echo $lang->get('bck_restore_cli_logout'); ?></button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
+                </div>
+            </div>
+        </div>
+    </div>
