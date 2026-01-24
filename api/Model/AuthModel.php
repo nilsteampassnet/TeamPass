@@ -136,8 +136,38 @@ class AuthModel
                 $SETTINGS = $configManager->getAllSettings();
 
                 // Log user
-                logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
+                // Log user (API / browser extension)
+                // Prevent duplicate entries when the client retries within a very short window.
+                loadClasses('DB');
+                // Mark API-originated connections so they can be distinguished in logs UI
+                $originForDb = 'api | tp_src=api';
 
+                try {
+                    $recentCount = (int) DB::queryFirstField(
+                        'SELECT COUNT(*)
+                        FROM ' . prefixTable('log_system') . '
+                        WHERE type = %s AND label = %s AND qui = %i AND field_1 LIKE %ss AND date > %i',
+                        'user_connection',
+                        'user_connection',
+                        (int) $userInfo['id'],
+                        '%tp_src=api%',
+                        time() - 2
+                    );
+                } catch (\Throwable $e) {
+                    // Logging checks must never break API auth
+                    $recentCount = 0;
+                }
+
+                if ($recentCount === 0) {
+                    logEvents(
+                        $SETTINGS,
+                        'user_connection',
+                        'user_connection',
+                        (string) $userInfo['id'],
+                        stripslashes($userInfo['login']),
+                        $originForDb
+                    );
+                }
                 // create JWT with session key
                 return $this->createUserJWT(
                     (int) $userInfo['id'],
