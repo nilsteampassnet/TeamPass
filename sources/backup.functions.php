@@ -614,6 +614,84 @@ if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
 
 /**
  * -----------------------------------------------------------------------------
+ * Orphan backup metadata (.meta.json) helpers
+ * -----------------------------------------------------------------------------
+ * A metadata file is considered orphan when <backup>.meta.json exists but the
+ * corresponding <backup> file does not exist anymore.
+ *
+ * We use this to detect rare edge cases (crash / partial operations) and allow
+ * admins to purge those orphan metadata files safely.
+ */
+
+if (function_exists('tpListOrphanBackupMetaFiles') === false) {
+    function tpListOrphanBackupMetaFiles(string $dir): array
+    {
+        $dir = rtrim($dir, '/\\');
+        if ($dir === '' || is_dir($dir) === false) {
+            return [];
+        }
+
+        $dirReal = realpath($dir);
+        if ($dirReal === false || is_dir($dirReal) === false) {
+            return [];
+        }
+
+        $paths = glob($dirReal . '/*.meta.json');
+        if ($paths === false) {
+            $paths = [];
+        }
+
+        $orphans = [];
+        foreach ($paths as $metaPath) {
+            if (!is_string($metaPath) || $metaPath === '') {
+                continue;
+            }
+            $basePath = substr($metaPath, 0, -strlen('.meta.json'));
+            if ($basePath === '' || is_file($basePath) === true) {
+                continue;
+            }
+            $orphans[] = $metaPath;
+        }
+
+        return $orphans;
+    }
+}
+
+if (function_exists('tpPurgeOrphanBackupMetaFiles') === false) {
+    /**
+     * @param array $metaPaths list of full paths to *.meta.json files
+     * @return array{deleted:int, failed:array}
+     */
+    function tpPurgeOrphanBackupMetaFiles(array $metaPaths): array
+    {
+        $deleted = 0;
+        $failed = [];
+
+        foreach ($metaPaths as $p) {
+            if (!is_string($p) || $p === '') {
+                continue;
+            }
+            if (is_file($p) === false) {
+                continue;
+            }
+            $ok = @unlink($p);
+            if ($ok === true) {
+                $deleted++;
+            } else {
+                $failed[] = $p;
+            }
+        }
+
+        return [
+            'deleted' => $deleted,
+            'failed' => $failed,
+        ];
+    }
+}
+
+
+/**
+ * -----------------------------------------------------------------------------
  * CLI Restore Authorization (one-shot token stored in teampass_misc)
  * -----------------------------------------------------------------------------
  * type    : restore_authorization_cli

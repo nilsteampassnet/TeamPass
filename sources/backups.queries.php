@@ -1035,6 +1035,125 @@ try {
             );
             break;
 
+
+        case 'onthefly_check_upload_filename':
+            // Pre-check before uploading a restore SQL file to <files>.
+            // We refuse uploading a file if its ORIGINAL name already exists in <files>,
+            // to avoid duplicates and accidental metadata removal edge cases.
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $filename = (string) ($dataReceived['filename'] ?? '');
+            $filename = basename($filename);
+
+            // Safety: only .sql allowed here (UI already filters, but keep server strict)
+            if ($filename === '' || strtolower((string) pathinfo($filename, PATHINFO_EXTENSION)) !== 'sql') {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Invalid filename',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $dir = rtrim($baseFilesDir, '/');
+            $fullPath = $dir . '/' . $filename;
+
+            $exists = is_file($fullPath);
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'exists' => $exists,
+                    'filename' => $filename,
+                    'message' => $exists ? str_replace('{FILENAME}', $filename, (string) $lang->get('bck_upload_error_file_already_exists')) : '',
+                ],
+                'encode'
+            );
+            break;
+
+        case 'bck_meta_orphans_status':
+            // Return the count of orphan *.meta.json files in:
+            // - <files> (on-the-fly)
+            // - <files>/backups (scheduled)
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $filesDir = rtrim($baseFilesDir, '/');
+            $scheduledDir = $filesDir . '/backups';
+
+            $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
+            $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'files' => count($orphFiles),
+                    'scheduled' => count($orphSched),
+                    'total' => count($orphFiles) + count($orphSched),
+                ],
+                'encode'
+            );
+            break;
+
+        case 'bck_meta_orphans_purge':
+            // Purge orphan *.meta.json files in <files> and <files>/backups (scheduled)
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $filesDir = rtrim($baseFilesDir, '/');
+            $scheduledDir = $filesDir . '/backups';
+
+            $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
+            $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
+
+            $all = array_merge($orphFiles, $orphSched);
+            $res = function_exists('tpPurgeOrphanBackupMetaFiles') ? tpPurgeOrphanBackupMetaFiles($all) : ['deleted' => 0, 'failed' => []];
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'deleted' => (int) ($res['deleted'] ?? 0),
+                    'failed' => $res['failed'] ?? [],
+                ],
+                'encode'
+            );
+            break;
+
         case 'onthefly_list_backups':
             // List on-the-fly backup files stored directly in <files> directory (not in /backups for scheduled)
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {

@@ -1578,5 +1578,11 @@ return array(
     'bck_restore_cli_warnings' => 'Avertissements',
     'bck_restore_cli_token_expires' => 'Le jeton d’autorisation expire le :',
     'bck_restore_cli_warning_version_not_verified' => 'Restauration depuis upload : la version TeamPass n’a pas pu être vérifiée (schema-level uniquement).',
+    'bck_upload_error_file_already_exists' => 'Un fichier nommé « {FILENAME} » existe déjà sur le serveur. L’upload a été bloqué afin d’éviter les doublons.',
+    'bck_meta_orphans_btn_title' => 'Métadonnées orphelines',
+    'bck_meta_orphans_tooltip' => 'Métadonnées orphelines détectées : {TOTAL} (files : {FILES}, scheduled : {SCHEDULED}). Cliquer pour purger.',
+    'bck_meta_orphans_tooltip_none' => 'Aucune métadonnée orpheline détectée.',
+    'bck_meta_orphans_purge_done' => 'Purge terminée : {DELETED} fichier(s) de métadonnées supprimé(s).',
+    'bck_meta_orphans_purge_none' => 'Aucune métadonnée orpheline à purger.',
 
 );
