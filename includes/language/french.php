@@ -1565,4 +1565,10 @@ return array(
     'bck_upload_max_file_size' => 'Taille maximale du fichier : %s.',
     'bck_upload_error_file_too_large' => 'Le fichier sélectionné est trop volumineux. Taille maximale autorisée : %s. Augmentez la valeur "upload_maxfilesize" dans TeamPass et vérifiez les limites PHP (upload_max_filesize, post_max_size).',
     'bck_upload_error_file_extension' => 'Type de fichier non autorisé. Formats acceptés : .sql, .sql.gz, .gz, .zip.',
+    'bck_upload_error_file_already_exists' => 'Un fichier nommé « {FILENAME} » existe déjà sur le serveur. L’upload a été bloqué afin d’éviter les doublons.',
+    'bck_meta_orphans_btn_title' => 'Métadonnées orphelines',
+    'bck_meta_orphans_tooltip' => 'Métadonnées orphelines détectées : {TOTAL} (files : {FILES}, scheduled : {SCHEDULED}). Cliquer pour purger.',
+    'bck_meta_orphans_tooltip_none' => 'Aucune métadonnée orpheline détectée.',
+    'bck_meta_orphans_purge_done' => 'Purge terminée : {DELETED} fichier(s) de métadonnées supprimé(s).',
+    'bck_meta_orphans_purge_none' => 'Aucune métadonnée orpheline à purger.',
 );
