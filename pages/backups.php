@@ -210,9 +210,15 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                     <div class="callout callout-info">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <h4 class="mb-0"><?php echo $lang->get('bck_onthefly_server_backups'); ?></h4>
-                                            <button type="button" class="btn btn-sm btn-secondary" id="onthefly-server-backups-refresh" title="<?php echo $lang->get('bck_onthefly_refresh_list'); ?>">
+                                            <div class="btn-group btn-group-sm" role="group" aria-label="<?php echo $lang->get('bck_onthefly_server_backups'); ?>">
+                                                <button type="button" class="btn btn-sm btn-outline-warning" id="onthefly-meta-orphans-btn" title="<?php echo $lang->get('bck_meta_orphans_btn_title'); ?>" data-toggle="tooltip">
+                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                    <span class="badge badge-danger ml-1 d-none" id="onthefly-meta-orphans-badge">0</span>
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-secondary" id="onthefly-server-backups-refresh" title="<?php echo $lang->get('bck_onthefly_refresh_list'); ?>">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
+                                            </div>
                                         </div>
 
                                         <div class="table-responsive mt-3">
