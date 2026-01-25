@@ -447,6 +447,23 @@ function tpSafePrepareDecode(resp) {
     var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
     var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
 
+// ---------------------------------------------------------------------
+// On-the-fly upload safety (prevent duplicates in <files>)
+// ---------------------------------------------------------------------
+// Template uses {FILENAME}
+var tpBckUploadFileAlreadyExistsTpl = "<?php echo addslashes($lang->get('bck_upload_error_file_already_exists')); ?>";
+
+// ---------------------------------------------------------------------
+// Orphan metadata (.meta.json) monitoring & purge
+// ---------------------------------------------------------------------
+// Templates use {TOTAL} {FILES} {SCHEDULED} and {DELETED}
+var tpBckMetaOrphansTooltipTpl = "<?php echo addslashes($lang->get('bck_meta_orphans_tooltip')); ?>";
+var tpBckMetaOrphansTooltipNone = "<?php echo addslashes($lang->get('bck_meta_orphans_tooltip_none')); ?>";
+var tpBckMetaOrphansPurgeDoneTpl = "<?php echo addslashes($lang->get('bck_meta_orphans_purge_done')); ?>";
+var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orphans_purge_none')); ?>";
+
+
+
     function tpFmtTpVersion(v) {
         v = (v || '').toString().trim();
         return v !== '' ? v : tpBckVersionUnknown;
@@ -770,6 +787,138 @@ function tpSafePrepareDecode(resp) {
     });
 
         // Load existing on-the-fly backups stored on server (<files> directory)
+// Simple template helper: replaces {KEY} tokens
+function tpTpl(str, map) {
+    str = (str || '').toString();
+    map = map || {};
+    try {
+        Object.keys(map).forEach(function (k) {
+            str = str.split('{' + k + '}').join((map[k] !== null && typeof map[k] !== 'undefined') ? String(map[k]) : '');
+        });
+    } catch (e) {}
+    return str;
+}
+
+// ---------------------------------------------------------------------
+// Orphan metadata (.meta.json) monitoring & purge (files + files/backups)
+// ---------------------------------------------------------------------
+var tpMetaOrphansState = { total: 0, files: 0, scheduled: 0 };
+
+function tpUpdateMetaOrphansButton(state) {
+    state = state || { total: 0, files: 0, scheduled: 0 };
+    var total = parseInt(state.total || 0, 10);
+    var filesCnt = parseInt(state.files || 0, 10);
+    var schedCnt = parseInt(state.scheduled || 0, 10);
+
+    tpMetaOrphansState = { total: total, files: filesCnt, scheduled: schedCnt };
+
+    var $btn = $('#onthefly-meta-orphans-btn');
+    var $badge = $('#onthefly-meta-orphans-badge');
+
+    if (!$btn.length) return;
+
+    // Badge + visual hint only when orphans exist
+    if (total > 0) {
+        $badge.removeClass('d-none').text(total);
+        try { $btn.addClass('btn-warning').removeClass('btn-outline-warning'); } catch (e) {}
+        $btn.attr('aria-label', 'Meta orphans: ' + total);
+        $btn.data('tp-has-orphans', 1);
+        $btn.attr('title', tpTpl(tpBckMetaOrphansTooltipTpl, {
+            TOTAL: total,
+            FILES: filesCnt,
+            SCHEDULED: schedCnt
+        }));
+    } else {
+        $badge.addClass('d-none').text('0');
+        try { $btn.addClass('btn-outline-warning').removeClass('btn-warning'); } catch (e) {}
+        $btn.data('tp-has-orphans', 0);
+        $btn.attr('title', tpBckMetaOrphansTooltipNone);
+    }
+
+    // Refresh tooltip content if bootstrap tooltips are used
+    try {
+        if (typeof $btn.tooltip === 'function') {
+            $btn.tooltip('dispose').tooltip({ boundary: 'window', trigger: 'hover' });
+        }
+    } catch (e) {}
+}
+
+function tpRefreshMetaOrphansIndicator() {
+    if ($('#onthefly-meta-orphans-btn').length === 0) return;
+
+    $.post(
+        "sources/backups.queries.php",
+        {
+            type: "bck_meta_orphans_status",
+            data: prepareExchangedData(JSON.stringify({}), "encode", tpSessionKey),
+            key: tpSessionKey
+        },
+        function (resp) {
+            var r = tpSafePrepareDecode(resp);
+            if (r === null) { return; }
+            if (r.error === true) {
+                // Keep button usable but do not spam toasts
+                return;
+            }
+            tpUpdateMetaOrphansButton({
+                total: r.total || 0,
+                files: r.files || 0,
+                scheduled: r.scheduled || 0
+            });
+        }
+    );
+}
+
+$(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Always refresh just before action (cheap + avoids stale badge)
+    tpRefreshMetaOrphansIndicator();
+
+    // If none, tell the user and bail
+    if (parseInt(tpMetaOrphansState.total || 0, 10) <= 0) {
+        toastr.remove();
+        toastr.info(tpBckMetaOrphansPurgeNone, '', { timeOut: 2500 });
+        return;
+    }
+
+    tpProgressToast.show('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+    $.post(
+        "sources/backups.queries.php",
+        {
+            type: "bck_meta_orphans_purge",
+            data: prepareExchangedData(JSON.stringify({}), "encode", tpSessionKey),
+            key: tpSessionKey
+        },
+        function (resp) {
+            tpProgressToast.hide();
+            var r = tpSafePrepareDecode(resp);
+            if (r === null) { return; }
+
+            if (r.error === true) {
+                toastr.remove();
+                toastr.error(r.message || "<?php echo addslashes($lang->get('error')); ?>", '', { timeOut: 6000, progressBar: true });
+                return;
+            }
+
+            var deleted = parseInt(r.deleted || 0, 10);
+            if (deleted > 0) {
+                toastr.remove();
+                toastr.warning(tpTpl(tpBckMetaOrphansPurgeDoneTpl, { DELETED: deleted }), '', { timeOut: 4000, progressBar: true });
+            } else {
+                toastr.remove();
+                toastr.info(tpBckMetaOrphansPurgeNone, '', { timeOut: 2500 });
+            }
+
+            // Refresh indicator + list (best effort)
+            tpRefreshMetaOrphansIndicator();
+            loadOnTheFlyServerBackups();
+        }
+    );
+});
+
         function tpFmtBytes(bytes) {
             if (bytes === null || bytes === undefined) return '';
             let b = parseInt(bytes, 10);
@@ -787,6 +936,9 @@ function tpSafePrepareDecode(resp) {
             if ($('#onthefly-server-backups-tbody').length === 0) {
                 return;
             }
+
+            // Refresh orphan metadata indicator (best effort)
+            tpRefreshMetaOrphansIndicator();
 
             $('#onthefly-server-backups-tbody').html(
                 '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
@@ -1351,7 +1503,41 @@ $maxFileSizeDisplay = preg_replace('/\s*(MB|GB)$/', ' $1', $maxFileSizeDisplay);
                                     teampassUser.uploadToken = data[0].token;
                                 }
                             );
-                            up.start();
+// Before starting upload, block if original filename already exists in <files>
+var fn = (files && files.length && files[0] && files[0].name) ? (files[0].name + '') : '';
+$.post(
+    "sources/backups.queries.php",
+    {
+        type: "onthefly_check_upload_filename",
+        data: prepareExchangedData(JSON.stringify({ filename: fn }), "encode", tpSessionKey),
+        key: tpSessionKey
+    },
+    function(resp) {
+        var r = tpSafePrepareDecode(resp);
+        if (r === null) { return; }
+
+        if (r.error === true) {
+            toastr.remove();
+            toastr.error(r.message || "<?php echo addslashes($lang->get('error')); ?>", '', {timeOut: 6000, progressBar: true});
+            try { up.removeFile(files[0]); } catch (e) {}
+            return;
+        }
+
+        if (r.exists === true) {
+            toastr.remove();
+            toastr.error(
+                tpTpl(tpBckUploadFileAlreadyExistsTpl, {FILENAME: fn}),
+                "<?php echo addslashes($lang->get('error')); ?>",
+                {timeOut: 8000, progressBar: true}
+            );
+            try { up.removeFile(files[0]); } catch (e) {}
+            return;
+        }
+
+        up.start();
+    }
+);
+
                         },
                         "json"
                     );
