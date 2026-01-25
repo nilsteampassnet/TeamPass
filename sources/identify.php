@@ -213,7 +213,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ]);
         return false;
     }
-
+    
     // prepare variables
     // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
     // Sanitization was removed to fix authentication issues (see upgrade 3.1.5.10)
@@ -1731,16 +1731,18 @@ function externalAdCreateUser(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
+
     // Generate user keys pair with transparent recovery support
     $userKeys = generateUserKeys($passwordClear, $SETTINGS);
-
+    
     // Create password hash
     $passwordManager = new PasswordManager();
     $hashedPassword = $passwordManager->hashPassword($passwordClear);
     
     // If any groups provided, add user to them
+    $groupIds = [];
     if (count($userGroups) > 0) {
-        $groupIds = [];
         foreach ($userGroups as $group) {
             // Check if exists in DB
             $groupData = DB::queryFirstRow(
@@ -1754,15 +1756,12 @@ function externalAdCreateUser(
                 array_push($groupIds, $groupData['id']);
             }
         }
-        $userGroups = implode(';', $groupIds);
-    } else {
-        $userGroups = '';
     }
     
     if (empty($userGroups) && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])) {
         $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
-
+    
     // Prepare user data
     $userData = [
         'login' => (string) $login,
@@ -1774,10 +1773,6 @@ function externalAdCreateUser(
         'gestionnaire' => '0',
         'can_manage_all_users' => '0',
         'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-        'groupes_interdits' => '',
-        'groupes_visibles' => '',
-        'fonction_id' => $userGroups,
-        'last_pw_change' => (int) time(),
         'user_language' => (string) $SETTINGS['default_language'],
         'encrypted_psk' => '',
         'isAdministratedByRole' => $authType === 'ldap' ?
@@ -1794,6 +1789,9 @@ function externalAdCreateUser(
         'otp_provided' => '1',
         'is_ready_for_usage' => '0',
         'created_at' => time(),
+        'personal_items_migrated' => 1,
+        'encryption_version' => 3,
+        'phpseclibv3_migration_completed' => 1,
     ];
 
     // Add transparent recovery fields if available
@@ -1803,10 +1801,12 @@ function externalAdCreateUser(
         $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
         $userData['last_pw_change'] = time();
     }
-
     // Insert user in DB
     DB::insert(prefixTable('users'), $userData);
     $newUserId = DB::insertId();
+
+    // Add Groups and Roles
+    setUserRoles($newUserId, $groupIds, 'manual');
 
     // Create the API key
     DB::insert(
@@ -1840,6 +1840,9 @@ function externalAdCreateUser(
         $tree->rebuild();
     }
 
+    // Prevent PhpSeclibv3 migration on next login
+    $session->set('phpseclibv3_migration_started', false);
+    $session->set('phpseclibv3_migration_in_progress', false);
 
     return [
         'error' => false,
@@ -1848,6 +1851,7 @@ function externalAdCreateUser(
         'user_initial_creation_through_external_ad' => true,
         'id' => $newUserId,
         'oauth2_login_ongoing' => true,
+        'pw' => $hashedPassword
     ];
 }
 

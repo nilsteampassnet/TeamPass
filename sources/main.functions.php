@@ -355,7 +355,7 @@ function identAdmin(string $idFonctions)
  *
  * @return array
  */
-function convertToArray($element): ?array
+function convertToArray($element): array
 {
     if (is_string($element) === true) {
         if (empty($element) === true) {
@@ -366,7 +366,7 @@ function convertToArray($element): ?array
             trimElement($element, ';')
         );
     }
-    return $element;
+    return is_array($element) === true ? $element : [];
 }
 
 /**
@@ -381,9 +381,9 @@ function convertToArray($element): ?array
  * @return bool
  */
 function identUser(
-    $allowedFolders,
-    $noAccessFolders,
-    $userRoles,
+    $allowedFolders= [],
+    $noAccessFolders= [],
+    $userRoles= [],
     array $SETTINGS,
     object $tree
 ) {
@@ -407,9 +407,9 @@ function identUser(
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
-    $noAccessFolders = convertToArray($noAccessFolders);
+    $noAccessFolders = convertToArray($noAccessFolders) ?? [];
     $userRoles = convertToArray($userRoles) ?? [];
-    $allowedFolders = convertToArray($allowedFolders);
+    $allowedFolders = convertToArray($allowedFolders) ?? [];
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
     // Get list of folders depending on Roles
@@ -5460,7 +5460,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         $userId
     );
 
-    if ((int) $user['phpseclibv3_migration_completed'] === 1) {
+    if ($user === null ||(int) $user['phpseclibv3_migration_completed'] === 1) {
         return; // Already migrated, nothing to do
     }
 
