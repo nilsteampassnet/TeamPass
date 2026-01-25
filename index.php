@@ -1331,7 +1331,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
     <?php
     // Include phpseclib v3 migration modal if migration is in progress
-    if (isset($session) && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)) {
+    if (isset($session)
+        && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)
+
+    ) {
         include_once 'includes/core/phpseclibv3_migration_modal.php';
     }
     ?>
