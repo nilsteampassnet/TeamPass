@@ -75,7 +75,7 @@ class B2cTokenFaker
               'sub' => $this->fakeData['sub'],
               'tfp' => 'tfp',
               'ver' => '1.0',
-              'iat' => time()
+              'iat' => time(),
             );
 
             $idToken = array(
@@ -90,7 +90,7 @@ class B2cTokenFaker
                 "idp_access_token" => '123',
                 "idp" => "idp",
                 "tfp" => "tfp",
-                "at_hash" => "rfz4eAdZL7I_G8tQBvHI5Q"
+                "at_hash" => "rfz4eAdZL7I_G8tQBvHI5Q",
             );
 
             $encryptedAccessToken = $this->createJWT($accessToken);

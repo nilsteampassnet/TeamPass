@@ -378,7 +378,8 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 }
 
                 // Check if the btn-copy-url button exists
-                if (document.getElementById('btn-copy-url')) {
+                const btnCopyUrl = document.getElementById('btn-copy-url');
+                if (btnCopyUrl) {
                     // Attach a click handler only if the button exists
                     btnCopyUrl.addEventListener('click', async function() {
                         try {

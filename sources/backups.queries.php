@@ -250,10 +250,12 @@ function tpCurrentSchemaLevel(): string
 function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', string $serverFile = '', int $operationId = 0): array
 {
     $expectedVersion = tpExpectedTpFilesVersion();
-    $expectedSchema = tpCurrentSchemaLevel();
+    $expectedSchema  = tpCurrentSchemaLevel();
 
     $backupVersion = null;
-    $schema = '';
+    $backupSchema  = '';
+    $warnings = [];
+    $mode = ($operationId > 0) ? 'upload_schema_only' : 'server_strict';
 
     // Resolve target file path
     $targetPath = '';
@@ -263,30 +265,44 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE increment_id = %i LIMIT 1',
             $operationId
         );
-        $val = isset($data['valeur']) ? (string)$data['valeur'] : '';
+        $val = isset($data['valeur']) ? (string) $data['valeur'] : '';
         if ($val === '') {
             return [
                 'is_compatible' => false,
                 'reason' => 'MISSING_UPLOAD_ENTRY',
+                'mode' => $mode,
+                'warnings' => $warnings,
+                'backup_schema_level' => '',
+                'expected_schema_level' => $expectedSchema,
                 'backup_tp_files_version' => null,
                 'expected_tp_files_version' => $expectedVersion,
+                'resolved_path' => '',
             ];
         }
+
         $bn = basename($val);
         $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files')), '/');
         $targetPath = $baseDir . '/' . $bn;
 
         if (function_exists('tpParseSchemaLevelFromBackupFilename')) {
-            $schema = (string) tpParseSchemaLevelFromBackupFilename($bn);
+            $backupSchema = (string) tpParseSchemaLevelFromBackupFilename($bn);
         }
+
+        // Upload restore has no meta => version cannot be verified by design
+        $warnings[] = 'VERSION_NOT_VERIFIED';
     } elseif ($serverFile !== '') {
         $bn = basename($serverFile);
         if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
             return [
                 'is_compatible' => false,
                 'reason' => 'INVALID_FILENAME',
+                'mode' => $mode,
+                'warnings' => $warnings,
+                'backup_schema_level' => '',
+                'expected_schema_level' => $expectedSchema,
                 'backup_tp_files_version' => null,
                 'expected_tp_files_version' => $expectedVersion,
+                'resolved_path' => '',
             ];
         }
 
@@ -300,53 +316,112 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
 
         if (function_exists('tpGetBackupTpFilesVersionFromMeta')) {
             $v = (string) tpGetBackupTpFilesVersionFromMeta($targetPath);
-            if ($v !== '') $backupVersion = $v;
+            if ($v !== '') {
+                $backupVersion = $v;
+            }
         }
         if (function_exists('tpGetBackupSchemaLevelFromMetaOrFilename')) {
-            $schema = (string) tpGetBackupSchemaLevelFromMetaOrFilename($targetPath);
+            $backupSchema = (string) tpGetBackupSchemaLevelFromMetaOrFilename($targetPath);
         }
     } else {
         return [
             'is_compatible' => false,
             'reason' => 'NO_TARGET',
+            'mode' => $mode,
+            'warnings' => $warnings,
+            'backup_schema_level' => '',
+            'expected_schema_level' => $expectedSchema,
             'backup_tp_files_version' => null,
             'expected_tp_files_version' => $expectedVersion,
+            'resolved_path' => '',
         ];
     }
 
-    // If no schema could be extracted => legacy backup without meta and without -sl token
-    if ($schema === '') {
+    // File existence check (best-effort, for clearer errors)
+    if ($targetPath !== '' && file_exists($targetPath) === false) {
         return [
             'is_compatible' => false,
-            'reason' => 'LEGACY_NO_METADATA',
+            'reason' => 'FILE_NOT_FOUND',
+            'mode' => $mode,
+            'warnings' => $warnings,
+            'backup_schema_level' => $backupSchema,
+            'expected_schema_level' => $expectedSchema,
             'backup_tp_files_version' => $backupVersion,
             'expected_tp_files_version' => $expectedVersion,
+            'resolved_path' => $targetPath,
         ];
     }
 
-    if ($expectedSchema === '' || preg_match('/^\d+$/', $expectedSchema) !== 1) {
+    // Schema is mandatory in all modes
+    if ($backupSchema === '' || $expectedSchema === '') {
         return [
             'is_compatible' => false,
-            'reason' => 'NO_EXPECTED_SCHEMA',
+            'reason' => 'MISSING_SCHEMA',
+            'mode' => $mode,
+            'warnings' => $warnings,
+            'backup_schema_level' => $backupSchema,
+            'expected_schema_level' => $expectedSchema,
             'backup_tp_files_version' => $backupVersion,
             'expected_tp_files_version' => $expectedVersion,
+            'resolved_path' => $targetPath,
         ];
     }
 
-    if ($schema !== $expectedSchema) {
+    if ((string) $backupSchema !== (string) $expectedSchema) {
         return [
             'is_compatible' => false,
             'reason' => 'SCHEMA_MISMATCH',
+            'mode' => $mode,
+            'warnings' => $warnings,
+            'backup_schema_level' => $backupSchema,
+            'expected_schema_level' => $expectedSchema,
             'backup_tp_files_version' => $backupVersion,
             'expected_tp_files_version' => $expectedVersion,
+            'resolved_path' => $targetPath,
         ];
+    }
+
+    // Version check is strict for server-side backups only
+    if ($mode === 'server_strict') {
+        if ($expectedVersion === '' || $backupVersion === null || (string) $backupVersion === '') {
+            return [
+                'is_compatible' => false,
+                'reason' => 'MISSING_VERSION_METADATA',
+                'mode' => $mode,
+                'warnings' => $warnings,
+                'backup_schema_level' => $backupSchema,
+                'expected_schema_level' => $expectedSchema,
+                'backup_tp_files_version' => $backupVersion,
+                'expected_tp_files_version' => $expectedVersion,
+                'resolved_path' => $targetPath,
+            ];
+        }
+
+        if ((string) $backupVersion !== (string) $expectedVersion) {
+            return [
+                'is_compatible' => false,
+                'reason' => 'VERSION_MISMATCH',
+                'mode' => $mode,
+                'warnings' => $warnings,
+                'backup_schema_level' => $backupSchema,
+                'expected_schema_level' => $expectedSchema,
+                'backup_tp_files_version' => $backupVersion,
+                'expected_tp_files_version' => $expectedVersion,
+                'resolved_path' => $targetPath,
+            ];
+        }
     }
 
     return [
         'is_compatible' => true,
         'reason' => '',
+        'mode' => $mode,
+        'warnings' => $warnings,
+        'backup_schema_level' => $backupSchema,
+        'expected_schema_level' => $expectedSchema,
         'backup_tp_files_version' => $backupVersion,
         'expected_tp_files_version' => $expectedVersion,
+        'resolved_path' => $targetPath,
     ];
 }
     switch ($post_type) {
@@ -960,6 +1035,125 @@ try {
             );
             break;
 
+
+        case 'onthefly_check_upload_filename':
+            // Pre-check before uploading a restore SQL file to <files>.
+            // We refuse uploading a file if its ORIGINAL name already exists in <files>,
+            // to avoid duplicates and accidental metadata removal edge cases.
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $filename = (string) ($dataReceived['filename'] ?? '');
+            $filename = basename($filename);
+
+            // Safety: only .sql allowed here (UI already filters, but keep server strict)
+            if ($filename === '' || strtolower((string) pathinfo($filename, PATHINFO_EXTENSION)) !== 'sql') {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Invalid filename',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $dir = rtrim($baseFilesDir, '/');
+            $fullPath = $dir . '/' . $filename;
+
+            $exists = is_file($fullPath);
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'exists' => $exists,
+                    'filename' => $filename,
+                    'message' => $exists ? str_replace('{FILENAME}', $filename, (string) $lang->get('bck_upload_error_file_already_exists')) : '',
+                ],
+                'encode'
+            );
+            break;
+
+        case 'bck_meta_orphans_status':
+            // Return the count of orphan *.meta.json files in:
+            // - <files> (on-the-fly)
+            // - <files>/backups (scheduled)
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $filesDir = rtrim($baseFilesDir, '/');
+            $scheduledDir = $filesDir . '/backups';
+
+            $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
+            $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'files' => count($orphFiles),
+                    'scheduled' => count($orphSched),
+                    'total' => count($orphFiles) + count($orphSched),
+                ],
+                'encode'
+            );
+            break;
+
+        case 'bck_meta_orphans_purge':
+            // Purge orphan *.meta.json files in <files> and <files>/backups (scheduled)
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => 'Not allowed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $filesDir = rtrim($baseFilesDir, '/');
+            $scheduledDir = $filesDir . '/backups';
+
+            $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
+            $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
+
+            $all = array_merge($orphFiles, $orphSched);
+            $res = function_exists('tpPurgeOrphanBackupMetaFiles') ? tpPurgeOrphanBackupMetaFiles($all) : ['deleted' => 0, 'failed' => []];
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'deleted' => (int) ($res['deleted'] ?? 0),
+                    'failed' => $res['failed'] ?? [],
+                ],
+                'encode'
+            );
+            break;
+
         case 'onthefly_list_backups':
             // List on-the-fly backup files stored directly in <files> directory (not in /backups for scheduled)
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
@@ -1026,34 +1220,314 @@ try {
                 'encode'
             );
             break;
+        case 'preflight_restore_compatibility':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
 
-case 'preflight_restore_compatibility':
-    if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
-        echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
-        break;
-    }
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
 
-    $dataReceived = prepareExchangedData($post_data, 'decode');
-    if (!is_array($dataReceived)) $dataReceived = [];
+            $serverScope = (string) ($dataReceived['serverScope'] ?? '');
+            $serverFile  = (string) ($dataReceived['serverFile']  ?? '');
+            $operationId = (int)    ($dataReceived['operation_id'] ?? 0);
 
-    $serverScope = (string) ($dataReceived['serverScope'] ?? '');
-    $serverFile  = (string) ($dataReceived['serverFile']  ?? '');
-    $operationId = (int)    ($dataReceived['operation_id'] ?? 0);
+            $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId);
 
-    $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId);
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'is_compatible' => (bool) ($chk['is_compatible'] ?? false),
+                    'reason' => (string) ($chk['reason'] ?? ''),
+                    'mode' => (string) ($chk['mode'] ?? ''),
+                    'warnings' => $chk['warnings'] ?? [],
+                    'backup_schema_level' => (string) ($chk['backup_schema_level'] ?? ''),
+                    'expected_schema_level' => (string) ($chk['expected_schema_level'] ?? ''),
+                    'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
+                    'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
+                ],
+                'encode'
+            );
+            break;
 
-    echo prepareExchangedData(
-        [
-            'error' => false,
-            'is_compatible' => (bool) ($chk['is_compatible'] ?? false),
-            'reason' => (string) ($chk['reason'] ?? ''),
-            'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
-            'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
-        ],
-        'encode'
-    );
-    break;
-        case 'onthefly_restore':
+                case 'prepare_restore_cli':
+                    // Check KEY + Admin only
+                    if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'message' => $lang->get('error_not_allowed_to'),
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    $dataReceived = prepareExchangedData($post_data, 'decode');
+                    if (!is_array($dataReceived)) {
+                        $dataReceived = [];
+                    }
+
+                    $serverScope = (string) ($dataReceived['serverScope'] ?? '');
+                    $serverFile  = (string) ($dataReceived['serverFile']  ?? '');
+                    $operationId = (int)    ($dataReceived['operation_id'] ?? 0);
+
+                    $encryptionKey = (string) ($dataReceived['encryptionKey'] ?? '');
+                    $overrideKey   = (string) ($dataReceived['overrideKey'] ?? '');
+
+                    // Compatibility check
+                    $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId);
+                    if (!empty($chk['is_compatible']) === false) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'error_code' => 'INCOMPATIBLE_BACKUP',
+                                'reason' => (string) ($chk['reason'] ?? ''),
+                                'mode' => (string) ($chk['mode'] ?? ''),
+                                'warnings' => $chk['warnings'] ?? [],
+                                'backup_schema_level' => (string) ($chk['backup_schema_level'] ?? ''),
+                                'expected_schema_level' => (string) ($chk['expected_schema_level'] ?? ''),
+                                'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
+                                'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
+                                'message' => $lang->get('bck_restore_incompatible_version_body'),
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    $resolvedPath = (string) ($chk['resolved_path'] ?? '');
+                    if ($resolvedPath === '' || file_exists($resolvedPath) === false) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'error_code' => 'FILE_NOT_FOUND',
+                                'message' => 'Restore file not found on server.',
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    // Validate encryption key by attempting to decrypt to a temporary file
+                    $keysToTry = [];
+
+                    // Build candidate keys depending on restore source
+                    // - scheduled: uses the instance key (stored in bck_script_passkey) + optional override key
+                    // - on-the-fly: uses the key provided by the UI
+                    // - upload (serverScope empty): can be either, so also try instance key candidates
+                    if ($serverScope === 'scheduled') {
+                        if ($overrideKey !== '') {
+                            $keysToTry[] = $overrideKey;
+                        }
+
+                        if (!empty($SETTINGS['bck_script_passkey'] ?? '')) {
+                            $rawInstanceKey = (string) $SETTINGS['bck_script_passkey'];
+                            $tmp = cryption($rawInstanceKey, '', 'decrypt', $SETTINGS);
+                            $decInstanceKey = isset($tmp['string']) ? (string) $tmp['string'] : '';
+
+                            if ($decInstanceKey !== '') {
+                                $keysToTry[] = $decInstanceKey;
+                            }
+                            // Some environments store bck_script_passkey already decrypted (or in another format)
+                            if ($rawInstanceKey !== '' && $rawInstanceKey !== $decInstanceKey) {
+                                $keysToTry[] = $rawInstanceKey;
+                            }
+                        }
+                    } else {
+                        if ($encryptionKey !== '') {
+                            $keysToTry[] = $encryptionKey;
+                        }
+                        if ($overrideKey !== '') {
+                            $keysToTry[] = $overrideKey;
+                        }
+
+                        // For uploaded restores (serverScope is empty), also try the instance key candidates.
+                        // This allows restoring scheduled backups uploaded manually (they are encrypted using bck_script_passkey).
+                        if ($serverScope === '' && !empty($SETTINGS['bck_script_passkey'] ?? '')) {
+                            $rawInstanceKey = (string) $SETTINGS['bck_script_passkey'];
+                            $tmp = cryption($rawInstanceKey, '', 'decrypt', $SETTINGS);
+                            $decInstanceKey = isset($tmp['string']) ? (string) $tmp['string'] : '';
+
+                            if ($decInstanceKey !== '') {
+                                $keysToTry[] = $decInstanceKey;
+                            }
+                            if ($rawInstanceKey !== '' && $rawInstanceKey !== $decInstanceKey) {
+                                $keysToTry[] = $rawInstanceKey;
+                            }
+                        }
+                    }
+
+                    $keysToTry = array_values(array_unique(array_filter($keysToTry, function ($v) {
+                        return $v !== '';
+                    })));
+
+                    if (empty($keysToTry)) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'error_code' => 'MISSING_ENCRYPTION_KEY',
+                                'message' => 'Missing encryption key.',
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    // IMPORTANT: do NOT use tempnam() here. It creates the file and can break Defuse file decrypt.
+                    $tmpRand = '';
+                    try {
+                        $tmpRand = bin2hex(random_bytes(4));
+                    } catch (Throwable $ignored) {
+                        $tmpRand = uniqid('', true);
+                    }
+
+                    $tmpDecryptedSql = rtrim((string) sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR
+                        . 'defuse_temp_restore_' . (int) ($session->get('user-id') ?? 0) . '_' . time() . '_' . $tmpRand . '.sql';
+
+                    // Try to decrypt with the available keys
+                    $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
+                    @unlink($tmpDecryptedSql);
+
+                    if (empty($decRet['success'])) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'error_code' => 'DECRYPT_FAILED',
+                                'message' => (string) ($decRet['message'] ?? 'Unable to decrypt backup with provided key(s).'),
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+// Create authorization token in DB (teampass_misc)
+                    $compat = [
+                        'mode' => (string) ($chk['mode'] ?? ''),
+                        'warnings' => $chk['warnings'] ?? [],
+                        'backup_schema_level' => (string) ($chk['backup_schema_level'] ?? ''),
+                        'expected_schema_level' => (string) ($chk['expected_schema_level'] ?? ''),
+                        'backup_tp_files_version' => $chk['backup_tp_files_version'] ?? null,
+                        'expected_tp_files_version' => (string) ($chk['expected_tp_files_version'] ?? ''),
+                    ];
+
+                    $ttl = 3600;
+
+                    $create = tpRestoreAuthorizationCreate(
+                        (int) ($session->get('user-id') ?? 0),
+                        (string) ($session->get('user-login') ?? ''),
+                        $resolvedPath,
+                        $serverScope,
+                        $serverFile,
+                        $operationId,
+                        $encryptionKey,
+                        $overrideKey,
+                        $compat,
+                        $ttl,
+                        $SETTINGS
+                    );
+
+                    if (empty($create['success'])) {
+                        echo prepareExchangedData(
+                            [
+                                'error' => true,
+                                'error_code' => 'TOKEN_CREATE_FAILED',
+                                'message' => (string) ($create['message'] ?? 'Unable to create authorization token.'),
+                            ],
+                            'encode'
+                        );
+                        break;
+                    }
+
+                    $token = (string) ($create['token'] ?? '');
+                    $expiresAt = (int) ($create['expires_at'] ?? 0);
+
+                    $tpRoot = (string) ($SETTINGS['cpassman_dir'] ?? '');
+
+					// Build a command adapted to the OS and (when possible) running as the same OS user as the web server.
+					// This avoids common permission issues on files/ and keeps behavior consistent.
+					$osFamily = defined('PHP_OS_FAMILY') ? (string) PHP_OS_FAMILY : (string) PHP_OS;
+					$isWindows = (stripos($osFamily, 'Windows') !== false);
+					$webUser = '';
+					if (!$isWindows && function_exists('posix_getpwuid') && function_exists('posix_geteuid')) {
+						$pw = @posix_getpwuid(@posix_geteuid());
+						if (is_array($pw) && !empty($pw['name'])) {
+							$webUser = (string) $pw['name'];
+						}
+					}
+
+					$scriptRel = $isWindows ? 'scripts\\restore.php' : 'scripts/restore.php';
+					$filePathForCmd = $isWindows ? str_replace('/', '\\', $resolvedPath) : $resolvedPath;
+					$rootForCmd = $isWindows ? str_replace('/', '\\', rtrim($tpRoot, '/\\')) : rtrim($tpRoot, '/');
+
+					$sudoPrefix = '';
+					if (!$isWindows && $webUser !== '') {
+						$sudoPrefix = 'sudo -u ' . escapeshellarg($webUser) . ' ';
+					}
+
+					$cmdNoCd = $sudoPrefix . 'php ' . $scriptRel
+						. ' --file ' . escapeshellarg($filePathForCmd)
+						. ' --auth-token ' . escapeshellarg($token);
+					$cmdNoCdForce = $cmdNoCd . ' --force-disconnect';
+
+					$cmd = $cmdNoCd;
+					$cmdForce = $cmdNoCdForce;
+					if ($tpRoot !== '') {
+						if ($isWindows) {
+							$cmd = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
+							$cmdForce = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
+						} else {
+							$cmd = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
+							$cmdForce = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
+						}
+					}
+
+					// Provide multiple variants to cover the most common OS families and privilege models.
+					$variants = [];
+					$variants[] = [
+						'label' => $isWindows ? 'Windows (CMD/Powershell)' : 'Recommended',
+						'command' => $cmd,
+					];
+					$variants[] = [
+						'label' => $isWindows ? 'Force disconnect (--force-disconnect)' : 'Force disconnect (--force-disconnect)',
+						'command' => $cmdForce,
+					];
+					if (!$isWindows && $webUser !== '') {
+						$cmdNoSudo = 'php scripts/restore.php'
+							. ' --file ' . escapeshellarg($resolvedPath)
+							. ' --auth-token ' . escapeshellarg($token);
+						$cmdNoSudoCd = ($tpRoot !== '')
+							? ('cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoSudo)
+							: $cmdNoSudo;
+						$variants[] = [
+							'label' => 'Alternative (no sudo) - run as ' . $webUser,
+							'command' => $cmdNoSudoCd,
+						];
+					}
+
+                    echo prepareExchangedData(
+                        [
+                            'error' => false,
+                            'token_expires_at' => $expiresAt,
+                            'ttl' => $ttl,
+                            'mode' => (string) ($chk['mode'] ?? ''),
+                            'warnings' => $chk['warnings'] ?? [],
+                            'command' => $cmd,
+                            'command_force_disconnect' => $cmdForce,
+                            'command_no_cd' => $cmdNoCd,
+							'command_variants' => $variants,
+							'os_family' => $osFamily,
+							'web_user' => $webUser,
+                            'resolved_path' => $resolvedPath,
+                        ],
+                        'encode'
+                    );
+                    break;
+
+case 'onthefly_restore':
             // Check KEY
             if ($post_key !== $session->get('key')) {
                 echo prepareExchangedData(
@@ -1075,7 +1549,18 @@ case 'preflight_restore_compatibility':
                 break;
             }
             
-            // Compatibility check (schema-level) BEFORE maintenance/lock and any destructive action
+                                    // Web restore is disabled: the UI only prepares a CLI command.
+                        echo prepareExchangedData(
+                            array(
+                                'error' => true,
+                                'error_code' => 'RESTORE_CLI_ONLY',
+                                'message' => $lang->get('bck_restore_cli_only'),
+                            ),
+                            'encode'
+                        );
+                        break;
+
+// Compatibility check (schema-level) BEFORE maintenance/lock and any destructive action
             $dataEarly = prepareExchangedData($post_data, 'decode');
             if (!is_array($dataEarly)) $dataEarly = [];
 

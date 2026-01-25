@@ -165,8 +165,31 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     // Force logout using the existing logout link when possible (CSRF token already embedded in href).
     // Fallback to the generic logout endpoint.
-    function tpForceLogout() {
+    function tpExtractLogoutUrlFromHtml(resp) {
+        if (typeof resp !== 'string') return null;
+        // Look for logout link already rendered by TeamPass error page
+        var m = resp.match(/href=["']([^"']*includes\/core\/logout\.php\?token=[^"']+)["']/i);
+        if (m && m[1]) return m[1];
+        return null;
+    }
+
+    // Force logout using the existing logout link when possible (CSRF token already embedded in href).
+    // If an HTML response contains a logout link with token, use it.
+    // Fallback to the generic logout endpoint.
+    function tpForceLogout(resp) {
+        if (window.tpLogoutInProgress === true) return;
+        window.tpLogoutInProgress = true;
+
         try { window.onbeforeunload = null; } catch (e) {}
+
+        try {
+            var urlFromResp = tpExtractLogoutUrlFromHtml(resp);
+            if (urlFromResp) {
+                window.location.href = urlFromResp;
+                return;
+            }
+        } catch (e) {}
+
         try {
             var $a = $('a[href*="includes/core/logout.php"]:first');
             if ($a.length && $a.attr('href')) {
@@ -174,17 +197,160 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 return;
             }
         } catch (e) {}
+
         window.location.href = 'includes/core/logout.php';
     }
 
+
     // Simple detection: when session is invalidated, PHP returns an HTML error page instead of JSON/encoded payload.
+    // Normalize response to string for detection (jQuery may give us a parsed object)
+    function tpNormalizeAjaxResponse(resp) {
+        try {
+            if (resp === null || typeof resp === 'undefined') return '';
+            if (typeof resp === 'string') return resp;
+            if (typeof resp === 'object') {
+                try { return JSON.stringify(resp); } catch (e) {}
+            }
+            return (resp.toString) ? resp.toString() : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    // Simple detection: when session is invalidated, the server may return HTML (error page) instead of an encoded payload.
     function tpResponseLooksLikeHtml(resp) {
-        if (typeof resp !== 'string') return false;
-        var s = resp.trim();
+        var s = tpNormalizeAjaxResponse(resp);
+        s = s.replace(/^﻿/, '').trim();
         return s !== '' && s.charAt(0) === '<';
     }
 
-    // Lock UI during DB restore and show a global progress modal.
+    // Some code paths may return plain JSON when session is invalidated.
+    function tpResponseLooksLikeJson(resp) {
+        var s = tpNormalizeAjaxResponse(resp);
+        s = s.replace(/^﻿/, '').trim();
+        return s !== '' && (s.charAt(0) === '{' || s.charAt(0) === '[');
+    }
+
+    function tpIsLikelySessionInvalidJson(resp) {
+        try {
+            var s = tpNormalizeAjaxResponse(resp).replace(/^﻿/, '').trim();
+            if (s === '' || (s.charAt(0) !== '{' && s.charAt(0) !== '[')) return false;
+            var o = JSON.parse(s);
+            if (!o || typeof o !== 'object') return false;
+            var msg = ((o.message || o.msg || '') + '').toLowerCase();
+            var code = ((o.error_code || o.code || '') + '').toLowerCase();
+            return (o.error === true || o.status === 'error') && (msg.indexOf('disconnected') !== -1 || msg.indexOf('not allowed') !== -1 || code.indexOf('not_allowed') !== -1);
+        } catch (e) {
+            return false;
+        }
+    }
+
+	// Session key (used for encrypted AJAX payloads)
+	var tpSessionKey = "<?php echo $session->get('key'); ?>";
+
+	// Disable background refreshes that could trigger decrypt errors once the session gets invalidated
+	function tpDisableBackgroundRefresh() {
+        try {
+            window.tpBackgroundRefreshDisabled = true;
+
+            // Stop disk usage refresh
+            if (window.tpDiskUsageInterval) {
+                clearInterval(window.tpDiskUsageInterval);
+                window.tpDiskUsageInterval = null;
+            }
+
+            // Stop "run now" poll if active
+            try {
+                if (typeof tpScheduled !== 'undefined' && tpScheduled && typeof tpScheduled.stopRunNowPoll === 'function') {
+                    tpScheduled.stopRunNowPoll();
+                }
+            } catch (e) {}
+
+            // Abort any further background POSTs once we are in CLI restore mode
+            if (!window.tpCliAjaxPrefilterInstalled && typeof $ !== 'undefined' && typeof $.ajaxPrefilter === 'function') {
+                window.tpCliAjaxPrefilterInstalled = true;
+                $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
+                    try {
+                        if (window.tpBackgroundRefreshDisabled !== true) return;
+
+                        // Allow explicit calls marked as allowed during CLI flow
+                        if (originalOptions && originalOptions.tpAllowDuringCli === true) return;
+
+                        var url = (options && options.url) ? options.url.toString() : '';
+                        if (url.indexOf('includes/core/logout.php') !== -1 || url.indexOf('includes/core/login.php') !== -1) return;
+
+                        // This page does not need server refreshes once the CLI command is displayed.
+                        if (((options.type || '') + '').toUpperCase() === 'POST') {
+                            try { jqXHR.abort(); } catch (e) {}
+                        }
+                    } catch (e) {}
+                });
+            }
+
+            // Wrap decode helpers to avoid showing the built-in "Malformed UTF-8" modal when server returns HTML/JSON
+            try {
+                if (!window.tpDecodeWrapped && typeof decodeQueryReturn === 'function') {
+                    window.tpDecodeWrapped = true;
+                    window.tpOriginalDecodeQueryReturn = decodeQueryReturn;
+                    decodeQueryReturn = function(resp, key) {
+                        if (window.tpBackgroundRefreshDisabled === true && (tpResponseLooksLikeHtml(resp) || tpIsLikelySessionInvalidJson(resp))) {
+                            try { tpForceLogout(resp); } catch (e) {}
+                            return '{}';
+                        }
+                        return window.tpOriginalDecodeQueryReturn(resp, key);
+                    };
+                }
+            } catch (e) {}
+
+            try {
+                if (!window.tpPrepareWrapped && typeof prepareExchangedData === 'function') {
+                    window.tpPrepareWrapped = true;
+                    window.tpOriginalPrepareExchangedData = prepareExchangedData;
+                    prepareExchangedData = function(resp, mode, key) {
+                        if (window.tpBackgroundRefreshDisabled === true && mode === 'decode' && (tpResponseLooksLikeHtml(resp) || tpIsLikelySessionInvalidJson(resp))) {
+                            try { tpForceLogout(resp); } catch (e) {}
+                            return '{}';
+                        }
+                        return window.tpOriginalPrepareExchangedData(resp, mode, key);
+                    };
+                }
+            } catch (e) {}
+
+        } catch (e) {}
+    }
+
+    function tpSafeDecodeQueryReturn(resp) {
+        var raw = tpNormalizeAjaxResponse(resp);
+        if (tpResponseLooksLikeHtml(raw) || tpIsLikelySessionInvalidJson(raw)) {
+            tpDisableBackgroundRefresh();
+            tpForceLogout(raw);
+            return null;
+        }
+        try {
+            return decodeQueryReturn(raw, tpSessionKey);
+        } catch (e) {
+            // Most common case: CryptoJS "Malformed UTF-8 data" when server returned HTML/JSON (session invalid)
+            tpDisableBackgroundRefresh();
+            tpForceLogout(raw);
+            return null;
+        }
+    }
+function tpSafePrepareDecode(resp) {
+        var raw = tpNormalizeAjaxResponse(resp);
+        if (tpResponseLooksLikeHtml(raw) || tpIsLikelySessionInvalidJson(raw)) {
+            tpDisableBackgroundRefresh();
+            tpForceLogout(raw);
+            return null;
+        }
+        try {
+            return prepareExchangedData(raw, "decode", tpSessionKey);
+        } catch (e) {
+            tpDisableBackgroundRefresh();
+            tpForceLogout(raw);
+            return null;
+        }
+    }
+// Lock UI during DB restore and show a global progress modal.
     var tpRestoreLock = {
         active: false,
         start: function() {
@@ -238,7 +404,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('#tp-restore-progress-title').text('<?php echo addslashes($lang->get('done')); ?>');
                 $('#tp-restore-progress-msg').text('<?php echo addslashes($lang->get('restore_done_now_logout')); ?>');
                 try { window.onbeforeunload = null; } catch (e) {}
-                if (!this._logoutScheduled) { this._logoutScheduled = true; setTimeout(function(){ tpForceLogout(); }, 900); }
+                if (!this._logoutScheduled) { this._logoutScheduled = true; setTimeout(function(){ tpForceLogout(''); }, 900); }
                 $('#tp-restore-progress-bar').removeClass('progress-bar-animated');
             } catch (e) {}
         }
@@ -281,6 +447,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
     var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
 
+// ---------------------------------------------------------------------
+// On-the-fly upload safety (prevent duplicates in <files>)
+// ---------------------------------------------------------------------
+// Template uses {FILENAME}
+var tpBckUploadFileAlreadyExistsTpl = "<?php echo addslashes($lang->get('bck_upload_error_file_already_exists')); ?>";
+
+// ---------------------------------------------------------------------
+// Orphan metadata (.meta.json) monitoring & purge
+// ---------------------------------------------------------------------
+// Templates use {TOTAL} {FILES} {SCHEDULED} and {DELETED}
+var tpBckMetaOrphansTooltipTpl = "<?php echo addslashes($lang->get('bck_meta_orphans_tooltip')); ?>";
+var tpBckMetaOrphansTooltipNone = "<?php echo addslashes($lang->get('bck_meta_orphans_tooltip_none')); ?>";
+var tpBckMetaOrphansPurgeDoneTpl = "<?php echo addslashes($lang->get('bck_meta_orphans_purge_done')); ?>";
+var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orphans_purge_none')); ?>";
+
+
+
     function tpFmtTpVersion(v) {
         v = (v || '').toString().trim();
         return v !== '' ? v : tpBckVersionUnknown;
@@ -308,11 +491,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             "sources/backups.queries.php",
             {
                 type: "preflight_restore_compatibility",
-                data: prepareExchangedData(JSON.stringify(payload), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
+	                data: prepareExchangedData(JSON.stringify(payload), "encode", tpSessionKey),
+	                key: tpSessionKey
             },
             function (resp) {
-                var r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
+	                var r = tpSafePrepareDecode(resp);
+	                if (r === null) {
+	                    return;
+	                }
                 if (!r || r.error === true) {
                     tpToast('error', (r && r.message) ? r.message : "<?php echo addslashes($lang->get('error')); ?>");
                     return;
@@ -323,8 +509,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     return;
                 }
 
-                if ((r.reason || '') === 'LEGACY_NO_METADATA') {
+                var rs = (r.reason || '');
+                if (rs === 'LEGACY_NO_METADATA' || rs === 'MISSING_VERSION_METADATA') {
                     tpToast('error', tpBckLegacyNoMeta);
+                    return;
+                }
+
+                if (rs === 'SCHEMA_MISMATCH' || rs === 'MISSING_SCHEMA') {
+                    tpToast('error', "<?php echo addslashes($lang->get('bck_restore_schema_mismatch')); ?>" + ' ' + (r.backup_schema_level || '?') + ' / ' + (r.expected_schema_level || '?') + ' (<?php echo addslashes($lang->get('bck_restore_expected_version')); ?> ' + (r.expected_tp_files_version || '?') + ')');
+                    return;
+                }
+
+                if (rs === 'FILE_NOT_FOUND') {
+                    tpToast('error', "<?php echo addslashes($lang->get('bck_restore_file_not_found')); ?>");
                     return;
                 }
 
@@ -332,6 +529,119 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         );
     }
+
+    function tpPrepareRestoreCli(payload, onOk, onErr) {
+        payload = payload || {};
+        $.post(
+            "sources/backups.queries.php",
+            {
+                type: "prepare_restore_cli",
+	            data: prepareExchangedData(JSON.stringify(payload), "encode", tpSessionKey),
+	            key: tpSessionKey
+            },
+            function(data) {
+	            data = tpSafeDecodeQueryReturn(data);
+	            if (data === null) {
+	                return;
+	            }
+
+                if (data.error === true) {
+                    if (typeof onErr === 'function') onErr(data);
+                    return;
+                }
+                if (typeof onOk === 'function') onOk(data);
+            }
+        ).fail(function(xhr) {
+            if (typeof onErr === 'function') onErr({error: true, message: 'Request failed', xhr: xhr});
+        });
+    }
+
+	function tpShowRestoreCliModal(cmd, cmdNoCd, expiresAt, warnings, variants) {
+        warnings = warnings || [];
+	    variants = variants || [];
+
+	        try {
+	            $('#tp-cli-restore-command').val(cmd || '');
+	
+	            var raw = '';
+	            if (Array.isArray(variants) && variants.length > 0) {
+	                var parts = [];
+	                variants.forEach(function(v) {
+	                    if (!v || !v.command) return;
+	                    var lbl = (v.label || '').toString().trim();
+	                    if (lbl !== '') {
+	                        parts.push('[' + lbl + ']\n' + v.command);
+	                    } else {
+	                        parts.push(v.command);
+	                    }
+	                });
+	                raw = parts.join("\n\n");
+	            } else {
+	                raw = (cmdNoCd ? (cmdNoCd + "\n") : "") + (cmd ? cmd : '');
+	            }
+	            $('#tp-cli-restore-command-raw').text((raw || '').trim());
+
+            if (expiresAt && parseInt(expiresAt, 10) > 0) {
+                var dt = new Date(parseInt(expiresAt, 10) * 1000);
+                $('#tp-cli-restore-expires').text("<?php echo addslashes($lang->get('bck_restore_cli_token_expires')); ?>" + ' ' + dt.toLocaleString());
+            } else {
+                $('#tp-cli-restore-expires').text('');
+            }
+
+            if (warnings.length > 0) {
+                var msgs = [];
+                warnings.forEach(function(w) {
+                    if (w === 'VERSION_NOT_VERIFIED') {
+                        msgs.push("<?php echo addslashes($lang->get('bck_restore_cli_warning_version_not_verified')); ?>");
+                    } else {
+                        msgs.push(w);
+                    }
+                });
+                $('#tp-cli-restore-warnings').html('<b><?php echo addslashes($lang->get('bck_restore_cli_warnings')); ?></b><br>' + msgs.join('<br>')).show();
+            } else {
+                $('#tp-cli-restore-warnings').hide().empty();
+            }
+
+	            // Prevent background refreshes from triggering CryptoJS errors once the session is invalidated
+	            tpDisableBackgroundRefresh();
+	
+	            $('#tp-cli-restore-modal').modal('show');
+        } catch (e) {
+            tpToast('info', cmd || cmdNoCd || '');
+        }
+    }
+
+    $(document).on('click', '#tp-cli-restore-copy', function(e) {
+        e.preventDefault();
+        var v = $('#tp-cli-restore-command').val() || '';
+        if (v === '') return;
+
+        try {
+            navigator.clipboard.writeText(v);
+            tpToast('success', "<?php echo addslashes($lang->get('copied')); ?>");
+        } catch (e) {
+            // Fallback
+            var $tmp = $('<textarea>');
+            $('body').append($tmp);
+            $tmp.val(v).select();
+            document.execCommand('copy');
+            $tmp.remove();
+            tpToast('success', "<?php echo addslashes($lang->get('copied')); ?>");
+        }
+    });
+
+	// Clean logout for the initiator (avoids CryptoJS "Malformed UTF-8" errors when the CLI restore disconnects the session)
+	$(document).on('click', '#tp-cli-restore-logout', function(e) {
+	    e.preventDefault();
+	    tpDisableBackgroundRefresh();
+	    // Give the browser a chance to close the modal cleanly
+	    try { $('#tp-cli-restore-modal').modal('hide'); } catch (ignored) {}
+	    setTimeout(function() {
+	        tpForceLogout('');
+	    }, 150);
+	});
+
+
         $(document).on('click', '#tp-confirm-restore-yes', function(e) {
             e.preventDefault();
             $('#tp-confirm-restore-modal').modal('hide');
@@ -387,7 +697,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 key: "<?php echo $session->get('key'); ?>"
             },
             function (resp) {
-                var r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
+                var r = tpSafePrepareDecode(resp);
+                if (r === null) { return; }
                 if (!r || r.error === true) {
                     tpToast('error', (r && r.message) ? r.message : "<?php echo addslashes($lang->get('bck_instance_key_copy_failed')); ?>");
                     return;
@@ -422,13 +733,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         key: "<?php echo $session->get('key'); ?>"
                     },
                     function (data) {
-                        if (tpResponseLooksLikeHtml(data)) { $('#tp-disk-usage').hide(); return; }
-                        try {
-                            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                        } catch (e) {
-                            $('#tp-disk-usage').hide();
-                            return;
-                        }
+                        data = tpSafePrepareDecode(data);
+                        if (data === null) { return; }
                         
                         if (data.error === true) {
                             toastr.error(data.message || "<?php echo addslashes($lang->get('error')); ?>");
@@ -464,7 +770,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                data = tpSafePrepareDecode(data);
+                if (data === null) { return; }
 
                 if (data.key !== "") {
                     $('#onthefly-backup-key').val(data.key);
@@ -480,6 +787,138 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
         // Load existing on-the-fly backups stored on server (<files> directory)
+// Simple template helper: replaces {KEY} tokens
+function tpTpl(str, map) {
+    str = (str || '').toString();
+    map = map || {};
+    try {
+        Object.keys(map).forEach(function (k) {
+            str = str.split('{' + k + '}').join((map[k] !== null && typeof map[k] !== 'undefined') ? String(map[k]) : '');
+        });
+    } catch (e) {}
+    return str;
+}
+
+// ---------------------------------------------------------------------
+// Orphan metadata (.meta.json) monitoring & purge (files + files/backups)
+// ---------------------------------------------------------------------
+var tpMetaOrphansState = { total: 0, files: 0, scheduled: 0 };
+
+function tpUpdateMetaOrphansButton(state) {
+    state = state || { total: 0, files: 0, scheduled: 0 };
+    var total = parseInt(state.total || 0, 10);
+    var filesCnt = parseInt(state.files || 0, 10);
+    var schedCnt = parseInt(state.scheduled || 0, 10);
+
+    tpMetaOrphansState = { total: total, files: filesCnt, scheduled: schedCnt };
+
+    var $btn = $('#onthefly-meta-orphans-btn');
+    var $badge = $('#onthefly-meta-orphans-badge');
+
+    if (!$btn.length) return;
+
+    // Badge + visual hint only when orphans exist
+    if (total > 0) {
+        $badge.removeClass('d-none').text(total);
+        try { $btn.addClass('btn-warning').removeClass('btn-outline-warning'); } catch (e) {}
+        $btn.attr('aria-label', 'Meta orphans: ' + total);
+        $btn.data('tp-has-orphans', 1);
+        $btn.attr('title', tpTpl(tpBckMetaOrphansTooltipTpl, {
+            TOTAL: total,
+            FILES: filesCnt,
+            SCHEDULED: schedCnt
+        }));
+    } else {
+        $badge.addClass('d-none').text('0');
+        try { $btn.addClass('btn-outline-warning').removeClass('btn-warning'); } catch (e) {}
+        $btn.data('tp-has-orphans', 0);
+        $btn.attr('title', tpBckMetaOrphansTooltipNone);
+    }
+
+    // Refresh tooltip content if bootstrap tooltips are used
+    try {
+        if (typeof $btn.tooltip === 'function') {
+            $btn.tooltip('dispose').tooltip({ boundary: 'window', trigger: 'hover' });
+        }
+    } catch (e) {}
+}
+
+function tpRefreshMetaOrphansIndicator() {
+    if ($('#onthefly-meta-orphans-btn').length === 0) return;
+
+    $.post(
+        "sources/backups.queries.php",
+        {
+            type: "bck_meta_orphans_status",
+            data: prepareExchangedData(JSON.stringify({}), "encode", tpSessionKey),
+            key: tpSessionKey
+        },
+        function (resp) {
+            var r = tpSafePrepareDecode(resp);
+            if (r === null) { return; }
+            if (r.error === true) {
+                // Keep button usable but do not spam toasts
+                return;
+            }
+            tpUpdateMetaOrphansButton({
+                total: r.total || 0,
+                files: r.files || 0,
+                scheduled: r.scheduled || 0
+            });
+        }
+    );
+}
+
+$(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Always refresh just before action (cheap + avoids stale badge)
+    tpRefreshMetaOrphansIndicator();
+
+    // If none, tell the user and bail
+    if (parseInt(tpMetaOrphansState.total || 0, 10) <= 0) {
+        toastr.remove();
+        toastr.info(tpBckMetaOrphansPurgeNone, '', { timeOut: 2500 });
+        return;
+    }
+
+    tpProgressToast.show('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+    $.post(
+        "sources/backups.queries.php",
+        {
+            type: "bck_meta_orphans_purge",
+            data: prepareExchangedData(JSON.stringify({}), "encode", tpSessionKey),
+            key: tpSessionKey
+        },
+        function (resp) {
+            tpProgressToast.hide();
+            var r = tpSafePrepareDecode(resp);
+            if (r === null) { return; }
+
+            if (r.error === true) {
+                toastr.remove();
+                toastr.error(r.message || "<?php echo addslashes($lang->get('error')); ?>", '', { timeOut: 6000, progressBar: true });
+                return;
+            }
+
+            var deleted = parseInt(r.deleted || 0, 10);
+            if (deleted > 0) {
+                toastr.remove();
+                toastr.warning(tpTpl(tpBckMetaOrphansPurgeDoneTpl, { DELETED: deleted }), '', { timeOut: 4000, progressBar: true });
+            } else {
+                toastr.remove();
+                toastr.info(tpBckMetaOrphansPurgeNone, '', { timeOut: 2500 });
+            }
+
+            // Refresh indicator + list (best effort)
+            tpRefreshMetaOrphansIndicator();
+            loadOnTheFlyServerBackups();
+        }
+    );
+});
+
         function tpFmtBytes(bytes) {
             if (bytes === null || bytes === undefined) return '';
             let b = parseInt(bytes, 10);
@@ -498,6 +937,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 return;
             }
 
+            // Refresh orphan metadata indicator (best effort)
+            tpRefreshMetaOrphansIndicator();
+
             $('#onthefly-server-backups-tbody').html(
                 '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
             );
@@ -510,7 +952,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     key: "<?php echo $session->get('key'); ?>"
                 },
                 function (data) {
-                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                    data = tpSafePrepareDecode(data);
+                if (data === null) { return; }
 
                     if (data.error === true) {
                         toastr.error(data.message || "<?php echo addslashes($lang->get('error')); ?>");
@@ -640,7 +1083,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     },
                     function(data) {
                         //decrypt data
-                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                        var _decoded = tpSafeDecodeQueryReturn(data);
+                        if (_decoded === null) { return; }
+                        data = _decoded;
                         console.log(data);
 
                         if (data.error === true) {
@@ -682,180 +1127,101 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             }
         } else if (action === 'onthefly-restore') {
-            // PERFORM A RESTORE
-            if ($('#onthefly-restore-key').val() !== '') {
-                        const opId = $('#onthefly-restore-file').data('operation-id');
-                        const serverFile = tpGetOnTheFlyServerFile();
-                        if ((opId === undefined || opId === null || opId === '') && (serverFile === undefined || serverFile === null || serverFile === '')) {
-                            toastr.error("<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
-                            return false;
-                        }
-                // Compatibility preflight (schema-level) before any lock/maintenance
-                var pfPayload = {};
-                var pfOpId = $('#onthefly-restore-file').data('operation-id');
-                var pfServerScope = $('#onthefly-restore-server-scope').val() || '';
-                var pfServerFile = tpGetOnTheFlyServerFile();
-                if (pfOpId !== undefined && pfOpId !== null && pfOpId !== '') {
-                    pfPayload.operation_id = pfOpId;
-                } else {
-                    pfPayload.serverScope = pfServerScope;
-                    pfPayload.serverFile = pfServerFile;
-                }
-                tpPreflightRestoreCompatibility(pfPayload, function() {
-                    tpExclusiveUsers.ensure(function() {
-                // Pre-check: don't lock UI until we are sure the backup can be decrypted.
-                // This prevents the "stuck" progress modal when the key is wrong.
-                tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_checking_key')); ?> <i class="fas fa-circle-notch fa-spin"></i>');
+            // CLI-only: prepare an authorization token and show the shell command to execute.
+            const opId = $('#onthefly-restore-file').data('operation-id');
+            const serverScope = $('#onthefly-restore-server-scope').val() || '';
+            const serverFile = tpGetOnTheFlyServerFile();
 
-                $('#onthefly-restore-progress').addClass('hidden');
+            if ((opId === undefined || opId === null || opId === '') && (serverFile === undefined || serverFile === null || serverFile === '')) {
+                toastr.error("<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
+                return false;
+            }
 
-                var restoreToken = '';
-                var lockStarted = false;
+            var encryptionKey = simplePurifier($('#onthefly-restore-key').val());
+            var overrideKey = '';
 
-                function ensureLockStarted(pct) {
-                    if (lockStarted !== true) {
-                        lockStarted = true;
-                        try { tpProgressToast.hide(); } catch (e) {}
-                        try { $('#onthefly-restore-progress').removeClass('hidden'); } catch (e) {}
-                        tpRestoreLock.start();
+            // If a scheduled backup is selected from this panel, the instance key will be used server-side.
+            // An override key may be provided (migration case).
+            if (serverScope === 'scheduled') {
+                encryptionKey = '';
+                overrideKey = ($('#scheduled-restore-override-key').val() || '').toString();
+            }
+
+            if (encryptionKey === '' && serverScope !== 'scheduled') {
+                toastr.error("<?php echo addslashes($lang->get('bck_restore_key_required')); ?>");
+                return false;
+            }
+
+            // Compatibility preflight (schema-level) before any token generation
+            var pfPayload = {};
+            if (opId !== undefined && opId !== null && opId !== '') {
+                pfPayload.operation_id = opId;
+            } else {
+                pfPayload.serverScope = serverScope;
+                pfPayload.serverFile = serverFile;
+            }
+
+            tpPreflightRestoreCompatibility(pfPayload, function() {
+                tpExclusiveUsers.ensure(function() {
+                    tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_prepare_in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+                    var prepPayload = {};
+                    if (opId !== undefined && opId !== null && opId !== '') {
+                        prepPayload.operation_id = opId;
+                    } else {
+                        prepPayload.serverScope = serverScope;
+                        prepPayload.serverFile = serverFile;
                     }
-                    tpRestoreLock.update(pct);
-                }
+                    prepPayload.encryptionKey = encryptionKey;
+                    prepPayload.overrideKey = overrideKey;
 
-                function restoreDatabase(offset, clearFilename, totalSize) {
-                    var serverScope = $('#onthefly-restore-server-scope').val() || '';
-                    var serverFile  = tpGetOnTheFlyServerFile();
-
-                    var opId = $('#onthefly-restore-file').data('operation-id') || 0;
-
-                    // If an upload is selected, ignore the server selection
-                    if (opId !== 0) {
-                        serverScope = '';
-                        serverFile = '';
-                        $('#onthefly-restore-server-scope').val('');
-                        $('#onthefly-restore-server-file').val('');
-                        $('#onthefly-restore-server-selected').hide();
-                    }
-
-                    var encryptionKey = simplePurifier($('#onthefly-restore-key').val());
-
-                    // For scheduled restores, don't force a key in the UI (the server will use the instance key)
-                    if (serverScope === 'scheduled') {
-                        encryptionKey = '';
-                    }
-
-                    var data = {
-                        'encryptionKey': encryptionKey,
-                        'backupFile': opId,
-                        'serverScope': serverScope,
-                        'serverFile': serverFile,
-                        'clearFilename': clearFilename,
-                        'offset': (parseInt(offset, 10) || 0),
-                        'totalSize': (parseInt(totalSize, 10) || 0)};
-
-                    $.post(
-                        "sources/backups.queries.php", 
-                        {
-                            type: "onthefly_restore",
-                            restore_token: restoreToken,
-                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                            key: "<?php echo $session->get('key'); ?>"
+                    tpPrepareRestoreCli(
+                        prepPayload,
+                        function(r) {
+                            tpProgressToast.hide();
+	                            tpShowRestoreCliModal(r.command, r.command_no_cd, r.token_expires_at, r.warnings || [], r.command_variants || []);
                         },
-                        function(response) {
-                        // If the restore invalidates the session, PHP can return an HTML error page.
-// In that case, don't try to decrypt (avoid JSON errors) and stop the process.
-                        if (tpResponseLooksLikeHtml(response)) {
-                            tpToast('error', "<?php echo addslashes($lang->get('server_answer_error')); ?>");
-                            $('#onthefly-restore-progress').addClass('hidden');
-                            $('#onthefly-restore-progress-text').html('0');
-                            try { tpProgressToast.hide(); } catch (e) {}
-                            toastr.remove();
-                            ProcessInProgress = false;
-                            tpRestoreLock.cancel();
-                            lockStarted = false;
-                            return;
-                        }
-                        data = decodeQueryReturn(response, '<?php echo $session->get('key'); ?>');
-                        if (data && data.restore_token) { restoreToken = data.restore_token; }
-                        if (!data.error) {
-                            if (data.finished === false) {
-                                // block time counter
-                                ProcessInProgress = true;
-                                
-                                // Continue with new offset
-                                updateProgressBar(data.newOffset, data.totalSize); // Update progress (also starts lock)
-                                restoreDatabase(data.newOffset, data.clearFilename, data.totalSize);
-                            } else {
-                                // SHOW LINK
-                                $('#onthefly-restore-finished')
-                                    .removeClass('hidden')
-                                    .html('<div class="alert alert-success alert-dismissible ml-2">' +
-                                        '<button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>' +
-                                        '<h5><i class="icon fa fa-check mr-2"></i><?php echo addslashes($lang->get('done')); ?></h5>' +
-                                        '<?php echo addslashes($lang->get('restore_done_now_logout')); ?>' +
-                                        '</div>');
+                        function(err) {
+                            tpProgressToast.hide();
+                            var errCode = err.error_code || '';
+                            var errMsg = err.message || "<?php echo addslashes($lang->get('error_unknown')); ?>";
 
-                                // Clean progress info
-                                $('#onthefly-restore-progress').addClass('hidden');
-                                $('#onthefly-restore-progress-text').html('0');                                    
+                            if (errCode === 'DECRYPT_FAILED') {
+                                tpToast('error', "<?php echo addslashes($lang->get('bck_restore_key_invalid')); ?>");
+                                tpShowRestoreKeyModal(
+                                    errMsg,
+                                    function(newKey) {
+                                        newKey = (newKey || '').toString();
+                                        if (serverScope === 'scheduled') {
+                                            prepPayload.overrideKey = newKey;
+                                            $('#scheduled-restore-override-key').val(newKey);
+                                        } else {
+                                            prepPayload.encryptionKey = newKey;
+                                            $('#onthefly-restore-key').val(newKey);
+                                        }
 
-                                // Inform user
-                                toastr.remove();
-                                toastr.success(
-                                    '<?php echo addslashes($lang->get('done')); ?>',
-                                    '', {
-                                        timeOut: 1000
-                                    }
+                                        tpPrepareRestoreCli(
+                                            prepPayload,
+                                            function(r2) {
+	                                                tpShowRestoreCliModal(r2.command, r2.command_no_cd, r2.token_expires_at, r2.warnings || [], r2.command_variants || []);
+                                            },
+                                            function(err2) {
+                                                tpToast('error', err2.message || errMsg);
+                                            }
+                                        );
+                                    },
+                                    (serverScope === 'scheduled') ? overrideKey : encryptionKey
                                 );
-
-                                // restart time expiration counter
-                                ProcessInProgress = false;
-
-                                // At the end of a restore, it's safer to force logout (DB changed / session may be invalid)
-                                ensureLockStarted(100);
-                                tpRestoreLock.finish();
-}
-                        } else {
-                            // ERROR
-                            try { tpProgressToast.hide(); } catch (e) {}
-                            toastr.remove();
-                            var errMsg = (data && (data.message || data.error)) ? (data.message || data.error) : "<?php echo addslashes($lang->get('error')); ?>";
-                            tpToast('error', errMsg, "<?php echo addslashes($lang->get('error')); ?>", { timeOut: 7000 });
-
-                            // Clean progress info
-                            $('#onthefly-restore-progress').addClass('hidden');
-                            $('#onthefly-restore-progress-text').html('0');
-
-                            // Ensure UI is unlocked
-                            if (lockStarted === true) {
-                                tpRestoreLock.cancel();
-                                lockStarted = false;
+                                return;
                             }
 
-                            // restart time expiration counter
-                            ProcessInProgress = false; 
+                            tpToast('error', errMsg);
                         }
-	                    });
-	                }
+                    );
+                });
+            });
 
-                function updateProgressBar(offset, totalSize) {
-                    // Show progress to user
-                    var percentage = 0;
-                    if (totalSize && totalSize > 0) {
-                        percentage = Math.round((offset / totalSize) * 100);
-                        if (percentage > 100) percentage = 100;
-                    }
-                    $('#onthefly-restore-progress-text').text(percentage);
-                    ensureLockStarted(percentage);
-                }
-
-	                // Start restoration
-	                restoreDatabase(0, '', 0);
-	            });
-	        });
-
-                return;
-            }
+            return;
         }
     });
 
@@ -935,14 +1301,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         return;
                     }
 
-                    var r;
-                    if (typeof decodeQueryReturn === 'function') {
-                        r = decodeQueryReturn(response, '<?php echo $session->get('key'); ?>');
-                    } else {
-                        r = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
-                    }
-
-                    if (r && r.restore_token) { restoreToken = r.restore_token; }
+                    var r = tpSafePrepareDecode(response);
+                    if (r === null) { return; }
+if (r && r.restore_token) { restoreToken = r.restore_token; }
 
                     if (r && r.error === false) {
                         if (r.finished === false) {
@@ -1037,7 +1398,52 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         // Compatibility preflight (schema-level) before any lock/maintenance
         tpPreflightRestoreCompatibility({ serverScope: 'scheduled', serverFile: serverFile }, function() {
             tpExclusiveUsers.ensure(function() {
-            tpScheduledRestoreStart(serverFile, overrideKey);
+            // Prepare CLI restore command (server-side)
+                tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_prepare_in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+                var prepPayload = {
+                    serverScope: 'scheduled',
+                    serverFile: serverFile,
+                    encryptionKey: '',
+                    overrideKey: overrideKey
+                };
+
+                tpPrepareRestoreCli(
+                    prepPayload,
+                    function(r) {
+                        tpProgressToast.hide();
+	                        tpShowRestoreCliModal(r.command, r.command_no_cd, r.token_expires_at, r.warnings || [], r.command_variants || []);
+                    },
+                    function(err) {
+                        tpProgressToast.hide();
+                        var errCode = err.error_code || '';
+                        var errMsg = err.message || "<?php echo addslashes($lang->get('error_unknown')); ?>";
+
+                        if (errCode === 'DECRYPT_FAILED') {
+                            tpToast('error', "<?php echo addslashes($lang->get('bck_restore_key_invalid')); ?>");
+                            tpShowRestoreKeyModal(
+                                errMsg,
+                                function(newKey) {
+                                    $('#scheduled-restore-override-key').val(newKey);
+                                    prepPayload.overrideKey = newKey;
+                                    tpPrepareRestoreCli(
+                                        prepPayload,
+                                        function(r2) {
+	                                                tpShowRestoreCliModal(r2.command, r2.command_no_cd, r2.token_expires_at, r2.warnings || [], r2.command_variants || []);
+                                        },
+                                        function(err2) {
+                                            tpToast('error', err2.message || errMsg);
+                                        }
+                                    );
+                                },
+                                overrideKey
+                            );
+                            return;
+                        }
+
+                        tpToast('error', errMsg);
+                    }
+                );
         });
         });
     });
@@ -1097,7 +1503,41 @@ $maxFileSizeDisplay = preg_replace('/\s*(MB|GB)$/', ' $1', $maxFileSizeDisplay);
                                     teampassUser.uploadToken = data[0].token;
                                 }
                             );
-                            up.start();
+// Before starting upload, block if original filename already exists in <files>
+var fn = (files && files.length && files[0] && files[0].name) ? (files[0].name + '') : '';
+$.post(
+    "sources/backups.queries.php",
+    {
+        type: "onthefly_check_upload_filename",
+        data: prepareExchangedData(JSON.stringify({ filename: fn }), "encode", tpSessionKey),
+        key: tpSessionKey
+    },
+    function(resp) {
+        var r = tpSafePrepareDecode(resp);
+        if (r === null) { return; }
+
+        if (r.error === true) {
+            toastr.remove();
+            toastr.error(r.message || "<?php echo addslashes($lang->get('error')); ?>", '', {timeOut: 6000, progressBar: true});
+            try { up.removeFile(files[0]); } catch (e) {}
+            return;
+        }
+
+        if (r.exists === true) {
+            toastr.remove();
+            toastr.error(
+                tpTpl(tpBckUploadFileAlreadyExistsTpl, {FILENAME: fn}),
+                "<?php echo addslashes($lang->get('error')); ?>",
+                {timeOut: 8000, progressBar: true}
+            );
+            try { up.removeFile(files[0]); } catch (e) {}
+            return;
+        }
+
+        up.start();
+    }
+);
+
                         },
                         "json"
                     );
@@ -1146,7 +1586,8 @@ $maxFileSizeDisplay = preg_replace('/\s*(MB|GB)$/', ' $1', $maxFileSizeDisplay);
 
     // Uploader options
     uploader_restoreDB.bind('FileUploaded', function(upldr, file, object) {
-        var myData = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
+        var myData = tpSafePrepareDecode(object.response);
+        if (myData === null) { return; }
         $('#onthefly-restore-file').data('operation-id', myData.operation_id);
         $('#onthefly-restore-serverfile').val('');
         $('#onthefly-restore-server-file').val('');
@@ -1328,19 +1769,8 @@ var tpScheduled = {
           return;
         }
 
-        // If session is invalidated, PHP may return an HTML error page.
-        if (tpResponseLooksLikeHtml(resp)) {
-          tpForceLogout();
-          return;
-        }
-
-        var r = null;
-        try {
-          r = prepareExchangedData(resp, "decode", "<?php echo $session->get('key'); ?>");
-        } catch (e) {
-          tpScheduled.showAlert('danger', '<?php echo addslashes($lang->get('server_answer_error')); ?>');
-          return;
-        }
+        var r = tpSafePrepareDecode(resp);
+        if (r === null) { return; }
 
         // Some code paths return a JSON string, others an already-parsed object
         if (typeof r === 'string') {
@@ -1771,10 +2201,13 @@ var tpExclusiveUsers = {
             "sources/backups.queries.php",
             {
                 type: "check_connected_users",
-                key: "<?php echo $session->get('key'); ?>"
+	            key: tpSessionKey
             },
             function (data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+	            data = tpSafePrepareDecode(data);
+	            if (data === null) {
+	                return;
+	            }
                 cb(data || { error: true });
             }
         );
@@ -1875,14 +2308,20 @@ function loadDiskUsage() {
 
     if (typeof tpRestoreLock !== 'undefined' && tpRestoreLock.active === true) return;
 
+    // If we are preparing a CLI restore, we intentionally stop background refreshes
+    if (window.tpBackgroundRefreshDisabled === true) return;
+
     $.post(
         "sources/backups.queries.php",
         {
             type: "disk_usage",
-            key: "<?php echo $session->get('key'); ?>"
+            key: tpSessionKey
         },
         function (data) {
-            data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            data = tpSafePrepareDecode(data);
+            if (data === null) {
+                return;
+            }
 
             if (!data || data.error) {
                 $('#tp-disk-usage').hide();

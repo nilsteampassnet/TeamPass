@@ -168,7 +168,7 @@ class Application extends BaseApplication
         if (null !== $newWorkDir) {
             $oldWorkingDir = Platform::getCwd(true);
             chdir($newWorkDir);
-            $this->initialWorkingDirectory = $newWorkDir;
+            $this->initialWorkingDirectory = getcwd();
             $cwd = Platform::getCwd(true);
             $io->writeError('Changed CWD to ' . ($cwd !== '' ? $cwd : $newWorkDir), true, IOInterface::DEBUG);
         }
@@ -282,6 +282,7 @@ class Application extends BaseApplication
                         $io->writeError('<warning>Plugin command '.$command->getName().' ('.get_class($command).') would override a Composer command and has been skipped</warning>');
                     } else {
                         // Compatibility layer for symfony/console <7.4
+                        // @phpstan-ignore method.notFound, function.alreadyNarrowedType
                         method_exists($this, 'addCommand') ? $this->addCommand($command) : $this->add($command);
                     }
                 }
@@ -401,6 +402,7 @@ class Application extends BaseApplication
                                 }
 
                                 // Compatibility layer for symfony/console <7.4
+                                // @phpstan-ignore method.notFound, function.alreadyNarrowedType
                                 method_exists($this, 'addCommand') ? $this->addCommand($cmd) : $this->add($cmd);
                             }
                         }

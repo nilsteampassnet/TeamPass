@@ -614,8 +614,8 @@ if (null !== $post_type) {
                         'SELECT * FROM ' . prefixTable('log_system') . '
                         WHERE type=%s '
                         . 'AND (date BETWEEN %i AND %i)'
-                        . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
-                        . ((int) $post_filter_user === -1 ? '' : ' AND field_1 = '.(int) $post_filter_user),
+                        . ($post_filter_action === 'all' ? '' : ' AND label = "'.$post_filter_action.'"')
+                        . ((int) $post_filter_user === -1 ? '' : ' AND qui = '.(int) $post_filter_user),
                         'user_connection',
                         $post_date_from,
                         $post_date_to
@@ -626,8 +626,8 @@ if (null !== $post_type) {
                         prefixTable('log_system'),
                         'type=%s '
                         . 'AND (date BETWEEN %i AND %i)'
-                        . ($post_filter_action === 'all' ? '' : ' AND action = '.$post_filter_action)
-                        . ((int) $post_filter_user === -1 ? '' : ' AND field_1 = '.(int) $post_filter_user),
+                        . ($post_filter_action === 'all' ? '' : ' AND label = "'.$post_filter_action.'"')
+                        . ((int) $post_filter_user === -1 ? '' : ' AND qui = '.(int) $post_filter_user),
                         'user_connection',
                         $post_date_from,
                         $post_date_to

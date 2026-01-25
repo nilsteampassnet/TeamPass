@@ -24,7 +24,7 @@ namespace TeampassClasses\SuperGlobal;
  * ---
  * @file      SuperGlobal.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */

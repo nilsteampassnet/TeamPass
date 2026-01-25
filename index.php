@@ -1329,6 +1329,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
+    <?php
+    // Include phpseclib v3 migration modal if migration is in progress
+    if (isset($session) && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)) {
+        include_once 'includes/core/phpseclibv3_migration_modal.php';
+    }
+    ?>
+
     </body>
 
 </html>

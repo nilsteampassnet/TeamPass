@@ -20,6 +20,7 @@ The Teampass extension currently offers the following features:
 - ✨ **Auto-fill**: Login form completion
 - 👁️ **Details view**: Complete information display with password show/hide
 - 🎲 **Integrated password generator**: Generate passwords based upon criteria
+- 🧠 **Henerated passwords history**: Store last generated passwords
 
 #### Complete CRUD Operations
 - ➕ **Create**: Add new credentials directly from the extension

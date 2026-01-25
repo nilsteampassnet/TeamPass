@@ -4531,8 +4531,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
                 }
                 // Add Description
-                value.desc = htmlDecode(value.desc)
-                description = (value.desc.replace(/<.*>/gi, '').trim() !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + value.desc : '<i>'+itemLabel + '</i>');
+                value.desc = htmlDecode(value.desc);
+                // Ensure preview is plain text even if backend sent HTML-encoded tags (ex: &lt;p&gt;...&lt;/p&gt;)
+                const descPreview = (value.desc ?? '')
+                    .replace(/<[^>]*>/g, '')
+                    .replace(/\u00A0/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim();
+                description = (descPreview !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + descPreview : '<i>'+itemLabel + '</i>');
                 // Consolidate item label
                 if (description !== '') {
                     description = '<span class="text-secondary small d-inline-block text-truncate">' + description + '</span>';
