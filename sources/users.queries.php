@@ -307,35 +307,48 @@ if (null !== $post_type) {
                     break;
                 }
 
-                // Add user in DB
+                // Prepare user data for insertion
+                $userData = array(
+                    'login' => $login,
+                    'name' => $name,
+                    'lastname' => $lastname,
+                    'pw' => $hashedPassword,
+                    'email' => $email,
+                    'auth_type' => 'local',
+                    'admin' => empty($is_admin) === true ? 0 : $is_admin,
+                    'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
+                    'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
+                    'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
+                    'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
+                    'user_language' => $SETTINGS['default_language'],
+                    'isAdministratedByRole' => $is_administrated_by,
+                    'encrypted_psk' => '',
+                    'last_pw_change' => time(),
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                    'special' => 'auth-pwd-change',
+                    'is_ready_for_usage' => 0,
+                    'otp_provided' => 0,
+                    'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
+                    'mfa_enabled' => empty($mfa_enabled) === true ? 0 : $mfa_enabled,
+                    'created_at' => time(),
+                    'personal_items_migrated' => 1,
+                    'encryption_version' => 3,
+                    'phpseclibv3_migration_completed' => 1,
+                );
+
+                // Add transparent recovery fields if available
+                if (isset($userKeys['user_seed'])) {
+                    $userData['user_derivation_seed'] = $userKeys['user_seed'];
+                    $userData['private_key_backup'] = $userKeys['private_key_backup'];
+                    $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                    $userData['last_pw_change'] = time();
+                }
+
+                // Insert user in DB
                 DB::insert(
                     prefixTable('users'),
-                    array(
-                        'login' => $login,
-                        'name' => $name,
-                        'lastname' => $lastname,
-                        'pw' => $hashedPassword,
-                        'email' => $email,
-                        'auth_type' => 'local',
-                        'admin' => empty($is_admin) === true ? 0 : $is_admin,
-                        'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
-                        'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
-                        'read_only' => empty($is_read_only) === true ? 0 : $is_read_only,
-                        'personal_folder' => empty($has_personal_folder) === true ? 0 : $has_personal_folder,
-                        'user_language' => $SETTINGS['default_language'],
-                        'isAdministratedByRole' => $is_administrated_by,
-                        'encrypted_psk' => '',
-                        'last_pw_change' => time(),
-                        'public_key' => $userKeys['public_key'],
-                        'private_key' => $userKeys['private_key'],
-                        'special' => 'auth-pwd-change',
-                        'is_ready_for_usage' => 0,
-                        'otp_provided' => 0,
-                        'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
-                        'mfa_enabled' => empty($mfa_enabled) === true ? 0 : $mfa_enabled,
-                        'created_at' => time(),
-                        'personal_items_migrated' => 1,
-                    )
+                    $userData
                 );
                 $new_user_id = DB::insertId();
 
@@ -2412,6 +2425,8 @@ if (null !== $post_type) {
                 'created_at' => time(),
                 'personal_items_migrated' => 1,
                 'otp_provided' => 1,
+                'encryption_version' => 3,
+                'phpseclibv3_migration_completed' => 1,
             );
 
             // Add transparent recovery fields if available
