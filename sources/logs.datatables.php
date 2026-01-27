@@ -798,10 +798,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $subclause2 = $sWhere->addClause('OR');
     $subclause2->add('u.session_end >= %i', time());
     $subclause2->add(
-        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = u.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls
+            WHERE ls.qui = u.id
+                AND ls.label = %s
+                AND ls.date >= %i
+                AND (
+                    (ls.type = %s)
+                    OR (ls.type = %s AND ls.field_1 LIKE %s)
+                )
+        )',
+        'user_connection',
+        $apiConnectedAfter,
         'api',
         'user_connection',
-        $apiConnectedAfter
+        '%tp_src=api%'
     );
 
     // Get the total number of records - use alias 'u'
@@ -819,16 +829,19 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     LEFT JOIN (
         SELECT qui, MAX(date) as last_api_date
         FROM '.prefixTable('log_system').'
-        WHERE type = %s
-            AND label = %s
+        WHERE label = %s
             AND date >= %i
+            AND (
+                (type = %s)
+                OR (type = %s AND field_1 LIKE %s)
+            )
         GROUP BY qui
     ) api_conn ON api_conn.qui = u.id
     WHERE %l
     ORDER BY %l %l
     LIMIT %i, %i';
 
-    $params = ['api', 'user_connection', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $params = ['user_connection', $apiConnectedAfter, 'api', 'user_connection', '%tp_src=api%', $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
