@@ -50,6 +50,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
+use Symfony\Component\Process\Process;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -6251,3 +6252,16 @@ function generateNewKeyTempo(int $userId): string
     return $keyTempo;
 }
 // -->
+
+/**
+ * Trigger the background tasks handler manually.
+ * @return void
+ */
+function triggerBackgroundHandler(): void
+{
+    // Create the process to run the handler script
+    $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
+    
+    // Run it asynchronously to avoid blocking the UI
+    $process->start();
+}
