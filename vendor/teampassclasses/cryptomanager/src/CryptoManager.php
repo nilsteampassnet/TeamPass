@@ -269,6 +269,11 @@ class CryptoManager
 
                 $decrypted = $cipher->decrypt($data);
 
+                // openssl_decrypt() can return false on failure
+                if ($decrypted === false) {
+                    throw new Exception('AES decryption failed (openssl returned false)');
+                }
+
                 // Success with v3
                 return $decrypted;
             } catch (Exception $e) {
@@ -295,6 +300,11 @@ class CryptoManager
 
                         $cipher->setPassword($password);
                         $decrypted = $cipher->decrypt($data);
+
+                        // openssl_decrypt() can return false on failure
+                        if ($decrypted === false) {
+                            throw new Exception('AES v1 decryption failed (openssl returned false)');
+                        }
 
                         // Success with v1 fallback
                         return $decrypted;
@@ -330,7 +340,14 @@ class CryptoManager
                 }
 
                 $cipher->setPassword($password);
-                return $cipher->decrypt($data);
+                $decrypted = $cipher->decrypt($data);
+
+                // openssl_decrypt() can return false on failure
+                if ($decrypted === false) {
+                    throw new Exception('AES v1-only decryption failed (openssl returned false)');
+                }
+
+                return $decrypted;
             } catch (Exception $e) {
                 throw new Exception('Failed to decrypt with AES: ' . $e->getMessage());
             }

@@ -685,10 +685,11 @@ function buildUserSession(
         $session->set('user-private_key', $returnKeys['private_key_clear']);
     }
 
-    // API key
+    // API key - use recovered private key from session if available, otherwise from returnKeys
+    $privateKeyForApiDecrypt = !empty($returnKeys['private_key_clear']) ? $returnKeys['private_key_clear'] : $session->get('user-private_key');
     $session->set(
         'user-api_key',
-        empty($userInfo['api_key']) === false ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $returnKeys['private_key_clear'])) : '',
+        empty($userInfo['api_key']) === false && !empty($privateKeyForApiDecrypt) ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyForApiDecrypt)) : '',
     );
     
     $session->set('user-special', $userInfo['special']);
@@ -1690,6 +1691,10 @@ function finalizeAuthentication(
             'id = %i',
             $userInfo['id']
         );
+
+        // Re-encrypt private key with AD password via transparent recovery
+        // The private key was encrypted with a random password during manual creation
+        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
     } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
         // Case where user is auth by LDAP but his password in Teampass is not synchronized
         // For example when user has changed his password in AD.
