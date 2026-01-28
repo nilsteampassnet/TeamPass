@@ -181,11 +181,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-<<<<<<< HEAD
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '],(string) $record['label']).'", ';
-        //col3
-        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
-=======
         $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
         //col3 (Source)
         $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
@@ -195,15 +190,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col4
         if (!empty($record['login'])) {
             $fullname = trim(
-                htmlspecialchars(stripslashes((string) ($record['name'] ?? '')), ENT_QUOTES) . ' ' .
-                htmlspecialchars(stripslashes((string) ($record['lastname'] ?? '')), ENT_QUOTES)
+                ((string) $record['name'] ?? '') . ' ' .
+                ((string) $record['lastname'] ?? '')
             );
-            $loginShown = htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES);
+            $loginShown = (string) $record['login'];
             $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $loginShown . ']"';
         } else {
-            $sOutput .= '"IP: ' . htmlspecialchars((string) $record['who'], ENT_QUOTES) . '"';
+            $sOutput .= '"IP: ' . (string) $record['who'] . '"';
         }
->>>>>>> develop
         //Finish the line
         $sOutput .= '],';
     }
@@ -533,27 +527,18 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col2
         $sOutput_item .= '"'.trim((string) $record['folder']).'", ';
         //col2
-<<<<<<< HEAD
         $sOutput_item .= '"'.trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']", ';
-        //col4
-        $sOutput_item .= '"'.trim($lang->get($record['action'])).'", ';
-        //col5
-        if ($record['perso'] === 1) {
-            $sOutput_item .= '"'.trim($lang->get('yes')).'"';
-=======
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
         //col6
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim($lang->get($record['action'])).'", ';
         //col7 (API / Extension)
         if (isset($record['raison']) && strpos((string) $record['raison'], 'tp_src=api') !== false) {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'", ';
+            $sOutput_item .= '"'.$lang->get('yes').'", ';
         } else {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'", ';
+            $sOutput_item .= '"'.$lang->get('no').'", ';
         }
         //col8 (Personal folder)
         if ((int) ($record['personal_folder'] ?? 0) === 1) {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
->>>>>>> develop
+            $sOutput_item .= '"'.$lang->get('yes').'"';
         } else {
             $sOutput_item .= '"'.trim($lang->get('no')).'"';
         }
