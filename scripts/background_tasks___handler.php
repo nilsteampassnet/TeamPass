@@ -39,6 +39,7 @@ class BackgroundTasksHandler {
     private $maxExecutionTime;
     private $batchSize;
     private $maxTimeBeforeRemoval;
+    private $lockFileHandle = null;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
@@ -79,7 +80,33 @@ class BackgroundTasksHandler {
         try {
             $this->cleanupStaleTasks();
             $this->handleScheduledDatabaseBackup();
-            $this->processTaskBatches();
+
+            // Drain loop: keep processing while there are pending tasks
+            $startTime = time();
+            $maxDrainTime = (int)($this->settings['tasks_max_drain_time'] ?? 55);
+
+            do {
+                $this->processTaskBatches();
+
+                // Check if there are remaining pending tasks
+                $pendingCount = $this->countPendingTasks();
+                if ($pendingCount === 0) {
+                    break;
+                }
+
+                // Check time limit
+                if ((time() - $startTime) >= $maxDrainTime) {
+                    if (LOG_TASKS === true) $this->logger->log(
+                        "Drain loop time limit reached ({$maxDrainTime}s), {$pendingCount} tasks remaining",
+                        'INFO'
+                    );
+                    break;
+                }
+
+                // Short delay to avoid hammering the database
+                usleep(200000); // 200ms
+            } while (true);
+
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
             if (LOG_TASKS=== true) $this->logger->log('Task processing error: ' . $e->getMessage(), 'ERROR');
@@ -297,14 +324,19 @@ class BackgroundTasksHandler {
      */
     private function acquireProcessLock(): bool {
         $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
-        
+
         $fp = fopen($lockFile, 'w');
-        
-        if (!flock($fp, LOCK_EX | LOCK_NB)) {
+        if ($fp === false) {
             return false;
         }
-        
+
+        if (!flock($fp, LOCK_EX | LOCK_NB)) {
+            fclose($fp);
+            return false;
+        }
+
         fwrite($fp, (string)getmypid());
+        $this->lockFileHandle = $fp;
         return true;
     }
 
@@ -312,6 +344,12 @@ class BackgroundTasksHandler {
      * Release the lock file.
      */
     private function releaseProcessLock() {
+        if ($this->lockFileHandle !== null) {
+            flock($this->lockFileHandle, LOCK_UN);
+            fclose($this->lockFileHandle);
+            $this->lockFileHandle = null;
+        }
+
         $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
         if (file_exists($lockFile)) {
             unlink($lockFile);
@@ -463,9 +501,22 @@ class BackgroundTasksHandler {
      */
     private function countRunningTasks(): int {
         return DB::queryFirstField(
-            'SELECT COUNT(*) 
-            FROM ' . prefixTable('background_tasks') . ' 
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 1'
+        );
+    }
+
+    /**
+     * Count the number of pending tasks (not started and not finished).
+     * @return int The number of pending tasks.
+     */
+    private function countPendingTasks(): int {
+        return (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 0
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
         );
     }
 
