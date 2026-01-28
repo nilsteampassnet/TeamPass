@@ -3238,18 +3238,9 @@ function storeUsersShareKey(
     int $all_users_except_id = -1,
     int $apiUserId = -1
 ): void {
-    
+
     $session = SessionManager::getSession();
     loadClasses('DB');
-
-    // Delete existing entries for this object
-    if ($deleteAll === true) {
-        DB::delete(
-            prefixTable($object_name),
-            'object_id = %i',
-            $post_object_id
-        );
-    }
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
@@ -3266,13 +3257,16 @@ function storeUsersShareKey(
         AND public_key != ""',
         $user_ids
     );
+
+    // Insert or update sharekeys first, track which users were processed
+    $processedUserIds = [];
     foreach ($users as $user) {
         // Insert in DB the new object key for this item by user
         if (count($objectKeyArray) === 0) {
             if (WIP === true) {
                 error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
             }
-            
+
             insertOrUpdateSharekey(
                 prefixTable($object_name),
                 $post_object_id,
@@ -3284,7 +3278,7 @@ function storeUsersShareKey(
                 if (WIP === true) {
                     error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
                 }
-                
+
                 insertOrUpdateSharekey(
                     prefixTable($object_name),
                     (int) $object['objectId'],
@@ -3292,6 +3286,28 @@ function storeUsersShareKey(
                     encryptUserObjectKey($object['objectKey'], $user['public_key'])
                 );
             }
+        }
+        $processedUserIds[] = (int) $user['id'];
+    }
+
+    // Remove stale sharekeys for users who no longer qualify
+    // This replaces the previous DELETE-all-then-INSERT pattern which
+    // created a race condition window where all sharekeys were absent.
+    if ($deleteAll === true) {
+        if (!empty($processedUserIds)) {
+            DB::query(
+                'DELETE FROM ' . prefixTable($object_name) . '
+                WHERE object_id = %i AND user_id NOT IN %li',
+                $post_object_id,
+                $processedUserIds
+            );
+        } else {
+            // No eligible users found: remove all sharekeys for this object
+            DB::delete(
+                prefixTable($object_name),
+                'object_id = %i',
+                $post_object_id
+            );
         }
     }
 }
