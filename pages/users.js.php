@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      users.js.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -310,18 +310,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
                 'body': '<?php echo $lang->get('email_body_new_user');?>',
                 'pre_replace' : {
-                    '#code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                     '#login#' : store.get('teampassUser').admin_new_user_login,
                     '#password#' : store.get('teampassUser').admin_new_user_password,
-                }
-            }
-        } else {
-            var data = {
-                'receipt': $('#form-email').val(),
-                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
-                'body': '<?php echo $lang->get('email_body_temporary_encryption_code');?>',
-                'pre_replace' : {
-                    '#enc_code#' : store.get('teampassUser').admin_new_user_temporary_encryption_code,
                 }
             }
         }
@@ -2599,15 +2589,29 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
                         // CHeck if not empty
                         if (userLogin !== '') {
+                            // LDAP/AD account status indicators
+                            var ldapStatusIcons = '';
+                            if (entry.ldapAccountDisabled !== undefined && parseInt(entry.ldapAccountDisabled) === 1) {
+                                ldapStatusIcons += '<i class="fa-solid fa-user-slash ml-2 infotip text-danger" title="<?php echo addslashes($lang->get('ldap_account_disabled')); ?>"></i>';
+                            }
+                            if (entry.ldapAccountExpired !== undefined && parseInt(entry.ldapAccountExpired) === 1) {
+                                var expiresHint = '';
+                                if (entry.ldapAccountExpiresAt !== undefined && entry.ldapAccountExpiresAt !== null) {
+                                    var d = new Date(parseInt(entry.ldapAccountExpiresAt) * 1000);
+                                    expiresHint = ' - ' + d.toLocaleDateString();
+                                }
+                                ldapStatusIcons += '<i class="fa-solid fa-hourglass-end ml-2 infotip text-warning" title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '"></i>';
+                            }
                             html += '<tr>' +
                                 '<td>' + userLogin +
                                 '</td>' +
-                                '<td>' +
+                                '<td class="text-center text-nowrap" style="min-width: 85px;">' +
+                                '<span class="d-inline-flex align-items-center justify-content-center" style="white-space:nowrap;">' +
                                 '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
                                 '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
                                 (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
                                 '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
-                                '"></i>' +
+                                '"></i>' + ldapStatusIcons + '</span>' +
                                 '</td><td>' +
                                 (entry.userInTeampass === 0 ? '' :
                                 '<i class="fa-solid ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +

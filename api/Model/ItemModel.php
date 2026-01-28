@@ -23,7 +23,7 @@
  *
  * @file      ItemModel.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -42,23 +42,29 @@ class ItemModel
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
+     * @param bool $showItem
      * 
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
     {
         // Get items
         $rows = DB::query(
-            'SELECT i.id, label, description, i.pw, i.url, i.id_tree, i.login, i.email, i.viewed_no, i.fa_icon, i.inactif, i.perso,
-            t.title as folder_label, io.secret as otp_secret
-            FROM ' . prefixTable('items') . ' AS i
-            LEFT JOIN '.prefixTable('nested_tree').' as t ON (t.id = i.id_tree) 
-            LEFT JOIN '.prefixTable('items_otp').' as io ON (io.item_id = i.id) '.
+            "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
+                i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
+                t.title as folder_label, 
+                io.secret as otp_secret,
+                (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
+                 FROM " . prefixTable('tags') . " AS tg 
+                 WHERE tg.item_id = i.id) as tags
+            FROM " . prefixTable('items') . " AS i
+            LEFT JOIN " . prefixTable('nested_tree') . " AS t ON (t.id = i.id_tree)
+            LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
             $sqlExtra . 
             " ORDER BY i.id ASC" .
             ($limit > 0 ? " LIMIT ". $limit : '')
-        );
-
+        ); 
+        
         $ret = [];
         foreach ($rows as $row) {
             $userKey = DB::queryfirstrow(
@@ -132,8 +138,23 @@ class ItemModel
                     'folder_label' => $row['folder_label'],
                     'path' => empty($path) === true ? '' : $path,
                     'totp' => $row['otp_secret'],
+                    'favicon_url' => $row['favicon_url'],
+                    'tags' => $row['tags'],
+                    'anyone_can_modify' => $row['anyone_can_modify'],
                 ]
             );
+
+            // Increase viewed number
+            if ($showItem === true) {
+                logItems(
+                    [],
+                    (int) $row['id'],
+                    $row['label'] ?? '',
+                    (int) $userId,
+                    'at_shown',
+                    ''
+                );
+            }
         }
 
         return $ret;
@@ -146,30 +167,26 @@ class ItemModel
      * item creation, and post-insertion tasks (like logging, sharing, and tagging).
      */
     public function addItem(
-        int $folderId,
-        string $label,
-        string $password,
-        string $description,
-        string $login,
-        string $email,
-        string $url,
-        string $tags,
-        string $anyone_can_modify,
-        string $icon,
-        int $userId,
-        string $username,
-        string $totp
+        array $arrItemParams
     ) : array
     {
         try {
             include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+            // Extract parameters
+            $folderId = (int) $arrItemParams['folder_id'];
+            $label = (string) $arrItemParams['label'];
+            $password = (string) $arrItemParams['password'];
+            $tags = (string) $arrItemParams['tags'] ?? '';
+            $userId = (int) $arrItemParams['id'];
+            $username = (string) $arrItemParams['username'];
 
             // Load config
             $configManager = new ConfigManager();
             $SETTINGS = $configManager->getAllSettings();
 
             // Step 1: Prepare data and sanitize inputs
-            $data = $this->prepareData($folderId, $label, $password, $description, $login, $email, $url, $tags, $anyone_can_modify, $icon, $totp);
+            $data = $this->prepareData($arrItemParams);
             $this->validateData($data); // Step 2: Validate the data
 
             // Step 3: Validate password rules (length, emptiness)
@@ -179,7 +196,7 @@ class ItemModel
             $itemInfos = $this->getFolderSettings($folderId);
 
             // Step 5: Ensure the password meets folder complexity requirements
-            $this->checkPasswordComplexity($password, $itemInfos);
+            $this->checkPasswordComplexity($password, array_merge($itemInfos, ['folderId' => $folderId]));
 
             // Step 6: Check for duplicates in the system
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
@@ -188,6 +205,11 @@ class ItemModel
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
+
+            // Generate favicon URL if URL is provided and favicon_url is empty
+            if (empty($data['url']) === false) {
+                $data['favicon_url'] = $this->getFaviconUrl($data['url']);
+            }
 
             // Step 8: Insert the new item into the database
             $newID = $this->insertNewItem($data, $password, $itemInfos);
@@ -213,36 +235,70 @@ class ItemModel
     }
 
     /**
+     * Generate favicon URL using Google service
+     * 
+     * @param string $url Website URL
+     * @return string|null Favicon URL
+     */
+    private function getFaviconUrl(string $url): ?string
+    {
+        try {
+            $parsedUrl = parse_url($url);
+            if (!isset($parsedUrl['host'])) {
+                return null;
+            }
+            
+            $domain = $parsedUrl['host'];
+            
+            // Quick DNS validation (very fast, ~50-100ms)
+            if (!$this->isValidDomain($domain)) {
+                return null;
+            }
+            
+            // Google's service handles the rest gracefully
+            return 'https://www.google.com/s2/favicons?domain=' . $domain . '&sz=32';
+            
+        } catch (Exception $e) {
+            // Silent fail
+            error_log('Favicon URL generation failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Validate domain using DNS lookup only
+     * Very fast check (~50ms) without HTTP overhead
+     * 
+     * @param string $domain Domain to validate
+     * @return bool True if domain has valid DNS records
+     */
+    private function isValidDomain(string $domain): bool
+    {
+        // Check for A or AAAA DNS records
+        return checkdnsrr($domain, 'A') || checkdnsrr($domain, 'AAAA');
+    }
+
+    /**
      * Prepares the data array for processing by combining all inputs.
-     * @param int $folderId - Folder ID where the item is stored
-     * @param string $label - Label or title of the item
-     * @param string $password - Password associated with the item
-     * @param string $description - Description of the item
-     * @param string $login - Login associated with the item
-     * @param string $email - Email linked to the item
-     * @param string $url - URL for the item
-     * @param string $tags - Tags for categorizing the item
-     * @param string $anyone_can_modify - Permission to allow modifications by others
-     * @param string $icon - Icon representing the item
-     * @param string $totp - Token for OTP
+     * @param array $arrItemParams - Array of item parameters
      * @return array - Returns the prepared data
      */
     private function prepareData(
-        int $folderId, string $label, string $password, string $description, string $login, 
-        string $email, string $url, string $tags, string $anyone_can_modify, string $icon, string $totp
+        array $arrItemParams
     ) : array {
         return [
-            'folderId' => $folderId,
-            'label' => $label,
-            'password' => $password,
-            'description' => $description,
-            'login' => $login,
-            'email' => $email,
-            'tags' => $tags,
-            'anyoneCanModify' => $anyone_can_modify,
-            'url' => $url,
-            'icon' => $icon,
-            'totp' => $totp,
+            'folderId' => (int) $arrItemParams['folder_id'],
+            'label' => (string) $arrItemParams['label'],
+            'password' => (string) $arrItemParams['password'],
+            'description' => (string) $arrItemParams['description'] ?? '',
+            'login' => (string) $arrItemParams['login'] ?? '',
+            'email' => (string) $arrItemParams['email'] ?? '',
+            'tags' => (string) $arrItemParams['tags'] ?? '',
+            'anyoneCanModify' => (int) $arrItemParams['anyone_can_modify'] ?? '0',
+            'url' => (string) $arrItemParams['url'] ?? '',
+            'icon' => (string) $arrItemParams['icon'] ?? '',
+            'totp' => (string) $arrItemParams['totp'] ?? '',
+            'favicon_url' => '',
         ];
     }
 
@@ -322,6 +378,19 @@ class ItemModel
      */
     private function checkPasswordComplexity(string $password, array $itemInfos) : void
     {
+        // Check existence first
+        if (isset($itemInfos['folderId']) === false) {
+            throw new Exception('Folder ID is missing');
+        }
+
+        // Cast to integer for strict validation
+        $folderId = (int) $itemInfos['folderId'];
+
+        // Validate value
+        if ($folderId <= 0) {
+            throw new Exception('Invalid folder ID for complexity check');
+        }
+        
         $folderComplexity = DB::queryFirstRow(
             'SELECT valeur
             FROM ' . prefixTable('misc') . '
@@ -335,7 +404,7 @@ class ItemModel
         $zxcvbn = new Zxcvbn();
         $passwordStrength = $zxcvbn->passwordStrength($password);
         $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
-
+error_log('Password strength score: ' . $passwordStrengthScore . ' | Required: ' . $requested_folder_complexity);
         if ($passwordStrengthScore < $requested_folder_complexity && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
             throw new Exception('Password strength is too low');
         }
@@ -413,6 +482,7 @@ class ItemModel
                 'fa_icon' => $data['icon'],
                 'item_key' => uniqidReal(50),
                 'created_at' => time(),
+                'favicon_url' => $data['favicon_url'],
             ]
         );
 
@@ -597,39 +667,28 @@ class ItemModel
                 $updateData['id_tree'] = $newFolderId;
             }
 
-            // Handle label update
-            if (isset($params['label'])) {
-                $updateData['label'] = filter_var($params['label'], FILTER_SANITIZE_STRING);
+            // Generate favicon URL if URL is provided and favicon_url is empty
+            if (empty($currentItem['url']) === false) {
+                $updateData['favicon_url'] = $this->getFaviconUrl($currentItem['url']);
             }
 
-            // Handle description update
-            if (isset($params['description'])) {
-                $updateData['description'] = $params['description'];
-            }
-
-            // Handle login update
-            if (isset($params['login'])) {
-                $updateData['login'] = filter_var($params['login'], FILTER_SANITIZE_STRING);
-            }
-
-            // Handle email update
-            if (isset($params['email'])) {
-                $updateData['email'] = filter_var($params['email'], FILTER_SANITIZE_EMAIL);
-            }
-
-            // Handle url update
-            if (isset($params['url'])) {
-                $updateData['url'] = filter_var($params['url'], FILTER_SANITIZE_URL);
-            }
-
-            // Handle icon update
-            if (isset($params['icon'])) {
-                $updateData['fa_icon'] = filter_var($params['icon'], FILTER_SANITIZE_STRING);
-            }
-
-            // Handle anyone_can_modify update
-            if (isset($params['anyone_can_modify'])) {
-                $updateData['anyone_can_modify'] = (int) $params['anyone_can_modify'];
+            $fieldsDefinitions = [
+                'label'             => ['db_key' => 'label', 'type' => 'string'],
+                'description'       => ['db_key' => 'description', 'type' => 'string'],
+                'login'             => ['db_key' => 'login', 'type' => 'string'],
+                'email'             => ['db_key' => 'email', 'type' => 'string'],
+                'url'               => ['db_key' => 'url', 'type' => 'string'],
+                'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
+                'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
+                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
+            ];
+            foreach ($fieldsDefinitions as $paramKey => $def) {
+                if (isset($params[$paramKey])) {
+                    $updateData[$def['db_key']] = match($def['type']) {
+                        'int'   => (int) $params[$paramKey],
+                        default => $params[$paramKey],
+                    };
+                }
             }
 
             // Handle password update
@@ -692,8 +751,18 @@ class ItemModel
                         ]
                     );
                 }
+            } else if (empty($updateData)) {
+                // Check if an entry exists for TOTP in items_otp table
+                // IF yes delete it
+                if (isset($params['totp']) === true && empty($params['totp']) === true) {
+                    DB::delete(
+                        prefixTable('items_otp'),
+                        'item_id = %i',
+                        $itemId
+                    );
+                }
             }
-
+            
             // Handle tags update
             if (isset($params['tags'])) {
                 // Delete existing tags

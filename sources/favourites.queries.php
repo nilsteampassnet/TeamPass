@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      favourites.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -101,21 +101,13 @@ if (null !== $post_type) {
     switch ($post_type) {
         //CASE adding a new function
         case 'del_fav':
-            //Get actual favourites
-            $data = DB::queryFirstRow('SELECT favourites FROM '.prefixTable('users').' WHERE id = %i', $session->get('user-id'));
-            $arrayFavorites = array_diff(explode(';', $data['favourites']), [$post_id]);
+            // Remove from database using the dedicated table
+            removeUserFavorite((int) $session->get('user-id'), (int) $post_id);
 
-            //update user's account
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'favourites' => implode(';', $arrayFavorites),
-                ),
-                'id = %i',
-                $session->get('user-id')
-            );
+            //Get actual favourites
+            $favs = getUserFavorites((int) $session->get('user-id'));
             //update session
-            $session->set('user-favorites', $arrayFavorites);
+            $session->set('user-favorites', $favs);
             break;
     }
 }

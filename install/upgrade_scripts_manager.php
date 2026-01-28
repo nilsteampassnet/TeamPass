@@ -21,7 +21,7 @@
  * ---
  * @file      upgrade_scripts_manager.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -61,6 +61,7 @@ $scripts_list = array(
     array('upgrade_operations.php', 'clean_duplicate_sharekeys'),
     array('upgrade_run_3.1.5.php', 'user_id'),
     array('upgrade_operations.php', 'Transparent_recovery_migration'),
+    array('upgrade_run_3.1.6.php', 'user_id'),
 );
 $param = '';
 

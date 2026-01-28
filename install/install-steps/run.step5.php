@@ -21,7 +21,7 @@
  * ---
  * @file      run.step5.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -316,8 +316,10 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
+                `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
                 PRIMARY KEY (`increment_id`),
-                UNIQUE KEY idx_unique_object_user (object_id, user_id)
+                UNIQUE KEY idx_unique_object_user (object_id, user_id),
+                KEY `encryption_version` (`encryption_version`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
@@ -350,8 +352,10 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
+                `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT "1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)",
                 PRIMARY KEY (`increment_id`),
-                UNIQUE KEY idx_unique_object_user (object_id, user_id)
+                UNIQUE KEY idx_unique_object_user (object_id, user_id),
+                KEY `encryption_version` (`encryption_version`)
             ) CHARSET=utf8;'
         );
     }
@@ -365,8 +369,10 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
+                `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT "1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)",
                 PRIMARY KEY (`increment_id`),
-                UNIQUE KEY idx_unique_object_user (object_id, user_id)
+                UNIQUE KEY idx_unique_object_user (object_id, user_id),
+                KEY `encryption_version` (`encryption_version`)
             ) CHARSET=utf8;'
         );
     }
@@ -380,8 +386,10 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
+                `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT "1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)",
                 PRIMARY KEY (`increment_id`),
-                UNIQUE KEY idx_unique_object_user (object_id, user_id)
+                UNIQUE KEY idx_unique_object_user (object_id, user_id),
+                KEY `encryption_version` (`encryption_version`)
             ) CHARSET=utf8;'
         );
     }
@@ -412,6 +420,7 @@ class DatabaseInstaller
             `auto_update_pwd_next_date` varchar(100) NOT null DEFAULT '0',
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             `fa_icon` varchar(100) DEFAULT NULL,
+            `favicon_url` VARCHAR(500) NULL DEFAULT NULL,
             `item_key` varchar(500) NOT NULL DEFAULT '-1',
             `created_at` varchar(30) NULL,
             `updated_at` varchar(30) NULL,
@@ -673,7 +682,9 @@ class DatabaseInstaller
             array('admin', 'transparent_key_recovery_enabled', '1'),
             array('admin', 'transparent_key_recovery_pbkdf2_iterations', '100000'),
             array('admin', 'transparent_key_recovery_integrity_check', '1'),
-            array('admin', 'transparent_key_recovery_max_age_days', '730')
+            array('admin', 'transparent_key_recovery_max_age_days', '730'),
+            array('admin', 'browser_extension_key', generateSecureToken(64)),
+            array('admin', 'phpseclibv3_native', '1')
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting
@@ -754,6 +765,7 @@ class DatabaseInstaller
             `pw` varchar(250) NOT NULL,
             `derniers` text NULL DEFAULT NULL,
             `key_tempo` varchar(100) NULL DEFAULT NULL,
+            `key_tempo_created_at` INT(12) DEFAULT NULL,
             `last_pw_change` varchar(30) NULL DEFAULT NULL,
             `last_pw` text NULL DEFAULT NULL,
             `admin` tinyint(1) NOT null DEFAULT '0',
@@ -803,9 +815,11 @@ class DatabaseInstaller
             `keys_recovery_time` VARCHAR(500) NULL DEFAULT NULL,
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
+            `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             PRIMARY KEY (`id`),
             UNIQUE KEY `login` (`login`),
-            KEY `idx_last_pw_change` (`last_pw_change`)
+            KEY `idx_last_pw_change` (`last_pw_change`),
+            UNIQUE KEY `encryption_version` (`encryption_version`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
@@ -926,7 +940,8 @@ class DatabaseInstaller
             `label` text NOT NULL,
             `qui` varchar(255) NOT NULL,
             `field_1` varchar(250) DEFAULT NULL,
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            KEY `idx_log_api_user_connection` (qui, type(20), label(30), date DESC)
             ) CHARSET=utf8;'
         );
     }

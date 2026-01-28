@@ -23,7 +23,7 @@
  *
  * @file      AuthModel.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -98,15 +98,7 @@ class AuthModel
                 }
 
                 // Update user's key_tempo
-                $keyTempo = bin2hex(random_bytes(16));
-                /*DB::update(
-                    prefixTable('users'),
-                    [
-                        'key_tempo' => $keyTempo,
-                    ],
-                    'id = %i',
-                    $userInfo['id']
-                );*/
+                $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
 
                 // Generate a unique session key for this API session (256 bits / 32 bytes)
                 // This key will be stored in the JWT and used to decrypt the private key
@@ -144,12 +136,43 @@ class AuthModel
                 $SETTINGS = $configManager->getAllSettings();
 
                 // Log user
-                logEvents($SETTINGS, 'api', 'user_connection', (string) $userInfo['id'], stripslashes($userInfo['login']));
+                // Log user (API / browser extension)
+                // Prevent duplicate entries when the client retries within a very short window.
+                loadClasses('DB');
+                // Mark API-originated connections so they can be distinguished in logs UI
+                $originForDb = 'api | tp_src=api';
 
+                try {
+                    $recentCount = (int) DB::queryFirstField(
+                        'SELECT COUNT(*)
+                        FROM ' . prefixTable('log_system') . '
+                        WHERE type = %s AND label = %s AND qui = %i AND field_1 LIKE %ss AND date > %i',
+                        'user_connection',
+                        'user_connection',
+                        (int) $userInfo['id'],
+                        '%tp_src=api%',
+                        time() - 2
+                    );
+                } catch (\Throwable $e) {
+                    // Logging checks must never break API auth
+                    $recentCount = 0;
+                }
+
+                if ($recentCount === 0) {
+                    logEvents(
+                        $SETTINGS,
+                        'user_connection',
+                        'user_connection',
+                        (string) $userInfo['id'],
+                        stripslashes($userInfo['login']),
+                        $originForDb
+                    );
+                }
                 // create JWT with session key
                 return $this->createUserJWT(
                     (int) $userInfo['id'],
                     (string) $inputData['login'],
+                    (string) $userInfo['email'],
                     (int) $userInfo['personal_folder'],
                     (string) implode(",", $ret['folders']),
                     (string) implode(",", $ret['items']),
@@ -165,6 +188,9 @@ class AuthModel
                     (int) $userInfo['api_allowed_to_read'],
                     (int) $userInfo['api_allowed_to_update'],
                     (int) $userInfo['api_allowed_to_delete'],
+                    (int) $SETTINGS['api_token_duration'] ?? 60,
+                    (int) $SETTINGS['pwd_maximum_length'] ?? 60,
+                    (int) $SETTINGS['maintenance_mode'] ?? 0,
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "Credentials not valid"];
@@ -188,6 +214,7 @@ class AuthModel
      *
      * @param integer $id
      * @param string $login
+     * @param string $email
      * @param integer $pf_enabled
      * @param string $folders
      * @param string $items
@@ -203,11 +230,15 @@ class AuthModel
      * @param integer $allowed_to_read
      * @param integer $allowed_to_update
      * @param integer $allowed_to_delete
+     * @param integer $api_token_duration
+     * @param integer $pwd_maximum_length
+     * @param integer $maintenance_mode
      * @return array
      */
     private function createUserJWT(
         int $id,
         string $login,
+        string $email,
         int $pf_enabled,
         string $folders,
         string $items,
@@ -223,6 +254,9 @@ class AuthModel
         int $allowed_to_read,
         int $allowed_to_update,
         int $allowed_to_delete,
+        int $api_token_duration,
+        int $pwd_maximum_length,
+        int $maintenance_mode
     ): array
     {
         // Load config
@@ -248,6 +282,10 @@ class AuthModel
             'allowed_to_read' => $allowed_to_read,
             'allowed_to_update' => $allowed_to_update,
             'allowed_to_delete' => $allowed_to_delete,
+            'email' => $email,
+            'api_token_duration' => $api_token_duration,
+            'pwd_maximum_length' => $pwd_maximum_length,
+            'maintenance_mode' => $maintenance_mode,
         ];
 
         return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];

@@ -316,10 +316,12 @@ class EventDispatcher
                     }
                     $app->setAutoExit(false);
                     $cmd = new $className($event->getName());
+                    // @phpstan-ignore method.notFound, function.alreadyNarrowedType
                     if (method_exists($app, 'addCommand')) {
                         $app->addCommand($cmd);
                     } else {
                         // Compatibility layer for symfony/console <7.4
+                        // @phpstan-ignore method.notFound
                         $app->add($cmd);
                     }
                     $app->setDefaultCommand((string) $cmd->getName(), true);
@@ -358,12 +360,7 @@ class EventDispatcher
 
                     if ($this->io->isVerbose()) {
                         $this->io->writeError(sprintf('> %s: %s', $event->getName(), $exec));
-                    } elseif (
-                        // do not output the command being run when using `composer exec` as it is fairly obvious the user is running it
-                        $event->getName() !== '__exec_command'
-                        // do not output the command being run when using `composer <script-name>` as it is also fairly obvious the user is running it
-                        && ($event->getFlags()['script-alias-input'] ?? null) === null
-                    ) {
+                    } elseif ($this->eventNeedsToOutput($event)) {
                         $this->io->writeError(sprintf('> %s', $exec));
                     }
 
@@ -508,11 +505,26 @@ class EventDispatcher
     {
         if ($this->io->isVerbose()) {
             $this->io->writeError(sprintf('> %s: %s::%s', $event->getName(), $className, $methodName));
-        } else {
+        } elseif ($this->eventNeedsToOutput($event)) {
             $this->io->writeError(sprintf('> %s::%s', $className, $methodName));
         }
 
         return $className::$methodName($event);
+    }
+
+    private function eventNeedsToOutput(Event $event): bool
+    {
+        // do not output the command being run when using `composer exec` as it is fairly obvious the user is running it
+        if ($event->getName() === '__exec_command') {
+            return false;
+        }
+
+        // do not output the command being run when using `composer <script-name>` as it is also fairly obvious the user is running it
+        if (($event->getFlags()['script-alias-input'] ?? null) !== null) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -710,7 +722,9 @@ class EventDispatcher
      */
     private function makeAutoloader(Event $event, $callable): void
     {
-        assert($this->composer instanceof Composer, new \LogicException('This should only be reached with a fully loaded Composer'));
+        if (!$this->composer instanceof Composer) {
+            return;
+        }
 
         if (is_array($callable)) {
             if (is_string($callable[0])) {

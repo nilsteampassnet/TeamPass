@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      users.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -337,6 +337,7 @@ if (null !== $inputData['type']) {
                         'lastname' => $lastname,
                         'pw' => $hashedPassword,
                         'email' => $email,
+                        'auth_type' => 'local',
                         'admin' => empty($is_admin) === true ? 0 : $is_admin,
                         'can_manage_all_users' => empty($is_hr) === true ? 0 : $is_hr,
                         'gestionnaire' => empty($is_manager) === true ? 0 : $is_manager,
@@ -391,6 +392,9 @@ if (null !== $inputData['type']) {
                             'renewal_period' => 0,
                             'bloquer_creation' => '0',
                             'bloquer_modification' => '0',
+                            'fa_icon' => 'fas fa-folder',
+                            'fa_icon_selected' => 'fas fa-folder-open',
+                            'categories' => '',
                         )
                     );
                     $new_folder_id = DB::insertId();
@@ -421,13 +425,10 @@ if (null !== $inputData['type']) {
                         )
                     );
                     // Add the new user to this role
-                    DB::update(
-                        prefixTable('users'),
-                        array(
-                            'fonction_id' => is_int($new_role_id),
-                        ),
-                        'id=%i',
-                        $new_user_id
+                    setUserRoles(
+                        $new_user_id,
+                        array_unique(array_merge($groups, [(int) $new_role_id])),
+                        'manual'
                     );
                     // rebuild tree
                     $tree->rebuild();
@@ -566,7 +567,6 @@ if (null !== $inputData['type']) {
                             'deleted_at' => $timestamp,
                             'disabled' => 1,
                             'special' => 'none',
-                            'auth_type' => 'none'
                         ),
                         'id = %i',
                         $userId
@@ -682,6 +682,79 @@ if (null !== $inputData['type']) {
                     ),
                     'id = %i',
                     $post_user_id
+                );
+            }
+            break;
+            
+        case 'disconnect_users_logged_in':
+            // Admin only + key check
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Exclude current admin by default (or explicit exclude_user_id)
+            $excludeUserId = (int) filter_input(INPUT_POST, 'exclude_user_id', FILTER_SANITIZE_NUMBER_INT);
+            if ($excludeUserId === 0 && null !== $session->get('user-id')) {
+                $excludeUserId = (int) $session->get('user-id');
+            }
+
+            $now = time();
+
+            try {
+                // Select IDs first to avoid multi-row update locking issues
+                if ($excludeUserId > 0) {
+                    $rows = DB::query(
+                        'SELECT id
+                         FROM ' . prefixTable('users') . '
+                         WHERE session_end >= %i AND id != %i',
+                        $now,
+                        $excludeUserId
+                    );
+                } else {
+                    $rows = DB::query(
+                        'SELECT id
+                         FROM ' . prefixTable('users') . '
+                         WHERE session_end >= %i',
+                        $now
+                    );
+                }
+
+                // Disconnect each user one by one (same logic as disconnect_user)
+                foreach ($rows as $row) {
+                    DB::update(
+                        prefixTable('users'),
+                        array(
+                            'timestamp' => '',
+                            'key_tempo' => '',
+                            'session_end' => '',
+                        ),
+                        'id = %i',
+                        (int) $row['id']
+                    );
+                }
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'message' => $lang->get('done'),
+                    ),
+                    'encode'
+                );
+            } catch (\Throwable $e) {
+                // Prevent 500: return a controlled error (optionally log server-side)
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error'),
+                    ),
+                    'encode'
                 );
             }
             break;
@@ -2083,8 +2156,12 @@ if (null !== $inputData['type']) {
                 'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
             );
 
+            $adStatusAttributes = array('useraccountcontrol', 'accountexpires', 'accountExpires');
+            $adQueryAttributes = array_values(array_unique(array_merge($adUsedAttributes, $adStatusAttributes)));
+
             try {
                 $results = $connection->query()
+                    ->select($adQueryAttributes)
                     ->rawfilter($SETTINGS['ldap_user_object_filter'])
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
@@ -2128,8 +2205,12 @@ if (null !== $inputData['type']) {
                     // Loop on all user attributes
                     $tmp = [
                         'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
-                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,                        
-                    ];
+                        'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,
+                        // LDAP/AD status flags (null = unknown / attribute not available)
+                        'ldapAccountDisabled' => null,
+                        'ldapAccountExpired' => null,
+                        'ldapAccountExpiresAt' => null,
+                    ];                        
                     foreach ($adUsedAttributes as $userAttribute) {
                         if (isset($adUser[$userAttribute]) === true) {
                             if (is_array($adUser[$userAttribute]) === true && array_key_first($adUser[$userAttribute]) !== 'count') {
@@ -2151,6 +2232,67 @@ if (null !== $inputData['type']) {
                             }
                         }
                     }
+                                // -------------------------------------------------------
+            // LDAP/AD: Determine if the account is disabled
+            // - Active Directory: userAccountControl bit 0x2 (UF_ACCOUNTDISABLE)
+            // -------------------------------------------------------
+            $uacRaw = null;
+            if (isset($adUser['useraccountcontrol'][0]) === true) {
+                $uacRaw = $adUser['useraccountcontrol'][0];
+            } elseif (isset($adUser['userAccountControl'][0]) === true) {
+                $uacRaw = $adUser['userAccountControl'][0];
+            }
+            if ($uacRaw !== null && is_numeric($uacRaw)) {
+                $uac = (int) $uacRaw;
+                $tmp['ldapAccountDisabled'] = (($uac & 2) === 2) ? 1 : 0;
+            }
+
+            // -------------------------------------------------------
+            // LDAP/AD: Determine if the account is expired
+            // - Active Directory: accountExpires is a Windows FILETIME
+            //   (100ns since 1601-01-01). 0 or 9223372036854775807 = never expires.
+            // - OpenLDAP shadowAccount: shadowExpire is days since 1970-01-01 (optional fallback).
+            // -------------------------------------------------------
+            $expiresRaw = null;
+            if (isset($adUser['accountexpires'][0]) === true) {
+                $expiresRaw = $adUser['accountexpires'][0];
+            } elseif (isset($adUser['accountExpires'][0]) === true) {
+                $expiresRaw = $adUser['accountExpires'][0];
+            }
+
+            if ($expiresRaw !== null) {
+                $expiresRawStr = trim((string) $expiresRaw);
+
+                // "never expires" values
+                if ($expiresRawStr !== '' &&
+                    $expiresRawStr !== '0' &&
+                    $expiresRawStr !== '9223372036854775807' &&
+                    $expiresRawStr !== '18446744073709551615'
+                ) {
+                    if (is_numeric($expiresRawStr)) {
+                        $filetime = (int) $expiresRawStr;
+                        if ($filetime > 0) {
+                            // FILETIME -> Unix seconds
+                            $unix = (int) (intdiv($filetime, 10000000) - 11644473600);
+                            $tmp['ldapAccountExpiresAt'] = $unix;
+                            $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                        }
+                    }
+                } else {
+                    $tmp['ldapAccountExpired'] = 0;
+                    $tmp['ldapAccountExpiresAt'] = null;
+                }
+            } elseif (isset($adUser['shadowexpire'][0]) === true && is_numeric($adUser['shadowexpire'][0])) {
+                // Fallback for shadowAccount directories (days since epoch)
+                $shadowDays = (int) $adUser['shadowexpire'][0];
+                if ($shadowDays > 0) {
+                    $unix = $shadowDays * 86400;
+                    $tmp['ldapAccountExpiresAt'] = $unix;
+                    $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                } else {
+                    $tmp['ldapAccountExpired'] = 0;
+                }
+            }
                     array_push($adUsersToSync, $tmp);
                 }
             }
@@ -2519,8 +2661,7 @@ if (null !== $inputData['type']) {
 
                 // Is user in Teampass ?
                 $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
-                if (null !== $userLogin) {
-                    //error_log(print_r($oAuthUser,true));
+                if (null !== $userLogin) {                    
                     // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
                         'SELECT id, login, auth_type
@@ -2734,7 +2875,7 @@ if (null !== $inputData['type']) {
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) TP_USER_ID,
                         'creator_pwd' => $userTP['pw'],
-                        'email_body' => $lang->get('email_body_user_config_5'),
+                        'email_body' => $lang->get('email_body_user_config_4'),
                         'send_email' => 1,
                         'otp_provided_new_value' => 0,
                         'user_self_change' => 0,

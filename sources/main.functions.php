@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      main.functions.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -49,6 +49,7 @@ use TeampassClasses\Encryption\Encryption;
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\CryptoManager\CryptoManager;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -694,15 +695,18 @@ function cacheTableRefresh(): void
     // truncate table
     DB::query('TRUNCATE TABLE ' . prefixTable('cache'));
     // reload date
-    $rows = DB::query(
-        'SELECT *
-        FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        AND l.action = %s
-        AND i.inactif = %i',
-        'at_creation',
-        0
-    );
+        $rows = DB::query(
+            'SELECT i.*,
+                IFNULL(l.id_user, 0) AS id_user,
+                IFNULL(l.date, 0) AS date
+            FROM ' . prefixTable('items') . ' as i
+            LEFT JOIN ' . prefixTable('log_items') . ' as l
+                ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.inactif = %i',
+            'at_creation',
+            0
+        );
+
     foreach ($rows as $record) {
         if (empty($record['id_tree']) === false) {
             // Get all TAGS
@@ -858,13 +862,14 @@ function cacheTableAdd(?int $ident = null): void
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
-        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url, l.date
+        'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url,
+            IFNULL(l.date, 0) AS date
         FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-        WHERE i.id = %i
-        AND l.action = %s',
-        $ident,
-        'at_creation'
+        LEFT JOIN ' . prefixTable('log_items') . ' as l
+            ON (l.id_item = i.id AND l.action = %s)
+        WHERE i.id = %i',
+        'at_creation',
+        $ident
     );
     // Get all TAGS
     $tags = '';
@@ -1424,16 +1429,38 @@ function logEvents(
     // Load class DB
     loadClasses('DB');
 
+    // Detect API context (official browser extension uses API)
+    $isApiContext = defined('API_ROOT_PATH')
+        || (isset($_SERVER['SCRIPT_NAME']) && strpos((string) $_SERVER['SCRIPT_NAME'], '/api/') !== false)
+        || (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/api/index.php') !== false);
+
+    // Mark API-originated connection events (extension / API) so the logs UI can distinguish sources
+    if ($type === 'user_connection' && $isApiContext) {
+        $field_1_str = $field_1 === null ? '' : (string) $field_1;
+        if (strpos($field_1_str, 'tp_src=api') === false) {
+            $field_1_str = trim($field_1_str);
+            $field_1_str = $field_1_str === '' ? 'tp_src=api' : $field_1_str . ' | tp_src=api';
+        }
+        $field_1 = $field_1_str;
+    }
+
+        try {
     DB::insert(
-        prefixTable('log_system'),
-        [
-            'type' => $type,
-            'date' => time(),
-            'label' => $label,
-            'qui' => $who,
-            'field_1' => $field_1 === null ? '' : $field_1,
-        ]
-    );
+            prefixTable('log_system'),
+            [
+                'type' => $type,
+                'date' => time(),
+                'label' => $label,
+                'qui' => $who,
+                'field_1' => $field_1 === null ? '' : $field_1,
+            ]
+        );
+    
+    } catch (\Throwable $e) {
+        // Logging must never break API or UI flows
+        return;
+    }
+
     // If SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         if ($type === 'user_mngt') {
@@ -1485,46 +1512,113 @@ function logItems(
     // Load class DB
     loadClasses('DB');
 
+    // Normalize event timestamp
+    $eventTime = is_null($time) === true ? time() : (int) $time;
+
+    // Detect API context (official browser extension uses API) and tag logs accordingly
+    $isApiContext = defined('API_ROOT_PATH')
+        || (isset($_SERVER['SCRIPT_NAME']) && strpos((string) $_SERVER['SCRIPT_NAME'], '/api/') !== false)
+        || (isset($_SERVER['REQUEST_URI']) && strpos((string) $_SERVER['REQUEST_URI'], '/api/index.php') !== false);
+    $sourceMarker = 'tp_src=api';
+
+    if ($isApiContext) {
+        // Add marker to reason to allow UI filtering/display
+        $raison = $raison === null ? '' : (string) $raison;
+        if (strpos($raison, $sourceMarker) === false) {
+            $raison = trim($raison);
+            $raison = $raison === '' ? $sourceMarker : $raison . ' | ' . $sourceMarker;
+        }
+
+        // Avoid duplicate "shown" logs caused by multiple API calls within a short window
+        if ($action === 'at_shown') {
+            try {
+            $existing = DB::queryFirstField(
+                'SELECT id FROM ' . prefixTable('log_items') . '
+                WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
+                ORDER BY date DESC
+                LIMIT 1',
+                $item_id,
+                $id_user,
+                $action,
+                $eventTime - 5,
+                $sourceMarker
+            );
+        } catch (\Throwable $e) {
+            $existing = null; // Never block API calls because of logging
+        }
+            if (!empty($existing)) {
+                return;
+            }
+        }
+    }
+
+    $raisonForDb = $raison === null ? '' : (string) $raison;
+
     // Insert log in DB
+    try {
     DB::insert(
         prefixTable('log_items'),
         [
             'id_item' => $item_id,
-            'date' => is_null($time) === true ? time() : $time,
+            'date' => $eventTime,
             'id_user' => $id_user,
             'action' => $action,
-            'raison' => $raison,
+            'raison' => $raisonForDb,
             'old_value' => $old_value,
             'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
         ]
     );
+    
+    } catch (\Throwable $e) {
+        // Logging must never break API or UI flows
+        return;
+    }
+
     // Timestamp the last change
     if (in_array($action, ['at_creation', 'at_modifiation', 'at_delete', 'at_import'], true)) {
-        DB::update(
-            prefixTable('misc'),
-            [
-                'valeur' => time(),
-                'updated_at' => time(),
-            ],
-            'type = %s AND intitule = %s',
-            'timestamp',
-            'last_item_change'
-        );
+        try {
+            DB::update(
+                prefixTable('misc'),
+                [
+                    'valeur' => time(),
+                    'updated_at' => time(),
+                ],
+                'type = %s AND intitule = %s',
+                'timestamp',
+                'last_item_change'
+            );
+        } catch (\Throwable $e) {
+            // ignore logging-related DB errors
+        }
+    }
+
+    // Prepare reason for syslog: remove internal source marker if present
+    $raisonForSyslog = $raison;
+    if ($isApiContext && $raisonForSyslog !== null) {
+        $raisonForSyslog = preg_replace('/\s*\|\s*tp_src=api\s*$/', '', (string) $raisonForSyslog);
+        $raisonForSyslog = trim((string) $raisonForSyslog);
+        if ($raisonForSyslog === '') {
+            $raisonForSyslog = null;
+        }
     }
 
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         // Extract reason
-        $attribute = is_null($raison) === true ? Array('') : explode(' : ', $raison);
+        $attribute = is_null($raisonForSyslog) === true ? Array('') : explode(' : ', $raisonForSyslog);
         // Get item info if not known
         if (empty($item_label) === true) {
-            $dataItem = DB::queryFirstRow(
-                'SELECT id, id_tree, label
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
-                $item_id
-            );
-            $item_label = $dataItem['label'];
+            try {
+                $dataItem = DB::queryFirstRow(
+                    'SELECT id, id_tree, label
+                    FROM ' . prefixTable('items') . '
+                    WHERE id = %i',
+                    $item_id
+                );
+                $item_label = $dataItem['label'];
+            } catch (\Throwable $e) {
+                // ignore logging-related DB errors
+            }
         }
 
         send_syslog(
@@ -2179,14 +2273,12 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $userPwd = $antiXss->xss_clean($userPwd);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    $cipher = new Crypt_AES();
-    // Create the private and public key
-    $res = $rsa->createKey(4096);
-    // Encrypt the privatekey
-    $cipher->setPassword($userPwd);
-    $privatekey = $cipher->encrypt($res['privatekey']);
+
+    // Generate RSA key pair using CryptoManager (phpseclib v3)
+    $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
+
+    // Encrypt the private key with user password using AES
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
 
     $result = [
         'private_key' => base64_encode($privatekey),
@@ -2202,9 +2294,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
     // Encrypt private key with derived key (backup)
-    $cipherBackup = new Crypt_AES();
-    $cipherBackup->setPassword($derivedKey);
-    $privatekeyBackup = $cipherBackup->encrypt($res['privatekey']);
+    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey);
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
@@ -2233,14 +2323,20 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);
         try {
-            return base64_encode((string) $cipher->decrypt(base64_decode($userPrivateKey)));
+            // Decrypt using CryptoManager (phpseclib v3)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode((string) $decrypted);
         } catch (Exception $e) {
-            return $e;
+            // Log error for debugging
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - decryptPrivateKey failed: ' . $e->getMessage());
+            }
+            // Return empty string on decryption failure
+            return '';
         }
     }
     return '';
@@ -2262,17 +2358,186 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
 
     if (empty($userPwd) === false) {
-        // Load classes
-        $cipher = new Crypt_AES();
-        // Encrypt the privatekey
-        $cipher->setPassword($userPwd);        
         try {
-            return base64_encode($cipher->encrypt(base64_decode($userPrivateKey)));
+            // Encrypt using CryptoManager (phpseclib v3)
+            $encrypted = CryptoManager::aesEncrypt(
+                base64_decode($userPrivateKey),
+                $userPwd
+            );
+            return base64_encode($encrypted);
         } catch (Exception $e) {
             return $e->getMessage();
         }
     }
     return '';
+}
+
+/**
+ * Decrypt user's private key with automatic migration from v1 to v3
+ *
+ * This function handles the migration of user private keys from phpseclib v1 (SHA-1)
+ * to v3 (SHA-256) transparently during login.
+ *
+ * Uses aesDecryptWithVersionDetection() to automatically try SHA-256 (v3) first,
+ * then fallback to SHA-1 (v1). More robust than relying on encryption_version in DB.
+ *
+ * Logic:
+ * - Try decryption with version detection (SHA-256 then SHA-1)
+ * - If v1 was used: Trigger migration to v3
+ * - If v3 was used: No migration needed
+ * - If error: Set migration_error flag
+ *
+ * @param string $userPwd User's password (clear text)
+ * @param string $userPrivateKey Encrypted private key (base64)
+ * @param int $userId User ID for migration
+ * @param int $encryptionVersion Current encryption version from DB (for logging only)
+ * @return array ['private_key_clear' => string, 'migration_error' => bool, 'needs_migration' => bool]
+ */
+function decryptPrivateKeyWithMigration(
+    string $userPwd,
+    string $userPrivateKey,
+    int $userId,
+    int $encryptionVersion
+): array {
+    $antiXss = new AntiXSS();
+    $userPwd = $antiXss->xss_clean($userPwd);
+    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+
+    try {
+        // Use automatic version detection (tries SHA-256 first, then SHA-1)
+        $result = CryptoManager::aesDecryptWithVersionDetection(
+            base64_decode($userPrivateKey),
+            $userPwd,
+            'cbc'
+        );
+        $decrypted = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        if (!empty($decrypted)) {
+            $privateKeyClear = base64_encode($decrypted);
+
+            // Check if migration is needed
+            $needsMigration = ($versionUsed === 1);
+
+            // Log if DB version doesn't match actual version used
+            if ($versionUsed !== $encryptionVersion && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration Notice - User ' . $userId . ' encryption_version mismatch: DB says ' . $encryptionVersion . ' but v' . $versionUsed . ' was used for decryption');
+            }
+
+            return [
+                'private_key_clear' => $privateKeyClear,
+                'migration_error' => false,
+                'needs_migration' => $needsMigration,
+                'version_used' => $versionUsed,
+            ];
+        }
+
+        // Empty decrypted data
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+
+    } catch (Exception $e) {
+        // Decryption failed with both versions
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' private key decryption failed: ' . $e->getMessage());
+        }
+
+        return [
+            'private_key_clear' => '',
+            'migration_error' => true,
+            'needs_migration' => false,
+        ];
+    }
+}
+
+/**
+ * Migrate all user keys from v1 (SHA-1) to v3 (SHA-256)
+ *
+ * This function re-encrypts:
+ * - private_key (with user password)
+ * - private_key_backup (with derived key from seed, if exists)
+ *
+ * And updates encryption_version to 3 in the database.
+ *
+ * @param int $userId User ID
+ * @param string $userPwd User's password (clear text)
+ * @param string $privateKeyClear User's private key (decrypted, base64)
+ * @param array $userInfo User information from database (must include user_derivation_seed if backup exists)
+ * @return bool True if migration successful, false otherwise
+ */
+function migrateAllUserKeysToV3(
+    int $userId,
+    string $userPwd,
+    string $privateKeyClear,
+    array $userInfo
+): bool {
+    try {
+        $updateData = [];
+
+        // Re-encrypt private_key with SHA-256
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $userPwd,
+            'cbc',
+            'sha256' // v3 uses SHA-256
+        );
+        $updateData['private_key'] = base64_encode($encrypted);
+
+        // Re-encrypt private_key_backup if it exists
+        if (!empty($userInfo['private_key_backup']) && !empty($userInfo['user_derivation_seed'])) {
+            try {
+                // Derive backup key (same as before, uses SHA-256 in derivation)
+                $configManager = new ConfigManager();
+                $SETTINGS = $configManager->getAllSettings();
+                $derivedKey = deriveBackupKey(
+                    $userInfo['user_derivation_seed'],
+                    $userInfo['public_key'],
+                    $SETTINGS
+                );
+
+                // Re-encrypt backup with SHA-256
+                $encryptedBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey,
+                    'cbc',
+                    'sha256' // v3 uses SHA-256
+                );
+                $updateData['private_key_backup'] = base64_encode($encryptedBackup);
+            } catch (Exception $e) {
+                // Log error but don't fail the whole migration
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Warning - User ' . $userId . ' private_key_backup migration failed: ' . $e->getMessage());
+                }
+            }
+        }
+
+        // Update encryption_version to 3
+        $updateData['encryption_version'] = 3;
+
+        // Update database
+        DB::update(
+            prefixTable('users'),
+            $updateData,
+            'id = %i',
+            $userId
+        );
+
+        // Log successful migration
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Success - User ' . $userId . ' keys migrated to v3 (SHA-256)');
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Log migration error
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Migration Error - User ' . $userId . ' - ' . $e->getMessage());
+        }
+        return false;
+    }
 }
 
 /**
@@ -2413,17 +2678,22 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             $SETTINGS
         );
 
-        // Decrypt private key using derived key
-        $cipher = new Crypt_AES();
-        $cipher->setPassword($derivedKey);
-        $privateKeyClear = base64_encode($cipher->decrypt(base64_decode($userInfo['private_key_backup'])));
+        // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            base64_decode($userInfo['private_key_backup']),
+            $derivedKey
+        );
+        $privateKeyClear = base64_encode($decrypted);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
         // Re-encrypt backup with derived key (refresh)
-        $cipher->setPassword($derivedKey);
-        $newPrivateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+            base64_decode($privateKeyClear),
+            $derivedKey
+        );
+        $newPrivateKeyBackup = base64_encode($encrypted);
         
         // Update database
         DB::update(
@@ -2558,15 +2828,15 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
-    
-    // Load classes
-    $cipher = new Crypt_AES(CRYPT_AES_MODE_CBC);
+
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
-    // Set it as password
-    $cipher->setPassword($objectKey);
+
+    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
+
     return [
-        'encrypted' => base64_encode($cipher->encrypt($data)),
+        'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
     ];
 }
@@ -2586,11 +2856,13 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
-    // Load classes
-    $cipher = new Crypt_AES();
-    // Set the object key
-    $cipher->setPassword(base64_decode($key));
-    return base64_encode((string) $cipher->decrypt(base64_decode($data)));
+    // Decrypt using CryptoManager (phpseclib v3)
+    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+        base64_decode($data),
+        base64_decode($key)
+    );
+
+    return base64_encode((string) $decrypted);
 }
 
 /**
@@ -2609,21 +2881,21 @@ function encryptUserObjectKey(string $key, string $publicKey): string
     // Sanitize
     $antiXss = new AntiXSS();
     $publicKey = $antiXss->xss_clean($publicKey);
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the public key
-    $decodedPublicKey = base64_decode($publicKey, true);
-    if ($decodedPublicKey === false) {
-        throw new InvalidArgumentException("Error while decoding key.");
+
+    // Encrypt using CryptoManager (phpseclib v3)
+    try {
+        $encrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+            base64_decode($key),
+            $publicKey
+        );
+        if (empty($encrypted)) {  // Check if key is empty or null
+            throw new RuntimeException("Error while encrypting key.");
+        }
+        // Return
+        return base64_encode($encrypted);
+    } catch (Exception $e) {
+        throw new RuntimeException("Error while encrypting key: " . $e->getMessage());
     }
-    $rsa->loadKey($decodedPublicKey);
-    // Encrypt
-    $encrypted = $rsa->encrypt(base64_decode($key));
-    if (empty($encrypted)) {  // Check if key is empty or null
-        throw new RuntimeException("Error while encrypting key.");
-    }
-    // Return
-    return base64_encode($encrypted);
 }
 
 /**
@@ -2640,37 +2912,188 @@ function decryptUserObjectKey(string $key, string $privateKey): string
     $antiXss = new AntiXSS();
     $privateKey = $antiXss->xss_clean($privateKey);
 
-    // Load classes
-    $rsa = new Crypt_RSA();
-    // Load the private key
-    $decodedPrivateKey = base64_decode($privateKey, true);
-    if ($decodedPrivateKey === false) {
-        throw new InvalidArgumentException("Error while decoding private key.");
-    }
-
-    $rsa->loadKey($decodedPrivateKey);
-
-    // Decrypt
+    // Decrypt using CryptoManager with backward compatibility (phpseclib v3)
     try {
         $decodedKey = base64_decode($key, true);
         if ($decodedKey === false) {
             throw new InvalidArgumentException("Error while decoding key.");
         }
 
-        // This check is needed as decrypt() in version 2 can return false in case of error
-        $tmpValue = $rsa->decrypt($decodedKey);
-        if ($tmpValue !== false) {
-            return base64_encode($tmpValue);
+        // Use CryptoManager with automatic v1 fallback (SHA-1)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::rsaDecrypt(
+            $decodedKey,
+            $privateKey,
+            true  // Enable legacy v1 compatibility
+        );
+
+        if (!empty($decrypted)) {
+            return base64_encode($decrypted);
         } else {
             return '';
         }
     } catch (Exception $e) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Error - ldap - '.$e->getMessage());
+            error_log('TEAMPASS Error - decrypt - '.$e->getMessage());
         }
         return 'Exception: could not decrypt object';
     }
 }
+
+/**
+ * Decrypt user object key with automatic v1→v3 migration
+ *
+ * This function decrypts a sharekey and automatically re-encrypts it with phpseclib v3
+ * if it was encrypted with v1 (detected during decryption).
+ *
+ * @param string $encryptedKey Base64 encoded encrypted sharekey
+ * @param string $privateKey User's private key (PEM format)
+ * @param string $publicKey User's public key (PEM format) - required for migration
+ * @param int $sharekeyId Increment ID from sharekeys_* table - required for migration
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items') - required for migration
+ * @return string Base64 encoded decrypted sharekey
+ * @throws Exception
+ */
+function decryptUserObjectKeyWithMigration(
+    string $encryptedKey,
+    string $privateKey,
+    string $publicKey,
+    int $sharekeyId,
+    string $sharekeyTable
+): string {
+    // Sanitize
+    $antiXss = new AntiXSS();
+    $privateKey = $antiXss->xss_clean($privateKey);
+
+    try {
+        $decodedKey = base64_decode($encryptedKey, true);
+        if ($decodedKey === false) {
+            throw new InvalidArgumentException("Error while decoding key.");
+        }
+
+        // Decrypt with version detection
+        $result = \TeampassClasses\CryptoManager\CryptoManager::rsaDecryptWithVersionDetection(
+            $decodedKey,
+            $privateKey
+        );
+
+        $decryptedKey = $result['data'];
+        $versionUsed = $result['version_used'];
+
+        // Automatic migration: if v1 was used, re-encrypt with v3
+        if ($versionUsed === 1) {
+            try {
+                migrateSharekeyToV3(
+                    $sharekeyId,
+                    $sharekeyTable,
+                    $decryptedKey,
+                    $publicKey
+                );
+            } catch (Exception $migrationError) {
+                // Log migration error but don't fail the decryption
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log("TEAMPASS Migration Error - {$sharekeyTable}:{$sharekeyId} - " . $migrationError->getMessage());
+                }
+            }
+        }
+
+        if (!empty($decryptedKey)) {
+            return base64_encode($decryptedKey);
+        } else {
+            return '';
+        }
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - decryptWithMigration - ' . $e->getMessage());
+        }
+        return 'Exception: could not decrypt object';
+    }
+}
+
+/**
+ * Migrate a sharekey from phpseclib v1 to v3 encryption
+ *
+ * Re-encrypts the sharekey with phpseclib v3 (SHA-256) and updates the database
+ *
+ * @param int $sharekeyId Increment ID from sharekeys_* table
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @param string $decryptedKey Decrypted sharekey (raw binary)
+ * @param string $publicKey User's public key (PEM format)
+ * @return void
+ * @throws Exception
+ */
+function migrateSharekeyToV3(
+    int $sharekeyId,
+    string $sharekeyTable,
+    string $decryptedKey,
+    string $publicKey
+): void {
+    // Re-encrypt with v3 (uses SHA-256 by default)
+    $reencryptedKey = \TeampassClasses\CryptoManager\CryptoManager::rsaEncrypt(
+        $decryptedKey,
+        $publicKey
+    );
+
+    // Update database with new v3 encrypted key
+    DB::update(
+        prefixTable($sharekeyTable),
+        [
+            'share_key' => base64_encode($reencryptedKey),
+            'encryption_version' => 3,
+        ],
+        'increment_id = %i',
+        $sharekeyId
+    );
+}
+
+/**
+ * Update migration statistics for a sharekeys table
+ *
+ * DISABLED: This function has been disabled to improve performance.
+ * It was causing slowdowns by executing COUNT queries on large tables
+ * for each item access. Statistics can be calculated manually if needed
+ * using: SELECT encryption_version, COUNT(*) FROM sharekeys_* GROUP BY encryption_version
+ *
+ * @param string $sharekeyTable Table name (e.g., 'sharekeys_items')
+ * @return void
+ */
+/*
+function updateMigrationStatistics(string $sharekeyTable): void
+{
+    try {
+        // Calculate current statistics
+        $stats = DB::queryFirstRow(
+            'SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN encryption_version = 1 THEN 1 ELSE 0 END) as v1,
+                SUM(CASE WHEN encryption_version = 3 THEN 1 ELSE 0 END) as v3
+             FROM ' . prefixTable($sharekeyTable)
+        );
+
+        // Update statistics table
+        DB::query(
+            'INSERT INTO ' . prefixTable('encryption_migration_stats') . '
+             (table_name, total_records, v1_records, v3_records)
+             VALUES (%s, %i, %i, %i)
+             ON DUPLICATE KEY UPDATE
+                total_records = %i,
+                v1_records = %i,
+                v3_records = %i',
+            $sharekeyTable,
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3'],
+            $stats['total'],
+            $stats['v1'],
+            $stats['v3']
+        );
+    } catch (Exception $e) {
+        // Statistics update failed, but don't throw - this is not critical
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Statistics Error - ' . $e->getMessage());
+        }
+    }
+}
+*/
 
 /**
  * Encrypts a file.
@@ -2686,8 +3109,8 @@ function encryptFile(string $fileInName, string $fileInPath): array
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
 
-    // Load classes
-    $cipher = new Crypt_AES();
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
 
     // Generate an object key
     $objectKey = uniqidReal(32);
@@ -2728,11 +3151,11 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     if (! defined('FILE_BUFFER_SIZE')) {
         define('FILE_BUFFER_SIZE', 128 * 1024);
     }
-    
-    // Load classes
-    $cipher = new Crypt_AES();
+
+    // Create AES cipher using CryptoManager (phpseclib v3)
+    $cipher = \TeampassClasses\CryptoManager\CryptoManager::createAESCipher('cbc');
     $antiXSS = new AntiXSS();
-    
+
     // Get file name
     $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
@@ -2892,12 +3315,13 @@ function insertOrUpdateSharekey(
     try {
         DB::query(
             'INSERT INTO ' . $tableName . ' 
-            (object_id, user_id, share_key) 
-            VALUES (%i, %i, %s)
+            (object_id, user_id, share_key, encryption_version) 
+            VALUES (%i, %i, %s, %i)
             ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
             $objectId,
             $userId,
-            $shareKey
+            $shareKey,
+            3
         );
         return true;
     } catch (Exception $e) {
@@ -3662,19 +4086,23 @@ function getUsersWithRoles(
     foreach ($roles as $role) {
         // loop on users and check if user has this role
         $rows = DB::query(
-            'SELECT id, fonction_id
-            FROM ' . prefixTable('users') . '
-            WHERE id != %i AND admin = 0 AND fonction_id IS NOT NULL AND fonction_id != ""',
+            'SELECT u.id,
+            GROUP_CONCAT(ur.role_id ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+            FROM ' . prefixTable('users') . ' AS u
+            INNER JOIN ' . prefixTable('users_roles') . ' AS ur 
+                ON ur.user_id = u.id AND ur.source = "manual"
+            WHERE u.id != %i AND u.admin = 0
+            GROUP BY u.id',
             $session->get('user-id')
         );
         foreach ($rows as $user) {
-            $userRoles = is_null($user['fonction_id']) === false && empty($user['fonction_id']) === false ? explode(';', $user['fonction_id']) : [];
-            if (in_array($role, $userRoles, true) === true) {
+            $userRoles = empty($user['fonction_id']) ? [] : array_map('intval', explode(';', (string) $user['fonction_id']));
+            if (in_array((int) $role, $userRoles, true) === true) {
                 array_push($arrUsers, $user['id']);
             }
         }
     }
-
+    
     return $arrUsers;
 }
 
@@ -4438,6 +4866,10 @@ function loadClasses(string $className = ''): void
     require_once __DIR__. '/../includes/config/settings.php';
     require_once __DIR__.'/../vendor/autoload.php';
 
+    // Load phpseclib v1 autoloader for backward compatibility
+    // This allows CryptoManager to fall back to v1 API for decrypting old data
+    require_once __DIR__ . '/../includes/libraries/phpseclibV1_autoload.php';
+
     if (defined('DB_PASSWD_CLEAR') === false) {
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
@@ -4998,6 +5430,249 @@ function checkAndMigratePersonalItems($userId, $privateKeyDecrypted, $passwordCl
 }
 
 /**
+ * Check and trigger forced phpseclib v3 migration on user login
+ *
+ * This function triggers a complete migration of all user's sharekeys from
+ * phpseclib v1 (SHA-1) to v3 (SHA-256) when FORCE_PHPSECLIBV3_MIGRATION is enabled.
+ *
+ * Unlike the progressive migration (which migrates on-access), this forces
+ * migration of ALL sharekeys owned by the user at login time.
+ *
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key (base64)
+ * @param string $passwordClear Clear user password
+ * @return void
+ */
+function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecrypted, string $passwordClear): void
+{
+    // Check if forced migration is enabled
+    if (!defined('FORCE_PHPSECLIBV3_MIGRATION') || FORCE_PHPSECLIBV3_MIGRATION !== true) {
+        return; // Forced migration disabled, use progressive migration instead
+    }
+
+    $session = SessionManager::getSession();
+
+    // Check if user already completed forced migration
+    $user = DB::queryFirstRow(
+        "SELECT phpseclibv3_migration_completed, phpseclibv3_migration_task_id, encryption_version, login
+         FROM " . prefixTable('users') . "
+         WHERE id = %i",
+        $userId
+    );
+
+    if ((int) $user['phpseclibv3_migration_completed'] === 1) {
+        return; // Already migrated, nothing to do
+    }
+
+    // Check if user has other background tasks in progress or pending
+    // We exclude 'user_build_cache_tree' and 'send_email' as they don't conflict
+    // We search in the JSON arguments column for "user_id":$userId
+    $existingTasks = DB::query(
+        "SELECT increment_id, process_type, arguments FROM " . prefixTable('background_tasks') . "
+         WHERE is_in_progress != -1
+         AND process_type NOT IN ('user_build_cache_tree', 'send_email')"
+    );
+
+    foreach ($existingTasks as $task) {
+        $arguments = json_decode($task['arguments'], true);
+        if (isset($arguments['user_id']) && (int) $arguments['user_id'] === $userId) {
+            // User has another task in progress, skip migration for now
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS phpseclibv3_migration - User ' . $userId . ' has other task (' . $task['process_type'] . ') in progress, skipping migration');
+            }
+            return;
+        }
+    }
+
+    // Check if user's private key is already in v3
+    // If encryption_version = 3, user keys are v3, only sharekeys need migration
+    $userKeysV3 = ((int) $user['encryption_version'] === 3);
+
+    // Count sharekeys to migrate (encryption_version = 1) for this user
+    $sharekeys_tables = [
+        'sharekeys_items',
+        'sharekeys_logs',
+        'sharekeys_fields',
+        'sharekeys_files',
+        'sharekeys_suggestions'
+    ];
+
+    $totalSharekeysToMigrate = 0;
+    $sharekeysPerTable = [];
+
+    foreach ($sharekeys_tables as $table) {
+        $count = DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable($table) . "
+             WHERE user_id = %i AND encryption_version = 1",
+            $userId
+        );
+        $sharekeysPerTable[$table] = (int) $count;
+        $totalSharekeysToMigrate += (int) $count;
+    }
+
+    // If no sharekeys to migrate, mark as completed
+    if ($totalSharekeysToMigrate === 0 && $userKeysV3) {
+        DB::update(
+            prefixTable('users'),
+            ['phpseclibv3_migration_completed' => 1],
+            'id = %i',
+            $userId
+        );
+        return;
+    }
+
+    // Check if migration task already exists and is in progress
+    $existingTask = DB::queryFirstRow(
+        "SELECT increment_id, status FROM " . prefixTable('background_tasks') . "
+         WHERE process_type = 'phpseclibv3_migration'
+         AND item_id = %i
+         AND status IN ('pending', 'in_progress')
+         ORDER BY created_at DESC LIMIT 1",
+        $userId
+    );
+
+    if ($existingTask) {
+        // Migration already in progress
+        $session->set('phpseclibv3_migration_in_progress', true);
+        $session->set('phpseclibv3_migration_task_id', $existingTask['increment_id']);
+        $session->set('phpseclibv3_migration_total', $totalSharekeysToMigrate);
+        return;
+    }
+
+    // Create migration background task
+    $taskId = createPhpseclibV3MigrationTask(
+        $userId,
+        $privateKeyDecrypted,
+        $passwordClear,
+        $sharekeysPerTable
+    );
+
+    // Set session variables for UI modal
+    $session->set('phpseclibv3_migration_started', true);
+    $session->set('phpseclibv3_migration_task_id', $taskId);
+    $session->set('phpseclibv3_migration_total', $totalSharekeysToMigrate);
+
+    // Log migration start
+    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS phpseclibv3_migration - User ' . $userId . ' (' . $user['login'] . ') - Starting forced migration for ' . $totalSharekeysToMigrate . ' sharekeys');
+    }
+}
+
+/**
+ * Create phpseclib v3 migration background task
+ *
+ * @param int $userId User ID
+ * @param string $privateKeyDecrypted Decrypted private key (base64)
+ * @param string $passwordClear Clear user password
+ * @param array $sharekeysPerTable Array of sharekeys count per table
+ * @return int Task ID
+ */
+function createPhpseclibV3MigrationTask(
+    int $userId,
+    string $privateKeyDecrypted,
+    string $passwordClear,
+    array $sharekeysPerTable
+): int {
+    // Create main background task
+    DB::insert(
+        prefixTable('background_tasks'),
+        [
+            'created_at' => time(),
+            'process_type' => 'phpseclibv3_migration',
+            'arguments' => json_encode([
+                'user_id' => $userId,
+                'user_pwd' => cryption($passwordClear, '', 'encrypt')['string'],
+                'user_private_key' => cryption($privateKeyDecrypted, '', 'encrypt')['string'],
+                'sharekeys_per_table' => $sharekeysPerTable,
+            ]),
+            'is_in_progress' => 0,
+            'status' => 'pending',
+            'item_id' => $userId // Use item_id to store user_id for filtering
+        ]
+    );
+
+    $taskId = DB::insertId();
+
+    // Create subtasks for each sharekeys table
+    createPhpseclibV3MigrationSubTasks($taskId, $sharekeysPerTable, NUMBER_ITEMS_IN_BATCH);
+
+    // Update user's migration status
+    DB::update(
+        prefixTable('users'),
+        [
+            'phpseclibv3_migration_task_id' => $taskId,
+        ],
+        'id = %i',
+        $userId
+    );
+
+    return $taskId;
+}
+
+/**
+ * Create subtasks for phpseclib v3 migration
+ *
+ * @param int $taskId Main task ID
+ * @param array $sharekeysPerTable Sharekeys count per table
+ * @param int $batchSize Number of sharekeys per subtask
+ * @return void
+ */
+function createPhpseclibV3MigrationSubTasks(int $taskId, array $sharekeysPerTable, int $batchSize): void
+{
+    $subtaskOrder = 1;
+
+    foreach ($sharekeysPerTable as $table => $count) {
+        if ($count === 0) {
+            continue; // Skip tables with no sharekeys to migrate
+        }
+
+        // Calculate number of batches needed
+        $numBatches = (int) ceil($count / $batchSize);
+
+        // Create subtasks for each batch
+        // IMPORTANT: We don't use OFFSET anymore (always 0) because as sharekeys
+        // are migrated, they disappear from WHERE encryption_version = 1
+        for ($batch = 0; $batch < $numBatches; $batch++) {
+            DB::insert(
+                prefixTable('background_subtasks'),
+                [
+                    'task_id' => $taskId,
+                    'task' => json_encode([
+                        'step' => 'migrate_sharekeys_table',
+                        'table' => $table,
+                        'limit' => $batchSize,
+                        'batch' => $batch + 1,
+                        'total_batches' => $numBatches,
+                    ]),
+                    'is_in_progress' => 0,
+                    'status' => 'pending',
+                    'finished_at' => null,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]
+            );
+            $subtaskOrder++;
+        }
+    }
+
+    // Add final subtask to mark migration as completed
+    DB::insert(
+        prefixTable('background_subtasks'),
+        [
+            'task_id' => $taskId,
+            'task' => json_encode([
+                'step' => 'finalize_phpseclibv3_migration',
+            ]),
+            'is_in_progress' => 0,
+            'status' => 'pending',
+            'finished_at' => null,
+            'updated_at' => time(),
+            'created_at' => time(),
+        ]
+    );
+}
+
+/**
  * Create migration task for a specific user
  * 
  * @param int $userId User ID
@@ -5491,6 +6166,94 @@ function isUserFavorite(int $userId, int $itemId): bool
     return !empty($result);
 }
 // ---<
+
+/**
+ * Sanitizes specific fields from a data array using a mapping of fields and filters.
+ *
+ * @param array $rawData The source array containing raw input data.
+ * @param array $inputsDefinition Associative array mapping field names to their filters (e.g., ['login' => 'trim|escape']).
+ * @return array The original array merged with the sanitized values.
+ */
+function sanitizeData(array $rawData, array $inputsDefinition): array
+{
+    $fieldsToProcess = [];
+    $filters = [];
+
+    // Extract only the values we want to sanitize based on the definition
+    foreach ($inputsDefinition as $field => $filter) {
+        $fieldsToProcess[$field] = isset($rawData[$field]) ? $rawData[$field] : '';
+        $filters[$field] = $filter;
+    }
+
+    // Perform sanitization and merge back into the original data set
+    // This ensures non-sanitized fields remain untouched
+    return array_merge(
+        $rawData,
+        dataSanitizer($fieldsToProcess, $filters)
+    );
+}
+
+
+// <--
+/**
+ * Get or regenerate temporary key based on lifetime
+ * Creates a new key if current one is older than lifetime, otherwise returns existing key
+ * 
+ * @param int $userId User ID
+ * @param int $lifetimeSeconds Key lifetime in seconds (default: 3600 = 1 hour)
+ * 
+ * @return string Valid temporary key (existing or newly generated)
+ */
+function getOrRotateKeyTempo(int $userId, int $lifetimeSeconds = 3600): string
+{
+    $userData = DB::queryFirstRow(
+        'SELECT key_tempo, key_tempo_created_at FROM %l WHERE id=%i',
+        prefixTable('users'),
+        $userId
+    );
+    
+    // No key exists or no timestamp - generate new one
+    if (!$userData || empty($userData['key_tempo']) || $userData['key_tempo_created_at'] === null) {
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Check if key is expired
+    $age = time() - (int)$userData['key_tempo_created_at'];
+    
+    if ($age > $lifetimeSeconds) {
+        // Key expired - generate new one
+        return generateNewKeyTempo($userId);
+    }
+    
+    // Key still valid - return existing
+    return $userData['key_tempo'];
+}
+
+/**
+ * Generate a new temporary key with timestamp
+ * 
+ * @param int $userId User ID
+ * 
+ * @return string Generated key
+ */
+function generateNewKeyTempo(int $userId): string
+{
+    $keyTempo = bin2hex(random_bytes(16));
+    $createdAt = time();
+    
+    DB::update(
+        prefixTable('users'),
+        [
+            'key_tempo' => $keyTempo,
+            'key_tempo_created_at' => $createdAt
+        ],
+        'id=%i',
+        $userId
+    );
+    
+    return $keyTempo;
+}
+// -->
 
 /**
  * Clean a string, array or object using AntiXss library

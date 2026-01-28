@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      tasks.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -310,7 +310,7 @@ catch (Exception $e) {
                                         <h5><i class="fa-solid fa-calendar-days mr-2"></i><?php echo $lang->get('done_tasks_history_delay_in_days'); ?></h5>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 604800; ?>'>
+                                            <input type='number' class='form-control form-control-sm' id='tasks_history_delay' value='<?php echo isset($SETTINGS['tasks_history_delay']) === true ? ((int) $SETTINGS['tasks_history_delay'] / 24 / 3600) : 7; ?>'>
                                         </div>
                                     </div>
 

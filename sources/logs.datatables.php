@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      logs.datatables.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -125,7 +125,7 @@ $orderDirection = in_array($order, $aSortTypes, true) ? $order : 'DESC';
 // Start building the query and output depending on the action
 if (isset($params['action']) && $params['action'] === 'connections') {
     //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.qui', 'u.login', 'u.name', 'u.lastname'];
+    $aColumns = ['l.date', 'l.label', 'l.field_1', 'u.login', 'u.name', 'u.lastname', 'l.qui'];
 
     // Ordering
     $orderColumn = $aColumns[0];
@@ -147,7 +147,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
         FROM '.prefixTable('log_system').' as l
-        INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
+        LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id) 
         WHERE %l ORDER BY %l %l',
         $sWhere,
         $orderColumn,
@@ -155,10 +155,10 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT l.date as date, l.label as label, l.qui as who, 
+    $sql = 'SELECT l.date as date, l.label as label, l.field_1 as field_1, l.qui as who, 
     u.login as login, u.name AS name, u.lastname AS lastname
     FROM '.prefixTable('log_system').' as l
-    INNER JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
+    LEFT JOIN '.prefixTable('users').' as u ON (l.qui=u.id)
     WHERE %l ORDER BY %l %l LIMIT %i, %i';
     $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
@@ -181,9 +181,29 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
+<<<<<<< HEAD
         $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '],(string) $record['label']).'", ';
         //col3
         $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
+=======
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        //col3 (Source)
+        $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
+        $isApi = ($field1 === 'api') || (strpos($field1, 'tp_src=api') !== false);
+        $sourceLabel = $isApi ? 'API/Extension' : 'Web';
+        $sOutput .= '"'.htmlspecialchars($sourceLabel, ENT_QUOTES).'", ';
+        //col4
+        if (!empty($record['login'])) {
+            $fullname = trim(
+                htmlspecialchars(stripslashes((string) ($record['name'] ?? '')), ENT_QUOTES) . ' ' .
+                htmlspecialchars(stripslashes((string) ($record['lastname'] ?? '')), ENT_QUOTES)
+            );
+            $loginShown = htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES);
+            $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $loginShown . ']"';
+        } else {
+            $sOutput .= '"IP: ' . htmlspecialchars((string) $record['who'], ENT_QUOTES) . '"';
+        }
+>>>>>>> develop
         //Finish the line
         $sOutput .= '],';
     }
@@ -450,7 +470,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 } elseif (isset($params['action']) && $params['action'] === 'items') {
     require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
     //Columns name
-    $aColumns = ['l.date', 'i.label', 'u.login', 'l.action', 'i.perso', 'i.id', 't.title'];
+    $aColumns = ['l.date', 'i.id', 'i.label', 't.title', 'u.login', 'l.action', 'l.raison', 't.personal_folder', 'u.name', 'u.lastname'];
 
     // Ordering
     $orderColumn = $aColumns[0];
@@ -459,10 +479,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
 
     // Filtering
-    $sWhere = new WhereClause('OR');
-    if ($searchValue !== '') {        
+    $sWhere = new WhereClause('AND');
+    if ($searchValue !== '') {
+        $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
-            $sWhere->add($column.' LIKE %ss', $searchValue);
+            $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
 
@@ -481,7 +502,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Prepare the SQL query
     $sql = 'SELECT l.date AS date, u.login AS login, u.name AS name, u.lastname AS lastname, i.label AS label,
-    i.perso AS perso, l.action AS action, t.title AS folder, i.id AS id
+    l.raison AS raison, t.personal_folder AS personal_folder, l.action AS action, t.title AS folder, i.id AS id
     FROM '.prefixTable('log_items').' AS l
     INNER JOIN '.prefixTable('items').' AS i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' AS u ON (l.id_user=u.id)
@@ -512,12 +533,27 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col2
         $sOutput_item .= '"'.trim((string) $record['folder']).'", ';
         //col2
+<<<<<<< HEAD
         $sOutput_item .= '"'.trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']", ';
         //col4
         $sOutput_item .= '"'.trim($lang->get($record['action'])).'", ';
         //col5
         if ($record['perso'] === 1) {
             $sOutput_item .= '"'.trim($lang->get('yes')).'"';
+=======
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
+        //col6
+        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
+        //col7 (API / Extension)
+        if (isset($record['raison']) && strpos((string) $record['raison'], 'tp_src=api') !== false) {
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'", ';
+        } else {
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'", ';
+        }
+        //col8 (Personal folder)
+        if ((int) ($record['personal_folder'] ?? 0) === 1) {
+            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
+>>>>>>> develop
         } else {
             $sOutput_item .= '"'.trim($lang->get('no')).'"';
         }
@@ -766,6 +802,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
+    // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
+    // A user is considered 'API connected' while their last API token is still valid.
+    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 3600); // Default 1 hour
+    if ($apiTokenDuration < 60) {
+        $apiTokenDuration = 3600; // Minimum 1 hour for safety
+    }
+    $apiConnectedAfter = time() - ($apiTokenDuration + 600);
+
     // Filtering
     $sWhere = new WhereClause('AND');
     if ($searchValue !== '') {        
@@ -775,23 +819,52 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
     }
     $subclause2 = $sWhere->addClause('OR');
-    $subclause2->add('session_end >= %i', time());
+    $subclause2->add('u.session_end >= %i', time());
+    $subclause2->add(
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls
+            WHERE ls.qui = u.id
+                AND ls.label = %s
+                AND ls.date >= %i
+                AND (
+                    (ls.type = %s)
+                    OR (ls.type = %s AND ls.field_1 LIKE %s)
+                )
+        )',
+        'user_connection',
+        $apiConnectedAfter,
+        'api',
+        'user_connection',
+        '%tp_src=api%'
+    );
 
-    // Get the total number of records
+    // Get the total number of records - use alias 'u'
     $iTotal = DB::queryFirstField(
         'SELECT COUNT(*)
-        FROM '.prefixTable('users').'
-        WHERE %l ORDER BY %l %l',
-        $sWhere,
-        $orderColumn,
-        $orderDirection
+        FROM '.prefixTable('users').' u
+        WHERE %l',
+        $sWhere
     );
 
     // Prepare the SQL query
-    $sql = 'SELECT *
-    FROM '.prefixTable('users').'
-    WHERE %l ORDER BY %l %l LIMIT %i, %i';
-    $params = [$sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $sql = 'SELECT u.*,
+        api_conn.last_api_date AS api_last_connection
+    FROM '.prefixTable('users').' u
+    LEFT JOIN (
+        SELECT qui, MAX(date) as last_api_date
+        FROM '.prefixTable('log_system').'
+        WHERE label = %s
+            AND date >= %i
+            AND (
+                (type = %s)
+                OR (type = %s AND field_1 LIKE %s)
+            )
+        GROUP BY qui
+    ) api_conn ON api_conn.qui = u.id
+    WHERE %l
+    ORDER BY %l %l
+    LIMIT %i, %i';
+
+    $params = ['user_connection', $apiConnectedAfter, 'api', 'user_connection', '%tp_src=api%', $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
@@ -823,10 +896,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         $sOutput .= '"'.$user_role.'", ';
         //col4
-        $time_diff = time() - (int) $record['timestamp'];
+        $connectedSince = (int) $record['timestamp'];
+        if ((int) $record['session_end'] < time() && !empty($record['api_last_connection'])) {
+            $connectedSince = (int) $record['api_last_connection'];
+        }
+        $time_diff = time() - $connectedSince;
         $hoursDiff = round($time_diff / 3600, 0, PHP_ROUND_HALF_DOWN);
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
-        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m" ';
+        $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m", ';
+        //col5 (API connected)
+        $apiConnected = !empty($record['api_last_connection']) ? 1 : 0;
+        $sOutput .= '"'.$apiConnected.'" ';
         //Finish the line
         $sOutput .= '],';
     }
@@ -948,7 +1028,16 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
-    $sWhere->add('finished_at != ""');
+    $sWhere->add('p.finished_at > 0');
+    
+    $historyDelay = isset($SETTINGS['tasks_history_delay']) === true ? (int) $SETTINGS['tasks_history_delay'] : 0;
+    if ($historyDelay > 0 && $historyDelay < 86400) {
+        $historyDelay = $historyDelay * 86400;
+    }
+    if ($historyDelay > 0) {
+        $threshold = time() - $historyDelay;
+        $sWhere->add('p.finished_at >= %i', $threshold);
+    }
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(
@@ -988,7 +1077,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         
         $sOutput .= '[';
         //col1
-        $sOutput .= '"'.(is_null($record['error_message']) ? '' : addslashes($record['error_message'])).'", ';
+        $errMsg = is_null($record['error_message']) ? '' : (string) $record['error_message'];
+        $errMsg = preg_replace('/\r\n|\r|\n/', ' ', $errMsg);
+        $sOutput .= json_encode($errMsg, JSON_UNESCAPED_UNICODE).', ';
         //col2
         $sOutput .= '"'.date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['created_at']).'", ';
         //col3

@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      favorites.js.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -130,6 +130,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 timeOut: 1000
                             }
                         );
+                        $('#warningModal').modal('hide');
                     }
                 );
             });

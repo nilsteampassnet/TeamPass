@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      downloadFile.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -229,23 +229,29 @@ else {
     // Try to get encrypted file info first
     $file_info = DB::queryFirstRow(
         'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-        s.share_key AS share_key
+        s.share_key AS share_key, s.increment_id AS sharekey_id
         FROM ' . prefixTable('files') . ' AS f
         INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
         WHERE s.user_id = %i AND s.object_id = %i',
         $session->get('user-id'),
         $get_fileid
     );
-    
+
     $isEncrypted = (DB::count() > 0);
     $fileContent = '';
-    
+
     if ($isEncrypted) {
-        // Decrypt the file
+        // Decrypt the file with automatic v1→v3 migration
         $fileContent = decryptFile(
             $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
-            decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
+            decryptUserObjectKeyWithMigration(
+                $file_info['share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                (int) $file_info['sharekey_id'],
+                'sharekeys_files'
+            )
         );
     } else {
         // Get unencrypted file info

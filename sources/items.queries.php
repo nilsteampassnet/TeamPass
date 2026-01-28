@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      items.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -1045,12 +1045,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id=%i AND l.action = %s',
-            $inputData['itemId'],
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['itemId']
         );
 
         // Always check what rights user has on requested folder
@@ -1151,9 +1152,10 @@ switch ($inputData['type']) {
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item)
-                INNER JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
+                LEFT JOIN ' . prefixTable('log_items') . ' as l ON (i.id=l.id_item AND l.action = %s)
+                LEFT JOIN ' . prefixTable('users') . ' as u ON (u.id=l.id_user)
                 WHERE i.id=%i',
+                'at_creation',
                 $inputData['itemId']
             );
 
@@ -1437,20 +1439,23 @@ switch ($inputData['type']) {
                             if ($dataTmpCat['encryption_type'] !== 'not_set') {
                                 // Get user sharekey for this field
                                 $userKey = DB::queryFirstRow(
-                                    'SELECT share_key
-                                    FROM ' . prefixTable('sharekeys_fields') . '
-                                    WHERE user_id = %i AND object_id = %i',
+                                    'SELECT s.share_key, s.increment_id
+                                    FROM ' . prefixTable('sharekeys_fields') . ' AS s
+                                    WHERE s.user_id = %i AND s.object_id = %i',
                                     $session->get('user-id'),
                                     $dataTmpCat['field_item_id']
                                 );
 
-                                // Decrypt the current value
+                                // Decrypt the current value with automatic v1→v3 migration
                                 if (DB::count() > 0) {
                                     $oldVal = base64_decode(doDataDecryption(
                                         $dataTmpCat['data'],
-                                        decryptUserObjectKey(
+                                        decryptUserObjectKeyWithMigration(
                                             $userKey['share_key'],
-                                            $session->get('user-private_key')
+                                            $session->get('user-private_key'),
+                                            $session->get('user-public_key'),
+                                            (int) $userKey['increment_id'],
+                                            'sharekeys_fields'
                                         )
                                     ));
                                 } else {
@@ -2086,13 +2091,14 @@ switch ($inputData['type']) {
 
             // Reload new values
             $dataItem = DB::queryFirstRow(
-                'SELECT *
-                FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-                WHERE i.id = %i AND l.action = %s',
-                $inputData['itemId'],
-                'at_creation'
-            );
+                'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
+            FROM ' . prefixTable('items') . ' as i
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['itemId']
+        );
             // Reload History
             $history = '';
             $rows = DB::query(
@@ -2278,9 +2284,9 @@ switch ($inputData['type']) {
 
             // Get the ITEM object key for the user
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
-                FROM ' . prefixTable('sharekeys_items') . '
-                WHERE user_id = %i AND object_id = %i',
+                'SELECT s.share_key, s.increment_id
+                FROM ' . prefixTable('sharekeys_items') . ' AS s
+                WHERE s.user_id = %i AND s.object_id = %i',
                 $session->get('user-id'),
                 $inputData['itemId']
             );
@@ -2296,14 +2302,17 @@ switch ($inputData['type']) {
                 break;
             }
 
-            // Decrypt / Encrypt the password
+            // Decrypt / Encrypt the password with automatic v1→v3 migration
             $cryptedStuff = doDataEncryption(
                 base64_decode(
                     doDataDecryption(
                         $originalRecord['pw'],
-                        decryptUserObjectKey(
+                        decryptUserObjectKeyWithMigration(
                             $userKey['share_key'],
-                            $session->get('user-private_key')
+                            $session->get('user-private_key'),
+                            $session->get('user-public_key'),
+                            (int) $userKey['increment_id'],
+                            'sharekeys_items'
                         )
                     )
                 )
@@ -2677,12 +2686,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id = %i AND l.action = %s',
-            $inputData['id'],
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $inputData['id']
         );
 
         // Notification
@@ -4219,11 +4229,21 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['item_key'] = (string) $record['item_key'];
                     $html_json[$record['id']]['tree_id'] = (int) $record['tree_id'];
                     $html_json[$record['id']]['label'] = strip_tags($record['label']);
-                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false && empty($record['description']) === false) {
-                        $html_json[$record['id']]['desc'] = mb_substr(preg_replace('#<[^>]+>#', ' ', $record['description']), 0, 200);
-                    } else {
-                        $html_json[$record['id']]['desc'] = '';
+                    // Build description preview (handles both raw HTML and HTML-encoded strings)
+                    $descPreview = '';
+                    if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false) {
+                        $descRaw = (string) $record['description'];
+                        // Some descriptions may be stored HTML-encoded (ex: &lt;p&gt;...&lt;/p&gt;). Decode first, then strip tags.
+                        $descDecoded = html_entity_decode($descRaw, ENT_QUOTES, 'UTF-8');
+                        $descStripped = preg_replace('#<[^>]+>#', ' ', $descDecoded);
+                        // Normalize spaces (includes NBSP) and trim
+                        $descStripped = str_replace("\xC2\xA0", ' ', (string) $descStripped);
+                        $descStripped = trim(preg_replace('/\s+/', ' ', (string) $descStripped));
+                        if ($descStripped !== '') {
+                            $descPreview = mb_substr($descStripped, 0, 200);
+                        }
                     }
+                    $html_json[$record['id']]['desc'] = $descPreview;
                     $html_json[$record['id']]['login'] = $record['login'];
                     $html_json[$record['id']]['anyone_can_modify'] = (int) $record['anyone_can_modify'];
                     $html_json[$record['id']]['is_result_of_search'] = 0;
@@ -4447,13 +4467,13 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Get item details and its sharekey
+        // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, s.share_key AS share_key, i.id AS id,
-                    i.label AS label, i.id_tree AS id_tree
+            'SELECT i.pw AS pw, s.share_key AS share_key, s.increment_id AS sharekey_id,
+                    i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
-            WHERE user_id = %i AND (i.item_key = %s OR i.id = %i)',
+            WHERE s.user_id = %i AND (i.item_key = %s OR i.id = %i)',
             $session->get('user-id'),
             $inputData['itemKey'] ?? '',
             $inputData['itemId'] ?? 0
@@ -4514,13 +4534,17 @@ switch ($inputData['type']) {
         );
 
         // Uncrypt PW if sharekey is available (empty password otherwise)
+        // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
             $pw = doDataDecryption(
                 $dataItem['pw'],
-                decryptUserObjectKey(
+                decryptUserObjectKeyWithMigration(
                     $dataItem['share_key'],
-                    $session->get('user-private_key')
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    (int) $dataItem['sharekey_id'],
+                    'sharekeys_items'
                 )
             );
         }
@@ -4911,8 +4935,8 @@ switch ($inputData['type']) {
     /*
      * FUNCTION
      * Launch an action when clicking on a quick icon
-     * $action = 0 => Make not favorite
-     * $action = 1 => Make favorite
+     * $action = 0 => Make favorite
+     * $action = 1 => Make not favorite
      */
     case 'action_on_quick_icon':
         // Check KEY and rights
@@ -4929,50 +4953,18 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        $inputData['action'] = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
-        $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+        $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
+        $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
-        if ((int) $inputData['action'] === 0) {
-            // Add new favourite
-            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'add');
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'favourites' => implode(';', $session->get('user-favorites')),
-                ),
-                'id = %i',
-                $session->get('user-id')
-            );
-            // Update SESSION with this new favourite
-            $data = DB::queryFirstRow(
-                'SELECT label,id_tree
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
-                $inputData['itemId']
-            );
-            SessionManager::addRemoveFromSessionAssociativeArray(
-                'user-favorites_tab',
-                [
-                    $inputData['itemId'] => [
-                        'label' => $data['label'],
-                        'url' => 'index.php?page=items&amp;group=' . $data['id_tree'] . '&amp;id=' . $inputData['itemId'],
-                    ],
-                ],
-                'add'
-            );
-        } elseif ((int) $inputData['action'] === 1) {
-            // delete from session
-            SessionManager::addRemoveFromSessionArray('user-favorites', [$inputData['itemId']], 'remove');
+        if ($action === 0) {
+            // Add to favorites
+            addUserFavorite((int) $session->get('user-id'), $itemId);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$itemId], 'add');
+        } elseif ($action === 1) {
+            // Remove from favorites
+            removeUserFavorite((int) $session->get('user-id'), $itemId);
+            SessionManager::addRemoveFromSessionArray('user-favorites', [$itemId], 'remove');
 
-            // delete from DB
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'favourites' => implode(';', $session->get('user-favorites')),
-                ),
-                'id = %i',
-                $session->get('user-id')
-            );
             // refresh session fav list
             if ($session->has('user-favorites_tab') && $session->has('user-favorites_tab') && null !== $session->get('user-favorites_tab')) {
                 $user_favorites_tab = $session->get('user-favorites_tab');
@@ -4984,6 +4976,9 @@ switch ($inputData['type']) {
                 }
             }
         }
+
+        $favs = getUserFavorites((int) $session->get('user-id'));
+        $session->set('user-favorites', $favs);
         break;
 
     /*
@@ -5911,12 +5906,13 @@ switch ($inputData['type']) {
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
-            'SELECT *
+            'SELECT i.*,
+            IFNULL(l.id_user, 0) AS id_user
             FROM ' . prefixTable('items') . ' as i
-            INNER JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id)
-            WHERE i.id=%i AND l.action = %s',
-            $item_id,
-            'at_creation'
+            LEFT JOIN ' . prefixTable('log_items') . ' as l ON (l.id_item = i.id AND l.action = %s)
+            WHERE i.id=%i',
+            'at_creation',
+            $item_id
         );
         // check that actual user can access this item
         $restrictionActive = true;

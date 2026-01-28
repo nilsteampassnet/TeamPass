@@ -21,7 +21,7 @@
  * ---3.0.0.22
  * @file      background_tasks___functions.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -47,6 +47,7 @@ header('Cache-Control: no-cache, must-revalidate');
 function doLog(string $status, string $job, int $enable_tasks_log = 0, ?int $id = null, ?int $treated_objects = null): int
 {
     clearTasksLog();
+    clearTasksHistory();
 
     // is log enabled?
     if ((int) $enable_tasks_log === 1) {
@@ -77,6 +78,49 @@ function doLog(string $status, string $job, int $enable_tasks_log = 0, ?int $id 
     }
     
     return -1;
+}
+
+function clearTasksHistory(): void
+{
+    global $SETTINGS;
+
+    // Run only once per PHP process (doLog can be called multiple times in a run)
+    static $alreadyDone = false;
+    if ($alreadyDone === true) {
+        return;
+    }
+    $alreadyDone = true;
+
+    $historyDelay = isset($SETTINGS['tasks_history_delay']) === true ? (int) $SETTINGS['tasks_history_delay'] : 0;
+
+    // Safety: this setting is meant to be in seconds (admin UI stores seconds),
+    // but if for any reason it is stored in days, convert it.
+    if ($historyDelay > 0 && $historyDelay < 86400) {
+        $historyDelay = $historyDelay * 86400;
+    }
+
+    if ($historyDelay <= 0) {
+        return;
+    }
+
+    $threshold = time() - $historyDelay;
+
+    // Delete subtasks linked to old finished tasks (avoid orphans)
+    DB::query(
+        'DELETE s
+         FROM ' . prefixTable('background_subtasks') . ' s
+         INNER JOIN ' . prefixTable('background_tasks') . ' t ON t.increment_id = s.task_id
+         WHERE t.finished_at > 0
+           AND t.finished_at < %i',
+        $threshold
+    );
+
+    // Delete old finished tasks from history
+    DB::delete(
+        prefixTable('background_tasks'),
+        'finished_at > 0 AND finished_at < %i',
+        $threshold
+    );
 }
 
 function clearTasksLog()

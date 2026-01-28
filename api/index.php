@@ -15,7 +15,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -109,6 +109,13 @@ if (isset($uri[0]) && $uri[0] === 'authorize') {
             array_slice($uri, 1),
             $userData['data']
         );
+
+    // action related to MISC
+    } elseif ($controller === 'misc') {
+        require API_ROOT_PATH . "/Controller/Api/MiscController.php";
+        $objFeedController = new MiscController();
+        $strMethodName = (string) $action . 'Action';
+        $objFeedController->{$strMethodName}();
     } else {
         errorHdl(
             "HTTP/1.1 404 Not Found",

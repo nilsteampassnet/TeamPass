@@ -15,7 +15,7 @@
  *
  * @author    Nils Laumaillé (nils@teampass.net)
  *
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  *
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  * ---
@@ -78,7 +78,7 @@ class ItemController extends BaseController
 
         if (strtoupper($requestMethod) === 'GET') {
             // define WHERE clause
-            $sqlExtra = '';
+            $sqlExtra = 'WHERE i.deleted_at IS NULL';
             if (empty($userData['folders_list']) === false) {
                 $userData['folders_list'] = explode(',', $userData['folders_list']);
             } else {
@@ -96,7 +96,7 @@ class ItemController extends BaseController
                 // build sql where clause
                 if (!empty($foldersList)) {
                     // build sql where clause
-                    $sqlExtra = ' WHERE id_tree IN ('.$foldersList.')';
+                    $sqlExtra .= ' AND i.id_tree IN ('.$foldersList.')';
                 } else {
                     // Send error
                     $this->sendOutput(
@@ -201,7 +201,8 @@ class ItemController extends BaseController
     /**
      * Manage case Add
      *
-     * @param array $userData
+     * @param array $userData User data from JWT token
+     * @return void
      */
     public function createAction(array $userData)
     {
@@ -234,22 +235,27 @@ class ItemController extends BaseController
                         $strErrorDesc = $arrCheck['strErrorDesc'];
                         $strErrorHeader = $arrCheck['strErrorHeader'];
                     } else {
+                        // Prepare array of item parameters
+                        $arrItemParams = [
+                            'folder_id' => (int) $arrQueryStringParams['folder_id'],
+                            'label' => (string) $arrQueryStringParams['label'],
+                            'password' => (string) $arrQueryStringParams['password'],
+                            'description' => (string) ($arrQueryStringParams['description'] ?? ''),
+                            'login' => (string) $arrQueryStringParams['login'],
+                            'email' => (string) ($arrQueryStringParams['email'] ?? ''),
+                            'url' => (string) ($arrQueryStringParams['url'] ?? ''),
+                            'tags' => (string) ($arrQueryStringParams['tags'] ?? ''),
+                            'anyone_can_modify' => (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
+                            'icon' => (string) $arrQueryStringParams['icon'] ?? '',
+                            'id' => (int) $userData['id'],
+                            'username' => (string) $userData['username'],
+                            'totp' => (string) ($userData['totp'] ?? ''),
+                        ];
+
                         // launch
                         $itemModel = new ItemModel();
                         $ret = $itemModel->addItem(
-                            (int) $arrQueryStringParams['folder_id'],
-                            (string) $arrQueryStringParams['label'],
-                            (string) $arrQueryStringParams['password'],
-                            (string) $arrQueryStringParams['description'] ?? '',
-                            (string) $arrQueryStringParams['login'],
-                            (string) $arrQueryStringParams['email'] ?? '',
-                            (string) $arrQueryStringParams['url'] ?? '' ,
-                            (string) $arrQueryStringParams['tags'] ?? '',
-                            (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
-                            (string) $arrQueryStringParams['icon'] ?? '',
-                            (int) $userData['id'],
-                            (string) $userData['username'],
-                            (string) $userData['totp'],
+                            $arrItemParams
                         );
                         $responseData = json_encode($ret);
                     }
@@ -292,7 +298,9 @@ class ItemController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = '';
-        $sqlExtra = '';
+        $showItem = false;
+        $sqlExtra = 'WHERE i.deleted_at IS NULL';
+        $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
         $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].')';
@@ -308,13 +316,15 @@ class ItemController extends BaseController
             // SQL where clause with item id
             if (isset($arrQueryStringParams['id']) === true) {
                 // build sql where clause by ID
-                $sqlExtra = ' WHERE i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+                $sqlExtra .= ' AND i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+                $showItem = true;
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
-                $sqlExtra = ' WHERE i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['label'] : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $sqlExtra .= ' AND i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
             } else if (isset($arrQueryStringParams['description']) === true) {
-                // build sql where clause by LABEL
-                $sqlExtra = ' WHERE i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
+                // build sql where clause by DESCRIPTION
+                $sqlExtra .= ' AND i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
             } else {
                 // Send error
                 $this->sendOutput(
@@ -333,7 +343,7 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, 0, $userPrivateKey, $userData['id']);
+                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem);
                     $responseData = json_encode($arrItems);
                 }
             } catch (Error $e) {
@@ -412,7 +422,7 @@ class ItemController extends BaseController
                 } else {
                     // Query items with the specific URL
                     $rows = DB::query(
-                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, 
+                        "SELECT i.id, i.label, i.login, i.url, i.id_tree, i.favicon_url,
                                 CASE WHEN o.enabled = 1 THEN 1 ELSE 0 END AS has_otp
                         FROM " . prefixTable('items') . " AS i
                         LEFT JOIN " . prefixTable('items_otp') . " AS o ON (o.item_id = i.id)
@@ -448,6 +458,7 @@ class ItemController extends BaseController
                                 'url' => $row['url'],
                                 'folder_id' => (int) $row['id_tree'],
                                 'has_otp' => (int) $row['has_otp'],
+                                'favicon_url' => (string) $row['favicon_url'],
                             ]
                         );
                     }

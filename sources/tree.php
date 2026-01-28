@@ -13,7 +13,7 @@ declare(strict_types=1);
  * @file      tree.php
  *
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   https://spdx.org/licenses/GPL-3.0-only.html#licenseText GPL-3.0
  *
  * @see       https://www.teampass.net
@@ -143,7 +143,7 @@ $goTreeRefresh = loadTreeStrategy(
     (int) $inputData['forceRefresh']
 );
 // We don't use the cache if an ID of folder is provided
-if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false || $inputData['userTreeLoadStrategy'] === 'sequential') {
+if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 

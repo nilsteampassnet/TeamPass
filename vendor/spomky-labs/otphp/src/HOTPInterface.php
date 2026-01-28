@@ -32,5 +32,10 @@ interface HOTPInterface extends OTPInterface
         int $digits = 6
     ): self;
 
+    /**
+     * @deprecated Deprecated since v11.4, use {@see self::withCounter()} instead
+     */
     public function setCounter(int $counter): void;
+
+    public function withCounter(int $counter): self;
 }

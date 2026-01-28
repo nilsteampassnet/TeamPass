@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      identify.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -139,7 +139,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
-    $session = SessionManager::getSession();
     
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
@@ -159,6 +158,12 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $session->get('key')
         );
     }
+
+    // Sanitize input data
+    $toClean = [
+        'login' => 'trim|escape',
+    ];
+    $dataReceived = sanitizeData($dataReceived, $toClean);
 
     // Base64 decode sensitive data
     if (isset($dataReceived['pw'])) {
@@ -629,7 +634,7 @@ function buildUserSession(
 
     // Good practice: reset PHPSESSID and key after successful authentication
     $session->migrate();
-    $session->set('key', generateQuickPassword(30, false));
+    $session->set('key', bin2hex(random_bytes(16)));
 
     // Save account in SESSION - Basic user info
     $session->set('user-login', stripslashes($username));
@@ -740,12 +745,20 @@ function performPostLoginTasks(
     // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
     checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
 
+    // Version 3.1.6 - Trigger forced phpseclib v3 migration if enabled
+    triggerPhpseclibV3MigrationOnLogin(
+        (int) $session->get('user-id'),
+        $session->get('user-private_key'),
+        $passwordClear
+    );
+
     // Set some settings
     $SETTINGS['update_needed'] = '';
 
     // Update table - Final user update in database
     $finalUpdateData = [
         'key_tempo' => $session->get('key'),
+        'key_tempo_created_at' => time(),
         'last_connexion' => time(),
         'timestamp' => time(),
         'disabled' => 0,
@@ -1144,6 +1157,7 @@ function canUserGetLog(
  */
 function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = []) : array
 {
+    $updateData = [];
     if (is_null($userInfo['private_key']) === true || empty($userInfo['private_key']) === true || $userInfo['private_key'] === 'none') {
         // No keys have been generated yet
         // Create them
@@ -1186,44 +1200,25 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         ];
     }
 
-    // Try to uncrypt private key with current password
-    try {
-        $privateKeyClear = decryptPrivateKey($passwordClear, $userInfo['private_key']);
-        
-        // If user has seed but no backup, create it on first successful login
-        if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Transparent Recovery - Creating backup for user ' . ($userInfo['login'] ?? 'unknown'));
-            }
+    // Get encryption version (default to 1 if not set)
+    $encryptionVersion = isset($userInfo['encryption_version']) ? (int) $userInfo['encryption_version'] : 1;
+    
+    // Try to decrypt private key with migration support
+    $decryptResult = decryptPrivateKeyWithMigration(
+        $passwordClear,
+        $userInfo['private_key'],
+        (int) $userInfo['id'],
+        $encryptionVersion
+    );
 
-            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
-            $cipher = new Crypt_AES();
-            $cipher->setPassword($derivedKey);
-            $privateKeyBackup = base64_encode($cipher->encrypt(base64_decode($privateKeyClear)));
+    // What phpseclib version is used?
+    if ($encryptionVersion !== $decryptResult['version_used']) {
+        $updateData['encryption_version'] = $decryptResult['version_used'];
+    }
 
-            // Generate integrity hash
-            $serverSecret = getServerSecret();
-            $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
-
-            return [
-                'public_key' => $userInfo['public_key'],
-                'private_key_clear' => $privateKeyClear,
-                'update_keys_in_db' => [
-                    'private_key_backup' => $privateKeyBackup,
-                    'key_integrity_hash' => $integrityHash,
-                    'last_pw_change' => time(),
-                ],
-            ];
-        }
-
-        return [
-            'public_key' => $userInfo['public_key'],
-            'private_key_clear' => $privateKeyClear,
-            'update_keys_in_db' => [],
-        ];
-
-    } catch (Exception $e) {
-        // Decryption failed - try transparent recovery
+    // Check for migration errors
+    if ($decryptResult['migration_error'] === true) {
+        // Decryption failed - try transparent recovery as fallback
         if (!empty($userInfo['user_derivation_seed'])
             && !empty($userInfo['private_key_backup'])) {
 
@@ -1238,10 +1233,76 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             }
         }
 
-        // Recovery failed or not available - return empty
+        // No recovery possible - throw exception to trigger normal error handling
+        throw new Exception('Failed to decrypt private key');
+    }
+
+    $privateKeyClear = $decryptResult['private_key_clear'];
+
+    // If migration is needed, perform it now
+    if ($decryptResult['needs_migration'] === true) {
+        $migrationSuccess = migrateAllUserKeysToV3(
+            (int) $userInfo['id'],
+            $passwordClear,
+            $privateKeyClear,
+            $userInfo
+        );
+
+        if ($migrationSuccess) {
+            // Migration successful - encryption_version updated in DB by migrateAllUserKeysToV3
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration - User ' . $userInfo['id'] . ' successfully migrated to v3');
+            }
+        } else {
+            // Migration failed but decryption worked, so continue with v1
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration Warning - User ' . $userInfo['id'] . ' migration to v3 failed, staying in v1');
+            }
+        }
+    }
+
+    try {
+        // If user has seed but no backup, create it on first successful login
+        if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Transparent Recovery - Creating backup for user ' . ($userInfo['login'] ?? 'unknown'));
+            }
+
+            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
+            // Encrypt private key backup using CryptoManager (use v3 if migration happened, otherwise v1)
+            $backupHashAlgorithm = ($decryptResult['needs_migration'] === true) ? 'sha256' : 'sha1';
+            $privateKeyBackup = base64_encode(
+                \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey,
+                    'cbc',
+                    $backupHashAlgorithm
+                )
+            );
+
+            // Generate integrity hash
+            $serverSecret = getServerSecret();
+            $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
+
+            $updateData['private_key_backup'] = $privateKeyBackup;
+            $updateData['key_integrity_hash'] = $integrityHash;
+            $updateData['last_pw_change'] = time();
+        }
+
         return [
             'public_key' => $userInfo['public_key'],
-            'private_key_clear' => '',
+            'private_key_clear' => $privateKeyClear,
+            'update_keys_in_db' => $updateData,
+        ];
+    } catch (Exception $e) {
+        // Exception during backup creation - log but don't fail login
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - prepareUserEncryptionKeys backup creation failed: ' . $e->getMessage());
+        }
+
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => $privateKeyClear,
             'update_keys_in_db' => [],
         ];
     }
@@ -1549,6 +1610,15 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
         // Get user groups from AD
         $user_ad_groups = [];
         foreach($groups as $group) {
+            // Skip invalid/corrupted group data
+            if (empty($group) || !mb_check_encoding($group, 'UTF-8') || !preg_match('/^[\x20-\x7E\x80-\xFF]+$/u', $group)) {
+                if (WIP === true) error_log('DEBUG TeamPass - LDAP: Invalid group data detected and skipped: ' . bin2hex($group));
+                continue;
+            }
+            
+            // Clean the group string
+            $group = trim($group);
+            
             // get relation role id for AD group
             $role = DB::queryFirstRow(
                 'SELECT lgr.role_id
@@ -2639,7 +2709,7 @@ function shouldUserAuthWithOauth2(
                         $userKeys['public_key']
                     );
                 }*/
-                    error_log('Switch user ' . $username . ' auth_type to oauth2');
+                
                 // Update user in database:
                 DB::update(
                     prefixTable('users'),

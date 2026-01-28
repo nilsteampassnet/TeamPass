@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      export.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -151,19 +151,19 @@ if (null !== $post_type) {
                     $rows = DB::query(
                         'SELECT i.id as id, i.id_tree as id_tree, i.restricted_to as restricted_to, i.perso as perso,
                             i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url,
-                            i.email as email,l.date as date, i.pw_iv as pw_iv,n.renewal_period as renewal_period
+                            i.email as email, IFNULL(l.date, 0) as date, i.pw_iv as pw_iv, n.renewal_period as renewal_period
                         FROM ' . prefixTable('items') . ' as i
                         INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
+                        LEFT JOIN ' . prefixTable('log_items') . ' as l
+                            ON (i.id = l.id_item AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s)))
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
-                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                         ORDER BY i.label ASC, l.date DESC',
-                        '0',
-                        intval($id),
                         'at_creation',
                         'at_modification',
-                        'at_pw :%'
+                        'at_pw :%',
+                        '0',
+                        intval($id)
                     );
                     foreach ($rows as $record) {
                         $restricted_users_array = empty($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : [];
@@ -372,21 +372,21 @@ if (null !== $post_type) {
                 // send query
                 $rows = DB::query(
                     'SELECT i.id as id, i.restricted_to as restricted_to, i.perso as perso, i.label as label, i.description as description, i.pw as pw, i.login as login, i.url as url, i.email as email,
-                        l.date as date, i.pw_iv as pw_iv,
+                        IFNULL(l.date, 0) as date, i.pw_iv as pw_iv,
                         n.renewal_period as renewal_period,
                         i.id_tree as tree_id
                         FROM ' . prefixTable('items') . ' as i
                         INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                        INNER JOIN ' . prefixTable('log_items') . ' as l ON (i.id = l.id_item)
+                        LEFT JOIN ' . prefixTable('log_items') . ' as l
+                            ON (i.id = l.id_item AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s)))
                         WHERE i.inactif = %i
                         AND i.id_tree= %i
-                        AND (l.action = %s OR (l.action = %s AND l.raison LIKE %s))
                         ORDER BY i.label ASC, l.date DESC',
-                    '0',
-                    $post_id,
                     'at_creation',
                     'at_modification',
-                    'at_pw :%'
+                    'at_pw :%',
+                    '0',
+                    $post_id
                 );
 
                 $id_managed = '';

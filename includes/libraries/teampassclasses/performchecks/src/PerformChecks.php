@@ -25,7 +25,7 @@ Use DB;
  * ---
  * @file      PerformChecks.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -72,6 +72,34 @@ class PerformChecks
             // if user is not logged in
             if (isset($this->sessionVar['login']) === true && is_null($this->sessionVar['login']) === false && empty($this->sessionVar['login']) === false) {
                 return $this->initialLogin();
+            }
+            /**
+             * Enforce DB-driven session validity (supports real "kick" from admin tools).
+             * If user's DB session markers are cleared/expired (key_tempo/session_end),
+             * invalidate PHP session immediately.
+             */
+            if (
+                isset($this->sessionVar['user_id'], $this->sessionVar['user_key']) === true
+                && empty($this->sessionVar['user_id']) === false
+                && empty($this->sessionVar['user_key']) === false
+            ) {
+                $userData = DB::queryfirstrow(
+                    'SELECT key_tempo, session_end, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i',
+                    (int) $this->sessionVar['user_id']
+                );
+
+                if (
+                    DB::count() === 0
+                    || (isset($userData['deleted_at']) && $userData['deleted_at'] !== null)
+                    || empty($userData['key_tempo']) === true
+                    || $userData['key_tempo'] !== $this->sessionVar['user_key']
+                    || empty($userData['session_end']) === true
+                    || (int) $userData['session_end'] < time()
+                ) {
+                    // Kill the Symfony/PHP session => user is really kicked out
+                    $session->invalidate();
+                    return false;
+                }
             }
             // Other cases
             if (isset($this->sessionVar['user_id']) === true && (is_null($this->sessionVar['user_id']) === true || empty($this->sessionVar['user_id']) === true)) {

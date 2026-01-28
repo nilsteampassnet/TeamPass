@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
+use Psr\Clock\ClockInterface;
+
 interface FactoryInterface
 {
     /**
@@ -12,5 +14,5 @@ interface FactoryInterface
      *
      * @param non-empty-string $uri
      */
-    public static function loadFromProvisioningUri(string $uri): OTPInterface;
+    public static function loadFromProvisioningUri(string $uri, ?ClockInterface $clock = null): OTPInterface;
 }

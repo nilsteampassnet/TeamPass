@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      utilities.logs.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -133,6 +133,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <tr>
                                             <th><?php echo $lang->get('date'); ?></th>
                                             <th><?php echo $lang->get('action'); ?></th>
+                                            <th>Source</th>
                                             <th><?php echo $lang->get('user'); ?></th>
                                         </tr>
                                     </thead>
@@ -182,6 +183,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <th><?php echo $lang->get('folder'); ?></th>
                                             <th><?php echo $lang->get('user'); ?></th>
                                             <th><?php echo $lang->get('action'); ?></th>
+                                            <th>API</th>
                                             <th><?php echo $lang->get('at_personnel'); ?></th>
                                         </tr>
                                     </thead>

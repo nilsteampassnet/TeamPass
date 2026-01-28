@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      2fa.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -117,7 +117,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     <?php echo $lang->get('2factors_expected_for_admin_tip'); ?>
                                 </small>
                             </div>
-                            <div class="col-3">
+                            <div class="col-3 d-flex justify-content-end">
                                 <div class="toggle toggle-modern" id="admin_2fa_required" data-toggle-on="<?php echo isset($SETTINGS['admin_2fa_required']) && (int) $SETTINGS['admin_2fa_required'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="admin_2fa_required_input" value="<?php echo isset($SETTINGS['admin_2fa_required']) && (int) $SETTINGS['admin_2fa_required'] === 1 ? '1' : '0'; ?>">
                             </div>
                         </div>
@@ -171,7 +171,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <?php echo $lang->get('admin_2factors_authentication_setting_tip'); ?>
                                         </small>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-3 d-flex justify-content-end">
                                         <div class="toggle toggle-modern" id="google_authentication" data-toggle-on="<?php echo isset($SETTINGS['google_authentication']) && (int) $SETTINGS['google_authentication'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="google_authentication_input" value="<?php echo isset($SETTINGS['google_authentication']) && (int) $SETTINGS['google_authentication'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
@@ -183,7 +183,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <?php echo $lang->get('admin_ga_website_name_tip'); ?>
                                         </small>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-3 d-flex justify-content-end">
                                         <input type="text" class="form-control form-control-sm purify" data-field="label" id="ga_website_name" value="<?php echo isset($SETTINGS['ga_website_name']) === true ? $SETTINGS['ga_website_name'] : ''; ?>">
                                     </div>
                                 </div>
@@ -195,7 +195,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <?php echo $lang->get('ga_reset_by_user_tip'); ?>
                                         </small>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-3 d-flex justify-content-end">
                                         <div class="toggle toggle-modern" id="ga_reset_by_user" data-toggle-on="<?php echo isset($SETTINGS['ga_reset_by_user']) && (int) $SETTINGS['ga_reset_by_user'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="ga_reset_by_user_input" value="<?php echo isset($SETTINGS['ga_reset_by_user']) && (int) $SETTINGS['ga_reset_by_user'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>
@@ -213,7 +213,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <small><a href="<?php echo DUO_ADMIN_URL_INFO; ?>" target="_blank"><?php echo $lang->get('more_information'); ?></a></small>
                                         </div>
                                     </div>
-                                    <div class="col-3">
+                                    <div class="col-3 d-flex justify-content-end">
                                         <div class="toggle toggle-modern" id="duo" data-toggle-on="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? 'true' : 'false'; ?>"></div><input type="hidden" id="duo_input" value="<?php echo isset($SETTINGS['duo']) && (int) $SETTINGS['duo'] === 1 ? '1' : '0'; ?>">
                                     </div>
                                 </div>

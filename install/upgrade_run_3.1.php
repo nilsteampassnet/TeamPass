@@ -21,7 +21,7 @@
  * ---
  * @file      upgrade_run_3.1.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -702,19 +702,15 @@ if (intval($tmp) === 0) {
         'id'                     => TP_USER_ID,
         'login'                  => 'TP',
         'pw'                     => $encryptedUserPassword,
-        'groupes_visibles'       => '',
         'derniers'               => '',
         'key_tempo'              => '',
         'last_pw_change'         => '',
         'last_pw'                => '',
         'admin'                  => 1,
-        'fonction_id'            => '',
-        'groupes_interdits'      => '',
         'last_connexion'         => '',
-        'gestionnaire'           => 0,
-        'email'                  => '',
-        'favourites'             => '',
-        'latest_items'           => '',
+        'gestionnaire'           => 0,        
+        'email'                  => 'none',
+        'user_ip'                => 'none',
         'personal_folder'        => 0,
         'public_key'             => $userKeys['public_key'],
         'private_key'            => $userKeys['private_key'],

@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      utilities.database.js.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -117,7 +117,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'serverSide': true,
         'responsive': true,
         'stateSave': true,
-        'autoWidth': true,
+        'autoWidth': false,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=items_in_edition',
             /*data: function(d) {
@@ -145,7 +145,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             {
                 'width': '80px',
                 'targets': 0,
-                'render': function(data, type, row, meta) {
+                    'orderable': false,
+                    'searchable': false,
+                                    'render': function(data, type, row, meta) {
                     // Trashbox icon
                     return '<i class="far fa-trash-alt text-danger action" data-id="' + $(data).data('id') + '" data-type="item-edited"></i>';
                 }
@@ -182,7 +184,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'serverSide': true,
             'responsive': true,
             'stateSave': true,
-            'autoWidth': true,
+            'autoWidth': false,
             'ajax': {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=users_logged_in',
                 /*data: function(d) {
@@ -210,13 +212,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 {
                     'width': '80px',
                     'targets': 0,
-                    'render': function(data, type, row, meta) {
+                    'orderable': false,
+                    'searchable': false,
+                                        'render': function(data, type, row, meta) {
                         // Disconnect Icon
                         return '<i class="far fa-trash-alt text-danger action" data-id="' + $(data).data('id') + '" data-type="disconnect-user"></i>';
                     }
                 },
                 {
-                    // 0 = action, 1 = user, 2 = role, 3 = connected since
+                    // 0 = action, 1 = user, 2 = role, 3 = connected since, 4 = API
                     'targets': [1],
                     'render': function(data, type, row, meta) {
                         if (type !== 'display') {
@@ -225,8 +229,23 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         return decodeHtmlEntities(data);
                     }
                 }
-            ]
-        });
+                ,
+                {
+                    // 0 = action, 1 = user, 2 = role, 3 = connected since, 4 = API
+                    'targets': 4,
+                    'orderable': false,
+                    'searchable': false,
+                    'className': 'text-center',
+                    'width': '48px',
+                    'render': function(data, type, row, meta) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        const isApi = (data === 1 || data === '1' || data === true || data === 'true');
+                        return isApi ? '<i class="fas fa-circle text-success" title="API"></i>' : '';
+                    }
+                }
+            ]});
     }
 
     $(document).on('click', '.action', function() {

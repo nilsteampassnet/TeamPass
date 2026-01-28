@@ -9,7 +9,7 @@
  * @version   
  * @file      functions.js
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -914,4 +914,51 @@ function decodeFilename(encodedName) {
     } catch (e) {
         return encodedName; // If atob fails, return the original string
     }
+}
+
+/**
+ * Displays a generic confirmation modal and executes a callback on success.
+ * * @param {string} title Modal title
+ * @param {string} message Modal body message (HTML allowed)
+ * @param {function} confirmCallback Function to execute if user confirms
+ * @param {string} confirmLabel Label for the action button (default: Confirm)
+ * @param {string} cancelLabel Label for the action button (default: Cancel)
+ * @param {string} modalId The ID of the modal to use
+ * @return {void}
+ */
+function launchConfirmDialog(
+    title,
+    message,
+    confirmCallback,
+    confirmLabel = "",
+    cancelLabel = "",
+    modalId = "#warningModal" // Default TeamPass modal
+) {
+    // Prepare labels
+    const btnActionLabel = confirmLabel !== "" ? confirmLabel : $('#warningModalButtonAction').data('label-confirm');
+    const btnCloseLabel = cancelLabel !== "" ? cancelLabel : $('#warningModalButtonClose').data('label-cancel');
+
+    // Call your existing showModalDialogBox
+    showModalDialogBox(
+        modalId,
+        title,
+        message,
+        btnActionLabel,
+        btnCloseLabel,
+        false, // xlSize
+        true,  // warningModal (orange header)
+        true   // closeCross
+    );
+
+    // Attach the callback to the action button
+    // We use .off() to ensure we don't stack events from previous calls
+    $(modalId + 'ButtonAction').off('click').on('click', function() {
+        // Execute the passed function
+        if (typeof confirmCallback === "function") {
+            confirmCallback();
+        }
+        
+        // Close the modal
+        $(modalId).modal('hide');
+    });
 }

@@ -21,7 +21,7 @@
  * ---
  * @file      UserHandlerTrait.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -577,7 +577,6 @@ trait UserHandlerTrait {
                 'TEAMPASS - ' . $lang->get('login_credentials'),
                 (array) filter_var_array(
                     [
-                        '#code#' => cryption($arguments['new_user_code'], '','decrypt', $this->settings)['string'],
                         '#lastname#' => isset($userInfo['name']) === true ? $userInfo['name'] : '',
                         '#login#' => isset($userInfo['login']) === true ? $userInfo['login'] : '',
                     ],

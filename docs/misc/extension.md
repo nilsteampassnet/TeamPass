@@ -4,6 +4,8 @@ Official extension for Chrome, Firefox, and Edge browsers enabling seamless inte
 
 ⚠️ **Note**: Currently in testing phase.
 
+**Written for version**: 1.4.24
+
 ---
 
 ## 📋 Features
@@ -18,6 +20,7 @@ The Teampass extension currently offers the following features:
 - ✨ **Auto-fill**: Login form completion
 - 👁️ **Details view**: Complete information display with password show/hide
 - 🎲 **Integrated password generator**: Generate passwords based upon criteria
+- 🧠 **Henerated passwords history**: Store last generated passwords
 
 #### Complete CRUD Operations
 - ➕ **Create**: Add new credentials directly from the extension
@@ -42,17 +45,17 @@ The Teampass extension currently offers the following features:
 - 🎨 **Modern interface**: Clean and minimalist design with Font Awesome
 - 🔔 **Toast notifications**: Non-intrusive visual feedback
 - 📊 **Counter badge**: Number of available credentials for current site
+- 🌍 **Multilingual support** (English, French, German, Spanish)
 
 #### License Verification
 - 🔍 **Automatic validation**: Verification with Teampass license server
-- ⏳ **Grace period**: In case of license server unavailability
+- ⏳ **Grace period**: Resilience in case of license server unavailability
 - 🎯 **Status indicator**: Colored badge (🟢 valid, 🔴 invalid, 🟠 not verified)
 
 ### 🚧 Coming Soon
 
 The following features are planned for upcoming releases:
 
-- 🌍 **Multilingual support** (French, German, Spanish)
 - ⌨️ **Customizable keyboard shortcuts**
 - ⭐ **Favorites** for quick access
 - 🔍 **Global search** (not just by URL)
@@ -64,45 +67,79 @@ The following features are planned for upcoming releases:
 
 ### Prerequisites
 
-- **Teampass 3.1.5.15 minimum installed and configured
+- **Teampass 3.1.5.23 minimum** installed and configured
 - **API enabled** in Teampass settings
 - **HTTPS connection** (required for security)
 - **Valid API key** generated in Teampass
 - **Compatible browser**: Chrome 88+, Edge 88+, or Firefox 89+
 
+### For Administrators
+
+> 🎫 **Commercial License Required** - Use of this extension requires a valid commercial license. To obtain a license and register your instance, please contact nils@teampass.net.
+
+Before users can install and use the browser extension, administrators must configure the server-side settings in Teampass.
+
+#### Server Configuration
+
+1. **Navigate to API Settings**:
+   - Log in to Teampass as an administrator
+   - Go to **Settings → API**
+   - Click on the **"Browser extension"** tab
+
+2. **Configure FQDN** (Fully Qualified Domain Name):
+   - This is the unique address of your TeamPass server (e.g., `mypasswords.com` or `localhost/TeamPass`)
+   - The FQDN allows the extension to identify the license owner
+   - Enter your server's FQDN in the corresponding field
+
+3. **Generate Browser Extension Key**:
+   - Click the **generate** button (🔄) to create a new extension key
+   - This key acts as a unique and private authentication token
+   - It ensures that only valid users are authorized to query your FQDN license
+   - **Copy** the generated key using the copy button (📋)
+
+#### Security Guidelines
+
+⚠️ **Important Security Notes**:
+- **Never share your extension key publicly**
+- Only share the key with authorized browser extension users
+- If you suspect your connection has been compromised, generate a new key immediately
+- Generating a new key will instantly reset all extensions' access
+- After generating a new key, update the license server by contacting: nils@teampass.net
+
+#### Interface Description
+
+The "Browser extension" tab provides:
+- **FQDN field**: Display and configure your server's fully qualified domain name
+- **Extension Key field**: Display the current key (disabled for editing)
+- **Copy button**: Quickly copy the key to clipboard
+- **Generate button**: Create a new extension key
+
+This interface establishes a secure link between browsers and your TeamPass instance, which is **mandatory** for the extension to communicate with the API in a fluid and protected manner.
+
+---
+
 ### Installation Steps
 
 #### For Google Chrome
 
-1. **Download** the extension ZIP file from the Teampass releases page
-2. **Extract** the ZIP contents to a folder of your choice
-3. **Open Chrome** and navigate to: `chrome://extensions/`
-4. **Enable** "Developer mode" (upper right corner)
-5. **Click** on "Load unpacked"
-6. **Select** the extracted folder
-7. ✅ Extension is installed!
+The easiest way to install the extension is via the Chrome Web Store:
+1. Go to the [Teampass Extension page](https://chromewebstore.google.com/detail/cnlomomlocpdfojipnpkhhndpdbcolfn?utm_source=item-share-cb).
+2. Click on "Add to Chrome".
+3. Confirm the installation in the pop-up window.
 
 #### For Microsoft Edge
 
-1. **Download** and **extract** the ZIP file
-2. **Install Font Awesome** (see Chrome step 3 above)
-3. **Open Edge** and navigate to: `edge://extensions/`
-4. **Enable** "Developer mode" (lower left corner)
-5. **Click** on "Load unpacked"
-6. **Select** the extracted folder
-7. ✅ Extension is installed!
+The easiest way to install the extension is via the Edge Web Store:
+1. Go to the [Teampass Extension page](https://microsoftedge.microsoft.com/addons/detail/teampass-password-manager/adgkighfbpgjgoldhcdjjjhceicdemem).
+2. Click on "Add to Edge".
+3. Confirm the installation in the pop-up window.
 
 #### For Mozilla Firefox
 
-1. **Download** and **extract** the ZIP file
-2. **Install Font Awesome** (see Chrome step 3 above)
-3. **Open Firefox** and navigate to: `about:debugging#/runtime/this-firefox`
-4. **Click** on "Load Temporary Add-on..."
-5. **Navigate** to the extracted folder and select the `manifest.json` file
-6. ✅ Extension is installed!
-
-⚠️ **Firefox Note**: The extension will be uninstalled on browser restart in developer mode. After a test period, the extension will be signed by Mozilla or installed from their official store.
-
+The easiest way to install the extension is via the Firefox Add-ons store:
+1. Go to the [Teampass Extension page](https://addons.mozilla.org/fr/firefox/addon/teampass-password-manager/).
+2. Click on "Add to Firefox".
+3. Confirm the installation in the pop-up window.
 
 ### Initial Configuration
 
@@ -115,7 +152,7 @@ After installation:
    - **Instance FQDN**: Fully qualified domain name of your instance
    - **Username**: Your Teampass username
    - **Password**: Your Teampass password
-   - **API Key**: Key generated in Teampass (My Profile → API)
+   - **API Key**: Key generated in Teampass (Settings → API)
 3. **Click** on "Save Configuration"
 4. **Click** on "Force Re-authentication" to test the connection
 5. ✅ All indicators should be green
@@ -126,7 +163,7 @@ After installation:
 
 ### General Principle
 
-Starting from version 1.1.0, the Teampass extension verifies the validity of your license with the official license server.
+The Teampass extension verifies the validity of your license with the official license server.
 
 ### How Verification Works
 
@@ -162,7 +199,7 @@ The license server can return different response codes:
 
 #### Principle
 
-To avoid blocking users in case of temporary license server outage, the extension includes a **grace period**.
+To avoid blocking users in case of temporary license server outage, the extension includes a grace period.
 
 #### Activation Conditions
 
@@ -177,23 +214,11 @@ The grace period is activated only in these cases:
 - ❌ Invalid license (400)
 - ❌ User limit exceeded (429)
 
-#### Duration and Behavior
+#### Behavior
 
 - **Counter**: Starts from the last successful verification
 - **Expiration**: After a period without successful verification, access is blocked
 - **Reset**: As soon as a verification succeeds, the counter is reset to zero
-
-#### Storage
-
-License information is stored locally in the browser:
-
-```javascript
-{
-  status: 'VALID' | 'INVALID' | 'EXPIRED' | 'LIMIT_EXCEEDED' | 'NOT_VERIFIED',
-  lastSuccessTimestamp: 1702542000000, // Last successful verification timestamp
-  graceExpiryTimestamp: 1702974000000  // Grace period expiry timestamp
-}
-```
 
 ### Visual Indicators
 

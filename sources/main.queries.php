@@ -24,7 +24,7 @@ declare(strict_types=1);
  * ---
  * @file      main.queries.php
  * @author    Nils Laumaillé (nils@teampass.net)
- * @copyright 2009-2025 Teampass.net
+ * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
  * @see       https://www.teampass.net
  */
@@ -957,6 +957,29 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
             );
 
             return '[{"token" : "' . $token . '"}]';
+        
+
+        /*
+         * Generates a TOKEN
+         */
+        case 'generate_token'://action_system
+            $token = GenerateCryptKey(
+                null !== filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) ? (int) filter_input(INPUT_POST, 'size', FILTER_SANITIZE_NUMBER_INT) : 20,
+                null !== filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'secure', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'numeric', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'capital', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'symbols', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false,
+                null !== filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ? filter_input(INPUT_POST, 'lowercase', FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : false
+            );
+
+            return prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                    'token' => $token,
+                ),
+                'encode'
+            );
 
         /*
         * Default case
@@ -1934,7 +1957,7 @@ function changePrivateKeyEncryptionPassword(
     $session = SessionManager::getSession();
     // Load user's language
     $lang = new Language($session->get('user-language') ?? 'english');
-    error_log($post_current_code." -- ".$post_new_code);
+    //error_log($post_current_code." -- ".$post_new_code);
     if (empty($post_new_code) === true) {
         // no user password
         return prepareExchangedData(
@@ -3344,10 +3367,10 @@ function changeUserLDAPAuthenticationPassword(
                 }
                 // Get one itemKey from current user
                 $currentUserKey = DB::queryFirstRow(
-                    'SELECT ski.share_key, ski.increment_id, l.id_user
+                    'SELECT ski.share_key, ski.increment_id
                     FROM ' . prefixTable('sharekeys_items') . ' AS ski
-                    INNER JOIN ' . prefixTable('log_items') . ' AS l ON ski.object_id = l.id_item
-                    WHERE ski.user_id = %i
+                    INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = ski.object_id
+                    WHERE ski.user_id = %i AND ski.share_key != ""
                     ORDER BY RAND()
                     LIMIT 1',
                     $post_user_id
@@ -3504,10 +3527,9 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
         if ($privateKey !== null) {
             // Select one personal item share_key to test decryption
             $currentUserItemKey = DB::queryFirstRow(
-                'SELECT si.share_key, si.increment_id, l.id_user, i.perso
+                'SELECT si.share_key, si.increment_id, i.perso
                 FROM ' . prefixTable('sharekeys_items') . ' AS si
-                INNER JOIN ' . prefixTable('log_items') . ' AS l ON si.object_id = l.id_item
-                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = l.id_item
+                INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = si.object_id
                 WHERE si.user_id = %i AND i.perso = 1 AND si.share_key != ""
                 ORDER BY RAND()
                 LIMIT 1',
