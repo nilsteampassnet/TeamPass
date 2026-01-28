@@ -2277,8 +2277,8 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Generate RSA key pair using CryptoManager (phpseclib v3)
     $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
 
-    // Encrypt the private key with user password using AES
-    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
+    // Encrypt the private key with user password using AES (SHA-256 for v3)
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd, 'cbc', 'sha256');
 
     $result = [
         'private_key' => base64_encode($privatekey),
@@ -2293,8 +2293,8 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Derive backup encryption key
     $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
-    // Encrypt private key with derived key (backup)
-    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey);
+    // Encrypt private key with derived key (backup, SHA-256 for v3)
+    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey, 'cbc', 'sha256');
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
@@ -2324,12 +2324,13 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 
     if (empty($userPwd) === false) {
         try {
-            // Decrypt using CryptoManager (phpseclib v3)
-            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            // Decrypt using CryptoManager with version detection (tries SHA-256 then SHA-1)
+            $result = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
                 base64_decode($userPrivateKey),
-                $userPwd
+                $userPwd,
+                'cbc'
             );
-            return base64_encode((string) $decrypted);
+            return base64_encode((string) $result['data']);
         } catch (Exception $e) {
             // Log error for debugging
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -2359,10 +2360,12 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 
     if (empty($userPwd) === false) {
         try {
-            // Encrypt using CryptoManager (phpseclib v3)
+            // Encrypt using CryptoManager (phpseclib v3, SHA-256)
             $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
-                $userPwd
+                $userPwd,
+                'cbc',
+                'sha256'
             );
             return base64_encode($encrypted);
         } catch (Exception $e) {
@@ -2679,19 +2682,23 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
         );
 
         // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
-        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+        // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
+        $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
             base64_decode($userInfo['private_key_backup']),
-            $derivedKey
+            $derivedKey,
+            'cbc'
         );
-        $privateKeyClear = base64_encode($decrypted);
+        $privateKeyClear = base64_encode($decryptResult['data']);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
-        // Re-encrypt backup with derived key (refresh)
+        // Re-encrypt backup with derived key (SHA-256 for v3)
         $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
             base64_decode($privateKeyClear),
-            $derivedKey
+            $derivedKey,
+            'cbc',
+            'sha256'
         );
         $newPrivateKeyBackup = base64_encode($encrypted);
         
@@ -2724,6 +2731,7 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
         return [
             'success' => true,
             'error' => '',
+            'private_key_clear' => $privateKeyClear,
         ];
 
     } catch (Exception $e) {
