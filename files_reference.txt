@@ -135,7 +135,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php ec67b59cb6ff99f67744945338763910
+includes/config/include.php d8514198c91ba54010c09ad4d3c11f5e
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 982e9b523a6656b51690f070a2489d26
@@ -343,7 +343,7 @@ includes/libraries/phpseclibV1_autoload.php d0d8ded8df165929b976d57a29929d5a
 includes/libraries/teampassclasses/configmanager/composer.json 533c20145e8d86add1bf2c244a49ba2d
 includes/libraries/teampassclasses/configmanager/src/ConfigManager.php 875909e08455ab80cd11ffcd59977012
 includes/libraries/teampassclasses/cryptomanager/composer.json c15ff2d53af0c1fdd00b79ee8a2a9842
-includes/libraries/teampassclasses/cryptomanager/src/CryptoManager.php f001d908d764151e2fcf38b86b81844f
+includes/libraries/teampassclasses/cryptomanager/src/CryptoManager.php 945ae28fcea73ecf3e140ac65fd812aa
 includes/libraries/teampassclasses/emailservice/composer.json 6ceed16528ad8e81851db32c9d8f9a5f
 includes/libraries/teampassclasses/emailservice/src/EmailService.php 7b387a45c8d20125c8acafda686fb26e
 includes/libraries/teampassclasses/emailservice/src/EmailSettings.php 46bf016f82139a5ba70af2a22bd136aa
@@ -405,7 +405,7 @@ install/images/information-white.png 93bd0553f036b6555cea5f65fbd7a944
 install/images/minus-circle.png 1764d2e728759d84f558455afd1305a8
 install/images/tick-circle.png e5fef4280f78af4b3f50c8cc96dc3151
 install/images/tick.png 9c16ecd780078250afaf9069352b5a17
-install/install-steps/install.functions.php 3b2961951dc9db1523ba78f04e2f6a1b
+install/install-steps/install.functions.php ffbc8ef52ff0a4673d9ec684758dbb44
 install/install-steps/install.js 9c76ac29aa0b0775a3139d190d00bc75
 install/install-steps/run.step1.php 8b1ba5c686fc0552aede791d76253488
 install/install-steps/run.step2.php 8c73cf8ddc2e4188464cab21bd7d7eef
@@ -450,7 +450,7 @@ pages/2fa.js.php 3670ac5d29ce7573d0f547607f9a42e6
 pages/2fa.php 2ca8f061e935a391b6bd64e615cb9637
 pages/admin.js.php 74aae656cf022685c5a4d624b2627247
 pages/admin.js.php.backup 3809a2c0fe637e7aea873fce872323b8
-pages/admin.php be87beec07f481f9e93c84106d7060c2
+pages/admin.php cb871afeeccd9fdf13cf3739d64f016e
 pages/admin.php.backup 1b173c701d80af30aafd286e2e6cfec8
 pages/api.js.php 2ba8741a05b2538702debc7e9761d963
 pages/api.php c3ea13f2b7fc2372035267f42c1e3c0f
@@ -3765,14 +3765,14 @@ sources/fields.queries.php 65fa7383fe3a0714e0620cc6b7ab3a2d
 sources/find.queries.php 273b62c3990e09f78293b3ed88ac6e57
 sources/folders.class.php 7562079251a5ed25d65a9e7a043b7648
 sources/folders.queries.php 602aed52c12deefc5b97b3b654dc26b7
-sources/identify.php 45de2a4e6eb06b70a727935b64a09d22
+sources/identify.php 091ce26d6d63f8047969023ada8104c0
 sources/import.queries.php 905b79cbb0a248fc696a0444789231f4
 sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 sources/items.logs.php e35ec78cc5888411563d16bf781cbb48
 sources/items.queries.php 08a8b26be0a9641177a896e0a0bf1218
 sources/ldap.queries.php c8df58059007855e5191a566d89acdf4
-sources/logs.datatables.php a53da153cc7c4ed89c3325749fb1d38e
-sources/main.functions.php db57b0b7b95f1222885ca0277d2bd8eb
+sources/logs.datatables.php 38b71853b0b89323151730906633b891
+sources/main.functions.php 0c5b625f849bf96092a706fcb733b920
 sources/main.queries.php bb963784c25bb7dff0616514ea81fee8
 sources/oauth.php 993e612416ad6b4b5c10b64958ab3725
 sources/phpseclibv3_migration.queries.php 9da371c5ab6849c541bd95633071e360
@@ -3785,7 +3785,7 @@ sources/upload.attachments.php e7ec9f2f04710b07a86c808fa287ef2e
 sources/upload.files.php 7ff70e44f19123b7b10b64e4640fd8df
 sources/users.datatable.php e0a97ce395965dbd2447e319aeab9bea
 sources/users.logs.datatable.php 9c97fa077823190f6442b97d751eebda
-sources/users.queries.php 06c3056386632ade2739b581ea7dd60a
+sources/users.queries.php 5e5a9ef5e666d2136aa06110a53d50d1
 sources/utilities.queries.php 6e5438b3af57fedd6bbd23be61300e7f
 sources/utils.queries.php 1cccfc2a9e41ff9a1012f3865b8a78cb
 teampass-docker-start.sh 5087e0acc3d19e48f996af7e620e21b2
@@ -8269,7 +8269,7 @@ vendor/symfony/var-exporter/composer.json b3afc7ff0a5b726391fa89173541ba37
 vendor/teampassclasses/configmanager/composer.json 533c20145e8d86add1bf2c244a49ba2d
 vendor/teampassclasses/configmanager/src/ConfigManager.php 875909e08455ab80cd11ffcd59977012
 vendor/teampassclasses/cryptomanager/composer.json c15ff2d53af0c1fdd00b79ee8a2a9842
-vendor/teampassclasses/cryptomanager/src/CryptoManager.php f001d908d764151e2fcf38b86b81844f
+vendor/teampassclasses/cryptomanager/src/CryptoManager.php 945ae28fcea73ecf3e140ac65fd812aa
 vendor/teampassclasses/emailservice/composer.json 6ceed16528ad8e81851db32c9d8f9a5f
 vendor/teampassclasses/emailservice/src/EmailService.php 7b387a45c8d20125c8acafda686fb26e
 vendor/teampassclasses/emailservice/src/EmailSettings.php 46bf016f82139a5ba70af2a22bd136aa
