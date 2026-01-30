@@ -381,11 +381,11 @@ switch ($inputData['type']) {
             // Insert in batch
             $batchInsert[] = array(
                 'label'        => $label,
-                'description'  => $comment . $comments,
-                'pwd'          => $pwd,
-                'url'          => $url,
-                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
-                'login'        => $login,
+                'description'  => $comment . (isset($comments) ? $comments : ''),
+                'pwd'          => isset($pwd) ? $pwd : '',
+                'url'          => isset($url) ? $url : '',
+                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? (isset($folder) ? $folder : '') : '',
+                'login'        => isset($login) ? $login : '',
                 'operation_id' => $post_operation_id,
             );
 

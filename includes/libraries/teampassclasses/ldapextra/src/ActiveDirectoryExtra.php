@@ -59,8 +59,8 @@ class ActiveDirectoryExtra extends BaseGroup
                 : 'gidnumber'
         );
 
-        // Always select CN and the chosen GUID attribute for the LDAP query
-        $selectAttrs = ['cn', $guidAttr];
+        // Always select CN, the chosen GUID attribute, and member attributes for group membership mapping
+        $selectAttrs = ['cn', $guidAttr, 'member', 'uniquemember', 'memberuid'];
         $query->select($selectAttrs);
 
         foreach (static::$objectClasses as $objectClass) {
@@ -100,6 +100,7 @@ class ActiveDirectoryExtra extends BaseGroup
                     'role_id' => -1,
                     'id' => -1,
                     'role_title' => '',
+                    'members' => $this->extractGroupMembers($group),
                 ];
             }
 
@@ -117,6 +118,46 @@ class ActiveDirectoryExtra extends BaseGroup
         }
     }
 
+    /**
+     * Extract group members from LDAP group entry
+     * Handles Active Directory member attribute and also posixGroup/groupOfNames for compatibility
+     *
+     * @param array $group The LDAP group entry
+     * @return array Array of members with type (uid or dn) and value
+     */
+    private function extractGroupMembers(array $group): array
+    {
+        $members = [];
+
+        // Active Directory and groupOfNames: member contains DN of members
+        if (isset($group['member']) === true) {
+            foreach ($group['member'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'dn', 'value' => $member];
+                }
+            }
+        }
+
+        // groupOfUniqueNames: uniqueMember contains DN of members
+        if (isset($group['uniquemember']) === true) {
+            foreach ($group['uniquemember'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'dn', 'value' => $member];
+                }
+            }
+        }
+
+        // posixGroup: memberUid contains uid/login of members
+        if (isset($group['memberuid']) === true) {
+            foreach ($group['memberuid'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'uid', 'value' => $member];
+                }
+            }
+        }
+
+        return $members;
+    }
 
     function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
     {
