@@ -409,7 +409,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 ?>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fa-solid fa-hand text-warning"></i>
-                                                Sharekeys Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
+                                                <?php echo $lang->get('sharekeys_encryption_migration_required'); ?>
+                                                <span class="badge badge-warning">
+                                                    <?php echo DB::count(); ?> <?php echo $lang->get('sharekeys_remaining_users'); ?>
+                                                </span>
                                                 </span>
                                                 <span>
                                                     <i class="fa-solid fa-info-circle text-primary open-info" 
