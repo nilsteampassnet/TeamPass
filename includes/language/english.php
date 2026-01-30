@@ -29,6 +29,8 @@
  */
 
 return array(
+    'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
+    'learn_more' => 'Learn more',
     'phpseclibv3_migration_title' => 'Encryption Migration in Progress',
     'phpseclibv3_migration_info_title' => 'Security Enhancement',
     'phpseclibv3_migration_info_text' => 'Your encrypted data is being migrated to a more secure encryption standard (phpseclib v3 with SHA-256). This process runs in the background and will complete automatically. Please do not close this window.',
@@ -1578,4 +1580,6 @@ return array(
     'recycled_bin_folder_contains_items' => 'Contains %s deleted items (restore the folder to recover them)',
     'sharekeys_encryption_migration_required' => 'Sharekeys Encryption Migration Required',
     'sharekeys_remaining_users' => 'remaining user(s)',
+    'recycled_bin_folder_contains_items' => 'Contains %s deleted items (restore the folder to recover them)',
+    'recycled_bin_items_filtered' => 'Items whose parent folder was deleted are not listed here. Restore the folder(s) above to recover them.',
 );
