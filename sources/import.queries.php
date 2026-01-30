@@ -391,11 +391,15 @@ switch ($inputData['type']) {
 
             // Store unique folders
             // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-            $folders = preg_split('/[\/\\\\]/', $folder);
-            foreach ($folders as $folder) {
-                if (!empty($folder)) {
-                    $uniqueFolders[$folder] = $folder;
+            if (isset($folder)) {
+                $folders = preg_split('/[\/\\\\]/', $folder);
+                foreach ($folders as $folder) {
+                    if (!empty($folder)) {
+                        $uniqueFolders[$folder] = $folder;
+                    }
                 }
+            } else {
+                $uniqueFolders = [];
             }
         }
 
