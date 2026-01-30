@@ -771,15 +771,37 @@ if (null !== $post_type) {
                         if ($thisSubFolders->parent_id >= 0
                             && $thisSubFolders->title !== $session->get('user-id')
                         ) {
-                            //Store the deleted folder (recycled bin)
+                            // Store the deleted folder (recycled bin)
+                            // Use JSON format to avoid issues with commas in titles and to preserve folder properties.
+                            $folderDeletedData = array(
+                                'id' => (int) $thisSubFolders->id,
+                                'parent_id' => (int) $thisSubFolders->parent_id,
+                                'title' => (string) $thisSubFolders->title,
+                                'nleft' => (int) $thisSubFolders->nleft,
+                                'nright' => (int) $thisSubFolders->nright,
+                                'nlevel' => (int) $thisSubFolders->nlevel,
+                                'bloquer_creation' => (int) ($thisSubFolders->bloquer_creation ?? 0),
+                                'bloquer_modification' => (int) ($thisSubFolders->bloquer_modification ?? 0),
+                                'personal_folder' => (int) ($thisSubFolders->personal_folder ?? 0),
+                                'renewal_period' => (int) ($thisSubFolders->renewal_period ?? 0),
+                                'categories' => (string) ($thisSubFolders->categories ?? ''),
+                            );
+                            if (isset($thisSubFolders->fa_icon) === true) {
+                                $folderDeletedData['fa_icon'] = (string) $thisSubFolders->fa_icon;
+                            }
+                            if (isset($thisSubFolders->fa_icon_selected) === true) {
+                                $folderDeletedData['fa_icon_selected'] = (string) $thisSubFolders->fa_icon_selected;
+                            }
+                            if (isset($thisSubFolders->is_template) === true) {
+                                $folderDeletedData['is_template'] = (int) $thisSubFolders->is_template;
+                            }
+
                             DB::insert(
                                 prefixTable('misc'),
                                 array(
                                     'type' => 'folder_deleted',
-                                    'intitule' => 'f' . $thisSubFolders->id,
-                                    'valeur' => $thisSubFolders->id . ', ' . $thisSubFolders->parent_id . ', ' .
-                                        $thisSubFolders->title . ', ' . $thisSubFolders->nleft . ', ' . $thisSubFolders->nright . ', ' .
-                                        $thisSubFolders->nlevel . ', 0, 0, 0, 0',
+                                    'intitule' => 'f' . (int) $thisSubFolders->id,
+                                    'valeur' => json_encode($folderDeletedData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
                                     'created_at' => time(),
                                 )
                             );
@@ -797,6 +819,7 @@ if (null !== $post_type) {
                                     prefixTable('items'),
                                     array(
                                         'inactif' => '1',
+                                        'deleted_at' => time(),
                                     ),
                                     'id = %i',
                                     $item['id']
