@@ -1581,5 +1581,6 @@ return array(
     'sharekeys_encryption_migration_required' => 'Sharekeys Encryption Migration Required',
     'sharekeys_remaining_users' => 'remaining user(s)',
     'recycled_bin_folder_contains_items' => 'Contains %s deleted items (restore the folder to recover them)',
-    'recycled_bin_items_filtered' => 'Items whose parent folder was deleted are not listed here. Restore the folder(s) above to recover them.',
+    'sharekeys_encryption_migration_required' => 'Sharekeys Encryption Migration Required',
+    'sharekeys_remaining_users' => 'remaining user(s)',
 );
