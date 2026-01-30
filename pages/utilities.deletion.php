@@ -37,7 +37,12 @@ use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
-require_once __DIR__.'/../sources/main.functions.php';
+$mainFunctionsPath = __DIR__ . '/../sources/main.functions.php';
+if (file_exists($mainFunctionsPath) === false) {
+    // Fallback when file is located in includes/libraries
+    $mainFunctionsPath = __DIR__ . '/../../sources/main.functions.php';
+}
+require_once $mainFunctionsPath;
 
 // init
 loadClasses('DB');
