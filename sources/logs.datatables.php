@@ -187,15 +187,15 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sourceLabel = $isApi ? 'API/Extension' : 'Web';
         $sOutput .= '"'.htmlspecialchars($sourceLabel, ENT_QUOTES).'", ';
         //col4
+        $record = secureOutput($record, ['login', 'name', 'lastname', 'who']);
         if (!empty($record['login'])) {
             $fullname = trim(
-                htmlspecialchars(stripslashes((string) ($record['name'] ?? '')), ENT_QUOTES) . ' ' .
-                htmlspecialchars(stripslashes((string) ($record['lastname'] ?? '')), ENT_QUOTES)
+                (string) ($record['name'] ?? '') . ' ' .
+                (string) ($record['lastname'] ?? '')
             );
-            $loginShown = htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES);
-            $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $loginShown . ']"';
+            $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $record['login'] . ']"';
         } else {
-            $sOutput .= '"IP: ' . htmlspecialchars((string) $record['who'], ENT_QUOTES) . '"';
+            $sOutput .= '"IP: ' . (string) $record['who'] . '"';
         }
         //Finish the line
         $sOutput .= '],';
@@ -263,13 +263,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label']).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'"';
+        $sOutput .= '"'.(string) $record['login'].'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -336,13 +337,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= '"'.trim((string) $record['label']).'", ';
         //col3
-        $sOutput .= '"'.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).'"';
+        $sOutput .= '"'.trim((string) $record['login']).'"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -406,12 +408,13 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['login', 'label']);
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput_item .= '"'.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).'", ';
+        $sOutput_item .= '"'.(string) $record['login'].'", ';
         //col3
         if ($record['label'] === 'at_user_added') {
             $cell = $lang->get('user_creation');
@@ -421,7 +424,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $cell = $lang->get('user_updated');
         } elseif (strpos($record['label'], 'at_user_email_changed') !== false) {
             $change = explode(':', $record['label']);
-            $cell = $lang->get('log_user_email_changed').' '.$change[1];
+            $cell = $lang->get('log_user_email_changed').' '.secureOutput($change[1]);
         } elseif ($record['label'] === 'at_user_new_keys') {
             $cell = $lang->get('new_keys_generated');
         } elseif ($record['label'] === 'at_user_keys_download') {
@@ -429,7 +432,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
             $cell = $lang->get('mfa_code_send_by_email');
         } else {
-            $cell = htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES);
+            $cell = (string) $record['label'];
         }
         $sOutput_item .= '"'.$cell.'" ';
         //col4
@@ -441,7 +444,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                     WHERE u.id = %i',
                     $record['field_1']
             );
-            $sOutput_item .= ', "'.(empty($info['name']) === false ? htmlspecialchars(stripslashes((string) $info['name'].' '.$info['lastname']), ENT_QUOTES) : 'Removed user ('.$record['field_1'].')').'" ';
+            $info = secureOutput($info ?? [], ['name', 'lastname']);
+            $sOutput_item .= ', "'.(empty($info['name']) === false ? (string) $info['name'].' '.$info['lastname'] : 'Removed user ('.$record['field_1'].')').'" ';
         } else {
             $sOutput_item .= ', "" ';
         }
@@ -510,31 +514,32 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
     $sOutput .= '"aaData": [ ';
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['label', 'folder', 'name', 'lastname', 'login']);
         $get_item_in_list = true;
         $sOutput_item = '[';
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col3
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['id']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim((string) $record['id']).'", ';
         //col3
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim((string) $record['label']).'", ';
         //col2
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['folder']), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.trim((string) $record['folder']).'", ';
         //col2
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES)).' '.trim(htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES)).' ['.trim(htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES)).']", ';
+        $sOutput_item .= '"'.trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']", ';
         //col6
-        $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get($record['action'])), ENT_QUOTES)).'", ';
+        $sOutput_item .= '"'.secureOutput($lang->get($record['action'])).'", ';
         //col7 (API / Extension)
         if (isset($record['raison']) && strpos((string) $record['raison'], 'tp_src=api') !== false) {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'", ';
+            $sOutput_item .= '"'.secureOutput($lang->get('yes')).'", ';
         } else {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'", ';
+            $sOutput_item .= '"'.secureOutput($lang->get('no')).'", ';
         }
         //col8 (Personal folder)
         if ((int) ($record['personal_folder'] ?? 0) === 1) {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('yes')), ENT_QUOTES)).'"';
+            $sOutput_item .= '"'.secureOutput($lang->get('yes')).'"';
         } else {
-            $sOutput_item .= '"'.trim(htmlspecialchars(stripslashes($lang->get('no')), ENT_QUOTES)).'"';
+            $sOutput_item .= '"'.secureOutput($lang->get('no')).'"';
         }
 
         //Finish the line
@@ -678,13 +683,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['name', 'lastname', 'login']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']"';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -747,6 +753,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['name', 'lastname', 'login', 'label']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-id=\"'.$record['item_id'].'\">", ';
@@ -756,9 +763,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m'.'", ';
         //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
         //col5 - TAGS
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES).' ['.$record['item_id'].']"';
+        $sOutput .= '"'.(string) $record['label'].' ['.$record['item_id'].']"';
         //Finish the line
         $sOutput .= '],';
     }
@@ -798,10 +805,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $subclause2 = $sWhere->addClause('OR');
     $subclause2->add('u.session_end >= %i', time());
     $subclause2->add(
-        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls WHERE ls.qui = u.id AND ls.type = %s AND ls.label = %s AND ls.date >= %i)',
+        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls
+            WHERE ls.qui = u.id
+                AND ls.label = %s
+                AND ls.date >= %i
+                AND (
+                    (ls.type = %s)
+                    OR (ls.type = %s AND ls.field_1 LIKE %s)
+                )
+        )',
+        'user_connection',
+        $apiConnectedAfter,
         'api',
         'user_connection',
-        $apiConnectedAfter
+        '%tp_src=api%'
     );
 
     // Get the total number of records - use alias 'u'
@@ -819,16 +836,19 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     LEFT JOIN (
         SELECT qui, MAX(date) as last_api_date
         FROM '.prefixTable('log_system').'
-        WHERE type = %s
-            AND label = %s
+        WHERE label = %s
             AND date >= %i
+            AND (
+                (type = %s)
+                OR (type = %s AND field_1 LIKE %s)
+            )
         GROUP BY qui
     ) api_conn ON api_conn.qui = u.id
     WHERE %l
     ORDER BY %l %l
     LIMIT %i, %i';
 
-    $params = ['api', 'user_connection', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $params = ['user_connection', $apiConnectedAfter, 'api', 'user_connection', '%tp_src=api%', $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
@@ -844,11 +864,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
+        $record = secureOutput($record, ['name', 'lastname', 'login']);
         $sOutput .= '[';
         //col1
         $sOutput .= '"<span data-id=\"'.$record['id'].'\">", ';
         //col2
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['name']), ENT_QUOTES).' '.htmlspecialchars(stripslashes((string) $record['lastname']), ENT_QUOTES).' ['.htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES).']", ';
+        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
         //col3
         if ($record['admin'] === '1') {
             $user_role = $lang->get('god');

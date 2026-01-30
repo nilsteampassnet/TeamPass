@@ -50,6 +50,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
+use Symfony\Component\Process\Process;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -2277,8 +2278,8 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Generate RSA key pair using CryptoManager (phpseclib v3)
     $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
 
-    // Encrypt the private key with user password using AES
-    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
+    // Encrypt the private key with user password using AES (SHA-256 for v3)
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd, 'cbc', 'sha256');
 
     $result = [
         'private_key' => base64_encode($privatekey),
@@ -2293,8 +2294,8 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
     // Derive backup encryption key
     $derivedKey = deriveBackupKey($userSeed, $result['public_key'], $SETTINGS);
 
-    // Encrypt private key with derived key (backup)
-    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey);
+    // Encrypt private key with derived key (backup, SHA-256 for v3)
+    $privatekeyBackup = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $derivedKey, 'cbc', 'sha256');
 
     // Generate integrity hash
     $serverSecret = getServerSecret();
@@ -2324,12 +2325,13 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 
     if (empty($userPwd) === false) {
         try {
-            // Decrypt using CryptoManager (phpseclib v3)
-            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            // Decrypt using CryptoManager with version detection (tries SHA-256 then SHA-1)
+            $result = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
                 base64_decode($userPrivateKey),
-                $userPwd
+                $userPwd,
+                'cbc'
             );
-            return base64_encode((string) $decrypted);
+            return base64_encode((string) $result['data']);
         } catch (Exception $e) {
             // Log error for debugging
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -2359,10 +2361,12 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 
     if (empty($userPwd) === false) {
         try {
-            // Encrypt using CryptoManager (phpseclib v3)
+            // Encrypt using CryptoManager (phpseclib v3, SHA-256)
             $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
-                $userPwd
+                $userPwd,
+                'cbc',
+                'sha256'
             );
             return base64_encode($encrypted);
         } catch (Exception $e) {
@@ -2679,19 +2683,23 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
         );
 
         // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
-        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+        // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
+        $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
             base64_decode($userInfo['private_key_backup']),
-            $derivedKey
+            $derivedKey,
+            'cbc'
         );
-        $privateKeyClear = base64_encode($decrypted);
+        $privateKeyClear = base64_encode($decryptResult['data']);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
 
-        // Re-encrypt backup with derived key (refresh)
+        // Re-encrypt backup with derived key (SHA-256 for v3)
         $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
             base64_decode($privateKeyClear),
-            $derivedKey
+            $derivedKey,
+            'cbc',
+            'sha256'
         );
         $newPrivateKeyBackup = base64_encode($encrypted);
         
@@ -2724,6 +2732,7 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
         return [
             'success' => true,
             'error' => '',
+            'private_key_clear' => $privateKeyClear,
         ];
 
     } catch (Exception $e) {
@@ -3238,18 +3247,9 @@ function storeUsersShareKey(
     int $all_users_except_id = -1,
     int $apiUserId = -1
 ): void {
-    
+
     $session = SessionManager::getSession();
     loadClasses('DB');
-
-    // Delete existing entries for this object
-    if ($deleteAll === true) {
-        DB::delete(
-            prefixTable($object_name),
-            'object_id = %i',
-            $post_object_id
-        );
-    }
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
@@ -3266,13 +3266,16 @@ function storeUsersShareKey(
         AND public_key != ""',
         $user_ids
     );
+
+    // Insert or update sharekeys first, track which users were processed
+    $processedUserIds = [];
     foreach ($users as $user) {
         // Insert in DB the new object key for this item by user
         if (count($objectKeyArray) === 0) {
             if (WIP === true) {
                 error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
             }
-            
+
             insertOrUpdateSharekey(
                 prefixTable($object_name),
                 $post_object_id,
@@ -3284,7 +3287,7 @@ function storeUsersShareKey(
                 if (WIP === true) {
                     error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
                 }
-                
+
                 insertOrUpdateSharekey(
                     prefixTable($object_name),
                     (int) $object['objectId'],
@@ -3292,6 +3295,28 @@ function storeUsersShareKey(
                     encryptUserObjectKey($object['objectKey'], $user['public_key'])
                 );
             }
+        }
+        $processedUserIds[] = (int) $user['id'];
+    }
+
+    // Remove stale sharekeys for users who no longer qualify
+    // This replaces the previous DELETE-all-then-INSERT pattern which
+    // created a race condition window where all sharekeys were absent.
+    if ($deleteAll === true) {
+        if (!empty($processedUserIds)) {
+            DB::query(
+                'DELETE FROM ' . prefixTable($object_name) . '
+                WHERE object_id = %i AND user_id NOT IN %li',
+                $post_object_id,
+                $processedUserIds
+            );
+        } else {
+            // No eligible users found: remove all sharekeys for this object
+            DB::delete(
+                prefixTable($object_name),
+                'object_id = %i',
+                $post_object_id
+            );
         }
     }
 }
@@ -3827,6 +3852,63 @@ function dataSanitizer(array $data, array $filters): array|string
 
     // Sanitize post and get variables
     return $antiXss->xss_clean($sanitizer->sanitize());
+}
+
+/**
+ * Recursively cleans data using AntiXSS library
+ * Handles strings, arrays, and objects
+ *
+ * @param mixed $data The data to clean (string, array, or object)
+ * @param AntiXSS $antiXss The AntiXSS instance to use
+ * @return mixed The cleaned data
+ */
+function secureStringWithAntiXss(mixed $data, AntiXSS $antiXss): mixed
+{
+    if (is_string($data)) {
+        return $antiXss->xss_clean($data);
+    }
+
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $data[$key] = secureStringWithAntiXss($value, $antiXss);
+        }
+        return $data;
+    }
+
+    if (is_object($data)) {
+        foreach (get_object_vars($data) as $key => $value) {
+            $data->$key = secureStringWithAntiXss($value, $antiXss);
+        }
+        return $data;
+    }
+
+    return $data;
+}
+
+/**
+ * Clean output data to prevent XSS attacks
+ * Applies htmlspecialchars with UTF-8 encoding
+ *
+ * @param mixed $data The data to secure (array or string)
+ * @param array $fields Fields to sanitize (for arrays only)
+ * @return mixed The secured data
+ */
+function secureOutput(mixed $data, array $fields = []): mixed
+{
+    if (is_array($data)) {
+        foreach ($fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = htmlspecialchars($data[$field], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            }
+        }
+        return $data;
+    }
+
+    if (is_string($data)) {
+        return htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    return $data;
 }
 
 /**
@@ -6251,3 +6333,16 @@ function generateNewKeyTempo(int $userId): string
     return $keyTempo;
 }
 // -->
+
+/**
+ * Trigger the background tasks handler manually.
+ * @return void
+ */
+function triggerBackgroundHandler(): void
+{
+    // Create the process to run the handler script
+    $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
+    
+    // Run it asynchronously to avoid blocking the UI
+    $process->start();
+}

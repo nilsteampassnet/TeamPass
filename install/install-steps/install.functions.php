@@ -161,8 +161,8 @@ function generateUserKeysForInstall(string $userPwd): array
     // Generate RSA key pair using CryptoManager (phpseclib v3)
     $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
 
-    // Encrypt the private key with user password using AES
-    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd);
+    // Encrypt the private key with user password using AES (SHA-256 for v3)
+    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd, 'cbc', 'sha256');
 
     return [
         'private_key' => base64_encode($privatekey),

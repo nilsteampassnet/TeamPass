@@ -683,7 +683,8 @@ class DatabaseInstaller
             array('admin', 'transparent_key_recovery_pbkdf2_iterations', '100000'),
             array('admin', 'transparent_key_recovery_integrity_check', '1'),
             array('admin', 'transparent_key_recovery_max_age_days', '730'),
-            array('admin', 'browser_extension_key', generateSecureToken(64))
+            array('admin', 'browser_extension_key', generateSecureToken(64)),
+            array('admin', 'phpseclibv3_native', '1')
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting
@@ -814,11 +815,11 @@ class DatabaseInstaller
             `keys_recovery_time` VARCHAR(500) NULL DEFAULT NULL,
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
-            `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
+            `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             PRIMARY KEY (`id`),
             UNIQUE KEY `login` (`login`),
             KEY `idx_last_pw_change` (`last_pw_change`),
-            UNIQUE KEY `encryption_version` (`encryption_version`)
+            KEY `encryption_version` (`encryption_version`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 

@@ -283,7 +283,7 @@ if ($deleted_users_count > 0) {
                                 </div>
                                 <div class="card-footer">
                                     <button type="button" class="btn btn-default float-left tp-action btn-info" data-action="add-new-role"><?php echo $lang->get('submit'); ?></button>
-                                    <button type="button" class="btn btn-default float-right tp-action" data-action="close-new-role"><?php echo $lang->get('close'); ?></button>
+                                    <button type="button" class="btn btn-default float-right tp-action" data-action="close-ldap-new-role"><?php echo $lang->get('close'); ?></button>
                                 </div>
                             </div>
                             <div class="card-body table-responsive p-0" id="ldap-users-table">

@@ -1569,4 +1569,10 @@ return array(
     'bck_upload_max_file_size' => 'Maximum file size: %s.',
     'bck_upload_error_file_too_large' => 'The selected file is too large. Maximum allowed size: %s. Increase TeamPass "upload_maxfilesize" and verify PHP limits (upload_max_filesize, post_max_size).',
     'bck_upload_error_file_extension' => 'Invalid file type. Allowed formats: .sql, .sql.gz, .gz, .zip.',
+    'bck_upload_error_file_already_exists' => 'A file named "{FILENAME}" already exists on the server. Upload has been blocked to prevent duplicates.',
+    'bck_meta_orphans_btn_title' => 'Orphan metadata',
+    'bck_meta_orphans_tooltip' => 'Orphan metadata detected: {TOTAL} (files: {FILES}, scheduled: {SCHEDULED}). Click to purge.',
+    'bck_meta_orphans_tooltip_none' => 'No orphan metadata detected.',
+    'bck_meta_orphans_purge_done' => 'Orphan metadata purged: {DELETED} file(s) deleted.',
+    'bck_meta_orphans_purge_none' => 'No orphan metadata to purge.',
 );

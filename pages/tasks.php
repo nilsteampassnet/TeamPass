@@ -315,14 +315,17 @@ catch (Exception $e) {
                                     </div>
 
                                     <div class='row mb-3 option'>
-                                        <div class='col-10'>
+                                        <div class='col-9'>
                                         <h5><i class="fa-solid fa-bars-progress mr-2"></i><?php echo $lang->get('max_parallel_tasks'); ?></h5>
                                             <small id='passwordHelpBlock' class='form-text text-muted'>
                                                 <?php echo $lang->get('max_parallel_tasks_tip'); ?>
                                             </small>
                                         </div>
                                         <div class='col-2'>
-                                            <input type='number' class='form-control form-control-sm' id='max_parallel_tasks' value='<?php echo isset($SETTINGS['max_parallel_tasks']) === true ? $SETTINGS['max_parallel_tasks'] : 2; ?>'>
+                                            <input type='range' class='form-control form-control-sm form-control-range range-slider' id='max_parallel_tasks' min='1' max="5" value='<?php echo $SETTINGS['max_parallel_tasks'] ?? 2; ?>'>
+                                        </div>
+                                        <div class='col-1'>
+                                            <input type='number' disabled class='form-control form-control-sm' id='max_parallel_tasks_text' value='<?php echo $SETTINGS['max_parallel_tasks'] ?? '2'; ?>'>
                                         </div>
                                     </div>
 

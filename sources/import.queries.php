@@ -317,6 +317,9 @@ switch ($inputData['type']) {
         $continue_on_next_line = false;
         $comment = "";
         foreach ($valuesToImport as $row) {
+            // Sanitize row data to prevent XSS
+            $row = secureStringWithAntiXss($row, $antiXss);
+
             // Check that each line has 6 columns
             if (count($row) !== 6) {
                 echo prepareExchangedData(
@@ -378,21 +381,25 @@ switch ($inputData['type']) {
             // Insert in batch
             $batchInsert[] = array(
                 'label'        => $label,
-                'description'  => $comment . $comments,
-                'pwd'          => $pwd,
-                'url'          => $url,
-                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
-                'login'        => $login,
+                'description'  => $comment . (isset($comments) ? $comments : ''),
+                'pwd'          => isset($pwd) ? $pwd : '',
+                'url'          => isset($url) ? $url : '',
+                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? (isset($folder) ? $folder : '') : '',
+                'login'        => isset($login) ? $login : '',
                 'operation_id' => $post_operation_id,
             );
 
             // Store unique folders
             // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-            $folders = preg_split('/[\/\\\\]/', $folder);
-            foreach ($folders as $folder) {
-                if (!empty($folder)) {
-                    $uniqueFolders[$folder] = $folder;
+            if (isset($folder)) {
+                $folders = preg_split('/[\/\\\\]/', $folder);
+                foreach ($folders as $folder) {
+                    if (!empty($folder)) {
+                        $uniqueFolders[$folder] = $folder;
+                    }
                 }
+            } else {
+                $uniqueFolders = [];
             }
         }
 
@@ -958,14 +965,15 @@ switch ($inputData['type']) {
          */
         function handleEntries(array $entries, string $previousFolder, array $newItemsToAdd) : array
         {
-            foreach ($entries as $key => $value) {
-                // Check if the entry has a 'String' field and process it
-                if (isset($value['String'])) {
-                    $newItemsToAdd['items'][] = buildItemDefinition($value['String'], $previousFolder);
-                }
-                // If it's a direct 'String' item, build a simple item
-                elseif ($key === 'String') {
-                    $newItemsToAdd['items'][] = buildSimpleItem($value, $previousFolder);
+            // If a single entry is found, wrap it into an array
+            // (same normalization as handleGroups does for single groups)
+            if (isset($entries['String'])) {
+                $entries = [$entries];
+            }
+
+            foreach ($entries as $entry) {
+                if (isset($entry['String'])) {
+                    $newItemsToAdd['items'][] = buildItemDefinition($entry['String'], $previousFolder);
                 }
             }
 
@@ -993,7 +1001,7 @@ switch ($inputData['type']) {
             $itemDefinition['parentFolderId'] = $previousFolder;
             $itemDefinition['Notes'] = $itemDefinition['Notes'] ?? '';
             $itemDefinition['URL'] = $itemDefinition['URL'] ?? '';
-            $itemDefinition['Password'] = base64_encode($itemDefinition['Password']) ?? '';
+            $itemDefinition['Password'] = $itemDefinition['Password'] ?? '';
 
             return $itemDefinition;
         }
@@ -1130,7 +1138,7 @@ switch ($inputData['type']) {
             } else {
                 $parentId = $arrFolders[$folder['parentFolderId']]['id'];
             }
-
+            
             // create folder in DB
             $folderId = createFolder(
                 $folder['folderName'],
@@ -1212,8 +1220,7 @@ switch ($inputData['type']) {
                 empty($item['Password']) === false
             ) {
                 // NEW ENCRYPTION
-                $itemPassword = base64_decode($item['Password']);
-                $cryptedStuff = doDataEncryption($itemPassword);
+                $cryptedStuff = doDataEncryption($item['Password']);
             } else {
                 $cryptedStuff['encrypted'] = '';
                 $cryptedStuff['objectKey'] = '';
@@ -1296,6 +1303,9 @@ switch ($inputData['type']) {
         // Commit transaction.
         DB::commit();
 
+        // Trigger background handler to process tasks
+        triggerBackgroundHandler();
+
         echo prepareExchangedData(
             array(
                 'error' => false,
@@ -1322,7 +1332,23 @@ switch ($inputData['type']) {
 
         // Reload cache for user
         updateCacheTable('reload', NULL);
-        
+
+        // Create user_build_cache_tree task for current user
+        $arguments = json_encode([
+            'user_id' => (int) $session->get('user-id'),
+        ], JSON_HEX_QUOT | JSON_HEX_TAG);
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'user_build_cache_tree',
+                'arguments' => $arguments,
+                'updated_at' => null,
+                'finished_at' => null,
+                'output' => null,
+            )
+        );
+
         // Rebuild full tree
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();

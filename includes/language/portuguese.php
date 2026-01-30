@@ -1579,5 +1579,11 @@ Path: %s',
     'bck_restore_cli_warnings' => 'Warnings',
     'bck_restore_cli_token_expires' => 'Authorization token expires at:',
     'bck_restore_cli_warning_version_not_verified' => 'Upload restore: TeamPass version could not be verified (schema-level only).',
+    'bck_upload_error_file_already_exists' => 'A file named "{FILENAME}" already exists on the server. Upload has been blocked to prevent duplicates.',
+    'bck_meta_orphans_btn_title' => 'Orphan metadata',
+    'bck_meta_orphans_tooltip' => 'Orphan metadata detected: {TOTAL} (files: {FILES}, scheduled: {SCHEDULED}). Click to purge.',
+    'bck_meta_orphans_tooltip_none' => 'No orphan metadata detected.',
+    'bck_meta_orphans_purge_done' => 'Orphan metadata purged: {DELETED} file(s) deleted.',
+    'bck_meta_orphans_purge_none' => 'No orphan metadata to purge.',
 
 );
