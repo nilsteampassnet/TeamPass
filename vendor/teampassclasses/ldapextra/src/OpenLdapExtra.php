@@ -53,6 +53,10 @@ class OpenLdapExtra extends BaseGroup
         // prepare query
         $query = $connection->query();
 
+        // Select attributes including member attributes for group membership mapping
+        $guidAttr = (!empty($settings['ldap_guid_attibute']) ? $settings['ldap_guid_attibute'] : 'gidnumber');
+        $query->select(['cn', $guidAttr, 'member', 'uniquemember', 'memberuid']);
+
         // get all parameters to search
         foreach (static::$objectClasses as $objectClass) {
             $query->where('objectclass', '=', $objectClass);
@@ -63,9 +67,6 @@ class OpenLdapExtra extends BaseGroup
 
             $groupsArr = [];
             foreach($groups as $key => $group) {
-                // Get the GUID attribute
-                $guidAttr = (!empty($settings['ldap_guid_attibute']) ? $settings['ldap_guid_attibute'] : 'gidnumber');
-
                 // Check if the attribute exists and contains at least one value
                 $adGroupId = isset($group[$guidAttr][0]) ? (int) $group[$guidAttr][0] : -1;
 
@@ -79,6 +80,7 @@ class OpenLdapExtra extends BaseGroup
                     'role_id'        => -1,
                     'id'             => -1,
                     'role_title'     => '',
+                    'members'        => $this->extractGroupMembers($group),
                 ];
             }            
 
@@ -96,12 +98,52 @@ class OpenLdapExtra extends BaseGroup
         }
     }
 
+    /**
+     * Extract group members from LDAP group entry
+     * Handles posixGroup (memberUid), groupOfNames (member), and groupOfUniqueNames (uniqueMember)
+     *
+     * @param array $group The LDAP group entry
+     * @return array Array of members with type (uid or dn) and value
+     */
+    private function extractGroupMembers(array $group): array
+    {
+        $members = [];
+
+        // posixGroup: memberUid contains uid/login of members
+        if (isset($group['memberuid']) === true) {
+            foreach ($group['memberuid'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'uid', 'value' => $member];
+                }
+            }
+        }
+
+        // groupOfNames: member contains DN of members
+        if (isset($group['member']) === true) {
+            foreach ($group['member'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'dn', 'value' => $member];
+                }
+            }
+        }
+
+        // groupOfUniqueNames: uniqueMember contains DN of members
+        if (isset($group['uniquemember']) === true) {
+            foreach ($group['uniquemember'] as $key => $member) {
+                if ($key !== 'count' && !empty($member)) {
+                    $members[] = ['type' => 'dn', 'value' => $member];
+                }
+            }
+        }
+
+        return $members;
+    }
 
     function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
     {
         // init
         $groupsArr = [];
-        
+
         try {
             Container::addConnection($connection);
             

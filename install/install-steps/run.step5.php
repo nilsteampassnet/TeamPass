@@ -819,7 +819,7 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             UNIQUE KEY `login` (`login`),
             KEY `idx_last_pw_change` (`last_pw_change`),
-            UNIQUE KEY `encryption_version` (`encryption_version`)
+            KEY `encryption_version` (`encryption_version`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 

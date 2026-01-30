@@ -1681,6 +1681,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'close-ldap-new-role') {
+            $('#ldap-new-role').addClass('hidden');
+            $('#ldap-users-table').removeClass('hidden');
+
+            //
+            // --- END
+            //
         } else if ($(this).data('action') === 'ldap-existing-users') {
             refreshListUsersLDAP();
 
@@ -2585,6 +2592,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         userLogin,
                         group;
                     var entry;
+
                     $.each(data.entries, function(i, entry) {
                         userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
                         // CHeck if not empty
@@ -2617,33 +2625,37 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 '<i class="fa-solid ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +
                                 '</td><td>';
                             groupsNumber = 0;
-                            $.each(entry.memberof, function(j, group) {
-                                var regex = String(group).replace('CN=', 'cn').match(/(cn=)(.*?),/g);
-                                if (regex !== null) {
-                                    group = regex[0].replace('cn=', '').replace(',', '');
-                                    // Check if this user has this group in Teampass
-                                    if (entry.teampass !== undefined && entry.ldap_groups.filter(p => p.title === group).length > 0) {
-                                        html += group + '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i><br>';
+                            // Use ldap_user_groups which contains group names directly
+                            // Works with both OpenLDAP and ActiveDirectory
+                            $.each(entry.ldap_user_groups || [], function(j, group) {
+                                let icon = '';
+
+                                // Check if this group exists in Teampass
+                                let teampassGroup = data.teampass_groups.filter(p => p.title === group);
+
+                                if (teampassGroup.length === 0) {
+                                    // Role doesn't exit in Teampass
+                                    icon = '<i class="far fa-circle-xmark text-danger ml-2 infotip" title="<?php echo $lang->get('role_not_exists_in_teampass'); ?>"></i>';
+                                } else if (entry.userInTeampass !== 0) {
+                                    // User exists in teampass, check if he has this role
+                                    // userTeampassRoles contains all roles in Teampass
+                                    let userHasRole = entry.userTeampassRoles && entry.userTeampassRoles.includes(group);
+
+                                    if (userHasRole) {
+                                        // User has already this role in Teampass
+                                        icon = '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i>';
                                     } else {
-                                        // Check if this group exists in Teampass and propose to add it
-                                        tmp = data.teampass_groups.filter(p => p.title === group);
-                                        if (tmp.length > 0 && entry.userInTeampass === 0) {
-                                            html += group + '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + tmp[0].id + '"></i><br>';
-                                        } else {
-                                            html += group + '<br>';
-                                        }
+                                        // Propose to add the user to the role
+                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + teampassGroup[0].id + '"></i>';
                                     }
-                                    groupsNumber++;
                                 }
+
+                                html += group + icon + '<br>';
+                                groupsNumber++;
                             });
                             html += '</td><td>';
                             // Action icons
                             html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
-
-                            // Only of not admin
-                            /*if (userLogin !== 'admin') {
-                                html += (entry.teampass.auth === 'ldap' ? '<i class="fa-solid fa-link text-success ml-2 infotip pointer auth-local" title="<?php echo $lang->get('ldap_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>' : '<i class="fa-solid fa-unlink text-orange ml-2 infotip pointer auth-ldap" title="<?php echo $lang->get('local_user_password_is_used_for_authentication'); ?>" data-user-id="' + entry.teampass.id + '"></i>');
-                            }*/
 
                             html += '</td></tr>';
                         }
@@ -2667,6 +2679,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             );
                         }
                     });
+
+                    // Rrefresh list of users in Teampass
+                    oTable.ajax.reload();
 
                     // Inform user
                     toastr.success(

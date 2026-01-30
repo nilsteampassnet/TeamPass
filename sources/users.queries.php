@@ -40,6 +40,8 @@ use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\OAuth2Controller\OAuth2Controller;
+use TeampassClasses\LdapExtra\OpenLdapExtra;
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
@@ -1970,19 +1972,27 @@ if (null !== $post_type) {
             $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-            // If
+            // If adding a role to user, use the users_roles table directly
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
+                // Check if user exists
                 $data_user = DB::queryFirstRow(
-                    'SELECT fonction_id, public_key
-                    FROM ' . prefixTable('users') . '
-                    WHERE id = %i',
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i',
                     $post_user_id
                 );
 
                 if ($data_user) {
-                    // Ensure array is unique
-                    $post_new_value = str_replace(',', ';', $data_user['fonction_id']) . ';' . $post_new_value;
-                    $post_new_value = implode(';', array_unique(explode(';', $post_new_value)));
+                    // Add the role using the dedicated function (INSERT IGNORE prevents duplicates)
+                    addUserRole((int) $post_user_id, (int) $post_new_value, 'manual');
+
+                    // Send success response
+                    echo prepareExchangedData(
+                        array(
+                            'error' => false,
+                            'message' => ''
+                        ),
+                        'encode'
+                    );
+                    break;
                 } else {
                     // User not found
                     echo prepareExchangedData(
@@ -2140,9 +2150,58 @@ if (null !== $post_type) {
             $adUsersToSync = array();
             $adRoles = array();
             $usersAlreadyInTeampass = array();
+
+            // Retrieve LDAP groups via a separate query based on LDAP server type
+            // This is necessary because OpenLDAP does not have 'memberof' attribute by default
+            // Also build a reverse mapping: user (uid or dn) -> list of groups
+            $userGroupsMap = [];
+            try {
+                if (isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'OpenLDAP') {
+                    $ldapGroupExtra = new OpenLdapExtra();
+                } elseif (isset($SETTINGS['ldap_type']) === true && $SETTINGS['ldap_type'] === 'ActiveDirectory') {
+                    $ldapGroupExtra = new ActiveDirectoryExtra();
+                } else {
+                    // Default to OpenLDAP for other types (FreeIPA, etc.)
+                    $ldapGroupExtra = new OpenLdapExtra();
+                }
+
+                $groupsData = $ldapGroupExtra->getADGroups($connection, $SETTINGS);
+
+                if ($groupsData['error'] === false && isset($groupsData['userGroups']) === true) {
+                    foreach ($groupsData['userGroups'] as $groupId => $group) {
+                        $groupTitle = $group['ad_group_title'] ?? '';
+                        if (empty($groupTitle)) continue;
+
+                        // Add to global groups list
+                        if (!in_array($groupTitle, $adRoles)) {
+                            $adRoles[] = $groupTitle;
+                        }
+
+                        // Map each member to this group for reverse lookup
+                        if (isset($group['members']) === true) {
+                            foreach ($group['members'] as $member) {
+                                $memberKey = strtolower($member['value']);
+                                if (!isset($userGroupsMap[$memberKey])) {
+                                    $userGroupsMap[$memberKey] = [];
+                                }
+                                if (!in_array($groupTitle, $userGroupsMap[$memberKey])) {
+                                    $userGroupsMap[$memberKey][] = $groupTitle;
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log the error but continue - groups will remain empty
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {                                       
+                    error_log('TEAMPASS Error - LDAP groups retrieval - ' . $e->getMessage());                  
+                }
+            } 
+            
+            // Retrieve LDAP users
             $adUsedAttributes = array(
                 'dn', 'mail', 'givenname', 'samaccountname', 'sn', $SETTINGS['ldap_user_attribute'],
-                'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname'
+                'memberof', 'name', 'displayname', 'cn', 'shadowexpire', 'distinguishedname', 'uid'
             );
 
             $adStatusAttributes = array('useraccountcontrol', 'accountexpires', 'accountExpires');
@@ -2191,10 +2250,28 @@ if (null !== $post_type) {
                     // Get his ID
                     $userInfo = getUserCompleteData($userLogin);
                     
+                    // Get user's Teampass roles (titles) if user exists in Teampass
+                    $userTeampassRoles = [];
+                    if ($userInfo !== null && isset($userInfo['fonction_id']) && !empty($userInfo['fonction_id'])) {
+                        $roleIds = explode(';', $userInfo['fonction_id']);
+                        foreach ($roleIds as $roleId) {
+                            if (!empty($roleId)) {
+                                $roleData = DB::queryFirstRow(
+                                    'SELECT title FROM ' . prefixTable('roles_title') . ' WHERE id = %i',
+                                    (int) $roleId
+                                );
+                                if ($roleData !== null) {
+                                    $userTeampassRoles[] = $roleData['title'];
+                                }
+                            }
+                        }
+                    }
+
                     // Loop on all user attributes
                     $tmp = [
                         'userInTeampass' => DB::count() > 0 ? (int) $userInfo['id'] : DB::count(),
                         'userAuthType' => isset($userInfo['auth_type']) === true ? $userInfo['auth_type'] : 0,
+                        'userTeampassRoles' => $userTeampassRoles,
                         // LDAP/AD status flags (null = unknown / attribute not available)
                         'ldapAccountDisabled' => null,
                         'ldapAccountExpired' => null,
@@ -2221,67 +2298,95 @@ if (null !== $post_type) {
                             }
                         }
                     }
-                                // -------------------------------------------------------
-            // LDAP/AD: Determine if the account is disabled
-            // - Active Directory: userAccountControl bit 0x2 (UF_ACCOUNTDISABLE)
-            // -------------------------------------------------------
-            $uacRaw = null;
-            if (isset($adUser['useraccountcontrol'][0]) === true) {
-                $uacRaw = $adUser['useraccountcontrol'][0];
-            } elseif (isset($adUser['userAccountControl'][0]) === true) {
-                $uacRaw = $adUser['userAccountControl'][0];
-            }
-            if ($uacRaw !== null && is_numeric($uacRaw)) {
-                $uac = (int) $uacRaw;
-                $tmp['ldapAccountDisabled'] = (($uac & 2) === 2) ? 1 : 0;
-            }
+                    // -------------------------------------------------------
+                    // LDAP/AD: Determine if the account is disabled
+                    // - Active Directory: userAccountControl bit 0x2 (UF_ACCOUNTDISABLE)
+                    // -------------------------------------------------------
+                    $uacRaw = null;
+                    if (isset($adUser['useraccountcontrol'][0]) === true) {
+                        $uacRaw = $adUser['useraccountcontrol'][0];
+                    } elseif (isset($adUser['userAccountControl'][0]) === true) {
+                        $uacRaw = $adUser['userAccountControl'][0];
+                    }
+                    if ($uacRaw !== null && is_numeric($uacRaw)) {
+                        $uac = (int) $uacRaw;
+                        $tmp['ldapAccountDisabled'] = (($uac & 2) === 2) ? 1 : 0;
+                    }
 
-            // -------------------------------------------------------
-            // LDAP/AD: Determine if the account is expired
-            // - Active Directory: accountExpires is a Windows FILETIME
-            //   (100ns since 1601-01-01). 0 or 9223372036854775807 = never expires.
-            // - OpenLDAP shadowAccount: shadowExpire is days since 1970-01-01 (optional fallback).
-            // -------------------------------------------------------
-            $expiresRaw = null;
-            if (isset($adUser['accountexpires'][0]) === true) {
-                $expiresRaw = $adUser['accountexpires'][0];
-            } elseif (isset($adUser['accountExpires'][0]) === true) {
-                $expiresRaw = $adUser['accountExpires'][0];
-            }
+                    // -------------------------------------------------------
+                    // LDAP/AD: Determine if the account is expired
+                    // - Active Directory: accountExpires is a Windows FILETIME
+                    //   (100ns since 1601-01-01). 0 or 9223372036854775807 = never expires.
+                    // - OpenLDAP shadowAccount: shadowExpire is days since 1970-01-01 (optional fallback).
+                    // -------------------------------------------------------
+                    $expiresRaw = null;
+                    if (isset($adUser['accountexpires'][0]) === true) {
+                        $expiresRaw = $adUser['accountexpires'][0];
+                    } elseif (isset($adUser['accountExpires'][0]) === true) {
+                        $expiresRaw = $adUser['accountExpires'][0];
+                    }
 
-            if ($expiresRaw !== null) {
-                $expiresRawStr = trim((string) $expiresRaw);
+                    if ($expiresRaw !== null) {
+                        $expiresRawStr = trim((string) $expiresRaw);
 
-                // "never expires" values
-                if ($expiresRawStr !== '' &&
-                    $expiresRawStr !== '0' &&
-                    $expiresRawStr !== '9223372036854775807' &&
-                    $expiresRawStr !== '18446744073709551615'
-                ) {
-                    if (is_numeric($expiresRawStr)) {
-                        $filetime = (int) $expiresRawStr;
-                        if ($filetime > 0) {
-                            // FILETIME -> Unix seconds
-                            $unix = (int) (intdiv($filetime, 10000000) - 11644473600);
+                        // "never expires" values
+                        if ($expiresRawStr !== '' &&
+                            $expiresRawStr !== '0' &&
+                            $expiresRawStr !== '9223372036854775807' &&
+                            $expiresRawStr !== '18446744073709551615'
+                        ) {
+                            if (is_numeric($expiresRawStr)) {
+                                $filetime = (int) $expiresRawStr;
+                                if ($filetime > 0) {
+                                    // FILETIME -> Unix seconds
+                                    $unix = (int) (intdiv($filetime, 10000000) - 11644473600);
+                                    $tmp['ldapAccountExpiresAt'] = $unix;
+                                    $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                                }
+                            }
+                        } else {
+                            $tmp['ldapAccountExpired'] = 0;
+                            $tmp['ldapAccountExpiresAt'] = null;
+                        }
+                    } elseif (isset($adUser['shadowexpire'][0]) === true && is_numeric($adUser['shadowexpire'][0])) {
+                        // Fallback for shadowAccount directories (days since epoch)
+                        $shadowDays = (int) $adUser['shadowexpire'][0];
+                        if ($shadowDays > 0) {
+                            $unix = $shadowDays * 86400;
                             $tmp['ldapAccountExpiresAt'] = $unix;
                             $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                        } else {
+                            $tmp['ldapAccountExpired'] = 0;
                         }
                     }
-                } else {
-                    $tmp['ldapAccountExpired'] = 0;
-                    $tmp['ldapAccountExpiresAt'] = null;
-                }
-            } elseif (isset($adUser['shadowexpire'][0]) === true && is_numeric($adUser['shadowexpire'][0])) {
-                // Fallback for shadowAccount directories (days since epoch)
-                $shadowDays = (int) $adUser['shadowexpire'][0];
-                if ($shadowDays > 0) {
-                    $unix = $shadowDays * 86400;
-                    $tmp['ldapAccountExpiresAt'] = $unix;
-                    $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
-                } else {
-                    $tmp['ldapAccountExpired'] = 0;
-                }
-            }
+
+                    // Retrieve user's groups from the reverse mapping built earlier
+                    // For posixGroup, memberUid typically references the 'uid' attribute of users
+                    $userGroups = [];
+                    $userDN = strtolower($adUser['dn'] ?? '');
+                    $userLoginAttr = strtolower($adUser[$SETTINGS['ldap_user_attribute']][0] ?? '');
+                    $userCN = strtolower($adUser['cn'][0] ?? '');
+                    $userUID = strtolower($adUser['uid'][0] ?? '');
+
+                    // Search by DN (for groupOfNames/groupOfUniqueNames)
+                    if (!empty($userDN) && isset($userGroupsMap[$userDN])) {
+                        $userGroups = array_merge($userGroups, $userGroupsMap[$userDN]);
+                    }
+                    // Search by uid attribute (for posixGroup memberUid)
+                    if (!empty($userUID) && isset($userGroupsMap[$userUID])) {
+                        $userGroups = array_merge($userGroups, $userGroupsMap[$userUID]);
+                    }
+                    // Search by login attribute
+                    if (!empty($userLoginAttr) && $userLoginAttr !== $userUID && isset($userGroupsMap[$userLoginAttr])) {
+                        $userGroups = array_merge($userGroups, $userGroupsMap[$userLoginAttr]);
+                    }
+                    // Search by CN if different
+                    if (!empty($userCN) && $userCN !== $userUID && $userCN !== $userLoginAttr && isset($userGroupsMap[$userCN])) {
+                        $userGroups = array_merge($userGroups, $userGroupsMap[$userCN]);
+                    }
+
+                    $tmp['ldap_user_groups'] = array_values(array_unique($userGroups));
+
                     array_push($adUsersToSync, $tmp);
                 }
             }

@@ -39,6 +39,9 @@ class BackgroundTasksHandler {
     private $maxExecutionTime;
     private $batchSize;
     private $maxTimeBeforeRemoval;
+    private $lockFileHandle = null;
+    /** @var array Running process pool: [taskId => ['process' => Process, 'task' => array, 'resourceKey' => ?string]] */
+    private $pool = [];
 
     public function __construct(array $settings) {
         $this->settings = $settings;
@@ -72,18 +75,19 @@ class BackgroundTasksHandler {
     public function processBackgroundTasks() {
         // Prevent multiple concurrent executions
         if (!$this->acquireProcessLock()) {
-            if (LOG_TASKS=== true) $this->logger->log('Process already running', 'INFO');
+            if (LOG_TASKS === true) $this->logger->log('Process already running', 'INFO');
             return false;
         }
 
         try {
             $this->cleanupStaleTasks();
             $this->handleScheduledDatabaseBackup();
-            $this->processTaskBatches();
+            $this->drainTaskPool();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
-            if (LOG_TASKS=== true) $this->logger->log('Task processing error: ' . $e->getMessage(), 'ERROR');
+            if (LOG_TASKS === true) $this->logger->log('Task processing error: ' . $e->getMessage(), 'ERROR');
         } finally {
+            $this->stopRunningProcesses();
             $this->releaseProcessLock();
         }
     }
@@ -297,14 +301,19 @@ class BackgroundTasksHandler {
      */
     private function acquireProcessLock(): bool {
         $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
-        
+
         $fp = fopen($lockFile, 'w');
-        
-        if (!flock($fp, LOCK_EX | LOCK_NB)) {
+        if ($fp === false) {
             return false;
         }
-        
+
+        if (!flock($fp, LOCK_EX | LOCK_NB)) {
+            fclose($fp);
+            return false;
+        }
+
         fwrite($fp, (string)getmypid());
+        $this->lockFileHandle = $fp;
         return true;
     }
 
@@ -312,6 +321,12 @@ class BackgroundTasksHandler {
      * Release the lock file.
      */
     private function releaseProcessLock() {
+        if ($this->lockFileHandle !== null) {
+            flock($this->lockFileHandle, LOCK_UN);
+            fclose($this->lockFileHandle);
+            $this->lockFileHandle = null;
+        }
+
         $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
         if (file_exists($lockFile)) {
             unlink($lockFile);
@@ -348,46 +363,162 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Process batches of tasks.
-     * This method fetches tasks from the database and processes them in parallel.
+     * Drain the task pool: launch tasks in parallel, poll for completion,
+     * refill slots, and repeat until no pending tasks remain or time limit is reached.
      */
-    private function processTaskBatches() {
-        $runningTasks = $this->countRunningTasks();
-        
-        // Check if the maximum number of parallel tasks is reached
-        if ($runningTasks >= $this->maxParallelTasks) {
-            if (LOG_TASKS=== true) $this->logger->log('Wait ... '.$runningTasks.' out of '.$this->maxParallelTasks.' are already running ', 'INFO');
-            return;
-        }
+    private function drainTaskPool(): void {
+        $startTime = time();
+        $maxDrainTime = (int)($this->settings['tasks_max_drain_time'] ?? 55);
+        $launchingEnabled = true;
 
-        $availableSlotsCount = $this->maxParallelTasks - $runningTasks;
+        while (true) {
+            // 1. Poll completed processes
+            $this->pollCompletedProcesses();
 
-        // Fetch next batch of tasks
-        $tasks = DB::query(
-            'SELECT increment_id, process_type, arguments 
-            FROM ' . prefixTable('background_tasks') . '
-            WHERE is_in_progress = 0 
-            AND (finished_at IS NULL OR finished_at = "")
-            ORDER BY increment_id ASC
-            LIMIT %i',
-            min($this->batchSize, $availableSlotsCount)
-        );
+            // 2. Fill slots with new tasks (if still within drain time)
+            if ($launchingEnabled) {
+                $this->fillPoolSlots();
+            }
 
-        foreach ($tasks as $task) {
-            if (LOG_TASKS=== true) $this->logger->log('Launching '.$task['increment_id'], 'INFO');
-            $this->processIndividualTask($task);
+            // 3. Nothing running and nothing to launch → done
+            if (empty($this->pool)) {
+                if (!$launchingEnabled || $this->countPendingTasks() === 0) {
+                    break;
+                }
+            }
+
+            // 4. Check drain time limit (stop launching, but wait for running processes)
+            if ($launchingEnabled && (time() - $startTime) >= $maxDrainTime) {
+                $launchingEnabled = false;
+                if (LOG_TASKS === true) {
+                    $pending = $this->countPendingTasks();
+                    $this->logger->log(
+                        "Drain time limit reached ({$maxDrainTime}s), waiting for "
+                        . count($this->pool) . " running, {$pending} pending deferred",
+                        'INFO'
+                    );
+                }
+                if (empty($this->pool)) break;
+            }
+
+            // 5. Short pause before next poll
+            usleep(100000); // 100ms
         }
     }
 
     /**
-     * Process an individual task.
-     * This method updates the task status in the database and starts a new process for the task.
-     * @param array $task The task to process.
+     * Poll pool for completed or timed-out processes and handle their results.
      */
-    private function processIndividualTask(array $task) {
-        if (LOG_TASKS=== true)  $this->logger->log('Starting task: ' . print_r($task, true), 'INFO');
+    private function pollCompletedProcesses(): void {
+        foreach ($this->pool as $taskId => $entry) {
+            $process = $entry['process'];
 
-        // Store progress in the database        
+            // Check per-process timeout
+            try {
+                $process->checkTimeout();
+            } catch (Throwable $e) {
+                $this->markTaskFailed($taskId, 'Process timeout: ' . $e->getMessage());
+                try { $process->stop(5); } catch (Throwable $ignored) {}
+                unset($this->pool[$taskId]);
+                continue;
+            }
+
+            // Check if process finished
+            if (!$process->isRunning()) {
+                $this->handleProcessCompletion($entry);
+                unset($this->pool[$taskId]);
+            }
+        }
+    }
+
+    /**
+     * Fill available pool slots with compatible pending tasks.
+     * Respects exclusive task rules and resource key conflict detection.
+     */
+    private function fillPoolSlots(): void {
+        $maxPool = min((int) $this->maxParallelTasks, 2);
+        $availableSlots = $maxPool - count($this->pool);
+        if ($availableSlots <= 0) return;
+
+        // Don't launch anything while an exclusive task is running
+        foreach ($this->pool as $entry) {
+            if ($this->isExclusiveTask($entry['task']['process_type'])) {
+                return;
+            }
+        }
+
+        // Collect resource keys of running tasks
+        $runningKeys = [];
+        foreach ($this->pool as $entry) {
+            if ($entry['resourceKey'] !== null) {
+                $runningKeys[] = $entry['resourceKey'];
+            }
+        }
+
+        // Fetch candidate tasks from DB
+        $candidates = DB::query(
+            'SELECT increment_id, process_type, arguments
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 0
+            AND (finished_at IS NULL OR finished_at = "")
+            ORDER BY increment_id ASC
+            LIMIT %i',
+            $this->batchSize
+        );
+
+        foreach ($candidates as $task) {
+            if ($availableSlots <= 0) break;
+
+            $isExclusive = $this->isExclusiveTask($task['process_type']);
+            $resourceKey = $this->getResourceKey($task);
+
+            // Exclusive task: only launch if pool is completely empty
+            if ($isExclusive && !empty($this->pool)) {
+                continue;
+            }
+
+            // Resource key conflict: skip if same key is already running
+            if ($resourceKey !== null && in_array($resourceKey, $runningKeys, true)) {
+                if (LOG_TASKS === true) $this->logger->log(
+                    'Task ' . $task['increment_id'] . ' deferred: resource conflict (' . $resourceKey . ')',
+                    'INFO'
+                );
+                continue;
+            }
+
+            // Launch the task
+            if (LOG_TASKS === true) $this->logger->log(
+                'Launching task ' . $task['increment_id'] . ' (' . $task['process_type'] . ')',
+                'INFO'
+            );
+
+            $process = $this->launchTask($task);
+            if ($process !== null) {
+                $this->pool[(int) $task['increment_id']] = [
+                    'process' => $process,
+                    'task' => $task,
+                    'resourceKey' => $resourceKey,
+                ];
+                if ($resourceKey !== null) {
+                    $runningKeys[] = $resourceKey;
+                }
+                $availableSlots--;
+
+                // If we just launched an exclusive task, stop filling
+                if ($isExclusive) break;
+            }
+        }
+    }
+
+    /**
+     * Launch a task as a non-blocking subprocess.
+     * Returns the Process object on success, null if the task was handled via fallback or failed.
+     *
+     * @param array $task Task row from the database.
+     * @return Process|null
+     */
+    private function launchTask(array $task): ?Process {
+        // Mark task as in progress
         DB::update(
             prefixTable('background_tasks'),
             [
@@ -400,7 +531,7 @@ class BackgroundTasksHandler {
             $task['increment_id']
         );
 
-        // Prepare process
+        // Build command
         $cmd = sprintf(
             '%s %s %d %s %s',
             escapeshellarg(PHP_BINARY),
@@ -411,50 +542,115 @@ class BackgroundTasksHandler {
         );
 
         $process = Process::fromShellCommandline($cmd);
+        $process->setTimeout($this->maxExecutionTime);
 
-        // Launch process
         try {
-            $process->setTimeout($this->maxExecutionTime);
-            $process->mustRun();
-
+            $process->start();
+            return $process;
         } catch (Throwable $e) {
-            // If Symfony Process cannot spawn, fallback to exec()
-            $msg = $e->getMessage();
-            $last = error_get_last();
-            if (is_array($last)) {
-                $msg .= ' | last_error=' . json_encode($last);
-            }
-
-            if (strpos($msg, 'Unable to launch a new process') !== false) {
-                $out = [];
-                $rc = 0;
-
-                // fallback run (blocking)
-                exec($cmd . ' 2>&1', $out, $rc);
-
-                if ($rc === 0) {
-                    // Worker ran successfully and updated the DB itself
-                    if (LOG_TASKS === true) $this->logger->log('Fallback exec succeeded for task ' . $task['increment_id'], 'INFO');
-                    return;
-                }
-
-                $msg .= ' | fallback_exit=' . $rc . ' | fallback_out=' . implode("\n", array_slice($out, -30));
-            }
-
-            if (LOG_TASKS=== true) $this->logger->log('Error launching task: ' . $msg, 'ERROR');
-
-            DB::update(
-                prefixTable('background_tasks'),
-                [
-                    'is_in_progress' => -1,
-                    'finished_at' => time(),
-                    'status' => 'failed',
-                    'error_message' => $msg
-                ],
-                'increment_id = %i',
-                $task['increment_id']
+            // Symfony Process failed to start, try exec() fallback (blocking)
+            if (LOG_TASKS === true) $this->logger->log(
+                'Process::start() failed for task ' . $task['increment_id'] . ': ' . $e->getMessage() . ', trying exec fallback',
+                'WARNING'
             );
+
+            $out = [];
+            $rc = 0;
+            exec($cmd . ' 2>&1', $out, $rc);
+
+            if ($rc === 0) {
+                // Worker ran successfully via fallback and updated the DB itself
+                if (LOG_TASKS === true) $this->logger->log(
+                    'Fallback exec succeeded for task ' . $task['increment_id'],
+                    'INFO'
+                );
+                return null; // Already completed, nothing to poll
+            }
+
+            $msg = $e->getMessage()
+                . ' | fallback_exit=' . $rc
+                . ' | fallback_out=' . implode("\n", array_slice($out, -30));
+
+            $this->markTaskFailed((int) $task['increment_id'], $msg);
+            return null;
         }
+    }
+
+    /**
+     * Handle a completed process: check exit status and update DB if the worker didn't.
+     *
+     * @param array $entry Pool entry with 'process', 'task', and 'resourceKey'.
+     */
+    private function handleProcessCompletion(array $entry): void {
+        $process = $entry['process'];
+        $taskId = (int) $entry['task']['increment_id'];
+
+        if ($process->isSuccessful()) {
+            if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' completed successfully', 'INFO');
+            return;
+        }
+
+        // Process exited with error - check if worker already updated the DB
+        $currentStatus = DB::queryFirstField(
+            'SELECT status FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+            $taskId
+        );
+
+        // Worker may have already handled the failure via handleTaskFailure()
+        if ($currentStatus !== 'in_progress') {
+            if (LOG_TASKS === true) $this->logger->log(
+                'Task ' . $taskId . ' process failed (exit ' . $process->getExitCode() . ') but worker already set status=' . $currentStatus,
+                'INFO'
+            );
+            return;
+        }
+
+        // Worker didn't update - mark as failed from handler side
+        $msg = 'Process exited with code ' . $process->getExitCode();
+        $stderr = $process->getErrorOutput();
+        if (!empty($stderr)) {
+            $msg .= ': ' . mb_substr($stderr, -500);
+        }
+        $this->markTaskFailed($taskId, $msg);
+    }
+
+    /**
+     * Mark a task as failed in the database.
+     *
+     * @param int $taskId Task ID.
+     * @param string $message Error message.
+     */
+    private function markTaskFailed(int $taskId, string $message): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'is_in_progress' => -1,
+                'finished_at' => time(),
+                'status' => 'failed',
+                'error_message' => mb_substr($message, 0, 1000)
+            ],
+            'increment_id = %i',
+            $taskId
+        );
+        if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' failed: ' . $message, 'ERROR');
+    }
+
+    /**
+     * Gracefully stop all processes remaining in the pool (safety net for shutdown).
+     */
+    private function stopRunningProcesses(): void {
+        foreach ($this->pool as $taskId => $entry) {
+            $process = $entry['process'];
+            if ($process->isRunning()) {
+                try {
+                    $process->stop(10);
+                } catch (Throwable $e) {
+                    // best effort
+                }
+                $this->markTaskFailed($taskId, 'Handler shutdown: process forcibly stopped');
+            }
+        }
+        $this->pool = [];
     }
 
     /**
@@ -463,10 +659,79 @@ class BackgroundTasksHandler {
      */
     private function countRunningTasks(): int {
         return DB::queryFirstField(
-            'SELECT COUNT(*) 
-            FROM ' . prefixTable('background_tasks') . ' 
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 1'
         );
+    }
+
+    /**
+     * Count the number of pending tasks (not started and not finished).
+     * @return int The number of pending tasks.
+     */
+    private function countPendingTasks(): int {
+        return (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 0
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+        );
+    }
+
+    /**
+     * Determine whether a task type must run exclusively (no other task in parallel).
+     * Exclusive tasks perform bulk operations across many rows or have global side-effects.
+     *
+     * @param string $processType The process_type value from background_tasks.
+     * @return bool
+     */
+    private function isExclusiveTask(string $processType): bool {
+        return in_array($processType, [
+            'create_user_keys',            // bulk delete + regenerate all sharekeys for a user
+            'phpseclibv3_migration',       // iterates all sharekeys for a user
+            'migrate_user_personal_items', // modifies personal item sharekeys
+            'database_backup',             // disconnects users, heavy I/O
+        ], true);
+    }
+
+    /**
+     * Extract a resource key from a task for conflict detection.
+     * Two tasks with the same resource key must not run in parallel.
+     * Returns null for exclusive tasks (handled separately) and for
+     * independent tasks that never conflict.
+     *
+     * @param array $task Task row with 'process_type' and 'arguments'.
+     * @return string|null Resource key or null if not applicable.
+     */
+    private function getResourceKey(array $task): ?string {
+        // Exclusive tasks are handled by isExclusiveTask(), no key needed
+        if ($this->isExclusiveTask($task['process_type'])) {
+            return null;
+        }
+
+        $args = json_decode($task['arguments'] ?? '', true);
+        if (!is_array($args)) {
+            $args = [];
+        }
+
+        switch ($task['process_type']) {
+            case 'new_item':
+            case 'item_copy':
+            case 'update_item':
+            case 'item_update_create_keys':
+                return 'item:' . ($args['item_id'] ?? 0);
+
+            case 'user_build_cache_tree':
+                return 'user:' . ($args['user_id'] ?? 0);
+
+            case 'send_email':
+                // Emails never conflict with each other
+                return null;
+
+            default:
+                // Unknown type: use task ID as unique key (never conflicts)
+                return null;
+        }
     }
 
     /**

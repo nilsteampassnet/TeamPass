@@ -92,10 +92,11 @@ if ((int) $session_user_admin === 1) {
 $usersList = [];
 $rows = DB::query('SELECT id,login,email FROM ' . prefixTable('users') . ' ORDER BY login ASC');
 foreach ($rows as $record) {
-    $usersList[$record['login']] = [
+    $userLoginSafe = htmlspecialchars($record['login'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $usersList[$userLoginSafe] = [
         'id' => $record['id'],
-        'login' => $record['login'],
-        'email' => $record['email'],
+        'login' => $userLoginSafe,
+        'email' => htmlspecialchars($record['email'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
     ];
 }
 // Get list of roles
