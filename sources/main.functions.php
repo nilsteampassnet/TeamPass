@@ -3855,6 +3855,63 @@ function dataSanitizer(array $data, array $filters): array|string
 }
 
 /**
+ * Recursively cleans data using AntiXSS library
+ * Handles strings, arrays, and objects
+ *
+ * @param mixed $data The data to clean (string, array, or object)
+ * @param AntiXSS $antiXss The AntiXSS instance to use
+ * @return mixed The cleaned data
+ */
+function secureStringWithAntiXss(mixed $data, AntiXSS $antiXss): mixed
+{
+    if (is_string($data)) {
+        return $antiXss->xss_clean($data);
+    }
+
+    if (is_array($data)) {
+        foreach ($data as $key => $value) {
+            $data[$key] = secureStringWithAntiXss($value, $antiXss);
+        }
+        return $data;
+    }
+
+    if (is_object($data)) {
+        foreach (get_object_vars($data) as $key => $value) {
+            $data->$key = secureStringWithAntiXss($value, $antiXss);
+        }
+        return $data;
+    }
+
+    return $data;
+}
+
+/**
+ * Clean output data to prevent XSS attacks
+ * Applies htmlspecialchars with UTF-8 encoding
+ *
+ * @param mixed $data The data to secure (array or string)
+ * @param array $fields Fields to sanitize (for arrays only)
+ * @return mixed The secured data
+ */
+function secureOutput(mixed $data, array $fields = []): mixed
+{
+    if (is_array($data)) {
+        foreach ($fields as $field) {
+            if (isset($data[$field]) && is_string($data[$field])) {
+                $data[$field] = htmlspecialchars($data[$field], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            }
+        }
+        return $data;
+    }
+
+    if (is_string($data)) {
+        return htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+
+    return $data;
+}
+
+/**
  * Permits to manage the cache tree for a user
  *
  * @param integer $user_id

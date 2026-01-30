@@ -317,6 +317,9 @@ switch ($inputData['type']) {
         $continue_on_next_line = false;
         $comment = "";
         foreach ($valuesToImport as $row) {
+            // Sanitize row data to prevent XSS
+            $row = secureStringWithAntiXss($row, $antiXss);
+
             // Check that each line has 6 columns
             if (count($row) !== 6) {
                 echo prepareExchangedData(

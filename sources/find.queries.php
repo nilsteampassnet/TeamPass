@@ -366,7 +366,7 @@ if (null === $request->query->get('type')) {
         //col2
         $sOutputItem .= '"'.base64_encode('<span id=\"item_label-' . $record['id'] . '\">' . (str_replace("\\", "&#92;", (string) $record['label'])) . '</span>').'", ';   // replace backslash #3015
         //col3
-        $sOutputItem .= '"' . base64_encode(str_replace('&amp;', '&', htmlspecialchars(stripslashes((string) $record['login']), ENT_QUOTES))) . '", ';
+        $sOutputItem .= '"' . base64_encode(str_replace('&amp;', '&', secureOutput((string) $record['login']))) . '", ';
         //col4
         //get restriction from ROles
         $restrictedToRole = false;

@@ -2933,8 +2933,9 @@ case 'get_live_activity':
     );
     
     $activityList = array();
-    
+
     foreach ($activities as $activity) {
+        $activity = secureOutput($activity, ['login', 'label']);
         // Translate action to readable text
         $actionText = '';
         switch ($activity['action']) {
