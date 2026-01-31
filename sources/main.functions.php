@@ -278,11 +278,11 @@ function identifyUserRights(
         )
         :
         identUser(
+            $SETTINGS, /** @scrutinizer ignore-type */
+            $tree,
             $groupesVisiblesUser,
             $groupesInterditsUser,
-            $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */
-            $tree
+            $idFonctions
         );
 
     // update user's timestamp
@@ -382,11 +382,11 @@ function convertToArray($element): array
  * @return bool
  */
 function identUser(
+    array $SETTINGS,
+    object $tree,
     $allowedFolders= [],
     $noAccessFolders= [],
-    $userRoles= [],
-    array $SETTINGS,
-    object $tree
+    $userRoles= []
 ) {
     $session = SessionManager::getSession();
     // Init
@@ -6336,13 +6336,31 @@ function generateNewKeyTempo(int $userId): string
 
 /**
  * Trigger the background tasks handler manually.
+ *
+ * This function creates a trigger file to notify a running handler that new
+ * urgent tasks have been added. The running handler will detect this file
+ * and extend its drain time to process the new tasks immediately.
+ *
+ * If no handler is currently running, a new one will be spawned.
+ *
  * @return void
  */
 function triggerBackgroundHandler(): void
 {
+    // Determine trigger file path
+    $triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
+        ? TASKS_TRIGGER_FILE
+        : __DIR__ . '/../files/teampass_background_tasks.trigger';
+
+    // Create/touch the trigger file to notify running handler
+    // The file content includes timestamp for debugging purposes
+    file_put_contents($triggerFile, (string) time());
+
     // Create the process to run the handler script
+    // If a handler is already running, it will detect the trigger file
+    // If no handler is running, this new process will handle the tasks
     $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-    
+
     // Run it asynchronously to avoid blocking the UI
     $process->start();
 }
