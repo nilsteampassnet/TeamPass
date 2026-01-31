@@ -1588,5 +1588,7 @@ Path: %s',
     'recycled_bin_folder_contains_items' => 'Contains %s deleted items (restore the folder to recover them)',
     'sharekeys_encryption_migration_required' => 'Sharekeys Encryption Migration Required',
     'sharekeys_remaining_users' => 'remaining user(s)',
+    'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
+    'learn_more' => 'Learn more',
 
 );
