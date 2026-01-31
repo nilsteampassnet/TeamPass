@@ -3582,7 +3582,7 @@ function increaseSessionDuration(
         // Return data
         return '[{"new_value":"' . $session->get('user-session_duration') . '"}]';
     }
-    
+
     return '[{"new_value":"expired"}]';
 }
 

@@ -666,7 +666,7 @@ function buildUserSession(
     $session->set('user-language', $userInfo['user_language']);
     $session->set('user-timezone', $userInfo['usertimezone']);
     $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
-    
+
     // Manage session expiration
     $session->set('user-session_duration', (int) $lifetime);
 
