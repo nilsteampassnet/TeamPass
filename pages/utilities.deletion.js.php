@@ -35,7 +35,12 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 // Load functions
-require_once __DIR__.'/../sources/main.functions.php';
+$mainFunctionsPath = __DIR__ . '/../sources/main.functions.php';
+if (file_exists($mainFunctionsPath) === false) {
+    // Fallback when file is located in includes/libraries
+    $mainFunctionsPath = __DIR__ . '/../../sources/main.functions.php';
+}
+require_once $mainFunctionsPath;
 
 // init
 loadClasses();
@@ -133,16 +138,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     } else {
                         var foldersHtml = '',
-                            itemsHtml = '';
-
+                            itemsHtml = '',
+                            folderContainsItemsTpl = '<?php echo addslashes($lang->get('recycled_bin_folder_contains_items')); ?>';
                         // Folders list
-                        $.each(data.folders, function(index, value) {
-                            foldersHtml += '<tr class="icheck-toggle">' +
-                                '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
-                                '<td class="font-weight-bold">' + value.label + '</td>' +
-                                '</tr>';
-                        });
-                        $('#recycled-folders').html(foldersHtml);
+                        // Folders list
+$.each(data.folders, function(index, value) {
+    var folderLabel = (value.path ? value.path : value.label);
+    var folderExtra = '';
+    if (typeof value.items_count !== 'undefined' && parseInt(value.items_count) > 0) {
+        folderExtra = '<br><small class="text-muted">' +
+            '<i class="fa-regular fa-file-lines mr-1"></i>' +
+            folderContainsItemsTpl.replace('%s', value.items_count) +
+            '</small>';
+    }
+
+    foldersHtml += '<tr class="icheck-toggle">' +
+        '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
+        '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
+        '</tr>';
+});
+$('#recycled-folders').html(foldersHtml);
                     }
                     
 
@@ -159,10 +174,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         $.each(data.items, function(index, value) {
                             itemsHtml += '<tr class="icheck-toggle">' +
                                 '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
-                                '<td class="font-weight-bold">' + value.label + '</td>' +
+                                '<td class="font-weight-bold">' + (value.path ? value.path : value.label) + '</td>' +
                                 '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
                                 '<td class=""><i class="fa-regular fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
-                                '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + value.folder_label + '</td>' +
+                                '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + (value.folder_path ? value.folder_path : value.folder_label) + '</td>' +
                                 (value.folder_deleted === true ?
                                     '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
                                     '') +

@@ -77,14 +77,21 @@ function cleanOrphanObjects(): void
         WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
     );
 
-    // Delete all files keys for which no item exist
+    // Delete all item keys for which no item exist
     DB::query(
-        'DELETE k.* FROM ' . prefixTable('sharekeys_files') . ' k
+        'DELETE k.* FROM ' . prefixTable('sharekeys_items') . ' k
         LEFT JOIN ' . prefixTable('items') . ' i ON k.object_id = i.id
         WHERE i.id IS NULL'
     );
 
-    // Delete all fields keys for which no item exist
+    // Delete all files keys for which no file exist or file is linked to a missing item
+    DB::query(
+        'DELETE k.* FROM ' . prefixTable('sharekeys_files') . ' k
+        LEFT JOIN ' . prefixTable('files') . ' f ON k.object_id = f.id
+        LEFT JOIN ' . prefixTable('items') . ' i ON f.id_item = i.id
+        WHERE f.id IS NULL OR i.id IS NULL'
+    );
+// Delete all fields keys for which no item exist
     DB::query(
         'DELETE k.* FROM ' . prefixTable('sharekeys_fields') . ' k
         LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id

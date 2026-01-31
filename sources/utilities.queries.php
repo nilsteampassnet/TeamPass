@@ -103,448 +103,492 @@ if (null !== $post_type) {
     switch ($post_type) {
             //CASE list of recycled elements
         case 'recycled_bin_elements':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+    // Check KEY
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    } elseif ($session->get('user-read_only') === 1) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('error_not_allowed_to'),
+            ),
+            'encode'
+        );
+        break;
+    }
 
-            // Get list of deleted FOLDERS
-            $arrFolders = array();
-            $rows = DB::query(
-                'SELECT valeur, intitule
-                FROM ' . prefixTable('misc') . '
-                WHERE type  = %s',
-                'folder_deleted'
+    // Deleted folders (recycled bin) - stored in misc (type folder_deleted)
+    $deletedFolders = tpGetDeletedFoldersFromMisc();
+    $deletedFolderIds = array_keys($deletedFolders);
+
+    // Build full paths for deleted folders (mix of deleted ancestors + existing parents)
+    $deletedFolderParentIds = array();
+    foreach ($deletedFolders as $df) {
+        $deletedFolderParentIds[] = (int) ($df['parent_id'] ?? 0);
+    }
+    $pathIdsToFetch = array_values(array_unique(array_filter($deletedFolderParentIds, static function ($v) {
+        return (int) $v > 0;
+    })));
+    $existingPaths = tpGetNestedTreeFolderPaths($pathIdsToFetch);
+
+    $deletedPathsMemo = array();
+
+    // Precompute deleted items count per deleted folder (direct count, then compute subtree count in PHP)
+    // IMPORTANT: for items belonging to a deleted folder, older instances may have inactif=1 without deleted_at set.
+    // We count deleted items based on inactif only.
+    $directDeletedItemsCount = array();
+    if (empty($deletedFolderIds) === false) {
+        $rowsCounts = DB::query(
+            'SELECT id_tree, COUNT(*) AS cnt
+            FROM ' . prefixTable('items') . '
+            WHERE id_tree IN %li
+              AND inactif = %i
+            GROUP BY id_tree',
+            $deletedFolderIds,
+            1
+        );
+        foreach ($rowsCounts as $rowCount) {
+            $directDeletedItemsCount[(int) $rowCount['id_tree']] = (int) $rowCount['cnt'];
+        }
+    }
+
+    $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
+    $subtreeCountMemo = array();
+
+    // Build folders array with full path + count of deleted items in this folder subtree
+    $arrFolders = array();
+    foreach ($deletedFolders as $folderId => $folderInfo) {
+        $path = tpBuildDeletedFolderPath((int) $folderId, $deletedFolders, $existingPaths, $deletedPathsMemo);
+        if ($path === '') {
+            $path = (string) ($folderInfo['title'] ?? '');
+        }
+
+        $itemsCount = tpComputeDeletedFolderSubtreeItemsCount((int) $folderId, $deletedChildren, $directDeletedItemsCount, $subtreeCountMemo);
+
+        $arrFolders[] = array(
+            'id' => (int) $folderId,
+            'label' => (string) ($folderInfo['title'] ?? ''),
+            'path' => $path,
+            'items_count' => (int) $itemsCount,
+        );
+    }
+
+    // Sort folders by path for readability
+    usort($arrFolders, static function ($a, $b) {
+        return strcmp((string) $a['path'], (string) $b['path']);
+    });
+
+    // Deleted items (only if the parent folder still exists).
+    // If the folder was deleted too, the item must be restored by restoring the folder (to avoid restoring an "invisible" item).
+    $arrItems = array();
+    $rows = DB::query(
+        'SELECT u.login as login, u.name as name, u.lastname as lastname,
+        i.id as id, i.label as label,
+        i.id_tree as id_tree, l.date as date, n.title as folder_title,
+        a.del_enabled as del_enabled, a.del_value as del_value, a.del_type as del_type
+        FROM ' . prefixTable('log_items') . ' as l
+        INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
+        LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
+        INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree=n.id)
+        LEFT JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
+        WHERE l.action = %s
+        AND TRIM(COALESCE(i.deleted_at, "")) <> ""
+        ORDER BY l.id_item ASC, CAST(l.date AS UNSIGNED) DESC',
+        'at_delete'
+    );
+
+    // Prepare paths for existing folders
+    $treeIds = array();
+    foreach ($rows as $record) {
+        if (isset($record['id_tree']) === true && $record['id_tree'] !== null) {
+            $treeIds[] = (int) $record['id_tree'];
+        }
+    }
+    $treeIds = array_values(array_unique($treeIds));
+    $existingFolderPaths = tpGetNestedTreeFolderPaths($treeIds);
+
+    // Build items array (one row per item)
+    $prev_id = '';
+    foreach ($rows as $record) {
+        if ($record['id'] !== $prev_id) {
+            $folderId = (int) $record['id_tree'];
+
+            $folderTitle = (string) ($record['folder_title'] ?? '');
+            $folderPath = $existingFolderPaths[$folderId] ?? $folderTitle;
+
+            $itemLabel = (string) ($record['label'] ?? '');
+            $itemPath = ($folderPath !== '' ? $folderPath . ' / ' : '') . $itemLabel;
+
+            $arrItems[] = array(
+                'id' => (int) $record['id'],
+                'label' => $itemLabel,
+                'path' => $itemPath,
+                'date' => date($SETTINGS['date_format'], (int) $record['date']),
+                'login' => (string) ($record['login'] ?? ''),
+                'name' => trim((string) ($record['name'] ?? '') . ' ' . (string) ($record['lastname'] ?? '')),
+                'folder_label' => $folderTitle,
+                'folder_path' => $folderPath,
+                'del_enabled' => (bool) $record['del_enabled'],
+                'del_value' => (int) $record['del_type'] === 1 ? (int) $record['del_value'] : $record['del_value'],
+                'del_type' => (int) $record['del_type'],
             );
-            foreach ($rows as $record) {
-                $folderInfo = explode(', ', $record['valeur']);
-                array_push(
-                    $arrFolders,
-                    array(
-                        'id' => $folderInfo[0],
-                        'label' => $folderInfo[2],
-                    )
-                );
-            }
+        }
+        $prev_id = $record['id'];
+    }
 
-            //Get list of deleted ITEMS
-            $arrItems = array();
-            //DB::debugmode(true);
-            $rows = DB::query(
-                'SELECT u.login as login, u.name as name, u.lastname as lastname,
-                i.id as id, i.label as label,
-                i.id_tree as id_tree, l.date as date, n.title as folder_title,
-                a.del_enabled as del_enabled, a.del_value as del_value, a.del_type as del_type
-                FROM ' . prefixTable('log_items') . ' as l
-                INNER JOIN ' . prefixTable('items') . ' as i ON (l.id_item=i.id)
-                LEFT JOIN ' . prefixTable('users') . ' as u ON (l.id_user=u.id)
-                LEFT JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree=n.id)
-                LEFT JOIN ' . prefixTable('automatic_del') . ' as a ON (l.id_item = a.item_id)
-                WHERE l.action = %s
-                AND i.perso = %i
-                AND TRIM(COALESCE(i.deleted_at, "")) <> ""
-                ORDER BY l.id_item ASC, CAST(l.date AS UNSIGNED) DESC',
-                'at_delete',
-                0
-            );
-            $prev_id = '';
-            foreach ($rows as $record) {
-                if ($record['id'] !== $prev_id) {
-                    if (array_search($record['id_tree'], array_column($arrFolders, 'id')) !== false) {
-                        $thisFolder = true;
-                    } else {
-                        $thisFolder = false;
-                    }
-
-                    array_push(
-                        $arrItems,
-                        array(
-                            'id' => $record['id'],
-                            'label' => $record['label'],
-                            'date' => date($SETTINGS['date_format'], (int) $record['date']),
-                            'login' => $record['login'],
-                            'name' => $record['name'] . ' ' . $record['lastname'],
-                            'folder_label' => $record['folder_title'],
-                            'folder_deleted' => $thisFolder,
-                            'del_enabled' => (bool) $record['del_enabled'],
-                            'del_value' => (int) $record['del_type'] === 1 ? (int) $record['del_value'] : $record['del_value'],
-                            'del_type' => (int) $record['del_type'],
-                        )
-                    );
-                }
-                $prev_id = $record['id'];
-            }
-            
-            // send data
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                    'folders' => $arrFolders,
-                    'items' => $arrItems,
-                ),
-                'encode'
-            );
-            break;
-
+    // send data
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => '',
+            'folders' => $arrFolders,
+            'items' => $arrItems,
+        ),
+        'encode'
+    );
+    break;
         //CASE recycle selected recycled elements
         case 'restore_selected_objects':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+    // Check KEY
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    } elseif ($session->get('user-read_only') === 1) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('error_not_allowed_to'),
+            ),
+            'encode'
+        );
+        break;
+    }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
+    // decrypt and retrieve data in JSON format
+    $dataReceived = prepareExchangedData(
+        $post_data,
+        'decode'
+    );
+
+    // Prepare variables
+    $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    // Deleted folders index (from misc)
+    $deletedFolders = tpGetDeletedFoldersFromMisc();
+    $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
+
+    // Restore folders
+    $foldersSelectedSubtree = array();
+    foreach ($post_folders as $folderIdRaw) {
+        $folderId = (int) $folderIdRaw;
+        if ($folderId <= 0 || isset($deletedFolders[$folderId]) === false) {
+            continue;
+        }
+
+        $subtree = tpCollectDeletedFolderSubtree($folderId, $deletedChildren);
+        foreach ($subtree as $fid) {
+            $foldersSelectedSubtree[$fid] = true;
+        }
+    }
+
+    // Ensure parent chain exists for each restored folder (restore ancestors only if needed)
+    $foldersToInsert = $foldersSelectedSubtree;
+    foreach (array_keys($foldersSelectedSubtree) as $fid) {
+        $parent = (int) ($deletedFolders[$fid]['parent_id'] ?? 0);
+        while ($parent > 0) {
+            // If parent exists in tree, stop climbing
+            $parentExists = DB::queryFirstField(
+                'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+                $parent
             );
-
-            // Prepare variables
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-            // Folders restore
-            foreach ($post_folders as $folderId) {
-                $data = DB::queryFirstRow(
-                    'SELECT valeur
-                    FROM ' . prefixTable('misc') . "
-                    WHERE type = 'folder_deleted'
-                    AND intitule = %s",
-                    'f' . $folderId
-                );
-                if ((int) $data['valeur'] !== 0) {
-                    $folderData = explode(', ', $data['valeur']);
-                    //insert deleted folder
-                    DB::insert(
-                        prefixTable('nested_tree'),
-                        array(
-                            'id' => $folderData[0],
-                            'parent_id' => $folderData[1],
-                            'title' => $folderData[2],
-                            'nleft' => $folderData[3],
-                            'nright' => $folderData[4],
-                            'nlevel' => $folderData[5],
-                            'bloquer_creation' => $folderData[6],
-                            'bloquer_modification' => $folderData[7],
-                            'personal_folder' => $folderData[8],
-                            'renewal_period' => $folderData[9],
-                            'categories' => '',
-                        )
-                    );
-
-                    //delete log
-                    DB::delete(
-                        prefixTable('misc'),
-                        'type = %s AND intitule = %s',
-                        'folder_deleted',
-                        'f' . $folderId
-                    );
-
-                    // Restore all items in this folder
-                    DB::update(
-                        prefixTable('items'),
-                        array(
-                            'inactif' => '0',
-                            'deleted_at' => null,
-                        ),
-                        'id_tree = %s',
-                        (int) $folderId
-                    );
-
-                    // Get list of all items in thos folder
-                    $items = DB::query(
-                        'SELECT id
-                        FROM ' . prefixTable('items') . '
-                        WHERE id_tree = %i',
-                        $folderId
-                    );
-
-                    // log
-                    foreach ($items as $item) {
-                        logItems(
-                            $SETTINGS,
-                            (int) $item['id'],
-                            '',
-                            $session->get('user-id'),
-                            'at_restored',
-                            $session->get('user-login')
-                        );
-                    }
-                }
+            if (empty($parentExists) === false) {
+                break;
             }
 
-            //restore ITEMS
-            foreach ($post_items as $itemId) {
-                DB::update(
-                    prefixTable('items'),
-                    array(
-                        'inactif' => '0',
-                        'deleted_at' => null,
-                    ),
-                    'id = %i',
-                    $itemId
-                );
-                //log
-                logItems(
-                    $SETTINGS,
-                    (int) $itemId,
-                    '',
-                    $session->get('user-id'),
-                    'at_restored',
-                    $session->get('user-login')
-                );
+            // If parent is not in deleted folders, stop (cannot restore further)
+            if (isset($deletedFolders[$parent]) === false) {
+                break;
             }
 
-            updateCacheTable('reload', null);
+            // Add the parent folder to insertion set
+            if (isset($foldersToInsert[$parent]) === false) {
+                $foldersToInsert[$parent] = true;
+            }
 
-            // send data
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
-                'encode'
+            $parent = (int) ($deletedFolders[$parent]['parent_id'] ?? 0);
+        }
+    }
+
+    $folderIdsToInsert = array_map('intval', array_keys($foldersToInsert));
+
+    // Sort folders to insert: parents first
+    $depthMemo = array();
+    usort($folderIdsToInsert, static function ($a, $b) use ($deletedFolders, &$depthMemo) {
+        $da = tpGetDeletedFolderDepth((int) $a, $deletedFolders, $depthMemo);
+        $db = tpGetDeletedFolderDepth((int) $b, $deletedFolders, $depthMemo);
+        if ($da === $db) {
+            return $a <=> $b;
+        }
+        return $da <=> $db;
+    });
+
+    // Default folder complexity (low)
+    $defaultComplexity = defined('TP_PW_STRENGTH_1') ? (int) TP_PW_STRENGTH_1 : 1;
+
+    foreach ($folderIdsToInsert as $fid) {
+        if (isset($deletedFolders[$fid]) === false) {
+            continue;
+        }
+
+        // Skip if folder already exists (was restored by another selection)
+        $exists = DB::queryFirstField(
+            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $fid
+        );
+        if (empty($exists) === false) {
+            // Ensure complexity exists (some instances may have lost it)
+            tpEnsureFolderComplexity($fid, $defaultComplexity);
+            continue;
+        }
+
+        $fd = $deletedFolders[$fid];
+        $parentId = (int) ($fd['parent_id'] ?? 0);
+
+        // If parent doesn't exist (and was not restored), attach to root to avoid a broken tree
+        if ($parentId > 0) {
+            $parentExists = DB::queryFirstField(
+                'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+                $parentId
             );
-            break;
+            if (empty($parentExists) === true && isset($foldersToInsert[$parentId]) === false) {
+                $parentId = 0;
+            }
+        }
 
+        $insertData = array(
+            'id' => (int) $fid,
+            'parent_id' => (int) $parentId,
+            'title' => (string) ($fd['title'] ?? ''),
+            'nleft' => 0,
+            'nright' => 0,
+            'nlevel' => 0,
+            'bloquer_creation' => (int) ($fd['bloquer_creation'] ?? 0),
+            'bloquer_modification' => (int) ($fd['bloquer_modification'] ?? 0),
+            'personal_folder' => (int) ($fd['personal_folder'] ?? 0),
+            'renewal_period' => (int) ($fd['renewal_period'] ?? 0),
+            'categories' => (string) ($fd['categories'] ?? ''),
+        );
+
+        // Optional fields (available in newer folder_deleted format)
+        if (isset($fd['fa_icon']) === true) {
+            $insertData['fa_icon'] = (string) $fd['fa_icon'];
+        }
+        if (isset($fd['fa_icon_selected']) === true) {
+            $insertData['fa_icon_selected'] = (string) $fd['fa_icon_selected'];
+        }
+        if (isset($fd['is_template']) === true) {
+            $insertData['is_template'] = (int) $fd['is_template'];
+        }
+
+        DB::insert(prefixTable('nested_tree'), $insertData);
+
+        // Ensure folder complexity exists (required for item editability)
+        tpEnsureFolderComplexity($fid, $defaultComplexity);
+    }
+
+    // Remove restored folders from recycled bin (misc folder_deleted entries)
+    foreach ($folderIdsToInsert as $fid) {
+        DB::delete(
+            prefixTable('misc'),
+            'type = %s AND intitule = %s',
+            'folder_deleted',
+            'f' . (int) $fid
+        );
+    }
+
+    // Restore items that belong to restored folders that were explicitly selected (folder subtree)
+    $folderIdsToRestoreItems = array_map('intval', array_keys($foldersSelectedSubtree));
+    if (empty($folderIdsToRestoreItems) === false) {
+        DB::update(
+            prefixTable('items'),
+            array(
+                'inactif' => 0,
+                'deleted_at' => null,
+            ),
+            'id_tree IN %li',
+            $folderIdsToRestoreItems
+        );
+
+        // Log restored items
+$items = DB::query(
+    'SELECT id, label
+    FROM ' . prefixTable('items') . '
+    WHERE id_tree IN %li',
+    $folderIdsToRestoreItems
+);
+foreach ($items as $item) {
+    logItems(
+        $SETTINGS,
+        (int) $item['id'],
+        (string) $item['label'],
+        (int) $session->get('user-id'),
+        'at_restored',
+        (string) $session->get('user-login')
+    );
+}
+}
+
+    // Restore selected items
+    foreach ($post_items as $itemIdRaw) {
+        $itemId = (int) $itemIdRaw;
+        if ($itemId <= 0) {
+            continue;
+        }
+
+        DB::update(
+            prefixTable('items'),
+            array(
+                'inactif' => 0,
+                'deleted_at' => null,
+            ),
+            'id = %i',
+            $itemId
+        );$itemLabel = DB::queryFirstField(
+    'SELECT label
+    FROM ' . prefixTable('items') . '
+    WHERE id = %i',
+    $itemId
+);
+logItems(
+    $SETTINGS,
+    $itemId,
+    (string) ($itemLabel ?? ''),
+    (int) $session->get('user-id'),
+    'at_restored',
+    (string) $session->get('user-login')
+);
+}
+
+    // Rebuild tree indexes and update cache
+    $tree->rebuild();
+    updateCacheTable('reload', null);
+
+    // send data
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => '',
+        ),
+        'encode'
+    );
+    break;
         //CASE delete selected recycled elements
         case 'delete_selected_objects':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            } elseif ($session->get('user-read_only') === 1) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+    // Check KEY
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    } elseif ($session->get('user-read_only') === 1) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('error_not_allowed_to'),
+            ),
+            'encode'
+        );
+        break;
+    }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
+    // decrypt and retrieve data in JSON format
+    $dataReceived = prepareExchangedData(
+        $post_data,
+        'decode'
+    );
 
-            // Prepare variables
-            $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    // Prepare variables
+    $post_folders = filter_var_array($dataReceived['folders'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $post_items = filter_var_array($dataReceived['items'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
-            // Folders to delete
-            foreach ($post_folders as $folderId) {
-                $data = DB::queryFirstRow(
-                    'SELECT valeur
-                    FROM ' . prefixTable('misc') . "
-                    WHERE type = 'folder_deleted'
-                    AND intitule = %s",
-                    'f' . $folderId
-                );
-                if ((int) $data['valeur'] !== 0) {
-                    $exploded = explode(',', $data['valeur']);
-                    $folderData = array_map('trim', $exploded);
+    // Deleted folders index (from misc) - used to delete a full subtree from the recycled bin
+    $deletedFolders = tpGetDeletedFoldersFromMisc();
+    $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
 
-                    //delete log
-                    DB::delete(
-                        prefixTable('misc'),
-                        'type = %s AND intitule = %s',
-                        'folder_deleted',
-                        'f' . $folderData[0]
-                    );
+    // Permanently delete FOLDERS (and all deleted subfolders + items they contain)
+    $folderIdsToDelete = array();
+    foreach ($post_folders as $folderIdRaw) {
+        $folderId = (int) $folderIdRaw;
+        if ($folderId <= 0 || isset($deletedFolders[$folderId]) === false) {
+            continue;
+        }
 
-                    // Delete all items in this folder
-                    DB::delete(
-                        prefixTable('items'),
-                        'id_tree = %s AND inactif = %i',
-                        $folderData[0],
-                        1
-                    );
+        $subtree = tpCollectDeletedFolderSubtree($folderId, $deletedChildren);
+        foreach ($subtree as $fid) {
+            $folderIdsToDelete[(int) $fid] = true;
+        }
+    }
+    $folderIdsToDelete = array_map('intval', array_keys($folderIdsToDelete));
 
-                    // Get list of all items in thos folder
-                    $items = DB::query(
-                        'SELECT id
-                        FROM ' . prefixTable('items') . '
-                        WHERE id_tree = %i',
-                        $folderData[0]
-                    );
+    foreach ($folderIdsToDelete as $folderId) {
+        // Permanently delete all (soft-deleted) items in this folder
+        $items = DB::query(
+            'SELECT id
+            FROM ' . prefixTable('items') . '
+            WHERE id_tree = %i AND inactif = %i',
+            $folderId,
+            1
+        );
+        foreach ($items as $item) {
+            tpHardDeleteItem((int) $item['id']);
+        }
 
-                    // log
-                    foreach ($items as $item) {
-                        // delete logs
-                        DB::delete(
-                            prefixTable('log_items'),
-                            'id_item = %i',
-                            $item['id']
-                        );
+        // Delete the folder recycled-bin entry
+        DB::delete(
+            prefixTable('misc'),
+            'type = %s AND intitule = %s',
+            'folder_deleted',
+            'f' . $folderId
+        );
+    }
 
-                        // Delete all fields
-                        $fields = DB::query(
-                            'SELECT id
-                            FROM ' . prefixTable('categories_items') . '
-                            WHERE item_id = %i',
-                            $folderData[0]
-                        );
-                        foreach ($fields as $field) {
-                            DB::delete(
-                                prefixTable('sharekeys_fields'),
-                                'object_id = %i',
-                                $field['id']
-                            );
-                        }
-                        DB::delete(
-                            prefixTable('categories_items'),
-                            'item_id = %i',
-                            $item['id']
-                        );
-                        
-                        // Delete all files
-                        $files = DB::query(
-                            'SELECT id
-                            FROM ' . prefixTable('files') . '
-                            WHERE id_item = %i',
-                            $folderData[0]
-                        );
-                        foreach ($files as $file) {
-                            DB::delete(
-                                prefixTable('sharekeys_files'),
-                                'object_id = %i',
-                                $file['id']
-                            );
-                        }
-                        DB::delete(
-                            prefixTable('files'),
-                            'id_item = %i',
-                            $item['id']
-                        );
+    // Permanently delete ITEMS
+    foreach ($post_items as $itemIdRaw) {
+        tpHardDeleteItem((int) $itemIdRaw);
+    }
 
-                        // delete all sharekeys
-                        DB::delete(
-                            prefixTable('sharekeys_items'),
-                            'object_id = %i',
-                            $item['id']
-                        );
-                    }
-                }
-            }
+    // Rebuild tree indexes and update cache
+    $tree->rebuild();
+    updateCacheTable('reload', null);
 
-            //delete ITEMS
-            foreach ($post_items as $itemId) {
-                DB::delete(
-                    prefixTable('items'),
-                    'id = %i',
-                    $itemId
-                );
-                DB::delete(
-                    prefixTable('log_items'),
-                    'id_item = %i',
-                    $itemId
-                );     
-                
-                // Delete all fields
-                DB::delete(
-                    prefixTable('categories_items'),
-                    'item_id = %i',
-                    $itemId
-                );
-
-                // Delete all sharekey
-                DB::delete(
-                    prefixTable('sharekeys_items'),
-                    'object_id = %i',
-                    $itemId
-                );
-
-                // Delete sharekey fields
-                $itemFields = DB::query(
-                    'SELECT id
-                    FROM ' . prefixTable('categories_items') . '
-                    WHERE item_id = %i',
-                    $itemId
-                );
-                foreach ($itemFields as $field) {
-                    DB::delete(
-                        prefixTable('sharekeys_fields'),
-                        'object_id = %i',
-                        $field
-                    );
-                }
-
-                // Delete sharekey files
-                $itemFiles = DB::query(
-                    'SELECT id
-                    FROM ' . prefixTable('files') . '
-                    WHERE id_item = %i',
-                    $itemId
-                );
-                foreach ($itemFiles as $file) {
-                    DB::delete(
-                        prefixTable('sharekeys_files'),
-                        'object_id = %i',
-                        $file
-                    );
-                }
-                DB::delete(
-                    prefixTable('files'),
-                    'id_item = %i',
-                    $itemId
-                );
-            }
-
-            updateCacheTable('reload', NULL);
-
-            // send data
-            echo prepareExchangedData(
-                array(
-                    'error' => false,
-                    'message' => '',
-                ),
-                'encode'
-            );
-            break;
-
-            /*
+    // send data
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => '',
+        ),
+        'encode'
+    );
+    break;
+/*
         * CASE purging logs
         */
         case 'purge_logs':
@@ -856,4 +900,347 @@ if (null !== $post_type) {
             );
             break;
     }
+}
+
+
+/**
+ * Parse "folder_deleted" misc value (legacy CSV or JSON).
+ *
+ * Legacy format (comma-separated): id, parent_id, title, nleft, nright, nlevel, bloquer_creation, bloquer_modification, personal_folder, renewal_period
+ */
+function tpParseFolderDeletedValeur(string $valeur): array
+{
+    $valeur = trim($valeur);
+    if ($valeur === '') {
+        return array();
+    }
+
+    // JSON format (preferred)
+    if (substr($valeur, 0, 1) === '{') {
+        $decoded = json_decode($valeur, true);
+        if (is_array($decoded) === true && json_last_error() === JSON_ERROR_NONE) {
+            return $decoded;
+        }
+    }
+
+    // Legacy CSV format
+    $parts = array_map('trim', explode(',', $valeur));
+
+    return array(
+        'id' => (int) ($parts[0] ?? 0),
+        'parent_id' => (int) ($parts[1] ?? 0),
+        'title' => (string) ($parts[2] ?? ''),
+        'nleft' => (int) ($parts[3] ?? 0),
+        'nright' => (int) ($parts[4] ?? 0),
+        'nlevel' => (int) ($parts[5] ?? 0),
+        'bloquer_creation' => (int) ($parts[6] ?? 0),
+        'bloquer_modification' => (int) ($parts[7] ?? 0),
+        'personal_folder' => (int) ($parts[8] ?? 0),
+        'renewal_period' => (int) ($parts[9] ?? 0),
+    );
+}
+
+/**
+ * Fetch full paths for existing folders from nested_tree (id => "A / B / C").
+ */
+function tpGetNestedTreeFolderPaths(array $folderIds): array
+{
+    if (empty($folderIds) === true) {
+        return array();
+    }
+
+    $folderIds = array_values(array_unique(array_map('intval', $folderIds)));
+
+    $rows = DB::query(
+        'SELECT node.id,
+           GROUP_CONCAT(parent.title ORDER BY parent.nlevel SEPARATOR " / ") AS path
+        FROM ' . prefixTable('nested_tree') . ' AS node
+        JOIN ' . prefixTable('nested_tree') . ' AS parent
+          ON parent.nleft <= node.nleft AND parent.nright >= node.nright
+        WHERE node.id IN %li
+        GROUP BY node.id',
+        $folderIds
+    );
+
+    $paths = array();
+    foreach ($rows as $row) {
+        $paths[(int) $row['id']] = (string) $row['path'];
+    }
+
+    return $paths;
+}
+
+/**
+ * Build the full path for a deleted folder by walking through misc folder_deleted and existing nested_tree.
+ */
+function tpBuildDeletedFolderPath(int $folderId, array $deletedFolders, array $existingPaths, array &$memo): string
+{
+    if (isset($memo[$folderId]) === true) {
+        return (string) $memo[$folderId];
+    }
+
+    // If the folder exists in nested_tree (should not happen for deleted folders, but safe)
+    if (isset($existingPaths[$folderId]) === true) {
+        $memo[$folderId] = (string) $existingPaths[$folderId];
+        return (string) $memo[$folderId];
+    }
+
+    if (isset($deletedFolders[$folderId]) === false) {
+        $memo[$folderId] = '';
+        return '';
+    }
+
+    $title = (string) $deletedFolders[$folderId]['title'];
+    $parentId = (int) $deletedFolders[$folderId]['parent_id'];
+
+    $parentPath = '';
+    if ($parentId > 0) {
+        if (isset($existingPaths[$parentId]) === true) {
+            $parentPath = (string) $existingPaths[$parentId];
+        } elseif (isset($deletedFolders[$parentId]) === true) {
+            $parentPath = tpBuildDeletedFolderPath($parentId, $deletedFolders, $existingPaths, $memo);
+        }
+    }
+
+    if ($parentPath !== '') {
+        $memo[$folderId] = $parentPath . ' / ' . $title;
+    } else {
+        $memo[$folderId] = $title;
+    }
+
+    return (string) $memo[$folderId];
+}
+
+/**
+ * Read deleted folders from misc table (type folder_deleted) and return a normalized map:
+ *   [folderId => ['id'=>..,'parent_id'=>..,'title'=>.., ...]]
+ *
+ * Supports both legacy "csv" format and JSON format.
+ */
+function tpGetDeletedFoldersFromMisc(): array
+{
+    $deletedFolders = array();
+
+    $rows = DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s',
+        'folder_deleted'
+    );
+
+    foreach ($rows as $record) {
+        $folderData = tpParseFolderDeletedValeur((string) $record['valeur']);
+        if (empty($folderData) === true || empty($folderData['id']) === true) {
+            continue;
+        }
+
+        $folderId = (int) $folderData['id'];
+        $deletedFolders[$folderId] = $folderData;
+        $deletedFolders[$folderId]['id'] = $folderId;
+        $deletedFolders[$folderId]['parent_id'] = (int) ($folderData['parent_id'] ?? 0);
+        $deletedFolders[$folderId]['title'] = (string) ($folderData['title'] ?? '');
+    }
+
+    return $deletedFolders;
+}
+
+/**
+ * Build a parent => children index from deleted folders.
+ *
+ * @return array<int, array<int>>
+ */
+function tpBuildDeletedFoldersChildrenMap(array $deletedFolders): array
+{
+    $children = array();
+
+    foreach ($deletedFolders as $folderId => $folderData) {
+        $parentId = (int) ($folderData['parent_id'] ?? 0);
+        if ($parentId <= 0) {
+            continue;
+        }
+
+        if (isset($children[$parentId]) === false) {
+            $children[$parentId] = array();
+        }
+        $children[$parentId][] = (int) $folderId;
+    }
+
+    return $children;
+}
+
+/**
+ * Collect the full subtree of a deleted folder (folder itself + deleted descendants).
+ *
+ * @return array<int>
+ */
+function tpCollectDeletedFolderSubtree(int $rootFolderId, array $childrenMap): array
+{
+    if ($rootFolderId <= 0) {
+        return array();
+    }
+
+    $seen = array();
+    $stack = array((int) $rootFolderId);
+
+    while (empty($stack) === false) {
+        $id = (int) array_pop($stack);
+        if ($id <= 0 || isset($seen[$id]) === true) {
+            continue;
+        }
+
+        $seen[$id] = true;
+
+        if (isset($childrenMap[$id]) === true) {
+            foreach ($childrenMap[$id] as $childId) {
+                $stack[] = (int) $childId;
+            }
+        }
+    }
+
+    return array_map('intval', array_keys($seen));
+}
+
+/**
+ * Compute deleted items count for a deleted folder subtree.
+ */
+function tpComputeDeletedFolderSubtreeItemsCount(int $folderId, array $childrenMap, array $directCounts, array &$memo): int
+{
+    if (isset($memo[$folderId]) === true) {
+        return (int) $memo[$folderId];
+    }
+
+    $count = (int) ($directCounts[$folderId] ?? 0);
+
+    if (isset($childrenMap[$folderId]) === true) {
+        foreach ($childrenMap[$folderId] as $childId) {
+            $count += tpComputeDeletedFolderSubtreeItemsCount((int) $childId, $childrenMap, $directCounts, $memo);
+        }
+    }
+
+    $memo[$folderId] = $count;
+
+    return $count;
+}
+
+/**
+ * Compute a folder depth in deleted folders graph (used to restore parents first).
+ */
+function tpGetDeletedFolderDepth(int $folderId, array $deletedFolders, array &$memo): int
+{
+    if (isset($memo[$folderId]) === true) {
+        return (int) $memo[$folderId];
+    }
+
+    if (isset($deletedFolders[$folderId]) === false) {
+        $memo[$folderId] = 0;
+        return 0;
+    }
+
+    $parentId = (int) ($deletedFolders[$folderId]['parent_id'] ?? 0);
+    if ($parentId <= 0 || isset($deletedFolders[$parentId]) === false) {
+        $memo[$folderId] = 0;
+        return 0;
+    }
+
+    $memo[$folderId] = 1 + tpGetDeletedFolderDepth($parentId, $deletedFolders, $memo);
+    return (int) $memo[$folderId];
+}
+
+/**
+ * Ensure a folder has a password complexity policy (misc: type=complex).
+ * Required for correct item editability after folder restore.
+ */
+function tpEnsureFolderComplexity(int $folderId, int $defaultComplexity): void
+{
+    if ($folderId <= 0) {
+        return;
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %i',
+        'complex',
+        $folderId
+    );
+
+    if (isset($row['valeur']) === false) {
+        DB::insert(
+            prefixTable('misc'),
+            array(
+                'type' => 'complex',
+                'intitule' => (int) $folderId,
+                'valeur' => (int) $defaultComplexity,
+            )
+        );
+        return;
+    }
+
+    if (trim((string) $row['valeur']) === '') {
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => (int) $defaultComplexity,
+            ),
+            'type = %s AND intitule = %i',
+            'complex',
+            $folderId
+        );
+    }
+}
+
+/**
+ * Permanently delete an item and its dependent records.
+ */
+function tpHardDeleteItem(int $itemId): void
+{
+    if ($itemId <= 0) {
+        return;
+    }
+
+    // Delete item logs
+    DB::delete(prefixTable('log_items'), 'id_item = %i', $itemId);
+
+    // Delete deletion policy (if any)
+    DB::delete(prefixTable('automatic_del'), 'item_id = %i', $itemId);
+
+    // Delete OTP data
+    DB::delete(prefixTable('items_otp'), 'item_id = %i', $itemId);
+
+    // Delete edition / change history
+    DB::delete(prefixTable('items_change'), 'item_id = %i', $itemId);
+    DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
+
+    // Delete KB link
+    DB::delete(prefixTable('kb_items'), 'item_id = %i', $itemId);
+
+    // Delete sharekeys for the item itself
+    DB::delete(prefixTable('sharekeys_items'), 'object_id = %i', $itemId);
+
+    // Delete custom fields and their sharekeys
+    $fields = DB::query(
+        'SELECT id
+        FROM ' . prefixTable('categories_items') . '
+        WHERE item_id = %i',
+        $itemId
+    );
+    foreach ($fields as $field) {
+        DB::delete(prefixTable('sharekeys_fields'), 'object_id = %i', (int) $field['id']);
+    }
+    DB::delete(prefixTable('categories_items'), 'item_id = %i', $itemId);
+
+    // Delete files and their sharekeys
+    $files = DB::query(
+        'SELECT id
+        FROM ' . prefixTable('files') . '
+        WHERE id_item = %i',
+        $itemId
+    );
+    foreach ($files as $file) {
+        DB::delete(prefixTable('sharekeys_files'), 'object_id = %i', (int) $file['id']);
+    }
+    DB::delete(prefixTable('files'), 'id_item = %i', $itemId);
+
+    // Finally delete the item itself
+    DB::delete(prefixTable('items'), 'id = %i', $itemId);
 }

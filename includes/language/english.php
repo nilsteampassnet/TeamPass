@@ -1575,4 +1575,7 @@ return array(
     'bck_meta_orphans_tooltip_none' => 'No orphan metadata detected.',
     'bck_meta_orphans_purge_done' => 'Orphan metadata purged: {DELETED} file(s) deleted.',
     'bck_meta_orphans_purge_none' => 'No orphan metadata to purge.',
+    'recycled_bin_folder_contains_items' => 'Contains %s deleted items (restore the folder to recover them)',
+    'sharekeys_encryption_migration_required' => 'Sharekeys Encryption Migration Required',
+    'sharekeys_remaining_users' => 'remaining user(s)',
 );

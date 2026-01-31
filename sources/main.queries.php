@@ -1552,7 +1552,7 @@ function refreshUserItemsSeenList(
     );
     if (DB::count() > 0) {
         foreach ($rows as $record) {
-            if (in_array($record['id']->id, array_column($arr_html, 'id')) === false) {
+            if (in_array($record['id'], array_column($arr_html, 'id')) === false) {
                 array_push(
                     $arr_html,
                     array(
