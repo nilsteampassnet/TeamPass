@@ -2,10 +2,6 @@
 
 Official extension for Chrome, Firefox, and Edge browsers enabling seamless integration with your Teampass server.
 
-⚠️ **Note**: Currently in testing phase.
-
-**Written for version**: 1.4.24
-
 ---
 
 ## 📋 Features
@@ -20,7 +16,7 @@ The Teampass extension currently offers the following features:
 - ✨ **Auto-fill**: Login form completion
 - 👁️ **Details view**: Complete information display with password show/hide
 - 🎲 **Integrated password generator**: Generate passwords based upon criteria
-- 🧠 **Henerated passwords history**: Store last generated passwords
+- 🧠 **Generated passwords history**: Store last generated passwords
 
 #### Complete CRUD Operations
 - ➕ **Create**: Add new credentials directly from the extension
