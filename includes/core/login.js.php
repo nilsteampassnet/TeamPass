@@ -840,8 +840,8 @@ declare(strict_types=1);
                         if (data.extra === 'ad_user_created') {
                             toastr.remove();
                             toastr.info(
-                                '<?php echo $lang->get('your_attention_please'); ?>',
-                                '<?php echo $lang->get('ad_user_created_automatically'); ?>', {
+                                '<?php echo $lang->get('ad_user_created_automatically'); ?>',
+                                '<?php echo $lang->get('your_attention_please'); ?>', {
                                     timeOut: 0,
                                     positionClass: "toast-top-center"
                                 }
