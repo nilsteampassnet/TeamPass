@@ -32,6 +32,7 @@ use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\HttpFoundation\Request;
 use Defuse\Crypto\Key;
 use TeampassClasses\SessionManager\EncryptedSessionProxy;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 class SessionManager
 {
@@ -39,7 +40,7 @@ class SessionManager
 
     public static function getSession()
     {
-        if (null === self::$session) {            
+        if (null === self::$session) {
             // Load the encryption key
             $key = Key::loadFromAsciiSafeString(file_get_contents(SECUREPATH . "/" . SECUREFILE));
 
@@ -52,6 +53,12 @@ class SessionManager
             if (session_status() === PHP_SESSION_NONE) {
                 $request = Request::createFromGlobals();
                 $isSecure = $request->isSecure();
+
+                // Configure gc_maxlifetime dynamically based on maximum_session_expiration_time
+                // This prevents PHP garbage collection from destroying session files before
+                // the TeamPass application session expires
+                $gcMaxLifetime = self::calculateGcMaxLifetime();
+                ini_set('session.gc_maxlifetime', (string) $gcMaxLifetime);
 
                 // Cookie lifetime is set to 24 hours to maintain PHP session data
                 // This is longer than the application session duration (default 60 min)
@@ -70,6 +77,36 @@ class SessionManager
         }
 
         return self::$session;
+    }
+
+    /**
+     * Calculate the gc_maxlifetime value based on maximum_session_expiration_time setting
+     * Adds a 30-minute buffer to ensure PHP doesn't garbage collect sessions before they expire
+     *
+     * @return int gc_maxlifetime in seconds (minimum 7200s/2h, default 86400s/24h)
+     */
+    private static function calculateGcMaxLifetime(): int
+    {
+        $defaultGcMaxLifetime = 86400; // 24 hours default
+        $minimumGcMaxLifetime = 7200;  // 2 hours minimum
+        $bufferTime = 1800;            // 30 minutes buffer
+
+        try {
+            // Try to load the maximum_session_expiration_time setting
+            $configManager = new ConfigManager();
+            $maxSessionTime = $configManager->getSetting('maximum_session_expiration_time');
+
+            if ($maxSessionTime !== null && is_numeric($maxSessionTime) && (int) $maxSessionTime > 0) {
+                // Convert minutes to seconds and add buffer
+                $calculatedLifetime = ((int) $maxSessionTime * 60) + $bufferTime;
+                return max($calculatedLifetime, $minimumGcMaxLifetime);
+            }
+        } catch (\Exception $e) {
+            // If ConfigManager is not available (e.g., during installation),
+            // fall back to default value
+        }
+
+        return $defaultGcMaxLifetime;
     }
 
     public static function addRemoveFromSessionArray($key, $values = [], $action = 'add') {
