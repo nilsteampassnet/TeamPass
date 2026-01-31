@@ -129,12 +129,12 @@ if (isset($SETTINGS['send_statistics_items'])) {
                 <!-- Statistics main tabs -->
                 <ul class='nav nav-tabs mb-3' id='tp-stats-main-tabs' role='tablist'>
                     <li class='nav-item'>
-                        <a class='nav-link active' id='tp-stats-main-tab-ops' data-toggle='tab' href='#tp-stats-main-ops' role='tab'>
+                        <a class='nav-link active' id='tp-stats-main-tab-ops' data-toggle='tab' href='javascript:void(0)' data-target='#tp-stats-main-ops' role='tab'>
                             <i class='fas fa-chart-line mr-1'></i><?php echo $lang->get('ops_tab_operational'); ?>
                         </a>
                     </li>
                     <li class='nav-item'>
-                        <a class='nav-link' id='tp-stats-main-tab-legacy' data-toggle='tab' href='#tp-stats-main-legacy' role='tab'>
+                        <a class='nav-link' id='tp-stats-main-tab-legacy' data-toggle='tab' href='javascript:void(0)' data-target='#tp-stats-main-legacy' role='tab'>
                             <i class='fas fa-history mr-1'></i><?php echo $lang->get('ops_tab_legacy'); ?>
                         </a>
                     </li>
@@ -176,18 +176,18 @@ if (isset($SETTINGS['send_statistics_items'])) {
                     <div class='card-body'>
                         <ul class='nav nav-tabs' id='tp-ops-tabs' role='tablist'>
                             <li class='nav-item'>
-                                <a class='nav-link active' id='tp-ops-tab-users' data-toggle='tab' href='#tp-ops-users' role='tab'>
+                                <a class='nav-link active' id='tp-ops-tab-users' data-toggle='tab' href='javascript:void(0)' data-target='#tp-ops-users' role='tab'>
                                     <i class='fas fa-users mr-1'></i><?php echo $lang->get('users'); ?>
                                 </a>
                             </li>
                             <li class='nav-item'>
-                                <a class='nav-link' id='tp-ops-tab-roles' data-toggle='tab' href='#tp-ops-roles' role='tab'>
+                                <a class='nav-link' id='tp-ops-tab-roles' data-toggle='tab' href='javascript:void(0)' data-target='#tp-ops-roles' role='tab'>
                                     <i class='fas fa-user-shield mr-1'></i><?php echo $lang->get('roles'); ?>
                                 </a>
                             </li>
                             <li class='nav-item'>
-                                <a class='nav-link' id='tp-ops-tab-items' data-toggle='tab' href='#tp-ops-items' role='tab'>
-                                    <i class='fas fa-key mr-1'></i><?php echo $lang->get('items_all'); ?>
+                                <a class='nav-link' id='tp-ops-tab-items' data-toggle='tab' href='javascript:void(0)' data-target='#tp-ops-items' role='tab'>
+                                    <i class='fas fa-key mr-1'></i><?php echo $lang->get('items'); ?>
                                 </a>
                             </li>
                         </ul>
@@ -578,7 +578,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
                                 </tr>
                                 <tr>
                                     <td>
-                                        <input type="checkbox" class="form-check-input form-control stat_option flat-blue" id="stat_items" style="margin-right:15px;" <?php echo in_array('stat_items', $statistics_items) || count($statistics_items) === 0 ? 'checked' : ''; ?>><label class="ml-2" for="stat_items"><b><?php echo $lang->get('items_all'); ?></b></label>
+                                        <input type="checkbox" class="form-check-input form-control stat_option flat-blue" id="stat_items" style="margin-right:15px;" <?php echo in_array('stat_items', $statistics_items) || count($statistics_items) === 0 ? 'checked' : ''; ?>><label class="ml-2" for="stat_items"><b><?php echo $lang->get('items'); ?></b></label>
                                         <i class="fas fa-question-circle infotip ml-2" title="<?php echo $lang->get('items_statistics'); ?>"></i>
                                     </td>
                                     <td>
