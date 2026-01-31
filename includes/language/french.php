@@ -1584,5 +1584,8 @@ return array(
     'bck_meta_orphans_tooltip_none' => 'Aucune métadonnée orpheline détectée.',
     'bck_meta_orphans_purge_done' => 'Purge terminée : {DELETED} fichier(s) de métadonnées supprimé(s).',
     'bck_meta_orphans_purge_none' => 'Aucune métadonnée orpheline à purger.',
+    'recycled_bin_folder_contains_items' => 'Contient %s éléments supprimés (restaurez le dossier pour les récupérer)',
+    'sharekeys_encryption_migration_required' => 'Migration du chiffrement des sharekeys requise',
+    'sharekeys_remaining_users' => 'utilisateur(s) restant(s)',
 
 );
