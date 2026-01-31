@@ -285,6 +285,133 @@ foreach ($settings as $setting) {
 //---<END 3.1.6
 
 
+
+// ============================================
+// STEP 7: Cleanup legacy deleted objects not compatible with Recycle Bin restore
+// ============================================
+// Goal: avoid HTTP 500 during restore by purging legacy deleted folders/items missing required markers.
+// - Legacy deleted folders with invalid payload in misc.type='folder_deleted' (not JSON and not legacy comma format) are removed.
+// - Legacy deleted items belonging to deleted folders, but missing a valid deleted_at marker (or belonging to an invalid deleted folder) are permanently removed.
+//   Associated orphan records in related tables are then cleaned up.
+
+// 7.1 Permanently delete legacy deleted items in deleted folders that are not safely restorable
+$sql = "DELETE i"
+    . " FROM `" . $pre . "items` i"
+    . " INNER JOIN `" . $pre . "misc` m ON m.type = 'folder_deleted' AND m.intitule = i.id_tree"
+    . " WHERE i.inactif = 1"
+    . "   AND ("
+    . "        (i.deleted_at IS NULL OR i.deleted_at = '' OR i.deleted_at = '0' OR i.deleted_at NOT REGEXP '^[0-9]+$')"
+    . "     OR (m.valeur IS NULL OR m.valeur = '' OR (m.valeur NOT LIKE '{%' AND m.valeur NOT LIKE '%,%'))"
+    . "   )";
+
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to purge legacy deleted items in deleted folders - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// 7.2 Remove invalid legacy deleted folders payloads (these cannot be restored safely)
+$sql = "DELETE FROM `" . $pre . "misc`"
+    . " WHERE type = 'folder_deleted'"
+    . "   AND (valeur IS NULL OR valeur = '' OR (valeur NOT LIKE '{%' AND valeur NOT LIKE '%,%'))";
+
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to purge invalid folder_deleted entries - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// 7.3 Cleanup orphans created by the purge (safe with soft-delete: only deletes rows referencing missing objects)
+// Sharekeys for items
+$sql = "DELETE s FROM `" . $pre . "sharekeys_items` s"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = s.object_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan sharekeys_items - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Categories items
+$sql = "DELETE c FROM `" . $pre . "categories_items` c"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = c.item_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan categories_items - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Sharekeys for fields (object_id references categories_items.id)
+$sql = "DELETE s FROM `" . $pre . "sharekeys_fields` s"
+    . " LEFT JOIN `" . $pre . "categories_items` c ON c.id = s.object_id"
+    . " WHERE c.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan sharekeys_fields - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// OTP
+$sql = "DELETE o FROM `" . $pre . "items_otp` o"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = o.item_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan items_otp - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Change history
+$sql = "DELETE ch FROM `" . $pre . "items_change` ch"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = ch.item_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan items_change - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Editions
+$sql = "DELETE e FROM `" . $pre . "items_edition` e"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = e.item_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan items_edition - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Knowledge base links
+$sql = "DELETE k FROM `" . $pre . "kb_items` k"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = k.item_id"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan kb_items - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Items logs
+$sql = "DELETE l FROM `" . $pre . "log_items` l"
+    . " LEFT JOIN `" . $pre . "items` i ON i.id = l.id_item"
+    . " WHERE i.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan log_items - MySQL Error: ' . mysqli_error($db_link);
+}
+
+// Files and sharekeys_files (object_id references files.id).
+$filesItemColumn = null;
+$resCols = mysqli_query($db_link, "SHOW COLUMNS FROM `" . $pre . "files`");
+if ($resCols !== false) {
+    while ($col = mysqli_fetch_assoc($resCols)) {
+        if ($col['Field'] === 'id_item') {
+            $filesItemColumn = 'id_item';
+            break;
+        }
+        if ($col['Field'] === 'item_id') {
+            $filesItemColumn = 'item_id';
+        }
+    }
+}
+
+if ($filesItemColumn !== null) {
+    $sql = "DELETE f FROM `" . $pre . "files` f"
+        . " LEFT JOIN `" . $pre . "items` i ON i.id = f." . $filesItemColumn
+        . " WHERE i.id IS NULL";
+    if (mysqli_query($db_link, $sql) === false) {
+        $error[] = 'Failed to cleanup orphan files - MySQL Error: ' . mysqli_error($db_link);
+    }
+}
+
+$sql = "DELETE s FROM `" . $pre . "sharekeys_files` s"
+    . " LEFT JOIN `" . $pre . "files` f ON f.id = s.object_id"
+    . " WHERE f.id IS NULL";
+if (mysqli_query($db_link, $sql) === false) {
+    $error[] = 'Failed to cleanup orphan sharekeys_files - MySQL Error: ' . mysqli_error($db_link);
+}
 // Close connection
 mysqli_close($db_link);
 
@@ -293,5 +420,4 @@ echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($e
 
 
 //---< FUNCTIONS
-
 
