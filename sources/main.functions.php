@@ -4397,7 +4397,7 @@ function handleUserKeys(
                 'creator_pwd' => $userTP['pw'],
                 'send_email' => $sendEmailToUser === true ? 1 : 0,
                 'otp_provided_new_value' => 1,
-                'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
+                'email_body' => $emailBody,
                 'user_self_change' => $user_self_change === true ? 1 : 0,
                 'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
             ]),

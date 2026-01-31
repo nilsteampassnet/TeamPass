@@ -3641,6 +3641,13 @@ function purgeDeletedUserById($userId): array
             'author = %i',
             $userId
         );
+        
+        // Delete cache_tree
+        DB::delete(
+            prefixTable('cache_tree'),
+            'user_id = %i',
+            $userId
+        );
 
         // delete personal folder and subfolders
         $data = DB::queryFirstRow(

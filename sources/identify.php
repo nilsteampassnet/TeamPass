@@ -288,21 +288,17 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
-
-        echo json_encode([
-            'data' => prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => '',
-                    'extra' => 'ad_user_created',
-                ],
-                'encode'
-            ),
-            'key' => $session->get('key')
-        ]);
+    if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
+        && (int) $userLdap['retLDAP']['user_info']['has_been_created'] === 1
+    ) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => '',
+                'extra' => 'ad_user_created',
+            ],
+            'encode'
+        );
         return false;
     }
     
@@ -1410,7 +1406,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
         
         // Get and handle user groups
-        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS);
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS, $username);
         handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
         
         // Finalize authentication
@@ -1474,10 +1470,21 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
 {
     try {
         $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
+
+        // Define attributes to retrieve from LDAP
+        // These are needed for user creation and authentication
+        $ldapAttributes = [
+            'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
+            'samaccountname', 'userprincipalname', 'uid',
+            'shadowexpire', 'accountexpires', 'useraccountcontrol',
+            $userAttribute
+        ];
+
         $userADInfos = $ldapHandler['connection']->query()
+            ->select($ldapAttributes)
             ->where($userAttribute, '=', $username)
             ->firstOrFail();
-        
+
         // Verify user status for ActiveDirectory
         if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
             return [
@@ -1485,7 +1492,6 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
                 'message' => "Error: User is not enabled"
             ];
         }
-        
         // Attempt authentication
         $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
             ? $userADInfos['userprincipalname'][0] 
@@ -1567,16 +1573,17 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
 
 /**
  * Get user groups based on LDAP type
- * 
+ *
  * @param array $userADInfos User AD information
  * @param array $ldapHandler LDAP connection and handler
  * @param array $SETTINGS Teampass settings
+ * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
  * @return array User groups
  */
-function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
-    
+
     if ($ldapHandler['type'] === 'ActiveDirectory') {
         return $ldapHandler['handler']->getUserADGroups(
             $userADInfos[$dnAttribute][0],
@@ -1584,15 +1591,16 @@ function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS
             $SETTINGS
         );
     }
-    
+
     if ($ldapHandler['type'] === 'OpenLDAP') {
         return $ldapHandler['handler']->getUserADGroups(
             $userADInfos['dn'],
             $ldapHandler['connection'],
-            $SETTINGS
+            $SETTINGS,
+            $username
         );
     }
-    
+
     throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
 }
 
@@ -1610,6 +1618,7 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
     if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
         // Get user groups from AD
         $user_ad_groups = [];
+        
         foreach($groups as $group) {
             // Skip invalid/corrupted group data
             if (empty($group) || !mb_check_encoding($group, 'UTF-8') || !preg_match('/^[\x20-\x7E\x80-\xFF]+$/u', $group)) {
