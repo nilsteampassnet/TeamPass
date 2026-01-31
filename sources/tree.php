@@ -227,6 +227,9 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
         )
     );
 
+    // Trigger background handler to process tasks
+    triggerBackgroundHandler();
+
     // Send back
     echo $ret_json;
 } else {

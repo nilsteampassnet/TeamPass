@@ -1353,6 +1353,9 @@ switch ($inputData['type']) {
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
 
+        // Trigger background handler to process tasks
+        triggerBackgroundHandler();
+
         echo prepareExchangedData(
             array(
                 'error' => false,
