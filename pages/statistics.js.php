@@ -590,7 +590,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
             });
 
-                        // Password compliance
+            // Password compliance
             if (tpOpsCharts.itemsPasswordCompliance) {
                 tpOpsCharts.itemsPasswordCompliance.destroy();
             }
@@ -598,13 +598,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var ctxPCEl = document.getElementById('tp-items-password-compliance-chart');
             if (ctxPCEl) {
                 var ctxPC = ctxPCEl.getContext('2d');
+
+                // Precompute values (avoid legend confusion when one slice is very small)
+                var compliantV = pwSecChart && pwSecChart.compliant !== undefined ? parseInt(pwSecChart.compliant, 10) : 0;
+                var nonCompliantV = pwSecChart && pwSecChart.non_compliant !== undefined ? parseInt(pwSecChart.non_compliant, 10) : 0;
+                var unknownV = pwSecChart && pwSecChart.unknown !== undefined ? parseInt(pwSecChart.unknown, 10) : 0;
+                if (isNaN(compliantV)) compliantV = 0;
+                if (isNaN(nonCompliantV)) nonCompliantV = 0;
+                if (isNaN(unknownV)) unknownV = 0;
+
                 tpOpsCharts.itemsPasswordCompliance = new Chart(ctxPC, {
                     type: 'doughnut',
                     data: {
                         labels: [
-                            '<?php echo addslashes($lang->get('ops_label_compliant')); ?>',
-                            '<?php echo addslashes($lang->get('ops_label_non_compliant')); ?>',
-                            '<?php echo addslashes($lang->get('ops_label_unknown')); ?>'
+                            '<?php echo addslashes($lang->get('ops_label_compliant')); ?>' + ' (' + compliantV + ')',
+                            '<?php echo addslashes($lang->get('ops_label_non_compliant')); ?>' + ' (' + nonCompliantV + ')',
+                            '<?php echo addslashes($lang->get('ops_label_unknown')); ?>' + ' (' + unknownV + ')'
                         ],
                         datasets: [
                             {
@@ -612,14 +621,36 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 borderColor: [tpOpsPalette().green, tpOpsPalette().red, tpOpsPalette().gray],
                                 borderWidth: 1,
                                 data: [
-                                    pwSecChart && pwSecChart.compliant !== undefined ? pwSecChart.compliant : 0,
-                                    pwSecChart && pwSecChart.non_compliant !== undefined ? pwSecChart.non_compliant : 0,
-                                    pwSecChart && pwSecChart.unknown !== undefined ? pwSecChart.unknown : 0
+                                    compliantV,
+                                    nonCompliantV,
+                                    unknownV
                                 ]
                             }
                         ]
                     },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: true },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        var label = context.label || '';
+                                        var value = context.parsed || 0;
+                                        var total = 0;
+                                        if (context.dataset && Array.isArray(context.dataset.data)) {
+                                            for (var i = 0; i < context.dataset.data.length; i++) {
+                                                total += parseInt(context.dataset.data[i] || 0, 10);
+                                            }
+                                        }
+                                        var pct = total > 0 ? Math.round((value / total) * 100) : 0;
+                                        return label + ': ' + value + ' (' + pct + '%)';
+                                    }
+                                }
+                            }
+                        }
+                    }
                 });
 
                 // Policy hint
