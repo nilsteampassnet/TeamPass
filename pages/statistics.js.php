@@ -84,6 +84,50 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     initOperationalStatistics();
 
 
+    // Robust tab navigation (do not rely on Bootstrap tab plugin to prevent anchor scrolling)
+    (function bindTpStatisticsTabs() {
+        function getTarget($a) {
+            var t = $a.attr('data-target') || $a.data('target') || $a.attr('href');
+            if (!t) return null;
+            // Accept '#id' or 'javascript:void(0)' with data-target
+            if (typeof t === 'string' && t.charAt(0) === '#') return t;
+            return null;
+        }
+
+        function activateTab($a, $content) {
+            var target = getTarget($a);
+            if (!target || $content.length === 0) return;
+
+            // Activate nav link
+            $a.closest('ul').find('a.nav-link').removeClass('active');
+            $a.addClass('active');
+
+            // Show target pane, hide others
+            $content.children('.tab-pane').removeClass('active show');
+            $(target).addClass('active show');
+
+            // If switching back to Operational tab, re-render charts from cache (no extra SQL call)
+            if (target === '#tp-stats-main-ops') {
+                try { tpOpsRerenderFromCache(); } catch (e) {}
+            } else if (target === '#tp-ops-users' || target === '#tp-ops-roles' || target === '#tp-ops-items') {
+                try { tpOpsRerenderFromCache(); } catch (e) {}
+            }
+        }
+
+        // Main tabs: Operational / Legacy
+        $(document).on('click', '#tp-stats-main-tabs a.nav-link', function(e) {
+            e.preventDefault();
+            activateTab($(this), $('#tp-stats-main-tabs-content'));
+        });
+
+        // Sub tabs inside Operational: Users / Roles / Items
+        $(document).on('click', '#tp-ops-tabs a.nav-link', function(e) {
+            e.preventDefault();
+            activateTab($(this), $('#tp-ops-tabs-content'));
+        });
+    })();
+
+
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"].flat-blue').iCheck({
         checkboxClass: 'icheckbox_flat-blue',
@@ -302,9 +346,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             tpOpsRerenderFromCache();
         });
 
-        // When switching between main page tabs (Operational / Legacy), ensure the operational view is rendered
+        // Ensure main page tabs always switch (some instances may not have Bootstrap tab data-API enabled)
+        $(document).on('click', '#tp-stats-main-tabs a[data-toggle="tab"]', function(e) {
+            e.preventDefault();
+            try { $(this).tab('show'); } catch (err) {}
+        });
+
+        // When switching between main page tabs (Operational / Legacy), scroll to top so the newly displayed panel is visible
+
         $(document).on('shown.bs.tab', '#tp-stats-main-tabs a[data-toggle="tab"]', function(e) {
             var href = $(e.target).attr('href');
+            // Bring the tab strip into view to avoid the "nothing happens" effect when switching while scrolled down
+            try {
+                var top = $('#tp-stats-main-tabs').offset().top;
+                $('html, body').stop(true).animate({scrollTop: Math.max(0, top - 80)}, 200);
+            } catch (err) {}
             if (href === '#tp-stats-main-ops') {
                 tpOpsEnsureLoadedOrRerender();
             }
