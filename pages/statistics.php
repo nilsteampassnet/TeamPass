@@ -104,6 +104,21 @@ if (isset($SETTINGS['send_statistics_items'])) {
 <!-- /.content-header -->
 
 
+<style>
+    /* Prevent Chart.js doughnut charts from growing when canvases are rendered inside tabs */
+    .tp-ops-doughnut-wrap {
+        position: relative;
+        height: 220px;
+        max-height: 220px;
+    }
+    .tp-ops-doughnut-wrap canvas {
+        width: 100% !important;
+        height: 220px !important;
+        max-height: 220px;
+    }
+</style>
+
+
 <!-- Main content -->
 <div class='content'>
     <div class='container-fluid'>
@@ -454,7 +469,9 @@ if (isset($SETTINGS['send_statistics_items'])) {
                                                 <h3 class='card-title'><?php echo $lang->get('ops_items_personal_vs_shared_inventory'); ?></h3>
                                             </div>
                                             <div class='card-body'>
-                                                <canvas id='tp-items-personal-chart' height='150'></canvas>
+                                                <div class='tp-ops-doughnut-wrap'>
+                                                <canvas id='tp-items-personal-chart'></canvas>
+                                            </div>
                                             </div>
                                         </div>
                                     </div>
@@ -464,7 +481,9 @@ if (isset($SETTINGS['send_statistics_items'])) {
                                                 <h3 class='card-title'><?php echo $lang->get('ops_items_password_compliance'); ?></h3>
                                             </div>
                                             <div class='card-body'>
-                                                <canvas id='tp-items-password-compliance-chart' height='150'></canvas>
+                                                <div class='tp-ops-doughnut-wrap'>
+                                                <canvas id='tp-items-password-compliance-chart'></canvas>
+                                            </div>
                                                 <div class='small text-muted mt-2' id='tp-items-password-policy'></div>
                                             </div>
                                         </div>
