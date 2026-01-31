@@ -42,6 +42,8 @@ class BackgroundTasksHandler {
     private $lockFileHandle = null;
     /** @var array Running process pool: [taskId => ['process' => Process, 'task' => array, 'resourceKey' => ?string]] */
     private $pool = [];
+    /** @var string Path to the trigger file for urgent task notifications */
+    private $triggerFile;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
@@ -67,6 +69,10 @@ class BackgroundTasksHandler {
 
         $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
 
+        // Initialize trigger file path (default: files/ directory, same as lock file)
+        $this->triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
+            ? TASKS_TRIGGER_FILE
+            : __DIR__ . '/../files/teampass_background_tasks.trigger';
     }
 
     /**
@@ -334,6 +340,34 @@ class BackgroundTasksHandler {
     }
 
     /**
+     * Check if a trigger file exists, indicating new urgent tasks were added.
+     * If found, the trigger file is consumed (deleted) and returns true.
+     *
+     * @return bool True if trigger file was found and consumed
+     */
+    private function checkAndConsumeTrigger(): bool
+    {
+        if (!file_exists($this->triggerFile)) {
+            return false;
+        }
+
+        // Read the timestamp for logging purposes
+        $triggerTime = @file_get_contents($this->triggerFile);
+
+        // Delete the trigger file (consume it)
+        @unlink($this->triggerFile);
+
+        if (LOG_TASKS === true) {
+            $this->logger->log(
+                'Trigger file detected (created at ' . $triggerTime . '), extending drain time for new tasks',
+                'INFO'
+            );
+        }
+
+        return true;
+    }
+
+    /**
      * Cleanup stale tasks that have been running for too long or are marked as failed.
      */
     private function cleanupStaleTasks() {
@@ -365,29 +399,46 @@ class BackgroundTasksHandler {
     /**
      * Drain the task pool: launch tasks in parallel, poll for completion,
      * refill slots, and repeat until no pending tasks remain or time limit is reached.
+     *
+     * The drain time can be extended if a trigger file is detected, indicating
+     * that new urgent tasks have been added by triggerBackgroundHandler().
      */
     private function drainTaskPool(): void {
         $startTime = time();
         $maxDrainTime = (int)($this->settings['tasks_max_drain_time'] ?? 55);
         $launchingEnabled = true;
+        $loopCount = 0;
+        $triggerCheckInterval = 10; // Check for trigger every 10 loops (~1 second)
 
         while (true) {
+            $loopCount++;
+
             // 1. Poll completed processes
             $this->pollCompletedProcesses();
 
-            // 2. Fill slots with new tasks (if still within drain time)
+            // 2. Check for trigger file periodically (new urgent tasks notification)
+            // This allows extending drain time when new tasks are added mid-execution
+            if ($loopCount % $triggerCheckInterval === 0) {
+                if ($this->checkAndConsumeTrigger()) {
+                    // Reset drain timer to process new urgent tasks
+                    $startTime = time();
+                    $launchingEnabled = true;
+                }
+            }
+
+            // 3. Fill slots with new tasks (if still within drain time)
             if ($launchingEnabled) {
                 $this->fillPoolSlots();
             }
 
-            // 3. Nothing running and nothing to launch → done
+            // 4. Nothing running and nothing to launch → done
             if (empty($this->pool)) {
                 if (!$launchingEnabled || $this->countPendingTasks() === 0) {
                     break;
                 }
             }
 
-            // 4. Check drain time limit (stop launching, but wait for running processes)
+            // 5. Check drain time limit (stop launching, but wait for running processes)
             if ($launchingEnabled && (time() - $startTime) >= $maxDrainTime) {
                 $launchingEnabled = false;
                 if (LOG_TASKS === true) {
@@ -401,7 +452,7 @@ class BackgroundTasksHandler {
                 if (empty($this->pool)) break;
             }
 
-            // 5. Short pause before next poll
+            // 6. Short pause before next poll
             usleep(100000); // 100ms
         }
     }

@@ -833,6 +833,9 @@ function performPostLoginTasks(
                 'output' => null,
             )
         );
+
+        // Trigger background handler to process tasks
+        triggerBackgroundHandler();
     } else {
         $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
     }

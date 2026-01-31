@@ -439,7 +439,23 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     'message' => "Failed to write settings.php. Check file permissions.",
                 ];
             }
-    
+
+            // Initialize background tasks trigger file
+            // This file is used to notify running handlers of new urgent tasks
+            $triggerFile = $absolutePath . '/files/teampass_background_tasks.trigger';
+            if (!file_exists($triggerFile)) {
+                @file_put_contents($triggerFile, (string) time());
+                @chmod($triggerFile, 0664);
+            }
+
+            // Initialize background tasks lock file
+            // This file is used to notify running handlers of new urgent tasks
+            $lockFile = $absolutePath . '/files/teampass_background_tasks.lock';
+            if (!file_exists($lockFile)) {
+                @file_put_contents($lockFile, (string) time());
+                @chmod($lockFile, 0664);
+            }
+
             // Check if user TP exists
             $tpUserExists = DB::queryFirstField(
                 "SELECT COUNT(*) FROM %busers WHERE id = %i",
