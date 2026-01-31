@@ -1593,4 +1593,5 @@ return array(
     'recycled_bin_folder_contains_items' => 'Contient %s éléments supprimés (restaurez le dossier pour les récupérer)',
     'sharekeys_encryption_migration_required' => 'Migration du chiffrement des sharekeys requise',
     'sharekeys_remaining_users' => 'utilisateur(s) restant(s)',
+
 );
