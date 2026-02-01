@@ -2211,7 +2211,591 @@ switch ($post_type) {
 
         break;
 
-    case 'save_sending_statistics':
+
+
+case 'get_operational_statistics':
+    // Check KEY and rights
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // We want to avoid throwing a 500 on any unexpected DB/runtime error.
+    // Return a readable message to the admin UI and log details in a temp file.
+    try {
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // Some callers may send JSON string; normalize to array.
+        if (is_string($dataReceived) === true) {
+            $tmp = json_decode($dataReceived, true);
+            if (is_array($tmp) === true) {
+                $dataReceived = $tmp;
+            }
+        }
+
+        if (is_array($dataReceived) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('ops_stats_bad_request'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $period = isset($dataReceived['period']) ? (string) $dataReceived['period'] : '24h';
+        if (in_array($period, array('24h', '7d', '30d', '90d'), true) === false) {
+            $period = '24h';
+        }
+
+        $includePersonal = isset($dataReceived['include_personal']) ? (int) $dataReceived['include_personal'] : 1;
+        $includeApi = isset($dataReceived['include_api']) ? (int) $dataReceived['include_api'] : 1;
+
+        $topUsersLimit = isset($dataReceived['top_users_limit']) ? (int) $dataReceived['top_users_limit'] : 15;
+        $topRolesLimit = isset($dataReceived['top_roles_limit']) ? (int) $dataReceived['top_roles_limit'] : 15;
+        $topItemsLimit = isset($dataReceived['top_items_limit']) ? (int) $dataReceived['top_items_limit'] : 20;
+
+        // hard limits (safety)
+        $topUsersLimit = min(max($topUsersLimit, 5), 50);
+        $topRolesLimit = min(max($topRolesLimit, 5), 50);
+        $topItemsLimit = min(max($topItemsLimit, 5), 50);
+
+        $nowTs = time();
+
+        // Period range and chart granularity
+        if ($period === '7d') {
+            $fromTs = $nowTs - (7 * 24 * 3600);
+            $granularity = 'day';
+        } elseif ($period === '30d') {
+            $fromTs = $nowTs - (30 * 24 * 3600);
+            $granularity = 'day';
+        } elseif ($period === '90d') {
+            $fromTs = $nowTs - (90 * 24 * 3600);
+            $granularity = 'day';
+        } else {
+            $fromTs = $nowTs - (24 * 3600);
+            $granularity = 'hour';
+        }
+
+        // Common filters (do not assume deleted_at is always filled)
+        $usersNotDeletedSql = "(u.deleted_at IS NULL OR u.deleted_at = '' OR u.deleted_at = '0')";
+        $itemsNotDeletedSql = "(i.deleted_at IS NULL OR i.deleted_at = '' OR i.deleted_at = '0')";
+
+        // Marker for API logs
+        $tpApiLike = '%tp_src=api%';
+
+        // ---- USERS (inventory / status)
+        $totalUsers = (int) DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql}"
+        );
+        $disabledUsers = (int) DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql} AND u.disabled = 1"
+        );
+        $enabledUsers = max(0, $totalUsers - $disabledUsers);
+
+        // Users active in period (based on items logs + connections)
+        $activeUsers = (int) DB::queryFirstField(
+            "SELECT COUNT(DISTINCT t.user_id) AS c
+            FROM (
+                SELECT li.id_user AS user_id
+                FROM " . prefixTable('log_items') . " li
+                INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+                WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND {$itemsNotDeletedSql}
+                  AND (%i = 1 OR i.perso = 0)
+                  AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+                UNION
+                SELECT CAST(ls.qui AS UNSIGNED) AS user_id
+                FROM " . prefixTable('log_system') . " ls
+                WHERE ls.type = 'user_connection'
+                  AND CAST(ls.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND (%i = 1 OR ls.field_1 IS NULL OR (ls.field_1 <> 'api' AND ls.field_1 NOT LIKE %s))
+            ) t
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = t.user_id)
+            WHERE {$usersNotDeletedSql} AND u.disabled = 0",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includeApi,
+            $tpApiLike
+        );
+        $inactiveUsers = max(0, $enabledUsers - $activeUsers);
+
+        // Connections web vs api (filtered depending on include_api)
+        $connections = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN is_api = 1 THEN 1 ELSE 0 END) AS api,
+                SUM(CASE WHEN is_api = 1 THEN 0 ELSE 1 END) AS web,
+                COUNT(*) AS total
+            FROM (
+                SELECT CASE WHEN (ls.field_1 = 'api' OR ls.field_1 LIKE %s) THEN 1 ELSE 0 END AS is_api
+                FROM " . prefixTable('log_system') . " ls
+                WHERE ls.type = 'user_connection'
+                  AND CAST(ls.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND (%i = 1 OR ls.field_1 IS NULL OR (ls.field_1 <> 'api' AND ls.field_1 NOT LIKE %s))
+            ) x",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includeApi,
+            $tpApiLike
+        );
+
+        // Actions totals (items)
+        $actions = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END) AS created,
+                SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END) AS modified,
+                SUM(CASE WHEN li.action = 'at_shown' AND li.raison LIKE %s THEN 1 ELSE 0 END) AS api_views
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+        // Time series (activity)
+        if ($granularity === 'hour') {
+            $groupExpr = "CONCAT(DATE(FROM_UNIXTIME(CAST(li.date AS UNSIGNED))), ' ', LPAD(HOUR(FROM_UNIXTIME(CAST(li.date AS UNSIGNED))), 2, '0'), ':00')";
+        } else {
+            $groupExpr = "DATE(FROM_UNIXTIME(CAST(li.date AS UNSIGNED)))";
+        }
+
+        $seriesRows = DB::query(
+            "SELECT
+                {$groupExpr} AS g,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY g
+            ORDER BY g ASC",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+        $series = array('labels' => array(), 'views' => array(), 'copies' => array(), 'pw_shown' => array());
+        foreach ($seriesRows as $r) {
+            $series['labels'][] = (string) $r['g'];
+            $series['views'][] = (int) $r['views'];
+            $series['copies'][] = (int) $r['copies'];
+            $series['pw_shown'][] = (int) $r['pw_shown'];
+        }
+
+        // Top users
+        $topUsers = DB::query(
+            "SELECT
+                u.id,
+                u.login,
+                u.name,
+                u.lastname,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END) AS created,
+                SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END) AS modified,
+                COUNT(DISTINCT li.id_item) AS items_unique,
+                COUNT(DISTINCT i.id_tree) AS folders_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity,
+                SUM(CASE WHEN li.action = 'at_shown' AND li.raison LIKE %s THEN 1 ELSE 0 END) AS api_views,
+                (
+                    SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END)
+                    + (3 * SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END))
+                    + (2 * SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END))
+                    + SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END)
+                    + SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END)
+                ) AS score
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY u.id
+            ORDER BY score DESC, last_activity DESC
+            LIMIT %i",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topUsersLimit
+        );
+
+        // ---- ROLES
+        $rolesTotal = (int) DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title'));
+
+        // Users total per role (excluding deleted users)
+        $roleUsersTotalRows = DB::query(
+            "SELECT ur.role_id, COUNT(DISTINCT ur.user_id) AS c
+             FROM " . prefixTable('users_roles') . " ur
+             INNER JOIN " . prefixTable('users') . " u ON (u.id = ur.user_id)
+             WHERE {$usersNotDeletedSql}
+             GROUP BY ur.role_id"
+        );
+        $roleUsersTotal = array();
+        foreach ($roleUsersTotalRows as $r) {
+            $roleUsersTotal[(int) $r['role_id']] = (int) $r['c'];
+        }
+
+        // Items accessible per role (nested set inheritance) - roles only apply to shared items
+        $roleItemsAccessibleRows = DB::query(
+            "SELECT rv.role_id, COUNT(DISTINCT i.id) AS c
+             FROM " . prefixTable('roles_values') . " rv
+             INNER JOIN " . prefixTable('nested_tree') . " rf ON (rf.id = rv.folder_id)
+             INNER JOIN " . prefixTable('nested_tree') . " itf ON (itf.nleft BETWEEN rf.nleft AND rf.nright)
+             INNER JOIN " . prefixTable('items') . " i ON (CAST(i.id_tree AS UNSIGNED) = itf.id)
+             WHERE {$itemsNotDeletedSql}
+               AND i.perso = 0
+             GROUP BY rv.role_id"
+        );
+        $roleItemsAccessible = array();
+        foreach ($roleItemsAccessibleRows as $r) {
+            $roleItemsAccessible[(int) $r['role_id']] = (int) $r['c'];
+        }
+
+        // Activity per role (based on user membership; folder access is evaluated separately)
+        $topRoles = DB::query(
+            "SELECT
+                ur.role_id,
+                rt.title,
+                COUNT(DISTINCT li.id_user) AS users_active,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                COUNT(DISTINCT li.id_item) AS items_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity,
+                (
+                    SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END)
+                    + (3 * SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END))
+                    + (2 * SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END))
+                ) AS score
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
+            INNER JOIN " . prefixTable('roles_title') . " rt ON (rt.id = ur.role_id)
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY ur.role_id
+            ORDER BY score DESC, last_activity DESC
+            LIMIT %i",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topRolesLimit
+        );
+
+        $rolesActive = count($topRoles);
+
+        // Global KPIs for roles tab (distinct users/items across role membership)
+        $rolesKpis = DB::queryFirstRow(
+            "SELECT
+                COUNT(DISTINCT li.id_user) AS users_active,
+                COUNT(DISTINCT li.id_item) AS items_unique
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+
+        // Enrich roles rows
+        foreach ($topRoles as $k => $r) {
+            $rid = (int) $r['role_id'];
+            $topRoles[$k]['items_accessible'] = isset($roleItemsAccessible[$rid]) ? (int) $roleItemsAccessible[$rid] : 0;
+            $topRoles[$k]['users_total'] = isset($roleUsersTotal[$rid]) ? (int) $roleUsersTotal[$rid] : 0;
+        }
+
+        // ---- ITEMS (inventory)
+        $stale90Ts = $nowTs - (90 * 24 * 3600);
+        $itemsInventory = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) THEN 1 ELSE 0 END) AS total_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND i.perso = 1 AND %i = 1 THEN 1 ELSE 0 END) AS personal_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND i.perso = 0 THEN 1 ELSE 0 END) AS shared_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.inactif = 1 THEN 1 ELSE 0 END) AS inactive_active,
+                SUM(CASE WHEN ({$itemsNotDeletedSql}) THEN 0 ELSE 1 END) AS deleted,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.restricted_to IS NOT NULL AND i.restricted_to <> '' THEN 1 ELSE 0 END) AS restricted,
+                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level <> '-1' THEN CAST(i.complexity_level AS SIGNED) ELSE NULL END) AS avg_complexity,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level = '-1' THEN 1 ELSE 0 END) AS unknown_complexity,
+                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.pw_len > 0 THEN i.pw_len ELSE NULL END) AS avg_pw_len,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND CAST(i.updated_at AS UNSIGNED) > 0 AND CAST(i.updated_at AS UNSIGNED) < %i THEN 1 ELSE 0 END) AS stale_90
+            FROM " . prefixTable('items') . " i",
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $stale90Ts
+        );
+
+        
+
+        // ---- ITEMS (password security - OWASP ASVS aligned policy)
+        $pwMinLen = 12;
+        $pwMinComplexity = 70;
+
+        $passwordSecurityRow = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND (i.pw_len IS NULL OR i.pw_len <= 0 OR i.complexity_level IS NULL OR i.complexity_level = '-1')
+                    THEN 1 ELSE 0 END) AS unknown,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND i.pw_len > 0 AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
+                    THEN 1 ELSE 0 END) AS assessed_total,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND i.pw_len >= %i AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
+                    AND CAST(i.complexity_level AS SIGNED) >= %i
+                    THEN 1 ELSE 0 END) AS compliant
+            FROM " . prefixTable('items') . " i",
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $pwMinLen,
+            $pwMinComplexity
+        );
+
+        $pwAssessedTotal = (int) ($passwordSecurityRow['assessed_total'] ?? 0);
+        $pwCompliant = (int) ($passwordSecurityRow['compliant'] ?? 0);
+        $pwUnknown = (int) ($passwordSecurityRow['unknown'] ?? 0);
+        $pwNonCompliant = max(0, $pwAssessedTotal - $pwCompliant);
+        $pwSecureScore = $pwAssessedTotal > 0 ? (int) round(($pwCompliant / $pwAssessedTotal) * 100) : null;
+        if ($pwSecureScore !== null) {
+            $pwSecureScore = min(max($pwSecureScore, 0), 100);
+        }
+
+// Complexity distribution (for chart)
+        $complexityDist = DB::query(
+            "SELECT i.complexity_level, COUNT(*) AS c
+             FROM " . prefixTable('items') . " i
+             WHERE {$itemsNotDeletedSql}
+               AND (%i = 1 OR i.perso = 0)
+             GROUP BY i.complexity_level
+             ORDER BY CAST(i.complexity_level AS SIGNED) ASC",
+            $includePersonal
+        );
+        $complexity = array('labels' => array(), 'counts' => array());
+        foreach ($complexityDist as $r) {
+            $complexity['labels'][] = (string) $r['complexity_level'];
+            $complexity['counts'][] = (int) $r['c'];
+        }
+
+        // Usage by personal/shared (period)
+        $usageByPersoRows = DB::query(
+            "SELECT
+                i.perso,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY i.perso",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+        $usageByPerso = array(
+            'personal' => array('views' => 0, 'copies' => 0, 'pw_shown' => 0),
+            'shared' => array('views' => 0, 'copies' => 0, 'pw_shown' => 0),
+        );
+        foreach ($usageByPersoRows as $r) {
+            if ((int) $r['perso'] === 1) {
+                $usageByPerso['personal'] = array('views' => (int) $r['views'], 'copies' => (int) $r['copies'], 'pw_shown' => (int) $r['pw_shown']);
+            } else {
+                $usageByPerso['shared'] = array('views' => (int) $r['views'], 'copies' => (int) $r['copies'], 'pw_shown' => (int) $r['pw_shown']);
+            }
+        }
+
+        // Top copied items
+        $topItemsCopied = DB::query(
+            "SELECT
+                i.id,
+                i.label,
+                i.perso,
+                nt.title AS folder_title,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                COUNT(DISTINCT li.id_user) AS users_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            LEFT JOIN " . prefixTable('nested_tree') . " nt ON (nt.id = CAST(i.id_tree AS UNSIGNED))
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND li.action IN ('at_password_copied','at_copy','at_shown')
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY i.id
+            ORDER BY copies DESC, views DESC, last_activity DESC
+            LIMIT %i",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topItemsLimit
+        );
+
+        // Prepare response
+        $response = array(
+            'error' => false,
+            'meta' => array(
+                'period' => $period,
+                'from' => $fromTs,
+                'to' => $nowTs,
+                'granularity' => $granularity,
+                'include_personal' => (int) $includePersonal,
+                'include_api' => (int) $includeApi,
+            ),
+            'users' => array(
+                'total_users' => $totalUsers,
+                'enabled_users' => $enabledUsers,
+                'disabled_users' => $disabledUsers,
+                'active_users' => $activeUsers,
+                'inactive_users' => $inactiveUsers,
+                'connections' => array(
+                    'api' => (int) ($connections['api'] ?? 0),
+                    'web' => (int) ($connections['web'] ?? 0),
+                    'total' => (int) ($connections['total'] ?? 0),
+                ),
+                'actions' => array(
+                    'views' => (int) ($actions['views'] ?? 0),
+                    'copies' => (int) ($actions['copies'] ?? 0),
+                    'pw_shown' => (int) ($actions['pw_shown'] ?? 0),
+                    'created' => (int) ($actions['created'] ?? 0),
+                    'modified' => (int) ($actions['modified'] ?? 0),
+                    'api_views' => (int) ($actions['api_views'] ?? 0),
+                ),
+                'series' => $series,
+                'top' => $topUsers,
+            ),
+            'roles' => array(
+                'total' => $rolesTotal,
+                'active' => $rolesActive,
+                'kpis' => array(
+                    'users_active' => (int) ($rolesKpis['users_active'] ?? 0),
+                    'items_unique' => (int) ($rolesKpis['items_unique'] ?? 0),
+                ),
+                'top' => $topRoles,
+            ),
+            'items' => array(
+                'password_security' => array(
+                    'secure_score' => $pwSecureScore,
+                    'assessed_total' => $pwAssessedTotal,
+                    'compliant' => $pwCompliant,
+                    'non_compliant' => $pwNonCompliant,
+                    'unknown' => $pwUnknown,
+                    'policy' => array(
+                        'min_len' => $pwMinLen,
+                        'min_complexity' => $pwMinComplexity,
+                    ),
+                ),
+                'inventory' => array(
+                    'total_active' => (int) ($itemsInventory['total_active'] ?? 0),
+                    'personal_active' => (int) ($itemsInventory['personal_active'] ?? 0),
+                    'shared_active' => (int) ($itemsInventory['shared_active'] ?? 0),
+                    'inactive_active' => (int) ($itemsInventory['inactive_active'] ?? 0),
+                    'deleted' => (int) ($itemsInventory['deleted'] ?? 0),
+                    'restricted' => (int) ($itemsInventory['restricted'] ?? 0),
+                    'avg_complexity' => $itemsInventory['avg_complexity'] !== null ? round((float) $itemsInventory['avg_complexity'], 1) : null,
+                    'unknown_complexity' => (int) ($itemsInventory['unknown_complexity'] ?? 0),
+                    'avg_pw_len' => $itemsInventory['avg_pw_len'] !== null ? round((float) $itemsInventory['avg_pw_len'], 1) : null,
+                    'stale_90' => (int) ($itemsInventory['stale_90'] ?? 0),
+                ),
+                'complexity' => $complexity,
+                'usage_by_perso' => $usageByPerso,
+                'top_copied' => $topItemsCopied,
+            ),
+        );
+
+        echo prepareExchangedData($response, 'encode');
+    } catch (Throwable $e) {
+        $traceId = bin2hex(random_bytes(6));
+        $msg = '[TP OPS STATS][' . $traceId . '] ' . $e->getMessage();
+
+        // Log to system log if configured
+        error_log($msg);
+
+        // Also log to a temporary file (useful when php/apache logs are not wired)
+        @file_put_contents(sys_get_temp_dir() . '/teampass_ops_stats.log', date('c') . ' ' . $msg . "\n" . $e->getTraceAsString() . "\n\n", FILE_APPEND);
+
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('ops_stats_db_error') . ' [' . $traceId . ']',
+            ),
+            'encode'
+        );
+    }
+    break;
+
+
+
+case 'save_sending_statistics':
         // Check KEY and rights
         if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
