@@ -607,24 +607,19 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <p>' . $lang->get('uploads') . '</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
-                                    <i class="fa-solid fa-chart-bar nav-icon"></i>
-                                    <p>' . $lang->get('statistics') . '</p>
-                                </a>
-                            </li>
                         </ul>
-                    </li>';
-
-        if (isset($SETTINGS['enable_tasks_manager']) && (int) $SETTINGS['enable_tasks_manager'] === 1) {
-            echo '
+                    </li>
                     <li class="nav-item">
+                        <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
+                            <i class="fa-solid fa-chart-bar nav-icon"></i>
+                            <p>' . $lang->get('statistics') . '</p>
+                        </a>
+                    </li><li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . $lang->get('tasks') . '</p>
                         </a>
                     </li>';
-        }
         
         if (WIP === true) {
             echo '
@@ -1281,7 +1276,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks', 'statistics']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">

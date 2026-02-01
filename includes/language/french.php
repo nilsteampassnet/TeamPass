@@ -1587,6 +1587,8 @@ return array(
     'recycled_bin_folder_contains_items' => 'Contient %s éléments supprimés (restaurez le dossier pour les récupérer)',
     'sharekeys_encryption_migration_required' => 'Migration du chiffrement des sharekeys requise',
     'sharekeys_remaining_users' => 'utilisateur(s) restant(s)',
+    'extension_promo_text' => 'Améliorez votre expérience TeamPass et accédez à vos mots de passe directement depuis votre navigateur !',
+    'learn_more' => 'En savoir plus',
     'ops_dashboard_title' => 'Exploitation',
     'ops_period' => 'Période',
     'ops_period_24h' => 'Dernières 24 heures',
@@ -1627,7 +1629,7 @@ return array(
     'ops_stats_db_error' => 'Une erreur est survenue lors de la récupération des statistiques.',
     'ops_no_data' => 'Aucune donnée',
     'item' => 'Item',
-    'ops_tab_operational' => 'Statistiques d\'exploitation',
+    'ops_tab_operational' => 'Statistiques d’exploitation',
     'ops_tab_legacy' => 'Statistiques historiques',
     'ops_period_90d' => '3 mois',
     'ops_kpi_copies_total' => 'Copies MDP',
@@ -1653,4 +1655,5 @@ return array(
     'ops_unknown' => 'Inconnu',
     'ops_users_ratio_active' => 'actifs',
     'ops_users_ratio_inactive' => 'inactifs',
-    );
+
+);
