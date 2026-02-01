@@ -4428,6 +4428,9 @@ function handleUserKeys(
         $userId
     );
 
+    // Trigger background handler
+    triggerBackgroundHandler();
+
     return prepareExchangedData(
         array(
             'error' => false,

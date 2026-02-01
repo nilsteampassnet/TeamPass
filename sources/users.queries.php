@@ -3020,6 +3020,9 @@ if (null !== $post_type) {
                 $post_user_id
             );
 
+            // Trigger background handler
+            triggerBackgroundHandler();
+
             echo prepareExchangedData(
                 array(
                     'message' => '',

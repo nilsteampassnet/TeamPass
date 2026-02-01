@@ -1662,4 +1662,4 @@ return array(
     'inactive_users_confirm_delete_many' => 'Are you sure you want to delete the selected users?',
     'inactive_users_no_results' => 'No inactive users found',
     'inactive_users_select_at_least_one' => 'Please select at least one user.',
-    );
+);
