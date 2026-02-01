@@ -617,7 +617,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
 
         var action = $(this).data('action');
-        var trackedActions = ['edit', 'new', 'logs', 'visible-folders', 'propagate', 'deleted-users', 'refresh', 'ldap-sync', 'oauth2-sync'];
+        var trackedActions = ['edit', 'new', 'logs', 'visible-folders', 'propagate', 'inactive-users', 'deleted-users', 'refresh', 'ldap-sync', 'oauth2-sync'];
         
         // Show relevant content
         if (trackedActions.includes(action)) {
@@ -1933,6 +1933,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'inactive-users') {
+            refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+
+            /**/
+            //
+            // --- END
+            //
         } else if ($(this).data('action') === 'deleted-users') {
             refreshListDeletedUsers();
 
@@ -1946,123 +1953,196 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         event.stopPropagation();
     });
 
+    // ---------------------------------------------------------------------
+    // Shared confirmation modal (inactive / deleted users actions)
+    // ---------------------------------------------------------------------
+    var tpUsersActionModal = {
+        onConfirm: null,
+        isOpen: false
+    };
+
+    function showUsersActionModal(options) {
+        var opts = options || {};
+        var $modal = $('#users-action-modal');
+        var $title = $('#users-action-modal-title');
+        var $body = $('#users-action-modal-body');
+        var $confirm = $('#users-action-modal-confirm');
+
+        // Title
+        if (opts.title) {
+            $title.html(opts.title);
+        } else {
+            $title.html('<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>');
+        }
+
+        // Body
+        $body.html(opts.message || '');
+
+        // Confirm button
+        $confirm
+            .text(opts.confirmText || '<?php echo $lang->get('confirm'); ?>')
+            .removeClass('btn-danger btn-secondary btn-warning btn-primary btn-success')
+            .addClass(opts.confirmBtnClass || 'btn-danger')
+            .prop('disabled', false);
+
+        // Store callback
+        tpUsersActionModal.onConfirm = typeof opts.onConfirm === 'function' ? opts.onConfirm : null;
+        tpUsersActionModal.isOpen = true;
+
+        $modal.modal('show');
+    }
+
+    // Confirm click
+    $(document).on('click', '#users-action-modal-confirm', function() {
+        if (typeof tpUsersActionModal.onConfirm !== 'function') {
+            $('#users-action-modal').modal('hide');
+            return;
+        }
+
+        // Prevent double click
+        $(this).prop('disabled', true);
+
+        var fn = tpUsersActionModal.onConfirm;
+        tpUsersActionModal.onConfirm = null;
+
+        $('#users-action-modal').modal('hide');
+
+        // Execute after the modal is hidden (avoids overlay glitches)
+        setTimeout(function() {
+            fn();
+        }, 50);
+    });
+
+    // Reset on close
+    $('#users-action-modal').on('hidden.bs.modal', function() {
+        tpUsersActionModal.onConfirm = null;
+        tpUsersActionModal.isOpen = false;
+        $('#users-action-modal-confirm')
+            .prop('disabled', false)
+            .removeClass('btn-danger btn-secondary btn-warning btn-primary btn-success');
+        $('#users-action-modal-body').empty();
+    });
+
     // Purge single user
     $(document).on('click', '.btn-purge-user', function() {
         var btn = $(this);
         var userId = btn.data('user-id');
-        
-        btn.prop('disabled', true);
-        
-        if (!confirm('<?php echo $lang->get("confirm_purge_user"); ?>')) {
-            return;
-        }
-        
-        var originalIcon = btn.find('i').attr('class');
-        btn.find('i').attr('class', 'fa-solid fa-circle-notch fa-spin');
-        btn.prop('disabled', true);
 
-        const data_to_send = {
-            'user_id': userId,
-        }
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("confirm_purge_user")); ?>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                var originalIcon = btn.find('i').attr('class');
+                btn.find('i').attr('class', 'fa-solid fa-circle-notch fa-spin');
+                btn.prop('disabled', true);
 
-        
-        $.post(
-            'sources/users.queries.php',
-            {
-                type: 'purge_user',
-                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                
-                if (data.error) {
-                    // Restore button
-                    btn.find('i').attr('class', originalIcon);
-                    btn.prop('disabled', false);
-
-                    toastr.error(
-                        data.message,
-                        '', {
-                            timeOut: 5000
-                        }
-                    );
-                } else {
-                    toastr.success(
-                        data.message,
-                        '', {
-                            timeOut: 2000
-                        }
-                    );
-                    
-                    // Remove the line
-                    btn.closest('tr').fadeOut(300, function() {
-                    $(this).remove();
-                    
-                    // Check if some lines remain
-                    var remainingRows = $('#table-deleted-users tbody tr:visible').length;
-                    if (remainingRows === 0) {
-                        $('#table-deleted-users tbody').html(
-                            '<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
-                        );
-                    }
-
-                    // Adjust counter in button
-                    update_deleted_users_button(data.deleted_accounts_count);
-                });
+                const data_to_send = {
+                    'user_id': userId,
                 }
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'purge_user',
+                        data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            // Restore button
+                            btn.find('i').attr('class', originalIcon);
+                            btn.prop('disabled', false);
+
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000
+                                }
+                            );
+                        } else {
+                            toastr.success(
+                                data.message,
+                                '', {
+                                    timeOut: 2000
+                                }
+                            );
+
+                            // Remove the line
+                            btn.closest('tr').fadeOut(300, function() {
+                                $(this).remove();
+
+                                // Check if some lines remain
+                                var remainingRows = $('#table-deleted-users tbody tr:visible').length;
+                                if (remainingRows === 0) {
+                                    $('#table-deleted-users tbody').html(
+                                        '<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
+                                    );
+                                }
+
+                                // Adjust counter in button
+                                update_deleted_users_button(data.deleted_accounts_count);
+                            });
+                        }
+                    }
+                );
             }
-        );
+        });
     });
     
     // Purge old users in mass
     $('#btn-purge-old-users').on('click', function() {
         var btn = $(this);
         var retention = btn.data('retention');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: ('<?php echo addslashes($lang->get("confirm_purge_old_users")); ?>').replace('%days%', retention),
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                btn.prop('disabled', true);
         
-        if (!confirm('<?php echo $lang->get("confirm_purge_old_users"); ?>'.replace('%days%', retention))) {
-            return;
-        }
-        
-        btn.prop('disabled', true);
-        
-        const data_to_send = {
-            'days_retention': retention,
-        }
-        
-        // Step 1 : Get list of users to purge
-        $.post(
-            'sources/users.queries.php',
-            {
-                type: 'get_purgeable_users',
-                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                console.log('Users to purge:', data);
-                
-                if (data.error) {
-                    toastr.remove();
-                    toastr.error(data.message);
-                    btn.prop('disabled', false);
-                    return;
-                }
-                
-                if (data.user_ids.length === 0) {
-                    toastr.remove();
-                    toastr.info('<?php echo $lang->get('no_users_to_purge'); ?>');
-                    btn.prop('disabled', false);
-                    return;
+                const data_to_send = {
+                    'days_retention': retention,
                 }
 
-                // Step 2 : Process in batches of 2
-                processPurgeBatch(data.user_ids, retention, btn);
+                // Step 1 : Get list of users to purge
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'get_purgeable_users',
+                        data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        console.log('Users to purge:', data);
+
+                        if (data.error) {
+                            toastr.remove();
+                            toastr.error(data.message);
+                            btn.prop('disabled', false);
+                            return;
+                        }
+
+                        if (data.user_ids.length === 0) {
+                            toastr.remove();
+                            toastr.info('<?php echo $lang->get('no_users_to_purge'); ?>');
+                            btn.prop('disabled', false);
+                            return;
+                        }
+
+                        // Step 2 : Process in batches of 2
+                        processPurgeBatch(data.user_ids, retention, btn);
+                    }
+                ).fail(function() {
+                    toastr.remove();
+                    toastr.error('<?php echo $lang->get('an_error_occurred'); ?>');
+                    btn.prop('disabled', false);
+                });
             }
-        ).fail(function() {
-            toastr.remove();
-            toastr.error('<?php echo $lang->get('an_error_occurred'); ?>');
-            btn.prop('disabled', false);
         });
     });
 
@@ -2092,8 +2172,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 } else {
                     $.each(data.result.users, function(i, user) {
                         var row = '<tr>' +
-                            '<td>' + user.login + '</td>' +
-                            '<td>' + (user.email || '-') + '</td>' +
+                            '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                            '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                             '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
                             '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
                             '<td>' +
@@ -2345,6 +2425,280 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#users-list').removeClass('hidden');
         $('html, body').animate({scrollTop: 0}, 'slow');
     });
+
+    // ---------------------------------------------------------------------
+    // Inactive users (never connected / inactive since X days)
+    // ---------------------------------------------------------------------
+
+    function update_inactive_users_button(neverConnectedCount) {
+        const $button = $('button[data-action="inactive-users"]');
+        if (parseInt(neverConnectedCount, 10) > 0) {
+            $button.addClass('blink_me');
+        } else {
+            $button.removeClass('blink_me');
+        }
+    }
+
+    function refreshNeverConnectedBlink() {
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'count_never_connected_active_users',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (!data.error) {
+                    update_inactive_users_button(data.count);
+                }
+            }
+        );
+    }
+
+    function refreshListInactiveUsers(filterValue) {
+        const data_to_send = {
+            filter: filterValue || 'never'
+        };
+
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'list_inactive_users',
+                data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (data.error) {
+                    toastr.error(data.message);
+                    return;
+                }
+
+                const tbody = $('#table-inactive-users tbody');
+                tbody.empty();
+
+                if (!data.result || !data.result.users || data.result.users.length === 0) {
+                    tbody.append('<tr><td colspan="6" class="text-center"><?php echo $lang->get("inactive_users_no_results"); ?></td></tr>');
+                } else {
+                    $.each(data.result.users, function(i, user) {
+                        const neverConnected = (parseInt(user.never_connected, 10) === 1)
+                            || (user.last_connexion_ts === null)
+                            || (parseInt(user.last_connexion_ts, 10) <= 0);
+
+                        const lastActivityTxt = neverConnected
+                            ? '<?php echo $lang->get("inactive_users_never_connected"); ?>'
+                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();
+
+                        const daysInactive = parseInt(user.days_inactive, 10);
+                        const daysInactiveTxt = neverConnected
+                            ? '-'
+                            : (isNaN(daysInactive) ? '-' : (daysInactive + ' <?php echo $lang->get("days"); ?>'));const row =
+                            '<tr>' +
+                                '<td class="text-center align-middle px-1"><input type="checkbox" class="inactive-user-select" value="' + user.id + '"></td>' +
+                                '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                                '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
+                                '<td class="align-middle">' + lastActivityTxt + '</td>' +
+                                '<td class="align-middle">' + daysInactiveTxt + '</td>' +
+                                '<td>' +
+                                    '<button class="btn btn-sm btn-secondary btn-disable-inactive-user" data-user-id="' + user.id + '">' +
+                                        '<i class="fa-solid fa-lock infotip" title="<?php echo $lang->get("inactive_users_disable"); ?>"></i>' +
+                                    '</button>' +
+                                    '<button class="btn btn-sm btn-danger ml-2 btn-delete-inactive-user" data-user-id="' + user.id + '">' +
+                                        '<i class="fas fa-trash infotip" title="<?php echo $lang->get("delete"); ?>"></i>' +
+                                    '</button>' +
+                                '</td>' +
+                            '</tr>';
+
+                        tbody.append(row);
+                    });
+                }
+
+                // checkbox header reset
+                $('#inactive-users-check-all').prop('checked', false);
+
+                // refresh blink state based on server truth (never connected)
+                refreshNeverConnectedBlink();
+            }
+        );
+    }
+
+    // Filter change
+    $(document).on('change', '#inactive-users-filter', function() {
+        refreshListInactiveUsers($(this).val());
+    });
+
+    // Check all
+    $(document).on('change', '#inactive-users-check-all', function() {
+        const checked = $(this).is(':checked');
+        $('#table-inactive-users .inactive-user-select').prop('checked', checked);
+    });
+
+    // Disable single
+    $(document).on('click', '.btn-disable-inactive-user', function() {
+        const userId = $(this).data('user-id');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_disable_one")); ?>',
+            confirmBtnClass: 'btn-secondary',
+            onConfirm: function() {
+                const data_to_send = {
+                    user_id: userId,
+                    disabled_status: 1
+                };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'manage_user_disable_status',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Delete single (soft delete => will appear in Deleted users)
+    $(document).on('click', '.btn-delete-inactive-user', function() {
+        const userId = $(this).data('user-id');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_delete_one")); ?>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                const data_to_send = {
+                    user_id: userId
+                };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'delete_user',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    function getSelectedInactiveUserIds() {
+        return $('#table-inactive-users .inactive-user-select:checked').map(function() {
+            return parseInt($(this).val(), 10);
+        }).get();
+    }
+
+    // Disable batch
+    $(document).on('click', '#btn-inactive-users-disable-selected', function() {
+        const ids = getSelectedInactiveUserIds();
+
+        if (ids.length === 0) {
+            toastr.info('<?php echo $lang->get("inactive_users_select_at_least_one"); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_disable_many")); ?>' + '<br><small>(' + ids.length + ')</small>',
+            confirmBtnClass: 'btn-secondary',
+            onConfirm: function() {
+                const data_to_send = { user_ids: ids };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'disable_users_batch',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Delete batch
+    $(document).on('click', '#btn-inactive-users-delete-selected', function() {
+        const ids = getSelectedInactiveUserIds();
+
+        if (ids.length === 0) {
+            toastr.info('<?php echo $lang->get("inactive_users_select_at_least_one"); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_delete_many")); ?>' + '<br><small>(' + ids.length + ')</small>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                const data_to_send = { user_ids: ids };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'delete_users_batch',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Close inactive users
+    $(document).on('click', '.btn-close-inactive-users', function() {
+        $('.user-content').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        $('html, body').animate({scrollTop: 0}, 'slow');
+    });
+
+
 
 
     /**

@@ -107,9 +107,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
         
         <!-- Info Box for last update and GitHub link -->
         <div class="row mb-3">
-            <div class="col-12">
+            <div class="col-7">
                 <div class="alert alert-info alert-dismissible">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
                     <h5>
                         <i class="icon fas fa-info"></i> <?php echo $lang->get('admin_info_header'); ?>
                     </h5>
@@ -117,13 +116,31 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <i class="fa-regular fa-eye mr-2"></i><?php echo $lang->get('currently_using_version')." <b>".TP_VERSION.".<i>".TP_VERSION_MINOR."</i></b>"; ?>
                     </span> | 
                     <span id="admin-last-refresh"><?php echo $lang->get('admin_last_refresh'); ?>: <span class="badge badge-light" id="last-refresh-time">--:--:--</span></span>
-                     | 
-                    <span class="ml-3">
+                    <br>
+                    <span>
+                        <i class="fab fa-github"></i> 
                         <a href="https://github.com/nilsteampassnet/TeamPass/releases" target="_blank" class="text-white">
-                            <i class="fab fa-github"></i> <?php echo $lang->get('admin_view_changelog_github'); ?>
+                            <?php echo $lang->get('admin_view_changelog_github'); ?>
                         </a>
                     </span>
                 </div>
+            </div>
+            <div class="col-5">
+                <div class="alert alert-primary border">                                                                                
+                    <div class="d-flex align-items-center">                                                                           
+                        <i class="fas fa-puzzle-piece fa-2x text-alert mr-3"></i>                                                   
+                        <div>                                                                                                         
+                            <strong><?php echo $lang->get('browser_extension'); ?></strong>                                           
+                            <p class="mb-0 small text-light">                                                                         
+                                <?php echo $lang->get('extension_promo_text'); ?> 
+                                <br>                                                    
+                                <a href="https://documentation.teampass.net/#/misc/extension" target="_blank" class="ml-1">           
+                                    <?php echo $lang->get('learn_more'); ?> <i class="fas fa-external-link-alt fa-xs"></i>            
+                                </a>                                                                                                  
+                            </p>                                                                                                      
+                        </div>                                                                                                        
+                    </div>                                                                                                            
+                </div> 
             </div>
         </div>
 
@@ -409,7 +426,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 ?>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fa-solid fa-hand text-warning"></i>
-                                                Sharekeys Encryption Migration Required <span class="badge badge-warning"><?php echo DB::count();?> remaing users</span>
+                                                <?php echo $lang->get('sharekeys_encryption_migration_required'); ?>
+                                                <span class="badge badge-warning">
+                                                    <?php echo DB::count(); ?> <?php echo $lang->get('sharekeys_remaining_users'); ?>
+                                                </span>
                                                 </span>
                                                 <span>
                                                     <i class="fa-solid fa-info-circle text-primary open-info" 

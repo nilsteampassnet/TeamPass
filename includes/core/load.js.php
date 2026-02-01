@@ -268,6 +268,19 @@ if (
                     $('#temps_restant').val(data[0].new_value);
                     $('#date_end_session').val(data[0].new_value);
                     $('#countdown').css('color', 'white');
+
+                    // Reset extend session dialog flag
+                    extendSessionShown = false;
+
+                    // Notify other tabs about session extension
+                    try {
+                        sessionStorage.setItem('sessionExtended', JSON.stringify({
+                            timestamp: data[0].new_value,
+                            time: Date.now()
+                        }));
+                    } catch (e) {
+                        // Ignore storage errors
+                    }
                 } else {
                     $(location).attr('href', 'index.php?session=expired');
                 }

@@ -22,9 +22,9 @@
 if (typeof lastSessionSync === 'undefined') {
     var lastSessionSync = parseInt(sessionStorage.getItem('lastSessionSync')) || 0;
 }
-// Sync interval: 5 minutes (300000 ms)
+// Sync interval: 2 minutes (120000 ms) - reduced from 5 minutes for better session tracking
 if (typeof sessionSyncInterval === 'undefined') {
-    var sessionSyncInterval = 300000;
+    var sessionSyncInterval = 120000;
 }
 // Track if extend session dialog has been shown
 if (typeof extendSessionShown === 'undefined') {
@@ -53,7 +53,7 @@ function countdown()
         return false;
     }
 
-    // Periodically sync session time with server (every 5 minutes)
+    // Periodically sync session time with server (every 2 minutes)
     let currentTime = new Date().getTime();
     if (lastSessionSync > 0 && currentTime - lastSessionSync > sessionSyncInterval) {
         syncSessionTimeWithServer();
@@ -157,6 +157,27 @@ function syncSessionTimeWithServer() {
     });
 }
 
+/**
+ * Synchronize session state between browser tabs
+ * Listens for session extension events from other tabs
+ */
+$(document).ready(function() {
+    // Listen for storage events from other tabs
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'sessionExtended') {
+            try {
+                var data = JSON.parse(e.newValue);
+                if (data && data.timestamp) {
+                    $('#temps_restant').val(data.timestamp);
+                    extendSessionShown = false;
+                    $('#countdown').css('color', '');
+                }
+            } catch (ex) {
+                // Ignore parse errors
+            }
+        }
+    });
+});
 
 /**
 *

@@ -27,8 +27,8 @@
  */
 
 define('TP_VERSION', '3.1.6');
-define("UPGRADE_MIN_DATE", "1769373319");
-define('TP_VERSION_MINOR', '2');
+define("UPGRADE_MIN_DATE", "1769936303");
+define('TP_VERSION_MINOR', '3');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -53,6 +53,7 @@ define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v
 define('LOG_TASKS', false); // Can be used in order to log background tasks
 define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored folder 'files', otherwize it is inside server error log. 🫸 Ensure you have the right to write in the log file
 define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 If you change this, ensure you have the right to write in the lock file
+define('TASKS_TRIGGER_FILE', ''); // Trigger file to notify running handler of new urgent tasks. By default, stored in folder 'files'
 
 // Internal constants
 define('ERR_NOT_ALLOWED', '1000');

@@ -7460,9 +7460,93 @@ function getUserVisibleFolders(int $userId): array
 {
     // Query to retrieve visible folders for the user
     $data = DB::queryFirstRow('SELECT visible_folders FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i', $userId);
-    
-    // Decode JSON data into an array; return an empty array if the data is invalid
-    return json_decode($data['visible_folders'], true) ?? [];
+
+    // Decode JSON data into an array
+    $visibleFolders = json_decode($data['visible_folders'] ?? '', true);
+
+    // If cache exists and is valid, return it
+    if (!empty($visibleFolders) && is_array($visibleFolders)) {
+        return $visibleFolders;
+    }
+
+    // FALLBACK: Build visible folders on-the-fly if cache is empty
+    // This handles the case where user_build_cache_tree hasn't run yet
+    return buildVisibleFoldersOnTheFly($userId);
+}
+
+/**
+ * Build visible folders on-the-fly when cache is not available
+ * This is a fallback for newly created users whose cache hasn't been built yet
+ *
+ * @param int $userId User ID
+ * @return array Array of visible folders with metadata
+ */
+function buildVisibleFoldersOnTheFly(int $userId): array
+{
+    $html = [];
+
+    // Get user's roles
+    $userRoles = DB::queryFirstColumn(
+        'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i',
+        $userId
+    );
+
+    $visibleFolderIds = [];
+
+    // Get folders accessible via roles
+    if (!empty($userRoles)) {
+        $roleFolders = DB::query(
+            'SELECT DISTINCT folder_id FROM ' . prefixTable('roles_values') . ' WHERE role_id IN %ls AND type IN %ls',
+            $userRoles,
+            ['W', 'ND', 'NE', 'NDNE', 'R']
+        );
+        foreach ($roleFolders as $row) {
+            $visibleFolderIds[] = (int) $row['folder_id'];
+        }
+    }
+
+    // Get folders directly allowed to the user via users_groups
+    $userGroups = DB::queryFirstColumn(
+        'SELECT group_id FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+        $userId
+    );
+    foreach ($userGroups as $groupId) {
+        $visibleFolderIds[] = (int) $groupId;
+    }
+
+    // Get user's personal folder if it exists
+    $personalFolder = DB::queryFirstRow(
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %s AND personal_folder = 1',
+        (string) $userId
+    );
+    if (!empty($personalFolder)) {
+        $visibleFolderIds[] = (int) $personalFolder['id'];
+    }
+
+    $visibleFolderIds = array_unique($visibleFolderIds);
+
+    // Build the visible folders array with metadata
+    foreach ($visibleFolderIds as $folderId) {
+        $folderInfo = DB::queryFirstRow(
+            'SELECT title, parent_id, personal_folder FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $folderId
+        );
+
+        if ($folderInfo) {
+            $html[] = [
+                "id" => $folderId,
+                "level" => 0, // Simplified - exact level not critical for access check
+                "title" => $folderInfo['title'],
+                "disabled" => 0,
+                "parent_id" => $folderInfo['parent_id'],
+                "perso" => $folderInfo['personal_folder'],
+                "path" => "",
+                "is_visible_active" => 1,
+            ];
+        }
+    }
+
+    return $html;
 }
 
 /**

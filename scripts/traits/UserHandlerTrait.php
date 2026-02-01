@@ -520,7 +520,7 @@ trait UserHandlerTrait {
      */
     private function generateNewUserStep99($arguments) {
         $lang = new Language('english');
-
+        
         // IF USER IS NOT THE SAME
         if (isset($arguments['owner_id']) && (int) $arguments['new_user_id'] === (int) $arguments['owner_id']) {
             return [
@@ -585,28 +585,22 @@ trait UserHandlerTrait {
                 false,
                 $arguments['new_user_pwd']
             );
-
-            // Prepare initial cache
-            $userCache = DB::query(
-                'SELECT * FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
-                $arguments['new_user_id']
-            );
-            if (empty($userCache)) {
-                DB::insert(
-                    prefixTable('background_tasks'),
-                    array(
-                        'created_at' => time(),
-                        'process_type' => 'user_build_cache_tree',
-                        'arguments' => json_encode([
-                            'user_id' => (int) $arguments['new_user_id'],
-                        ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                        'updated_at' => null,
-                        'finished_at' => null,
-                        'output' => null,
-                    )
-                );
-            }
         }
+
+        // Prepare initial cache
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'user_build_cache_tree',
+                'arguments' => json_encode([
+                    'user_id' => (int) $arguments['new_user_id'],
+                ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                'updated_at' => null,
+                'finished_at' => null,
+                'output' => null,
+            )
+        );
 
         /*
         // Does user has personal items?

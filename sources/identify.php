@@ -213,7 +213,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ]);
         return false;
     }
-
+    
     // prepare variables
     // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
     // Sanitization was removed to fix authentication issues (see upgrade 3.1.5.10)
@@ -288,21 +288,17 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
-    if (isset($userLdap['user_info']) === true && (int) $userLdap['user_info']['has_been_created'] === 1) {
-        // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
-
-        echo json_encode([
-            'data' => prepareExchangedData(
-                [
-                    'error' => true,
-                    'message' => '',
-                    'extra' => 'ad_user_created',
-                ],
-                'encode'
-            ),
-            'key' => $session->get('key')
-        ]);
+    if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
+        && (int) $userLdap['retLDAP']['user_info']['has_been_created'] === 1
+    ) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => '',
+                'extra' => 'ad_user_created',
+            ],
+            'encode'
+        );
         return false;
     }
     
@@ -670,7 +666,7 @@ function buildUserSession(
     $session->set('user-language', $userInfo['user_language']);
     $session->set('user-timezone', $userInfo['usertimezone']);
     $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
-    
+
     // Manage session expiration
     $session->set('user-session_duration', (int) $lifetime);
 
@@ -837,6 +833,9 @@ function performPostLoginTasks(
                 'output' => null,
             )
         );
+
+        // Trigger background handler to process tasks
+        triggerBackgroundHandler();
     } else {
         $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
     }
@@ -1410,7 +1409,7 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         }
         
         // Get and handle user groups
-        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS);
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS, $username);
         handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
         
         // Finalize authentication
@@ -1474,10 +1473,21 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
 {
     try {
         $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
+
+        // Define attributes to retrieve from LDAP
+        // These are needed for user creation and authentication
+        $ldapAttributes = [
+            'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
+            'samaccountname', 'userprincipalname', 'uid',
+            'shadowexpire', 'accountexpires', 'useraccountcontrol',
+            $userAttribute
+        ];
+
         $userADInfos = $ldapHandler['connection']->query()
+            ->select($ldapAttributes)
             ->where($userAttribute, '=', $username)
             ->firstOrFail();
-        
+
         // Verify user status for ActiveDirectory
         if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
             return [
@@ -1485,7 +1495,6 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
                 'message' => "Error: User is not enabled"
             ];
         }
-        
         // Attempt authentication
         $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
             ? $userADInfos['userprincipalname'][0] 
@@ -1567,16 +1576,17 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
 
 /**
  * Get user groups based on LDAP type
- * 
+ *
  * @param array $userADInfos User AD information
  * @param array $ldapHandler LDAP connection and handler
  * @param array $SETTINGS Teampass settings
+ * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
  * @return array User groups
  */
-function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS): array
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
 {
     $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
-    
+
     if ($ldapHandler['type'] === 'ActiveDirectory') {
         return $ldapHandler['handler']->getUserADGroups(
             $userADInfos[$dnAttribute][0],
@@ -1584,15 +1594,16 @@ function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS
             $SETTINGS
         );
     }
-    
+
     if ($ldapHandler['type'] === 'OpenLDAP') {
         return $ldapHandler['handler']->getUserADGroups(
             $userADInfos['dn'],
             $ldapHandler['connection'],
-            $SETTINGS
+            $SETTINGS,
+            $username
         );
     }
-    
+
     throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
 }
 
@@ -1610,6 +1621,7 @@ function handleUserADGroups(string $username, array $userInfo, array $groups, ar
     if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
         // Get user groups from AD
         $user_ad_groups = [];
+        
         foreach($groups as $group) {
             // Skip invalid/corrupted group data
             if (empty($group) || !mb_check_encoding($group, 'UTF-8') || !preg_match('/^[\x20-\x7E\x80-\xFF]+$/u', $group)) {
@@ -1736,16 +1748,18 @@ function externalAdCreateUser(
     array $SETTINGS
 ): array
 {
+    $session = SessionManager::getSession();
+
     // Generate user keys pair with transparent recovery support
     $userKeys = generateUserKeys($passwordClear, $SETTINGS);
-
+    
     // Create password hash
     $passwordManager = new PasswordManager();
     $hashedPassword = $passwordManager->hashPassword($passwordClear);
     
     // If any groups provided, add user to them
+    $groupIds = [];
     if (count($userGroups) > 0) {
-        $groupIds = [];
         foreach ($userGroups as $group) {
             // Check if exists in DB
             $groupData = DB::queryFirstRow(
@@ -1759,15 +1773,12 @@ function externalAdCreateUser(
                 array_push($groupIds, $groupData['id']);
             }
         }
-        $userGroups = implode(';', $groupIds);
-    } else {
-        $userGroups = '';
     }
     
     if (empty($userGroups) && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])) {
         $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
     }
-
+    
     // Prepare user data
     $userData = [
         'login' => (string) $login,
@@ -1779,10 +1790,6 @@ function externalAdCreateUser(
         'gestionnaire' => '0',
         'can_manage_all_users' => '0',
         'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
-        'groupes_interdits' => '',
-        'groupes_visibles' => '',
-        'fonction_id' => $userGroups,
-        'last_pw_change' => (int) time(),
         'user_language' => (string) $SETTINGS['default_language'],
         'encrypted_psk' => '',
         'isAdministratedByRole' => $authType === 'ldap' ?
@@ -1799,6 +1806,9 @@ function externalAdCreateUser(
         'otp_provided' => '1',
         'is_ready_for_usage' => '0',
         'created_at' => time(),
+        'personal_items_migrated' => 1,
+        'encryption_version' => 3,
+        'phpseclibv3_migration_completed' => 1,
     ];
 
     // Add transparent recovery fields if available
@@ -1808,10 +1818,12 @@ function externalAdCreateUser(
         $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
         $userData['last_pw_change'] = time();
     }
-
     // Insert user in DB
     DB::insert(prefixTable('users'), $userData);
     $newUserId = DB::insertId();
+
+    // Add Groups and Roles
+    setUserRoles($newUserId, $groupIds, 'manual');
 
     // Create the API key
     DB::insert(
@@ -1845,6 +1857,9 @@ function externalAdCreateUser(
         $tree->rebuild();
     }
 
+    // Prevent PhpSeclibv3 migration on next login
+    $session->set('phpseclibv3_migration_started', false);
+    $session->set('phpseclibv3_migration_in_progress', false);
 
     return [
         'error' => false,
@@ -1853,6 +1868,7 @@ function externalAdCreateUser(
         'user_initial_creation_through_external_ad' => true,
         'id' => $newUserId,
         'oauth2_login_ongoing' => true,
+        'pw' => $hashedPassword
     ];
 }
 

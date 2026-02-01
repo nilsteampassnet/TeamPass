@@ -3020,6 +3020,9 @@ if (null !== $post_type) {
                 $post_user_id
             );
 
+            // Trigger background handler
+            triggerBackgroundHandler();
+
             echo prepareExchangedData(
                 array(
                     'message' => '',
@@ -3201,7 +3204,159 @@ if (null !== $post_type) {
             );
             
             break;
-        
+
+        case "count_never_connected_active_users":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'count' => countNeverConnectedActiveUsers(),
+                ),
+                'encode'
+            );
+
+            break;
+
+        case "list_inactive_users":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $filter = isset($dataReceived['filter']) ? (string) $dataReceived['filter'] : 'never';
+            $result = listInactiveUsers($filter);
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'result' => $result,
+                ),
+                'encode'
+            );
+
+            break;
+
+        case "disable_users_batch":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($session->get('user-read_only') === 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Same rights as manage_user_disable_status
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userIds = isset($dataReceived['user_ids']) && is_array($dataReceived['user_ids'])
+                ? array_map('intval', $dataReceived['user_ids'])
+                : array();
+
+            if (empty($userIds)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_empty_data'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                disableUsersBatch($userIds, 1, $SETTINGS),
+                'encode'
+            );
+
+            break;
+
+        case "delete_users_batch":
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($session->get('user-read_only') === 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userIds = isset($dataReceived['user_ids']) && is_array($dataReceived['user_ids'])
+                ? array_map('intval', $dataReceived['user_ids'])
+                : array();
+
+            if (empty($userIds)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_empty_data'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                deleteUsersBatch($userIds, $SETTINGS),
+                'encode'
+            );
+
+            break;
+
         case "purge_user":
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -3591,6 +3746,223 @@ function listDeletedUsers(): array
     ];
 }
 
+function countNeverConnectedActiveUsers(): int
+{
+    return (int) DB::queryFirstField(
+        "SELECT COUNT(id)
+         FROM " . prefixTable('users') . "
+         WHERE deleted_at IS NULL
+         AND disabled = 0
+         AND LOWER(login) NOT IN ('api','otv','tp')
+         AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
+    );
+}
+
+/**
+ * List inactive users based on last_connexion (and never connected).
+ *
+ * Accepted filters:
+ *  - 'never'
+ *  - '90', '180', '365'
+ */
+function listInactiveUsers(string $filter): array
+{
+    $filter = trim($filter);
+
+    // Exclude TeamPass system accounts
+    $baseWhere = "deleted_at IS NULL AND disabled = 0 AND LOWER(login) NOT IN ('api','otv','tp')";
+
+    // Extract a unix timestamp from last_connexion when possible.
+    // Supports:
+    // - epoch seconds (10 digits)
+    // - epoch milliseconds (13 digits)
+    // - datetime strings parseable by MySQL's UNIX_TIMESTAMP()
+    $tsExpr = "CASE
+        WHEN last_connexion REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(last_connexion AS UNSIGNED)/1000)
+        WHEN last_connexion REGEXP '^[0-9]{10}$' THEN CAST(last_connexion AS UNSIGNED)
+        WHEN last_connexion REGEXP '^[0-9]{1,9}$' THEN CAST(last_connexion AS UNSIGNED)
+        ELSE UNIX_TIMESTAMP(last_connexion)
+    END";
+
+    if ($filter === 'never') {
+        $users = DB::query(
+            "SELECT id, login, email,
+                    NULL as last_connexion_ts,
+                    1 as never_connected,
+                    NULL as days_inactive
+             FROM " . prefixTable('users') . "
+             WHERE $baseWhere
+             AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')
+             ORDER BY login ASC"
+        );
+    } else {
+        $days = (int) $filter;
+        if (!in_array($days, array(90, 180, 365), true)) {
+            $days = 90;
+        }
+        $cutoff = time() - ($days * 86400);
+
+        $users = DB::query(
+            "SELECT id, login, email,
+                    ($tsExpr) as last_connexion_ts,
+                    0 as never_connected,
+                    FLOOR((%i - ($tsExpr))/86400) as days_inactive
+             FROM " . prefixTable('users') . "
+             WHERE $baseWhere
+             AND ($tsExpr) IS NOT NULL
+             AND ($tsExpr) > 0
+             AND ($tsExpr) < %i
+             ORDER BY ($tsExpr) ASC",
+            time(),
+            $cutoff
+        );
+    }
+
+    return array(
+        'users' => $users,
+        'count' => count($users),
+    );
+}
+
+/**
+ * Batch disable users (uses same semantics as manage_user_disable_status)
+ */
+function disableUsersBatch(array $userIds, int $disabledStatus, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+
+    $done = 0;
+    $errors = array();
+
+    $systemLogins = array('api', 'otv', 'tp');
+
+    foreach ($userIds as $userId) {
+        $userId = (int) $userId;
+        if ($userId <= 0) {
+            continue;
+        }
+
+        $target = DB::queryFirstRow(
+            'SELECT id, login, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+
+        if (empty($target) || $target['deleted_at'] !== null) {
+            $errors[] = 'User ID ' . $userId . ' not found or already deleted';
+            continue;
+        }
+
+        if (in_array(strtolower((string) $target['login']), $systemLogins, true)) {
+            $errors[] = 'User ID ' . $userId . ' is a system account and cannot be disabled';
+            continue;
+        }
+
+        DB::update(
+            prefixTable('users'),
+            array(
+                'disabled' => empty($disabledStatus) === true ? 0 : $disabledStatus,
+            ),
+            'id = %i',
+            $userId
+        );
+
+        logEvents(
+            $SETTINGS,
+            'user_mngt',
+            $disabledStatus === 1 ? 'at_user_locked' : 'at_user_unlocked',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            $userId
+        );
+
+        $done++;
+    }
+
+    return array(
+        'error' => false,
+        'done' => $done,
+        'errors' => $errors,
+    );
+}
+
+/**
+ * Batch soft-delete users (same behavior as delete_user case)
+ */
+function deleteUsersBatch(array $userIds, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+
+    $done = 0;
+    $errors = array();
+
+    $systemLogins = array('api', 'otv', 'tp');
+
+    foreach ($userIds as $userId) {
+        $userId = (int) $userId;
+        if ($userId <= 0) {
+            continue;
+        }
+
+        $data_user = DB::queryFirstRow(
+            'SELECT login, admin, isAdministratedByRole, deleted_at FROM ' . prefixTable('users') . '
+            WHERE id = %i',
+            $userId
+        );
+
+        if (empty($data_user) || $data_user['deleted_at'] !== null) {
+            $errors[] = 'User ID ' . $userId . ' not found or already deleted';
+            continue;
+        }
+
+        if (isset($data_user['login']) && in_array(strtolower((string) $data_user['login']), $systemLogins, true)) {
+            $errors[] = 'User ID ' . $userId . ' is a system account and cannot be deleted';
+            continue;
+        }
+
+        // Is this user allowed to do this? (same as delete_user)
+        if (
+            (int) $session->get('user-admin') === 1
+            || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
+            || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
+        ) {
+            DB::startTransaction();
+            try {
+                $timestamp = time();
+                $deletedSuffix = '_deleted_' . $timestamp;
+
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'login' => $data_user['login'].$deletedSuffix,
+                        'deleted_at' => $timestamp,
+                        'disabled' => 1,
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $userId
+                );
+
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+
+                DB::commit();
+                $done++;
+            } catch (Exception $e) {
+                DB::rollback();
+                $errors[] = 'User ID ' . $userId . ': ' . $e->getMessage();
+            }
+        } else {
+            $errors[] = 'User ID ' . $userId . ': not allowed';
+        }
+    }
+
+    return array(
+        'error' => false,
+        'done' => $done,
+        'errors' => $errors,
+    );
+}
+
+
 /**
  * Purge deleted user by ID
  * 
@@ -3639,6 +4011,13 @@ function purgeDeletedUserById($userId): array
         DB::delete(
             prefixTable('cache'),
             'author = %i',
+            $userId
+        );
+        
+        // Delete cache_tree
+        DB::delete(
+            prefixTable('cache_tree'),
+            'user_id = %i',
             $userId
         );
 

@@ -278,11 +278,11 @@ function identifyUserRights(
         )
         :
         identUser(
+            $SETTINGS, /** @scrutinizer ignore-type */
+            $tree,
             $groupesVisiblesUser,
             $groupesInterditsUser,
-            $idFonctions,
-            $SETTINGS, /** @scrutinizer ignore-type */
-            $tree
+            $idFonctions
         );
 
     // update user's timestamp
@@ -356,7 +356,7 @@ function identAdmin(string $idFonctions)
  *
  * @return array
  */
-function convertToArray($element): ?array
+function convertToArray($element): array
 {
     if (is_string($element) === true) {
         if (empty($element) === true) {
@@ -367,7 +367,7 @@ function convertToArray($element): ?array
             trimElement($element, ';')
         );
     }
-    return $element;
+    return is_array($element) === true ? $element : [];
 }
 
 /**
@@ -382,11 +382,11 @@ function convertToArray($element): ?array
  * @return bool
  */
 function identUser(
-    $allowedFolders,
-    $noAccessFolders,
-    $userRoles,
     array $SETTINGS,
-    object $tree
+    object $tree,
+    $allowedFolders= [],
+    $noAccessFolders= [],
+    $userRoles= []
 ) {
     $session = SessionManager::getSession();
     // Init
@@ -408,9 +408,9 @@ function identUser(
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
-    $noAccessFolders = convertToArray($noAccessFolders);
+    $noAccessFolders = convertToArray($noAccessFolders) ?? [];
     $userRoles = convertToArray($userRoles) ?? [];
-    $allowedFolders = convertToArray($allowedFolders);
+    $allowedFolders = convertToArray($allowedFolders) ?? [];
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
     // Get list of folders depending on Roles
@@ -4397,7 +4397,7 @@ function handleUserKeys(
                 'creator_pwd' => $userTP['pw'],
                 'send_email' => $sendEmailToUser === true ? 1 : 0,
                 'otp_provided_new_value' => 1,
-                'email_body' => empty($emailBody) === true ? '' : $lang->get($emailBody),
+                'email_body' => $emailBody,
                 'user_self_change' => $user_self_change === true ? 1 : 0,
                 'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
             ]),
@@ -4427,6 +4427,9 @@ function handleUserKeys(
         'id=%i',
         $userId
     );
+
+    // Trigger background handler
+    triggerBackgroundHandler();
 
     return prepareExchangedData(
         array(
@@ -5542,7 +5545,7 @@ function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecry
         $userId
     );
 
-    if ((int) $user['phpseclibv3_migration_completed'] === 1) {
+    if ($user === null ||(int) $user['phpseclibv3_migration_completed'] === 1) {
         return; // Already migrated, nothing to do
     }
 
@@ -6336,13 +6339,31 @@ function generateNewKeyTempo(int $userId): string
 
 /**
  * Trigger the background tasks handler manually.
+ *
+ * This function creates a trigger file to notify a running handler that new
+ * urgent tasks have been added. The running handler will detect this file
+ * and extend its drain time to process the new tasks immediately.
+ *
+ * If no handler is currently running, a new one will be spawned.
+ *
  * @return void
  */
 function triggerBackgroundHandler(): void
 {
+    // Determine trigger file path
+    $triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
+        ? TASKS_TRIGGER_FILE
+        : __DIR__ . '/../files/teampass_background_tasks.trigger';
+
+    // Create/touch the trigger file to notify running handler
+    // The file content includes timestamp for debugging purposes
+    file_put_contents($triggerFile, (string) time());
+
     // Create the process to run the handler script
+    // If a handler is already running, it will detect the trigger file
+    // If no handler is running, this new process will handle the tasks
     $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-    
+
     // Run it asynchronously to avoid blocking the UI
     $process->start();
 }
