@@ -1673,5 +1673,7 @@ return array(
     'inactive_users_confirm_delete_many' => 'Êtes-vous sûr de vouloir supprimer les utilisateurs sélectionnés ?',
     'inactive_users_no_results' => 'Aucun utilisateur inactif',
     'inactive_users_select_at_least_one' => 'Veuillez sélectionner au moins un utilisateur.',
+    'settings_ldap_tls_certificate_check' => 'Vérification du certificat TLS LDAP',
+    'settings_ldap_tls_certificate_check_tip' => 'Définit le niveau de vérification du certificat TLS lors des connexions LDAP (ex. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
 
 );

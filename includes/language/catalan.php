@@ -1656,8 +1656,6 @@ Path: %s',
     'ops_unknown' => 'Unknown',
     'ops_users_ratio_active' => 'active',
     'ops_users_ratio_inactive' => 'inactive',
-<<<<<<< HEAD
-=======
     'inactive_users' => 'Inactive users',
     'inactive_users_threshold' => 'Inactivity threshold',
     'inactive_users_never_connected' => 'Never connected',
@@ -1676,6 +1674,7 @@ Path: %s',
     'inactive_users_confirm_delete_many' => 'Are you sure you want to delete the selected users?',
     'inactive_users_no_results' => 'No inactive users found',
     'inactive_users_select_at_least_one' => 'Please select at least one user.',
->>>>>>> pr-5060
+    'settings_ldap_tls_certificate_check' => 'LDAP TLS certificate check',
+    'settings_ldap_tls_certificate_check_tip' => 'Defines how TLS certificate validation is handled for LDAP connections (e.g. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
 
 );

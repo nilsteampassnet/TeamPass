@@ -1473,6 +1473,7 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
 {
     try {
         $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
+        $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
 
         // Define attributes to retrieve from LDAP
         // These are needed for user creation and authentication
@@ -1480,7 +1481,8 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
             'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
             'samaccountname', 'userprincipalname', 'uid',
             'shadowexpire', 'accountexpires', 'useraccountcontrol',
-            $userAttribute
+            $userAttribute,
+            $dnAttribute
         ];
 
         $userADInfos = $ldapHandler['connection']->query()
