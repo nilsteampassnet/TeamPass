@@ -2491,7 +2491,7 @@ case 'get_operational_statistics':
             $roleItemsAccessible[(int) $r['role_id']] = (int) $r['c'];
         }
 
-        // Activity per role (avoid double counting via EXISTS on role folders)
+        // Activity per role (based on user membership; folder access is evaluated separately)
         $topRoles = DB::query(
             "SELECT
                 ur.role_id,
@@ -2509,7 +2509,6 @@ case 'get_operational_statistics':
                 ) AS score
             FROM " . prefixTable('log_items') . " li
             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
-            INNER JOIN " . prefixTable('nested_tree') . " itf ON (itf.id = CAST(i.id_tree AS UNSIGNED))
             INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
             INNER JOIN " . prefixTable('roles_title') . " rt ON (rt.id = ur.role_id)
             INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
@@ -2517,20 +2516,14 @@ case 'get_operational_statistics':
               AND {$usersNotDeletedSql}
               AND u.disabled = 0
               AND {$itemsNotDeletedSql}
-              AND i.perso = 0
+              AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
-              AND EXISTS (
-                  SELECT 1
-                  FROM " . prefixTable('roles_values') . " rv
-                  INNER JOIN " . prefixTable('nested_tree') . " rf ON (rf.id = rv.folder_id)
-                  WHERE rv.role_id = ur.role_id
-                    AND (itf.nleft BETWEEN rf.nleft AND rf.nright)
-              )
             GROUP BY ur.role_id
             ORDER BY score DESC, last_activity DESC
             LIMIT %i",
             $fromTs,
             $nowTs,
+            $includePersonal,
             $includeApi,
             $tpApiLike,
             $topRolesLimit
@@ -2538,34 +2531,28 @@ case 'get_operational_statistics':
 
         $rolesActive = count($topRoles);
 
-        // Global KPIs for roles tab (distinct users/items across attributed events)
+        // Global KPIs for roles tab (distinct users/items across role membership)
         $rolesKpis = DB::queryFirstRow(
             "SELECT
                 COUNT(DISTINCT li.id_user) AS users_active,
                 COUNT(DISTINCT li.id_item) AS items_unique
             FROM " . prefixTable('log_items') . " li
             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
-            INNER JOIN " . prefixTable('nested_tree') . " itf ON (itf.id = CAST(i.id_tree AS UNSIGNED))
             INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
             INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
               AND {$usersNotDeletedSql}
               AND u.disabled = 0
               AND {$itemsNotDeletedSql}
-              AND i.perso = 0
-              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
-              AND EXISTS (
-                  SELECT 1
-                  FROM " . prefixTable('roles_values') . " rv
-                  INNER JOIN " . prefixTable('nested_tree') . " rf ON (rf.id = rv.folder_id)
-                  WHERE rv.role_id = ur.role_id
-                    AND (itf.nleft BETWEEN rf.nleft AND rf.nright)
-              )",
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
             $fromTs,
             $nowTs,
+            $includePersonal,
             $includeApi,
             $tpApiLike
         );
+
 
         // Enrich roles rows
         foreach ($topRoles as $k => $r) {
@@ -2691,18 +2678,19 @@ case 'get_operational_statistics':
                 i.perso,
                 nt.title AS folder_title,
                 SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
                 COUNT(DISTINCT li.id_user) AS users_unique,
                 MAX(CAST(li.date AS UNSIGNED)) AS last_activity
             FROM " . prefixTable('log_items') . " li
             INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
             LEFT JOIN " . prefixTable('nested_tree') . " nt ON (nt.id = CAST(i.id_tree AS UNSIGNED))
             WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
-              AND li.action IN ('at_password_copied','at_copy')
+              AND li.action IN ('at_password_copied','at_copy','at_shown')
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
             GROUP BY i.id
-            ORDER BY copies DESC, last_activity DESC
+            ORDER BY copies DESC, views DESC, last_activity DESC
             LIMIT %i",
             $fromTs,
             $nowTs,
