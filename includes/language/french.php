@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'extension_promo_text' => 'Améliorez votre expérience TeamPass et accédez à vos mots de passe directement depuis votre navigateur !',
-    'learn_more' => 'En savoir plus',
     'show_user_temporary_encryption_code' => 'Afficher le code de chiffrement de l’utilisateur',
     'email_body_new_user' => 'Bonjour,<br><br>Ceci est un mail généré par le gestionnaire de mot de passe Teampass.<br><br>Un administrateur vous a créé un compte utilisateur sur Teampass. Lors de votre prochaine connexion, veuillez utiliser les identifiants suivants :<ul><li>Login: #login#</li><li>Mot de passe: #password#</li></ul><br><br>Cordialement',
     'user_password' => 'Mot de passe utilisateur',
@@ -1589,6 +1587,8 @@ return array(
     'recycled_bin_folder_contains_items' => 'Contient %s éléments supprimés (restaurez le dossier pour les récupérer)',
     'sharekeys_encryption_migration_required' => 'Migration du chiffrement des sharekeys requise',
     'sharekeys_remaining_users' => 'utilisateur(s) restant(s)',
+    'extension_promo_text' => 'Améliorez votre expérience TeamPass et accédez à vos mots de passe directement depuis votre navigateur !',
+    'learn_more' => 'En savoir plus',
     'ops_dashboard_title' => 'Exploitation',
     'ops_period' => 'Période',
     'ops_period_24h' => 'Dernières 24 heures',
@@ -1629,7 +1629,7 @@ return array(
     'ops_stats_db_error' => 'Une erreur est survenue lors de la récupération des statistiques.',
     'ops_no_data' => 'Aucune donnée',
     'item' => 'Item',
-    'ops_tab_operational' => 'Statistiques d\'exploitation',
+    'ops_tab_operational' => 'Statistiques d’exploitation',
     'ops_tab_legacy' => 'Statistiques historiques',
     'ops_period_90d' => '3 mois',
     'ops_kpi_copies_total' => 'Copies MDP',
@@ -1673,4 +1673,5 @@ return array(
     'inactive_users_confirm_delete_many' => 'Êtes-vous sûr de vouloir supprimer les utilisateurs sélectionnés ?',
     'inactive_users_no_results' => 'Aucun utilisateur inactif',
     'inactive_users_select_at_least_one' => 'Veuillez sélectionner au moins un utilisateur.',
-    );
+
+);

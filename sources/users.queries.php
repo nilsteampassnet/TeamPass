@@ -3854,27 +3854,25 @@ function disableUsersBatch(array $userIds, int $disabledStatus, array $SETTINGS)
             continue;
         }
 
-        if (!empty($target)) {
-            DB::update(
-                prefixTable('users'),
-                array(
-                    'disabled' => empty($disabledStatus) === true ? 0 : $disabledStatus,
-                ),
-                'id = %i',
-                $userId
-            );
+        DB::update(
+            prefixTable('users'),
+            array(
+                'disabled' => empty($disabledStatus) === true ? 0 : $disabledStatus,
+            ),
+            'id = %i',
+            $userId
+        );
 
-            logEvents(
-                $SETTINGS,
-                'user_mngt',
-                $disabledStatus === 1 ? 'at_user_locked' : 'at_user_unlocked',
-                (string) $session->get('user-id'),
-                $session->get('user-login'),
-                $userId
-            );
+        logEvents(
+            $SETTINGS,
+            'user_mngt',
+            $disabledStatus === 1 ? 'at_user_locked' : 'at_user_unlocked',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            $userId
+        );
 
-            $done++;
-        }
+        $done++;
     }
 
     return array(
