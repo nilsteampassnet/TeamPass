@@ -148,6 +148,26 @@ function count_deleted_users() : int
     return (int)DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
 }
 
+/**
+ * count_never_connected_active_users
+ *
+ * Counts active users (not disabled, not soft-deleted) who never connected.
+ *
+ * @return int
+ */
+function count_never_connected_active_users() : int
+{
+    return (int)DB::queryFirstField(
+        "SELECT COUNT(id)
+         FROM " . prefixTable('users') . "
+         WHERE deleted_at IS NULL
+         AND disabled = 0
+         AND LOWER(login) NOT IN ('api','otv','tp')
+         AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
+    );
+}
+
+
 $deleted_users_count = count_deleted_users();
 
 // Prepare the CSS class for blinking and the badge for the count.
@@ -161,6 +181,10 @@ if ($deleted_users_count > 0) {
     // Create the badge HTML with the count
     $count_badge_html = ' <span class="badge badge-danger ml-1">' . $deleted_users_count . '</span>';
 }
+
+
+$inactive_never_connected_count = count_never_connected_active_users();
+$inactive_blink_class = $inactive_never_connected_count > 0 ? 'blink_me' : '';
 ?>
 
 <!-- Content Header (Page header) -->
@@ -203,6 +227,10 @@ if ($deleted_users_count > 0) {
                             <i class="fa-solid fa-plug mr-2"></i>' . $lang->get('oauth2_synchronization') . '
                         </button>' : '';
                                     ?>
+                        <button type="button" class="btn btn-primary btn-sm tp-action mr-2 <?php echo $inactive_blink_class; ?>" data-action="inactive-users">
+                            <i class="fa-solid fa-user-clock mr-2"></i><?php echo $lang->get('inactive_users'); ?>
+                        </button>
+
                         <button type="button" class="btn btn-primary btn-sm tp-action mr-2 <?php echo $blink_class; ?>" data-action="deleted-users">
                             <i class="fa-solid fa-user-xmark mr-2"></i><?php echo $lang->get('deleted_users'); ?><?php echo $count_badge_html; ?>
                         </button>
@@ -608,7 +636,58 @@ if ($deleted_users_count > 0) {
     </div>
 
 
-    <div class="row hidden extra-form user-content with-header-menu" id="deleted-users-section" data-content="deleted-users">
+    
+
+    <div class="row hidden extra-form user-content with-header-menu" id="inactive-users-section" data-content="inactive-users">
+        <div class="card-header">
+            <h5><?php echo $lang->get('inactive_users'); ?></h5>
+        </div>
+
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="inactive-users-filter"><?php echo $lang->get('inactive_users_threshold'); ?></label>
+                    <select id="inactive-users-filter" class="form-control">
+                        <option value="never"><?php echo $lang->get('inactive_users_never_connected'); ?></option>
+                        <option value="90"><?php echo $lang->get('inactive_users_over_90d'); ?></option>
+                        <option value="180"><?php echo $lang->get('inactive_users_over_180d'); ?></option>
+                        <option value="365"><?php echo $lang->get('inactive_users_over_365d'); ?></option>
+                    </select>
+                </div>
+
+                <div class="col-md-8 text-right align-self-end">
+                    <button type="button" class="btn btn-secondary btn-sm mr-2" id="btn-inactive-users-disable-selected">
+                        <i class="fa-solid fa-lock"></i> <?php echo $lang->get('inactive_users_disable_selected'); ?>
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" id="btn-inactive-users-delete-selected">
+                        <i class="fas fa-trash"></i> <?php echo $lang->get('inactive_users_delete_selected'); ?>
+                    </button>
+                </div>
+            </div>
+
+            <div id="inactive-users-list">
+                <table class="table table-striped table-sm" id="table-inactive-users">
+                    <thead>
+                        <tr>
+                            <th class="text-center align-middle px-1" style="width: 32px;"><input type="checkbox" id="inactive-users-check-all"></th>
+                            <th class="align-middle text-left"><?php echo $lang->get('login'); ?></th>
+                            <th class="align-middle text-left"><?php echo $lang->get('email'); ?></th>
+                            <th class="align-middle"><?php echo $lang->get('inactive_users_last_activity'); ?></th>
+                            <th class="align-middle"><?php echo $lang->get('inactive_users_days_inactive'); ?></th>
+                            <th class="align-middle"><?php echo $lang->get('actions'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <div class="card-footer">
+                <button type="button" class="btn btn-default float-right btn-close-inactive-users"><?php echo $lang->get('cancel'); ?></button>
+            </div>
+        </div>
+    </div>
+
+<div class="row hidden extra-form user-content with-header-menu" id="deleted-users-section" data-content="deleted-users">
         <div class="card-header">
             <h5><?php echo $lang->get('deleted_users'); ?></h5>
         </div>
@@ -624,11 +703,11 @@ if ($deleted_users_count > 0) {
                 <table class="table table-striped" id="table-deleted-users">
                     <thead>
                         <tr>
-                            <th><?php echo $lang->get('login'); ?></th>
-                            <th><?php echo $lang->get('email'); ?></th>
+                            <th class="align-middle text-left"><?php echo $lang->get('login'); ?></th>
+                            <th class="align-middle text-left"><?php echo $lang->get('email'); ?></th>
                             <th><?php echo $lang->get('deleted_date'); ?></th>
                             <th><?php echo $lang->get('days_since'); ?></th>
-                            <th><?php echo $lang->get('actions'); ?></th>
+                            <th class="align-middle"><?php echo $lang->get('actions'); ?></th>
                         </tr>
                     </thead>
                     <tbody></tbody>
@@ -637,6 +716,27 @@ if ($deleted_users_count > 0) {
 
             <div class="card-footer">
                 <button type="button" class="btn btn-default float-right btn-close-deleted-users"><?php echo $lang->get('cancel'); ?></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared confirmation modal for user actions (inactive / deleted) -->
+    <div class="modal fade" id="users-action-modal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title" id="users-action-modal-title">
+                        <i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="users-action-modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                    <button type="button" class="btn" id="users-action-modal-confirm"><?php echo $lang->get('confirm'); ?></button>
+                </div>
             </div>
         </div>
     </div>
