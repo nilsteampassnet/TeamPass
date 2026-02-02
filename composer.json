@@ -199,7 +199,9 @@
         "thenetworg/oauth2-azure": "^2.2",
         "symfony/console": "^6.4",
         "composer/composer": "^2.7",
-        "phpseclib/phpseclib": "^3.0"
+        "phpseclib/phpseclib": "^3.0",
+        "cboden/ratchet": "^0.4.4",
+        "react/event-loop": "^1.6"
     },
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",
