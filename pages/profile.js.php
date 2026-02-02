@@ -89,6 +89,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#profile-button-api_token').click(function() {
             generateNewUserApiKey('profile-user-api-token', false);
         });
+
+        $('#profile-button-api_token_inline').click(function() {
+            generateNewUserApiKey('profile-user-api-token', false);
+        });
+
     <?php endif; ?>
 
     //iCheck for checkbox and radio inputs
@@ -362,19 +367,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-
                 if (data.key !== "") {
-                    newApiKey = data.key;
+                    // Depending on the backend, data.key may be returned either as an array (legacy behavior)
+                    // or as a plain string. Normalize it to a string.
+                    newApiKey = Array.isArray(data.key) ? data.key[0] : data.key;
 
                     // Save key in session and database
                     var data = {
-                        'field' : 'user_api_key',
-                        'value' : newApiKey[0],
-                        'user_id' : <?php echo $session->get('user-id'); ?>,
-                        'context' : '',
+                        'field': 'user_api_key',
+                        'value': newApiKey,
+                        'user_id': <?php echo $session->get('user-id'); ?>,
+                        'context': '',
                     };
-                    console.log(data)
-                    
+
                     $.post(
                         "sources/users.queries.php", {
                             type: "save_user_change",
