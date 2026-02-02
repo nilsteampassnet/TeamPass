@@ -321,6 +321,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         echo '
                                     <li class="list-group-item">
                                         <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . $lang->get('user_profile_api_key') . '</b>
+                                        <button class="btn btn-sm btn-warning float-right ml-1" id="profile-button-api_token_inline"><i class="fa-solid fa-arrows-rotate pointer"></i></button>
                                         <button class="btn btn-sm btn-primary float-right" id="copy-api-key"><i class="fa-regular fa-copy  pointer"></i></button>
                                         <a class="float-right mr-2" id="profile-user-api-token">',
                                             null !== $session->get('user-api_key') ? $session->get('user-api_key') : '',
