@@ -458,10 +458,40 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $lifetime = time() + ($session_time * 60);
 
         // Build user session - Extracted to separate function for readability
-        $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
-        $old_key = $sessionData['old_key'];
-        $returnKeys = $sessionData['returnKeys'];
-        
+        // Keep the pre-auth session key: it is the one the client can use to decrypt our response
+        // even if the session is migrated inside buildUserSession().
+        $preAuthKey = $session->get('key');
+
+        try {
+            $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+            $old_key = $sessionData['old_key'];
+            $returnKeys = $sessionData['returnKeys'];
+        } catch (Throwable $e) {
+            // In case buildUserSession() migrated the session and/or rotated the key before failing,
+            // ensure we respond using the key the client still has (pre-auth key), otherwise the UI
+            // will fail to decrypt the response ("Malformed UTF-8 data").
+            if (!empty($preAuthKey)) {
+                $session->set('key', $preAuthKey);
+            }
+
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('[identify.php] buildUserSession() failed for user "' . $username . '": ' . $e->getMessage());
+            }
+
+            $errorPayload = [
+                'error' => true,
+                'message' => $lang->get('error_bad_credentials'),
+            ];
+
+            if (!empty($preAuthKey)) {
+                echo prepareExchangedData($errorPayload, 'encode', $preAuthKey);
+            } else {
+                echo prepareExchangedData($errorPayload, 'encode');
+            }
+
+            return false;
+        }
+
         // Setup user roles and permissions - Extracted to separate function for readability
         $rolesDbUpdateData = setupUserRolesAndPermissions($session, $userInfo, $SETTINGS);
         
@@ -682,12 +712,48 @@ function buildUserSession(
     }
 
     // API key - use recovered private key from session if available, otherwise from returnKeys
-    $privateKeyForApiDecrypt = !empty($returnKeys['private_key_clear']) ? $returnKeys['private_key_clear'] : $session->get('user-private_key');
-    $session->set(
-        'user-api_key',
-        empty($userInfo['api_key']) === false && !empty($privateKeyForApiDecrypt) ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyForApiDecrypt)) : '',
-    );
-    
+    $privateKeyForApiDecrypt = !empty($returnKeys['private_key_clear'])
+        ? $returnKeys['private_key_clear']
+        : $session->get('user-private_key');
+
+    // API key is stored encrypted in DB. decryptUserObjectKey() should return the clear token.
+    // Some legacy setups may have stored the clear token base64-encoded; handle both safely.
+    $apiKeyClear = '';
+$apiKeyDecryptFailed = false;
+
+if (empty($userInfo['api_key']) === false && !empty($privateKeyForApiDecrypt)) {
+    try {
+        $decrypted = decryptUserObjectKey($userInfo['api_key'], $privateKeyForApiDecrypt);
+    } catch (Throwable $e) {
+        // If user's keys were reset (e.g. after phpseclib migration without old password),
+        // previously stored encrypted API token can no longer be decrypted.
+        $apiKeyDecryptFailed = true;
+
+        // Do not block login/session creation for this: user can regenerate an API token from Profile.
+        // Optionally log server-side.
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('[TeamPass] Unable to decrypt user API key for user_id=' . (int) $userInfo['id'] . ' : ' . $e->getMessage());
+        }
+        $decrypted = '';
+    }
+
+    if (is_string($decrypted)) {
+        $decrypted = trim($decrypted);
+
+        // If it looks like base64 and decodes to printable ASCII, use the decoded value.
+        // Otherwise keep as-is (already clear token).
+        $decoded = base64_decode($decrypted, true);
+        if ($decoded !== false && preg_match('/^[ -~]+$/', $decoded) === 1) {
+            $apiKeyClear = $decoded;
+        } else {
+            $apiKeyClear = $decrypted;
+        }
+    }
+}
+
+$session->set('user-api_key', $apiKeyClear);
+$session->set('user-api_key_decrypt_failed', $apiKeyDecryptFailed);
+
     $session->set('user-special', $userInfo['special']);
     $session->set('user-auth_type', $userInfo['auth_type']);
 
