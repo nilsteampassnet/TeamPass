@@ -2770,7 +2770,7 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $inputData['id']
         );
-        
+
         if (empty($userKeys) || empty($dataItem['pw'])) {
             // No share key found
             $pwIsEmptyNormally = false;
@@ -2794,12 +2794,12 @@ switch ($inputData['type']) {
             $pwIsEmptyNormal = true;
             $decryptedObject = null;
             $validKeyFound = false;
-            
+
             // Loop on available keys
             // We should only have one but in case of, do this loop
             foreach ($userKeys as $userKey) {
                 $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
-                
+
                 if (!empty($decryptedObject)) {
                     $validKeyFound = true;
                     break;
@@ -6207,7 +6207,7 @@ switch ($inputData['type']) {
         // prepare image info
         $post_title = basename($file_info['name'], '.' . $file_info['extension']);
         $post_title = isBase64($post_title) === true ? base64_decode($post_title) : $post_title;
-        
+
         // Get image content
         // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
         $fileContent = decryptFile(

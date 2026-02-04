@@ -3339,10 +3339,10 @@ function insertOrUpdateSharekey(
 ): bool {
     try {
         DB::query(
-            'INSERT INTO ' . $tableName . ' 
-            (object_id, user_id, share_key, encryption_version) 
+            'INSERT INTO ' . $tableName . '
+            (object_id, user_id, share_key, encryption_version)
             VALUES (%i, %i, %s, %i)
-            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
+            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key), encryption_version = VALUES(encryption_version)',
             $objectId,
             $userId,
             $shareKey,
