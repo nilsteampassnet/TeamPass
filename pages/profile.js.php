@@ -86,7 +86,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             generateNewUserApiKey('profile-user-api-token', true);
         }
 
-        $('#profile-button-api_token').click(function() {
+        $('#generate-api-key').click(function() {
             generateNewUserApiKey('profile-user-api-token', false);
         });
     <?php endif; ?>
