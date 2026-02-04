@@ -212,6 +212,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         previousSelectedFolder = selectedFolderId;
         initialPageLoad = false;
+
+        // Subscribe to WebSocket notifications for this folder
+        if (typeof window.tpWsSubscribeToFolder === 'function') {
+            window.tpWsSubscribeToFolder(selectedFolderId);
+        }
     })
     // Search in tree
     .bind('search.jstree', function(e, data) {
@@ -7055,6 +7060,28 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#jstree').jstree('deselect_all');
                 $('#jstree').jstree('select_node', '#li_' + folder_id);
             }
+        });
+
+        // WebSocket: Expose refresh function for real-time updates
+        window.refreshVisibleItems = function() {
+            var currentFolder = store.get('teampassApplication') ? store.get('teampassApplication').selectedFolder : null;
+            if (currentFolder) {
+                ListerItems(currentFolder, '', 0);
+            }
+        };
+
+        // WebSocket: Listen for refresh events
+        $(document).on('teampass:items:refresh', function() {
+            window.refreshVisibleItems();
+        });
+
+        // WebSocket: Expose tree refresh function
+        window.refreshTree = function() {
+            $('#jstree').jstree('refresh');
+        };
+
+        $(document).on('teampass:folders:refresh', function() {
+            window.refreshTree();
         });
     });
 </script>

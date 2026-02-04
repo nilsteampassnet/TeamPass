@@ -289,7 +289,10 @@ function performStep5() {
         { id: 'check50', action: 'users_groups_forbidden' },
         { id: 'check51', action: 'users_roles' },
         { id: 'check52', action: 'users_favorites' },
-        { id: 'check53', action: 'users_latest_items' }
+        { id: 'check53', action: 'users_latest_items' },
+        { id: 'check54', action: 'websocket_events' },
+        { id: 'check55', action: 'websocket_connections' },
+        { id: 'check56', action: 'websocket_tokens' }
     ];
     
     let errorOccurred = false; // Variable to track errors

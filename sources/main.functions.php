@@ -6367,3 +6367,340 @@ function triggerBackgroundHandler(): void
     // Run it asynchronously to avoid blocking the UI
     $process->start();
 }
+
+/**
+ * Emit a WebSocket event for real-time notifications
+ *
+ * This function inserts an event into the websocket_events table,
+ * which is then picked up by the WebSocket server and broadcast
+ * to connected clients.
+ *
+ * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
+ * @param string $targetType Target type for routing: 'user', 'folder', or 'broadcast'
+ * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
+ * @param array $payload Event payload data to send to clients
+ * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
+ * @return bool True if event was queued successfully, false otherwise
+ *
+ * @example
+ * // Notify all users viewing a folder that an item was updated
+ * emitWebSocketEvent(
+ *     'item_updated',
+ *     'folder',
+ *     $folderId,
+ *     [
+ *         'item_id' => $itemId,
+ *         'folder_id' => $folderId,
+ *         'label' => $itemLabel,
+ *         'updated_by' => $userLogin
+ *     ],
+ *     $currentUserId // Don't notify the user who made the change
+ * );
+ *
+ * @example
+ * // Notify a specific user that their encryption keys are ready
+ * emitWebSocketEvent(
+ *     'user_keys_ready',
+ *     'user',
+ *     $userId,
+ *     ['status' => 'ready', 'message' => 'Your account is now ready']
+ * );
+ *
+ * @example
+ * // Broadcast to all connected users (e.g., maintenance notice)
+ * emitWebSocketEvent(
+ *     'system_maintenance',
+ *     'broadcast',
+ *     null,
+ *     ['message' => 'System will restart in 5 minutes']
+ * );
+ */
+function emitWebSocketEvent(
+    string $eventType,
+    string $targetType,
+    ?int $targetId,
+    array $payload,
+    ?int $excludeUserId = null
+): bool {
+    // Check if WebSocket is enabled
+    try {
+        $wsEnabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'websocket_enabled'
+        );
+
+        if ($wsEnabled !== '1') {
+            // WebSocket not enabled, silently skip
+            return false;
+        }
+    } catch (Exception $e) {
+        // Table might not exist yet (before migration)
+        return false;
+    }
+
+    // Validate target type
+    if (!in_array($targetType, ['user', 'folder', 'broadcast'], true)) {
+        error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
+        return false;
+    }
+
+    // Add exclude_user_id to payload if specified
+    if ($excludeUserId !== null) {
+        $payload['exclude_user_id'] = $excludeUserId;
+    }
+
+    // Add timestamp to payload
+    $payload['server_timestamp'] = time();
+
+    try {
+        DB::insert(
+            prefixTable('websocket_events'),
+            [
+                'event_type' => $eventType,
+                'target_type' => $targetType,
+                'target_id' => $targetId,
+                'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]
+        );
+
+        return true;
+
+    } catch (Exception $e) {
+        error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Emit a WebSocket event for item operations
+ *
+ * Convenience wrapper for item-related events.
+ *
+ * @param string $action Action performed: 'created', 'updated', 'deleted', 'copied'
+ * @param int $itemId The item ID
+ * @param int $folderId The folder ID containing the item
+ * @param string $label The item label
+ * @param string $userLogin The user who performed the action
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitItemEvent(
+    string $action,
+    int $itemId,
+    int $folderId,
+    string $label,
+    string $userLogin,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'item_' . $action;
+
+    $payload = [
+        'item_id' => $itemId,
+        'folder_id' => $folderId,
+        'label' => $label,
+        $action . '_by' => $userLogin,
+    ];
+
+    return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for folder operations
+ *
+ * Convenience wrapper for folder-related events.
+ *
+ * @param string $action Action performed: 'created', 'updated', 'deleted'
+ * @param int $folderId The folder ID
+ * @param string $title The folder title
+ * @param string $userLogin The user who performed the action
+ * @param int|null $parentId Parent folder ID (for created events)
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitFolderEvent(
+    string $action,
+    int $folderId,
+    string $title,
+    string $userLogin,
+    ?int $parentId = null,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'folder_' . $action;
+
+    $payload = [
+        'folder_id' => $folderId,
+        'title' => $title,
+        $action . '_by' => $userLogin,
+    ];
+
+    if ($parentId !== null) {
+        $payload['parent_id'] = $parentId;
+    }
+
+    // For folder events, broadcast to parent folder subscribers
+    $targetFolderId = $parentId ?? $folderId;
+
+    return emitWebSocketEvent($eventType, 'folder', $targetFolderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for task progress
+ *
+ * Used to notify users about long-running background tasks.
+ *
+ * @param int $userId Target user ID
+ * @param string $taskId Unique task identifier
+ * @param string $taskType Type of task (encryption, import, export, ldap_sync, etc.)
+ * @param int $progress Current progress count
+ * @param int $total Total items to process
+ * @param string $status Status: 'in_progress', 'completed', 'failed'
+ * @param string|null $message Optional status message
+ * @return bool True if event was queued
+ */
+function emitTaskProgress(
+    int $userId,
+    string $taskId,
+    string $taskType,
+    int $progress,
+    int $total,
+    string $status = 'in_progress',
+    ?string $message = null
+): bool {
+    $eventType = $status === 'in_progress' ? 'task_progress' : 'task_completed';
+
+    $payload = [
+        'task_id' => $taskId,
+        'task_type' => $taskType,
+        'progress' => $progress,
+        'total' => $total,
+        'status' => $status,
+        'percent' => $total > 0 ? round(($progress / $total) * 100, 1) : 0,
+    ];
+
+    if ($message !== null) {
+        $payload['message'] = $message;
+    }
+
+    return emitWebSocketEvent($eventType, 'user', $userId, $payload);
+}
+
+/**
+ * Generate a temporary WebSocket authentication token for a user
+ *
+ * This token is used to authenticate WebSocket connections since
+ * the WebSocket server cannot read encrypted PHP sessions.
+ *
+ * @param int $userId User ID
+ * @param int $validitySeconds Token validity duration in seconds (default: 1 hour)
+ * @return string|null The generated token, or null on failure
+ */
+function generateWebSocketToken(int $userId, int $validitySeconds = 3600): ?string
+{
+    // Check if WebSocket is enabled
+    try {
+        $wsEnabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'websocket_enabled'
+        );
+
+        if ($wsEnabled !== '1') {
+            return null;
+        }
+    } catch (Exception $e) {
+        return null;
+    }
+
+    // Generate a secure random token
+    $token = bin2hex(random_bytes(32)); // 64 characters
+
+    try {
+        // Delete all existing tokens for this user (one token per user is enough)
+        DB::query(
+            'DELETE FROM %l WHERE user_id = %i',
+            prefixTable('websocket_tokens'),
+            $userId
+        );
+
+        // Insert new token with expiration calculated by MySQL to avoid timezone issues
+        DB::query(
+            'INSERT INTO %l (user_id, token, expires_at, used) VALUES (%i, %s, DATE_ADD(NOW(), INTERVAL %i SECOND), 0)',
+            prefixTable('websocket_tokens'),
+            $userId,
+            $token,
+            $validitySeconds
+        );
+
+        return $token;
+
+    } catch (Exception $e) {
+        error_log("generateWebSocketToken: Failed - " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Validate a WebSocket authentication token
+ *
+ * @param string $token The token to validate
+ * @return array|null User data if valid, null otherwise
+ */
+function validateWebSocketToken(string $token): ?array
+{
+    try {
+        // Find the token with user info
+        $tokenData = DB::queryFirstRow(
+            'SELECT wt.*, u.login, u.admin
+             FROM %l wt
+             JOIN %l u ON wt.user_id = u.id
+             WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
+            prefixTable('websocket_tokens'),
+            prefixTable('users'),
+            $token
+        );
+
+        if (!$tokenData) {
+            return null;
+        }
+
+        $userId = (int) $tokenData['user_id'];
+
+        // Get user's accessible folders from users_groups table
+        $userGroups = DB::queryFirstColumn(
+            'SELECT group_id FROM %l WHERE user_id = %i',
+            prefixTable('users_groups'),
+            $userId
+        );
+        $accessibleFolders = array_map('intval', $userGroups ?: []);
+
+        // Get user's roles from users_roles table
+        $userRoles = DB::queryFirstColumn(
+            'SELECT role_id FROM %l WHERE user_id = %i',
+            prefixTable('users_roles'),
+            $userId
+        );
+
+        // Get folders accessible via roles
+        if (!empty($userRoles)) {
+            $roleFolders = DB::queryFirstColumn(
+                'SELECT DISTINCT folder_id FROM %l WHERE role_id IN %ls',
+                prefixTable('roles_values'),
+                $userRoles
+            );
+            $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
+        }
+
+        return [
+            'user_id' => $userId,
+            'user_login' => $tokenData['login'],
+            'accessible_folders' => $accessibleFolders,
+            'is_admin' => $tokenData['admin'] === '1',
+            'auth_method' => 'ws_token',
+        ];
+
+    } catch (Exception $e) {
+        error_log("validateWebSocketToken: Failed - " . $e->getMessage());
+        return null;
+    }
+}

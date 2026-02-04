@@ -69,9 +69,24 @@ trait UserHandlerTrait {
         $remainingSubtasks = DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
             $this->taskId
-        );    
+        );
         if ($remainingSubtasks == 0) {
             $this->completeTask();
+
+            // Emit WebSocket event to notify user that keys are ready
+            $userId = (int) ($arguments['new_user_id'] ?? $arguments['user_id'] ?? 0);
+            if ($userId > 0) {
+                emitWebSocketEvent(
+                    'user_keys_ready',
+                    'user',
+                    $userId,
+                    [
+                        'user_id' => $userId,
+                        'status' => 'ready',
+                        'message' => 'Your encryption keys are now ready'
+                    ]
+                );
+            }
         }
     }
     

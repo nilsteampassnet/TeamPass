@@ -815,6 +815,16 @@ switch ($inputData['type']) {
             // Add item to CACHE table if new item has been created
             if (isset($newID) === true) {
                 updateCacheTable('add_value', (int) $newID);
+
+                // Emit WebSocket event for real-time notification
+                emitItemEvent(
+                    'created',
+                    (int) $newID,
+                    (int) $inputData['folderId'],
+                    $inputData['label'] ?? '',
+                    $session->get('user-login') ?? '',
+                    (int) $session->get('user-id')
+                );
             }
 
             $arrData = array(
@@ -2164,6 +2174,16 @@ switch ($inputData['type']) {
             // Notifiy changes to the users
             notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
 
+            // Emit WebSocket event for real-time notification
+            emitItemEvent(
+                'updated',
+                (int) $inputData['itemId'],
+                (int) $inputData['folderId'],
+                $inputData['label'] ?? '',
+                $session->get('user-login') ?? '',
+                (int) $session->get('user-id')
+            );
+
             // Prepare some stuff to return
             $arrData = array(
                 'error' => false,
@@ -2179,7 +2199,7 @@ switch ($inputData['type']) {
             );
             break;
         }
-        
+
         // return data
         echo (string) prepareExchangedData(
             $arrData,
@@ -2578,6 +2598,21 @@ switch ($inputData['type']) {
                 $session->get('user-id'),
                 'at_copy',
                 $session->get('user-login')
+            );
+
+            // Emit WebSocket event for real-time notification
+            emitWebSocketEvent(
+                'item_copied',
+                'folder',
+                (int) $post_dest_id,
+                [
+                    'item_id' => (int) $inputData['itemId'],
+                    'new_item_id' => (int) $newItemId,
+                    'folder_id' => (int) $post_dest_id,
+                    'label' => $originalRecord['label'] ?? '',
+                    'copied_by' => $session->get('user-login') ?? '',
+                ],
+                (int) $session->get('user-id')
             );
 
             echo (string) prepareExchangedData(
@@ -3636,6 +3671,16 @@ switch ($inputData['type']) {
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
 
+        // Emit WebSocket event for real-time notification
+        emitItemEvent(
+            'deleted',
+            (int) $inputData['itemId'],
+            (int) $inputData['folderId'],
+            $inputData['label'] ?? '',
+            $session->get('user-login') ?? '',
+            (int) $session->get('user-id')
+        );
+
         echo (string) prepareExchangedData(
             array(
                 'error' => false,
@@ -3645,7 +3690,7 @@ switch ($inputData['type']) {
         );
         break;
 
-        
+
     /*
      * CASE
      * Display OTP of the selected Item

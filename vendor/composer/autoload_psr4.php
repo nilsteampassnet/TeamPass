@@ -12,6 +12,7 @@ return array(
     'ZxcvbnPhp\\' => array($vendorDir . '/bjeavons/zxcvbn-php/src'),
     'TiBeN\\' => array($vendorDir . '/tiben/crontab-manager/src'),
     'TheNetworg\\OAuth2\\Client\\' => array($vendorDir . '/thenetworg/oauth2-azure/src'),
+    'TeampassWebSocket\\' => array($baseDir . '/websocket/src'),
     'TeampassClasses\\SuperGlobal\\' => array($vendorDir . '/teampassclasses/superglobal/src'),
     'TeampassClasses\\SessionManager\\' => array($vendorDir . '/teampassclasses/sessionmanager/src'),
     'TeampassClasses\\PerformChecks\\' => array($vendorDir . '/teampassclasses/performchecks/src'),

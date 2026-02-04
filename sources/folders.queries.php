@@ -523,6 +523,18 @@ if (null !== $post_type) {
 
             $tree->rebuild();
 
+            // Emit WebSocket event for real-time notification
+            if ($error === false) {
+                emitFolderEvent(
+                    'updated',
+                    (int) $dataFolder['id'],
+                    $inputData['title'] ?? $dataFolder['title'],
+                    $session->get('user-login') ?? '',
+                    (int) $inputData['parentId'],
+                    (int) $session->get('user-id')
+                );
+            }
+
             echo prepareExchangedData(
                 array(
                     'error' => $error,
@@ -638,6 +650,18 @@ if (null !== $post_type) {
                 SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$creationStatus['newId']], 'add');
             }
 
+            // Emit WebSocket event for real-time notification
+            if ($creationStatus['error'] === false && $creationStatus['newId'] !== 0) {
+                emitFolderEvent(
+                    'created',
+                    (int) $creationStatus['newId'],
+                    $inputData['title'] ?? '',
+                    $session->get('user-login') ?? '',
+                    (int) $inputData['parentId'],
+                    (int) $session->get('user-id')
+                );
+            }
+
             echo prepareExchangedData(
                 array(
                     'error' => $creationStatus['error'],
@@ -722,6 +746,7 @@ if (null !== $post_type) {
 
             //decrypt and retreive data in JSON format
             $folderForDel = array();
+            $foldersDeletedInfo = array(); // For WebSocket notifications
 
             // Start transaction
             DB::startTransaction();
@@ -808,6 +833,13 @@ if (null !== $post_type) {
                             //array for delete folder
                             $folderForDel[] = $thisSubFolders->id;
 
+                            // Store info for WebSocket notification
+                            $foldersDeletedInfo[] = [
+                                'folder_id' => (int) $thisSubFolders->id,
+                                'title' => (string) $thisSubFolders->title,
+                                'parent_id' => (int) $thisSubFolders->parent_id,
+                            ];
+
                             //delete items & logs
                             $itemsInSubFolder = DB::query(
                                 'SELECT id FROM ' . prefixTable('items') . ' 
@@ -891,6 +923,18 @@ if (null !== $post_type) {
 
             //rebuild tree
             $tree->rebuild();
+
+            // Emit WebSocket events for deleted folders
+            foreach ($foldersDeletedInfo as $deletedFolder) {
+                emitFolderEvent(
+                    'deleted',
+                    (int) $deletedFolder['folder_id'],
+                    $deletedFolder['title'],
+                    $session->get('user-login') ?? '',
+                    (int) $deletedFolder['parent_id'],
+                    (int) $session->get('user-id')
+                );
+            }
 
             echo prepareExchangedData(
                 array(

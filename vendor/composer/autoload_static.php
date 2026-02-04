@@ -51,6 +51,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         array (
             'TiBeN\\' => 6,
             'TheNetworg\\OAuth2\\Client\\' => 25,
+            'TeampassWebSocket\\' => 18,
             'TeampassClasses\\SuperGlobal\\' => 28,
             'TeampassClasses\\SessionManager\\' => 31,
             'TeampassClasses\\PerformChecks\\' => 30,
@@ -224,6 +225,10 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TheNetworg\\OAuth2\\Client\\' => 
         array (
             0 => __DIR__ . '/..' . '/thenetworg/oauth2-azure/src',
+        ),
+        'TeampassWebSocket\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/websocket/src',
         ),
         'TeampassClasses\\SuperGlobal\\' => 
         array (
@@ -3174,6 +3179,13 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'TeampassClasses\\SessionManager\\EncryptedSessionProxy' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/EncryptedSessionProxy.php',
         'TeampassClasses\\SessionManager\\SessionManager' => __DIR__ . '/..' . '/teampassclasses/sessionmanager/src/SessionManager.php',
         'TeampassClasses\\SuperGlobal\\SuperGlobal' => __DIR__ . '/..' . '/teampassclasses/superglobal/src/SuperGlobal.php',
+        'TeampassWebSocket\\AuthValidator' => __DIR__ . '/../..' . '/websocket/src/AuthValidator.php',
+        'TeampassWebSocket\\ConnectionManager' => __DIR__ . '/../..' . '/websocket/src/ConnectionManager.php',
+        'TeampassWebSocket\\EventBroadcaster' => __DIR__ . '/../..' . '/websocket/src/EventBroadcaster.php',
+        'TeampassWebSocket\\Logger' => __DIR__ . '/../..' . '/websocket/src/Logger.php',
+        'TeampassWebSocket\\MessageHandler' => __DIR__ . '/../..' . '/websocket/src/MessageHandler.php',
+        'TeampassWebSocket\\RateLimiter' => __DIR__ . '/../..' . '/websocket/src/RateLimiter.php',
+        'TeampassWebSocket\\WebSocketServer' => __DIR__ . '/../..' . '/websocket/src/WebSocketServer.php',
         'TheNetworg\\OAuth2\\Client\\Grant\\JwtBearer' => __DIR__ . '/..' . '/thenetworg/oauth2-azure/src/Grant/JwtBearer.php',
         'TheNetworg\\OAuth2\\Client\\Provider\\Azure' => __DIR__ . '/..' . '/thenetworg/oauth2-azure/src/Provider/Azure.php',
         'TheNetworg\\OAuth2\\Client\\Provider\\AzureResourceOwner' => __DIR__ . '/..' . '/thenetworg/oauth2-azure/src/Provider/AzureResourceOwner.php',

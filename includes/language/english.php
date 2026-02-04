@@ -29,6 +29,14 @@
  */
 
 return array(
+    'settings_websocket_title' => 'Websocket',
+    'settings_websocket_title_goal' => 'Enable real-time communication for instant updates and notifications.',
+    'settings_websocket_enabler' => 'Enable websocket',
+    'settings_websocket_enabler_tip' => 'Allows the application to use WebSockets for real-time status updates, reducing server polling.',
+    'settings_websocket_host' => 'Websocket host',
+    'settings_websocket_host_tip' => 'The IP address or FQDN where the WebSocket server is running (e.g., 127.0.0.1 or ws.domain.com).',
+    'settings_websocket_port' => 'Websocket port',
+    'settings_websocket_port_tip' => 'The TCP port used by the WebSocket server (default is often 8080 or 8443 for SSL).',
     'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
     'learn_more' => 'Learn more',
     'phpseclibv3_migration_title' => 'Encryption Migration in Progress',

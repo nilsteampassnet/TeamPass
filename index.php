@@ -1082,7 +1082,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <!-- Main Footer -->
             <footer class="main-footer">
                 <!-- To the right -->
-                <div class="float-right d-none d-sm-inline">
+                <div class="float-right d-none d-sm-inline" id="footer-version">
                     <?php echo $lang->get('version_alone'); ?>&nbsp;<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>
                 </div>
                 <!-- Default to the left -->
@@ -1324,11 +1324,31 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
+    <!-- WebSocket real-time notifications -->
+    <?php
+    $websocketEnabled = isset($SETTINGS['websocket_enabled']) && $SETTINGS['websocket_enabled'] === '1';
+    if ($websocketEnabled && isset($session) && $session->has('user-id')) {
+        // Generate a WebSocket authentication token for this user
+        $wsToken = generateWebSocketToken((int) $session->get('user-id'));
+        $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+        $wsPort = $SETTINGS['websocket_port'] ?? '8080';
+    ?>
+    <script type="text/javascript">
+        window.TeamPassWebSocketEnabled = true;
+        window.TeamPassWebSocketDebug = <?php echo (isset($SETTINGS['debug_mode']) && $SETTINGS['debug_mode'] === '1') ? 'true' : 'false'; ?>;
+        window.TeamPassWebSocketToken = <?php echo $wsToken ? json_encode($wsToken) : 'null'; ?>;
+        window.TeamPassWebSocketUrl = 'ws://<?php echo $wsHost . ':' . $wsPort; ?>';
+    </script>
+    <script type="text/javascript" src="includes/js/teampass-websocket.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="includes/js/teampass-websocket-init.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <?php
+    }
+    ?>
+
     <?php
     // Include phpseclib v3 migration modal if migration is in progress
     if (isset($session)
         && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)
-
     ) {
         include_once 'includes/core/phpseclibv3_migration_modal.php';
     }
