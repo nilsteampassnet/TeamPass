@@ -872,7 +872,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <div class="form-control mt-3 font-weight-light grey" id="dialog-admin-change-user-password-progress">
                                     <?php echo $lang->get('provide_current_psk_and_click_launch'); ?>
                                 </div>
-                                <div class="mt-3">                                    
+                                <div class="mt-3 hidden" id="dialog-admin-change-user-password-show-password-div">                                    
                                     <label>
                                         <span class="mr-2 pointer fw-normal"><i class="fa-solid fa-eye mr-2 text-orange"></i><?php echo $lang->get('show_user_password');?></span>
                                         <input type="checkbox" id="dialog-admin-change-user-password-do-show-password" class="pointer">
