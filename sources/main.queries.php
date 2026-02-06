@@ -261,7 +261,10 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
         /*
          * User's authentication password in LDAP has changed
          */
+        /*
+        // TODO to remove
         case 'change_user_ldap_auth_password'://action_password
+            error_log("DEBUG - Received request to change LDAP authentication password for user ID ".$session->get('user-id'));
             // Check if no_password_provided is set
             if (isset($dataReceived['no_password_provided']) && $dataReceived['no_password_provided'] === 1) {
                 // Handle case where no password is provided
@@ -292,11 +295,12 @@ function passwordHandler(string $post_type, array|null|string $dataReceived, arr
                 );
             }
 
-            return /** @scrutinizer ignore-call */ changeUserLDAPAuthenticationPassword(
+            return changeUserLDAPAuthenticationPassword(
                 (int) $session->get('user-id'),
                 $dataReceived['previous_password'],
                 $userPassword
             );
+        */
 
         /*
          * test_current_user_password_is_correct
@@ -2091,19 +2095,28 @@ function initializeUserPassword(
             if ($continue === true) {
                 // Only change if email is successfull
                 $passwordManager = new PasswordManager();
-                // GEnerate new keys
-                $userKeys = generateUserKeys($post_user_password);
+                // Generate new keys
+                $userKeys = generateUserKeys($post_user_password, $SETTINGS);
 
                 // Update user account
+                $updateData = array(
+                    'special' => $post_special,
+                    'pw' => $passwordManager->hashPassword($post_user_password),
+                    'public_key' => $userKeys['public_key'],
+                    'private_key' => $userKeys['private_key'],
+                    'last_pw_change' => time(),
+                );
+
+                // Include transparent recovery data if available
+                if (isset($userKeys['user_seed'])) {
+                    $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+                    $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+                    $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                }
+
                 DB::update(
                     prefixTable('users'),
-                    array(
-                        'special' => $post_special,
-                        'pw' => $passwordManager->hashPassword($post_user_password),
-                        'public_key' => $userKeys['public_key'],
-                        'private_key' => $userKeys['private_key'],
-                        'last_pw_change' => time(),
-                    ),
+                    $updateData,
                     'id = %i',
                     $post_user_id
                 );
@@ -2172,14 +2185,31 @@ function generateOneTimeCode(
             // Generate pwd
             $password = generateQuickPassword();
 
-            // GEnerate new keys
-            $userKeys = generateUserKeys($password);
-            
+            // Generate new keys
+            $userKeys = generateUserKeys($password, null);
+
             // Handle private key
             insertPrivateKeyWithCurrentFlag(
                 $userId,
-                $userKeys['private_key'],        
+                $userKeys['private_key'],
             );
+
+            // Update transparent recovery data if available
+            if (isset($userKeys['user_seed'])) {
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'user_derivation_seed' => $userKeys['user_seed'],
+                        'private_key_backup' => $userKeys['private_key_backup'],
+                        'key_integrity_hash' => $userKeys['key_integrity_hash'],
+                        'public_key' => $userKeys['public_key'],
+                        'private_key' => $userKeys['private_key'],
+                        'last_pw_change' => time(),
+                    ),
+                    'id = %i',
+                    $userId
+                );
+            }
 
             return prepareExchangedData(
                 array(
@@ -3207,13 +3237,14 @@ function changeUserAuthenticationPassword(
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
- 
+
     if (isUserIdValid($post_user_id) === true) {
-        // Get user info
+        // Get user info including transparent recovery fields
         $userData = DB::queryFirstRow(
-            'SELECT auth_type, login, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.auth_type, u.login, u.public_key, u.user_derivation_seed, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            INNER JOIN ' . prefixTable('user_private_keys') . ' AS pk ON pk.user_id = u.id AND pk.is_current = 1
+            WHERE u.id = %i',
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
@@ -3232,27 +3263,62 @@ function changeUserAuthenticationPassword(
                 );
             }
 
-            $lang = new Language($session->get('user-language') ?? 'english');
-
             if ($session->get('user-private_key') === $privateKey) {
                 // Encrypt it with new password
                 $hashedPrivateKey = encryptPrivateKey($post_new_pwd, $privateKey);
 
                 // Generate new hash for auth password
                 $passwordManager = new PasswordManager();
-
-                // Prepare variables
                 $newPw = $passwordManager->hashPassword($post_new_pwd);
+
+                // Save private key in dedicated table
+                insertPrivateKeyWithCurrentFlag(
+                    $post_user_id,
+                    $hashedPrivateKey,
+                );
+
+                // Prepare update data
+                $updateData = array(
+                    'private_key' => $hashedPrivateKey,
+                    'pw' => $newPw,
+                    'special' => 'none',
+                    'last_pw_change' => time(),
+                );
+
+                // Update transparent recovery backup with new password context
+                if (!empty($userData['user_derivation_seed']) && !empty($userData['public_key'])) {
+                    $derivedKey = deriveBackupKey(
+                        $userData['user_derivation_seed'],
+                        $userData['public_key'],
+                        $SETTINGS
+                    );
+
+                    // Re-encrypt private key backup with derived key
+                    $privateKeyBackup = base64_encode(
+                        \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                            base64_decode($privateKey),
+                            $derivedKey,
+                            'cbc',
+                            'sha256'
+                        )
+                    );
+
+                    // Recalculate integrity hash
+                    $serverSecret = getServerSecret();
+                    $integrityHash = generateKeyIntegrityHash(
+                        $userData['user_derivation_seed'],
+                        $userData['public_key'],
+                        $serverSecret
+                    );
+
+                    $updateData['private_key_backup'] = $privateKeyBackup;
+                    $updateData['key_integrity_hash'] = $integrityHash;
+                }
 
                 // Update user account
                 DB::update(
                     prefixTable('users'),
-                    array(
-                        'private_key' => $hashedPrivateKey,
-                        'pw' => $newPw,
-                        'special' => 'none',
-                        'last_pw_change' => time(),
-                    ),
+                    $updateData,
                     'id = %i',
                     $post_user_id
                 );
@@ -3262,12 +3328,12 @@ function changeUserAuthenticationPassword(
                 return prepareExchangedData(
                     array(
                         'error' => false,
-                        'message' => $lang->get('done'),'',
+                        'message' => $lang->get('done'),
                     ),
                     'encode'
                 );
             }
-            
+
             // ERROR
             return prepareExchangedData(
                 array(
@@ -3278,7 +3344,7 @@ function changeUserAuthenticationPassword(
             );
         }
     }
-        
+
     return prepareExchangedData(
         array(
             'error' => true,
@@ -3296,7 +3362,8 @@ function changeUserAuthenticationPassword(
  * @param string $post_current_pwd
  * @param string $post_action_type
  * @return string
- */            
+ *//* 
+// TODO: to remove
 function changeUserLDAPAuthenticationPassword(
     int $post_user_id,
     string $post_previous_pwd,
@@ -3491,6 +3558,7 @@ function changeUserLDAPAuthenticationPassword(
         'encode'
     );
 }
+*/
 
 /**
  * Try to find a valid previous private key by testing all previous keys

@@ -4312,6 +4312,8 @@ function handleUserKeys(
         );
     }
 
+    /*
+    // Those 2 variables are always empty
     // Check if valid public/private keys
     if ($recovery_public_key !== '' && $recovery_private_key !== '') {
         try {
@@ -4338,6 +4340,7 @@ function handleUserKeys(
             );
         }
     }
+    */
 
     // Generate new keys
     if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
@@ -4347,9 +4350,9 @@ function handleUserKeys(
             'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
         ];
     } else {
-        $userKeys = generateUserKeys($passwordClear);
+        $userKeys = generateUserKeys($passwordClear, null);
     }
-    
+
     // Handle private key
     insertPrivateKeyWithCurrentFlag(
         $userId,
@@ -4358,14 +4361,24 @@ function handleUserKeys(
 
     // Save in DB
     // TODO: remove private key field from Users table
+    $updateData = array(
+        'pw' => $hashedPassword,
+        'public_key' => $userKeys['public_key'],
+        'private_key' => $userKeys['private_key'],
+        'keys_recovery_time' => NULL,
+    );
+
+    // Include transparent recovery data if available
+    if (isset($userKeys['user_seed'])) {
+        $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+        $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+        $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+        $updateData['last_pw_change'] = time();
+    }
+
     DB::update(
         prefixTable('users'),
-        array(
-            'pw' => $hashedPassword,
-            'public_key' => $userKeys['public_key'],
-            'private_key' => $userKeys['private_key'],
-            'keys_recovery_time' => NULL,
-        ),
+        $updateData,
         'id=%i',
         $userId
     );

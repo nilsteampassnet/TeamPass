@@ -348,15 +348,25 @@ case 'perform_fix_pf_items-step3':
 
         if (empty($privateKey)) {
             // Generate new keys for TP user
-            $userKeys = generateUserKeys($pwd);
+            $userKeys = generateUserKeys($pwd, $SETTINGS ?? null);
 
             // Update user keys
+            $updateData = array(
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+            );
+
+            // Include transparent recovery data if available
+            if (isset($userKeys['user_seed'])) {
+                $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+                $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+                $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+                $updateData['last_pw_change'] = time();
+            }
+
             DB::update(
                 prefixTable('users'),
-                array(
-                    'public_key' => $userKeys['public_key'],
-                    'private_key' => $userKeys['private_key'],
-                ),
+                $updateData,
                 'id = %i',
                 TP_USER_ID
             );

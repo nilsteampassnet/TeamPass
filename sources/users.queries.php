@@ -1132,7 +1132,10 @@ if (null !== $post_type) {
                 $changeArray['key_tempo'] = '';
 
                 // We need to adapt the private key with new password
-                $session->set('user-private_key', encryptPrivateKey($post_password, $session->get('user-private_key')));
+                // Re-encrypt private key and save to BOTH session AND database
+                $newPrivateKeyEncrypted = encryptPrivateKey($post_password, $session->get('user-private_key'));
+                $session->set('user-private_key', $newPrivateKeyEncrypted);
+                $changeArray['private_key'] = $newPrivateKeyEncrypted;
             }
 
             // Empty user

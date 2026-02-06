@@ -213,7 +213,7 @@ trait PhpseclibV3MigrationTrait {
         $sharekeys = DB::query(
             'SELECT increment_id, share_key, user_id, object_id
              FROM ' . prefixTable($table) . '
-             WHERE user_id = %i AND encryption_version = 1
+             WHERE user_id = %i AND encryption_version = 1 AND share_key != ""
              ORDER BY increment_id ASC
              LIMIT %i',
             $userId,
@@ -311,7 +311,7 @@ trait PhpseclibV3MigrationTrait {
         foreach ($sharekeysTablesList as $table) {
             $count = DB::queryFirstField(
                 'SELECT COUNT(*) FROM ' . prefixTable($table) . '
-                 WHERE user_id = %i AND encryption_version = 1',
+                 WHERE user_id = %i AND encryption_version = 1 AND share_key != ""',
                 $userId
             );
             $sharekeysTablesV1Count[$table] = (int) $count;

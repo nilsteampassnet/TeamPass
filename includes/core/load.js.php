@@ -779,8 +779,8 @@ if (
                                 'email_body': 'email_body_user_config_4',
                                 'generate_user_new_password': false,
                                 'user_self_change': true,
-                                'recovery_public_key': $('#recovery-public-key').val(),
-                                'recovery_private_key': $('#recovery-private-key').val(),
+                                //'recovery_public_key': $('#recovery-public-key').val(), // should be removed
+                                //'recovery_private_key': $('#recovery-private-key').val(), // should be removed
                             };
 
                             $.post(
@@ -1598,7 +1598,8 @@ if (
 
     /**
     * USER PASSWORD IN LDAP HAS CHANGED
-    */
+    *//*
+    // TODO: to remove
     $(document).on('click', '#dialog-ldap-user-change-password-do', function() {
         // Start by changing the user password and send it by email
         if (
@@ -1689,6 +1690,7 @@ if (
         $('#dialog-ldap-user-change-password, #dialog-ldap-user-change-password-info').addClass('hidden');
     });
     // --- END ---
+*/
 
 
     function loadSettings() {
