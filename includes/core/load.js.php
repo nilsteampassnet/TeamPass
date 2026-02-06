@@ -1172,15 +1172,15 @@ if (
         );
         
         // Disable buttons
-        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled');            
+        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled'); 
         
         // ENsure we have a user id
-        if ($('#admin_change_user_password_target_user').val() !== '') {
+        if ($('#admin_change_user_encryption_code_target_user').val() !== '') {
             // Case where change is for user's account
             // update the process
             // add all tasks
             var parameters = {
-                'user_id': parseInt($('#admin_change_user_password_target_user').val()),
+                'user_id': parseInt($('#admin_change_user_encryption_code_target_user').val()),
                 'user_pwd': '',
                 'encryption_key': '',
                 'delete_existing_keys': true,
@@ -1598,8 +1598,7 @@ if (
 
     /**
     * USER PASSWORD IN LDAP HAS CHANGED
-    *//*
-    // TODO: to remove
+    */
     $(document).on('click', '#dialog-ldap-user-change-password-do', function() {
         // Start by changing the user password and send it by email
         if (
@@ -1690,7 +1689,6 @@ if (
         $('#dialog-ldap-user-change-password, #dialog-ldap-user-change-password-info').addClass('hidden');
     });
     // --- END ---
-*/
 
 
     function loadSettings() {
