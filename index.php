@@ -359,12 +359,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                         <i class="fa-solid fa-lock fa-fw mr-2"></i><?php echo $lang->get('index_change_pw'); ?>
                                     </a>
                                 <?php
+                                /*
+                                // TODO: to remove
                                     } elseif ($session_auth_type === 'ldap') {
                                         ?>
                                     <a class="dropdown-item user-menu" href="#" data-name="sync-new-ldap-password">
                                         <i class="fa-solid fa-key fa-fw mr-2"></i><?php echo $lang->get('sync_new_ldap_password'); ?>
                                     </a>
                                 <?php
+                                */
                                     } ?>
                                 <a class="dropdown-item user-menu<?php echo (int) $session_user_admin === 1 ? ' hidden' : '';?>" href="#" data-name="generate-new_keys">
                                     <i class="fa-solid fa-spray-can-sparkles fa-fw mr-2"></i><?php echo $lang->get('generate_new_keys'); ?>
