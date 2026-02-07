@@ -1677,4 +1677,5 @@ Path: %s',
     'settings_ldap_tls_certificate_check' => 'LDAP TLS certificate check',
     'settings_ldap_tls_certificate_check_tip' => 'Defines how TLS certificate validation is handled for LDAP connections (e.g. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
     'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
 );

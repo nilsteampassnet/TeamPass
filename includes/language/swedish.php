@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Visa användares krypteringsnyckel',
     'email_body_new_user' => 'Hej, <br><br>Detta är ett automatiskt utskick från Teampass lösenordshanterare. <br><br>En administratör har skapat ett användarkonto till dig. Nästa gång du vill logga in i Teampass så använd dina uppgifter: <ul><li>Användarnamn: #login# </li><li>Lösenord: #password# </li></ul><br><br><br>Välkommen',

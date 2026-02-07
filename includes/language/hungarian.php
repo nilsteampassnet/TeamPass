@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Felhasználó titkosító kód megjelenítése',
     'email_body_new_user' => 'Helló,<br><br>Ez egy generált e-mail a TeamPass jelszókezelőtől.<br><br>Egy adminisztrátor létrehozott Önnek egy felhasználói fiókot a TeamPass-on. Következő alkalommal, amikor csatlakozik a TeamPass-hoz, kérjük használja a következő hitelesítő adatokat:<ul><li>bejelentkezés: #login#</li><li>Jelszó: #password#</li></ul><br><br><br>Üdvözlettel',
