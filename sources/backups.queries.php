@@ -537,10 +537,12 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         
             // Prepare variables
             $encryptionKey = filter_var($dataReceived['encryptionKey'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $comment = (string) ($dataReceived['comment'] ?? '');
-            $comment = trim((string) filter_var($comment, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
 
-            $commentLen = function_exists('mb_strlen') ? mb_strlen($comment) : strlen($comment);
+            // Optional comment (stored in <backup>.meta.json)
+            $comment = isset($dataReceived['comment']) ? (string) $dataReceived['comment'] : '';
+            $comment = str_replace("\0", '', $comment);
+            $comment = trim($comment);
+            $commentLen = function_exists('mb_strlen') ? (int) mb_strlen($comment) : (int) strlen($comment);
             if ($commentLen > 2000) {
                 echo prepareExchangedData(
                     array(
@@ -843,7 +845,6 @@ try {
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
                     'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
-                    'comment' => (function_exists('tpGetBackupCommentFromMeta') ? ((($c = tpGetBackupCommentFromMeta($fp)) !== null) ? $c : null) : null),
                     'download' => 'sources/backups.queries.php?type=scheduled_download_backup&file=' . urlencode($bn)
                         . '&key=' . urlencode((string) $session->get('key'))
                         . '&key_tmp=' . urlencode($keyTmp),
@@ -1055,59 +1056,58 @@ try {
             );
             break;
 
-
         case 'onthefly_update_comment':
-            // Update or create the metadata sidecar comment for an on-the-fly backup stored in <files>
-            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+            // Update comment for an on-the-fly backup (stored in <backup>.meta.json)
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
-                    [
+                    array(
                         'error' => true,
                         'message' => $lang->get('error_not_allowed_to'),
-                    ],
+                    ),
                     'encode'
                 );
                 break;
             }
 
             $dataReceived = prepareExchangedData($post_data, 'decode');
-            if (!is_array($dataReceived)) {
-                $dataReceived = [];
-            }
+            $file = isset($dataReceived['file']) ? (string) $dataReceived['file'] : '';
+            $comment = isset($dataReceived['comment']) ? (string) $dataReceived['comment'] : '';
 
-            $fileName = basename((string) ($dataReceived['file'] ?? ''));
-            $comment = (string) ($dataReceived['comment'] ?? '');
-            $comment = trim((string) filter_var($comment, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+            $bn = basename($file);
 
-            $commentLen = function_exists('mb_strlen') ? mb_strlen($comment) : strlen($comment);
-            if ($commentLen > 2000) {
+            // Safety checks
+            if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
                 echo prepareExchangedData(
-                    [
-                        'error' => true,
-                        'message' => $lang->get('bck_onthefly_comment_too_long'),
-                    ],
-                    'encode'
-                );
-                break;
-            }
-
-            if ($fileName === '' || strtolower((string) pathinfo($fileName, PATHINFO_EXTENSION)) !== 'sql') {
-                echo prepareExchangedData(
-                    [
+                    array(
                         'error' => true,
                         'message' => $lang->get('bck_onthefly_invalid_filename'),
-                    ],
+                    ),
                     'encode'
                 );
                 break;
             }
 
             // Never allow touching scheduled backups or temp files
-            if (strpos($fileName, 'scheduled-') === 0 || strpos($fileName, 'defuse_temp_') === 0 || strpos($fileName, 'defuse_temp_restore_') === 0) {
+            if (strpos($bn, 'scheduled-') === 0 || strpos($bn, 'defuse_temp_') === 0 || strpos($bn, 'defuse_temp_restore_') === 0) {
                 echo prepareExchangedData(
-                    [
+                    array(
                         'error' => true,
                         'message' => $lang->get('error_not_allowed_to'),
-                    ],
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $comment = str_replace("\0", '', $comment);
+            $comment = trim($comment);
+            $commentLen = function_exists('mb_strlen') ? (int) mb_strlen($comment) : (int) strlen($comment);
+            if ($commentLen > 2000) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('bck_onthefly_comment_too_long'),
+                    ),
                     'encode'
                 );
                 break;
@@ -1115,63 +1115,51 @@ try {
 
             $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
             $dir = rtrim($baseFilesDir, '/');
-            $fullPath = $dir . '/' . $fileName;
+            $fullPath = $dir . '/' . $bn;
 
             if (is_file($fullPath) === false) {
                 echo prepareExchangedData(
-                    [
+                    array(
                         'error' => true,
                         'message' => $lang->get('bck_onthefly_file_not_found'),
-                    ],
+                    ),
                     'encode'
                 );
                 break;
             }
 
             try {
-                $updates = [
-                    'source' => 'onthefly',
-                    'comment' => ($comment !== '' ? $comment : null),
-                    'comment_updated_at' => gmdate('c'),
-                ];
-
-                if (function_exists('tpUpsertBackupMetadata')) {
-                    $res = tpUpsertBackupMetadata($fullPath, $updates);
+                if (function_exists('tpUpsertBackupMetadata') === true) {
+                    tpUpsertBackupMetadata($fullPath, ['comment' => $comment]);
                 } else {
-                    $res = function_exists('tpWriteBackupMetadata')
-                        ? tpWriteBackupMetadata($fullPath, '', '', $updates)
-                        : ['success' => false, 'message' => ''];
+                    // Fallback: rewrite minimal metadata
+                    if (function_exists('tpWriteBackupMetadata') === true) {
+                        $extraMeta = ['source' => 'onthefly', 'comment' => $comment];
+                        tpWriteBackupMetadata($fullPath, '', '', $extraMeta);
+                    }
                 }
-
-                if (($res['success'] ?? false) !== true) {
-                    echo prepareExchangedData(
-                        [
-                            'error' => true,
-                            'message' => $lang->get('bck_onthefly_comment_save_failed'),
-                        ],
-                        'encode'
-                    );
-                    break;
-                }
-            } catch (Throwable $ignored) {
+            } catch (Throwable $e) {
                 echo prepareExchangedData(
-                    [
+                    array(
                         'error' => true,
                         'message' => $lang->get('bck_onthefly_comment_save_failed'),
-                    ],
+                    ),
                     'encode'
                 );
                 break;
             }
 
             echo prepareExchangedData(
-                [
+                array(
                     'error' => false,
-                    'comment' => ($comment !== '' ? $comment : ''),
-                ],
+                    'message' => $lang->get('bck_onthefly_comment_saved'),
+                ),
                 'encode'
             );
             break;
+
+
+
 
         case 'onthefly_check_upload_filename':
             // Pre-check before uploading a restore SQL file to <files>.
@@ -1336,6 +1324,7 @@ try {
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
                     'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
+                    'comment' => (function_exists('tpGetBackupCommentFromMeta') ? ((($c = (string)tpGetBackupCommentFromMeta($fp)) !== '') ? $c : null) : null),
                     'download' => 'sources/downloadFile.php?name=' . urlencode($bn) .
                         '&action=backup&file=' . urlencode($bn) .
                         '&type=sql&key=' . $session->get('key') .
