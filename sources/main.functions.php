@@ -2529,6 +2529,11 @@ function migrateAllUserKeysToV3(
             $userId
         );
 
+        // Store migrated private key in dedicated table
+        if (isset($updateData['private_key'])) {
+            insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
+        }
+
         // Log successful migration
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Migration Success - User ' . $userId . ' keys migrated to v3 (SHA-256)');
@@ -2715,6 +2720,9 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             'id = %i',
             $userInfo['id']
         );
+
+        // Store recovered private key in dedicated table
+        insertPrivateKeyWithCurrentFlag((int) $userInfo['id'], $newPrivateKeyEncrypted);
 
         // Log success
         logEvents(
@@ -4277,9 +4285,10 @@ function handleUserKeys(
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key
-        FROM ' . prefixTable('users') . '
-        WHERE id = %i',
+        'SELECT u.pw, u.public_key, pk.private_key
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+        WHERE u.id = %i',
         TP_USER_ID
     );
     if (DB::count() === 0) {
@@ -4359,11 +4368,10 @@ function handleUserKeys(
     );
 
     // Save in DB
-    // TODO: remove private key field from Users table
     $updateData = array(
         'pw' => $hashedPassword,
         'public_key' => $userKeys['public_key'],
-        //'private_key' => $userKeys['private_key'],
+        'private_key' => $userKeys['private_key'],
         'keys_recovery_time' => NULL,
     );
 
@@ -5469,9 +5477,25 @@ function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {
 }
 
 /**
+ * Get the current (active) private key for a user from the user_private_keys table.
+ *
+ * @param int $userId The ID of the user.
+ * @return string|null The encrypted private key, or null if not found.
+ */
+function getCurrentPrivateKey(int $userId): ?string {
+    $row = DB::queryFirstRow(
+        'SELECT private_key FROM ' . prefixTable('user_private_keys') . '
+         WHERE user_id = %i AND is_current = %i',
+        $userId,
+        true
+    );
+    return $row ? $row['private_key'] : null;
+}
+
+/**
  * Check and migrate personal items at user login
  * After successful authentication and private key decryption
- * 
+ *
  * @param int $userId User ID
  * @param string $privateKeyDecrypted Decrypted private key from login
  * @param string $passwordClear Clear user password
@@ -5941,8 +5965,10 @@ function getUserCompleteData($login = null, $userId = null)
     }
     
     // Get user with all related data
+    // Note: pk.private_key overrides u.private_key (from users table) to read from user_private_keys
     $data = DB::queryFirstRow(
-        'SELECT u.*, 
+        'SELECT u.*,
+         pk.private_key AS private_key,
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
          GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
          GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
@@ -5951,6 +5977,7 @@ function getUserCompleteData($login = null, $userId = null)
          GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
          GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
         FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
         LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
         LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
         LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)

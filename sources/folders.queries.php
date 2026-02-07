@@ -1130,9 +1130,10 @@ if (null !== $post_type) {
 
                     // We will use TP_USER in order to decrypt and crypt passwords
                     $userTpInfo = DB::queryFirstRow(
-                        'SELECT pw, public_key, private_key, login, name
-                        FROM ' . prefixTable('users') . '
-                        WHERE id = %i',
+                        'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
+                        FROM ' . prefixTable('users') . ' AS u
+                        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+                        WHERE u.id = %i',
                         TP_USER_ID
                     );
                     $decryptedData = cryption($userTpInfo['pw'], '', 'decrypt', $SETTINGS);
