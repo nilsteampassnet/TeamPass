@@ -668,9 +668,10 @@ trait UserHandlerTrait {
      */
     private function getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = ''): array {
         $userInfo = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key, login, name
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $owner_id
         );
 

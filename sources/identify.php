@@ -800,7 +800,15 @@ function performPostLoginTasks(
         'id=%i',
         $userInfo['id']
     );
-    
+
+    // Store private key in dedicated table if it was generated/updated
+    if (!empty($returnKeys['update_keys_in_db']['private_key'])) {
+        insertPrivateKeyWithCurrentFlag(
+            (int) $userInfo['id'],
+            $returnKeys['update_keys_in_db']['private_key']
+        );
+    }
+
     // Get user's rights
     if ($isNewExternalUser) {
         // is new LDAP/OAuth2 user. Show only his personal folder
@@ -1837,6 +1845,9 @@ function externalAdCreateUser(
     // Insert user in DB
     DB::insert(prefixTable('users'), $userData);
     $newUserId = DB::insertId();
+
+    // Store private key in dedicated table
+    insertPrivateKeyWithCurrentFlag($newUserId, $userKeys['private_key']);
 
     // Add Groups and Roles
     setUserRoles($newUserId, $groupIds, 'manual');

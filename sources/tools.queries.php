@@ -125,9 +125,10 @@ case 'perform_fix_pf_items-step1':
 
     // Get user info
     $userInfo = DB::queryFirstRow(
-        'SELECT private_key, public_key, psk, encrypted_psk
-        FROM teampass_users
-        WHERE id = %i',
+        'SELECT pk.private_key, u.public_key, u.psk, u.encrypted_psk
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+        WHERE u.id = %i',
         $userId
     );
 
@@ -334,9 +335,10 @@ case 'perform_fix_pf_items-step3':
 
         // Get TP_USER info
         $userInfo = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key, login, name
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 
@@ -370,6 +372,9 @@ case 'perform_fix_pf_items-step3':
                 'id = %i',
                 TP_USER_ID
             );
+
+            // Store private key in dedicated table
+            insertPrivateKeyWithCurrentFlag((int) TP_USER_ID, $userKeys['private_key']);
 
             $privateKey = decryptPrivateKey($pwd, $userKeys['private_key']);
 
@@ -463,9 +468,10 @@ case 'perform_fix_pf_items-step3':
 
         // Get user info
         $userInfo = DB::queryFirstRow(
-            'SELECT public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $userId
         );
 

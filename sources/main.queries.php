@@ -1174,8 +1174,10 @@ function changePassword(
 
         // check if expected security level is reached
         $dataUser = DB::queryFirstRow(
-            'SELECT *
-            FROM ' . prefixTable('users') . ' WHERE id = %i',
+            'SELECT u.*, pk.private_key AS private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $post_user_id
         );
 
@@ -1240,6 +1242,7 @@ function changePassword(
             }
 
             // update DB
+            $newEncryptedPrivateKey = encryptPrivateKey($post_new_password, $session->get('user-private_key'));
             DB::update(
                 prefixTable('users'),
                 array(
@@ -1247,11 +1250,15 @@ function changePassword(
                     'last_pw_change' => mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')),
                     'last_pw' => $post_current_password,
                     'special' => $special_action,
-                    'private_key' => encryptPrivateKey($post_new_password, $session->get('user-private_key')),
+                    'private_key' => $newEncryptedPrivateKey,
                 ),
                 'id = %i',
                 $post_user_id
             );
+
+            // Store private key in dedicated table
+            insertPrivateKeyWithCurrentFlag($post_user_id, $newEncryptedPrivateKey);
+
             // update LOG
             logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), $post_user_id);
 
@@ -1847,9 +1854,10 @@ function isUserPasswordCorrect(
     if (isUserIdValid($post_user_id) === true) {
         // Check if user exists
         $userInfo = DB::queryFirstRow(
-            'SELECT public_key, private_key, pw, auth_type
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.public_key, pk.private_key, u.pw, u.auth_type
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $post_user_id
         );
         if (DB::count() > 0 && empty($userInfo['private_key']) === false) {
@@ -1977,9 +1985,10 @@ function changePrivateKeyEncryptionPassword(
     if (isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $post_user_id
         );
         if (DB::count() > 0 && empty($userData['private_key']) === false) {
@@ -2120,6 +2129,9 @@ function initializeUserPassword(
                     'id = %i',
                     $post_user_id
                 );
+
+                // Store private key in dedicated table
+                insertPrivateKeyWithCurrentFlag($post_user_id, $userKeys['private_key']);
 
                 // Return
                 return prepareExchangedData(
@@ -3377,8 +3389,9 @@ function changeUserLDAPAuthenticationPassword(
     if ((bool) isUserIdValid($post_user_id) === true) {
         // Get user info
         $userData = DB::queryFirstRow(
-            'SELECT u.auth_type, u.login, u.private_key, u.special
+            'SELECT u.auth_type, u.login, pk.private_key, u.special
             FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
             WHERE u.id = %i',
             $post_user_id
         );
@@ -3408,6 +3421,9 @@ function changeUserLDAPAuthenticationPassword(
                         'id = %i',
                         $post_user_id
                     );
+
+                    // Store private key in dedicated table
+                    insertPrivateKeyWithCurrentFlag($post_user_id, $hashedPrivateKey);
 
                     $session->set('user-private_key', $privateKey);
 
@@ -3463,7 +3479,10 @@ function changeUserLDAPAuthenticationPassword(
                             'id = %i',
                             $post_user_id
                         );
-                        
+
+                        // Store private key in dedicated table
+                        insertPrivateKeyWithCurrentFlag($post_user_id, $hashedPrivateKey);
+
                         $lang = new Language($session->get('user-language') ?? 'english');
                         $session->set('user-private_key', $privateKey);
 
