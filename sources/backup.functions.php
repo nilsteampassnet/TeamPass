@@ -559,6 +559,49 @@ if (function_exists('tpWriteBackupMetadata') === false) {
     }
 }
 
+
+if (function_exists('tpUpsertBackupMetadata') === false) {
+    /**
+     * Upsert backup metadata sidecar file (<backup>.meta.json) without dropping existing fields.
+     *
+     * @param array<string, mixed> $updates
+     * @return array{success: bool, message: string, meta_path: string}
+     */
+    function tpUpsertBackupMetadata(string $backupFilePath, array $updates): array
+    {
+        $metaPath = tpGetBackupMetadataPath($backupFilePath);
+
+        $current = [];
+        if (is_file($metaPath)) {
+            $current = tpReadBackupMetadata($backupFilePath);
+        } else {
+            // Ensure a minimal base payload for newly created meta file
+            $current = [
+                'tp_files_version' => ($v = tpGetTpFilesVersion()) !== '' ? $v : null,
+                'schema_level' => ($sl = tpGetSchemaLevel()) !== '' ? $sl : null,
+                'created_at' => gmdate('c'),
+            ];
+        }
+
+        // Merge updates (explicit null allowed)
+        foreach ($updates as $k => $v) {
+            $current[$k] = $v;
+        }
+
+        $json = json_encode($current, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            return ['success' => false, 'message' => 'Unable to encode metadata as JSON', 'meta_path' => $metaPath];
+        }
+
+        $ok = @file_put_contents($metaPath, $json);
+        if ($ok === false) {
+            return ['success' => false, 'message' => 'Unable to write metadata file', 'meta_path' => $metaPath];
+        }
+
+        return ['success' => true, 'message' => 'OK', 'meta_path' => $metaPath];
+    }
+}
+
 if (function_exists('tpReadBackupMetadata') === false) {
     function tpReadBackupMetadata(string $backupFilePath): array
     {
@@ -615,63 +658,15 @@ if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
 
 if (function_exists('tpGetBackupCommentFromMeta') === false) {
     /**
-     * Returns the optional human comment stored in <backup>.meta.json.
+     * Read optional user comment from <backup>.meta.json.
      */
-    function tpGetBackupCommentFromMeta(string $backupFilePath): ?string
+    function tpGetBackupCommentFromMeta(string $backupFilePath): string
     {
         $meta = tpReadBackupMetadata($backupFilePath);
-        if (array_key_exists('comment', $meta) && is_scalar($meta['comment'])) {
-            $c = trim((string) $meta['comment']);
-            return $c !== '' ? $c : null;
+        if (!empty($meta['comment']) && is_scalar($meta['comment'])) {
+            return (string) $meta['comment'];
         }
-        return null;
-    }
-}
-
-if (function_exists('tpUpsertBackupMetadata') === false) {
-    /**
-     * Merge/Upsert metadata keys in <backup>.meta.json without losing existing fields.
-     *
-     * @return array{success:bool,message:string,meta_path:string}
-     */
-    function tpUpsertBackupMetadata(string $backupFilePath, array $updates, string $tpFilesVersion = '', string $schemaLevel = ''): array
-    {
-        $metaPath = tpGetBackupMetadataPath($backupFilePath);
-
-        $payload = tpReadBackupMetadata($backupFilePath);
-
-        if ($tpFilesVersion === '') {
-            $tpFilesVersion = tpGetTpFilesVersion();
-        }
-        if ($schemaLevel === '') {
-            $schemaLevel = tpGetSchemaLevel();
-        }
-
-        if (array_key_exists('tp_files_version', $payload) === false) {
-            $payload['tp_files_version'] = ($tpFilesVersion !== '') ? $tpFilesVersion : null;
-        }
-        if (array_key_exists('schema_level', $payload) === false) {
-            $payload['schema_level'] = ($schemaLevel !== '') ? $schemaLevel : null;
-        }
-        if (array_key_exists('created_at', $payload) === false) {
-            $payload['created_at'] = gmdate('c');
-        }
-
-        foreach ($updates as $k => $v) {
-            $payload[$k] = $v;
-        }
-
-        $json = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-        if ($json === false) {
-            return ['success' => false, 'message' => '', 'meta_path' => $metaPath];
-        }
-
-        $ok = @file_put_contents($metaPath, $json . "\n");
-        if ($ok === false) {
-            return ['success' => false, 'message' => '', 'meta_path' => $metaPath];
-        }
-
-        return ['success' => true, 'message' => '', 'meta_path' => $metaPath];
+        return '';
     }
 }
 
