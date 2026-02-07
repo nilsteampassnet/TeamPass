@@ -3808,7 +3808,8 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
         $userPreviousPwd,
         $userId
     );
-    if ($validPreviousKey['private_key'] !== null) {
+    
+    if ($validPreviousKey['private_key'] !== null && empty($validPreviousKey['private_key']) === false) {
         // Decrypt all personal items with this key
         // Launch the re-encryption process for personal items
         // Create process

@@ -3488,35 +3488,34 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
     // Load class DB
     loadClasses('DB');
 
-    // Remove all item sharekeys items
-    // expect if personal item
+    // Remove all item sharekeys items except personal items
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)'',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys files
+    // Remove all item sharekeys files except personal items
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys fields
+    // Remove all item sharekeys fields except personal items
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys logs
+    // Remove all item sharekeys logs except personal items
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id = %i', // AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys suggestions
+    // Remove all item sharekeys suggestions except personal items
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     return false;
@@ -4364,7 +4363,7 @@ function handleUserKeys(
     $updateData = array(
         'pw' => $hashedPassword,
         'public_key' => $userKeys['public_key'],
-        'private_key' => $userKeys['private_key'],
+        //'private_key' => $userKeys['private_key'],
         'keys_recovery_time' => NULL,
     );
 
@@ -6376,7 +6375,7 @@ function triggerBackgroundHandler(): void
     // If a handler is already running, it will detect the trigger file
     // If no handler is running, this new process will handle the tasks
     $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-
+    
     // Run it asynchronously to avoid blocking the UI
     $process->start();
 }

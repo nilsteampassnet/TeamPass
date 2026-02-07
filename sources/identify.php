@@ -593,7 +593,7 @@ function buildAuthResponse(
                 ? 'ask_for_otc' 
                 : '';
         $response['upgrade_needed'] = isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0;
-        $response['special'] = isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0;
+        $response['special'] = $userInfo['special'] ?? '';
         $response['split_view_mode'] = isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0;
         $response['show_subfolders'] = isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0;
         $response['validite_pw'] = $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '';

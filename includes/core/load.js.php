@@ -1188,7 +1188,7 @@ if (
                 'encrypt_with_user_pwd': true,
                 'generate_user_new_password': true,
                 'email_body': 'email_body_user_config_2',
-                'user_has_to_encrypt_personal_items_after': false,
+                'user_has_to_encrypt_personal_items_after': true,
             };
             $.post(
                 "sources/main.queries.php", {
