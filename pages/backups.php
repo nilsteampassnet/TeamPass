@@ -153,12 +153,12 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="row mt-3">
+                                            <div class="row mt-2">
                                                 <div class="col-3">
                                                     <span class="text-bold"><?php echo $lang->get('bck_onthefly_comment_label'); ?></span>
                                                 </div>
                                                 <div class="col-9">
-                                                    <textarea class="form-control form-control-sm" id="onthefly-backup-comment" rows="2" placeholder="<?php echo $lang->get('bck_onthefly_comment_placeholder'); ?>"></textarea>
+                                                    <textarea class="form-control form-control-sm" id="onthefly-backup-comment" rows="2" maxlength="2000" placeholder="<?php echo $lang->get('bck_onthefly_comment_placeholder'); ?>"></textarea>
                                                     <small class="form-text text-muted"><?php echo $lang->get('bck_onthefly_comment_help'); ?></small>
                                                 </div>
                                             </div>
@@ -238,7 +238,7 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
                                                         <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_date'); ?></th>
                                                         <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_size'); ?></th>
                                                         <th class="text-nowrap"><?php echo $lang->get('bck_col_teampass_version'); ?></th>
-                                                        <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_comment'); ?></th>
+                                                        <th><?php echo $lang->get('bck_onthefly_col_comment'); ?></th>
                                                         <th class="text-right text-nowrap"><?php echo $lang->get('bck_onthefly_col_action'); ?></th>
                                                     </tr>
                                                 </thead>
@@ -472,6 +472,37 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 
 
 
+
+
+<!-- On-the-fly backup comment modal -->
+<div class="modal fade" id="tp-onthefly-comment-modal" tabindex="-1" role="dialog" aria-labelledby="tp-onthefly-comment-title" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tp-onthefly-comment-title"><?php echo $lang->get('bck_onthefly_comment_modal_title'); ?></h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $lang->get('close'); ?>">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-2">
+                    <label class="mb-1"><?php echo $lang->get('bck_onthefly_comment_modal_file'); ?></label>
+                    <div class="text-monospace small" id="tp-onthefly-comment-file"></div>
+                </div>
+                <div class="form-group mb-0">
+                    <label for="tp-onthefly-comment-text" class="mb-1"><?php echo $lang->get('bck_onthefly_comment_label'); ?></label>
+                    <textarea class="form-control form-control-sm" id="tp-onthefly-comment-text" rows="4" maxlength="2000" placeholder="<?php echo $lang->get('bck_onthefly_comment_placeholder'); ?>"></textarea>
+                    <small class="form-text text-muted"><?php echo $lang->get('bck_onthefly_comment_modal_help'); ?></small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                <button type="button" class="btn btn-primary" id="tp-onthefly-comment-save"><?php echo $lang->get('save'); ?></button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Confirm restore modal -->
 <div class="modal fade" id="tp-confirm-restore-modal" tabindex="-1" role="dialog" aria-labelledby="tp-confirm-restore-title" aria-hidden="true">
     <div class="modal-dialog modal-sm" role="document">
@@ -517,31 +548,6 @@ $localEncryptionKey = isset($SETTINGS['bck_script_passkey']) === true ?
 </div>
 
 
-
-
-<!-- On-the-fly backup comment modal -->
-<div class="modal fade" id="tp-onthefly-comment-modal" tabindex="-1" role="dialog" aria-labelledby="tp-onthefly-comment-title" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="tp-onthefly-comment-title"><?php echo $lang->get('bck_onthefly_comment_modal_title'); ?></h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $lang->get('close'); ?>">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-2 text-muted small"><?php echo $lang->get('bck_onthefly_comment_modal_file'); ?>: <b><span id="tp-onthefly-comment-file"></span></b></div>
-                <textarea class="form-control" id="tp-onthefly-comment-text" rows="4" placeholder="<?php echo $lang->get('bck_onthefly_comment_placeholder'); ?>"></textarea>
-                <small class="form-text text-muted"><?php echo $lang->get('bck_onthefly_comment_modal_help'); ?></small>
-                <div class="alert alert-danger hidden mt-2" id="tp-onthefly-comment-error" role="alert"></div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
-                <button type="button" class="btn btn-primary" id="tp-onthefly-comment-save"><?php echo $lang->get('save'); ?></button>
-            </div>
-        </div>
-    </div>
-</div>
 
 <style>
 /* Fun restore progress: a little cat that moves along the progress bar */
