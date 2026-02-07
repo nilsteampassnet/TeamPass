@@ -756,6 +756,57 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
         );
     });
 
+    // Edit comment for on-the-fly server backup
+    $(document).on('click', '.onthefly-server-backup-edit-comment', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const fileName = $(this).data('filename');
+        if (!fileName) return;
+
+        const $row = $(this).closest('tr');
+        let commentRaw = '';
+        try {
+            commentRaw = decodeURIComponent($row.attr('data-comment') || '');
+        } catch (err) {
+            commentRaw = '';
+        }
+
+        $('#tp-onthefly-comment-file').text(fileName);
+        $('#tp-onthefly-comment-text').val(commentRaw);
+        $('#tp-onthefly-comment-error').addClass('hidden').text('');
+        $('#tp-onthefly-comment-modal').data('filename', fileName);
+        $('#tp-onthefly-comment-modal').modal('show');
+    });
+
+    $(document).on('click', '#tp-onthefly-comment-save', function () {
+        const fileName = ($('#tp-onthefly-comment-modal').data('filename') || '').toString();
+        if (fileName === '') return;
+        const comment = ($('#tp-onthefly-comment-text').val() || '').toString();
+
+        $.post(
+            "sources/backups.queries.php",
+            {
+                type: "onthefly_update_comment",
+                data: prepareExchangedData(JSON.stringify({ file: fileName, comment: simplePurifier(comment) }), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function (data) {
+                data = tpSafePrepareDecode(data);
+                if (data === null) { return; }
+
+                if (data.error === true) {
+                    $('#tp-onthefly-comment-error').removeClass('hidden').text(data.message || "<?php echo addslashes($lang->get('error')); ?>");
+                    return;
+                }
+
+                $('#tp-onthefly-comment-modal').modal('hide');
+                toastr.success("<?php echo addslashes($lang->get('bck_onthefly_comment_saved')); ?>");
+                loadOnTheFlyServerBackups();
+            }
+        );
+    });
+
+
     $(document).on('click', '.key-generate', function() {
         $.post(
             "sources/main.queries.php", {
@@ -932,6 +983,33 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
             return (u === 0 ? Math.round(b) : b.toFixed(1)) + ' ' + units[u];
         }
 
+
+        function tpEscapeHtml(str) {
+            str = (str || '').toString();
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function tpOneLine(str) {
+            return (str || '').toString()
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+        }
+
+        function tpTruncate(str, maxLen) {
+            str = (str || '').toString();
+            maxLen = parseInt(maxLen, 10) || 0;
+            if (maxLen <= 0 || str.length <= maxLen) {
+                return str;
+            }
+            return str.substring(0, Math.max(1, maxLen - 1)) + '…';
+        }
+
         function loadOnTheFlyServerBackups() {
             if ($('#onthefly-server-backups-tbody').length === 0) {
                 return;
@@ -941,7 +1019,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
             tpRefreshMetaOrphansIndicator();
 
             $('#onthefly-server-backups-tbody').html(
-                '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
+                '<tr><td colspan="5" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
             );
 
             $.post(
@@ -963,7 +1041,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                     let html = '';
                     const currentSelected = ($('#onthefly-restore-serverfile').val() || '').toString();
                     if (!data.files || data.files.length === 0) {
-                        html = '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
+                        html = '<tr><td colspan="5" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
                         $('#onthefly-server-backups-tbody').html(html);
                         return;
                     }
@@ -973,13 +1051,18 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                         const dt = new Date((parseInt(f.mtime, 10) || 0) * 1000).toLocaleString();
                         const sz = tpFmtBytes(f.size_bytes);
                         const dl = (f.download || '');
+                        const commentRaw = (f.comment || '').toString();
+                        const commentOneLine = tpOneLine(commentRaw);
+                        const commentDisplay = tpTruncate(commentOneLine, 80);
+                        const commentAttr = encodeURIComponent(commentRaw);
+
                         const isSelected = (currentSelected !== '' && currentSelected === name);
                         const fileKey = encodeURIComponent(name);
 
                         // Avoid breaking HTML attribute if filename contains quotes
                         const titleName = (name + '').replace(/"/g, '&quot;');
 
-                        html += '<tr title="' + titleName + '" data-file="' + fileKey + '" class="' + (isSelected ? 'table-active' : '') + '">';
+                        html += '<tr title="' + titleName + '" data-file="' + fileKey + '" data-comment="' + commentAttr + '" class="' + (isSelected ? 'table-active' : '') + '">';
                         html += '  <td class="text-nowrap">';
                         html += '    <div class="form-check m-0">';
                         html += '      <input class="form-check-input tp-onthefly-backup-radio" type="radio" name="onthefly-server-backup-radio" id="onthefly-bck-' + idx + '" value="' + titleName + '"' + (isSelected ? ' checked' : '') + '>';
@@ -989,6 +1072,14 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                         html += '  <td>' + sz + '</td>';
                         var tpv = (f.tp_files_version || '');
                         html += '  <td class="text-nowrap">' + tpFmtTpVersion(tpv) + '</td>';
+                        if (commentOneLine !== '') {
+                            html += '  <td class="text-truncate" style="max-width:260px;">';
+                            html += '    <span data-toggle="tooltip" title="' + tpEscapeHtml(commentOneLine) + '">' + tpEscapeHtml(commentDisplay) + '</span>';
+                            html += '  </td>';
+                        } else {
+                            html += '  <td class="text-muted">-</td>';
+                        }
+
                         html += '  <td class="text-right text-nowrap">';
                         html += '    <div class="btn-group btn-group-sm" role="group">';
                         if (dl !== '') {
@@ -996,9 +1087,8 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                             html += '        <i class="fas fa-download"></i>';
                             html += '      </a>';
                         }
+                        html += '      <button type="button" class="btn btn-outline-secondary onthefly-server-backup-edit-comment" data-filename="' + titleName + '" title="<?php echo addslashes($lang->get('bck_onthefly_edit_comment')); ?>" aria-label="<?php echo addslashes($lang->get('bck_onthefly_edit_comment')); ?>" data-toggle="tooltip"><i class="fas fa-pen"></i></button>';
                         html += '      <button type="button" class="btn btn-outline-danger onthefly-server-backup-delete" data-filename="' + titleName + '" title="<?php echo addslashes($lang->get('delete')); ?>" aria-label="<?php echo addslashes($lang->get('delete')); ?>" data-toggle="tooltip">';
-                        html += '        <i class="fas fa-trash"></i>';
-                        html += '      </button>';
                         html += '        <i class="fas fa-trash"></i>';
                         html += '      </button>';
                         html += '    </div>';
@@ -1072,6 +1162,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                 // Prepare data
                 var data = {
                     'encryptionKey': simplePurifier($('#onthefly-backup-key').val()),
+                    'comment': simplePurifier($('#onthefly-backup-comment').val() || ''),
                 };
 
                 //send query
@@ -1104,6 +1195,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                             tpProgressToast.hide();
                             // No inline green alert here (bottom-right toast + server list refresh are enough)
                             $('#onthefly-backup-progress').addClass('hidden').empty();
+                            $('#onthefly-backup-comment').val('');
 
 
                             // Refresh on-the-fly server backups list (new file is stored in <files>)
