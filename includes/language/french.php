@@ -1675,5 +1675,17 @@ return array(
     'inactive_users_select_at_least_one' => 'Veuillez sélectionner au moins un utilisateur.',
     'settings_ldap_tls_certificate_check' => 'Vérification du certificat TLS LDAP',
     'settings_ldap_tls_certificate_check_tip' => 'Définit le niveau de vérification du certificat TLS lors des connexions LDAP (ex. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
-
+    'bck_onthefly_col_comment' => 'Commentaire',
+    'bck_onthefly_comment_label' => 'Commentaire (optionnel)',
+    'bck_onthefly_comment_placeholder' => 'Ajouter une note sur cette sauvegarde…',
+    'bck_onthefly_comment_help' => 'Stocké dans le fichier meta associé (<backup>.meta.json).',
+    'bck_onthefly_edit_comment' => 'Modifier le commentaire',
+    'bck_onthefly_comment_modal_title' => 'Commentaire de sauvegarde On-the-fly',
+    'bck_onthefly_comment_modal_file' => 'Fichier de sauvegarde',
+    'bck_onthefly_comment_modal_help' => 'Vous pourrez modifier ce commentaire ultérieurement.',
+    'bck_onthefly_comment_saved' => 'Commentaire enregistré.',
+    'bck_onthefly_comment_too_long' => 'Commentaire trop long (max 2000 caractères).',
+    'bck_onthefly_invalid_filename' => 'Nom de fichier invalide.',
+    'bck_onthefly_file_not_found' => 'Fichier de sauvegarde introuvable.',
+    'bck_onthefly_comment_save_failed' => 'Impossible d’enregistrer le commentaire.',
 );
