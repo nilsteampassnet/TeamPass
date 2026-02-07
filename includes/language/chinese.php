@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => '显示用户加密代码',
     'email_body_new_user' => '您好，<br><br>这是由 Teampass 密码管理器生成的电子邮件。<br><br>管理员已为您在 Teampass 上创建了一个用户帐户。下次连接到 Teampass 时，请使用以下凭据：<ul><li>登录：#login#</li><li>密码：#password#</li></ul><br><br><br>干杯',
     'user_password' => '用户密码',

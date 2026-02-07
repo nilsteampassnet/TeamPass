@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Hiển thị mã mã hóa người dùng',
     'email_body_new_user' => 'Xin chào,<br><br>Đây là email tự động từ trình quản lý mật khẩu Teampass.<br><br>Quản trị viên đã tạo tài khoản người dùng cho bạn trên Teampass. Lần tới bạn kết nối với Teampass, vui lòng sử dụng thông tin đăng nhập sau:<ul><li>Đăng nhập: #login#</li><li>Mật khẩu: #password#</li></ul><br><br><br>Trân trọng',
     'user_password' => 'Mật khẩu người dùng',

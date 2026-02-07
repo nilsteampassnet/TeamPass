@@ -1356,6 +1356,7 @@ return array(
     'syslog_host' => 'Syslog server name or IP address',
     'syslog_port' => 'Syslog port (default 514)',
     'error_bad_credentials' => 'Login credentials do not correspond!',
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'bruteforce_unlock_at' => 'Account unlocked at (anti bruteforce): ',
     'bruteforce_reset_account' => 'Reset anti bruteforce of user',

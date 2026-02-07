@@ -1676,5 +1676,5 @@ Path: %s',
     'inactive_users_select_at_least_one' => 'Please select at least one user.',
     'settings_ldap_tls_certificate_check' => 'LDAP TLS certificate check',
     'settings_ldap_tls_certificate_check_tip' => 'Defines how TLS certificate validation is handled for LDAP connections (e.g. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
-
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
 );

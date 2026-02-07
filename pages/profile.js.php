@@ -373,7 +373,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         'user_id' : <?php echo $session->get('user-id'); ?>,
                         'context' : '',
                     };
-                    console.log(data)
                     
                     $.post(
                         "sources/users.queries.php", {

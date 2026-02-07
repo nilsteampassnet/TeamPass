@@ -459,6 +459,16 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Build user session - Extracted to separate function for readability
         $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+        if (isset($sessionData['error']) && $sessionData['error'] === true) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('private_key_decryption_failed'),
+                ],
+                'encode'
+            );
+            return false;
+        }
         $old_key = $sessionData['old_key'];
         $returnKeys = $sessionData['returnKeys'];
         
@@ -582,7 +592,8 @@ function buildAuthResponse(
 
     // Add error or success specific fields
     if (!$success) {
-        $response['error'] = $errorType === false ? true : $errorType;
+        $response['error'] = true;
+        $response['error_type'] = $errorType;
         $response['message'] = $errorMessage;
     } else {
         // Success-specific fields
@@ -671,7 +682,17 @@ function buildUserSession(
     $session->set('user-session_duration', (int) $lifetime);
 
     // User signature keys
-    $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    try {
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - buildUserSession: ' . $e->getMessage() . ' for user ' . ($userInfo['login'] ?? $userInfo['id']));
+        }
+        return [
+            'error' => true,
+            'message' => $e->getMessage(),
+        ];
+    }
     $session->set('user-public_key', $returnKeys['public_key']);
     
     // Did user has his AD password changed
@@ -2669,6 +2690,10 @@ function identifyDoLDAPChecks(
             $SETTINGS
         );
         if ($retLDAP['error'] === true) {
+            // Use specific message if available (e.g. private key decryption failure)
+            $errorMessage = !empty($retLDAP['message']) && strpos($retLDAP['message'], 'Failed to decrypt private key') !== false
+                ? $lang->get('private_key_decryption_failed')
+                : $lang->get('error_bad_credentials');
             return [
                 'error' => true,
                 'array' => [
@@ -2677,7 +2702,7 @@ function identifyDoLDAPChecks(
                     'initial_url' => $sessionUrl,
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
-                    'message' => $lang->get('error_bad_credentials'),
+                    'message' => $errorMessage,
                 ]
             ];
         }

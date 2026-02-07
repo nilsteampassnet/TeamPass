@@ -756,6 +756,7 @@ return array(
     'syslog_host' => 'Serveur Syslog',
     'syslog_port' => 'Port Syslog',
     'error_bad_credentials' => 'Informations de connexion erronées',
+    'private_key_decryption_failed' => 'Impossible de déchiffrer vos clés de chiffrement. Veuillez contacter votre administrateur pour régénérer vos clés.',
     'server_password_change_enable' => 'Activer le changement automatique du mot de passe du compte du serveur (en utilisant une connexion SSH)',
     'update_server_password' => 'Mettre à jour le mot de passe du serveur',
     'ssh_pwd' => 'Mot de passe SSH',

@@ -29,6 +29,7 @@
  */
 global $LANG;
 $LANG = array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'user_keys_management' => 'User keys management',
     'sending_emails' => 'Sending emails',
     'task_frequency' => 'Frequency (in minutes)',

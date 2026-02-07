@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Kuva kasutaja krüpteerimisvõti',
     'email_body_new_user' => 'Tere!<br><br>See on Teampassi poolt genereeritud e-kiri.<br><br>Administraator on loonud sulle Teampassi kasutajakonto. Järgmisel sisselogimisel kasuta järgmisi andmeid:<ul><li>kasutajanimi: #login#</li><li>Parool: #password#</li></ul><br><br><br>Tervitades',
     'user_password' => 'Kasutaja parool',

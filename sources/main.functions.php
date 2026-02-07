@@ -4383,6 +4383,34 @@ function handleUserKeys(
     );
 
 
+    // Regenerate API key with new public key
+    $newApiKey = encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']);
+    $existingApiKey = DB::queryFirstRow(
+        'SELECT increment_id FROM ' . prefixTable('api') . ' WHERE user_id = %i',
+        $userId
+    );
+    if ($existingApiKey) {
+        DB::update(
+            prefixTable('api'),
+            array(
+                'value' => $newApiKey,
+                'timestamp' => time(),
+            ),
+            'user_id = %i',
+            $userId
+        );
+    } else {
+        DB::insert(
+            prefixTable('api'),
+            array(
+                'type' => 'user',
+                'user_id' => $userId,
+                'value' => $newApiKey,
+                'timestamp' => time(),
+            )
+        );
+    }
+
     // update session too
     if ($userId === $session->get('user-id')) {
         $session->set('user-private_key', $userKeys['private_key_clear']);

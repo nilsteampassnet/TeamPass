@@ -1172,14 +1172,26 @@ if (
         );
         
         // Disable buttons
-        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled'); 
-        
-        // ENsure we have a user id
-        if ($('#admin_change_user_encryption_code_target_user').val() !== '') {
-            // Case where change is for user's account
-            // update the process
-            // add all tasks
-            var parameters = {
+        $('#dialog-admin-change-user-password-do, #dialog-admin-change-user-password-close').attr('disabled', 'disabled');
+
+        var changeExpected = false,
+            parameters = {};
+        if ($('#admin_change_user_password_target_user').val() !== '') {
+            changeExpected = true;
+            parameters = {
+                'user_id': parseInt($('#admin_change_user_password_target_user').val()),
+                'user_pwd': '',
+                'encryption_key': '',
+                'delete_existing_keys': true,
+                'send_email_to_user': true,
+                'encrypt_with_user_pwd': true,
+                'generate_user_new_password': true,
+                'email_body': 'email_body_user_config_3',
+                'user_self_change': false,
+            };
+        } else if ($('#admin_change_user_encryption_code_target_user').val() !== '') {
+            changeExpected = true;
+            parameters = {
                 'user_id': parseInt($('#admin_change_user_encryption_code_target_user').val()),
                 'user_pwd': '',
                 'encryption_key': '',
@@ -1190,6 +1202,13 @@ if (
                 'email_body': 'email_body_user_config_2',
                 'user_has_to_encrypt_personal_items_after': true,
             };
+        }
+        
+        // ENsure we have a user id
+        if (changeExpected === true) {
+            // Case where change is for user's account
+            // update the process
+            // add all tasks
             $.post(
                 "sources/main.queries.php", {
                     type: "user_new_keys_generation",

@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Toon gebruikersversleutelingscode',
     'email_body_new_user' => 'Hallo,<br><br>Een beheerder heeft een gebruikersaccount aangemaakt:<ul><li>login: #login#</li><li>Wachtwoord: #password#</li></ul><br><br>Groeten',
     'user_password' => 'Gebruikerswachtwoord',

@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Vis brukerkrypteringskode',
     'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li></ul><br><br><br>Cheers',
     'user_password' => 'Brukerpassord',
