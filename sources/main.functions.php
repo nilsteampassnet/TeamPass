@@ -2864,7 +2864,7 @@ function doDataEncryption(string $data, ?string $key = null): array
  * @param string $data Encrypted data
  * @param string $key  Key to uncrypt
  *
- * @return string
+ * @return string Empty string on decryption failure
  */
 function doDataDecryption(string $data, string $key): string
 {
@@ -2873,13 +2873,20 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
-    // Decrypt using CryptoManager (phpseclib v3)
-    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-        base64_decode($data),
-        base64_decode($key)
-    );
+    try {
+        // Decrypt using CryptoManager (phpseclib v3)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            base64_decode($data),
+            base64_decode($key)
+        );
 
-    return base64_encode((string) $decrypted);
+        return base64_encode((string) $decrypted);
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
+        }
+        return '';
+    }
 }
 
 /**

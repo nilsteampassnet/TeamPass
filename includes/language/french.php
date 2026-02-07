@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'decryption_failed_for_some_fields' => 'Certains champs personnalisés n’ont pas pu être déchiffrés. Ils peuvent être corrompus ou chiffrés avec une clé obsolète.',
     'show_user_temporary_encryption_code' => 'Afficher le code de chiffrement de l’utilisateur',
     'email_body_new_user' => 'Bonjour,<br><br>Ceci est un mail généré par le gestionnaire de mot de passe Teampass.<br><br>Un administrateur vous a créé un compte utilisateur sur Teampass. Lors de votre prochaine connexion, veuillez utiliser les identifiants suivants :<ul><li>Login: #login#</li><li>Mot de passe: #password#</li></ul><br><br>Cordialement',
     'user_password' => 'Mot de passe utilisateur',
