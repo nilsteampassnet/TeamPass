@@ -26,7 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'decryption_failed_for_some_fields' => 'Certains champs personnalisés n’ont pas pu être déchiffrés. Ils peuvent être corrompus ou chiffrés avec une clé obsolète.',
     'show_user_temporary_encryption_code' => 'Afficher le code de chiffrement de l’utilisateur',
     'email_body_new_user' => 'Bonjour,<br><br>Ceci est un mail généré par le gestionnaire de mot de passe Teampass.<br><br>Un administrateur vous a créé un compte utilisateur sur Teampass. Lors de votre prochaine connexion, veuillez utiliser les identifiants suivants :<ul><li>Login: #login#</li><li>Mot de passe: #password#</li></ul><br><br>Cordialement',
     'user_password' => 'Mot de passe utilisateur',
@@ -757,7 +756,6 @@ return array(
     'syslog_host' => 'Serveur Syslog',
     'syslog_port' => 'Port Syslog',
     'error_bad_credentials' => 'Informations de connexion erronées',
-    'private_key_decryption_failed' => 'Impossible de déchiffrer vos clés de chiffrement. Veuillez contacter votre administrateur pour régénérer vos clés.',
     'server_password_change_enable' => 'Activer le changement automatique du mot de passe du compte du serveur (en utilisant une connexion SSH)',
     'update_server_password' => 'Mettre à jour le mot de passe du serveur',
     'ssh_pwd' => 'Mot de passe SSH',

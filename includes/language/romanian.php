@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
-    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Afișează codul de criptare utilizator',
     'email_body_new_user' => 'Bună,<br><br>Acesta este un e-mail generat de managerul de parole Teampass.<br><br>Un administrator a creat pentru dvs. un cont utilizator pe Teampass. Data viitoare când vă veți conecta la Teampass, vă rugăm folosiți următoarele credențiale:<ul><li>login: #login#</li><li>Parolă: #password#</li></ul><br><br><br>Salutări',
     'user_password' => 'Parolă utilizator',
