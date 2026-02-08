@@ -1702,51 +1702,44 @@ function finalizeAuthentication(
 ): void
 {
     $passwordManager = new PasswordManager();
-    
+
     // Migrate password if needed
-    $result  = $passwordManager->migratePassword(
+    $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id']
     );
 
-    // Use the new hashed password if migration was successful
+    // Check if password in Teampass needs to be synchronized with AD
+    // Covers: first login (empty pw), new AD user, or AD password change
     $hashedPassword = $result['hashedPassword'];
-    if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
-        // 2 cases are managed here:
-        // Case where user has never been connected then erase current pwd with the ldap's one
-        // Case where user has been added from LDAP and never being connected to TP
-        DB::update(
-            prefixTable('users'),
-            [
-                'pw' => $passwordManager->hashPassword($passwordClear),
-                'otp_provided' => 1,
-                'special' => 'none',
-            ],
-            'id = %i',
-            $userInfo['id']
+    $passwordNeedsSync = empty($userInfo['pw']) === true
+        || $userInfo['special'] === 'user_added_from_ad'
+        || $passwordManager->verifyPassword($hashedPassword, $passwordClear) === false;
+
+    if ($passwordNeedsSync) {
+        // Try transparent recovery to re-encrypt private key with new password
+        $recoverySuccess = handleExternalPasswordChange(
+            (int) $userInfo['id'],
+            $passwordClear,
+            $userInfo,
+            $SETTINGS
         );
 
-        // Re-encrypt private key with AD password via transparent recovery
-        // The private key was encrypted with a random password during manual creation
-        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
-    } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
-        // Case where user is auth by LDAP but his password in Teampass is not synchronized
-        // For example when user has changed his password in AD.
-        // So we need to update it in Teampass and handle private key re-encryption
-        DB::update(
-            prefixTable('users'),
-            [
-                'pw' => $passwordManager->hashPassword($passwordClear),
-                'otp_provided' => 1,
-                'special' => 'none',
-            ],
-            'id = %i',
-            $userInfo['id']
-        );
-
-        // Try transparent recovery for automatic re-encryption
-        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
+        // Only update pw hash if private key was successfully re-encrypted
+        // This ensures the mismatch remains detectable on next login if recovery failed
+        if ($recoverySuccess) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                    'otp_provided' => 1,
+                    'special' => 'none',
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
     }
 }
 
