@@ -972,15 +972,28 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '"'.$record['process_type'].'", ';
 
         // col5
+        $args = json_decode($record['arguments'], true);
+        $args = is_array($args) ? $args : [];
+
         if (in_array($record['process_type'], array('create_user_keys', 'item_copy')) === true) {
-            $data_user = DB::queryFirstRow(
-                'SELECT name, lastname FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                json_decode($record['arguments'], true)['new_user_id']
-            );
-            $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+            $newUserId = $args['new_user_id'] ?? ($args['user_id'] ?? null);
+            if (empty($newUserId) === false) {
+                $data_user = DB::queryFirstRow(
+                    'SELECT name, lastname FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    (int) $newUserId
+                );
+                if (DB::count() > 0) {
+                    $sOutput .= '"'.$data_user['name'].' '.$data_user['lastname'].'", ';
+                } else {
+                    $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>", ';
+                }
+            } else {
+                $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>", ';
+            }
         } elseif ($record['process_type'] === 'send_email') {
-            $sOutput .= '"'.json_decode($record['arguments'], true)['receiver_name'].'", ';
+            $receiver = $args['receiver_name'] ?? ($args['login'] ?? ($args['email'] ?? null));
+            $sOutput .= '"'.(empty($receiver) ? '<i class=\"fa-solid fa-user-slash\"></i>' : $receiver).'", ';
         }
         // col6
         $sOutput .= '""';
@@ -1093,6 +1106,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '"'.$processIcon.'", ';
         // col6
         $arguments = json_decode($record['arguments'], true);
+        $arguments = is_array($arguments) ? $arguments : [];
         $newUserId = array_key_exists('new_user_id', $arguments) ? 
             $arguments['new_user_id'] : 
             (array_key_exists('user_id', $arguments) ? $arguments['user_id'] : null);
@@ -1109,18 +1123,22 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                 $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
             }
         } elseif ($record['process_type'] === 'send_email') {
-            $user = json_decode($record['arguments'], true)['receiver_name'];
+            $user = $arguments['receiver_name'] ?? ($arguments['login'] ?? ($arguments['email'] ?? null));
             $sOutput .= '"'.(is_null($user) === true || empty($user) === true ? '<i class=\"fa-solid fa-user-slash\"></i>' : $user).'"';
         } elseif ($record['process_type'] === 'user_build_cache_tree') {
-            $user = json_decode($record['arguments'], true)['user_id'];
-            $data_user = DB::queryFirstRow(
-                'SELECT name, lastname, login FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $user
-            );
-            if (DB::count() > 0) {
-                $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
-                $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
+            $user = $arguments['user_id'] ?? null;
+            if (empty($user) === false) {
+                $data_user = DB::queryFirstRow(
+                    'SELECT name, lastname, login FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    (int) $user
+                );
+                if (DB::count() > 0) {
+                    $txt = (isset($data_user['name']) === true ? $data_user['name'] : '').(isset($data_user['lastname']) === true ? ' '.$data_user['lastname'] : '');
+                    $sOutput .= '"'.(empty($txt) === false ? $txt : $data_user['login']).'"';
+                } else {
+                    $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
+                }
             } else {
                 $sOutput .= '"<i class=\"fa-solid fa-user-slash\"></i>"';
             }
