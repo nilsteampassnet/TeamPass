@@ -2846,8 +2846,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
         if (e.keyCode === 13 && actionOnGoing === false) {
             // Enter key
-            actionOnGoing = true;
-            saveChange(item, currentText, $(':focus'), field);
+            // Only trigger save when an inline editable field is focused (avoid DataTables search input, etc.)
+            var focusedElement = $(':focus');
+
+            if (
+                focusedElement.length === 1
+                && focusedElement.hasClass('save-me') === true
+                && item !== ''
+                && typeof item.data === 'function'
+                && field !== ''
+            ) {
+                actionOnGoing = true;
+                saveChange(item, currentText, focusedElement, field);
+            }
         }
     });
 
