@@ -135,7 +135,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 2d6492ef794f146b41d8f0889c7f8e7c
+includes/config/include.php 0d7ced9cda4a42db37472270c1f05a17
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 94170a0543825ace037fd20babf30739
@@ -200,7 +200,7 @@ includes/js/CreateRandomString.js 169408165b8be967ba25505524d1f676
 includes/js/functions.js dd729d40cb64239a98c5486f19ada336
 includes/js/secure-clipboard-cleaner.js fef75749be8c5b14f8519aa821ede518
 includes/language/arabic.php 022f6a43becc1c002a84e84451907f3a
-includes/language/bulgarian.php f5edc84573a439720ea90019397b390d
+includes/language/bulgarian.php 8833ead4695d345da3cd59737f12b8bf
 includes/language/catalan.php 13f9e9227a175ff5a99c427598760174
 includes/language/chinese.php b2482e9fe9a8df7139be2d0680859132
 includes/language/czech.php 78dabce9566cacb02c003803031e4d74
@@ -228,7 +228,7 @@ includes/language/datatables.vietnamese.txt f9b6e7a07d0f6533f186dac4b3499dd4
 includes/language/dutch.php ad0deba38d18c53963605d9cae721c63
 includes/language/english.php af4a75ee6b39eac510655e1aa67501d3
 includes/language/estonian.php a200920ca2d478e019e621e3dd91cebd
-includes/language/french.php 1dba291e90e36d6a293a017dbebcde3a
+includes/language/french.php 30fc33fdbeb6be73c909d68db1df1689
 includes/language/german.php b504d4e8ff47a99a9462c1c73f0c0af7
 includes/language/greek.php 8230985d8ab41096286fa9f4bcdb48fa
 includes/language/hungarian.php a02d1d1ef20c6f1b8fc7eaaf7ea46edc
@@ -491,7 +491,7 @@ pages/tools.js.php 8d7c4223237534e5829100f500def8b1
 pages/tools.php 7cf7752f721c087f73af5966dad4a7d1
 pages/uploads.js.php 7e12b2fb8879e9a634efe8cd6f4767fc
 pages/uploads.php c9373eda7acaabd7695eb0245612e70b
-pages/users.js.php d69f8a28648a55b5c71b2c5a89c59b0d
+pages/users.js.php 8e9348e375fdf1c240b9baff898ccb7c
 pages/users.php 37ccda828ea605a99f8cc9019498777c
 pages/utilities.database.js.php 7d18ce3e0e4ef01331a4a92517d0dcc9
 pages/utilities.database.php 489086792d9e291f05aa5fc7aed4256c
@@ -3771,7 +3771,7 @@ sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 sources/items.logs.php e35ec78cc5888411563d16bf781cbb48
 sources/items.queries.php a3d38d425149899270a3cbbcf93591f6
 sources/ldap.queries.php c8df58059007855e5191a566d89acdf4
-sources/logs.datatables.php 18351670b3aa7076fa730dbb6e355aa3
+sources/logs.datatables.php fa96c1f7c90fbeb46069337ddba58c2d
 sources/main.functions.php bf6c042c37d8ecf604d484f9e23fc5c4
 sources/main.queries.php 22de488ea27a56bb27f0142b8b280d78
 sources/oauth.php 993e612416ad6b4b5c10b64958ab3725
