@@ -2200,28 +2200,32 @@ function generateOneTimeCode(
             // Generate new keys
             $userKeys = generateUserKeys($password, null);
 
-            // Handle private key
+            // Update users table first (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
+            $updateData = array(
+                'public_key' => $userKeys['public_key'],
+                'private_key' => $userKeys['private_key'],
+                'last_pw_change' => time(),
+            );
+
+            // Include transparent recovery data if available
+            if (isset($userKeys['user_seed'])) {
+                $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+                $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+                $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+            }
+
+            DB::update(
+                prefixTable('users'),
+                $updateData,
+                'id = %i',
+                $userId
+            );
+
+            // Store private key in dedicated table (after users table update to prevent desync)
             insertPrivateKeyWithCurrentFlag(
                 $userId,
                 $userKeys['private_key'],
             );
-
-            // Update transparent recovery data if available
-            if (isset($userKeys['user_seed'])) {
-                DB::update(
-                    prefixTable('users'),
-                    array(
-                        'user_derivation_seed' => $userKeys['user_seed'],
-                        'private_key_backup' => $userKeys['private_key_backup'],
-                        'key_integrity_hash' => $userKeys['key_integrity_hash'],
-                        'public_key' => $userKeys['public_key'],
-                        'private_key' => $userKeys['private_key'],
-                        'last_pw_change' => time(),
-                    ),
-                    'id = %i',
-                    $userId
-                );
-            }
 
             return prepareExchangedData(
                 array(
@@ -3283,12 +3287,6 @@ function changeUserAuthenticationPassword(
                 $passwordManager = new PasswordManager();
                 $newPw = $passwordManager->hashPassword($post_new_pwd);
 
-                // Save private key in dedicated table
-                insertPrivateKeyWithCurrentFlag(
-                    $post_user_id,
-                    $hashedPrivateKey,
-                );
-
                 // Prepare update data
                 $updateData = array(
                     'private_key' => $hashedPrivateKey,
@@ -3327,12 +3325,18 @@ function changeUserAuthenticationPassword(
                     $updateData['key_integrity_hash'] = $integrityHash;
                 }
 
-                // Update user account
+                // Update user account (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
                 DB::update(
                     prefixTable('users'),
                     $updateData,
                     'id = %i',
                     $post_user_id
+                );
+
+                // Store private key in dedicated table (after users table update to prevent desync)
+                insertPrivateKeyWithCurrentFlag(
+                    $post_user_id,
+                    $hashedPrivateKey,
                 );
 
                 $session->set('user-private_key', $privateKey);
