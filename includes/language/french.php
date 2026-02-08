@@ -1675,6 +1675,8 @@ return array(
     'inactive_users_select_at_least_one' => 'Veuillez sélectionner au moins un utilisateur.',
     'settings_ldap_tls_certificate_check' => 'Vérification du certificat TLS LDAP',
     'settings_ldap_tls_certificate_check_tip' => 'Définit le niveau de vérification du certificat TLS lors des connexions LDAP (ex. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
+    'private_key_decryption_failed' => 'Impossible de déchiffrer vos clés de chiffrement. Veuillez contacter votre administrateur pour régénérer vos clés.',
+    'decryption_failed_for_some_fields' => 'Certains champs personnalisés n’ont pas pu être déchiffrés. Ils peuvent être corrompus ou chiffrés avec une clé obsolète.',
     'bck_onthefly_col_comment' => 'Commentaire',
     'bck_onthefly_comment_label' => 'Commentaire (optionnel)',
     'bck_onthefly_comment_placeholder' => 'Ajouter une note sur cette sauvegarde…',
@@ -1688,4 +1690,5 @@ return array(
     'bck_onthefly_invalid_filename' => 'Nom de fichier invalide.',
     'bck_onthefly_file_not_found' => 'Fichier de sauvegarde introuvable.',
     'bck_onthefly_comment_save_failed' => 'Impossible d’enregistrer le commentaire.',
+
 );
