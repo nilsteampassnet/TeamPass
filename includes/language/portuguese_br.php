@@ -26,6 +26,7 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Exibir código de criptografia do usuário',
     'email_body_new_user' => 'Olá,<br><br>Este é um e-mail gerado pelo gerenciador de senhas Teampass.<br><br>Um administrador criou para você uma conta de usuário no Teampass. Na próxima vez que você se autenticar no Teampass, por favor, use as seguintes credenciais:<ul><li>Login: #login#</li><li>Senha: #password#</li></ul><br><br><br>Atenciosamente',

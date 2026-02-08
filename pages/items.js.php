@@ -105,7 +105,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
-        debugJavascript = false;
+        debugJavascript = false,
+        loadingToast = '';
 
     // Manage memory
     browserSession(
@@ -248,7 +249,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     ) {
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         // Store current view
         savePreviousView();
@@ -2559,7 +2560,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
-            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
@@ -2585,7 +2586,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
@@ -2595,7 +2596,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
@@ -3002,7 +3003,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             BeforeUpload: function(up, file) {
                 fileId = file.id;
                 toastr.remove();         
-                toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
+                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
                 // Show file name
                 $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
 
@@ -5161,6 +5162,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
                     }
 
+                    // Show decryption errors for custom fields
+                    if (data.decryption_errors !== undefined && data.decryption_errors.length > 0) {
+                        toastr.warning(
+                            '<?php echo $lang->get('decryption_failed_for_some_fields'); ?>',
+                            '<?php echo $lang->get('warning'); ?>', {
+                                timeOut: 10000,
+                                progressBar: true,
+                                positionClass: 'toast-top-right'
+                            }
+                        );
+                    }
+
                     // Update hidden variables
                     store.update(
                         'teampassItem',
@@ -5732,7 +5745,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     }
 
                     // Inform user
-                    toastr.remove();
+                    //toastr.remove();
+                    toastr.clear(loadingToast);
                     toastr.info(
                         '<?php echo $lang->get('done'); ?>',
                         '', {

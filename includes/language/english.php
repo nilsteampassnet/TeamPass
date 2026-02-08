@@ -29,6 +29,7 @@
  */
 
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
     'learn_more' => 'Learn more',
     'phpseclibv3_migration_title' => 'Encryption Migration in Progress',
