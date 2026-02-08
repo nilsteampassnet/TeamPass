@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
-    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Kullanıcı şifreleme kodunu göster',
     'email_body_new_user' => 'Merhaba,<br><br>Bu, Teampass şifre yöneticisinden oluşturulan bir e-postadır.<br><br>Bir yönetici Teampass’te sizin için bir kullanıcı hesabı oluşturdu. Teampass’e bir dahaki bağlantınızda lütfen şu kimlik bilgilerini kullanın:<ul><li>giriş: #login#</li><li>Şifre: #password#</li></ul><br><br><br>Saygılarımızla',
     'user_password' => 'Kullanıcı şifresi',

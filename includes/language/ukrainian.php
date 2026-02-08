@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
-    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Показати код шифрування користувача',
     'email_body_new_user' => 'Привіт,<br><br>Цей лист автоматично згенерований менеджером паролів Teampass. <br><br>Адміністратор створив для вас обліковий запис користувача в Teampass. Наступного разу, коли ви підключатиметеся до Teampass, будь ласка, використовуйте наступні облікові дані:<ul><li>Логін: #login#</li><li>Пароль: #password#</li></ul><br><br><br>Дякую',
     'user_password' => 'Пароль користувача',

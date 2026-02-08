@@ -26,8 +26,6 @@
  * @see       https://www.teampass.net
  */
 return array(
-    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
-    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'ユーザーの暗号化コードを表示',
     'email_body_new_user' => 'こんにちは<br><br>これメールは Teampass パスワード マネージャーから自動生成されています.<br><br>管理者が Teampass のユーザー アカウントを作成しました。次回 Teampass にログインする際、次のログイン情報を使用してください:<ul><li>ログインID: #login#</li><li>パスワード: #password#</li></ul><br><br><br>',
     'user_password' => 'ユーザーのパスワード',
