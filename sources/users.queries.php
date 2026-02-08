@@ -354,6 +354,9 @@ if (null !== $post_type) {
                 );
                 $new_user_id = DB::insertId();
 
+                // Store private key in dedicated table
+                insertPrivateKeyWithCurrentFlag($new_user_id, $userKeys['private_key']);
+
                 // Add Groups and Roles
                 setUserRoles($new_user_id, $groups, 'manual');
                 setUserGroups($new_user_id, $allowed_flds);
@@ -650,7 +653,7 @@ if (null !== $post_type) {
                 break;
             }
 
-            $post_user_id = filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+            $post_user_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
 
             // Get info about user to delete
             $data_user = DB::queryFirstRow(
@@ -1132,7 +1135,10 @@ if (null !== $post_type) {
                 $changeArray['key_tempo'] = '';
 
                 // We need to adapt the private key with new password
-                $session->set('user-private_key', encryptPrivateKey($post_password, $session->get('user-private_key')));
+                // Re-encrypt private key and save to BOTH session AND database
+                $newPrivateKeyEncrypted = encryptPrivateKey($post_password, $session->get('user-private_key'));
+                $session->set('user-private_key', $newPrivateKeyEncrypted);
+                $changeArray['private_key'] = $newPrivateKeyEncrypted;
             }
 
             // Empty user
@@ -1277,6 +1283,11 @@ if (null !== $post_type) {
                         'id = %i',
                         $post_id
                     );
+
+                    // Store private key in dedicated table (after users table update to prevent desync)
+                    if (isset($changeArray['private_key'])) {
+                        insertPrivateKeyWithCurrentFlag($post_id, $changeArray['private_key']);
+                    }
 
                     // Add Groups and Roles
                     setUserRoles($post_id, $post_groups, 'manual');
@@ -2939,7 +2950,7 @@ if (null !== $post_type) {
             }
 
             // Prepare variables
-            $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
+            $post_user_id = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_user_code = filter_var($dataReceived['user_code'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
             // Search TP_USER in db        
@@ -3019,6 +3030,9 @@ if (null !== $post_type) {
                 'id = %i',
                 $post_user_id
             );
+
+            // Store private key in dedicated table
+            insertPrivateKeyWithCurrentFlag($post_user_id, $userKeys['private_key']);
 
             // Trigger background handler
             triggerBackgroundHandler();

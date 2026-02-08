@@ -494,6 +494,13 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     'otp_provided'           => 0,
                     'created_at'             => time(),
                 ]);
+
+                // Store private key in dedicated table
+                DB::insert($this->inputData['tablePrefix'] . 'user_private_keys', [
+                    'user_id'     => TP_USER_ID,
+                    'private_key' => $userKeys['private_key'],
+                    'is_current'  => true,
+                ]);
             }
     
             return [

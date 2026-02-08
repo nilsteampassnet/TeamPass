@@ -29,6 +29,8 @@
  */
 global $LANG;
 $LANG = array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'user_keys_management' => 'User keys management',
     'sending_emails' => 'Sending emails',
     'task_frequency' => 'Frequency (in minutes)',

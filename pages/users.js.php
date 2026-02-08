@@ -152,6 +152,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         ) +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
+                        ($(data).data('auth-type') !== 'local' ?
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
+                            : '') +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
@@ -1357,13 +1360,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'disable-user') {
-            var userID = $(this).data('id');
+            var userID = $(this).data('id'),
+                disabledStatus = $('#user-disable-'+userID).data('disabled') === 1 ? ' checked' : '';
             showModalDialogBox(
                 '#warningModal',
                 '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
                 '<div class="form-group">'+
                     '<span class="mr-3"><?php echo $lang->get('user_disable_status'); ?></span>'+
-                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled">' +
+                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled"' + disabledStatus + '>' +
                 '</div>',
                 '<?php echo $lang->get('perform'); ?>',
                 '<?php echo $lang->get('cancel'); ?>'

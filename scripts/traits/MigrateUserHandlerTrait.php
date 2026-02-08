@@ -167,9 +167,10 @@ trait MigrateUserHandlerTrait {
 
         // get TP_USER private key
         $userTP = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 
@@ -294,9 +295,10 @@ trait MigrateUserHandlerTrait {
 
         // get TP_USER private key
         $userTP = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 
@@ -370,9 +372,10 @@ trait MigrateUserHandlerTrait {
 
         // get TP_USER private key
         $userTP = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 
@@ -445,9 +448,10 @@ trait MigrateUserHandlerTrait {
 
         // get TP_USER private key
         $userTP = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 
@@ -522,9 +526,10 @@ trait MigrateUserHandlerTrait {
 
         // get TP_USER private key
         $userTP = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID
         );
 

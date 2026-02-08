@@ -2529,6 +2529,11 @@ function migrateAllUserKeysToV3(
             $userId
         );
 
+        // Store migrated private key in dedicated table
+        if (isset($updateData['private_key'])) {
+            insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
+        }
+
         // Log successful migration
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Migration Success - User ' . $userId . ' keys migrated to v3 (SHA-256)');
@@ -2716,6 +2721,9 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
             $userInfo['id']
         );
 
+        // Store recovered private key in dedicated table
+        insertPrivateKeyWithCurrentFlag((int) $userInfo['id'], $newPrivateKeyEncrypted);
+
         // Log success
         logEvents(
             $SETTINGS,
@@ -2856,7 +2864,7 @@ function doDataEncryption(string $data, ?string $key = null): array
  * @param string $data Encrypted data
  * @param string $key  Key to uncrypt
  *
- * @return string
+ * @return string Empty string on decryption failure
  */
 function doDataDecryption(string $data, string $key): string
 {
@@ -2865,13 +2873,20 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
-    // Decrypt using CryptoManager (phpseclib v3)
-    $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-        base64_decode($data),
-        base64_decode($key)
-    );
+    try {
+        // Decrypt using CryptoManager (phpseclib v3)
+        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+            base64_decode($data),
+            base64_decode($key)
+        );
 
-    return base64_encode((string) $decrypted);
+        return base64_encode((string) $decrypted);
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
+        }
+        return '';
+    }
 }
 
 /**
@@ -3339,10 +3354,10 @@ function insertOrUpdateSharekey(
 ): bool {
     try {
         DB::query(
-            'INSERT INTO ' . $tableName . ' 
-            (object_id, user_id, share_key, encryption_version) 
+            'INSERT INTO ' . $tableName . '
+            (object_id, user_id, share_key, encryption_version)
             VALUES (%i, %i, %s, %i)
-            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key)',
+            ON DUPLICATE KEY UPDATE share_key = VALUES(share_key), encryption_version = VALUES(encryption_version)',
             $objectId,
             $userId,
             $shareKey,
@@ -3488,35 +3503,34 @@ function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
     // Load class DB
     loadClasses('DB');
 
-    // Remove all item sharekeys items
-    // expect if personal item
+    // Remove all item sharekeys items except personal items
     DB::delete(
         prefixTable('sharekeys_items'),
-        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)'',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys files
+    // Remove all item sharekeys files except personal items
     DB::delete(
         prefixTable('sharekeys_files'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys fields
+    // Remove all item sharekeys fields except personal items
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'user_id = %i',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys logs
+    // Remove all item sharekeys logs except personal items
     DB::delete(
         prefixTable('sharekeys_logs'),
-        'user_id = %i', // AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
-    // Remove all item sharekeys suggestions
+    // Remove all item sharekeys suggestions except personal items
     DB::delete(
         prefixTable('sharekeys_suggestions'),
-        'user_id = %i',// AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
+        'user_id = %i AND object_id NOT IN (SELECT i.id FROM ' . prefixTable('items') . ' AS i WHERE i.perso = 1)',
         $userId
     );
     return false;
@@ -4278,9 +4292,10 @@ function handleUserKeys(
 
     // prepapre background tasks for item keys generation        
     $userTP = DB::queryFirstRow(
-        'SELECT pw, public_key, private_key
-        FROM ' . prefixTable('users') . '
-        WHERE id = %i',
+        'SELECT u.pw, u.public_key, pk.private_key
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+        WHERE u.id = %i',
         TP_USER_ID
     );
     if (DB::count() === 0) {
@@ -4312,6 +4327,8 @@ function handleUserKeys(
         );
     }
 
+    /*
+    // Those 2 variables are always empty
     // Check if valid public/private keys
     if ($recovery_public_key !== '' && $recovery_private_key !== '') {
         try {
@@ -4338,6 +4355,7 @@ function handleUserKeys(
             );
         }
     }
+    */
 
     // Generate new keys
     if ($user_self_change === true && empty($recovery_public_key) === false && empty($recovery_private_key) === false){
@@ -4347,29 +4365,66 @@ function handleUserKeys(
             'private_key' => encryptPrivateKey($passwordClear, $recovery_private_key),
         ];
     } else {
-        $userKeys = generateUserKeys($passwordClear);
+        $userKeys = generateUserKeys($passwordClear, null);
     }
-    
-    // Handle private key
+
+    // Save in DB (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
+    $updateData = array(
+        'pw' => $hashedPassword,
+        'public_key' => $userKeys['public_key'],
+        'private_key' => $userKeys['private_key'],
+        'keys_recovery_time' => NULL,
+    );
+
+    // Include transparent recovery data if available
+    if (isset($userKeys['user_seed'])) {
+        $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+        $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+        $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+        $updateData['last_pw_change'] = time();
+    }
+
+    DB::update(
+        prefixTable('users'),
+        $updateData,
+        'id=%i',
+        $userId
+    );
+
+    // Store private key in dedicated table (after users table update to prevent desync)
     insertPrivateKeyWithCurrentFlag(
         $userId,
         $userKeys['private_key'],
     );
 
-    // Save in DB
-    // TODO: remove private key field from Users table
-    DB::update(
-        prefixTable('users'),
-        array(
-            'pw' => $hashedPassword,
-            'public_key' => $userKeys['public_key'],
-            'private_key' => $userKeys['private_key'],
-            'keys_recovery_time' => NULL,
-        ),
-        'id=%i',
+
+    // Regenerate API key with new public key
+    $newApiKey = encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']);
+    $existingApiKey = DB::queryFirstRow(
+        'SELECT increment_id FROM ' . prefixTable('api') . ' WHERE user_id = %i',
         $userId
     );
-
+    if ($existingApiKey) {
+        DB::update(
+            prefixTable('api'),
+            array(
+                'value' => $newApiKey,
+                'timestamp' => time(),
+            ),
+            'user_id = %i',
+            $userId
+        );
+    } else {
+        DB::insert(
+            prefixTable('api'),
+            array(
+                'type' => 'user',
+                'user_id' => $userId,
+                'value' => $newApiKey,
+                'timestamp' => time(),
+            )
+        );
+    }
 
     // update session too
     if ($userId === $session->get('user-id')) {
@@ -5429,9 +5484,25 @@ function insertPrivateKeyWithCurrentFlag(int $userId, string $privateKey) {
 }
 
 /**
+ * Get the current (active) private key for a user from the user_private_keys table.
+ *
+ * @param int $userId The ID of the user.
+ * @return string|null The encrypted private key, or null if not found.
+ */
+function getCurrentPrivateKey(int $userId): ?string {
+    $row = DB::queryFirstRow(
+        'SELECT private_key FROM ' . prefixTable('user_private_keys') . '
+         WHERE user_id = %i AND is_current = %i',
+        $userId,
+        true
+    );
+    return $row ? $row['private_key'] : null;
+}
+
+/**
  * Check and migrate personal items at user login
  * After successful authentication and private key decryption
- * 
+ *
  * @param int $userId User ID
  * @param string $privateKeyDecrypted Decrypted private key from login
  * @param string $passwordClear Clear user password
@@ -5901,8 +5972,10 @@ function getUserCompleteData($login = null, $userId = null)
     }
     
     // Get user with all related data
+    // Note: pk.private_key overrides u.private_key (from users table) to read from user_private_keys
     $data = DB::queryFirstRow(
-        'SELECT u.*, 
+        'SELECT u.*,
+         pk.private_key AS private_key,
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
          GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
          GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
@@ -5911,6 +5984,7 @@ function getUserCompleteData($login = null, $userId = null)
          GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
          GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
         FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
         LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
         LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
         LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
@@ -6363,7 +6437,7 @@ function triggerBackgroundHandler(): void
     // If a handler is already running, it will detect the trigger file
     // If no handler is running, this new process will handle the tasks
     $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-
+    
     // Run it asynchronously to avoid blocking the UI
     $process->start();
 }

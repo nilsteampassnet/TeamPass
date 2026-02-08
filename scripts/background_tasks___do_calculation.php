@@ -115,9 +115,10 @@ foreach ($ret as $folder) {
 
 // Get user key
 $userKey = DB::queryFirstRow(
-    'SELECT pw,private_key
-    FROM '.prefixTable('users')
-    .' WHERE id = %i',
+    'SELECT u.pw, pk.private_key
+    FROM '.prefixTable('users').' AS u
+    LEFT JOIN '.prefixTable('user_private_keys').' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+    WHERE u.id = %i',
     TP_USER_ID
 );
 $userPw = defuseReturnDecrypted($userKey['pw']);

@@ -26,6 +26,8 @@
  * @see       https://www.teampass.net
  */
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'show_user_temporary_encryption_code' => 'Show user encryption code',
     'email_body_new_user' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>An administrator has created for you a user account on Teampass. Next time you will connect to Teampass, please use next credentials:<ul><li>login: #login#</li><li>Password: #password#</li></ul><br><br><br>Cheers',
     'user_password' => 'User password',
@@ -1676,5 +1678,18 @@ Path: %s',
     'inactive_users_select_at_least_one' => 'Please select at least one user.',
     'settings_ldap_tls_certificate_check' => 'LDAP TLS certificate check',
     'settings_ldap_tls_certificate_check_tip' => 'Defines how TLS certificate validation is handled for LDAP connections (e.g. LDAP_OPT_X_TLS_NEVER / DEMAND / HARD).',
+    'bck_onthefly_col_comment' => 'Comment',
+    'bck_onthefly_comment_label' => 'Comment (optional)',
+    'bck_onthefly_comment_placeholder' => 'Add a note about this backup…',
+    'bck_onthefly_comment_help' => 'Stored in the metadata sidecar file (<backup>.meta.json).',
+    'bck_onthefly_edit_comment' => 'Edit comment',
+    'bck_onthefly_comment_modal_title' => 'On-the-fly backup comment',
+    'bck_onthefly_comment_modal_file' => 'Backup file',
+    'bck_onthefly_comment_modal_help' => 'You can update this comment later.',
+    'bck_onthefly_comment_saved' => 'Comment saved.',
+    'bck_onthefly_comment_too_long' => 'Comment is too long (max 2000 characters).',
+    'bck_onthefly_invalid_filename' => 'Invalid filename.',
+    'bck_onthefly_file_not_found' => 'Backup file not found.',
+    'bck_onthefly_comment_save_failed' => 'Unable to save the comment.',
 
 );

@@ -320,8 +320,9 @@ foreach ($session->get('user-roles_array') as $role) {
                                     if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
                                         echo '
                                     <li class="list-group-item">
+                                        <button class="btn btn-sm btn-primary float-right infotip ml-1" id="generate-api-key" title="'.$lang->get('generate_api_token').'"><i class="fa-solid fa-rotate pointer"></i></button>
                                         <b><i class="fas fa-paper-plane fa-fw fa-lg mr-2"></i>' . $lang->get('user_profile_api_key') . '</b>
-                                        <button class="btn btn-sm btn-primary float-right" id="copy-api-key"><i class="fa-regular fa-copy  pointer"></i></button>
+                                        <button class="btn btn-sm btn-primary float-right infotip" id="copy-api-key" title="'.$lang->get('copy_to_clipboard').'"><i class="fa-regular fa-copy pointer"></i></button>
                                         <a class="float-right mr-2" id="profile-user-api-token">',
                                             null !== $session->get('user-api_key') ? $session->get('user-api_key') : '',
                                         '</a>
@@ -469,9 +470,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
                                                     <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
                                                 <?php 
-                                                }
-                                                if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
-                                                    echo '<button type="button" class="btn btn-warning float-right" id="profile-button-api_token">' . $lang->get('generate_api_token') . '</button>';
                                                 }
                                                 ?>
                                                 <div id="profile-avatar-file-container" class="hidden"></div>

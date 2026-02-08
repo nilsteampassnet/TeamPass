@@ -3225,9 +3225,10 @@ case 'save_sending_statistics':
         
         // Get some TP USER info
         $userInfo = DB::queryFirstRow(
-            'SELECT id, public_key, private_key, pw
-            FROM ' . prefixTable('users') . ' 
-            WHERE id = %i',
+            'SELECT u.id, u.public_key, pk.private_key, u.pw
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             TP_USER_ID,
         );
 
@@ -3998,12 +3999,11 @@ function getTransparentRecoveryStats(array $SETTINGS): array
          AND disabled = 0'
     );
 
-    // Count total active users
+    // Count total active users (with a current private key in user_private_keys)
     $totalUsers = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
-         WHERE disabled = 0
-         AND private_key IS NOT NULL
-         AND private_key != "none"'
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' AS u
+         WHERE u.disabled = 0
+         AND EXISTS (SELECT 1 FROM ' . prefixTable('user_private_keys') . ' AS pk WHERE pk.user_id = u.id AND pk.is_current = 1)'
     );
 
     // Get recent recovery events (last 10)

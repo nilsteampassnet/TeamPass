@@ -288,6 +288,18 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
+    // Reload userInfo from database after LDAP checks
+    // This is critical because identifyDoLDAPChecks() may have called
+    // attemptTransparentRecovery() which updates private_key in the database.
+    // Without this reload, prepareUserEncryptionKeys() would use a stale
+    // private_key and trigger a redundant second attemptTransparentRecovery() call.
+    if ($userLdap['error'] === false) {
+        $refreshedUserInfo = getUserCompleteData($username);
+        if ($refreshedUserInfo !== false && !empty($refreshedUserInfo)) {
+            $userInfo = $refreshedUserInfo + $dataReceived;
+        }
+    }
+
     if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
         && (int) $userLdap['retLDAP']['user_info']['has_been_created'] === 1
     ) {
@@ -459,6 +471,16 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Build user session - Extracted to separate function for readability
         $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+        if (isset($sessionData['error']) && $sessionData['error'] === true) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('private_key_decryption_failed'),
+                ],
+                'encode'
+            );
+            return false;
+        }
         $old_key = $sessionData['old_key'];
         $returnKeys = $sessionData['returnKeys'];
         
@@ -582,7 +604,8 @@ function buildAuthResponse(
 
     // Add error or success specific fields
     if (!$success) {
-        $response['error'] = $errorType === false ? true : $errorType;
+        $response['error'] = true;
+        $response['error_type'] = $errorType;
         $response['message'] = $errorMessage;
     } else {
         // Success-specific fields
@@ -593,7 +616,7 @@ function buildAuthResponse(
                 ? 'ask_for_otc' 
                 : '';
         $response['upgrade_needed'] = isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0;
-        $response['special'] = isset($userInfo['special']) === true ? (int) $userInfo['special'] : 0;
+        $response['special'] = $userInfo['special'] ?? '';
         $response['split_view_mode'] = isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0;
         $response['show_subfolders'] = isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0;
         $response['validite_pw'] = $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '';
@@ -671,7 +694,17 @@ function buildUserSession(
     $session->set('user-session_duration', (int) $lifetime);
 
     // User signature keys
-    $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    try {
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - buildUserSession: ' . $e->getMessage() . ' for user ' . ($userInfo['login'] ?? $userInfo['id']));
+        }
+        return [
+            'error' => true,
+            'message' => $e->getMessage(),
+        ];
+    }
     $session->set('user-public_key', $returnKeys['public_key']);
     
     // Did user has his AD password changed
@@ -779,7 +812,15 @@ function performPostLoginTasks(
         'id=%i',
         $userInfo['id']
     );
-    
+
+    // Store private key in dedicated table if it was generated/updated
+    if (!empty($returnKeys['update_keys_in_db']['private_key'])) {
+        insertPrivateKeyWithCurrentFlag(
+            (int) $userInfo['id'],
+            $returnKeys['update_keys_in_db']['private_key']
+        );
+    }
+
     // Get user's rights
     if ($isNewExternalUser) {
         // is new LDAP/OAuth2 user. Show only his personal folder
@@ -1681,51 +1722,44 @@ function finalizeAuthentication(
 ): void
 {
     $passwordManager = new PasswordManager();
-    
+
     // Migrate password if needed
-    $result  = $passwordManager->migratePassword(
+    $result = $passwordManager->migratePassword(
         $userInfo['pw'],
         $passwordClear,
         (int) $userInfo['id']
     );
 
-    // Use the new hashed password if migration was successful
+    // Check if password in Teampass needs to be synchronized with AD
+    // Covers: first login (empty pw), new AD user, or AD password change
     $hashedPassword = $result['hashedPassword'];
-    if (empty($userInfo['pw']) === true || $userInfo['special'] === 'user_added_from_ad') {
-        // 2 cases are managed here:
-        // Case where user has never been connected then erase current pwd with the ldap's one
-        // Case where user has been added from LDAP and never being connected to TP
-        DB::update(
-            prefixTable('users'),
-            [
-                'pw' => $passwordManager->hashPassword($passwordClear),
-                'otp_provided' => 1,
-                'special' => 'none',
-            ],
-            'id = %i',
-            $userInfo['id']
+    $passwordNeedsSync = empty($userInfo['pw']) === true
+        || $userInfo['special'] === 'user_added_from_ad'
+        || $passwordManager->verifyPassword($hashedPassword, $passwordClear) === false;
+
+    if ($passwordNeedsSync) {
+        // Try transparent recovery to re-encrypt private key with new password
+        $recoverySuccess = handleExternalPasswordChange(
+            (int) $userInfo['id'],
+            $passwordClear,
+            $userInfo,
+            $SETTINGS
         );
 
-        // Re-encrypt private key with AD password via transparent recovery
-        // The private key was encrypted with a random password during manual creation
-        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
-    } elseif ($passwordManager->verifyPassword($hashedPassword, $passwordClear) === false) {
-        // Case where user is auth by LDAP but his password in Teampass is not synchronized
-        // For example when user has changed his password in AD.
-        // So we need to update it in Teampass and handle private key re-encryption
-        DB::update(
-            prefixTable('users'),
-            [
-                'pw' => $passwordManager->hashPassword($passwordClear),
-                'otp_provided' => 1,
-                'special' => 'none',
-            ],
-            'id = %i',
-            $userInfo['id']
-        );
-
-        // Try transparent recovery for automatic re-encryption
-        handleExternalPasswordChange((int) $userInfo['id'], $passwordClear, $userInfo, $SETTINGS);
+        // Only update pw hash if private key was successfully re-encrypted
+        // This ensures the mismatch remains detectable on next login if recovery failed
+        if ($recoverySuccess) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                    'otp_provided' => 1,
+                    'special' => 'none',
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
     }
 }
 
@@ -1823,6 +1857,9 @@ function externalAdCreateUser(
     // Insert user in DB
     DB::insert(prefixTable('users'), $userData);
     $newUserId = DB::insertId();
+
+    // Store private key in dedicated table
+    insertPrivateKeyWithCurrentFlag($newUserId, $userKeys['private_key']);
 
     // Add Groups and Roles
     setUserRoles($newUserId, $groupIds, 'manual');
@@ -2669,6 +2706,10 @@ function identifyDoLDAPChecks(
             $SETTINGS
         );
         if ($retLDAP['error'] === true) {
+            // Use specific message if available (e.g. private key decryption failure)
+            $errorMessage = !empty($retLDAP['message']) && strpos($retLDAP['message'], 'Failed to decrypt private key') !== false
+                ? $lang->get('private_key_decryption_failed')
+                : $lang->get('error_bad_credentials');
             return [
                 'error' => true,
                 'array' => [
@@ -2677,7 +2718,7 @@ function identifyDoLDAPChecks(
                     'initial_url' => $sessionUrl,
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
-                    'message' => $lang->get('error_bad_credentials'),
+                    'message' => $errorMessage,
                 ]
             ];
         }

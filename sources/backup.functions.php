@@ -559,6 +559,49 @@ if (function_exists('tpWriteBackupMetadata') === false) {
     }
 }
 
+
+if (function_exists('tpUpsertBackupMetadata') === false) {
+    /**
+     * Upsert backup metadata sidecar file (<backup>.meta.json) without dropping existing fields.
+     *
+     * @param array<string, mixed> $updates
+     * @return array{success: bool, message: string, meta_path: string}
+     */
+    function tpUpsertBackupMetadata(string $backupFilePath, array $updates): array
+    {
+        $metaPath = tpGetBackupMetadataPath($backupFilePath);
+
+        $current = [];
+        if (is_file($metaPath)) {
+            $current = tpReadBackupMetadata($backupFilePath);
+        } else {
+            // Ensure a minimal base payload for newly created meta file
+            $current = [
+                'tp_files_version' => ($v = tpGetTpFilesVersion()) !== '' ? $v : null,
+                'schema_level' => ($sl = tpGetSchemaLevel()) !== '' ? $sl : null,
+                'created_at' => gmdate('c'),
+            ];
+        }
+
+        // Merge updates (explicit null allowed)
+        foreach ($updates as $k => $v) {
+            $current[$k] = $v;
+        }
+
+        $json = json_encode($current, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+        if ($json === false) {
+            return ['success' => false, 'message' => 'Unable to encode metadata as JSON', 'meta_path' => $metaPath];
+        }
+
+        $ok = @file_put_contents($metaPath, $json);
+        if ($ok === false) {
+            return ['success' => false, 'message' => 'Unable to write metadata file', 'meta_path' => $metaPath];
+        }
+
+        return ['success' => true, 'message' => 'OK', 'meta_path' => $metaPath];
+    }
+}
+
 if (function_exists('tpReadBackupMetadata') === false) {
     function tpReadBackupMetadata(string $backupFilePath): array
     {
@@ -607,6 +650,21 @@ if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
         $meta = tpReadBackupMetadata($backupFilePath);
         if (!empty($meta['tp_files_version']) && is_scalar($meta['tp_files_version'])) {
             return (string) $meta['tp_files_version'];
+        }
+        return '';
+    }
+}
+
+
+if (function_exists('tpGetBackupCommentFromMeta') === false) {
+    /**
+     * Read optional user comment from <backup>.meta.json.
+     */
+    function tpGetBackupCommentFromMeta(string $backupFilePath): string
+    {
+        $meta = tpReadBackupMetadata($backupFilePath);
+        if (!empty($meta['comment']) && is_scalar($meta['comment'])) {
+            return (string) $meta['comment'];
         }
         return '';
     }
@@ -878,4 +936,3 @@ if (function_exists('tpRestoreAuthorizationUpdatePayload') === false) {
         }
     }
 }
-

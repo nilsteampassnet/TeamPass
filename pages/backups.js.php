@@ -756,6 +756,68 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
         );
     });
 
+
+    // Edit on-the-fly backup comment
+    $(document).on('click', '.onthefly-server-backup-edit-comment', function () {
+        const fileName = ($(this).data('filename') || '').toString();
+        let comment = '';
+        try { comment = decodeURIComponent((($(this).data('commentEnc') || '') + '')); } catch (e) { comment = ((($(this).data('commentEnc') || '') + '')); }
+
+        if (fileName === '') {
+            return;
+        }
+
+        $('#tp-onthefly-comment-file').text(fileName);
+        $('#tp-onthefly-comment-text').val(comment);
+
+        $('#tp-onthefly-comment-modal').data('filename', fileName);
+        $('#tp-onthefly-comment-modal').modal('show');
+    });
+
+    // Save on-the-fly backup comment
+    $(document).on('click', '#tp-onthefly-comment-save', function () {
+        const fileName = ($('#tp-onthefly-comment-modal').data('filename') || '').toString();
+        const comment = ($('#tp-onthefly-comment-text').val() || '').toString();
+
+        if (fileName === '') {
+            return;
+        }
+
+        if (comment.length > 2000) {
+            toastr.error("<?php echo addslashes($lang->get('bck_onthefly_comment_too_long')); ?>");
+            return;
+        }
+
+        var data = {
+            'file': fileName,
+            'comment': comment
+        };
+
+        $.post(
+            "sources/backups.queries.php",
+            {
+                type: "onthefly_update_comment",
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function (data) {
+                var _decoded = tpSafeDecodeQueryReturn(data);
+                if (_decoded === null) { return; }
+                data = _decoded;
+
+                if (data.error === true) {
+                    toastr.error(data.message || "<?php echo addslashes($lang->get('bck_onthefly_comment_save_failed')); ?>");
+                    return;
+                }
+
+                toastr.success(data.message || "<?php echo addslashes($lang->get('bck_onthefly_comment_saved')); ?>");
+                $('#tp-onthefly-comment-modal').modal('hide');
+                loadOnTheFlyServerBackups();
+            }
+        );
+    });
+
+
     $(document).on('click', '.key-generate', function() {
         $.post(
             "sources/main.queries.php", {
@@ -919,7 +981,34 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
     );
 });
 
-        function tpFmtBytes(bytes) {
+        
+        function tpEscapeHtml(str) {
+            str = (str === null || str === undefined) ? '' : ('' + str);
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function tpTruncate(str, maxLen) {
+            str = (str === null || str === undefined) ? '' : ('' + str);
+            maxLen = parseInt(maxLen, 10);
+            if (isNaN(maxLen) || maxLen <= 0) return '';
+            if (str.length <= maxLen) return str;
+            return str.substring(0, maxLen - 1) + '…';
+        }
+
+        function tpGetOnTheFlyBackupComment(f) {
+            if (!f) return '';
+            if (typeof f.comment !== 'undefined' && f.comment !== null) return '' + f.comment;
+            if (typeof f.backup_comment !== 'undefined' && f.backup_comment !== null) return '' + f.backup_comment;
+            if (typeof f.meta !== 'undefined' && f.meta && typeof f.meta.comment !== 'undefined' && f.meta.comment !== null) return '' + f.meta.comment;
+            return '';
+        }
+
+function tpFmtBytes(bytes) {
             if (bytes === null || bytes === undefined) return '';
             let b = parseInt(bytes, 10);
             if (isNaN(b) || b < 0) return '';
@@ -941,7 +1030,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
             tpRefreshMetaOrphansIndicator();
 
             $('#onthefly-server-backups-tbody').html(
-                '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
+                '<tr><td colspan="5" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_loading')); ?></td></tr>'
             );
 
             $.post(
@@ -963,7 +1052,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                     let html = '';
                     const currentSelected = ($('#onthefly-restore-serverfile').val() || '').toString();
                     if (!data.files || data.files.length === 0) {
-                        html = '<tr><td colspan="4" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
+                        html = '<tr><td colspan="5" class="text-muted"><?php echo addslashes($lang->get('bck_onthefly_no_backups_found')); ?></td></tr>';
                         $('#onthefly-server-backups-tbody').html(html);
                         return;
                     }
@@ -989,16 +1078,24 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                         html += '  <td>' + sz + '</td>';
                         var tpv = (f.tp_files_version || '');
                         html += '  <td class="text-nowrap">' + tpFmtTpVersion(tpv) + '</td>';
+
+                        // Comment (optional, stored in <backup>.meta.json)
+                        var rawComment = tpGetOnTheFlyBackupComment(f);
+                        var commentTitle = tpEscapeHtml(rawComment);
+                        var commentDisplay = tpEscapeHtml(tpTruncate(rawComment, 120));
+                        html += '  <td class="tp-onthefly-backup-comment" title="' + commentTitle + '">' + commentDisplay + '</td>';
+
                         html += '  <td class="text-right text-nowrap">';
                         html += '    <div class="btn-group btn-group-sm" role="group">';
+                        html += '      <button type="button" class="btn btn-outline-secondary onthefly-server-backup-edit-comment" data-filename="' + titleName + '" data-comment-enc="' + encodeURIComponent(rawComment) + '" title="<?php echo addslashes($lang->get('bck_onthefly_edit_comment')); ?>" aria-label="<?php echo addslashes($lang->get('bck_onthefly_edit_comment')); ?>" data-toggle="tooltip">';
+                        html += '        <i class="fas fa-pen"></i>';
+                        html += '      </button>';
                         if (dl !== '') {
                             html += '      <a class="btn btn-outline-primary" href="' + dl + '" download title="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" aria-label="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" data-toggle="tooltip">';
                             html += '        <i class="fas fa-download"></i>';
                             html += '      </a>';
                         }
                         html += '      <button type="button" class="btn btn-outline-danger onthefly-server-backup-delete" data-filename="' + titleName + '" title="<?php echo addslashes($lang->get('delete')); ?>" aria-label="<?php echo addslashes($lang->get('delete')); ?>" data-toggle="tooltip">';
-                        html += '        <i class="fas fa-trash"></i>';
-                        html += '      </button>';
                         html += '        <i class="fas fa-trash"></i>';
                         html += '      </button>';
                         html += '    </div>';
@@ -1072,6 +1169,7 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
                 // Prepare data
                 var data = {
                     'encryptionKey': simplePurifier($('#onthefly-backup-key').val()),
+                    'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : '')
                 };
 
                 //send query
