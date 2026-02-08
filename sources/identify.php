@@ -288,6 +288,18 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         return false;
     }
 
+    // Reload userInfo from database after LDAP checks
+    // This is critical because identifyDoLDAPChecks() may have called
+    // attemptTransparentRecovery() which updates private_key in the database.
+    // Without this reload, prepareUserEncryptionKeys() would use a stale
+    // private_key and trigger a redundant second attemptTransparentRecovery() call.
+    if ($userLdap['error'] === false) {
+        $refreshedUserInfo = getUserCompleteData($username);
+        if ($refreshedUserInfo !== false && !empty($refreshedUserInfo)) {
+            $userInfo = $refreshedUserInfo + $dataReceived;
+        }
+    }
+
     if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
         && (int) $userLdap['retLDAP']['user_info']['has_been_created'] === 1
     ) {

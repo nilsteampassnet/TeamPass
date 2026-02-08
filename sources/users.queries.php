@@ -1139,9 +1139,6 @@ if (null !== $post_type) {
                 $newPrivateKeyEncrypted = encryptPrivateKey($post_password, $session->get('user-private_key'));
                 $session->set('user-private_key', $newPrivateKeyEncrypted);
                 $changeArray['private_key'] = $newPrivateKeyEncrypted;
-
-                // Store private key in dedicated table
-                insertPrivateKeyWithCurrentFlag($post_id, $newPrivateKeyEncrypted);
             }
 
             // Empty user
@@ -1286,6 +1283,11 @@ if (null !== $post_type) {
                         'id = %i',
                         $post_id
                     );
+
+                    // Store private key in dedicated table (after users table update to prevent desync)
+                    if (isset($changeArray['private_key'])) {
+                        insertPrivateKeyWithCurrentFlag($post_id, $changeArray['private_key']);
+                    }
 
                     // Add Groups and Roles
                     setUserRoles($post_id, $post_groups, 'manual');

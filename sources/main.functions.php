@@ -4368,13 +4368,7 @@ function handleUserKeys(
         $userKeys = generateUserKeys($passwordClear, null);
     }
 
-    // Handle private key
-    insertPrivateKeyWithCurrentFlag(
-        $userId,
-        $userKeys['private_key'],
-    );
-
-    // Save in DB
+    // Save in DB (must happen BEFORE insertPrivateKeyWithCurrentFlag to avoid desync)
     $updateData = array(
         'pw' => $hashedPassword,
         'public_key' => $userKeys['public_key'],
@@ -4395,6 +4389,12 @@ function handleUserKeys(
         $updateData,
         'id=%i',
         $userId
+    );
+
+    // Store private key in dedicated table (after users table update to prevent desync)
+    insertPrivateKeyWithCurrentFlag(
+        $userId,
+        $userKeys['private_key'],
     );
 
 
