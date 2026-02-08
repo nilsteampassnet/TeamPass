@@ -313,6 +313,38 @@ if (!file_exists($lockFile)) {
     }
 }
 
+
+// Ensure TP_USER has his private_key stored into user_private_keys table for migration to work properly
+$result = mysqli_query(
+    $db_link,
+    "SELECT id FROM `" . $pre . "users`
+     WHERE login = '" . TP_USER_ID . "'
+     AND (private_key IS NULL OR private_key = '')"
+);
+if (mysqli_num_rows($result) > 0) {
+    $user = mysqli_fetch_assoc($result);
+
+    // Check if a private key already exists in user_private_keys for this user
+    $keyResult = mysqli_query(
+        $db_link,
+        "SELECT id FROM `" . $pre . "user_private_keys`
+         WHERE user_id = " . TP_USER_ID
+    );
+
+    if (mysqli_num_rows($keyResult) > 0) {
+        // If a key already exists, we can use it to update the users table
+        $keyData = mysqli_fetch_assoc($keyResult);
+        $privateKey = $keyData['private_key'];
+
+        mysqli_query(
+            $db_link,
+            "UPDATE `" . $pre . "users`
+             SET private_key = '" . $privateKey . "'
+             WHERE id = " . TP_USER_ID
+        );
+    }
+}
+
 // ==========================================
 // WebSocket: Create table and settings
 // ==========================================

@@ -2805,7 +2805,7 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $inputData['id']
         );
-        
+
         if (empty($userKeys) || empty($dataItem['pw'])) {
             // No share key found
             $pwIsEmptyNormally = false;
@@ -2829,12 +2829,12 @@ switch ($inputData['type']) {
             $pwIsEmptyNormal = true;
             $decryptedObject = null;
             $validKeyFound = false;
-            
+
             // Loop on available keys
             // We should only have one but in case of, do this loop
             foreach ($userKeys as $userKey) {
                 $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
-                
+
                 if (!empty($decryptedObject)) {
                     $validKeyFound = true;
                     break;
@@ -2861,6 +2861,7 @@ switch ($inputData['type']) {
 
         // check user is admin
         $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
+        $decryptionErrors = [];
         if (
             (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] !== 1
@@ -3008,6 +3009,7 @@ switch ($inputData['type']) {
 
             // get fields
             $fieldsTmp = array();
+            $decryptionErrors = array();
             $arrCatList = $template_id = '';
             if (isset($SETTINGS['item_extra_fields']) && (int) $SETTINGS['item_extra_fields'] === 1) {
                 // get list of associated Categories
@@ -3065,17 +3067,27 @@ switch ($inputData['type']) {
                             ];
                         } else {
                             // Data is encrypted in DB and we have a key
-                            $fieldText = [
-                                'string' => doDataDecryption(
-                                    $row['data'],
-                                    decryptUserObjectKey(
-                                        $userKey['share_key'],
-                                        $session->get('user-private_key')
-                                    )
-                                ),
-                                'encrypted' => true,
-                                'error' => '',
-                            ];
+                            $decryptedValue = doDataDecryption(
+                                $row['data'],
+                                decryptUserObjectKey(
+                                    $userKey['share_key'],
+                                    $session->get('user-private_key')
+                                )
+                            );
+                            if ($decryptedValue === '') {
+                                $fieldText = [
+                                    'string' => '',
+                                    'encrypted' => true,
+                                    'error' => 'decryption_failed',
+                                ];
+                                $decryptionErrors[] = (int) $row['field_id'];
+                            } else {
+                                $fieldText = [
+                                    'string' => $decryptedValue,
+                                    'encrypted' => true,
+                                    'error' => '',
+                                ];
+                            }
                         }
 
                         // Manage textarea string
@@ -3241,6 +3253,9 @@ switch ($inputData['type']) {
 
         // Set temporary session variable to allow step2
         $session->set('system-show_step2', true);
+
+        // Decryption errors (fields that could not be decrypted)
+        $arrData['decryption_errors'] = $decryptionErrors;
 
         // Error
         $arrData['error'] = '';
@@ -6252,7 +6267,7 @@ switch ($inputData['type']) {
         // prepare image info
         $post_title = basename($file_info['name'], '.' . $file_info['extension']);
         $post_title = isBase64($post_title) === true ? base64_decode($post_title) : $post_title;
-        
+
         // Get image content
         // deepcode ignore PT: File and path are secured directly inside the function decryptFile()
         $fileContent = decryptFile(

@@ -29,6 +29,7 @@
  */
 
 return array(
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'settings_websocket_title' => 'Websocket',
     'settings_websocket_title_goal' => 'Enable real-time communication for instant updates and notifications.',
     'settings_websocket_enabler' => 'Enable websocket',
@@ -1364,6 +1365,7 @@ return array(
     'syslog_host' => 'Syslog server name or IP address',
     'syslog_port' => 'Syslog port (default 514)',
     'error_bad_credentials' => 'Login credentials do not correspond!',
+    'private_key_decryption_failed' => 'Unable to decrypt your encryption keys. Please contact your administrator to regenerate your keys.',
     'bruteforce_wait' => 'Too many failed attempts, your account is blocked until: ',
     'bruteforce_unlock_at' => 'Account unlocked at (anti bruteforce): ',
     'bruteforce_reset_account' => 'Reset anti bruteforce of user',
@@ -1670,4 +1672,17 @@ return array(
     'inactive_users_confirm_delete_many' => 'Are you sure you want to delete the selected users?',
     'inactive_users_no_results' => 'No inactive users found',
     'inactive_users_select_at_least_one' => 'Please select at least one user.',
+    'bck_onthefly_col_comment' => 'Comment',
+    'bck_onthefly_comment_label' => 'Comment (optional)',
+    'bck_onthefly_comment_placeholder' => 'Add a note about this backup…',
+    'bck_onthefly_comment_help' => 'Stored in the metadata sidecar file (<backup>.meta.json).',
+    'bck_onthefly_edit_comment' => 'Edit comment',
+    'bck_onthefly_comment_modal_title' => 'On-the-fly backup comment',
+    'bck_onthefly_comment_modal_file' => 'Backup file',
+    'bck_onthefly_comment_modal_help' => 'You can update this comment later.',
+    'bck_onthefly_comment_saved' => 'Comment saved.',
+    'bck_onthefly_comment_too_long' => 'Comment is too long (max 2000 characters).',
+    'bck_onthefly_invalid_filename' => 'Invalid filename.',
+    'bck_onthefly_file_not_found' => 'Backup file not found.',
+    'bck_onthefly_comment_save_failed' => 'Unable to save the comment.',
 );

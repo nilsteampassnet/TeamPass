@@ -213,7 +213,7 @@ trait PhpseclibV3MigrationTrait {
         $sharekeys = DB::query(
             'SELECT increment_id, share_key, user_id, object_id
              FROM ' . prefixTable($table) . '
-             WHERE user_id = %i AND encryption_version = 1
+             WHERE user_id = %i AND encryption_version = 1 AND share_key != ""
              ORDER BY increment_id ASC
              LIMIT %i',
             $userId,
@@ -286,9 +286,8 @@ trait PhpseclibV3MigrationTrait {
     /**
      * Finalize phpseclib v3 migration
      *
-     * Marks the user as fully migrated to phpseclib v3 by setting:
-     * - phpseclibv3_migration_completed = 1
-     * - phpseclibv3_migration_task_id = NULL
+     * Checks if all sharekeys have been migrated before marking user as complete.
+     * Only marks the user as fully migrated if no v1 sharekeys remain.
      *
      * @param array $arguments Task arguments containing user_id
      * @return void
@@ -297,27 +296,82 @@ trait PhpseclibV3MigrationTrait {
     {
         $userId = (int) $arguments['user_id'];
 
-        // Update user's migration status
-        DB::update(
-            prefixTable('users'),
-            [
-                'phpseclibv3_migration_completed' => 1,
-                'phpseclibv3_migration_task_id' => null,
-            ],
-            'id = %i',
-            $userId
-        );
+        // Check if there are remaining v1 sharekeys for this user
+        $sharekeysTablesV1Count = [];
+        $totalV1Remaining = 0;
 
+        $sharekeysTablesList = [
+            'sharekeys_items',
+            'sharekeys_fields',
+            'sharekeys_files',
+            'sharekeys_logs',
+            'sharekeys_suggestions',
+        ];
+
+        foreach ($sharekeysTablesList as $table) {
+            $count = DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable($table) . '
+                 WHERE user_id = %i AND encryption_version = 1 AND share_key != ""',
+                $userId
+            );
+            $sharekeysTablesV1Count[$table] = (int) $count;
+            $totalV1Remaining += (int) $count;
+        }
+
+        // Log remaining v1 sharekeys
         if (LOG_TASKS === true) {
             $this->logger->log(
-                "phpseclibv3_migration completed for user {$userId}",
-                'SUCCESS'
+                "phpseclibv3_migration finalize check for user {$userId}: " .
+                "v1 remaining = {$totalV1Remaining} (" . json_encode($sharekeysTablesV1Count) . ")",
+                'INFO'
             );
         }
 
-        // Log to server if enabled
-        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log("TEAMPASS phpseclibv3_migration - User {$userId} migration completed successfully");
+        // Only mark as completed if ALL sharekeys are migrated
+        if ($totalV1Remaining === 0) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'phpseclibv3_migration_completed' => 1,
+                    'phpseclibv3_migration_task_id' => null,
+                ],
+                'id = %i',
+                $userId
+            );
+
+            if (LOG_TASKS === true) {
+                $this->logger->log(
+                    "phpseclibv3_migration completed for user {$userId} - all sharekeys migrated",
+                    'SUCCESS'
+                );
+            }
+
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log("TEAMPASS phpseclibv3_migration - User {$userId} migration completed successfully");
+            }
+        } else {
+            // Some sharekeys failed to migrate - don't mark as completed
+            // Clear the task_id so user can retry on next login
+            DB::update(
+                prefixTable('users'),
+                [
+                    'phpseclibv3_migration_completed' => 0,
+                    'phpseclibv3_migration_task_id' => null,
+                ],
+                'id = %i',
+                $userId
+            );
+
+            if (LOG_TASKS === true) {
+                $this->logger->log(
+                    "phpseclibv3_migration incomplete for user {$userId} - {$totalV1Remaining} v1 sharekeys remaining",
+                    'WARNING'
+                );
+            }
+
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log("TEAMPASS phpseclibv3_migration - User {$userId} has {$totalV1Remaining} v1 sharekeys remaining - migration incomplete");
+            }
         }
     }
 }

@@ -418,7 +418,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             $user_results = DB::query(
                                                 "SELECT login 
                                                 FROM ".prefixTable('users')."
-                                                WHERE phpseclibv3_migration_completed = 0 AND deleted_at IS NULL"
+                                                WHERE phpseclibv3_migration_completed = 0 AND deleted_at IS NULL AND id NOT IN %ls",
+                                                $excluded_ids
                                             );
                                             if (DB::count() > 0) {
                                                 $logins_array = array_column($user_results, 'login');

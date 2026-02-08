@@ -588,7 +588,7 @@ trait UserHandlerTrait {
             sendMailToUser(
                 filter_var($userInfo['email'], FILTER_SANITIZE_EMAIL),
                 // @scrutinizer ignore-type
-                empty($arguments['email_body']) === false ? $arguments['email_body'] : $lang->get('email_body_user_config_1'),
+                empty($arguments['email_body']) === false ? $lang->get($arguments['email_body']) : $lang->get('email_body_user_config_1'),
                 'TEAMPASS - ' . $lang->get('login_credentials'),
                 (array) filter_var_array(
                     [
@@ -643,13 +643,27 @@ trait UserHandlerTrait {
 
         // if special status is generate-keys, then set it to none
         if (isset($userInfo['special']) === true && $userInfo['special'] === 'generate-keys') {
+            // Determine if user has personal items that need re-encryption
+            $specialStatus = 'none';
+            if (isset($arguments['userHasToEncryptPersonalItemsAfter']) === true && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1) {
+                $personalItemsCount = DB::queryFirstField(
+                    'SELECT COUNT(*)
+                    FROM ' . prefixTable('items') . '
+                    WHERE perso = 1 AND id IN (SELECT object_id FROM ' . prefixTable('sharekeys_items') . ' WHERE user_id = %i AND share_key != "")',
+                    $arguments['new_user_id']
+                );
+                if ((int) $personalItemsCount > 0) {
+                    $specialStatus = 'encrypt_personal_items_with_new_password';
+                }
+            }
+
             DB::update(
                 prefixTable('users'),
                 array(
                     'is_ready_for_usage' => 1,
                     'otp_provided' => isset($arguments['otp_provided_new_value']) === true && (int) $arguments['otp_provided_new_value'] === 1 ? $arguments['otp_provided_new_value'] : 0,
                     'ongoing_process_id' => NULL,
-                    'special' => isset($arguments['userHasToEncryptPersonalItemsAfter']) === true && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1 ? 'encrypt_personal_items_with_new_password' : 'none',
+                    'special' => $specialStatus,
                     'updated_at' => time(),
                 ),
                 'id = %i',
@@ -669,9 +683,10 @@ trait UserHandlerTrait {
      */
     private function getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = ''): array {
         $userInfo = DB::queryFirstRow(
-            'SELECT pw, public_key, private_key, login, name
-            FROM ' . prefixTable('users') . '
-            WHERE id = %i',
+            'SELECT u.pw, u.public_key, pk.private_key, u.login, u.name
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
             $owner_id
         );
 

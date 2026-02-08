@@ -293,7 +293,7 @@ foreach ($rows as $record) {
             '\" data-auth-type=\"'.$record['auth_type'].'\" data-special=\"'.$record['special'].'\" data-mfa-enabled=\"'.$record['mfa_enabled'].'\" data-otp-provided=\"'.(isset($record['otp_provided']) === true ? $record['otp_provided'] : '').'\"></span>", ';
         //col2
         $sOutput .= '"'.
-            ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.$lang->get('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\"></i>'
+            ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.$lang->get('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\" data-disabled=\"1\"></i>'
             : '').
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
