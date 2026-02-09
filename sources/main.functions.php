@@ -4669,6 +4669,7 @@ function storeTask(
                 'arguments' => json_encode([
                     'item_id' => $item_id,
                     'object_key' => $object_keys,
+                    'author' => $user_id,
                 ]),
                 'item_id' => $item_id,
             )

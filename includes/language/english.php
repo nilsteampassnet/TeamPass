@@ -29,6 +29,7 @@
  */
 
 return array(
+    'websocket_health' => 'Websocket health',
     'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
     'settings_websocket_title' => 'Websocket',
     'settings_websocket_title_goal' => 'Enable real-time communication for instant updates and notifications.',

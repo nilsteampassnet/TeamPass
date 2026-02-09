@@ -106,6 +106,26 @@ class TaskWorker {
             // Mark the task as completed
             try {
                 $this->completeTask();
+
+                // Emit WebSocket event for item encryption task completion
+                if (in_array($this->processType, ['new_item', 'item_copy', 'item_update_create_keys'], true)) {
+                    $authorId = (int) ($this->taskData['author'] ?? 0);
+                    if ($authorId > 0) {
+                        emitWebSocketEvent(
+                            'task_completed',
+                            'user',
+                            $authorId,
+                            [
+                                'task_id' => $this->taskId,
+                                'task_type' => 'Chiffrement',
+                                'status' => 'completed',
+                                'message' => 'Les clés de chiffrement ont été générées avec succès',
+                                'item_id' => (int) ($this->taskData['item_id'] ?? 0),
+                                'process_type' => $this->processType,
+                            ]
+                        );
+                    }
+                }
             } catch (Exception $e) {
                 $this->handleTaskFailure($e);
             }
@@ -497,6 +517,26 @@ try {
             $this->taskId
         );
         $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
+
+        // Emit WebSocket event for item encryption task failure
+        if (in_array($this->processType, ['new_item', 'item_copy', 'item_update_create_keys'], true)) {
+            $authorId = (int) ($this->taskData['author'] ?? 0);
+            if ($authorId > 0) {
+                emitWebSocketEvent(
+                    'task_completed',
+                    'user',
+                    $authorId,
+                    [
+                        'task_id' => $this->taskId,
+                        'task_type' => 'Chiffrement',
+                        'status' => 'failed',
+                        'message' => 'Erreur lors de la génération des clés de chiffrement',
+                        'item_id' => (int) ($this->taskData['item_id'] ?? 0),
+                        'process_type' => $this->processType,
+                    ]
+                );
+            }
+        }
 
         // If a scheduled backup failed, update scheduler state and optionally send email report (via background tasks)
         if ($this->processType === 'database_backup' && (string)($this->taskData['source'] ?? '') === 'scheduler') {

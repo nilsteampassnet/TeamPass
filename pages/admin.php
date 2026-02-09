@@ -284,6 +284,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('health_unknown_files'); ?></span>
                                                 <span class="badge badge-warning" id="health-unknown-files">-</span>
                                             </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-message text-success"></i> <?php echo $lang->get('websocket_health'); ?></span>
+                                                <span class="badge badge-warning" id="health-websocket">-</span>
+                                            </li>
                                         </ul>
                                     </div>
                                     <div class="overlay" id="loading-health" style="display:none;">
