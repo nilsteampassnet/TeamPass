@@ -657,10 +657,14 @@ function loadSystemHealth() {
                 updateHealthBadge('health-encryption', data.encryption.status, data.encryption.text)
                 updateHealthBadge('health-sessions', 'info', data.sessions.count + ' active')
                 updateHealthBadge('health-cron', data.cron.status, data.cron.text)
-                updateHealthBadge('health-unknown-files', 
-                    data.unknown_files.count > 0 ? 'warning' : 'success', 
+                updateHealthBadge('health-unknown-files',
+                    data.unknown_files.count > 0 ? 'warning' : 'success',
                     data.unknown_files.count
                 )
+                // WebSocket status
+                if (data.websocket) {
+                    updateWebSocketUI(data.websocket)
+                }
             }
         }
     );
@@ -695,8 +699,129 @@ function updateHealthBadge(id, status, text) {
 }
 
 /**
+ * Update WebSocket status UI
+ *
+ * @param {object} ws - WebSocket status data
+ * @return {void}
+ */
+function updateWebSocketUI(ws) {
+    const badge = $('#health-websocket')
+    const btnAction = $('#btn-websocket-action')
+    const details = $('#websocket-details')
+    const detailsContent = $('#websocket-details-content')
+
+    if (!ws.enabled) {
+        updateHealthBadge('health-websocket', 'secondary', 'Disabled')
+        btnAction.hide()
+        details.hide()
+        return
+    }
+
+    if (ws.running) {
+        updateHealthBadge('health-websocket', 'success', ws.text)
+        btnAction
+            .attr('title', 'Stop')
+            .data('action', 'stop')
+            .html('<i class="fas fa-stop text-danger"></i>')
+            .show()
+    } else {
+        updateHealthBadge('health-websocket', 'danger', ws.text)
+        btnAction
+            .attr('title', 'Start')
+            .data('action', 'start')
+            .html('<i class="fas fa-play text-success"></i>')
+            .show()
+    }
+}
+
+/**
+ * Load detailed WebSocket status
+ *
+ * @return {void}
+ */
+function loadWebSocketStatus() {
+    $('#btn-websocket-refresh').find('i').addClass('fa-spin')
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'websocket_status',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+            } catch (e) {
+                toastr.error('<?php echo $lang->get('server_answer_error'); ?>')
+                return
+            }
+
+            $('#btn-websocket-refresh').find('i').removeClass('fa-spin')
+
+            if (data.error === false) {
+                updateWebSocketUI(data)
+
+                if (data.running) {
+                    let info = '<i class="fas fa-circle text-success mr-1"></i> '
+                    info += '<strong>' + data.host + ':' + data.port + '</strong>'
+                    if (data.pid) info += ' &middot; PID ' + data.pid
+                    if (data.uptime) info += ' &middot; Uptime ' + data.uptime
+                    if (data.connections !== null) info += ' &middot; ' + data.connections + ' conn.'
+                    $('#websocket-details-content').html(info)
+                    $('#websocket-details').show()
+                } else {
+                    $('#websocket-details-content').html('<i class="fas fa-circle text-danger mr-1"></i> Server is not running')
+                    $('#websocket-details').show()
+                }
+            }
+        }
+    )
+}
+
+// WebSocket action button (start/stop)
+$(document).on('click', '#btn-websocket-action', function() {
+    const action = $(this).data('action')
+    const actionType = action === 'start' ? 'websocket_start' : 'websocket_stop'
+    const btn = $(this)
+
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>')
+
+    $.post(
+        'sources/admin.queries.php', {
+            type: actionType,
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+            } catch (e) {
+                toastr.error('<?php echo $lang->get('server_answer_error'); ?>')
+                btn.prop('disabled', false)
+                return
+            }
+
+            btn.prop('disabled', false)
+
+            if (data.error) {
+                toastr.error(data.message)
+            } else {
+                toastr.success(data.message)
+            }
+
+            // Refresh status after action
+            setTimeout(function() {
+                loadWebSocketStatus()
+            }, 1000)
+        }
+    )
+})
+
+// WebSocket refresh button
+$(document).on('click', '#btn-websocket-refresh', function() {
+    loadWebSocketStatus()
+})
+
+/**
  * Initialize dashboard tab with auto-refresh
- * 
+ *
  * @return {void}
  */
 function initDashboardTab() {

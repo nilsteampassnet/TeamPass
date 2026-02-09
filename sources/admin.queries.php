@@ -3633,7 +3633,8 @@ case 'get_system_health':
      *   database: {status: string, text: string},
      *   sessions: {count: int},
      *   cron: {status: string, text: string},
-     *   unknown_files: {count: int}
+     *   unknown_files: {count: int},
+     *   websocket: {status: string}
      * }
      */
     
@@ -3699,7 +3700,29 @@ case 'get_system_health':
             $unknownFilesCount = count($unknownFiles);
         }
     }
-    
+
+    // WebSocket status check
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+    $wsStatus = 'disabled';
+    $wsText = 'Disabled';
+    $wsRunning = false;
+
+    if ($wsEnabled === '1') {
+        $wsRunning = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+        if ($wsRunning) {
+            fclose($wsRunning);
+            $wsRunning = true;
+            $wsStatus = 'success';
+            $wsText = 'Running';
+        } else {
+            $wsRunning = false;
+            $wsStatus = 'danger';
+            $wsText = 'Stopped';
+        }
+    }
+
     echo prepareExchangedData(
         array(
             'error' => false,
@@ -3717,6 +3740,220 @@ case 'get_system_health':
             'unknown_files' => array(
                 'count' => $unknownFilesCount,
             ),
+            'websocket' => array(
+                'status' => $wsStatus,
+                'text' => $wsText,
+                'enabled' => $wsEnabled === '1',
+                'running' => $wsRunning,
+                'host' => $wsHost,
+                'port' => $wsPort,
+            ),
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// WEBSOCKET STATUS & CONTROL
+// ========================================
+
+case 'websocket_status':
+    /**
+     * Get detailed WebSocket server status
+     */
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+
+    if ($wsEnabled !== '1') {
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'running' => false,
+                'enabled' => false,
+                'status' => 'disabled',
+                'text' => 'WebSocket is disabled',
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Check if port is open
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    $running = false;
+    if ($socket) {
+        fclose($socket);
+        $running = true;
+    }
+
+    // Get process info using port-based lookup (reliable, no self-matching issue)
+    $pid = null;
+    $uptime = null;
+    if ($running) {
+        // lsof finds the PID of the process listening on this port
+        $pidOutput = @exec(sprintf('lsof -ti tcp:%d -sTCP:LISTEN 2>/dev/null | head -1', $wsPort));
+        if (!empty($pidOutput)) {
+            $pid = (int) trim($pidOutput);
+            // Get process start time from /proc
+            $statOutput = @exec('stat -c %Y /proc/' . $pid . ' 2>/dev/null');
+            if (!empty($statOutput)) {
+                $startTime = (int) trim($statOutput);
+                $uptimeSec = time() - $startTime;
+                if ($uptimeSec < 60) {
+                    $uptime = $uptimeSec . 's';
+                } elseif ($uptimeSec < 3600) {
+                    $uptime = floor($uptimeSec / 60) . 'm ' . ($uptimeSec % 60) . 's';
+                } elseif ($uptimeSec < 86400) {
+                    $uptime = floor($uptimeSec / 3600) . 'h ' . floor(($uptimeSec % 3600) / 60) . 'm';
+                } else {
+                    $uptime = floor($uptimeSec / 86400) . 'j ' . floor(($uptimeSec % 86400) / 3600) . 'h';
+                }
+            }
+        }
+    }
+
+    // Get active connections count from websocket log (last stats line)
+    $connections = null;
+    $logFile = dirname(__DIR__) . '/websocket/logs/websocket.log';
+    if (file_exists($logFile)) {
+        $lastLines = @exec('tail -50 ' . escapeshellarg($logFile) . ' | grep "Server statistics" | tail -1');
+        if (!empty($lastLines) && preg_match('/"total_connections":\s*(\d+)/', $lastLines, $matches)) {
+            $connections = (int) $matches[1];
+        }
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'running' => $running,
+            'enabled' => true,
+            'status' => $running ? 'success' : 'danger',
+            'text' => $running ? 'Running' : 'Stopped',
+            'pid' => $pid,
+            'uptime' => $uptime,
+            'connections' => $connections,
+            'host' => $wsHost,
+            'port' => $wsPort,
+        ),
+        'encode'
+    );
+    break;
+
+case 'websocket_start':
+    /**
+     * Start the WebSocket server process
+     */
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+
+    if ($wsEnabled !== '1') {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'WebSocket is not enabled in settings',
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Check if already running
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    if ($socket) {
+        fclose($socket);
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => 'WebSocket server is already running',
+                'already_running' => true,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Start the server in background
+    $serverScript = dirname(__DIR__) . '/websocket/bin/server.php';
+    if (!file_exists($serverScript)) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'Server script not found: ' . $serverScript,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    $logFile = dirname(__DIR__) . '/websocket/logs/websocket.log';
+    $cmd = sprintf(
+        '%s %s >> %s 2>&1 &',
+        escapeshellarg(PHP_BINARY),
+        escapeshellarg($serverScript),
+        escapeshellarg($logFile)
+    );
+    exec($cmd);
+
+    // Wait briefly and check if it started
+    usleep(500000); // 500ms
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 3);
+    $started = false;
+    if ($socket) {
+        fclose($socket);
+        $started = true;
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => !$started,
+            'message' => $started ? 'WebSocket server started' : 'Failed to start WebSocket server, check logs',
+            'started' => $started,
+        ),
+        'encode'
+    );
+    break;
+
+case 'websocket_stop':
+    /**
+     * Stop the WebSocket server process
+     */
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+
+    // Find PID via port (reliable method)
+    $pidOutput = @exec(sprintf('lsof -ti tcp:%d -sTCP:LISTEN 2>/dev/null | head -1', $wsPort));
+    if (empty($pidOutput)) {
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => 'WebSocket server is not running',
+                'already_stopped' => true,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Kill the process gracefully (SIGTERM)
+    $pid = (int) trim($pidOutput);
+    posix_kill($pid, 15); // SIGTERM
+
+    // Wait and verify via port check
+    usleep(800000); // 800ms
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    $stillRunning = false;
+    if ($socket) {
+        fclose($socket);
+        $stillRunning = true;
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => $stillRunning,
+            'message' => !$stillRunning ? 'WebSocket server stopped' : 'Failed to stop WebSocket server (PID: ' . $pid . ')',
+            'stopped' => !$stillRunning,
         ),
         'encode'
     );
