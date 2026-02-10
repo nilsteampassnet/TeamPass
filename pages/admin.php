@@ -285,16 +285,15 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <span class="badge badge-warning" id="health-unknown-files">-</span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                <span><i class="fas fa-plug text-info"></i> <?php echo $lang->get('websocket_health'); ?></span>
+                                                <span><i class="fas fa-plug text-info"></i> <?php echo $lang->get('websocket'); ?></span>
                                                 <span>
-                                                    <span class="badge badge-secondary align-items-right" id="health-websocket">-</span>
-                                                    <br>
                                                     <button class="btn btn-xs btn-default ml-2" id="btn-websocket-action" style="display:none;" title="">
                                                         <i class="fas fa-play"></i>
                                                     </button>
                                                     <button class="btn btn-xs btn-default ml-1" id="btn-websocket-refresh" title="Refresh">
                                                         <i class="fas fa-sync-alt"></i>
                                                     </button>
+                                                    <span class="badge badge-secondary align-items-right" id="health-websocket">-</span>
                                                 </span>
                                             </li>
                                             <li class="list-group-item small text-muted" id="websocket-details" style="display:none;">

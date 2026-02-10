@@ -3813,13 +3813,12 @@ case 'websocket_status':
         }
     }
 
-    // Get active connections count from websocket log (last stats line)
+    // Get active connections count from websocket server (live query)
     $connections = null;
-    $logFile = dirname(__DIR__) . '/websocket/logs/websocket.log';
-    if (file_exists($logFile)) {
-        $lastLines = @exec('tail -50 ' . escapeshellarg($logFile) . ' | grep "Server statistics" | tail -1');
-        if (!empty($lastLines) && preg_match('/"total_connections":\s*(\d+)/', $lastLines, $matches)) {
-            $connections = (int) $matches[1];
+    if ($running) {
+        $wsStats = queryWebSocketStats($wsHost, $wsPort, (int) $session->get('user-id'));
+        if ($wsStats !== null) {
+            $connections = $wsStats['total_connections'] ?? null;
         }
     }
 
@@ -4738,4 +4737,207 @@ function simulateUserKeyChangeDuration($userInfo): ?float
     }
 
     return $timeExecutionEstimation ?? 0;
+}
+
+/**
+ * Query the WebSocket server for live stats via the WebSocket protocol.
+ *
+ * Opens a short-lived TCP connection, performs the WS handshake with a
+ * temporary admin token, sends {"action":"get_stats"}, and returns the
+ * stats array from the response.
+ *
+ * @param string $host WebSocket server host
+ * @param int    $port WebSocket server port
+ * @param int    $userId Current admin user ID (for token generation)
+ *
+ * @return array|null Stats array on success, null on any failure
+ */
+function queryWebSocketStats(string $host, int $port, int $userId): ?array
+{
+    try {
+        // Generate a short-lived token (30 seconds) for this stats query
+        $token = generateWebSocketToken($userId, 30);
+        if ($token === null) {
+            return null;
+        }
+
+        // Open TCP connection with 2-second timeout
+        $socket = @stream_socket_client(
+            sprintf('tcp://%s:%d', $host, $port),
+            $errno,
+            $errstr,
+            2,
+            STREAM_CLIENT_CONNECT
+        );
+        if ($socket === false) {
+            return null;
+        }
+
+        // Set read/write timeout
+        stream_set_timeout($socket, 2);
+
+        // Perform WebSocket upgrade handshake
+        $wsKey = base64_encode(random_bytes(16));
+        $path = '/?token=' . urlencode($token);
+        $handshake = "GET {$path} HTTP/1.1\r\n"
+            . "Host: {$host}:{$port}\r\n"
+            . "Upgrade: websocket\r\n"
+            . "Connection: Upgrade\r\n"
+            . "Sec-WebSocket-Key: {$wsKey}\r\n"
+            . "Sec-WebSocket-Version: 13\r\n"
+            . "\r\n";
+
+        fwrite($socket, $handshake);
+
+        // Read the upgrade response (read up to 2KB, should be plenty)
+        $response = '';
+        while (($line = fgets($socket, 2048)) !== false) {
+            $response .= $line;
+            // End of HTTP headers
+            if (trim($line) === '') {
+                break;
+            }
+        }
+
+        // Verify 101 Switching Protocols
+        if (strpos($response, '101') === false) {
+            fclose($socket);
+            return null;
+        }
+
+        // The server may send initial messages (e.g. auth_success)
+        // Read and discard them until we get our stats response
+        // First, send the get_stats request
+        $payload = json_encode(['action' => 'get_stats']);
+        fwrite($socket, wsEncodeFrame($payload));
+
+        // Read response frames (try up to 5 frames to find our stats response)
+        $stats = null;
+        for ($i = 0; $i < 5; $i++) {
+            $frame = wsReadFrame($socket);
+            if ($frame === null) {
+                break;
+            }
+
+            $data = json_decode($frame, true);
+            if ($data !== null && ($data['type'] ?? '') === 'stats') {
+                $stats = $data['stats'] ?? null;
+                break;
+            }
+        }
+
+        // Send close frame and clean up
+        fwrite($socket, wsEncodeFrame('', 0x88));
+        fclose($socket);
+
+        return $stats;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Encode a payload into a WebSocket frame (client-side, masked).
+ *
+ * @param string $payload Data to send
+ * @param int    $opcode  Frame opcode (0x01=text, 0x88=close)
+ *
+ * @return string Binary WebSocket frame
+ */
+function wsEncodeFrame(string $payload, int $opcode = 0x01): string
+{
+    $length = strlen($payload);
+    $frame = chr(0x80 | $opcode); // FIN + opcode
+
+    // Mask bit is always set for client frames
+    if ($length < 126) {
+        $frame .= chr(0x80 | $length);
+    } elseif ($length < 65536) {
+        $frame .= chr(0x80 | 126) . pack('n', $length);
+    } else {
+        $frame .= chr(0x80 | 127) . pack('J', $length);
+    }
+
+    // 4-byte masking key
+    $mask = random_bytes(4);
+    $frame .= $mask;
+
+    // Apply mask to payload
+    for ($i = 0; $i < $length; $i++) {
+        $frame .= $payload[$i] ^ $mask[$i % 4];
+    }
+
+    return $frame;
+}
+
+/**
+ * Read a single WebSocket frame from the socket.
+ *
+ * @param resource $socket TCP stream
+ *
+ * @return string|null Decoded payload or null on failure
+ */
+function wsReadFrame($socket): ?string
+{
+    // Read first 2 bytes (FIN/opcode + mask/length)
+    $header = fread($socket, 2);
+    if ($header === false || strlen($header) < 2) {
+        return null;
+    }
+
+    $byte1 = ord($header[0]);
+    $byte2 = ord($header[1]);
+    $opcode = $byte1 & 0x0F;
+    $masked = ($byte2 & 0x80) !== 0;
+    $length = $byte2 & 0x7F;
+
+    // Connection close frame
+    if ($opcode === 0x08) {
+        return null;
+    }
+
+    // Extended payload length
+    if ($length === 126) {
+        $ext = fread($socket, 2);
+        if ($ext === false || strlen($ext) < 2) {
+            return null;
+        }
+        $length = unpack('n', $ext)[1];
+    } elseif ($length === 127) {
+        $ext = fread($socket, 8);
+        if ($ext === false || strlen($ext) < 8) {
+            return null;
+        }
+        $length = unpack('J', $ext)[1];
+    }
+
+    // Read masking key if present (server frames are typically unmasked)
+    $mask = null;
+    if ($masked) {
+        $mask = fread($socket, 4);
+        if ($mask === false || strlen($mask) < 4) {
+            return null;
+        }
+    }
+
+    // Read payload
+    $payload = '';
+    $remaining = $length;
+    while ($remaining > 0) {
+        $chunk = fread($socket, $remaining);
+        if ($chunk === false || $chunk === '') {
+            return null;
+        }
+        $payload .= $chunk;
+        $remaining -= strlen($chunk);
+    }
+
+    // Unmask if needed
+    if ($masked && $mask !== null) {
+        for ($i = 0; $i < $length; $i++) {
+            $payload[$i] = $payload[$i] ^ $mask[$i % 4];
+        }
+    }
+
+    return $payload;
 }

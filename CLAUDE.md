@@ -592,3 +592,25 @@ Current version constants in `/includes/config/include.php`:
 - Full version: 3.1.5.2
 
 Version upgrades managed through `/install/upgrade_run_*.php` scripts.
+
+## Règles IMPORTANTES
+- Toujours privilégier des modifications minimales
+- Ne jamais proposer de refonte complète
+- Respecter le style de code existant
+- Les nouvelles fonctions doivent rester compatibles PHP 8.2
+- Sécuriser toutes les entrées utilisateur (SQLi, XSS)
+- N'invente pas les choses et appuis toi uniquement sur du factuel
+- Tu travailles sur un projet existant.
+Priorité absolue : t’intégrer au code actuel plutôt que proposer une architecture idéale.
+Chaque modification doit être minimale, locale et compatible avec le reste du projet.
+Si une amélioration globale est possible, propose-la à la fin sous forme de suggestion séparée.
+
+## Style attendu
+- Code lisible
+- Commentaires utiles mais pas excessifs
+- Pas d’introduction de librairie externe sans demande explicite
+- Commentaires en anglais
+
+## Commit
+- Message de commit toujours en anglais
+- Des phrases simples et concises
