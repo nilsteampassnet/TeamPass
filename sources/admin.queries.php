@@ -3828,7 +3828,7 @@ case 'websocket_status':
             'running' => $running,
             'enabled' => true,
             'status' => $running ? 'success' : 'danger',
-            'text' => $running ? 'Running' : 'Stopped',
+            'text' => $running ? $lang->get('ws_status_running') : $lang->get('ws_status_stopped'),
             'pid' => $pid,
             'uptime' => $uptime,
             'connections' => $connections,
@@ -3849,7 +3849,7 @@ case 'websocket_start':
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => 'WebSocket is not enabled in settings',
+                'message' => $lang->get('ws_not_enabled'),
             ),
             'encode'
         );
@@ -3865,7 +3865,7 @@ case 'websocket_start':
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => 'WebSocket server is already running',
+                'message' => $lang->get('ws_already_running'),
                 'already_running' => true,
             ),
             'encode'
@@ -3879,7 +3879,7 @@ case 'websocket_start':
         echo prepareExchangedData(
             array(
                 'error' => true,
-                'message' => 'Server script not found: ' . $serverScript,
+                'message' => $lang->get('ws_server_script_not_found') . ': ' . $serverScript,
             ),
             'encode'
         );
@@ -3907,7 +3907,7 @@ case 'websocket_start':
     echo prepareExchangedData(
         array(
             'error' => !$started,
-            'message' => $started ? 'WebSocket server started' : 'Failed to start WebSocket server, check logs',
+            'message' => $started ? $lang->get('ws_server_started') : $lang->get('ws_server_start_failed'),
             'started' => $started,
         ),
         'encode'
@@ -3927,7 +3927,7 @@ case 'websocket_stop':
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => 'WebSocket server is not running',
+                'message' => $lang->get('ws_server_not_running_msg'),
                 'already_stopped' => true,
             ),
             'encode'
@@ -3951,7 +3951,7 @@ case 'websocket_stop':
     echo prepareExchangedData(
         array(
             'error' => $stillRunning,
-            'message' => !$stillRunning ? 'WebSocket server stopped' : 'Failed to stop WebSocket server (PID: ' . $pid . ')',
+            'message' => !$stillRunning ? $lang->get('ws_server_stopped') : $lang->get('ws_server_stop_failed') . ' (PID: ' . $pid . ')',
             'stopped' => !$stillRunning,
         ),
         'encode'

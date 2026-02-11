@@ -23,6 +23,9 @@
     return
   }
 
+  // Language strings (injected by PHP via window.TeamPassWsLang)
+  var L = window.TeamPassWsLang || {}
+
   // Check if we have an authentication token
   if (typeof window.TeamPassWebSocketToken === 'undefined' || !window.TeamPassWebSocketToken) {
     console.log('[TeamPass WS Init] No WebSocket token available')
@@ -67,7 +70,7 @@
 
         // Show notification only if not intentional
         if (event.code !== 1000) {
-          showNotification('warning', 'Connexion temps réel perdue', 'Reconnexion en cours...')
+          showNotification('warning', L.realtime_connection_lost, L.reconnecting)
         }
       })
       .onReconnecting(function(attempt, delay) {
@@ -93,43 +96,43 @@
     // Item events
     tpWs.on('item_created', function(data) {
       if (data.folder_id === currentFolderId) {
-        showNotification('success', 'Nouvel item', '"' + data.label + '" créé par ' + data.created_by)
+        showNotification('success', L.new_item, '"' + data.label + '" ' + L.item_created_by + ' ' + data.created_by)
         refreshItemsList()
       }
     })
 
     tpWs.on('item_updated', function(data) {
       if (data.folder_id === currentFolderId) {
-        showNotification('info', 'Item modifié', '"' + data.label + '" modifié par ' + data.updated_by)
+        showNotification('info', L.item_updated, '"' + data.label + '" ' + L.item_updated_by + ' ' + data.updated_by)
         refreshItemsList()
       }
     })
 
     tpWs.on('item_deleted', function(data) {
       if (data.folder_id === currentFolderId) {
-        showNotification('warning', 'Item supprimé', 'Un item a été supprimé par ' + data.deleted_by)
+        showNotification('warning', L.item_deleted, L.item_deleted_by + ' ' + data.deleted_by)
         refreshItemsList()
       }
     })
 
     // Folder events
     tpWs.on('folder_created', function(data) {
-      showNotification('success', 'Nouveau dossier', '"' + data.title + '" créé')
+      showNotification('success', L.new_folder, '"' + data.title + '" ' + L.folder_created)
       refreshFolderTree()
     })
 
     tpWs.on('folder_updated', function(data) {
-      showNotification('info', 'Dossier modifié', '"' + data.title + '" a été modifié')
+      showNotification('info', L.folder_updated, '"' + data.title + '" ' + L.folder_has_been_updated)
       refreshFolderTree()
     })
 
     tpWs.on('folder_deleted', function(data) {
-      showNotification('warning', 'Dossier supprimé', 'Un dossier a été supprimé')
+      showNotification('warning', L.folder_deleted, L.folder_has_been_deleted)
       refreshFolderTree()
     })
 
     tpWs.on('folder_permission_changed', function(data) {
-      showNotification('info', 'Permissions modifiées', 'Les permissions d\'un dossier ont changé')
+      showNotification('info', L.permissions_changed, L.folder_permissions_changed)
       // May need to refresh accessible folders
       if (typeof refreshUserFolders === 'function') {
         refreshUserFolders()
@@ -138,7 +141,7 @@
 
     // User events
     tpWs.on('user_keys_ready', function(data) {
-      showNotification('success', 'Compte prêt', 'Votre compte est maintenant opérationnel')
+      showNotification('success', L.account_ready, L.account_operational)
       // Refresh page to show full interface
       if (typeof window.location.reload === 'function') {
         setTimeout(function() {
@@ -158,7 +161,7 @@
 
     // Session events
     tpWs.on('session_expired', function(data) {
-      showNotification('error', 'Session expirée', data.reason || 'Veuillez vous reconnecter')
+      showNotification('error', L.session_expired, data.reason || L.please_reconnect)
       setTimeout(function() {
         window.location.href = 'includes/core/logout.php?session_expired=1'
       }, 2000)
@@ -166,12 +169,12 @@
 
     // System events
     tpWs.on('system_maintenance', function(data) {
-      showNotification('warning', 'Maintenance', data.message)
+      showNotification('warning', L.maintenance, data.message)
     })
 
     // Reconnection failed
     tpWs.on('reconnect_failed', function() {
-      showNotification('error', 'Connexion perdue', 'Impossible de se reconnecter au serveur')
+      showNotification('error', L.connection_lost, L.unable_to_reconnect)
     })
 
     // Debug: log all events
@@ -220,7 +223,7 @@
     }
 
     indicator.style.backgroundColor = connected ? '#28a745' : '#dc3545'
-    indicator.title = connected ? 'Temps réel: connecté' : 'Temps réel: déconnecté'
+    indicator.title = connected ? (L.realtime_connected || 'Real-time: connected') : (L.realtime_disconnected || 'Real-time: disconnected')
   }
 
   /**
@@ -279,7 +282,7 @@
         toastr.info(
           '<div class="progress"><div class="progress-bar" id="' + progressId + '" style="width:' + data.percent + '%"></div></div>' +
           '<small>' + data.task_type + ': ' + data.progress + '/' + data.total + '</small>',
-          'Progression',
+          L.progress || 'Progress',
           { timeOut: 0, extendedTimeOut: 0, closeButton: true }
         )
       }
@@ -296,9 +299,9 @@
    */
   function handleTaskCompleted(data) {
     var type = data.status === 'completed' ? 'success' : 'error'
-    var message = data.message || (data.status === 'completed' ? 'Opération terminée' : 'Opération échouée')
+    var message = data.message || (data.status === 'completed' ? (L.operation_completed || 'Operation completed') : (L.operation_failed || 'Operation failed'))
 
-    showNotification(type, data.task_type || 'Tâche', message)
+    showNotification(type, data.task_type || (L.task || 'Task'), message)
 
     // Trigger custom event
     $(document).trigger('teampass:task:completed', [data])

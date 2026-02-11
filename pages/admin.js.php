@@ -711,7 +711,7 @@ function updateWebSocketUI(ws) {
     const detailsContent = $('#websocket-details-content')
 
     if (!ws.enabled) {
-        updateHealthBadge('health-websocket', 'secondary', 'Disabled')
+        updateHealthBadge('health-websocket', 'secondary', '<?php echo addslashes($lang->get('ws_status_disabled')); ?>')
         btnAction.hide()
         details.hide()
         return
@@ -720,14 +720,14 @@ function updateWebSocketUI(ws) {
     if (ws.running) {
         updateHealthBadge('health-websocket', 'success', ws.text)
         btnAction
-            .attr('title', 'Stop')
+            .attr('title', '<?php echo addslashes($lang->get('ws_action_stop')); ?>')
             .data('action', 'stop')
             .html('<i class="fas fa-stop text-danger"></i>')
             .show()
     } else {
         updateHealthBadge('health-websocket', 'danger', ws.text)
         btnAction
-            .attr('title', 'Start')
+            .attr('title', '<?php echo addslashes($lang->get('ws_action_start')); ?>')
             .data('action', 'start')
             .html('<i class="fas fa-play text-success"></i>')
             .show()
@@ -764,11 +764,11 @@ function loadWebSocketStatus() {
                     info += '<strong>' + data.host + ':' + data.port + '</strong>'
                     if (data.pid) info += ' &middot; PID ' + data.pid
                     if (data.uptime) info += ' &middot; Uptime ' + data.uptime
-                    if (data.connections !== null) info += ' &middot; ' + data.connections + ' conn.'
+                    if (data.connections !== null) info += ' &middot; ' + data.connections + ' <?php echo addslashes($lang->get('ws_connections_short')); ?>'
                     $('#websocket-details-content').html(info)
                     $('#websocket-details').show()
                 } else {
-                    $('#websocket-details-content').html('<i class="fas fa-circle text-danger mr-1"></i> Server is not running')
+                    $('#websocket-details-content').html('<i class="fas fa-circle text-danger mr-1"></i> <?php echo addslashes($lang->get('ws_server_not_running')); ?>')
                     $('#websocket-details').show()
                 }
             }
