@@ -2183,7 +2183,7 @@ switch ($post_type) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'misc' => $counter . ' ; ' . $SETTINGS[$post_field],
+                'misc' => $counter . ' ; ' . $SETTINGS[$post_field] ?? $post_value),
                 'message' => empty($post_translate) === false ? $lang->get($post_translate) : '',
             ),
             'encode'
