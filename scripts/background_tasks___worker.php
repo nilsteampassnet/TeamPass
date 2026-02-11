@@ -150,6 +150,108 @@ class TaskWorker {
             throw new Exception('Missing encryption key (bck_script_passkey).');
         }
 
+// Auto-disconnect connected users before running a scheduled backup.
+// Exclude the user who enqueued the task (manual run), if provided.
+try {
+    if (function_exists('loadClasses') && !class_exists('DB')) {
+        loadClasses('DB');
+    }
+    $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
+    $now = time();
+
+    if ($excludeUserId > 0) {
+        $connectedUsers = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+            $now,
+            $excludeUserId
+        );
+    } else {
+        $connectedUsers = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
+            $now
+        );
+    }
+
+    foreach ($connectedUsers as $u) {
+        DB::update(
+            prefixTable('users'),
+            [
+                'key_tempo' => '',
+                'timestamp' => '',
+                'session_end' => '',
+            ],
+            'id = %i',
+            (int) $u['id']
+        );
+    }
+} catch (Throwable $ignored) {
+    // Best effort only - do not block backups if disconnection cannot be done
+}
+
+        $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
+            'output_dir' => $targetDir,
+            'filename_prefix' => 'scheduled-',
+        ]);
+
+        if (($res['success'] ?? false) !== true) {
+            throw new Exception($res['message'] ?? 'Backup failed');
+        }
+
+        
+// Best effort: write metadata sidecar next to the backup file
+try {
+    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
+    }
+} catch (Throwable $ignored) {
+    // do not block backups if metadata cannot be written
+}
+// Store a tiny summary for the task completion "arguments" field (no secrets)
+        $this->taskData['backup_file'] = $res['filename'] ?? '';
+        $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
+        $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
+
+        // Retention purge (scheduled backups only)
+        $backupSource = (string)($taskData['source'] ?? '');
+        $backupDir = (string)($taskData['output_dir'] ?? '');   // from task arguments (reliable)
+        if ($backupDir === '') {
+            $backupDir = (string) $targetDir;
+        }
+
+        // keep for debug/trace
+        $this->taskData['output_dir'] = $backupDir;
+
+        if ($backupSource === 'scheduler' && $backupDir !== '') {
+            $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+            $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
+
+            $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
+            $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+
+            if (LOG_TASKS === true) {
+                $this->logger->log("database_backup: purge retention={$days}d dir={$backupDir} deleted={$deleted}", 'INFO');
+            }
+        }
+
+        // If launched by scheduler, update scheduler status in teampass_misc
+        if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
+            $this->updateSchedulerState('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
+            try {
+                $this->queueScheduledBackupReportEmail('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
+            } catch (Throwable $ignored) {
+                // best effort only - never block the backup process
+            }
+        }
+
+        if (LOG_TASKS === true) {
+            $this->logger->log(
+                'database_backup: created ' . ($this->taskData['backup_file'] ?? '') . ' (' . $this->taskData['backup_size_bytes'] . ' bytes)',
+                'INFO'
+            );
+        }
+    }
+
+
     /**
      * Housekeeping: warn inactive users then disable/soft-delete/hard-delete after grace period.
      */
@@ -397,106 +499,6 @@ class TaskWorker {
         ], 'id = %i', $userId);
     }
 
-// Auto-disconnect connected users before running a scheduled backup.
-// Exclude the user who enqueued the task (manual run), if provided.
-try {
-    if (function_exists('loadClasses') && !class_exists('DB')) {
-        loadClasses('DB');
-    }
-    $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
-    $now = time();
-
-    if ($excludeUserId > 0) {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-            $now,
-            $excludeUserId
-        );
-    } else {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
-            $now
-        );
-    }
-
-    foreach ($connectedUsers as $u) {
-        DB::update(
-            prefixTable('users'),
-            [
-                'key_tempo' => '',
-                'timestamp' => '',
-                'session_end' => '',
-            ],
-            'id = %i',
-            (int) $u['id']
-        );
-    }
-} catch (Throwable $ignored) {
-    // Best effort only - do not block backups if disconnection cannot be done
-}
-
-        $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
-            'output_dir' => $targetDir,
-            'filename_prefix' => 'scheduled-',
-        ]);
-
-        if (($res['success'] ?? false) !== true) {
-            throw new Exception($res['message'] ?? 'Backup failed');
-        }
-
-        
-// Best effort: write metadata sidecar next to the backup file
-try {
-    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
-    }
-} catch (Throwable $ignored) {
-    // do not block backups if metadata cannot be written
-}
-// Store a tiny summary for the task completion "arguments" field (no secrets)
-        $this->taskData['backup_file'] = $res['filename'] ?? '';
-        $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
-        $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
-
-        // Retention purge (scheduled backups only)
-        $backupSource = (string)($taskData['source'] ?? '');
-        $backupDir = (string)($taskData['output_dir'] ?? '');   // from task arguments (reliable)
-        if ($backupDir === '') {
-            $backupDir = (string) $targetDir;
-        }
-
-        // keep for debug/trace
-        $this->taskData['output_dir'] = $backupDir;
-
-        if ($backupSource === 'scheduler' && $backupDir !== '') {
-            $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
-            $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
-
-            $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
-            $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
-
-            if (LOG_TASKS === true) {
-                $this->logger->log("database_backup: purge retention={$days}d dir={$backupDir} deleted={$deleted}", 'INFO');
-            }
-        }
-
-        // If launched by scheduler, update scheduler status in teampass_misc
-        if (!empty($taskData['source']) && $taskData['source'] === 'scheduler') {
-            $this->updateSchedulerState('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
-            try {
-                $this->queueScheduledBackupReportEmail('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
-            } catch (Throwable $ignored) {
-                // best effort only - never block the backup process
-            }
-        }
-
-        if (LOG_TASKS === true) {
-            $this->logger->log(
-                'database_backup: created ' . ($this->taskData['backup_file'] ?? '') . ' (' . $this->taskData['backup_size_bytes'] . ' bytes)',
-                'INFO'
-            );
-        }
-    }
 
     /**
      * Mark the task as completed in the database.
