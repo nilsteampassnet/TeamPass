@@ -45,6 +45,7 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'users_purge.functions.php';
 
 // init
 loadClasses('DB');
