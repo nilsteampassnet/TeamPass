@@ -50,7 +50,6 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
-use Symfony\Component\Process\Process;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -4718,10 +4717,13 @@ function storeTask(
             )
         );
     }
+
+    // Trigger immediate execution of the background handler
+    triggerBackgroundHandler();
 }
 
 /**
- * 
+ *
  */
 function createTaskForItem(
     string $processType,
@@ -4813,6 +4815,9 @@ function createTaskForItem(
                 break;
         }
     }
+
+    // Trigger immediate execution of the background handler
+    triggerBackgroundHandler();
 }
 
 
@@ -6434,13 +6439,15 @@ function triggerBackgroundHandler(): void
     // The file content includes timestamp for debugging purposes
     file_put_contents($triggerFile, (string) time());
 
-    // Create the process to run the handler script
-    // If a handler is already running, it will detect the trigger file
-    // If no handler is running, this new process will handle the tasks
-    $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-    
-    // Run it asynchronously to avoid blocking the UI
-    $process->start();
+    // Launch the handler as a fully detached background process.
+    // We use exec() instead of Symfony Process because Process::start() creates
+    // pipes for stdout/stderr. When the parent request ends and pipes are closed,
+    // the child receives SIGPIPE and dies silently on the first write (log, error, etc.).
+    // Redirecting to /dev/null with & ensures true fire-and-forget detachment.
+    $cmd = escapeshellarg(getPHPBinary())
+        . ' ' . escapeshellarg(__DIR__ . '/../scripts/background_tasks___handler.php')
+        . ' > /dev/null 2>&1 &';
+    exec($cmd);
 }
 
 /**

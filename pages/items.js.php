@@ -2413,7 +2413,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      */
     function closeItemDetailsCard() {
         if (debugJavascript === true) console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView);
-        if (userDidAChange === true) {
+        if (userDidAChange === true && $('.form-item').hasClass('hidden') === false) {
             toastr
                 .warning(
                     '<?php echo $lang->get('changes_ongoing'); ?><br>' +
