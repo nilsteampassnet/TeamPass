@@ -3503,7 +3503,71 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
 
                             } else if ($('#form-item-button-save').data('action') === 'new_item') {
-                                window.location.href = './index.php?page=items&group='+$('#form-item-folder').val()+'&id='+data.item_id;
+                                // Refresh tree to update folder item count
+                                refreshTree($('#form-item-folder').val(), true);
+
+                                // Confirm attachments
+                                var confirmData = {
+                                    'item_id': data.item_id,
+                                }
+                                $.post(
+                                    "sources/items.queries.php", {
+                                        type: 'confirm_attachments',
+                                        data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
+                                        key: '<?php echo $session->get('key'); ?>'
+                                    }
+                                );
+
+                                // Update store with new item id
+                                store.update(
+                                    'teampassItem',
+                                    function(teampassItem) {
+                                        teampassItem.id = parseInt(data.item_id);
+                                        teampassItem.isNewItem = 0;
+                                    }
+                                );
+
+                                // Select folder in jstree (prevent duplicate ListerItems via event handler)
+                                startedItemsListQuery = true;
+                                $('#jstree').jstree('deselect_all');
+                                $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
+
+                                // Refresh list of items in background
+                                ListerItems($('#form-item-folder').val(), '', 0);
+
+                                // Reset flags
+                                userDidAChange = false;
+                                userUploadedFile = false;
+
+                                // Hide edit form immediately
+                                $('.form-item, #form-item-attachments-zone').addClass('hidden');
+
+                                // Show parent row but pre-hide tree/list to prevent visual flash
+                                // (#items-details-container is inside #folders-tree-card, so the row must be visible)
+                                $('#folder-tree-container, #items-list-container').addClass('hidden');
+                                $('#folders-tree-card').removeClass('hidden');
+
+                                // Show item container immediately with loading spinner
+                                // (spinner is removed by Details() via .delete-after-usage at line 5093)
+                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                $('#items-details-container')
+                                    .removeClass('col-md-5 hidden')
+                                    .addClass('col-md-12')
+                                    .prepend(
+                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
+                                            '<div class="text-center text-muted">' +
+                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
+                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
+                                            '</div>' +
+                                        '</div>'
+                                    );
+
+                                // Show loading toast
+                                toastr.remove();
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+                                // Load item details (replaces spinner with actual content)
+                                Details(data.item_id, 'show', true);
                                 return;
                             } else {
                                 refreshTree($('#form-item-folder').val(), true);
