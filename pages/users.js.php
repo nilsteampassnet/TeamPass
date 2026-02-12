@@ -2479,13 +2479,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 $b.removeClass('d-none alert-info alert-warning alert-danger alert-success')
-                .addClass('alert-' + (data.result.banner_type || 'info'))
-                .html(data.result.banner_html || '');
+                    .addClass('alert-' + (data.result.banner_type || 'info'))
+                    .html(data.result.banner_html || '');
             }
         );
-    }
+}
 
-    function refreshListInactiveUsers(filterValue) {
+function refreshListInactiveUsers(filterValue) {
         const data_to_send = {
             filter: filterValue || 'never'
         };
@@ -2518,9 +2518,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         const lastActivityTxt = neverConnected
                             ? '<?php echo $lang->get("inactive_users_never_connected"); ?>'
-                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();
-
-                        const daysInactive = parseInt(user.days_inactive, 10);
+                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();                        const daysInactive = parseInt(user.days_inactive, 10);
                         const daysInactiveTxt = neverConnected
                             ? '-'
                             : (isNaN(daysInactive) ? '-' : (daysInactive + ' <?php echo $lang->get("days"); ?>'));
@@ -2568,6 +2566,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // checkbox header reset
                 $('#inactive-users-check-all').prop('checked', false);
+
+                // refresh tooltips for dynamically inserted badges
                 $('.infotip').tooltip();
 
                 // refresh blink state based on server truth (never connected)
