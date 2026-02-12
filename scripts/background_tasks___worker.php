@@ -117,7 +117,7 @@ class TaskWorker {
                             $authorId,
                             [
                                 'task_id' => $this->taskId,
-                                'task_type' => 'Chiffrement',
+                                'task_type' => 'Item encryption',
                                 'status' => 'completed',
                                 'message' => 'Les clés de chiffrement ont été générées avec succès',
                                 'item_id' => (int) ($this->taskData['item_id'] ?? 0),

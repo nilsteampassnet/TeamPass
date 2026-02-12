@@ -105,7 +105,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
-        debugJavascript = false,
+        debugJavascript = true,
         loadingToast = '';
 
     // Manage memory
@@ -7075,6 +7075,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#jstree').jstree('select_node', '#li_' + folder_id);
             }
         });
+
+        // WebSocket: Expose item details refresh for real-time updates
+        window.refreshItemDetails = function(itemId) {
+            Details(itemId, 'show', true);
+        };
 
         // WebSocket: Expose refresh function for real-time updates
         window.refreshVisibleItems = function() {

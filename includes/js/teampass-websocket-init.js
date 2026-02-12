@@ -229,9 +229,9 @@
   /**
    * Show notification using Toastr or fallback
    */
-  function showNotification(type, title, message) {
+  function showNotification(type, title, message, timeOut = 10000) {
     if (typeof toastr !== 'undefined') {
-      toastr[type](message, title)
+      toastr[type](message, title, { timeOut: timeOut, extendedTimeOut: 3000, progressBar: true })
     } else if (typeof alertify !== 'undefined') {
       alertify[type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success'](title + ': ' + message)
     } else {
@@ -301,7 +301,16 @@
     var type = data.status === 'completed' ? 'success' : 'error'
     var message = data.message || (data.status === 'completed' ? (L.operation_completed || 'Operation completed') : (L.operation_failed || 'Operation failed'))
 
-    showNotification(type, data.task_type || (L.task || 'Task'), message)
+    showNotification(type, data.task_type || (L.task || 'Task'), message, 5000)
+
+    // Auto-refresh item details when encryption task completes for the viewed item
+    if (data.status === 'completed' && data.task_type === 'Item encryption' && data.item_id) {
+      if (store.get('teampassItem').id == data.item_id) {
+        if (typeof window.refreshItemDetails === 'function') {
+          window.refreshItemDetails(data.item_id)
+        }
+      }
+    }
 
     // Trigger custom event
     $(document).trigger('teampass:task:completed', [data])
