@@ -45,7 +45,6 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
 
 // Load functions
 require_once 'main.functions.php';
-require_once 'users_purge.functions.php';
 
 // init
 loadClasses('DB');
@@ -3784,8 +3783,8 @@ function listInactiveUsers(string $filter): array
 {
     $filter = trim($filter);
 
-    // Exclude TeamPass system accounts
-    $baseWhere = "deleted_at IS NULL AND disabled = 0 AND LOWER(login) NOT IN ('api','otv','tp')";
+    // Exclude admins and TeamPass system/special accounts
+    $baseWhere = "deleted_at IS NULL AND disabled = 0 AND admin = 0 AND special = 'none' AND LOWER(login) NOT IN ('api','otv','tp')";
 
     // Extract a unix timestamp from last_connexion when possible.
     // Supports:
@@ -3799,16 +3798,26 @@ function listInactiveUsers(string $filter): array
         ELSE UNIX_TIMESTAMP(last_connexion)
     END";
 
+    // Same logic for created_at (used for never connected users)
+    $createdTsExpr = "CASE
+        WHEN created_at REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(created_at AS UNSIGNED)/1000)
+        WHEN created_at REGEXP '^[0-9]{10}$' THEN CAST(created_at AS UNSIGNED)
+        WHEN created_at REGEXP '^[0-9]{1,9}$' THEN CAST(created_at AS UNSIGNED)
+        ELSE UNIX_TIMESTAMP(created_at)
+    END";
+
     if ($filter === 'never') {
         $users = DB::query(
             "SELECT id, login, email,
+                    inactivity_warned_at, inactivity_action_at, inactivity_action, inactivity_no_email,
                     NULL as last_connexion_ts,
                     1 as never_connected,
-                    NULL as days_inactive
+                    FLOOR((%i - ($createdTsExpr))/86400) as days_inactive
              FROM " . prefixTable('users') . "
              WHERE $baseWhere
              AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')
-             ORDER BY login ASC"
+             ORDER BY login ASC",
+            time()
         );
     } else {
         $days = (int) $filter;
@@ -3819,6 +3828,7 @@ function listInactiveUsers(string $filter): array
 
         $users = DB::query(
             "SELECT id, login, email,
+                    inactivity_warned_at, inactivity_action_at, inactivity_action, inactivity_no_email,
                     ($tsExpr) as last_connexion_ts,
                     0 as never_connected,
                     FLOOR((%i - ($tsExpr))/86400) as days_inactive
@@ -3838,6 +3848,7 @@ function listInactiveUsers(string $filter): array
         'count' => count($users),
     );
 }
+
 
 /**
  * Batch disable users (uses same semantics as manage_user_disable_status)
