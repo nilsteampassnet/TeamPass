@@ -5436,7 +5436,7 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
     );
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'object_id IN (SELECT id FROM '.prefixTable('fields').' WHERE id_item = %i) AND user_id NOT IN %ls',
+        'object_id IN (SELECT id FROM '.prefixTable('categories_items').' WHERE item_id = %i) AND user_id NOT IN %ls',
         $itemId,
         [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );

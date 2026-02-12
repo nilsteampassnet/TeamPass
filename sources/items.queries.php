@@ -246,10 +246,13 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             );
             $post_email = filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL);
-            $post_fields = filter_var_array(
-                $dataReceived['fields'],
-                FILTER_SANITIZE_FULL_SPECIAL_CHARS
-            );
+            $post_fields = [];
+            foreach ($dataReceived['fields'] as $field) {
+                $post_fields[] = [
+                    'id' => (int) filter_var($field['id'] ?? 0, FILTER_SANITIZE_NUMBER_INT),
+                    'value' => htmlspecialchars_decode($field['value'] ?? ''),
+                ];
+            }
             $inputData['folderId'] = filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
             $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -936,10 +939,13 @@ switch ($inputData['type']) {
                 FILTER_SANITIZE_FULL_SPECIAL_CHARS
             ) :
             '';
-        $post_fields = (filter_var_array(
-            $dataReceived['fields'],
-            FILTER_SANITIZE_FULL_SPECIAL_CHARS
-        ));
+        $post_fields = [];
+        foreach ($dataReceived['fields'] as $field) {
+            $post_fields[] = [
+                'id' => (int) filter_var($field['id'] ?? 0, FILTER_SANITIZE_NUMBER_INT),
+                'value' => htmlspecialchars_decode($field['value'] ?? ''),
+            ];
+        }
         $post_description = $antiXss->xss_clean($dataReceived['description']);
         $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_otp_is_enabled = (int) filter_var($dataReceived['otp_is_enabled'], FILTER_SANITIZE_NUMBER_INT);
@@ -1328,7 +1334,7 @@ switch ($inputData['type']) {
 
             // Delete all existing sharekey_items for users if the item is personal
             if ((int) $dataItem['perso'] === 1) {
-                EnsurePersonalItemHasOnlyKeysForOwner((int) $inputData['itemId'], (int) $dataItem['id_user']);
+                EnsurePersonalItemHasOnlyKeysForOwner((int) $dataItem['id_user'], (int) $inputData['itemId']);
             }
 
             // update fields
@@ -1553,14 +1559,25 @@ switch ($inputData['type']) {
                             $encryptionTaskIsRequested = true;
                         }
                     } else {
-                        // Case where field new value is empty
-                        // then delete field
-                        if (empty($field_data[1]) === true) {
+                        // Field value is empty - delete field entry and its sharekeys
+                        $existingField = DB::queryFirstRow(
+                            'SELECT id FROM ' . prefixTable('categories_items') . '
+                            WHERE item_id = %i AND field_id = %i',
+                            $inputData['itemId'],
+                            $field['id']
+                        );
+                        if (DB::count() > 0) {
+                            // Delete associated sharekeys first
+                            DB::delete(
+                                prefixTable('sharekeys_fields'),
+                                'object_id = %i',
+                                $existingField['id']
+                            );
+                            // Then delete the field entry
                             DB::delete(
                                 prefixTable('categories_items'),
-                                'item_id = %i AND field_id = %s',
-                                $inputData['itemId'],
-                                $field['id']
+                                'id = %i',
+                                $existingField['id']
                             );
                         }
                     }

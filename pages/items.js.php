@@ -5487,8 +5487,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         .removeClass('hidden')
                                         .children(".card-item-field-value")
                                         .html(
-                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                            '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
+                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>'
+                                        )
+                                        .append(
+                                            $('<input>', {
+                                                type: 'text',
+                                                style: 'width:0px; height:0px; border:0px;',
+                                                id: 'hidden-card-item-field-value-' + field.id,
+                                            }).val(field.value)
                                         )
                                     $('#card-item-field-' + field.id)
                                         .children(".btn-copy-clipboard-clear")
@@ -5498,7 +5504,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     $('#card-item-field-' + field.id)
                                         .removeClass('hidden')
                                         .children(".card-item-field-value")
-                                        .html(field.value);
+                                        .text(field.value);
                                 }
                                 // Item edit form
                                 $('#form-item-field-' + field.id)
