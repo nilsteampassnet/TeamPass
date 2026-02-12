@@ -1729,4 +1729,16 @@ return array(
     'inactive_users_mgmt_summary_warned' => 'Avertis',
     'inactive_users_mgmt_summary_errors' => 'Erreurs',
     'user_not_found_or_not_deleted' => 'Utilisateur introuvable ou non supprimé',
-);
+    'inactive_users_mgmt_inactivity_days_tip' => 'Basé sur la dernière connexion (ou la date de création si jamais connecté).',
+    'inactive_users_mgmt_grace_days_tip' => 'Après l’avertissement, attendre ce nombre de jours avant d’appliquer l’action.',
+    'inactive_users_mgmt_action_tip' => 'Choisir ce qui se passe après le délai de grâce si l’utilisateur ne se reconnecte pas.',
+    'inactive_users_mgmt_time_tip' => 'Heure d’exécution quotidienne (mécanisme identique aux sauvegardes).',
+    'inactive_users_mgmt_actions_tip' => 'Enregistrer les paramètres ou lancer une exécution immédiate.',
+    'inactive_users_mgmt_tt_user_prefix' => 'Inactive users management:',
+    'inactive_users_mgmt_tt_user_warned_on' => 'Warning sent on %s',
+    'inactive_users_mgmt_tt_user_action_scheduled_on' => 'Action (%s) scheduled on %s',
+    'inactive_users_mgmt_tt_user_action_due_on' => 'Action (%s) due since %s',
+    'inactive_users_mgmt_tt_user_no_email' => 'No email address to warn user',
+    'settings_category_inactive_users_title' => 'Gestion des utilisateurs inactifs',
+    'settings_category_inactive_users_goal'  => 'Avertir les inactifs puis appliquer une action planifiée.',
+    );
