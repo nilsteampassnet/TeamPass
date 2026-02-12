@@ -2175,16 +2175,25 @@ switch ($inputData['type']) {
                 }
             }
 
-            // Remove the edition lock if no  encryption steps are needed
+            // Remove the edition lock if no encryption steps are needed
             if ($encryptionTaskIsRequested === false) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('Remove the edition lock if no  encryption steps are needed');
+                    error_log('Remove the edition lock if no encryption steps are needed');
                 }
                 DB::delete(
-                    prefixTable('items_edition'), 
-                    'item_id = %i AND user_id = %i', 
+                    prefixTable('items_edition'),
+                    'item_id = %i AND user_id = %i',
                     $inputData['itemId'],
                     $session->get('user-id')
+                );
+
+                // Notify other users via WebSocket that this item is now free
+                emitEditionLockEvent(
+                    'stopped',
+                    (int) $inputData['itemId'],
+                    (int) $inputData['folderId'],
+                    $session->get('user-login') ?? '',
+                    (int) $session->get('user-id')
                 );
             }
 
@@ -4908,13 +4917,25 @@ switch ($inputData['type']) {
 
         if ($action === 'release_lock') {
             DB::delete(
-                prefixTable('items_edition'), 
-                'item_id = %i AND user_id = %i', 
+                prefixTable('items_edition'),
+                'item_id = %i AND user_id = %i',
                 $itemId,
                 $session->get('user-id')
             );
+
+            // Notify other users via WebSocket that this item is now free
+            $folderId = getItemFolderIdFromDb((int) $itemId);
+            if ($folderId !== null) {
+                emitEditionLockEvent(
+                    'stopped',
+                    (int) $itemId,
+                    $folderId,
+                    $session->get('user-login') ?? '',
+                    (int) $session->get('user-id')
+                );
+            }
         }
-        
+
         break;
 
     /*
@@ -6058,6 +6079,18 @@ switch ($inputData['type']) {
             'item_id = %i',
             $inputData['id']
         );
+
+        // Notify via WebSocket that this item is now free
+        $folderId = getItemFolderIdFromDb((int) $inputData['id']);
+        if ($folderId !== null) {
+            emitEditionLockEvent(
+                'stopped',
+                (int) $inputData['id'],
+                $folderId,
+                $session->get('user-login') ?? '',
+                (int) $session->get('user-id')
+            );
+        }
         break;
 
     /*
@@ -7403,6 +7436,13 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
     if (count($editionLocks) === 0 && $actionType === 'edit') {
         // If no locks exist and the action is 'edit', create a new lock
         createEditionLock($itemId, $userId, $now);
+
+        // Notify other users via WebSocket that this item is now being edited
+        $folderId = getItemFolderIdFromDb($itemId);
+        if ($folderId !== null) {
+            emitEditionLockEvent('started', $itemId, $folderId, $session->get('user-login') ?? '', $userId);
+        }
+
         return [
             'status' => false,
         ];
@@ -7434,6 +7474,18 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
 
     // Check if the lock has expired
     if ($elapsed > $delay) {
+        // Notify via WebSocket that the expired lock is released
+        $folderId = getItemFolderIdFromDb($itemId);
+        if ($folderId !== null) {
+            // Use the previous lock owner info for the notification
+            $lockOwnerLogin = DB::queryFirstField(
+                'SELECT login FROM %l WHERE id = %i',
+                prefixTable('users'),
+                (int) $lastLock['user_id']
+            );
+            emitEditionLockEvent('stopped', $itemId, $folderId, $lockOwnerLogin ?? '', (int) $lastLock['user_id']);
+        }
+
         // Delete all edition locks for this item
         DB::delete(prefixTable('items_edition'), 'item_id = %i', $itemId);
 

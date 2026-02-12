@@ -4987,8 +4987,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 toastr.error(
                     '<?php echo $lang->get('error_item_currently_being_updated').'<br/>'.
                         $lang->get('remaining_lock_time'); ?>' +
-                        (retData.edition_locked_delay === null ? 
-                        '' 
+                        (retData.edition_locked_delay === null ?
+                        ''
                         :
                         ' : ' + retData.edition_locked_delay + ' <?php echo $lang->get('seconds');?>'),
                     '', {
@@ -4996,6 +4996,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         progressBar: true
                     }
                 );
+                // Track this item so WebSocket can notify when it becomes available
+                window.tpBlockedEditItemId = parseInt(itemId);
                 // Finished
                 requestRunning = false;
                 return false;
@@ -6762,6 +6764,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             progressBar: true
                         }
                     );
+                    // Track this item so WebSocket can notify when it becomes available
+                    window.tpBlockedEditItemId = parseInt(store.get('teampassItem').id);
                     // Finished
                     requestRunning = false;
                     return false;

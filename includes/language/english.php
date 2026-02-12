@@ -1717,6 +1717,9 @@ return array(
     'ws_operation_completed' => 'Operation completed',
     'ws_operation_failed' => 'Operation failed',
     'ws_task' => 'Task',
+    'ws_being_edited_by' => 'Being edited by',
+    'ws_item_now_available' => 'Item available',
+    'ws_item_edition_released' => 'Item is now available for editing',
 
     // WebSocket admin panel
     'ws_status_disabled' => 'Disabled',

@@ -226,10 +226,24 @@ class WebSocketServer implements MessageComponentInterface
      */
     public function onClose(ConnectionInterface $conn): void
     {
-        $userId = $conn->userData['user_id'] ?? 'unknown';
+        $userId = $conn->userData['user_id'] ?? null;
         $userLogin = $conn->userData['user_login'] ?? 'unknown';
         $connectedAt = $conn->connectedAt ?? null;
         $duration = $connectedAt ? time() - $connectedAt : 0;
+
+        // Release edition locks if this user has no other active connections
+        if ($userId !== null) {
+            $remainingUserConns = $this->connections->getUserConnections((int) $userId);
+            // Exclude the current closing connection from the count
+            $otherConns = array_filter(
+                $remainingUserConns,
+                fn($c) => $c->resourceId !== $conn->resourceId
+            );
+
+            if (empty($otherConns)) {
+                $this->releaseEditionLocks((int) $userId, $userLogin);
+            }
+        }
 
         // Clean up
         $this->connections->removeConnection($conn);
@@ -237,11 +251,90 @@ class WebSocketServer implements MessageComponentInterface
 
         $this->logger->info('Connection closed', [
             'resourceId' => $conn->resourceId,
-            'user_id' => $userId,
+            'user_id' => $userId ?? 'unknown',
             'user_login' => $userLogin,
             'duration_seconds' => $duration,
             'remaining_connections' => $this->connections->getConnectionCount(),
         ]);
+    }
+
+    /**
+     * Release all edition locks held by a disconnected user
+     * and emit WebSocket events to notify other users.
+     *
+     * @param int $userId The user ID whose locks should be released
+     * @param string $userLogin The user login for notification payload
+     */
+    private function releaseEditionLocks(int $userId, string $userLogin): void
+    {
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            // Find all edition locks held by this user, with folder info
+            $locks = \DB::query(
+                'SELECT ie.item_id, i.id_tree AS folder_id
+                 FROM %l ie
+                 JOIN %l i ON ie.item_id = i.id
+                 WHERE ie.user_id = %i',
+                $tablePrefix . 'items_edition',
+                $tablePrefix . 'items',
+                $userId
+            );
+
+            if (empty($locks)) {
+                return;
+            }
+
+            // Delete all edition locks for this user
+            \DB::delete(
+                $tablePrefix . 'items_edition',
+                'user_id = %i',
+                $userId
+            );
+
+            // Check if WebSocket events table is available
+            $wsEnabled = \DB::queryFirstField(
+                'SELECT valeur FROM %l WHERE intitule = %s',
+                $tablePrefix . 'misc',
+                'websocket_enabled'
+            );
+
+            if ($wsEnabled !== '1') {
+                return;
+            }
+
+            // Emit item_edition_stopped event for each released lock
+            foreach ($locks as $lock) {
+                \DB::insert(
+                    $tablePrefix . 'websocket_events',
+                    [
+                        'event_type' => 'item_edition_stopped',
+                        'target_type' => 'folder',
+                        'target_id' => (int) $lock['folder_id'],
+                        'payload' => json_encode([
+                            'item_id' => (int) $lock['item_id'],
+                            'folder_id' => (int) $lock['folder_id'],
+                            'user_login' => $userLogin,
+                            'user_id' => $userId,
+                            'reason' => 'disconnected',
+                            'server_timestamp' => time(),
+                        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ]
+                );
+            }
+
+            $this->logger->info('Released edition locks on disconnect', [
+                'user_id' => $userId,
+                'user_login' => $userLogin,
+                'locks_released' => count($locks),
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to release edition locks on disconnect', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

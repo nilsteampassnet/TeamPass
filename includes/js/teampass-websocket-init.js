@@ -115,6 +115,35 @@
       }
     })
 
+    // Edition lock events
+    tpWs.on('item_edition_started', function(data) {
+      if (data.folder_id === currentFolderId) {
+        showEditionLockIndicator(data.item_id, data.user_login)
+      }
+      // Track locked items globally
+      if (!window.tpLockedItems) window.tpLockedItems = {}
+      window.tpLockedItems[data.item_id] = data.user_login
+    })
+
+    tpWs.on('item_edition_stopped', function(data) {
+      if (data.folder_id === currentFolderId) {
+        removeEditionLockIndicator(data.item_id)
+      }
+      // Remove from global tracking
+      if (window.tpLockedItems) {
+        delete window.tpLockedItems[data.item_id]
+      }
+      // Notify user if they previously tried to edit this item
+      if (window.tpBlockedEditItemId && window.tpBlockedEditItemId === data.item_id) {
+        showNotification('success',
+          L.item_now_available || 'Item available',
+          (L.item_edition_released || 'Item is now available for editing') +
+          ' (' + data.user_login + ')'
+        )
+        window.tpBlockedEditItemId = null
+      }
+    })
+
     // Folder events
     tpWs.on('folder_created', function(data) {
       showNotification('success', L.new_folder, '"' + data.title + '" ' + L.folder_created)
@@ -316,9 +345,39 @@
     $(document).trigger('teampass:task:completed', [data])
   }
 
+  /**
+   * Show lock indicator on an item row in the items list
+   */
+  function showEditionLockIndicator(itemId, userLogin) {
+    if (typeof $ === 'undefined') return
+
+    var $row = $('#list-item-row_' + itemId)
+    if ($row.length === 0) return
+
+    // Don't add duplicate indicator
+    if ($row.find('.edition-lock-badge').length > 0) return
+
+    var badge = $('<span class="edition-lock-badge badge badge-warning ml-2" ' +
+      'title="' + (L.being_edited_by || 'Being edited by') + ' ' + userLogin + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + userLogin +
+      '</span>')
+
+    $row.find('.list-item-row-description').first().after(badge)
+  }
+
+  /**
+   * Remove lock indicator from an item row
+   */
+  function removeEditionLockIndicator(itemId) {
+    if (typeof $ === 'undefined') return
+    $('#list-item-row_' + itemId).find('.edition-lock-badge').remove()
+  }
+
   // Expose functions globally
   window.tpWsSubscribeToFolder = subscribeToFolder
   window.tpWsShowNotification = showNotification
+  window.tpWsShowEditionLock = showEditionLockIndicator
+  window.tpWsRemoveEditionLock = removeEditionLockIndicator
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {

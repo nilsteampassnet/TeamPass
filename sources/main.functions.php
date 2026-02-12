@@ -6588,6 +6588,56 @@ function emitItemEvent(
 }
 
 /**
+ * Emit a WebSocket event for item edition lock changes
+ *
+ * Notifies folder subscribers when an item is being edited or released.
+ *
+ * @param string $action 'started' or 'stopped'
+ * @param int $itemId The item ID
+ * @param int $folderId The folder ID containing the item
+ * @param string $userLogin The user who locked/unlocked
+ * @param int $userId The user ID who locked/unlocked
+ * @return bool True if event was queued
+ */
+function emitEditionLockEvent(
+    string $action,
+    int $itemId,
+    int $folderId,
+    string $userLogin,
+    int $userId
+): bool {
+    $eventType = 'item_edition_' . $action;
+
+    $payload = [
+        'item_id' => $itemId,
+        'folder_id' => $folderId,
+        'user_login' => $userLogin,
+        'user_id' => $userId,
+    ];
+
+    // For 'started', exclude the user who locked (they know they're editing)
+    $excludeUserId = ($action === 'started') ? $userId : null;
+
+    return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Get the folder ID (id_tree) of an item
+ *
+ * @param int $itemId The item ID
+ * @return int|null The folder ID or null if not found
+ */
+function getItemFolderIdFromDb(int $itemId): ?int
+{
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM %l WHERE id = %i',
+        prefixTable('items'),
+        $itemId
+    );
+    return $item ? (int) $item['id_tree'] : null;
+}
+
+/**
  * Emit a WebSocket event for folder operations
  *
  * Convenience wrapper for folder-related events.
