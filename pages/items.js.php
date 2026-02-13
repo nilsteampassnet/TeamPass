@@ -3515,18 +3515,30 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 userDidAChange = false;
                                 userUploadedFile = false;
 
-                                // Close edit form and show item details
+                                // Hide edit form
                                 $('.form-item, #form-item-attachments-zone').addClass('hidden');
+
+                                // Show parent row but pre-hide tree/list to prevent visual flash
+                                $('#folder-tree-container, #items-list-container').addClass('hidden');
                                 $('#folders-tree-card').removeClass('hidden');
 
-                                // Inform user
+                                // Show item container immediately with loading spinner
+                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                $('#items-details-container')
+                                    .removeClass('col-md-5 hidden')
+                                    .addClass('col-md-12')
+                                    .prepend(
+                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
+                                            '<div class="text-center text-muted">' +
+                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
+                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
+                                            '</div>' +
+                                        '</div>'
+                                    );
+
+                                // Show loading toast
                                 toastr.remove();
-                                toastr.info(
-                                    '<?php echo $lang->get('success'); ?>',
-                                    '', {
-                                        timeOut: 1000
-                                    }
-                                );
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
                                 // Reload item details
                                 // If an encryption task was created, the WebSocket task_completed
