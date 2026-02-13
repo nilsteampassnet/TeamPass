@@ -138,22 +138,35 @@ if (
         document.querySelectorAll('.clipboard-copy').forEach(element => {
             element.addEventListener('click', async function() {
                 try {
-                    // Retrieve the target defined by clipboard-target
-                    const targetId = this.getAttribute('clipboard-target');
-                    if (!targetId) {
-                        return; // Stop if no target ID is defined
+                    // Retrieve the target defined by clipboard-target (legacy) or data-clipboard-text
+                    const clipboardTarget = this.getAttribute('clipboard-target');
+                    const dataClipboardText = this.getAttribute('data-clipboard-text');
+
+                    // Prefer explicit target id (clipboard-target)
+                    let targetElement = null;
+                    if (clipboardTarget) {
+                        targetElement = document.getElementById(clipboardTarget);
+                    } else if (dataClipboardText) {
+                        // In some places, data-clipboard-text contains the target element id.
+                        targetElement = document.getElementById(dataClipboardText);
                     }
 
-                    // Retrieve the value of the target field
-                    const targetElement = document.getElementById(targetId);
-                    if (!targetElement || !targetElement.textContent) {
-                        return; // Stop if the target element or its value is empty
+                    // Determine what to copy
+                    let valueToCopy = '';
+                    if (targetElement) {
+                        valueToCopy = (typeof targetElement.value === 'string') ? targetElement.value : targetElement.textContent;
+                    } else if (dataClipboardText) {
+                        // Fallback: treat data-clipboard-text as the literal text to copy
+                        valueToCopy = dataClipboardText;
+                    }
+
+                    if (!valueToCopy) {
+                        return;
                     }
 
                     // Copy the value to the clipboard
-                    await navigator.clipboard.writeText(targetElement.textContent);
-
-                    // Send success message
+                    await navigator.clipboard.writeText(valueToCopy);
+// Send success message
                     toastr.info(
                         '<?php echo $lang->get("copy_to_clipboard"); ?>',
                         '', {
@@ -1997,7 +2010,7 @@ if (
      * @return void
      */
     function generateBugReport() {
-        $('#dialog-bug-report-text').html('');
+        $('#dialog-bug-report-text').val('');
         $('#dialog-bug-report').removeClass('hidden');
 
         // Scroll to top
@@ -2021,15 +2034,29 @@ if (
             function(data) {
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
 
-                // Show data
-                $('#dialog-bug-report-text').html(data.html);
+                // Show data (prefer 'text' key, fallback to 'html')
+                var raw = (data.text !== undefined && data.text !== null) ? data.text : (data.html || '');
 
-                // Open Github
-                $('#dialog-bug-report-github-button').click(function() {
-                    window.open('https://github.com/nilsteampassnet/TeamPass/issues/new', '_blank');
-                    return false;
-                });
-            }
+                // Decode common HTML entities without interpreting HTML tags (keeps values like "<removed>")
+                var decoded = String(raw)
+                    .replace(/<br\s*\/?\s*>/gi, '\n')
+                    .replace(/&amp;/g, '&')
+                    .replace(/&gt;/g, '>')
+                    .replace(/&lt;/g, '<')
+                    .replace(/&quot;/g, '"')
+                    .replace(/&#0*39;/g, "'")
+                    .replace(/&#0*34;/g, '"');
+
+                $('#dialog-bug-report-text').val(decoded);
+
+                // Open Github (avoid stacking click handlers)
+                $('#dialog-bug-report-github-button')
+                    .off('click')
+                    .on('click', function() {
+                        window.open('https://github.com/nilsteampassnet/TeamPass/issues/new', '_blank');
+                        return false;
+                    });
+}
         );
     }
 
