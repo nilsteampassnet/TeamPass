@@ -583,5 +583,5 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query('SELECT * FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
-$session->set('system-nb_users_online', DB::count());
+$onlineCount = DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
+$session->set('system-nb_users_online', (int) $onlineCount);

@@ -105,7 +105,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
-        debugJavascript = true,
+        debugJavascript = false,
         loadingToast = '';
 
     // Manage memory
@@ -288,22 +288,20 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
     });
 
-    // load list of visible folders for current user
-    // Refresh data later to avoid php session lock which slows page display.
-    $(this).delay(500).queue(function() {
+    // Load list of visible folders once jstree data is ready
+    // Uses loaded.jstree event instead of arbitrary 500ms delay
+    $('#jstree').one('loaded.jstree', function() {
         refreshVisibleFolders(true);
 
         // show correct folder in Tree
         let groupe_id = store.get('teampassApplication').itemsListFolderId;
-        if (groupe_id !== false && 
+        if (groupe_id !== false &&
             ($('#jstree').jstree('get_selected', true)[0] === undefined ||
             'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id)
         ) {
             $('#jstree').jstree('deselect_all');
             $('#jstree').jstree('select_node', '#li_' + groupe_id);
         }
-
-        $(this).dequeue();
     });
 
     // What do we do if a folder is selected?
@@ -3484,27 +3482,67 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 if ($('#form-item-folder').val() !== '' &&
                                     originalFolderId !== $('#form-item-folder').val()
                                 ) {
-                                    refreshTree($('#form-item-folder').val(), false);
+                                    // Pass empty node_to_select: we handle select_node ourselves below
+                                    // to avoid triggering a duplicate ListerItems via select_node.jstree handler
+                                    refreshTree('', false);
                                 }
+                                // Save server response flag before local var shadows it
+                                var encryptionTaskCreated = data.encryption_task_created === true;
+
                                 // Send query to confirm attachments
-                                var data = {
+                                var confirmData = {
                                     'item_id': store.get('teampassItem').id,
                                 }
                                 $.post(
                                     "sources/items.queries.php", {
                                         type: 'confirm_attachments',
-                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                                        data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
                                     }
                                 );
 
-                                // Select new folder of item in jstree
+                                // Prevent duplicate ListerItems via jstree select_node event handler
+                                startedItemsListQuery = true;
+
+                                // Select folder of item in jstree
                                 $('#jstree').jstree('deselect_all');
                                 $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
 
+                                // Refresh list of items (single call, not duplicated by jstree handler)
+                                ListerItems($('#form-item-folder').val(), '', 0);
+
+                                // Reset flags
+                                userDidAChange = false;
+                                userUploadedFile = false;
+
+                                // Close edit form and show item details
+                                $('.form-item, #form-item-attachments-zone').addClass('hidden');
+                                $('#folders-tree-card').removeClass('hidden');
+
+                                // Inform user
+                                toastr.remove();
+                                toastr.info(
+                                    '<?php echo $lang->get('success'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
+
+                                // Reload item details
+                                // If an encryption task was created, the WebSocket task_completed
+                                // event will trigger Details() when encryption finishes.
+                                // Otherwise, call Details() immediately (no duplication risk).
+                                if (encryptionTaskCreated !== true) {
+                                    Details(store.get('teampassItem').id, 'show', true);
+                                }
+                                return;
+
                             } else if ($('#form-item-button-save').data('action') === 'new_item') {
                                 // Refresh tree to update folder item count
-                                refreshTree($('#form-item-folder').val(), true);
+                                // Pass empty node_to_select: we handle select_node ourselves below
+                                // to avoid a race condition where the async jstree refresh
+                                // triggers a second ListerItems via the select_node.jstree handler
+                                refreshTree('', true);
 
                                 // Confirm attachments
                                 var confirmData = {
@@ -3566,8 +3604,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                 toastr.remove();
                                 loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
-                                // Load item details (replaces spinner with actual content)
-                                Details(data.item_id, 'show', true);
+                                // Load item details
+                                // If an encryption task was created, the WebSocket task_completed
+                                // event will trigger Details() when encryption finishes.
+                                // Otherwise (personal folder), call Details() immediately.
+                                if (data.encryption_task_created !== true) {
+                                    Details(data.item_id, 'show', true);
+                                }
                                 return;
                             } else {
                                 refreshTree($('#form-item-folder').val(), true);
@@ -4128,21 +4171,26 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         if (do_refresh === true || store.get('teampassApplication').jstreeForceRefresh === 1) {
             $('#jstree').jstree(true).refresh();
-        }
 
-        if (node_to_select !== '') {
-            $('#jstree').jstree('deselect_all');
-
-            $('#jstree')
-                .one('refresh.jstree', function(e, data) {
+            // Wait for jstree refresh to complete before refreshing visible folders
+            if (node_to_select !== '') {
+                $('#jstree').one('refresh.jstree', function(e, data) {
                     data.instance.select_node('#li_' + node_to_select);
+                    refreshVisibleFolders(true);
                 });
-        }
-
-        $(this).delay(500).queue(function() {
+            } else {
+                $('#jstree').one('refresh.jstree', function() {
+                    refreshVisibleFolders(true);
+                });
+            }
+        } else {
+            if (node_to_select !== '') {
+                $('#jstree').jstree('deselect_all');
+                $('#jstree').jstree('select_node', '#li_' + node_to_select);
+            }
+            // No jstree refresh needed, call immediately
             refreshVisibleFolders(true);
-            $(this).dequeue();
-        });
+        }
     }
 
     /**

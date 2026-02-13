@@ -433,6 +433,7 @@ switch ($inputData['type']) {
                 $itemExists = 0;
             }
 
+            $encryptionTaskCreated = false;
             if ((isset($SETTINGS['duplicate_item']) === true
                     && (int) $SETTINGS['duplicate_item'] === 0
                     && (int) $itemExists === 0)
@@ -763,6 +764,10 @@ switch ($inputData['type']) {
                         $itemFieldsForTasks,
                         $itemFilesForTasks,
                     );
+                    $encryptionTaskCreated = true;
+
+                    // Immediately trigger background handler to process encryption task
+                    triggerBackgroundHandler();
                 }
 
                 // Announce by email?
@@ -833,6 +838,7 @@ switch ($inputData['type']) {
             $arrData = array(
                 'error' => false,
                 'item_id' => $newID,
+                'encryption_task_created' => $encryptionTaskCreated,
             );
         } else {
             // an error appears on JSON format
@@ -1597,6 +1603,9 @@ switch ($inputData['type']) {
                     $itemFieldsForTasks,
                     []
                 );
+
+                // Immediately trigger background handler to process encryption task
+                triggerBackgroundHandler();
             }
 
             // If template enable, is there a main one selected?
@@ -2214,6 +2223,7 @@ switch ($inputData['type']) {
             $arrData = array(
                 'error' => false,
                 'message' => '',
+                'encryption_task_created' => ($encryptionTaskIsRequested === true && (int) $dataItem['perso'] !== 1),
             );
         } else {
             echo (string) prepareExchangedData(
@@ -4018,18 +4028,19 @@ switch ($inputData['type']) {
             // deepcode ignore WebCookieSecureDisabledByDefault: defined in $arr_cookie_options, deepcode ignore WebCookieHttpOnlyDisabledByDefault: defined in $arr_cookie_options
             setcookie('jstree_select', $inputData['id'], $arr_cookie_options);
 
-            // CHeck if roles have 'allow_pw_change' set to true
+            // Check if any role has 'allow_pw_change' set to true (single query)
             $forceItemEditPrivilege = false;
-            foreach ($session->get('user-roles_array') as $role) {
+            $userRolesArray = $session->get('user-roles_array');
+            if (!empty($userRolesArray)) {
                 $roleQ = DB::queryFirstRow(
-                    'SELECT allow_pw_change
+                    'SELECT id
                     FROM ' . prefixTable('roles_title') . '
-                    WHERE id = %i',
-                    $role
+                    WHERE id IN %ls AND allow_pw_change = %i',
+                    $userRolesArray,
+                    1
                 );
-                if ((int) $roleQ['allow_pw_change'] === 1) {
+                if ($roleQ !== null) {
                     $forceItemEditPrivilege = true;
-                    break;
                 }
             }
 
@@ -4051,42 +4062,45 @@ switch ($inputData['type']) {
             if ((int) $folder_is_personal === 0) {
                 $accessLevel = 20;
                 $arrTmp = [];
-                
-                foreach ($session->get('user-roles_array') as $role) {
-                    $access = DB::queryFirstRow(
-                        'SELECT type FROM ' . prefixTable('roles_values') . ' WHERE role_id = %i AND folder_id = %i',
-                        $role,
+
+                // Single query to get all role access types for this folder
+                $isInAccessibleFolders = in_array($inputData['id'], $session->get('user-accessible_folders'));
+                $rolesWithAccess = [];
+                if (!empty($userRolesArray)) {
+                    $accessRows = DB::query(
+                        'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE role_id IN %ls AND folder_id = %i',
+                        $userRolesArray,
                         $inputData['id']
                     );
-                    if (DB::count()>0) {
-                        if ($access['type'] === 'R') {
+                    foreach ($accessRows as $access) {
+                        $rolesWithAccess[$access['role_id']] = $access['type'];
+                    }
+                }
+
+                // Evaluate access level per role (same logic as before)
+                foreach ($userRolesArray as $role) {
+                    if (isset($rolesWithAccess[$role])) {
+                        $type = $rolesWithAccess[$role];
+                        if ($type === 'R') {
                             array_push($arrTmp, 10);
-                        } elseif ($access['type'] === 'W') {
+                        } elseif ($type === 'W') {
                             array_push($arrTmp, 30);
                         } elseif (
-                            $access['type'] === 'ND'
-                            || ($forceItemEditPrivilege === true && $access['type'] === 'NDNE')
+                            $type === 'ND'
+                            || ($forceItemEditPrivilege === true && $type === 'NDNE')
                         ) {
                             array_push($arrTmp, 20);
-                        } elseif ($access['type'] === 'NE') {
+                        } elseif ($type === 'NE') {
                             array_push($arrTmp, 10);
-                        } elseif ($access['type'] === 'NDNE') {
+                        } elseif ($type === 'NDNE') {
                             array_push($arrTmp, 15);
                         } else {
                             // Ensure to give access Right if allowed folder
-                            if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
-                                array_push($arrTmp, 30);
-                            } else {
-                                array_push($arrTmp, 0);
-                            }
+                            array_push($arrTmp, $isInAccessibleFolders ? 30 : 0);
                         }
                     } else {
-                        // Ensure to give access Right if allowed folder
-                        if (in_array($inputData['id'], $session->get('user-accessible_folders')) === true) {
-                            array_push($arrTmp, 50);
-                        } else {
-                            array_push($arrTmp, 0);
-                        }
+                        // No access entry for this role - check if folder is accessible
+                        array_push($arrTmp, $isInAccessibleFolders ? 50 : 0);
                     }
                 }
                 // 3.0.0.0 - changed  MIN to MAX
@@ -4121,13 +4135,13 @@ switch ($inputData['type']) {
                 );
                 break;
             } else {
-                DB::query(
-                    'SELECT *
+                $counter = (int) DB::queryFirstField(
+                    'SELECT COUNT(*)
                     FROM ' . prefixTable('items') . '
-                    WHERE inactif = %i',
-                    0
+                    WHERE inactif = %i AND id_tree = %i',
+                    0,
+                    $inputData['id']
                 );
-                $counter = DB::count();
                 $uniqueLoadData['counter'] = $counter;
             }
 
@@ -4207,7 +4221,7 @@ switch ($inputData['type']) {
                     
                 $rows = DB::query(
                     'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
-                    i.label, i.description, i.pw, i.login,
+                    i.label, i.description, i.login,
                     i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
                     n.renewal_period, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
@@ -4222,7 +4236,7 @@ switch ($inputData['type']) {
 
                 $rows = DB::query(
                     'SELECT i.id AS id, i.item_key AS item_key, i.restricted_to, i.perso,
-                    i.label, i.description, i.pw, i.login,
+                    i.label, i.description, i.login,
                     i.anyone_can_modify, i.id_tree AS tree_id, i.fa_icon,
                     n.renewal_period, i.url AS link, i.email
                     FROM ' . prefixTable('items') . ' AS i
@@ -4234,6 +4248,51 @@ switch ($inputData['type']) {
             }
 
             $idManaged = '';
+
+            // --- Batch fetch data for all items to avoid N+1 queries ---
+            $allItemIds = array_column($rows, 'id');
+            $batchRestrictedToRoles = [];
+            $batchUserIncludedInRole = [];
+            $batchExpirationDates = [];
+
+            if (!empty($allItemIds)) {
+                // Batch: get all role restrictions for these items
+                $roleRestrictions = DB::query(
+                    'SELECT item_id, role_id
+                    FROM ' . prefixTable('restriction_to_roles') . '
+                    WHERE item_id IN %ls',
+                    $allItemIds
+                );
+                $userRolesArray = $session->get('user-roles_array');
+                foreach ($roleRestrictions as $rr) {
+                    $batchRestrictedToRoles[$rr['item_id']] = true;
+                    if (in_array($rr['role_id'], $userRolesArray)) {
+                        $batchUserIncludedInRole[$rr['item_id']] = true;
+                    }
+                }
+
+                // Batch: get expiration dates (most recent between creation and last pw modification)
+                $logRows = DB::query(
+                    'SELECT id_item, date
+                    FROM ' . prefixTable('log_items') . '
+                    WHERE id_item IN %ls
+                    AND (
+                        action = %s
+                        OR (action = %s AND raison = %s)
+                    )
+                    ORDER BY date DESC',
+                    $allItemIds,
+                    'at_creation',
+                    'at_modification',
+                    'at_pw'
+                );
+                foreach ($logRows as $logRow) {
+                    // Keep only the most recent date per item
+                    if (!isset($batchExpirationDates[$logRow['id_item']])) {
+                        $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
+                    }
+                }
+            }
 
             foreach ($rows as $record) {
                 // exclude all results except the first one returned by query
@@ -4252,30 +4311,11 @@ switch ($inputData['type']) {
                         $record['perso'] = 1;
                     }
 
-                    // Does this item has restriction to groups of users?
-                    $item_is_restricted_to_role = false;
-                    DB::queryFirstRow(
-                        'SELECT role_id
-                        FROM ' . prefixTable('restriction_to_roles') . '
-                        WHERE item_id = %i',
-                        $record['id']
-                    );
-                    if (DB::count() > 0) {
-                        $item_is_restricted_to_role = true;
-                    }
+                    // Does this item has restriction to groups of users? (batch pre-fetched)
+                    $item_is_restricted_to_role = isset($batchRestrictedToRoles[$record['id']]);
 
-                    // Has this item a restriction to Groups of Users
-                    $user_is_included_in_role = false;
-                    DB::query(
-                        'SELECT role_id
-                        FROM ' . prefixTable('restriction_to_roles') . '
-                        WHERE item_id = %i AND role_id IN %ls',
-                        $record['id'],
-                        $session->get('user-roles_array')
-                    );
-                    if (DB::count() > 0) {
-                        $user_is_included_in_role = true;
-                    }
+                    // Has this item a restriction to Groups of Users (batch pre-fetched)
+                    $user_is_included_in_role = isset($batchUserIncludedInRole[$record['id']]);
 
                     // Is user in restricted list of users
                     if (empty($record['restricted_to']) === false) {
@@ -4292,13 +4332,8 @@ switch ($inputData['type']) {
                         $user_is_in_restricted_list = false;
                     }
 
-                    // Get Expiration date
-                    $sql = 'SELECT date FROM ' . prefixTable('log_items') 
-                        . " WHERE action = 'at_creation' AND id_item=" . $record['id']
-                        . ' union all SELECT date FROM '. prefixTable('log_items') 
-                        . " WHERE action = 'at_modification' AND raison = 'at_pw'
-                        AND id_item=" . $record['id'] . " ORDER BY date DESC LIMIT 1";
-                    $record['date'] = DB::queryFirstRow($sql)['date'];
+                    // Get Expiration date (batch pre-fetched)
+                    $record['date'] = $batchExpirationDates[$record['id']] ?? null;
 
                     // Check if item is expired
                     $expired_item = 0;
@@ -6419,43 +6454,63 @@ switch ($inputData['type']) {
         } else {
             $listRestrictedFoldersForItemsKeys = array();
         }
+
+        // Pre-flip arrays for O(1) lookups in the main loop
+        $accessibleFoldersSet = array_flip($session->get('user-accessible_folders'));
+        $limitedFoldersSet = array_flip($listFoldersLimitedKeys);
+        $restrictedFoldersSet = array_flip($listRestrictedFoldersForItemsKeys);
+        $forbidenPfSet = array_flip($session->get('user-forbiden_personal_folders'));
+        $readOnlyFoldersSet = (null !== $session->get('user-read_only_folders'))
+            ? array_flip($session->get('user-read_only_folders'))
+            : [];
         
-        //Build tree
-        $tree->rebuild();
+        //Build tree (no rebuild needed - MPTT values are maintained by write operations)
         $folders = $tree->getDescendants();
+
+        // Build an index of folders by id for in-memory path computation and lookups
+        // This avoids calling getPath() per folder (1 DB query each)
+        $foldersById = [];
+        foreach ($folders as $folder) {
+            $foldersById[$folder->id] = $folder;
+        }
+
+        // Pre-compute which folders should be displayed using bottom-up ancestor marking
+        // Instead of calling getDescendantsFromTreeArray() per folder (O(n²)),
+        // we mark all ancestors of accessible folders as displayable in a single O(n) pass
+        // Combine all sets for the displayability check (reuse pre-flipped arrays)
+        $accessibleSet = $accessibleFoldersSet + $limitedFoldersSet + $restrictedFoldersSet;
+        $displayableFolders = [];
+
+        // Mark all accessible folders and their ancestors as displayable
+        foreach ($foldersById as $fId => $fObj) {
+            if (isset($accessibleSet[$fId])) {
+                // This folder is accessible - mark it and all ancestors
+                $currentId = $fId;
+                while (isset($foldersById[$currentId]) && !isset($displayableFolders[$currentId])) {
+                    $displayableFolders[$currentId] = true;
+                    $currentId = $foldersById[$currentId]->parent_id;
+                }
+            }
+        }
+
         foreach ($folders as $folder) {
             // Be sure that user can only see folders he/she is allowed to
             if (
-                in_array($folder->id, $session->get('user-forbiden_personal_folders')) === false
-                || in_array($folder->id, $session->get('user-accessible_folders')) === true
-                || in_array($folder->id, $listFoldersLimitedKeys) === true
-                || in_array($folder->id, $listRestrictedFoldersForItemsKeys) === true
+                !isset($forbidenPfSet[$folder->id])
+                || isset($accessibleFoldersSet[$folder->id])
+                || isset($limitedFoldersSet[$folder->id])
+                || isset($restrictedFoldersSet[$folder->id])
             ) {
-                // Init
-                $displayThisNode = false;
-
-                // Check if any allowed folder is part of the descendants of this node
-                $nodeDescendants = $tree->getDescendantsFromTreeArray($folders, $folder->id);
-                foreach ($nodeDescendants as $node) {
-                    // manage tree counters
-                    if (
-                        in_array($node, array_merge($session->get('user-accessible_folders'), $session->get('system-list_restricted_folders_for_items'))) === true
-                        || (is_array($listFoldersLimitedKeys) === true && in_array($node, $listFoldersLimitedKeys) === true)
-                        || (is_array($listRestrictedFoldersForItemsKeys) === true && in_array($node, $listRestrictedFoldersForItemsKeys) === true)
-                    ) {
-                        $displayThisNode = true;
-                        break;
-                    }
-                }
-
-                if ($displayThisNode === true) {
+                if (isset($displayableFolders[$folder->id])) {
                     // ALL FOLDERS
-                    // Build path
-                    $arbo = $tree->getPath($folder->id, false);
-                    $path = '';
-                    foreach ($arbo as $elem) {
-                        $path = (empty($path) ? '' : $path . ' / ') . htmlspecialchars(stripslashes(htmlspecialchars_decode($elem->title, ENT_QUOTES)), ENT_QUOTES);
+                    // Build path by walking parent_id chain in memory (no DB query)
+                    $pathParts = [];
+                    $currentId = $folder->parent_id;
+                    while (isset($foldersById[$currentId])) {
+                        $pathParts[] = htmlspecialchars(stripslashes(htmlspecialchars_decode($foldersById[$currentId]->title, ENT_QUOTES)), ENT_QUOTES);
+                        $currentId = $foldersById[$currentId]->parent_id;
                     }
+                    $path = implode(' / ', array_reverse($pathParts));
 
                     // Build array
                     array_push($arrayFolders, [
@@ -6463,13 +6518,13 @@ switch ($inputData['type']) {
                         'level' => (int) $folder->nlevel,
                         'title' => ((int) $folder->title === (int) $session->get('user-id') && (int) $folder->nlevel === 1) ? $session->get('user-login') : $folder->title,
                         'disabled' => (
-                            in_array($folder->id, $session->get('user-accessible_folders')) === false
-                            || in_array($folder->id, $session->get('user-read_only_folders')) === true
+                            !isset($accessibleFoldersSet[$folder->id])
+                            || isset($readOnlyFoldersSet[$folder->id])
                         ) ? 1 : 0,
                         'parent_id' => (int) $folder->parent_id,
                         'perso' => (int) $folder->personal_folder,
                         'path' => htmlspecialchars($path),
-                        'is_visible_active' => (null !== $session->get('user-read_only_folders') && in_array($folder->id, $session->get('user-read_only_folders'))) ? 1 : 0,
+                        'is_visible_active' => isset($readOnlyFoldersSet[$folder->id]) ? 1 : 0,
                     ]);
                 }
             }
