@@ -88,6 +88,7 @@ class BackgroundTasksHandler {
         try {
             $this->cleanupStaleTasks();
             $this->handleScheduledDatabaseBackup();
+            $this->handleScheduledInactiveUsersMgmt();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
@@ -182,6 +183,94 @@ class BackgroundTasksHandler {
      * - bck_scheduled_dom: 1..31 for monthly (default 1)
      */
     
+        /**
+     * Scheduler: enqueue an inactive_users_housekeeping task when due (daily at a fixed time).
+     */
+    private function handleScheduledInactiveUsersMgmt(): void
+    {
+        $enabled = (int)$this->getSettingValue('inactive_users_mgmt_enabled', '0');
+        if ($enabled !== 1) {
+            return;
+        }
+
+        $timeStr = (string)$this->getSettingValue('inactive_users_mgmt_time', '02:00');
+        if (!preg_match('/^\d{2}:\d{2}$/', $timeStr)) {
+            $timeStr = '02:00';
+        }
+
+        $now = time();
+        $nextRunAt = (int)$this->getSettingValue('inactive_users_mgmt_next_run_at', '0');
+
+        if ($nextRunAt <= 0) {
+            $nextRunAt = $this->computeNextDailyRunAt($now, $timeStr);
+            $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$nextRunAt);
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'inactive_users_housekeeping'
+        );
+        if ($pending > 0) {
+            $newNext = $this->computeNextDailyRunAt($now + 60, $timeStr);
+            $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$newNext);
+            return;
+        }
+
+        DB::insert(
+            prefixTable('background_tasks'),
+            [
+                'created_at' => (string)$now,
+                'process_type' => 'inactive_users_housekeeping',
+                'arguments' => json_encode(['source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                'is_in_progress' => 0,
+                'status' => 'new',
+            ]
+        );
+
+        $this->upsertSettingValue('inactive_users_mgmt_last_run_at', (string)$now);
+        $this->upsertSettingValue('inactive_users_mgmt_last_status', 'queued');
+        $this->upsertSettingValue('inactive_users_mgmt_last_message', 'inactive_users_mgmt_msg_task_enqueued');
+
+        $newNext = $this->computeNextDailyRunAt($now + 60, $timeStr);
+        $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$newNext);
+    }
+
+    /**
+     * Compute next daily run timestamp (HH:MM) using TeamPass timezone stored in teampass_misc.
+     */
+    private function computeNextDailyRunAt(int $fromTs, string $hhmm): int
+    {
+        $tzName = $this->getTeampassTimezoneName();
+        try {
+            $tz = new DateTimeZone($tzName);
+        } catch (Throwable $e) {
+            $tz = new DateTimeZone('UTC');
+        }
+
+        if (!preg_match('/^\d{2}:\d{2}$/', $hhmm)) {
+            $hhmm = '02:00';
+        }
+        [$hh, $mm] = array_map('intval', explode(':', $hhmm));
+
+        $now = (new DateTimeImmutable('@' . $fromTs))->setTimezone($tz);
+        $candidate = $now->setTime($hh, $mm, 0);
+
+        if ($candidate->getTimestamp() <= $fromTs) {
+            $candidate = $candidate->modify('+1 day')->setTime($hh, $mm, 0);
+        }
+
+        return (int) $candidate->getTimestamp();
+    }
+
     private function getTeampassTimezoneName(): string
 {
     // TeamPass stores timezone in teampass_misc: type='admin', intitule='timezone'

@@ -644,6 +644,7 @@ $inactive_blink_class = $inactive_never_connected_count > 0 ? 'blink_me' : '';
         </div>
 
         <div class="card-body">
+            <div id="inactive-users-mgmt-banner" class="alert d-none mb-3" role="alert"></div>
             <div class="row mb-3">
                 <div class="col-md-4">
                     <label for="inactive-users-filter"><?php echo $lang->get('inactive_users_threshold'); ?></label>

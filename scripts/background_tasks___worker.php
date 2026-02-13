@@ -29,6 +29,7 @@
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\Language\Language;
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/users_purge.functions.php';
 require_once __DIR__.'/background_tasks___functions.php';
 require_once __DIR__.'/traits/ItemHandlerTrait.php';
 require_once __DIR__.'/traits/UserHandlerTrait.php';
@@ -99,6 +100,9 @@ class TaskWorker {
                 case 'database_backup':
                     $this->handleDatabaseBackup($this->taskData);
                     break;
+                case 'inactive_users_housekeeping':
+                    $this->handleInactiveUsersHousekeeping($this->taskData);
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
@@ -113,8 +117,8 @@ class TaskWorker {
         } catch (Exception $e) {
             $this->handleTaskFailure($e);
         }
-
     }
+
     /**
      * Perform a scheduled database backup (encrypted) into files/backups.
      */
@@ -246,6 +250,255 @@ try {
             );
         }
     }
+
+
+    /**
+     * Housekeeping: warn inactive users then disable/soft-delete/hard-delete after grace period.
+     */
+    private function handleInactiveUsersHousekeeping(array $taskData): void
+    {
+        if (function_exists('loadClasses') && !class_exists('DB')) {
+            loadClasses('DB');
+        }
+
+        $now = time();
+
+        $enabled = (int)$this->getMiscSetting('inactive_users_mgmt_enabled', '0');
+        if ($enabled !== 1) {
+            $this->updateInactiveUsersMgmtState('completed', 'inactive_users_mgmt_msg_task_disabled', [
+                'checked' => 0,
+                'warned' => 0,
+                'warned_no_email' => 0,
+                'action_disable' => 0,
+                'action_soft_delete' => 0,
+                'action_hard_delete' => 0,
+                'purged' => 0,
+                'errors' => 0,
+            ]);
+            return;
+        }
+
+        $inactivityDays = max(1, (int)$this->getMiscSetting('inactive_users_mgmt_inactivity_days', '90'));
+        $graceDays = max(0, (int)$this->getMiscSetting('inactive_users_mgmt_grace_days', '7'));
+        $defaultAction = (string)$this->getMiscSetting('inactive_users_mgmt_action', 'disable');
+        if (!in_array($defaultAction, ['disable', 'soft_delete', 'hard_delete'], true)) {
+            $defaultAction = 'disable';
+        }
+
+        $this->updateInactiveUsersMgmtState('running', 'inactive_users_mgmt_msg_task_started', [
+            'inactivity_days' => $inactivityDays,
+            'grace_days' => $graceDays,
+            'action' => $defaultAction,
+        ]);
+        $this->upsertMiscSetting('inactive_users_mgmt_last_run_at', (string)$now);
+
+        // Exclude system accounts by ID (constants if present)
+        $excludeIds = [];
+        foreach (['TP_USER_ID', 'API_USER_ID', 'OTV_USER_ID', 'SSH_USER_ID'] as $c) {
+            if (defined($c) && is_numeric(constant($c))) {
+                $excludeIds[] = (int) constant($c);
+            }
+        }
+        $excludeIds = array_values(array_unique(array_filter($excludeIds, fn($v) => (int)$v > 0)));
+
+        $sql = 'SELECT id, login, email, name, lastname, user_language,
+                    admin, special, disabled, deleted_at,
+                    last_connexion, created_at,
+                    inactivity_warned_at, inactivity_action_at, inactivity_action, inactivity_no_email
+                FROM ' . prefixTable('users') . '
+                WHERE admin = 0
+                AND disabled = 0
+                AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)
+                AND (special IS NULL OR special = "" OR special = "none")';
+        if (count($excludeIds) > 0) {
+            $sql .= ' AND id NOT IN %li';
+            $users = DB::query($sql, $excludeIds);
+        } else {
+            $users = DB::query($sql);
+        }
+
+        $warnCutoff = $now - ($inactivityDays * 86400);
+
+        $warned = 0;
+        $warnedNoEmail = 0;
+        $actionDisable = 0;
+        $actionSoftDelete = 0;
+        $actionHardDelete = 0;
+        $purged = 0;
+        $errors = 0;
+        $reset = 0;
+
+        foreach ($users as $u) {
+            $userId = (int)($u['id'] ?? 0);
+            if ($userId <= 0) continue;
+
+            try {
+                $lastConnexionTs = $this->parseUserTs($u['last_connexion'] ?? null);
+                $createdAtTs = $this->parseUserTs($u['created_at'] ?? null);
+                $lastActivityTs = $lastConnexionTs > 0 ? $lastConnexionTs : ($createdAtTs > 0 ? $createdAtTs : 0);
+
+                $warnedAt = $this->parseUserTs($u['inactivity_warned_at'] ?? null);
+                $actionAt = $this->parseUserTs($u['inactivity_action_at'] ?? null);
+                $storedAction = (string)($u['inactivity_action'] ?? '');
+
+                // Reset tracking if user logged in after a warning
+                if ($warnedAt > 0 && $lastConnexionTs > 0 && $lastConnexionTs > $warnedAt) {
+                    DB::update(prefixTable('users'), [
+                        'inactivity_warned_at' => null,
+                        'inactivity_action_at' => null,
+                        'inactivity_action' => null,
+                        'inactivity_no_email' => 0,
+                    ], 'id = %i', $userId);
+                    $reset++;
+                    continue;
+                }
+
+                // Apply due action
+                if ($actionAt > 0 && $actionAt <= $now) {
+                    $toApply = $storedAction !== '' ? $storedAction : $defaultAction;
+                    $this->applyInactivityAction($userId, $toApply, $now);
+
+                    if ($toApply === 'disable') $actionDisable++;
+                    if ($toApply === 'soft_delete') $actionSoftDelete++;
+                    if ($toApply === 'hard_delete') { $actionHardDelete++; $purged++; }
+
+                    continue;
+                }
+
+                // Warn if threshold reached and not warned yet
+                if ($warnedAt <= 0 && $lastActivityTs > 0 && $lastActivityTs <= $warnCutoff) {
+                    $email = trim((string)($u['email'] ?? ''));
+                    $noEmail = 0;
+
+                    if ($email === '') {
+                        $noEmail = 1;
+                        $warnedNoEmail++;
+                    } else {
+                        $userLang = trim((string)($u['user_language'] ?? ''));
+                        if ($userLang === '' || $userLang === '0') $userLang = 'english';
+                        $langUser = new Language($userLang);
+
+                        $receiverName = trim((string)($u['name'] ?? '') . ' ' . (string)($u['lastname'] ?? ''));
+                        if ($receiverName === '') $receiverName = (string)($u['login'] ?? '');
+
+                        $subject = (string)$langUser->get('inactive_users_mgmt_email_subject');
+                        $bodyTpl = (string)$langUser->get('inactive_users_mgmt_email_body');
+                        $actionLabel = (string)$langUser->get('inactive_users_mgmt_action_' . $defaultAction);
+
+                        $tpUrl = (string)($this->settings['cpassman_url'] ?? '');
+                        $body = str_replace(
+                            ['#login#', '#lastname#', '#inactivity_days#', '#grace_days#', '#action#', '#url#'],
+                            [(string)($u['login'] ?? ''), (string)($u['lastname'] ?? ''), (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
+                            $bodyTpl
+                        );
+
+                        prepareSendingEmail($subject, $body, $email, $receiverName);
+                    }
+
+                    $actionAtNew = $now + ($graceDays * 86400);
+
+                    DB::update(prefixTable('users'), [
+                        'inactivity_warned_at' => (string)$now,
+                        'inactivity_action_at' => (string)$actionAtNew,
+                        'inactivity_action' => $defaultAction,
+                        'inactivity_no_email' => $noEmail,
+                    ], 'id = %i', $userId);
+
+                    $warned++;
+                }
+            } catch (Throwable $e) {
+                $errors++;
+                if (LOG_TASKS === true) $this->logger->log('inactive_users_housekeeping user_id=' . $userId . ' error: ' . $e->getMessage(), 'ERROR');
+            }
+        }
+
+        $details = [
+            'checked' => count($users),
+            'warned' => $warned,
+            'warned_no_email' => $warnedNoEmail,
+            'action_disable' => $actionDisable,
+            'action_soft_delete' => $actionSoftDelete,
+            'action_hard_delete' => $actionHardDelete,
+            'purged' => $purged,
+            'errors' => $errors,
+            'reset' => $reset,
+            'inactivity_days' => $inactivityDays,
+            'grace_days' => $graceDays,
+            'action' => $defaultAction,
+        ];
+
+        $msgKey = $errors > 0 ? 'inactive_users_mgmt_msg_task_completed_with_errors' : 'inactive_users_mgmt_msg_task_completed';
+        $this->updateInactiveUsersMgmtState('completed', $msgKey, $details);
+    }
+
+    private function updateInactiveUsersMgmtState(string $status, string $messageKey, array $details = []): void
+    {
+        $this->upsertMiscSetting('inactive_users_mgmt_last_status', $status);
+        $this->upsertMiscSetting('inactive_users_mgmt_last_message', $messageKey);
+        $this->upsertMiscSetting('inactive_users_mgmt_last_details', json_encode($details, JSON_UNESCAPED_SLASHES));
+        if (in_array($status, ['completed', 'failed'], true)) {
+            $this->upsertMiscSetting('inactive_users_mgmt_last_completed_at', (string)time());
+        }
+    }
+
+    private function parseUserTs($value): int
+    {
+        if ($value === null) return 0;
+        $v = trim((string)$value);
+        if ($v === '' || $v === '0') return 0;
+
+        if (preg_match('/^[0-9]{13}$/', $v)) return (int) floor(((int)$v) / 1000);
+        if (preg_match('/^[0-9]{1,10}$/', $v)) return (int) $v;
+
+        $ts = strtotime($v);
+        return $ts !== false ? (int)$ts : 0;
+    }
+
+    private function applyInactivityAction(int $userId, string $action, int $now): void
+    {
+        if ($action === 'disable') {
+            DB::update(prefixTable('users'), [
+                'disabled' => 1,
+                'inactivity_action_at' => null,
+                'inactivity_action' => null,
+            ], 'id = %i', $userId);
+            return;
+        }
+
+        if ($action === 'soft_delete' || $action === 'hard_delete') {
+            $this->softDeleteUserForInactivity($userId, $now);
+
+            if ($action === 'hard_delete') {
+                $res = tpPurgeDeletedUserById($userId);
+                if (!empty($res['error'])) {
+                    throw new Exception('purge_failed');
+                }
+            }
+        }
+    }
+
+    private function softDeleteUserForInactivity(int $userId, int $timestamp): void
+    {
+        $data_user = DB::queryFirstRow(
+            'SELECT id, login FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if (empty($data_user) || empty($data_user['login'])) {
+            throw new Exception('user_not_found');
+        }
+
+        $deletedSuffix = '_deleted_' . $timestamp;
+
+        DB::update(prefixTable('users'), [
+            'login' => (string)$data_user['login'] . $deletedSuffix,
+            'deleted_at' => (string)$timestamp,
+            'disabled' => 1,
+            'special' => 'none',
+            'inactivity_action_at' => null,
+            'inactivity_action' => null,
+        ], 'id = %i', $userId);
+    }
+
 
     /**
      * Mark the task as completed in the database.
