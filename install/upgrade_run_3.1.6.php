@@ -259,6 +259,8 @@ $res = addColumnIfNotExist(
     "INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task'"
 );
 
+
+// <----
 // ============================================
 // STEP: Add inactive users management columns (3.1.6.5+ feature)
 // ============================================
@@ -347,9 +349,9 @@ foreach ($iumSettings as $setting) {
 if ($res === false) {
     $error[] = "Failed to add phpseclibv3_migration_task_id to users table - MySQL Error: " . mysqli_error($db_link);
 }
-
-
 // --->
+
+// <---
 // Add new settings
 $settings = [
     ['phpseclibv3_native', '0'],
@@ -366,6 +368,8 @@ foreach ($settings as $setting) {
 }
 // ---<
 
+
+// <---
 // ============================================
 // STEP: Initialize background tasks trigger file
 // ============================================
@@ -423,6 +427,8 @@ if (mysqli_num_rows($result) > 0) {
         );
     }
 }
+
+// --->
 
 //---<END 3.1.6
 
