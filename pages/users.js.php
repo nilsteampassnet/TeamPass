@@ -1938,6 +1938,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'inactive-users') {
+            refreshInactiveUsersMgmtBanner();
             refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
 
             /**/
@@ -2459,7 +2460,32 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         );
     }
 
-    function refreshListInactiveUsers(filterValue) {
+    function refreshInactiveUsersMgmtBanner() {
+        const $b = $('#inactive-users-mgmt-banner');
+        if (!$b.length) return;
+
+        $.post(
+            'sources/inactive_users_mgmt.queries.php',
+            {
+                type: 'inactive_users_mgmt_get_status',
+                data: prepareExchangedData(JSON.stringify({}), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (!data || data.error || !data.result) {
+                    $b.addClass('d-none');
+                    return;
+                }
+
+                $b.removeClass('d-none alert-info alert-warning alert-danger alert-success')
+                    .addClass('alert-' + (data.result.banner_type || 'info'))
+                    .html(data.result.banner_html || '');
+            }
+        );
+}
+
+function refreshListInactiveUsers(filterValue) {
         const data_to_send = {
             filter: filterValue || 'never'
         };
@@ -2492,15 +2518,35 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         const lastActivityTxt = neverConnected
                             ? '<?php echo $lang->get("inactive_users_never_connected"); ?>'
-                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();
-
-                        const daysInactive = parseInt(user.days_inactive, 10);
+                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();                        const daysInactive = parseInt(user.days_inactive, 10);
                         const daysInactiveTxt = neverConnected
                             ? '-'
-                            : (isNaN(daysInactive) ? '-' : (daysInactive + ' <?php echo $lang->get("days"); ?>'));const row =
+                            : (isNaN(daysInactive) ? '-' : (daysInactive + ' <?php echo $lang->get("days"); ?>'));
+
+                        const warnedAt = parseInt(user.inactivity_warned_at || 0, 10);
+                        const actionAt = parseInt(user.inactivity_action_at || 0, 10);
+                        const noEmail = parseInt(user.inactivity_no_email || 0, 10) === 1;
+                        const nowTs = Math.floor(Date.now() / 1000);
+
+                        let badges = '';
+                        if (noEmail) {
+                            badges += ' <span class="badge badge-secondary infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_no_email")); ?>"><?php echo addslashes($lang->get("inactive_users_mgmt_badge_no_email")); ?></span>';
+                        }
+                        if (warnedAt > 0) {
+                            badges += ' <span class="badge badge-warning infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_warned_at")); ?>"><?php echo addslashes($lang->get("inactive_users_mgmt_badge_warned")); ?></span>';
+                        }
+                        if (actionAt > 0) {
+                            const due = actionAt <= nowTs;
+                            const badgeLbl = due ? '<?php echo addslashes($lang->get("inactive_users_mgmt_badge_action_due")); ?>'
+                                                 : '<?php echo addslashes($lang->get("inactive_users_mgmt_badge_action_scheduled")); ?>';
+                            const badgeCls = due ? 'badge-danger' : 'badge-info';
+                            badges += ' <span class="badge ' + badgeCls + ' infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_action_at")); ?>">' + badgeLbl + '</span>';
+                        }
+
+                        const row =
                             '<tr>' +
                                 '<td class="text-center align-middle px-1"><input type="checkbox" class="inactive-user-select" value="' + user.id + '"></td>' +
-                                '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                                '<td class="align-middle pl-1 text-left">' + user.login + badges + '</td>' +
                                 '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                                 '<td class="align-middle">' + lastActivityTxt + '</td>' +
                                 '<td class="align-middle">' + daysInactiveTxt + '</td>' +
@@ -2520,6 +2566,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // checkbox header reset
                 $('#inactive-users-check-all').prop('checked', false);
+
+                // refresh tooltips for dynamically inserted badges
+                $('.infotip').tooltip();
 
                 // refresh blink state based on server truth (never connected)
                 refreshNeverConnectedBlink();

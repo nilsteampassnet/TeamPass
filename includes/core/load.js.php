@@ -999,15 +999,17 @@ if (
             }
         ]
     });
-    $("#profile-password").bind({
-        "score.simplePassMeter": function(jQEvent, score) {
+    $("#profile-password")
+        .on("score.simplePassMeter", function (jQEvent, score) {
             $("#profile-password-complex").val(score);
-        }
-    }).change({
-        "score.simplePassMeter": function(jQEvent, score) {
-            $("#profile-password-complex").val(score);
-        }
-    });
+            $(this).data("tpSimplePassMeterScore", score);
+        })
+        .on("change", function () {
+            var lastScore = $(this).data("tpSimplePassMeterScore");
+            if (typeof lastScore !== "undefined") {
+                $("#profile-password-complex").val(lastScore);
+            }
+        });
 
     // Hide sidebar footer icons when reducing sidebar
     $('a[data-widget="pushmenu"]').click(function(event) {
