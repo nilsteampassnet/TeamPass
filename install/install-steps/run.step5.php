@@ -685,6 +685,17 @@ class DatabaseInstaller
             array('admin', 'transparent_key_recovery_max_age_days', '730'),
             array('admin', 'browser_extension_key', generateSecureToken(64)),
             array('admin', 'phpseclibv3_native', '1'),
+            array('admin', 'inactive_users_mgmt_enabled', '0'),
+            array('admin', 'inactive_users_mgmt_inactivity_days', '90'),
+            array('admin', 'inactive_users_mgmt_grace_days', '7'),
+            array('admin', 'inactive_users_mgmt_action', 'disable'),
+            array('admin', 'inactive_users_mgmt_time', '02:00'),
+            array('admin', 'inactive_users_mgmt_next_run_at', '0'),
+            array('admin', 'inactive_users_mgmt_last_run_at', '0'),
+            array('admin', 'inactive_users_mgmt_last_status', ''),
+            array('admin', 'inactive_users_mgmt_last_message', ''),
+            array('admin', 'inactive_users_mgmt_last_details', ''),
+            array('admin', 'phpseclibv3_native', '1'),
             array('admin', 'websocket_enabled', '0'),
             array('admin', 'websocket_port', '8080'),
             array('admin', 'websocket_host', '127.0.0.1')
@@ -812,6 +823,10 @@ class DatabaseInstaller
             `otp_provided` BOOLEAN NOT NULL DEFAULT FALSE,
             `ongoing_process_id` VARCHAR(100) NULL DEFAULT NULL,
             `mfa_enabled` tinyint(1) NOT null DEFAULT '1',
+            `inactivity_warned_at` VARCHAR(30) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: warning timestamp',
+            `inactivity_action_at` VARCHAR(30) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: action timestamp',
+            `inactivity_action` VARCHAR(20) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: action (disable|soft_delete|hard_delete)',
+            `inactivity_no_email` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Inactive users mgmt: 1 if no email available to warn user',
             `created_at` varchar(30) NULL DEFAULT NULL,
             `updated_at` varchar(30) NULL DEFAULT NULL,
             `deleted_at` varchar(30) NULL DEFAULT NULL,
@@ -824,7 +839,9 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             UNIQUE KEY `login` (`login`),
             KEY `idx_last_pw_change` (`last_pw_change`),
-            KEY `encryption_version` (`encryption_version`)
+            KEY `encryption_version` (`encryption_version`),
+            KEY `idx_users_inactivity_action_at` (`inactivity_action_at`),
+            KEY `idx_users_inactivity_warned_at` (`inactivity_warned_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 

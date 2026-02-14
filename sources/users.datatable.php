@@ -287,6 +287,40 @@ foreach ($rows as $record) {
                 ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['pw_passwordlib'] === 1) ? '<i class=\"fa-solid fa-person-walking-luggage infotip ml-1\" style=\"color:Tomato\" title=\"Old password encryption. Shall login to initialize.\"></i>' : '');
         }
 
+        // Inactive users management icon (yellow card)
+        $iumIcon = '';
+        if ((int) $record['admin'] !== 1 && in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false) {
+            $warnedAt = (int) ($record['inactivity_warned_at'] ?? 0);
+            $actionAt = (int) ($record['inactivity_action_at'] ?? 0);
+            $noEmail  = (int) ($record['inactivity_no_email'] ?? 0);
+            $action   = (string) ($record['inactivity_action'] ?? '');
+
+            if ($warnedAt > 0 || $actionAt > 0 || $noEmail === 1) {
+                $parts = [];
+                if ($warnedAt > 0) {
+                    $parts[] = sprintf(
+                        $lang->get('inactive_users_mgmt_tt_user_warned_on'),
+                        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $warnedAt)
+                    );
+                }
+                if ($actionAt > 0) {
+                    $actionLabel = $action !== '' ? $lang->get('inactive_users_mgmt_action_' . $action) : '';
+                    $dateTxt = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $actionAt);
+                    if ($actionAt <= time()) {
+                        $parts[] = sprintf($lang->get('inactive_users_mgmt_tt_user_action_due_on'), $actionLabel, $dateTxt);
+                    } else {
+                        $parts[] = sprintf($lang->get('inactive_users_mgmt_tt_user_action_scheduled_on'), $actionLabel, $dateTxt);
+                    }
+                }
+                if ($noEmail === 1) {
+                    $parts[] = $lang->get('inactive_users_mgmt_tt_user_no_email');
+                }
+
+                $tooltip = $lang->get('inactive_users_mgmt_tt_user_prefix') . ' ' . implode(' | ', $parts);
+                $iumIcon = '<i class=\"fa-solid fa-id-card infotip text-warning mr-2\" title=\"' . addslashes($tooltip) . '\"></i>';
+            }
+        }
+
         $sOutput .= '["<span data-id=\"'.$record['id'].'\" data-fullname=\"'.
             (empty($record['name']) === false ? htmlentities($record['name'], ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED) : '').' '.
             (empty($record['lastname']) === false ? htmlentities($record['lastname'], ENT_QUOTES|ENT_SUBSTITUTE|ENT_DISALLOWED) : '').
@@ -295,6 +329,7 @@ foreach ($rows as $record) {
         $sOutput .= '"'.
             ((int) $record['disabled'] === 1 ? '<i class=\"fas fa-user-slash infotip text-danger mr-2\" title=\"'.$lang->get('account_is_locked').'\" id=\"user-disable-'.$record['id'].'\" data-disabled=\"1\"></i>'
             : '').
+            $iumIcon.
             '<span data-id=\"'.$record['id'].'\" data-field=\"login\" data-html=\"true\" id=\"user-login-'.$record['id'].'\">'.addslashes(str_replace("'", '&lsquo;', $record['login'])).'</span>'.
             $userDisplayInfos.
             (is_null($record['ongoing_process_id']) === false ? '<i class=\"fas fa-hourglass-half fa-beat-fade infotip text-warning ml-3\" title=\"'.$lang->get('task_in_progress_user_not_active').'\"></i>' : '').

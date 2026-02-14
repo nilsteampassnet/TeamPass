@@ -19,7 +19,7 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      upgrade_run_3.1.5.php
+ * @file      upgrade_run_3.1.6.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -259,11 +259,96 @@ $res = addColumnIfNotExist(
     "INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task'"
 );
 
+
+// <----
+// ============================================
+// STEP: Add inactive users management columns (3.1.6.5+ feature)
+// ============================================
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'inactivity_warned_at',
+    "VARCHAR(30) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: warning timestamp'"
+);
+if ($res === false) {
+    $error[] = "Failed to add inactivity_warned_at to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'inactivity_action_at',
+    "VARCHAR(30) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: action timestamp'"
+);
+if ($res === false) {
+    $error[] = "Failed to add inactivity_action_at to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'inactivity_action',
+    "VARCHAR(20) NULL DEFAULT NULL COMMENT 'Inactive users mgmt: action (disable|soft_delete|hard_delete)'"
+);
+if ($res === false) {
+    $error[] = "Failed to add inactivity_action to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'inactivity_no_email',
+    "TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Inactive users mgmt: 1 if no email available to warn user'"
+);
+if ($res === false) {
+    $error[] = "Failed to add inactivity_no_email to users table - MySQL Error: " . mysqli_error($db_link);
+}
+
+// Indexes for performance
+$res = checkIndexExist(
+    $pre . 'users',
+    'idx_users_inactivity_action_at',
+    "ADD KEY `idx_users_inactivity_action_at` (`inactivity_action_at`)"
+);
+
+$res = checkIndexExist(
+    $pre . 'users',
+    'idx_users_inactivity_warned_at',
+    "ADD KEY `idx_users_inactivity_warned_at` (`inactivity_warned_at`)"
+);
+
+// ============================================
+// STEP: Initialize default settings (type=settings)
+// ============================================
+$iumSettings = [
+    ['inactive_users_mgmt_enabled', '0'],
+    ['inactive_users_mgmt_inactivity_days', '90'],
+    ['inactive_users_mgmt_grace_days', '7'],
+    ['inactive_users_mgmt_action', 'disable'],
+    ['inactive_users_mgmt_time', '02:00'],
+    // optional runtime defaults (safe)
+    ['inactive_users_mgmt_next_run_at', '0'],
+    ['inactive_users_mgmt_last_run_at', '0'],
+    ['inactive_users_mgmt_last_status', ''],
+    ['inactive_users_mgmt_last_message', ''],
+    ['inactive_users_mgmt_last_details', ''],
+];
+
+foreach ($iumSettings as $setting) {
+    $tmp = mysqli_num_rows(mysqli_query(
+        $db_link,
+        "SELECT * FROM `" . $pre . "misc`
+         WHERE type = 'settings' AND intitule = '" . $setting[0] . "'"
+    ));
+    if ((int)$tmp === 0) {
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+             VALUES ('settings', '" . $setting[0] . "', '" . $setting[1] . "')"
+        );
+    }
+}
+
 if ($res === false) {
     $error[] = "Failed to add phpseclibv3_migration_task_id to users table - MySQL Error: " . mysqli_error($db_link);
 }
-
-
 // --->
 
 // ============================================
@@ -287,6 +372,8 @@ foreach ($settings as $setting) {
 }
 // ---<
 
+
+// <---
 // ============================================
 // STEP: Initialize background tasks trigger file
 // ============================================
@@ -345,6 +432,8 @@ if (mysqli_num_rows($result) > 0) {
     }
 }
 
+// --->
+
 //---<END 3.1.6
 
 
@@ -356,5 +445,3 @@ echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($e
 
 
 //---< FUNCTIONS
-
-

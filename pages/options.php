@@ -690,11 +690,6 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-
-
-
-
-
                         <div class='row mb-2 option' data-keywords="folder personal user">
                             <div class='col-10'>
                                 <?php echo $lang->get('enable_personal_folder_feature'); ?>
@@ -709,6 +704,125 @@ $zones = timezone_list();
                         
                     </div>
                 </div>
+
+                <!-- /.card -->
+                <!-- INACTIVE USERS MANAGEMENT -->
+                <div class='card card-info'>
+                    <div class='card-header'>
+                        <h3 class='card-title'><i class="fa-solid fa-user-clock mr-2"></i><?php echo $lang->get('settings_category_inactive_users_title'); ?>
+                            <span class="badge text-bg-secondary">
+                                <?php echo $lang->get('settings_category_inactive_users_goal'); ?>
+                            </span>
+                        </h3>
+                    </div>
+                    <!-- /.card-header -->
+                    <div class='card-body'>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management warn delete disable purge soft hard" id='inactive-users-mgmt-block'>
+                            <div class='col-10'>
+                                <?php echo $lang->get('inactive_users_mgmt_description'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='ium-enabled' data-toggle-on='false'></div><input type='hidden' id='ium-enabled_input' value='0' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management message">
+                            <div class='col-12'>
+                                <div id='ium-alert' class='alert d-none mb-0' role='alert'></div>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management inactivity days warning">
+                            <div class='col-10'>
+                                <?php echo $lang->get('inactive_users_mgmt_inactivity_days'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('inactive_users_mgmt_inactivity_days_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' class='form-control form-control-sm' id='ium-inactivity-days' value='90'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management grace days delete disable">
+                            <div class='col-10'>
+                                <?php echo $lang->get('inactive_users_mgmt_grace_days'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('inactive_users_mgmt_grace_days_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='0' class='form-control form-control-sm' id='ium-grace-days' value='7'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management action disable soft hard purge">
+                            <div class='col-4'>
+                                <?php echo $lang->get('inactive_users_mgmt_action'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('inactive_users_mgmt_action_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-8'>
+                                <select id='ium-action' class='form-control form-control-sm w-100' style='min-width: 260px;'>
+                                    <option value='disable'><?php echo $lang->get('inactive_users_mgmt_action_disable'); ?></option>
+                                    <option value='soft_delete'><?php echo $lang->get('inactive_users_mgmt_action_soft_delete'); ?></option>
+                                    <option value='hard_delete'><?php echo $lang->get('inactive_users_mgmt_action_hard_delete'); ?></option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management schedule time daily">
+                            <div class='col-4'>
+                                <?php echo $lang->get('inactive_users_mgmt_time'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('inactive_users_mgmt_time_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-8'>
+                                <input type='time' class='form-control form-control-sm' id='ium-time' value='02:00' style='max-width: 180px;'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="inactive users management save run now">
+                            <div class='col-4'>
+                                <?php echo $lang->get('actions'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('inactive_users_mgmt_actions_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-8'>
+                                <button type='button' class='btn btn-primary btn-sm mr-2' id='ium-save'>
+                                    <i class='fas fa-save mr-1'></i><?php echo $lang->get('save'); ?>
+                                </button>
+                                <button type='button' class='btn btn-secondary btn-sm' id='ium-run-now'>
+                                    <i class='fa-solid fa-play mr-1'></i><?php echo $lang->get('inactive_users_mgmt_run_now'); ?>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class='row mb-0 option' data-keywords="inactive users management status next last summary">
+                            <div class='col-12'>
+                                <b><?php echo $lang->get('status'); ?></b>
+                                <small class='form-text text-muted mb-0'>
+                                    <?php echo $lang->get('inactive_users_mgmt_status_next_run'); ?>: <span id='ium-status-next-run'>-</span>
+                                    &nbsp;|&nbsp;
+                                    <?php echo $lang->get('inactive_users_mgmt_status_last_run'); ?>: <span id='ium-status-last-run'>-</span>
+                                    &nbsp;|&nbsp;
+                                    <?php echo $lang->get('inactive_users_mgmt_status_last_status'); ?>: <span id='ium-status-last-status'>-</span>
+                                    <br>
+                                    <?php echo $lang->get('inactive_users_mgmt_status_last_message'); ?>: <span id='ium-status-last-message'>-</span>
+                                    <br>
+                                    <?php echo $lang->get('inactive_users_mgmt_status_last_summary'); ?>: <span id='ium-status-last-summary'>-</span>
+                                </small>
+                            </div>
+                        </div>
+
+                    </div>
+                    <!-- /.card-body -->
+                </div>
+                <!-- /.card -->
 
             </div>
             <!-- /.col-md-6 -->
@@ -914,7 +1028,6 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
-                    </div>
                     <!-- /.card-body -->
                 </div>
                 <!-- /.card -->
@@ -1189,7 +1302,6 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
             </div>
             <!--/.col (right) -->
         </div>
-        <!-- /.row -->
     </div><!-- /.container-fluid -->
-</div>
+</div></div>
 <!-- /.content -->
