@@ -1795,4 +1795,5 @@ return array(
     'sharekeys_migration_next_step_1' => 'Demander aux utilisateurs concernés de se connecter au moins une fois.',
     'sharekeys_migration_next_step_2' => 'Ou mettre à jour leur mot de passe depuis la gestion des utilisateurs pour déclencher la migration.',
     'sharekeys_migration_remaining_users_title' => 'Utilisateurs restants (%s)',
+
 );
