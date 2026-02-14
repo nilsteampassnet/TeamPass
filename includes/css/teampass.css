@@ -352,3 +352,8 @@
         opacity: 0.5;
     }
 }
+
+.edition-lock-badge {
+    margin-top: 15px;
+    margin-bottom: 15px;
+}

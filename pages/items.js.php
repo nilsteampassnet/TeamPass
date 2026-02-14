@@ -105,8 +105,51 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
+        editionLockInterval = null,
         debugJavascript = false,
         loadingToast = '';
+
+    /**
+     * Start edition lock heartbeat via AJAX.
+     * Sends a renew_lock request every 60 seconds to keep the lock alive.
+     */
+    function startEditionLockHeartbeat(itemId) {
+        stopEditionLockHeartbeat()
+        if (!itemId) return
+
+        editionLockInterval = setInterval(function() {
+            var data = {
+                'item_id': parseInt(itemId),
+                'action': 'renew_lock',
+            }
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'handle_item_edition_lock',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                }
+            )
+            if (debugJavascript === true) console.log('Lock heartbeat sent for item ' + itemId)
+        }, 10000)
+
+        if (debugJavascript === true) console.log('Edition lock heartbeat started for item ' + itemId)
+    }
+
+    /**
+     * Stop edition lock heartbeat
+     */
+    function stopEditionLockHeartbeat() {
+        if (editionLockInterval !== null) {
+            clearInterval(editionLockInterval)
+            editionLockInterval = null
+            if (debugJavascript === true) console.log('Edition lock heartbeat stopped')
+        }
+    }
+
+    // Clean up edition lock on page unload (tab close, navigation away)
+    $(window).on('beforeunload', function() {
+        stopEditionLockHeartbeat()
+    })
 
     // Manage memory
     browserSession(
@@ -1301,6 +1344,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         if ($(this).hasClass('but-back-to-item') === false) {
             // Is this form the edition one?
             if ($(this).hasClass('item-edit') === true) {
+                // Stop edition lock heartbeat
+                stopEditionLockHeartbeat();
+
                 // release existing edition lock
                 data = {
                     'item_id': store.get('teampassItem').id,
@@ -3480,6 +3526,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             );
                             return false;
                         } else {
+                            // Stop edition lock heartbeat on successful save
+                            stopEditionLockHeartbeat()
+
                             // Refresh tree
                             if ($('#form-item-button-save').data('action') === 'update_item') {
                                 if ($('#form-item-folder').val() !== '' &&
@@ -5067,6 +5116,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 return false;
             }
             
+            // Start edition lock heartbeat when editing is allowed
+            if (actionType === 'edit' && retData.edition_locked !== true) {
+                startEditionLockHeartbeat(itemId)
+            }
+
             // Is the user allowed?
             if (retData.access === false
                 || (actionType === 'edit' && retData.edit === false)

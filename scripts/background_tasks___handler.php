@@ -906,10 +906,15 @@ class BackgroundTasksHandler {
      * This method removes expired tokens from the items_edition table.
      */
     private function handleItemTokensExpiration() {
+        // Use heartbeat timeout: locks not renewed within the timeout are considered stale
+        $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+            ? EDITION_LOCK_HEARTBEAT_TIMEOUT
+            : 300;
+
         DB::query(
             'DELETE FROM ' . prefixTable('items_edition') . '
             WHERE timestamp < %i',
-            time() - ($this->settings['delay_item_edition'] * 60 ?: EDITION_LOCK_PERIOD)
+            time() - $heartbeatTimeout
         );
     }
 

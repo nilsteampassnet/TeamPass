@@ -22,12 +22,13 @@ class MessageHandler
      * Allowed client actions
      */
     private const ALLOWED_ACTIONS = [
-        'subscribe',      // Subscribe to a channel (folder)
-        'unsubscribe',    // Unsubscribe from a channel
-        'ping',           // Client heartbeat
-        'pong',           // Response to server ping
-        'get_status',     // Get connection status
-        'get_stats',      // Get server stats (admin only)
+        'subscribe',          // Subscribe to a channel (folder)
+        'unsubscribe',        // Unsubscribe from a channel
+        'ping',               // Client heartbeat
+        'pong',               // Response to server ping
+        'get_status',         // Get connection status
+        'get_stats',          // Get server stats (admin only)
+        'renew_item_lock',    // Renew edition lock heartbeat
     ];
 
     public function __construct(
@@ -86,6 +87,7 @@ class MessageHandler
             'pong' => $this->handlePong($conn, $requestId),
             'get_status' => $this->handleGetStatus($conn, $requestId),
             'get_stats' => $this->handleGetStats($conn, $requestId),
+            'renew_item_lock' => $this->handleRenewItemLock($conn, $message, $requestId),
             default => null,
         };
     }
@@ -251,6 +253,72 @@ class MessageHandler
             'server_time' => time(),
             'request_id' => $requestId,
         ];
+    }
+
+    /**
+     * Handle renew_item_lock: refresh the edition lock timestamp for an item
+     */
+    private function handleRenewItemLock(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        $userId = $userData['user_id'] ?? null;
+
+        if ($userId === null) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $itemId = isset($data['item_id']) ? (int) $data['item_id'] : null;
+
+        if ($itemId === null || $itemId <= 0) {
+            return $this->error('invalid_request', 'item_id is required', $requestId);
+        }
+
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            // Only update if the lock belongs to the requesting user
+            \DB::query(
+                'UPDATE %l SET timestamp = %i WHERE item_id = %i AND user_id = %i',
+                $tablePrefix . 'items_edition',
+                time(),
+                $itemId,
+                (int) $userId
+            );
+
+            $affected = \DB::affectedRows();
+
+            if ($affected === 0) {
+                $this->logger->debug('Lock renewal ignored: no matching lock', [
+                    'user_id' => $userId,
+                    'item_id' => $itemId,
+                ]);
+
+                return $this->error('no_lock', 'No active lock found for this item', $requestId);
+            }
+
+            $this->logger->debug('Edition lock renewed', [
+                'user_id' => $userId,
+                'item_id' => $itemId,
+            ]);
+
+            return [
+                'type' => 'response',
+                'status' => 'success',
+                'action' => 'lock_renewed',
+                'item_id' => $itemId,
+                'request_id' => $requestId,
+            ];
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to renew edition lock', [
+                'user_id' => $userId,
+                'item_id' => $itemId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('server_error', 'Failed to renew lock', $requestId);
+        }
     }
 
     /**

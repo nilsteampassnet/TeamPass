@@ -4932,6 +4932,15 @@ switch ($inputData['type']) {
                     (int) $session->get('user-id')
                 );
             }
+        } elseif ($action === 'renew_lock') {
+            // Heartbeat: refresh the lock timestamp to keep the lock alive
+            DB::update(
+                prefixTable('items_edition'),
+                ['timestamp' => time()],
+                'item_id = %i AND user_id = %i',
+                $itemId,
+                $session->get('user-id')
+            );
         }
 
         break;
@@ -7453,8 +7462,6 @@ function getItemRestrictedUsersList($itemId, $userId)
  */
 function isItemLocked(int $itemId, $session, int $userId, string $actionType = ''): array
 {
-    global $SETTINGS;
-
     $now = time();
     $editionLocks = DB::query(
         'SELECT timestamp, user_id, increment_id
@@ -7496,16 +7503,18 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
         ];
     }
 
-    // Calculate the delay for the lock
-    $delay = isset($SETTINGS['delay_item_edition']) && $SETTINGS['delay_item_edition'] > 0
-        ? $SETTINGS['delay_item_edition'] * 60
-        : EDITION_LOCK_PERIOD;
+    // Use heartbeat-based timeout: lock expires only if no heartbeat renewal
+    // was received within EDITION_LOCK_HEARTBEAT_TIMEOUT (default 5 minutes).
+    // The client sends a WebSocket renew_item_lock every 60s while editing.
+    $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+        ? EDITION_LOCK_HEARTBEAT_TIMEOUT
+        : 300;
 
-    // Calculate the elapsed time since the last lock
+    // Calculate the elapsed time since the last lock refresh (heartbeat or creation)
     $elapsed = abs($now - (int) $lastLock['timestamp']);
 
-    // Check if the lock has expired
-    if ($elapsed > $delay) {
+    // Check if the lock has expired (no heartbeat received within timeout)
+    if ($elapsed > $heartbeatTimeout) {
         // Notify via WebSocket that the expired lock is released
         $folderId = getItemFolderIdFromDb($itemId);
         if ($folderId !== null) {
@@ -7542,15 +7551,17 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
             $itemId
         );
 
-        // If encryption process is not running, delete the lock        
+        // If encryption process is not running, allow the new user to proceed
         if (DB::count() === 0) {
-            DB::update(
-                prefixTable('items_edition'),
-                ['timestamp' => $now],
-                'item_id = %i AND user_id = %i',
-                $itemId,
-                $userId
-            );
+            // Create a new lock for the requesting user if action is edit
+            if ($actionType === 'edit') {
+                createEditionLock($itemId, $userId, $now);
+
+                $folderId = getItemFolderIdFromDb($itemId);
+                if ($folderId !== null) {
+                    emitEditionLockEvent('started', $itemId, $folderId, $session->get('user-login') ?? '', $userId);
+                }
+            }
             return [
                 'status' => false,
             ];
@@ -7558,14 +7569,14 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
 
         return [
             'status' => true,   // Encryption in progress
-            'delay' => $delay - $elapsed, // Time remaining before the lock expires
+            'delay' => $heartbeatTimeout - $elapsed,
         ];
     }
 
-    // Lock still valid and owned by another user
+    // Lock still valid (heartbeat was received recently) - owned by another user
     return [
         'status' => true,
-        'delay' => $delay - $elapsed, // Time remaining before the lock expires
+        'delay' => $heartbeatTimeout - $elapsed,
     ];
 }
 

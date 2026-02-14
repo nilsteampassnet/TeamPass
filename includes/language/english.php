@@ -29,16 +29,7 @@
  */
 
 return array(
-    'websocket' => 'Websocket',
-    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
-    'settings_websocket_title' => 'Websocket',
-    'settings_websocket_title_goal' => 'Enable real-time communication for instant updates and notifications.',
-    'settings_websocket_enabler' => 'Enable websocket',
-    'settings_websocket_enabler_tip' => 'Allows the application to use WebSockets for real-time status updates, reducing server polling.',
-    'settings_websocket_host' => 'Websocket host',
-    'settings_websocket_host_tip' => 'The IP address or FQDN where the WebSocket server is running (e.g., 127.0.0.1 or ws.domain.com).',
-    'settings_websocket_port' => 'Websocket port',
-    'settings_websocket_port_tip' => 'The TCP port used by the WebSocket server (default is often 8080 or 8443 for SSL).',
+    'remaining_lock_time' => 'Remaining lock time',
     'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
     'learn_more' => 'Learn more',
     'phpseclibv3_migration_title' => 'Encryption Migration in Progress',
@@ -1788,4 +1779,15 @@ return array(
     'ws_server_not_running_msg' => 'WebSocket server is not running',
     'ws_server_stopped' => 'WebSocket server stopped',
     'ws_server_stop_failed' => 'Failed to stop WebSocket server',
+    'websocket' => 'Websocket',
+    'decryption_failed_for_some_fields' => 'Some custom fields could not be decrypted. They may be corrupted or encrypted with an outdated key.',
+    'settings_websocket_title' => 'Websocket',
+    'settings_websocket_title_goal' => 'Enable real-time communication for instant updates and notifications.',
+    'settings_websocket_enabler' => 'Enable websocket',
+    'settings_websocket_enabler_tip' => 'Allows the application to use WebSockets for real-time status updates, reducing server polling.',
+    'settings_websocket_host' => 'Websocket host',
+    'settings_websocket_host_tip' => 'The IP address or FQDN where the WebSocket server is running (e.g., 127.0.0.1 or ws.domain.com).',
+    'settings_websocket_port' => 'Websocket port',
+    'settings_websocket_port_tip' => 'The TCP port used by the WebSocket server (default is often 8080 or 8443 for SSL).',
+    
 );
