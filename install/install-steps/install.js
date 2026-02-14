@@ -506,10 +506,10 @@ function performStep2() {
         { id: 'check9', type: 'extension', name: 'mbstring' },
         { id: 'check10', type: 'extension', name: 'openssl' },
         { id: 'check11', type: 'extension', name: 'bcmath' },
-        { id: 'check12', type: 'extension', name: 'iconv' },
         { id: 'check13', type: 'extension', name: 'xml' },
-        { id: 'check14', type: 'extension', name: 'gd' },
         { id: 'check15', type: 'extension', name: 'curl' },
+        { id: 'check20', type: 'extension', name: 'posix' },
+        { id: 'check19', type: 'extension', name: 'pcntl' },
         { id: 'check17', type: 'php_version', version: '' },
         { id: 'check18', type: 'execution_time', limit: 30 }
     ];

@@ -385,23 +385,13 @@ if (isset($post_type)) {
             }
 
             if (!extension_loaded('openssl')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"openssl\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"openssl\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
-            }
-            if (!extension_loaded('gd')) {
-                //$okExtensions = false;
-                $txt .= '<span>PHP extension \"gd\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"gd\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('mbstring')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"mbstring\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
@@ -409,23 +399,13 @@ if (isset($post_type)) {
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('bcmath')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"bcmath\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"bcmath\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
-            }
-            if (!extension_loaded('iconv')) {
-                //$okExtensions = false;
-                $txt .= '<span>PHP extension \"iconv\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"iconv\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('xml')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"xml\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
@@ -439,12 +419,18 @@ if (isset($post_type)) {
                 $txt .= '<span>PHP extension \"curl\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
-            if (!extension_loaded('gmp')) {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
+            // pcntl and posix are CLI-only extensions, not available in web SAPI
+            // Use shell check to verify they are installed for CLI
+            $cliModules = [];
+            exec('php -m 2>/dev/null', $cliModules);
+            foreach (['posix', 'pcntl'] as $cliExt) {
+                if (!in_array($cliExt, $cliModules, true)) {
+                    $txt .= '<span>PHP extension \"' . $cliExt . '\"' .
+                        '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
+                } else {
+                    $txt .= '<span>PHP extension \"' . $cliExt . '\"' .
+                        '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
+                }
             }
             if (ini_get('max_execution_time') < 30) {
                 $txt .= '<span>PHP \"Maximum ' .
