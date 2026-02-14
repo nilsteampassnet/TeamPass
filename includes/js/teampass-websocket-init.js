@@ -95,29 +95,29 @@
   function setupEventHandlers() {
     // Item events
     tpWs.on('item_created', function(data) {
-      if (data.folder_id === currentFolderId) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showNotification('success', L.new_item, '"' + data.label + '" ' + L.item_created_by + ' ' + data.created_by)
         refreshItemsList()
       }
     })
 
     tpWs.on('item_updated', function(data) {
-      if (data.folder_id === currentFolderId) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showNotification('info', L.item_updated, '"' + data.label + '" ' + L.item_updated_by + ' ' + data.updated_by)
         refreshItemsList()
       }
     })
 
     tpWs.on('item_deleted', function(data) {
-      if (data.folder_id === currentFolderId) {
-        showNotification('warning', L.item_deleted, L.item_deleted_by + ' ' + data.deleted_by)
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('warning', L.item_deleted, '"' + data.label + '" ' + L.item_deleted_by + ' ' + data.deleted_by)
         refreshItemsList()
       }
     })
 
     // Edition lock events
     tpWs.on('item_edition_started', function(data) {
-      if (data.folder_id === currentFolderId) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showEditionLockIndicator(data.item_id, data.user_login)
       }
       // Track locked items globally
@@ -126,7 +126,7 @@
     })
 
     tpWs.on('item_edition_stopped', function(data) {
-      if (data.folder_id === currentFolderId) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         removeEditionLockIndicator(data.item_id)
       }
       // Remove from global tracking
