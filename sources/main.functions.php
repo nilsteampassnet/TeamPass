@@ -1612,24 +1612,28 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsUserId = $session->get('user-id');
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
-    // send email to user that what to be notified
-    $notification = DB::queryFirstField(
-        'SELECT email
+
+    // Get all subscribers' emails as an array
+    $emails = DB::queryFirstColumn(
+        'SELECT u.email
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
         $item_id,
         $globalsUserId
     );
+
     if (DB::count() > 0) {
         // Prepare path
         $path = geItemReadablePath($item_id, '', $SETTINGS);
+
         // Get list of changes
         $htmlChanges = '<ul>';
         foreach ($changes as $change) {
             $htmlChanges .= '<li>' . $change . '</li>';
         }
         $htmlChanges .= '</ul>';
+
         // send email
         DB::insert(
             prefixTable('emails'),
@@ -1641,7 +1645,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
                     [$label, $path, (string) $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
                     $lang->get('email_body_item_updated')
                 ),
-                'receivers' => implode(',', $notification),
+                'receivers' => implode(',', $emails),
                 'status' => '',
             ]
         );
