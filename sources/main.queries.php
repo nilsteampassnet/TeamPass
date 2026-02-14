@@ -1675,6 +1675,7 @@ function generateBugReport(
 {
     $config_exclude_vars = array(
         'bck_script_passkey',
+        'browser_extension_key',
         'email_smtp_server',
         'email_auth_username',
         'email_auth_pwd',
@@ -1740,6 +1741,12 @@ function generateBugReport(
     // Get error
     $err = error_get_last();
 
+    // Prepare last PHP error line (avoid undefined indexes)
+    $php_last_error = $lang->get('none');
+    if (is_array($err) === true && isset($err['message'], $err['file'], $err['line']) === true) {
+        $php_last_error = $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')';
+    }
+
     // Get 10 latest errors in Teampass
     $teampass_errors = '';
     $rows = DB::query(
@@ -1751,11 +1758,7 @@ function generateBugReport(
     );
     if (DB::count() > 0) {
         foreach ($rows as $record) {
-            if (empty($teampass_errors) === true) {
-                $teampass_errors = ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-            } else {
-                $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'];
-            }
+            $teampass_errors .= ' * ' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['error_date']) . ' - ' . $record['label'] . "\n";
         }
     }
 
@@ -1808,7 +1811,7 @@ Tell us what happens instead
 
 #### Web server error log
 ```
-' . $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')
+' . $php_last_error . '
 ```
 
 #### Teampass 10 last system errors
@@ -1824,6 +1827,7 @@ Insert the log here and especially the answer of the query that failed.
 
     return prepareExchangedData(
         array(
+            'text' => $txt,
             'html' => $txt,
             'error' => '',
         ),
