@@ -13,13 +13,13 @@
 
   // Check if WebSocket client is available
   if (typeof TeamPassWebSocket === 'undefined') {
-    console.warn('[TeamPass WS Init] TeamPassWebSocket not loaded')
+    tpWsDebug('[TeamPass WS Init] TeamPassWebSocket not loaded', 'warn')
     return
   }
 
   // Check if WebSocket is enabled (set by PHP)
   if (typeof window.TeamPassWebSocketEnabled === 'undefined' || !window.TeamPassWebSocketEnabled) {
-    console.log('[TeamPass WS Init] WebSocket is disabled')
+    tpWsDebug('[TeamPass WS Init] WebSocket is disabled', 'log')
     return
   }
 
@@ -28,7 +28,7 @@
 
   // Check if we have an authentication token
   if (typeof window.TeamPassWebSocketToken === 'undefined' || !window.TeamPassWebSocketToken) {
-    console.log('[TeamPass WS Init] No WebSocket token available')
+    tpWsDebug('[TeamPass WS Init] No WebSocket token available', 'log')
     return
   }
   
@@ -54,7 +54,7 @@
   function init() {
     tpWs
       .onOpen(function() {
-        console.log('[TeamPass WS] Connected to server')
+        tpWsDebug('[TeamPass WS] Connected to server', 'log')
 
         // Subscribe to current folder if any
         if (currentFolderId) {
@@ -65,7 +65,7 @@
         updateConnectionStatus(true)
       })
       .onClose(function(event) {
-        console.log('[TeamPass WS] Disconnected', event.code)
+        tpWsDebug('[TeamPass WS] Disconnected - ' + event.code, 'log')
         updateConnectionStatus(false)
 
         // Show notification only if not intentional
@@ -74,10 +74,10 @@
         }
       })
       .onReconnecting(function(attempt, delay) {
-        console.log('[TeamPass WS] Reconnecting, attempt', attempt)
+        tpWsDebug('[TeamPass WS] Reconnecting, attempt' + attempt, 'log')
       })
       .onError(function(error) {
-        console.error('[TeamPass WS] Error', error)
+        tpWsDebug('[TeamPass WS] Error' + error, 'error')
       })
 
     // Set up event handlers
@@ -85,7 +85,7 @@
 
     // Connect
     tpWs.connect().catch(function(err) {
-      console.error('[TeamPass WS] Initial connection failed', err)
+      tpWsDebug('[TeamPass WS] Initial connection failed' + err, 'error')
     })
   }
 
@@ -209,7 +209,7 @@
     // Debug: log all events
     if (window.TeamPassWebSocketDebug) {
       tpWs.on('*', function(eventName, data) {
-        console.log('[TeamPass WS Event]', eventName, data)
+        tpWsDebug('[TeamPass WS Event] ' + eventName + " - " + data, 'log')
       })
     }
   }
@@ -229,10 +229,10 @@
 
     tpWs.subscribeToFolder(folderId)
       .then(function() {
-        console.log('[TeamPass WS] Subscribed to folder', folderId)
+        tpWsDebug('[TeamPass WS] Subscribed to folder ' + folderId, 'log')
       })
       .catch(function(err) {
-        console.error('[TeamPass WS] Failed to subscribe to folder', folderId, err)
+        tpWsDebug('[TeamPass WS] Failed to subscribe to folder ' + folderId + " - " + err, 'error')
       })
   }
 
@@ -264,7 +264,7 @@
     } else if (typeof alertify !== 'undefined') {
       alertify[type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success'](title + ': ' + message)
     } else {
-      console.log('[Notification]', type, title, message)
+      tpWsDebug('[TeamPass WS Notification] ' + type +" - " + title + " - " + message, 'log')
     }
   }
 
@@ -401,3 +401,9 @@
   }
 
 })(window, typeof jQuery !== 'undefined' ? jQuery : null);
+
+function tpWsDebug(msg, logType = 'log') {
+  if (debugJavascript) {
+    logType === 'error' ? console.error(msg) : logType === 'warn' ? console.warn(msg) : console.log(msg)
+  }
+}
