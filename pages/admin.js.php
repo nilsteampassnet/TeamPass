@@ -1692,7 +1692,7 @@ $(document).on('click', '.open-info', function(e) {
         content = $(target).html()
     }
     
-    const title = $(this).data('title') || 'Information'
+    const title = $(this).data('title') || '<?php echo $lang->get('information'); ?>'
     const size = $(this).data('size') || 'lg'
     
     const modalDialog = $('#info-modal .modal-dialog')
