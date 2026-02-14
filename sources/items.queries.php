@@ -294,31 +294,15 @@ switch ($inputData['type']) {
             }
 
             // Is author authorized to create in this folder
-            if (count($session->get('user-list_folders_limited')) > 0) {
-                if (in_array($inputData['folderId'], array_keys($session->get('user-list_folders_limited'))) === false
-                    && in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
-                    && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
-                ) {
-                    echo (string) prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to_access_this_folder'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
-            } else {
-                if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
-                    echo (string) prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to_access_this_folder'),
-                        ),
-                        'encode'
-                    );
-                    break;
-                }
+            if (in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false) {
+                echo (string) prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             // perform a check in case of Read-Only user creating an item in his PF
@@ -1150,7 +1134,6 @@ switch ($inputData['type']) {
         $diffRolesRestiction = [];
         $arrayOfRestrictionRoles = [];
 
-        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if ((in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                 && ((int) $dataItem['perso'] === 0
                     || ((int) $dataItem['perso'] === 1
@@ -1162,10 +1145,6 @@ switch ($inputData['type']) {
                 && (int) $dataItem['anyone_can_modify'] === 1
                 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true
                     || (int) $session->get('user-admin') === 1)
-                && $restrictionActive === false)
-            || (null !== $inputData['folderId']
-                && count($session__list_restricted_folders_for_items) > 0
-                && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']]) === true
                 && $restrictionActive === false)
         ) {
             // Get existing values
@@ -2896,7 +2875,6 @@ switch ($inputData['type']) {
         }
 
         // check user is admin
-        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         $decryptionErrors = [];
         if (
             (int) $session->get('user-admin') === 1
@@ -3386,7 +3364,6 @@ switch ($inputData['type']) {
         }
 
         // check user is admin
-        $session__list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items') ?? [];
         if (
             (int) $session->get('user-admin') === 1
             && (int) $dataItem['perso'] === 0
@@ -4113,18 +4090,9 @@ switch ($inputData['type']) {
 
             // check if items exist
             $where = new WhereClause('and');
-            $session__user_list_folders_limited = $session->get('user-list_folders_limited');
-            if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
-                $counter = count($session__user_list_folders_limited[$inputData['id']]);
-                $uniqueLoadData['counter'] = $counter;
-                // check if this folder is visible
-            } elseif (!in_array(
+            if (!in_array(
                 $inputData['id'],
-                array_merge(
-                    $session->get('user-accessible_folders'),
-                    array_keys($session->get('system-list_restricted_folders_for_items')),
-                    array_keys($session->get('user-list_folders_limited'))
-                )
+                $session->get('user-accessible_folders')
             )) {
                 echo (string) prepareExchangedData(
                     array(
@@ -4197,12 +4165,7 @@ switch ($inputData['type']) {
         
         // prepare query WHere conditions
         $where = new WhereClause('and');
-        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
-        if (null !== $post_restricted && (int) $post_restricted === 1 && empty($session__user_list_folders_limited[$inputData['id']]) === false) {
-            $where->add('i.id IN %ls', $session__user_list_folders_limited[$inputData['id']]);
-        } else {
-            $where->add('i.id_tree=%i', $inputData['id']);
-        }
+        $where->add('i.id_tree=%i', $inputData['id']);
 
         // build the HTML for this set of Items
         if ($counter > 0 && empty($showError)) {
@@ -6035,7 +5998,6 @@ switch ($inputData['type']) {
         $label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $date = filter_var($dataReceived['date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $time = filter_var($dataReceived['time'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $session__user_list_folders_limited = $session->get('user-list_folders_limited');
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
@@ -6059,7 +6021,6 @@ switch ($inputData['type']) {
 
         if (((in_array($dataItem['id_tree'], $session->get('user-accessible_folders'))) && ((int) $dataItem['perso'] === 0 || ((int) $dataItem['perso'] === 1 && $dataItem['id_user'] === $session->get('user-id'))) && $restrictionActive === false)
             || (isset($SETTINGS['anyone_can_modify']) && (int) $SETTINGS['anyone_can_modify'] === 1 && (int) $dataItem['anyone_can_modify'] === 1 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1) && $restrictionActive === false)
-            || (is_array($session__user_list_folders_limited[$inputData['folderId']]) === true && in_array($inputData['id'], $session__user_list_folders_limited[$inputData['folderId']]) === true)
         ) {
             // Query
             logItems(
@@ -6410,12 +6371,6 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        // Will we show the root folder?
-        $canCreateFromUser = $session->has('user-can_create_root_folder') 
-            && (int) $session->get('user-can_create_root_folder') === 1;            
-        $canCreateFromSettings = !empty($SETTINGS['can_create_root_folder']);
-        $arr_data['can_create_root_folder'] = ($canCreateFromUser || $canCreateFromSettings) ? 1 : 0;
-
         // do we have a cache to be used?
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
@@ -6433,38 +6388,62 @@ switch ($inputData['type']) {
                 break;
             }
         }
-        // Build list of visible folders
-        if (
-            (int) $session->get('user-admin') === 1
-        ) {
-            $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
+        // Refresh role-based folder access from database
+        // Ensures real-time visibility when admin changes role permissions
+        $userData = DB::queryFirstRow(
+            'SELECT u.admin,
+            GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
+            GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
+            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+            LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
+            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+            WHERE u.id = %s
+            GROUP BY u.id',
+            $session->get('user-id')
+        );
+
+        if (empty($userData) === false) {
+            identifyUserRights(
+                $userData['groupes_visibles'] ?? [],
+                $userData['groupes_interdits'] ?? [],
+                $userData['admin'],
+                is_null($userData['roles_from_ad_groups']) === true
+                    ? $userData['fonction_id']
+                    : (empty($userData['roles_from_ad_groups']) === true
+                        ? $userData['fonction_id']
+                        : $userData['fonction_id'] . ';' . $userData['roles_from_ad_groups']),
+                $SETTINGS
+            );
+
+            // Handle root folder creation right
+            if (
+                $session->has('user-can_create_root_folder')
+                && null !== $session->get('user-can_create_root_folder')
+                && (int) $session->get('user-can_create_root_folder') === 1
+            ) {
+                SessionManager::addRemoveFromSessionArray('user-accessible_folders', [0], 'add');
+            }
         }
 
-        if (null !== $session->get('user-list_folders_limited') && count($session->get('user-list_folders_limited')) > 0) {
-            $listFoldersLimitedKeys = array_keys($session->get('user-list_folders_limited'));
-        } else {
-            $listFoldersLimitedKeys = array();
-        }
-        // list of items accessible but not in an allowed folder
-        if (
-            null !== $session->get('system-list_restricted_folders_for_items') &&
-            count($session->get('system-list_restricted_folders_for_items')) > 0
-        ) {
-            $listRestrictedFoldersForItemsKeys = array_keys($session->get('system-list_restricted_folders_for_items'));
-        } else {
-            $listRestrictedFoldersForItemsKeys = array();
-        }
+        // Recompute after role refresh (session may have changed)
+        $canCreateFromUser = $session->has('user-can_create_root_folder')
+            && (int) $session->get('user-can_create_root_folder') === 1;
+        $canCreateFromSettings = !empty($SETTINGS['can_create_root_folder']);
+        $arr_data['can_create_root_folder'] = ($canCreateFromUser || $canCreateFromSettings) ? 1 : 0;
+
 
         // Pre-flip arrays for O(1) lookups in the main loop
         $accessibleFoldersSet = array_flip($session->get('user-accessible_folders'));
-        $limitedFoldersSet = array_flip($listFoldersLimitedKeys);
-        $restrictedFoldersSet = array_flip($listRestrictedFoldersForItemsKeys);
         $forbidenPfSet = array_flip($session->get('user-forbiden_personal_folders'));
         $readOnlyFoldersSet = (null !== $session->get('user-read_only_folders'))
             ? array_flip($session->get('user-read_only_folders'))
             : [];
         
         //Build tree (no rebuild needed - MPTT values are maintained by write operations)
+        $tree->rebuild();
         $folders = $tree->getDescendants();
 
         // Build an index of folders by id for in-memory path computation and lookups
@@ -6478,7 +6457,7 @@ switch ($inputData['type']) {
         // Instead of calling getDescendantsFromTreeArray() per folder (O(n²)),
         // we mark all ancestors of accessible folders as displayable in a single O(n) pass
         // Combine all sets for the displayability check (reuse pre-flipped arrays)
-        $accessibleSet = $accessibleFoldersSet + $limitedFoldersSet + $restrictedFoldersSet;
+        $accessibleSet = $accessibleFoldersSet;
         $displayableFolders = [];
 
         // Mark all accessible folders and their ancestors as displayable
@@ -6498,8 +6477,6 @@ switch ($inputData['type']) {
             if (
                 !isset($forbidenPfSet[$folder->id])
                 || isset($accessibleFoldersSet[$folder->id])
-                || isset($limitedFoldersSet[$folder->id])
-                || isset($restrictedFoldersSet[$folder->id])
             ) {
                 if (isset($displayableFolders[$folder->id])) {
                     // ALL FOLDERS

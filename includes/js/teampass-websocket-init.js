@@ -373,11 +373,25 @@
     $('#list-item-row_' + itemId).find('.edition-lock-badge').remove()
   }
 
+  /**
+   * Refresh user folders after a permission change
+   *
+   * Triggers a custom jQuery event that items.js.php listens to.
+   * This avoids scope/timing issues since items.js.php has direct
+   * access to refreshVisibleFolders(), store, and jstree.
+   */
+  function refreshUserFolders() {
+    if (typeof $ !== 'undefined') {
+      $(document).trigger('teampass:permissions:refresh')
+    }
+  }
+
   // Expose functions globally
   window.tpWsSubscribeToFolder = subscribeToFolder
   window.tpWsShowNotification = showNotification
   window.tpWsShowEditionLock = showEditionLockIndicator
   window.tpWsRemoveEditionLock = removeEditionLockIndicator
+  window.refreshUserFolders = refreshUserFolders
 
   // Initialize when DOM is ready
   if (document.readyState === 'loading') {

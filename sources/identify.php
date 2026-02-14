@@ -833,9 +833,7 @@ function performPostLoginTasks(
         }
         $session->set('user-roles_array', []);
         $session->set('user-read_only_folders', []);
-        $session->set('user-list_folders_limited', []);
         $session->set('system-list_folders_editable_by_role', []);
-        $session->set('system-list_restricted_folders_for_items', []);
         $session->set('user-nb_folders', 1);
         $session->set('user-nb_roles', 1);
     } else {

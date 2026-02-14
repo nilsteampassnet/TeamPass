@@ -314,9 +314,7 @@ function identAdmin(string $idFonctions)
     $session->set('user-no_access_folders', []);
     $session->set('user-personal_visible_folders', []);
     $session->set('user-read_only_folders', []);
-    $session->set('system-list_restricted_folders_for_items', []);
     $session->set('system-list_folders_editable_by_role', []);
-    $session->set('user-list_folders_limited', []);
     $session->set('user-forbiden_personal_folders', []);
     
     // Get list of Folders
@@ -400,16 +398,13 @@ function identUser(
     $personalFolders = [];
     $readOnlyFolders = [];
     $noAccessPersonalFolders = [];
-    $restrictedFoldersForItems = [];
-    $foldersLimited = [];
-    $foldersLimitedFull = [];
     $allowedFoldersByRoles = [];
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
     $noAccessFolders = convertToArray($noAccessFolders) ?? [];
     $userRoles = convertToArray($userRoles) ?? [];
-    $allowedFolders = convertToArray($allowedFolders) ?? [];
+    $allowedFolders = [];//convertToArray($allowedFolders) ?? [];
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
     // Get list of folders depending on Roles
@@ -422,42 +417,6 @@ function identUser(
     $allowedFoldersByRoles = $arrays['allowedFoldersByRoles'];
     $readOnlyFolders = $arrays['readOnlyFolders'];
 
-    // Does this user is allowed to see other items
-    $inc = 0;
-    $rows = DB::query(
-        'SELECT id, id_tree FROM ' . prefixTable('items') . '
-            WHERE restricted_to LIKE %ss AND inactif = %s'.
-            (count($allowedFolders) > 0 ? ' AND id_tree NOT IN ('.implode(',', $allowedFolders).')' : ''),
-        $globalsUserId,
-        '0'
-    );
-    foreach ($rows as $record) {
-        // Exclude restriction on item if folder is fully accessible
-        //if (in_array($record['id_tree'], $allowedFolders) === false) {
-            $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
-            ++$inc;
-        //}
-    }
-
-    // Check for the users roles if some specific rights exist on items
-    $rows = DB::query(
-        'SELECT i.id_tree, r.item_id
-        FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (r.item_id=i.id)
-        WHERE i.id_tree <> "" '.
-        (count($userRoles) > 0 ? 'AND r.role_id IN %li ' : '').
-        'ORDER BY i.id_tree ASC',
-        $userRoles
-    );
-    $inc = 0;
-    foreach ($rows as $record) {
-        //if (isset($record['id_tree'])) {
-            $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-            array_push($foldersLimitedFull, $record['id_tree']);
-            ++$inc;
-        //}
-    }
-
     // Get list of Personal Folders
     $arrays = identUserGetPFList(
         $globalsPersonalFolders,
@@ -465,9 +424,7 @@ function identUser(
         $globalsUserId,
         $personalFolders,
         $noAccessPersonalFolders,
-        $foldersLimitedFull,
         $allowedFoldersByRoles,
-        array_keys($restrictedFoldersForItems),
         $readOnlyFolders,
         $noAccessFolders,
         isset($SETTINGS['enable_pf_feature']) === true ? $SETTINGS['enable_pf_feature'] : 0,
@@ -476,15 +433,14 @@ function identUser(
     $allowedFolders = $arrays['allowedFolders'];
     $personalFolders = $arrays['personalFolders'];
     $noAccessPersonalFolders = $arrays['noAccessPersonalFolders'];
-
+    
     // Return data
     $session->set('user-accessible_folders', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC));
     $session->set('user-read_only_folders', $readOnlyFolders);
     $session->set('user-no_access_folders', $noAccessFolders);
     $session->set('user-personal_folders', $personalFolders);
-    $session->set('user-list_folders_limited', $foldersLimited);
+    //$session->set('user-list_folders_limited', $foldersLimited);
     $session->set('system-list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
-    $session->set('system-list_restricted_folders_for_items', $restrictedFoldersForItems);
     $session->set('user-forbiden_personal_folders', $noAccessPersonalFolders);
     // Folders and Roles numbers
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
@@ -523,10 +479,18 @@ function identUser(
  */
 function identUserGetFoldersFromRoles(array $userRoles, array $allowedFoldersByRoles = [], array $readOnlyFolders = [], array $allowedFolders = []) : array
 {
+    // No roles means no role-based folder access
+    if (count($userRoles) === 0) {
+        return [
+            'readOnlyFolders' => $readOnlyFolders,
+            'allowedFoldersByRoles' => $allowedFoldersByRoles
+        ];
+    }
+
     $rows = DB::query(
         'SELECT *
         FROM ' . prefixTable('roles_values') . '
-        WHERE type IN %ls'.(count($userRoles) > 0 ? ' AND role_id IN %li' : ''),
+        WHERE type IN %ls AND role_id IN %li',
         ['W', 'ND', 'NE', 'NDNE', 'R'],
         $userRoles,
     );
@@ -561,9 +525,7 @@ function identUserGetFoldersFromRoles(array $userRoles, array $allowedFoldersByR
  * @param int $globalsUserId
  * @param array $personalFolders
  * @param array $noAccessPersonalFolders
- * @param array $foldersLimitedFull
  * @param array $allowedFoldersByRoles
- * @param array $restrictedFoldersForItems
  * @param array $readOnlyFolders
  * @param array $noAccessFolders
  * @param int $enablePfFeature
@@ -577,9 +539,7 @@ function identUserGetPFList(
     $globalsUserId,
     $personalFolders,
     $noAccessPersonalFolders,
-    $foldersLimitedFull,
     $allowedFoldersByRoles,
-    $restrictedFoldersForItems,
     $readOnlyFolders,
     $noAccessFolders,
     $enablePfFeature,
@@ -636,9 +596,7 @@ function identUserGetPFList(
     // All folders visibles
     $allowedFolders = array_unique(array_merge(
         $allowedFolders,
-        $foldersLimitedFull,
         $allowedFoldersByRoles,
-        $restrictedFoldersForItems,
         $readOnlyFolders
     ), SORT_NUMERIC);
     // Exclude from allowed folders all the specific user forbidden folders
@@ -2147,7 +2105,6 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
     
     $session = SessionManager::getSession();
     $session_groupes_visibles = $session->get('user-accessible_folders');
-    $session_list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items');
     // Load item data
     $data = DB::queryFirstRow(
         'SELECT id_tree
@@ -2157,12 +2114,7 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
     );
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
-        // Now check if this folder is restricted to user
-        if (isset($session_list_restricted_folders_for_items[$data['id_tree']]) === true
-            && in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']]) === false
-        ) {
-            return 'ERR_FOLDER_NOT_ALLOWED';
-        }
+        return 'ERR_FOLDER_NOT_ALLOWED';
     }
 
     return true;

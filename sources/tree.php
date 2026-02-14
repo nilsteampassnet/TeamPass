@@ -87,7 +87,6 @@ $data = [
     'userId' => null !== $session->get('user-id') ? $session->get('user-id') : '',
     'userLogin' => null !== $session->get('user-login') ? $session->get('user-login') : '',
     'userReadOnly' => null !== $session->get('user-read_only') ? $session->get('user-read_only') : '',
-    'limitedFolders' => null !== $session->get('user-list_folders_limited') ? json_encode($session->get('user-list_folders_limited')) : '{}',
     'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
     'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
     'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
@@ -106,7 +105,6 @@ $filters = [
     'userId' => 'cast:integer',
     'userLogin' => 'trim|escape',
     'userReadOnly' => 'cast:boolean',
-    'limitedFolders' => 'cast:array',
     'readOnlyFolders' => 'cast:array',
     'personalVisibleFolders' => 'cast:array',
     'userTreeLastRefresh' => 'cast:integer',
@@ -146,16 +144,6 @@ $goTreeRefresh = loadTreeStrategy(
 if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     // Build tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-    if (
-        isset($inputData['limitedFolders']) === true
-        && is_array($inputData['limitedFolders']) === true
-        && count($inputData['limitedFolders']) > 0
-    ) {
-        $listFoldersLimitedKeys = array_keys($inputData['limitedFolders']);
-    } else {
-        $listFoldersLimitedKeys = array();
-    }
     
     // list of items accessible but not in an allowed folder
     if (
@@ -177,7 +165,6 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
         $nodeId,
         $inputData['forbidenPfs'],
         $inputData['visibleFolders'],
-        $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys
     ) === true)
     {
@@ -188,7 +175,6 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
                 (int) $child,
                 $completTree[$child],
                 /** @scrutinizer ignore-type */ $tree,
-                $listFoldersLimitedKeys,
                 $listRestrictedFoldersForItemsKeys,
                 $last_visible_parent,
                 $last_visible_parent_level,
@@ -243,7 +229,6 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
  * @param integer $nodeId
  * @param array $session_forbiden_pfs
  * @param array $session_groupes_visibles
- * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
  * @return boolean
  */
@@ -251,7 +236,6 @@ function showFolderToUser(
     int $nodeId,
     array $session_forbiden_pfs,
     array $session_groupes_visibles,
-    array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys
 ): bool
 {
@@ -259,7 +243,6 @@ function showFolderToUser(
         array_unique(
             array_merge(
                 $session_groupes_visibles, 
-                $listFoldersLimitedKeys, 
                 $listRestrictedFoldersForItemsKeys
             ), 
             SORT_NUMERIC
@@ -280,7 +263,6 @@ function showFolderToUser(
  * @param int     $nodeId                            Id
  * @param stdClass   $currentNode                       Tree info
  * @param NestedTree   $tree                              The tree
- * @param array   $listFoldersLimitedKeys            Limited
  * @param array   $listRestrictedFoldersForItemsKeys Restricted
  * @param int     $last_visible_parent               Visible parent
  * @param int     $last_visible_parent_level         Parent level
@@ -294,7 +276,6 @@ function recursiveTree(
     int $nodeId,
     stdClass $currentNode,
     NestedTree $tree,
-    array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
     int $last_visible_parent_level,
@@ -337,7 +318,6 @@ function recursiveTree(
             (int) $nodeId,
             $currentNode,
             $tree,
-            $listFoldersLimitedKeys,
             $listRestrictedFoldersForItemsKeys,
             $last_visible_parent,
             $last_visible_parent_level,
@@ -360,7 +340,6 @@ function recursiveTree(
  * @param integer $nodeId
  * @param stdClass $currentNode
  * @param NestedTree $tree
- * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
  * @param integer $last_visible_parent
  * @param integer $last_visible_parent_level
@@ -377,7 +356,6 @@ function handleNode(
     int $nodeId,
     stdClass $currentNode,
     NestedTree $tree,
-    array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
     int $last_visible_parent_level,
@@ -406,10 +384,8 @@ function handleNode(
         (int) $nbItemsInFolder,
         (int) $nbItemsInSubfolders,
         (int) $nbSubfolders,
-        $inputData['limitedFolders'],
         isset($SETTINGS['tree_counters']) === true && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
         (bool) $inputData['userReadOnly'],
-        $listFoldersLimitedKeys,
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
         $inputData['personalFolders'],
@@ -443,7 +419,6 @@ function handleNode(
                 (int) $child,
                 $tree->getNode($child),// get node info for this child
                 /** @scrutinizer ignore-type */ $tree,
-                $listFoldersLimitedKeys,
                 $listRestrictedFoldersForItemsKeys,
                 $last_visible_parent,
                 $last_visible_parent_level,
@@ -559,10 +534,8 @@ function prepareNodeJson(
  * @param integer $nbItemsInFolder
  * @param integer $nbItemsInSubfolders
  * @param integer $nbSubfolders
- * @param array $session_list_folders_limited
  * @param integer $tree_counters
  * @param bool $session_user_read_only
- * @param array $listFoldersLimitedKeys
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
  * @param array $session_personal_folder
@@ -577,10 +550,8 @@ function prepareNodeData(
     int $nbItemsInFolder,
     int $nbItemsInSubfolders,
     int $nbSubfolders,
-    array $session_list_folders_limited,
     int $tree_counters,
     bool $session_user_read_only,
-    array $listFoldersLimitedKeys,
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
     array $session_personal_folder,
@@ -625,18 +596,6 @@ function prepareNodeData(
             'html' => ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . $nbItemsInFolder .'/'.$nbItemsInSubfolders .'/'.$nbSubfolders. '</span>'  : ''),
             'title' => '',
             'restricted' => 0,
-            'folderClass' => 'folder',
-            'show_but_block' => false,
-            'hide_node' => false,
-            'is_pf' => in_array($nodeId, $session_personal_folder) === true ? 1 : 0,
-        ];
-
-    } elseif (in_array($nodeId, $listFoldersLimitedKeys) === true) {
-        return [
-            'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
-                ($tree_counters === 1 ? '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_folders_limited[$nodeId]) . '</span>' : ''),
-            'title' => '',
-            'restricted' => 1,
             'folderClass' => 'folder',
             'show_but_block' => false,
             'hide_node' => false,

@@ -291,7 +291,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     // Load list of visible folders once jstree data is ready
     // Uses loaded.jstree event instead of arbitrary 500ms delay
     $('#jstree').one('loaded.jstree', function() {
-        refreshVisibleFolders(true);
+        internalRefreshVisibleFolders(true);
 
         // show correct folder in Tree
         let groupe_id = store.get('teampassApplication').itemsListFolderId;
@@ -301,6 +301,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         ) {
             $('#jstree').jstree('deselect_all');
             $('#jstree').jstree('select_node', '#li_' + groupe_id);
+        } else {
+            // No folder to auto-select, dismiss loading toastr
+            toastr.remove();
         }
     });
 
@@ -1204,7 +1207,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $('#items-selection-checkbox').iCheck('uncheck');
 
                         // Force refresh of the tree
-                        refreshVisibleFolders(true)
+                        internalRefreshVisibleFolders(true)
 
                         // Reload items list
                         ListerItems(
@@ -2131,7 +2134,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     if ($('#form-folder-add').data('action') === 'add') {
                         // select new folder on jstree
                         $('#jstree').jstree('deselect_all');
@@ -2271,7 +2274,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree(data.parent_id, true);
                     // Refresh list of items inside the folder
@@ -2356,7 +2359,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree($('#form-folder-copy-destination option:selected').val(), true);
                     // Refresh list of items inside the folder
@@ -3940,7 +3943,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      *
      * @return void
      */
-    function refreshVisibleFolders(forceRefreshCache = false) {
+    function internalRefreshVisibleFolders(forceRefreshCache = false) {
         var data = {
             'force_refresh_cache': forceRefreshCache,
         }
@@ -4188,11 +4191,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             if (node_to_select !== '') {
                 $('#jstree').one('refresh.jstree', function(e, data) {
                     data.instance.select_node('#li_' + node_to_select);
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                 });
             } else {
                 $('#jstree').one('refresh.jstree', function() {
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                 });
             }
         } else {
@@ -4201,7 +4204,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#jstree').jstree('select_node', '#li_' + node_to_select);
             }
             // No jstree refresh needed, call immediately
-            refreshVisibleFolders(true);
+            internalRefreshVisibleFolders(true);
         }
     }
 
@@ -4539,6 +4542,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     function sList(listOfItems) {
         if (debugJavascript === true) {
+            console.log('DEBUG: sList start')
             console.log(listOfItems);
         }
         var counter = 0,
@@ -7233,8 +7237,68 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             $('#jstree').jstree('refresh');
         };
 
+        // WebSocket: Expose visible folders refresh function
+        window.refreshVisibleFolders = function(forceRefreshCache) {
+            internalRefreshVisibleFolders(forceRefreshCache);
+        };
+
         $(document).on('teampass:folders:refresh', function() {
             window.refreshTree();
+        });
+
+        // WebSocket: Handle role permission changes
+        // Refreshes session rights via AJAX, then forces jstree rebuild
+        $(document).on('teampass:permissions:refresh', function() {
+            // Force tree.php to bypass its cache on next call
+            store.update('teampassApplication', function(teampassApplication) {
+                teampassApplication.jstreeForceRefresh = 1;
+            });
+
+            // AJAX call to items.queries.php goes through core.php
+            // which recalculates identifyUserRights() from DB
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'refresh_visible_folders',
+                    data: prepareExchangedData(JSON.stringify({'force_refresh_cache': true}), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'refresh_visible_folders');
+                    if (typeof data !== 'undefined' && data.error !== true) {
+                        // Update folder select elements
+                        var html_visible = '';
+                        if (typeof data.html_json !== 'undefined' && typeof data.html_json.folders !== 'undefined') {
+                            var foldersArray = Array.isArray(data.html_json.folders) ? data.html_json.folders : [data.html_json.folders];
+                            if (data.html_json.can_create_root_folder === 1) {
+                                html_visible = '<option value="0"><?php echo $lang->get('root'); ?></option>';
+                            }
+                            $.each(foldersArray, function(i, value) {
+                                html_visible += '<option value="' + value.id + '"' +
+                                    ((value.disabled === 1) ? ' disabled="disabled"' : '') +
+                                    ' data-parent-id="' + value.parent_id + '">' +
+                                    '&nbsp;'.repeat(value.level) +
+                                    value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
+                            });
+                            $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
+                                    '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')
+                                .find('option').remove().end()
+                                .append(html_visible);
+                            store.update('teampassUser', function(teampassUser) {
+                                teampassUser.folders = html_visible;
+                            });
+                        }
+
+                        // Now refresh jstree with force_refresh=1
+                        $('#jstree').jstree('refresh');
+                        $('#jstree').one('refresh.jstree', function() {
+                            store.update('teampassApplication', function(teampassApplication) {
+                                teampassApplication.jstreeForceRefresh = 0;
+                            });
+                            toastr.remove();
+                        });
+                    }
+                }
+            );
         });
     });
 </script>
