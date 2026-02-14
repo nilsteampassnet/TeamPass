@@ -1789,5 +1789,12 @@ Path: %s',
     'inactive_users_mgmt_tt_user_no_email' => 'No email address to warn user',
     'settings_category_inactive_users_title' => 'Inactive users management',
     'settings_category_inactive_users_goal' => 'Warn inactive users and apply a scheduled action.',
+    'sharekeys_migration_modal_title' => 'Important Information',
+    'sharekeys_migration_notice_count' => '%s user account(s) are still using the legacy sharekeys encryption library.',
+    'sharekeys_migration_notice_text' => 'These accounts must be migrated to use the more recent and secure encryption library.',
+    'sharekeys_migration_next_step_title' => 'Recommended Actions',
+    'sharekeys_migration_next_step_1' => 'Ask the affected users to log in at least once.',
+    'sharekeys_migration_next_step_2' => 'Alternatively, update their password via user management to trigger the migration.',
+    'sharekeys_migration_remaining_users_title' => 'Remaining Users (%s)',
 
 );

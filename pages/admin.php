@@ -437,24 +437,45 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 $excluded_ids
                                             );
                                             if (DB::count() > 0) {
+                                                $remaining_users = DB::count();
                                                 $logins_array = array_column($user_results, 'login');
-                                                $logins_list = implode(', ', $logins_array);
+                                                sort($logins_array, SORT_NATURAL | SORT_FLAG_CASE);
+                                                $logins_badges = '';
+                                                foreach ($logins_array as $login) {
+                                                    $logins_badges .= '<span class="badge badge-light border text-dark mr-1 mb-1 p-2">' . htmlspecialchars($login, ENT_QUOTES, 'UTF-8') . '</span>';
+                                                }
                                                 ?>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fa-solid fa-hand text-warning"></i>
                                                 <?php echo $lang->get('sharekeys_encryption_migration_required'); ?>
                                                 <span class="badge badge-warning">
-                                                    <?php echo DB::count(); ?> <?php echo $lang->get('sharekeys_remaining_users'); ?>
+                                                    <?php echo $remaining_users; ?> <?php echo $lang->get('sharekeys_remaining_users'); ?>
                                                 </span>
                                                 </span>
                                                 <span>
                                                     <i class="fa-solid fa-info-circle text-primary open-info" 
                                                     data-target="#info-migration-sharekeys" 
                                                     data-size="lg" 
-                                                    data-title="Important notice"></i>
+                                                    data-title="<?php echo $lang->get('sharekeys_migration_modal_title'); ?>"></i>
                                                     <div id="info-migration-sharekeys" class="d-none">
-                                                        <?php echo DB::count(); ?> user accounts still use the legacy encryption library for the sharekeys and must be migrated to rely on more secure library.
-                                                        <p class='mt-2'>List of remaining users: <?php echo htmlspecialchars($logins_list, ENT_QUOTES, 'UTF-8'); ?></p>
+                                                        <div class="alert alert-warning mb-3" role="alert">
+                                                            <i class="fa-solid fa-triangle-exclamation mr-2"></i>
+                                                            <strong><?php echo sprintf($lang->get('sharekeys_migration_notice_count'), $remaining_users); ?></strong><br>
+                                                            <?php echo $lang->get('sharekeys_migration_notice_text'); ?>
+                                                        </div>
+                                                        <div class="mb-3">
+                                                            <div class="small text-muted text-uppercase font-weight-bold mb-2"><?php echo $lang->get('sharekeys_migration_next_step_title'); ?></div>
+                                                            <ul class="pl-3 mb-0">
+                                                                <li><?php echo $lang->get('sharekeys_migration_next_step_1'); ?></li>
+                                                                <li><?php echo $lang->get('sharekeys_migration_next_step_2'); ?></li>
+                                                            </ul>
+                                                        </div>
+                                                        <div class="small text-muted text-uppercase font-weight-bold mb-2">
+                                                            <?php echo sprintf($lang->get('sharekeys_migration_remaining_users_title'), $remaining_users); ?>
+                                                        </div>
+                                                        <div class="border rounded bg-light p-2" style="max-height:260px; overflow-y:auto;">
+                                                            <?php echo $logins_badges; ?>
+                                                        </div>
                                                     </div>
                                                 </span>
                                             </li>
@@ -781,7 +802,7 @@ if ($internetStatus) {
         <div class="modal-content">
             <div class="modal-header bg-info">
                 <h5 class="modal-title" id="info-modal-title">
-                    <i class="fas fa-info-circle"></i> Information
+                    <i class="fas fa-info-circle"></i> <?php echo $lang->get('information'); ?>
                 </h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
@@ -792,7 +813,7 @@ if ($internetStatus) {
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                    <i class="fas fa-times"></i> Close
+                    <i class="fas fa-times"></i> <?php echo $lang->get('close'); ?>
                 </button>
             </div>
         </div>
