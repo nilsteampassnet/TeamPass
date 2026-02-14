@@ -297,7 +297,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     ) {
         // Show cog
         toastr.remove();
-        loadingToast = loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Store current view
         savePreviousView();
@@ -486,6 +486,38 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             .removeClass('pointer_none');
     }
 
+
+    /**
+     * Update an existing toast in place: change message, type (color), and auto-close delay.
+     * Falls back to creating a new toast if the original was already dismissed.
+     *
+     * @param {jQuery}  $toast   - The jQuery element returned by toastr.info/success/etc.
+     * @param {string}  type     - 'success', 'error', 'warning', or 'info'
+     * @param {string}  message  - New HTML message content
+     * @param {object}  [options] - { timeOut: ms (default 3000, 0 = no auto-close) }
+     */
+    function toastrUpdate($toast, type, message, options) {
+        if (!$toast || !$toast.length || !$toast.is(':visible')) {
+            toastr[type](message, '', options)
+            return
+        }
+        var opts = options || {}
+        var timeOut = opts.timeOut !== undefined ? opts.timeOut : 3000
+
+        // Update message
+        $toast.find('.toast-message').html(message)
+
+        // Update type/color
+        $toast.removeClass('toast-info toast-success toast-error toast-warning')
+            .addClass('toast-' + type)
+
+        // Auto-close after delay
+        if (timeOut > 0) {
+            setTimeout(function () {
+                toastr.clear($toast)
+            }, timeOut)
+        }
+    }
 
     // Manage folders action
     $('.tp-action').click(function() {
@@ -1084,7 +1116,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         } else if ($(this).data('item-action') === 'reload') {            
             if (debugJavascript === true) console.info('RELOAD ITEM');
             toastr.remove();
-            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             $.when(
                 Details(store.get('teampassItem').id, 'show', true)
@@ -1193,18 +1225,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             // Handle delete task
             $("#modal-btn-items-delete-launch").on("click", function() {
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                loadingToast = toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
                 
                 var selectedItemIds = getSelectedItemIds();
 
                 if (selectedItemIds.length === 0) {
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         '<?php echo $lang->get('no_item_selected'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                     $("#items-delete-user-confirm").modal('hide');
                     return false;
@@ -1226,24 +1254,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $("#items-delete-user-confirm").modal('hide');
 
                         if (data.error === true) {
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 data.message,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         }
-                        
+
                         // Inform user
-                        toastr.remove();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('message'); ?>',
-                            '', {
-                                timeOut: 3000
-                            }
+                            { timeOut: 3000 }
                         );
 
                         // Reset the checkbox
@@ -1259,15 +1280,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             0,
                             0,
                             true
-                        );
-                        
-                        // Inform user
-                        toastr.remove();
-                        toastr.success(
-                            '<?php echo $lang->get('message'); ?>',
-                            '', {
-                                timeOut: 3000
-                            }
                         );
                     }
                 );
@@ -1624,8 +1636,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Prepare data
         var data = {
@@ -1646,25 +1658,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error !== false) {
                     // Show error
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     $('#folders-tree-card').removeClass('hidden');
                     $('.form-item-share').addClass('hidden');
 
                     // Inform user
-                    toastr.remove();
-                    toastr.info(
+                    toastrUpdate(loadingToast, 'info',
                         '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     // Clear
@@ -1691,8 +1696,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     function goDeleteItem(itemId, itemKey, folderId, hasAccessLevel, closeItemCard = true)
     {
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1722,14 +1727,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
-                    
+
                     // Refresh tree
                     refreshTree(folderId, true);
                     // Close
@@ -1739,13 +1741,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     requestRunning = false;
                 } else {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 }
             }
@@ -1815,7 +1813,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1844,11 +1842,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Warn user
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     // Select folder of new item in jstree
@@ -1866,19 +1862,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         'show',
                         true
                     );
-                    
+
                     // Close
                     $('#folders-tree-card').removeClass('hidden');
                     $('.form-item-copy').addClass('hidden');
                 } else {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 }
             }
@@ -1910,8 +1902,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Show cog
             toastr.remove();
-            toastr.info(
+            loadingToast = toastr.info(
                 '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+                '', { timeOut: 0 }
             );
 
             // Force user did a change to false
@@ -1938,21 +1931,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     if (debugJavascript === true) console.log(data);
                     //check if format error
                     if (data.error === true) {
-                        toastr.remove();
-                        toastr.error(
+                        toastrUpdate(loadingToast, 'error',
                             data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
+                            { timeOut: 5000 }
                         );
                     } else {
                         // Warn user
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
+                            { timeOut: 1000 }
                         );
 
                         // Info
@@ -1972,21 +1959,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 },
                 function(data) {
                     if (data[0].error != "") {
-                        toastr.remove();
-                        toastr.error(
+                        toastrUpdate(loadingToast, 'error',
                             data[0].error,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
+                            { timeOut: 5000 }
                         );
                     } else {
                         $('#form-item-server-cron-frequency').val(0).change();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
+                            { timeOut: 1000 }
                         );
                     }
                 },
@@ -2019,8 +2000,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -2052,21 +2033,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Warn user
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                     // Clear form
                     $('.form-item-suggestion').html('');
@@ -2120,8 +2095,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -2133,13 +2108,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             formIconSelected = fieldDomPurifier('#form-folder-add-icon-selected', false, false, false);
         if (formLabel === false || formIcon === false || formIconSelected === false) {
             // Label is empty
-            toastr.remove();
-            toastr.warning(
+            toastrUpdate(loadingToast, 'warning',
                 'XSS attempt detected. Field has been emptied.',
-                'Error', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
+                { timeOut: 5000 }
             );
             return false;
         }
@@ -2170,13 +2141,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
@@ -2210,12 +2177,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Back to list
                     closeItemDetailsCard();
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                 }
                 // Enable the parent in select
@@ -2285,8 +2249,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
         
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
 
         var selectedFolders = [],
@@ -2310,13 +2274,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
@@ -2328,12 +2288,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Back to list
                     closeItemDetailsCard();
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                 }
 
@@ -2372,8 +2329,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show cog
         toastr.remove();
-        toastr
-            .info('<?php echo $lang->get('please_wait_folders_in_construction'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('please_wait_folders_in_construction'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
         
         // Launch action
         var data = {
@@ -2395,13 +2352,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
@@ -2426,18 +2379,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             itemList += '<li>' + item + '</li>';
                         });
                         itemList += '</ul>';
-                        toastr.remove();
-                        toastr.warning(
+                        toastrUpdate(loadingToast, 'warning',
                             '<?php echo $lang->get('some_items_not_copied_empty_password'); ?>:<br>' + itemList,
-                            '<?php echo $lang->get('caution'); ?>'
+                            { timeOut: 0 }
                         );
                     } else {
-                        toastr.remove();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 4000
-                            }
+                            { timeOut: 4000 }
                         );
                     }
                 }
@@ -2612,7 +2561,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
@@ -2638,7 +2587,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
@@ -2648,7 +2597,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
@@ -3055,7 +3004,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             BeforeUpload: function(up, file) {
                 fileId = file.id;
                 toastr.remove();         
-                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
+                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>', '', { timeOut: 0 });
                 // Show file name
                 $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
 
@@ -3263,9 +3212,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show loading
         toastr.remove();
-        toastr.info(
+        loadingToast = toastr.info(
             '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
-            '<?php echo $lang->get('please_wait'); ?>'
+            '<?php echo $lang->get('please_wait'); ?>',
+            { timeOut: 0 }
         );
 
         // Loop on all changed fields
@@ -3501,13 +3451,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
                             $("#div_dialog_message").dialog("open");
 
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         }
@@ -3516,13 +3462,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             console.log(data);
                         }
                         if (data.error === true) {
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 data.message,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         } else {
@@ -3589,8 +3531,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     );
 
                                 // Show loading toast
-                                toastr.remove();
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+                                toastr.clear(loadingToast);
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Reload item details
                                 // If an encryption task was created, the WebSocket task_completed
@@ -3665,8 +3607,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     );
 
                                 // Show loading toast
-                                toastr.remove();
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+                                toastr.clear(loadingToast);
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Load item details
                                 // If an encryption task was created, the WebSocket task_completed
@@ -3684,12 +3626,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             ListerItems($('#form-item-folder').val(), '', 0);
 
                             // Inform user
-                            toastr.remove();
-                            toastr.info(
+                            toastrUpdate(loadingToast, 'success',
                                 '<?php echo $lang->get('success'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
+                                { timeOut: 1000 }
                             );
 
                             // Close
@@ -5941,12 +5880,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Inform user
                     //toastr.remove();
-                    toastr.clear(loadingToast);
-                    toastr.info(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     return true;
