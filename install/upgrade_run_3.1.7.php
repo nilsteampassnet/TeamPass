@@ -208,6 +208,12 @@ if ($result !== false && mysqli_num_rows($result) === 0) {
 }
 // --->
 
+// <---
+// PERFORM STRUCTURAL DB CHANGES
+
+modifyColumn($pre . 'users', 'agses-usercardid', "agses_usercardid", "VARCHAR(50) NOT NULL DEFAULT '0'");
+
+// --->
 
 
 //---<END 3.1.7

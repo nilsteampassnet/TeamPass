@@ -1529,17 +1529,30 @@ if (null !== $post_type) {
 
             // Requête adaptée avec les nouvelles tables relationnelles
             if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-can_manage_all_users') === 0) {
-                $rows = DB::query(
+                // Use subqueries for aggregations (MySQL ONLY_FULL_GROUP_BY compatibility)
+            $rows = DB::query(
                     'SELECT u.*,
-                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    agg_roles.fonction_id,
+                    agg_groups.groupes_visibles,
+                    agg_gforbid.groupes_interdits
                     FROM ' . prefixTable('users') . ' AS u
-                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-                    WHERE u.admin = %i AND u.isAdministratedByRole IN %ls AND u.deleted_at IS NULL AND u.disabled = %i
-                    GROUP BY u.id',
+                    LEFT JOIN (
+                        SELECT user_id,
+                            GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id
+                        FROM ' . prefixTable('users_roles') . '
+                        GROUP BY user_id
+                    ) agg_roles ON agg_roles.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+                        FROM ' . prefixTable('users_groups') . '
+                        GROUP BY user_id
+                    ) agg_groups ON agg_groups.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+                        FROM ' . prefixTable('users_groups_forbidden') . '
+                        GROUP BY user_id
+                    ) agg_gforbid ON agg_gforbid.user_id = u.id
+                    WHERE u.admin = %i AND u.isAdministratedByRole IN %ls AND u.deleted_at IS NULL AND u.disabled = %i',
                     0,
                     array_filter($session->get('user-roles_array')),
                     0
@@ -1547,15 +1560,27 @@ if (null !== $post_type) {
             } else {
                 $rows = DB::query(
                     'SELECT u.*,
-                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    agg_roles.fonction_id,
+                    agg_groups.groupes_visibles,
+                    agg_gforbid.groupes_interdits
                     FROM ' . prefixTable('users') . ' AS u
-                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-                    WHERE u.admin = %i AND u.deleted_at IS NULL AND u.disabled = %i
-                    GROUP BY u.id',
+                    LEFT JOIN (
+                        SELECT user_id,
+                            GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id
+                        FROM ' . prefixTable('users_roles') . '
+                        GROUP BY user_id
+                    ) agg_roles ON agg_roles.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+                        FROM ' . prefixTable('users_groups') . '
+                        GROUP BY user_id
+                    ) agg_groups ON agg_groups.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+                        FROM ' . prefixTable('users_groups_forbidden') . '
+                        GROUP BY user_id
+                    ) agg_gforbid ON agg_gforbid.user_id = u.id
+                    WHERE u.admin = %i AND u.deleted_at IS NULL AND u.disabled = %i',
                     0,
                     0
                 );
@@ -3659,7 +3684,7 @@ if (null !== $post_type) {
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses_usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -3685,7 +3710,7 @@ if (null !== $post_type) {
                 'treeloadstrategy' => 'user-tree_load_strategy',
                 'usertimezone' => 'user-timezone',
                 'userlanguage' => 'user-language',
-                'agses-usercardid' => null, 
+                'agses_usercardid' => null, 
                 'email' => 'user-email',
                 'split_view_mode' => 'user-split_view_mode',
                 'show_subfolders' => 'user-show_subfolders',
