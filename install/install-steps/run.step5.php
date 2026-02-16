@@ -1417,7 +1417,8 @@ class DatabaseInstaller
             `timestamp` varchar(50) NOT NULL,
             `user_id` int(12) NOT NULL,
             `folders` longtext DEFAULT NULL,
-            PRIMARY KEY (`increment_id`)
+            PRIMARY KEY (`increment_id`),
+            INDEX `idx_user_id` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

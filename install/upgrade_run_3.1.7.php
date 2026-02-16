@@ -208,7 +208,15 @@ if ($result !== false && mysqli_num_rows($result) === 0) {
 }
 // --->
 
+// <---
+// ==========================================
 
+// Indexes for performance
+$res = checkIndexExist(
+    $pre . 'cache_tree',
+    'idx_user_id',
+    "ADD INDEX idx_user_id (user_id)"
+);
 
 //---<END 3.1.7
 

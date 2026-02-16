@@ -174,7 +174,7 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
             recursiveTree(
                 (int) $child,
                 $completTree[$child],
-                /** @scrutinizer ignore-type */ $tree,
+                $completTree,
                 $listRestrictedFoldersForItemsKeys,
                 $last_visible_parent,
                 $last_visible_parent_level,
@@ -224,6 +224,59 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
 
 
 /**
+ * Get all descendant nodes from the in-memory tree (no SQL query).
+ * Replaces $tree->getDescendants($id, true/false, false, false) calls.
+ *
+ * @param array $completTree Complete tree from getTreeWithChildren()
+ * @param int $nodeId Node ID to get descendants for
+ * @param bool $includeSelf Whether to include the node itself
+ * @return array Associative array of node objects keyed by ID
+ */
+function getDescendantNodesFromTree(array $completTree, int $nodeId, bool $includeSelf = false): array
+{
+    $nodes = [];
+    if ($includeSelf && isset($completTree[$nodeId])) {
+        $nodes[$nodeId] = $completTree[$nodeId];
+    }
+    if (isset($completTree[$nodeId]) && !empty($completTree[$nodeId]->children)) {
+        foreach ($completTree[$nodeId]->children as $childId) {
+            if (isset($completTree[(int) $childId])) {
+                $nodes[(int) $childId] = $completTree[(int) $childId];
+                $subNodes = getDescendantNodesFromTree($completTree, (int) $childId, false);
+                foreach ($subNodes as $k => $v) {
+                    $nodes[$k] = $v;
+                }
+            }
+        }
+    }
+    return $nodes;
+}
+
+/**
+ * Get all descendant IDs from the in-memory tree (no SQL query).
+ * Replaces $tree->getDescendants($id, false, false, true) calls.
+ *
+ * @param array $completTree Complete tree from getTreeWithChildren()
+ * @param int $nodeId Node ID to get descendants for
+ * @param bool $includeSelf Whether to include the node itself
+ * @return array Flat array of descendant IDs
+ */
+function getDescendantIdsFromTree(array $completTree, int $nodeId, bool $includeSelf = false): array
+{
+    $ids = [];
+    if ($includeSelf) {
+        $ids[] = $nodeId;
+    }
+    if (isset($completTree[$nodeId]) && !empty($completTree[$nodeId]->children)) {
+        foreach ($completTree[$nodeId]->children as $childId) {
+            $ids[] = (int) $childId;
+            $ids = array_merge($ids, getDescendantIdsFromTree($completTree, (int) $childId, false));
+        }
+    }
+    return $ids;
+}
+
+/**
  * Check if user can see this folder based upon rights
  *
  * @param integer $nodeId
@@ -262,7 +315,7 @@ function showFolderToUser(
  *
  * @param int     $nodeId                            Id
  * @param stdClass   $currentNode                       Tree info
- * @param NestedTree   $tree                              The tree
+ * @param array      $completTree                       In-memory tree from getTreeWithChildren()
  * @param array   $listRestrictedFoldersForItemsKeys Restricted
  * @param int     $last_visible_parent               Visible parent
  * @param int     $last_visible_parent_level         Parent level
@@ -275,7 +328,7 @@ function showFolderToUser(
 function recursiveTree(
     int $nodeId,
     stdClass $currentNode,
-    NestedTree $tree,
+    array $completTree,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
     int $last_visible_parent_level,
@@ -284,10 +337,10 @@ function recursiveTree(
     array &$ret_json = array()
 ) {
     // Initialize variables
-    $text = '';    
+    $text = '';
     $displayThisNode = false;
     $nbItemsInSubfolders = $nbSubfolders = $nbItemsInFolder = 0;
-    $nodeDescendants = $tree->getDescendants($nodeId, true, false, false);
+    $nodeDescendants = getDescendantNodesFromTree($completTree, $nodeId, true);
     // On combine les tableaux une seule fois pour optimiser
     $allowedFolders = array_merge($inputData['personalFolders'], $inputData['visibleFolders']);
     
@@ -317,7 +370,7 @@ function recursiveTree(
         handleNode(
             (int) $nodeId,
             $currentNode,
-            $tree,
+            $completTree,
             $listRestrictedFoldersForItemsKeys,
             $last_visible_parent,
             $last_visible_parent_level,
@@ -339,7 +392,7 @@ function recursiveTree(
  *
  * @param integer $nodeId
  * @param stdClass $currentNode
- * @param NestedTree $tree
+ * @param array $completTree In-memory tree from getTreeWithChildren()
  * @param array $listRestrictedFoldersForItemsKeys
  * @param integer $last_visible_parent
  * @param integer $last_visible_parent_level
@@ -355,7 +408,7 @@ function recursiveTree(
 function handleNode(
     int $nodeId,
     stdClass $currentNode,
-    NestedTree $tree,
+    array $completTree,
     array $listRestrictedFoldersForItemsKeys,
     int $last_visible_parent,
     int $last_visible_parent_level,
@@ -389,10 +442,10 @@ function handleNode(
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
         $inputData['personalFolders'],
-        $tree
+        $completTree
     );
 
-    // Prepare JSON 
+    // Prepare JSON
     $tmpRetArray = prepareNodeJson(
         $currentNode,
         $nodeData,
@@ -411,14 +464,17 @@ function handleNode(
 
     // ensure we get the children of the folder
     if (isset($currentNode->children) === false) {
-        $currentNode->children = $tree->getDescendants($nodeId, false, true, true);
+        $currentNode->children = isset($completTree[$nodeId]) ? $completTree[$nodeId]->children : [];
     }
     if ($inputData['userTreeLoadStrategy'] === 'full' && isset($currentNode->children) === true) {
         foreach ($currentNode->children as $child) {
+            if (!isset($completTree[$child])) {
+                continue;
+            }
             recursiveTree(
                 (int) $child,
-                $tree->getNode($child),// get node info for this child
-                /** @scrutinizer ignore-type */ $tree,
+                $completTree[$child],
+                $completTree,
                 $listRestrictedFoldersForItemsKeys,
                 $last_visible_parent,
                 $last_visible_parent_level,
@@ -539,7 +595,7 @@ function prepareNodeJson(
  * @param array $listRestrictedFoldersForItemsKeys
  * @param array $session_list_restricted_folders_for_items
  * @param array $session_personal_folder
- * @param NestedTree $tree
+ * @param array $completTree In-memory tree from getTreeWithChildren()
  * @return array
  */
 function prepareNodeData(
@@ -555,7 +611,7 @@ function prepareNodeData(
     array $listRestrictedFoldersForItemsKeys,
     array $session_list_restricted_folders_for_items,
     array $session_personal_folder,
-    NestedTree $tree
+    array $completTree
 ): array
 {
     $session = SessionManager::getSession();
@@ -619,7 +675,7 @@ function prepareNodeData(
     ) {
         // folder should not be visible
         // only if it has no descendants
-        $nodeDirectDescendants = $tree->getDescendants($nodeId, false, false, true);
+        $nodeDirectDescendants = getDescendantIdsFromTree($completTree, $nodeId, false);
         if (
             count(
                 array_diff(
