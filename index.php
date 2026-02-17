@@ -706,6 +706,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <p>' . $lang->get('database') . '</p>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.health" class="nav-link', $get['page'] === 'utilities.health' ? ' active' : '', '">
+                                <i class="fa-solid fa-heart-pulse nav-icon"></i>
+                                <p>' . $lang->get('system_health') . '</p>
+                                </a>
+                            </li>
                         </ul>
                     </li>';
     } ?>
@@ -1279,7 +1285,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.renewal', 'tasks', 'statistics']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
@@ -1490,6 +1496,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.logs.js.php';
         } elseif ($get['page'] === 'utilities.database') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
+        } elseif ($get['page'] === 'utilities.health') {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.health.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
         }
