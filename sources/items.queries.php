@@ -6384,6 +6384,20 @@ switch ($inputData['type']) {
         if (isset($dataReceived['force_refresh_cache']) === true && $dataReceived['force_refresh_cache'] === false) {
             $goCachedFolders = loadFoldersListByCache('visible_folders', 'folders');
             if ($goCachedFolders['state'] === true) {
+                // Check client-side version to avoid sending unchanged data
+                $foldersVersion = md5($goCachedFolders['data']);
+                $clientVersion = isset($dataReceived['folders_version']) ? $dataReceived['folders_version'] : '';
+                if (!empty($clientVersion) && $clientVersion === $foldersVersion) {
+                    echo (string) prepareExchangedData(
+                        [
+                            'error' => 'false',
+                            'unchanged' => true,
+                            'folders_version' => $foldersVersion,
+                        ],
+                        'encode'
+                    );
+                    break;
+                }
                 $arr_data['folders'] = json_decode($goCachedFolders['data'], true);
                 // send data
                 echo (string) prepareExchangedData(
@@ -6391,6 +6405,7 @@ switch ($inputData['type']) {
                         'error' => 'false',
                         'html_json' => ($arr_data),
                         'extra' => isset($goCachedFolders['extra']) ? $goCachedFolders['extra'] : '',
+                        'folders_version' => $foldersVersion,
                     ],
                     'encode'
                 );
@@ -6528,11 +6543,13 @@ switch ($inputData['type']) {
             );
         }
 
-        // send data
+        // send data with version
+        $foldersVersion = md5(json_encode($arr_data['folders'] ?? []));
         echo (string) prepareExchangedData(
             [
                 'error' => 'false',
                 'html_json' => $arr_data,
+                'folders_version' => $foldersVersion,
             ],
             'encode'
         );

@@ -176,21 +176,82 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         'core': {
             'animation': 0,
             'check_callback': true,
-            'data': {
-                'url': './sources/tree.php',
-                'dataType': 'json',
-                'icons': false,
-                'data': function(node) {
-                    if (debugJavascript === true) {
-                        console.info('Les répertoires sont chargés');
-                        console.log(node);
-                    }
-                    return {
-                        'id': node.id.split('_')[1],
-                        'force_refresh': store.get('teampassApplication') !== undefined ?
-                            store.get('teampassApplication').jstreeForceRefresh : 0
-                    };
+            'data': function(node, callback) {
+                if (debugJavascript === true) {
+                    console.info('Les répertoires sont chargés');
+                    console.log(node);
                 }
+                var treeVersion = ''
+                try { treeVersion = localStorage.getItem('tp_tree_version') || '' } catch(e) {}
+
+                var forceRefresh = store.get('teampassApplication') !== undefined ?
+                    store.get('teampassApplication').jstreeForceRefresh : 0
+
+                // Clear localStorage version on force refresh to get fresh data
+                if (parseInt(forceRefresh) === 1) {
+                    treeVersion = ''
+                    try { localStorage.removeItem('tp_tree_version') } catch(e) {}
+                }
+
+                $.ajax({
+                    url: './sources/tree.php',
+                    dataType: 'json',
+                    data: {
+                        'id': node.id.split('_')[1],
+                        'force_refresh': forceRefresh,
+                        'tree_version': treeVersion
+                    },
+                    success: function(response) {
+                        if (response && response.unchanged === true) {
+                            // Use cached data from localStorage
+                            try {
+                                var cached = JSON.parse(localStorage.getItem('tp_tree_data'))
+                                if (cached) {
+                                    callback(cached)
+                                    return
+                                }
+                            } catch(e) {}
+                            // Fallback: if cache corrupted, reload without version
+                            $.ajax({
+                                url: './sources/tree.php',
+                                dataType: 'json',
+                                data: {
+                                    'id': node.id.split('_')[1],
+                                    'force_refresh': 1
+                                },
+                                success: function(resp) {
+                                    var treeData = resp.tree || resp
+                                    try {
+                                        localStorage.setItem('tp_tree_version', resp.version || '')
+                                        localStorage.setItem('tp_tree_data', JSON.stringify(treeData))
+                                    } catch(e) {}
+                                    callback(treeData)
+                                }
+                            })
+                        } else if (response && response.tree) {
+                            // New data received
+                            try {
+                                localStorage.setItem('tp_tree_version', response.version || '')
+                                localStorage.setItem('tp_tree_data', JSON.stringify(response.tree))
+                            } catch(e) {}
+                            callback(response.tree)
+                        } else {
+                            // Fallback for unexpected response format (raw array)
+                            callback(response)
+                        }
+                    },
+                    error: function() {
+                        // On error, try localStorage fallback
+                        try {
+                            var cached = JSON.parse(localStorage.getItem('tp_tree_data'))
+                            if (cached) {
+                                callback(cached)
+                                return
+                            }
+                        } catch(e) {}
+                        callback([])
+                    }
+                })
             },
             'strings': {
                 'Loading ...': '<?php echo $lang->get('loading'); ?>...'
@@ -3934,8 +3995,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      * @return void
      */
     function internalRefreshVisibleFolders(forceRefreshCache = false) {
+        var foldersVersion = ''
+        try { foldersVersion = localStorage.getItem('tp_folders_version') || '' } catch(e) {}
+        // Clear version on force refresh
+        if (forceRefreshCache === true) {
+            foldersVersion = ''
+            try { localStorage.removeItem('tp_folders_version') } catch(e) {}
+        }
+
         var data = {
             'force_refresh_cache': forceRefreshCache,
+            'folders_version': foldersVersion,
         }
         if (debugJavascript === true) {
             console.log('Refresh visible folders');
@@ -3955,6 +4025,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     console.log('TREE');
                     console.log(data);
                 }
+
+                // Handle unchanged response — use cached folders from store
+                if (typeof data !== 'undefined' && data.unchanged === true) {
+                    if (debugJavascript === true) {
+                        console.log('Folders unchanged, using cached data');
+                    }
+                    // Store version
+                    try { localStorage.setItem('tp_folders_version', data.folders_version || '') } catch(e) {}
+                    return;
+                }
+
                 //check if format error
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Build html lists
@@ -4014,6 +4095,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             teampassUser.folders = html_visible;
                         }
                     );
+
+                    // Store version for client-side caching
+                    try {
+                        if (data.folders_version) {
+                            localStorage.setItem('tp_folders_version', data.folders_version)
+                        }
+                    } catch(e) {}
 
                     // remove ROOT option if exists
                     $('#form-item-copy-destination option[value="0"]').remove();
@@ -4175,6 +4263,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         if (do_refresh === true || store.get('teampassApplication').jstreeForceRefresh === 1) {
+            // Clear client-side tree cache on force refresh
+            try {
+                localStorage.removeItem('tp_tree_version');
+                localStorage.removeItem('tp_tree_data');
+            } catch(e) {}
             $('#jstree').jstree(true).refresh();
 
             // Wait for jstree refresh to complete before refreshing visible folders
@@ -7245,6 +7338,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             store.update('teampassApplication', function(teampassApplication) {
                 teampassApplication.jstreeForceRefresh = 1;
             });
+
+            // Clear client-side tree/folders cache
+            try {
+                localStorage.removeItem('tp_tree_version');
+                localStorage.removeItem('tp_tree_data');
+                localStorage.removeItem('tp_folders_version');
+            } catch(e) {}
 
             // AJAX call to items.queries.php goes through core.php
             // which recalculates identifyUserRights() from DB

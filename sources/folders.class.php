@@ -253,7 +253,7 @@ class FolderManager
             if (isset($options['setFolderCategories']) && $options['setFolderCategories'] === true) {
                 $this->setFolderCategories($newId);
             }
-            $this->updateTimestamp();
+            $this->updateTimestamp((int) $newId);
             if (isset($options['rebuildFolderTree']) && $options['rebuildFolderTree'] === true) {
                 $this->rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId);
             }
@@ -327,14 +327,11 @@ class FolderManager
     }
 
     /**
-     * Updates the last folder change timestamp.
+     * Invalidate cache for users with access to the given folder.
      */
-    private function updateTimestamp()
+    private function updateTimestamp(int $folderId)
     {
-        DB::update(prefixTable('misc'), [
-            'valeur' => time(),
-            'updated_at' => time(),
-        ], 'type = %s AND intitule = %s', 'timestamp', 'last_folder_change');
+        invalidateCacheForFolderUsers($folderId);
     }
 
     /**

@@ -97,6 +97,7 @@ $data = [
     'personalFolders' => null !== $session->get('user-personal_folders') ? json_encode($session->get('user-personal_folders')) : '{}',
     'userCanCreateRootFolder' => null !== $session->get('user-can_create_root_folder') ? json_encode($session->get('user-can_create_root_folder')) : '{}',
     'userTreeLoadStrategy' => null !== $session->get('user-tree_load_strategy') ? $session->get('user-tree_load_strategy') : '',
+    'treeVersion' => null !== $request->query->get('tree_version') ? $request->query->get('tree_version') : '',
 ];
 
 $filters = [
@@ -115,6 +116,7 @@ $filters = [
     'personalFolders' => 'cast:array',
     'userCanCreateRootFolder' => 'cast:array',
     'userTreeLoadStrategy' => 'trim|escape',
+    'treeVersion' => 'trim|escape',
 ];
 
 $inputData = dataSanitizer(
@@ -156,6 +158,7 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     }
     
     $ret_json = array();
+    $completTree = [];
     $last_visible_parent = -1;
     $last_visible_parent_level = 1;
     $nodeId = isset($inputData['nodeId']) === true && is_int($inputData['nodeId']) === true ? $inputData['nodeId'] : 0;
@@ -189,37 +192,37 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     $session->set('user-tree_structure', $ret_json);
     $session->set('user-tree_last_refresh_timestamp', time());
 
+    // Build visible_folders synchronously from the same tree data
+    $visibleFoldersArray = buildVisibleFoldersFromTree($ret_json, $completTree, $inputData);
+    $visibleFoldersJson = json_encode($visibleFoldersArray);
+
     $ret_json = json_encode($ret_json);
 
-    // Save user folders tree
+    // Save user folders tree (data + visible_folders in one call)
     cacheTreeUserHandler(
         (int) $inputData['userId'],
         $ret_json,
-        $SETTINGS
+        $SETTINGS,
+        '',
+        $visibleFoldersJson
     );
 
-    // Add new process
-    DB::insert(
-        prefixTable('background_tasks'),
-        array(
-            'created_at' => time(),
-            'process_type' => 'user_build_cache_tree',
-            'arguments' => json_encode([
-                'user_id' => (int) $inputData['userId'],
-            ], JSON_HEX_QUOT | JSON_HEX_TAG),
-            'updated_at' => null,
-            'finished_at' => null,
-            'output' => null,
-        )
-    );
-
-    // Trigger background handler to process tasks
-    triggerBackgroundHandler();
-
-    // Send back
-    echo $ret_json;
+    // Send back with version for client-side caching
+    $treeVersion = md5($ret_json);
+    if (!empty($inputData['treeVersion']) && $inputData['treeVersion'] === $treeVersion) {
+        echo json_encode(['unchanged' => true, 'version' => $treeVersion]);
+    } else {
+        echo json_encode(['unchanged' => false, 'version' => $treeVersion, 'tree' => json_decode($ret_json)]);
+    }
 } else {
-    echo $goTreeRefresh['data'];
+    // Cached data path — also version it
+    $cachedData = $goTreeRefresh['data'];
+    $treeVersion = md5($cachedData);
+    if (!empty($inputData['treeVersion']) && $inputData['treeVersion'] === $treeVersion) {
+        echo json_encode(['unchanged' => true, 'version' => $treeVersion]);
+    } else {
+        echo json_encode(['unchanged' => false, 'version' => $treeVersion, 'tree' => json_decode($cachedData)]);
+    }
 }
 
 
@@ -724,6 +727,74 @@ function prepareNodeData(
 
 
 /**
+ * Build visible_folders array from the jstree data and the complete tree.
+ * Synchronizes visible_folders with the jstree data in a single pass,
+ * eliminating the desync between data and visible_folders columns.
+ *
+ * @param array $retJsonArray The jstree JSON array built by recursiveTree()
+ * @param array $completTree Complete tree from getTreeWithChildren()
+ * @param array $inputData Sanitized input data with session info
+ * @return array The visible_folders array
+ */
+function buildVisibleFoldersFromTree(
+    array $retJsonArray,
+    array $completTree,
+    array $inputData
+): array {
+    $visibleFolders = [];
+    $readOnlyFoldersSet = array_flip($inputData['readOnlyFolders'] ?? []);
+    $accessibleFoldersSet = array_flip($inputData['visibleFolders'] ?? []);
+
+    foreach ($retJsonArray as $node) {
+        // Extract folder ID from jstree "li_123" format
+        $nodeIdStr = $node['id'] ?? '';
+        if (strpos($nodeIdStr, 'li_') !== 0) {
+            continue;
+        }
+        $folderId = (int) substr($nodeIdStr, 3);
+
+        if (!isset($completTree[$folderId])) {
+            continue;
+        }
+        $treeNode = $completTree[$folderId];
+
+        // Build path by walking parent chain in memory
+        $pathParts = [];
+        $currentId = (int) $treeNode->parent_id;
+        while (isset($completTree[$currentId]) && $currentId > 0) {
+            $pathParts[] = htmlspecialchars(
+                stripslashes(htmlspecialchars_decode($completTree[$currentId]->title, ENT_QUOTES)),
+                ENT_QUOTES
+            );
+            $currentId = (int) $completTree[$currentId]->parent_id;
+        }
+        $path = implode(' / ', array_reverse($pathParts));
+
+        // Determine title (personal folder uses login name)
+        $title = $treeNode->title;
+        if ((int) $title === (int) $inputData['userId'] && (int) $treeNode->nlevel === 1) {
+            $title = $inputData['userLogin'];
+        }
+
+        $visibleFolders[] = [
+            'id' => $folderId,
+            'level' => (int) $treeNode->nlevel,
+            'title' => $title,
+            'disabled' => (
+                !isset($accessibleFoldersSet[$folderId])
+                || isset($readOnlyFoldersSet[$folderId])
+            ) ? 1 : 0,
+            'parent_id' => (int) $treeNode->parent_id,
+            'perso' => (int) $treeNode->personal_folder,
+            'path' => $path,
+            'is_visible_active' => isset($readOnlyFoldersSet[$folderId]) ? 1 : 0,
+        ];
+    }
+
+    return $visibleFolders;
+}
+
+/**
  * Permits to check if we can user a cache instead of loading from DB
  *
  * @param integer $lastTreeChange
@@ -770,12 +841,19 @@ function loadTreeStrategy(
 
     // Does this user has a tree cache
     $userCacheTree = DB::queryFirstRow(
-        'SELECT data
+        'SELECT data, timestamp, IFNULL(invalidated_at, 0) as invalidated_at
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
         $userId
     );
     if (empty($userCacheTree['data']) === false && $userCacheTree['data'] !== '[]') {
+        // Check per-user invalidation
+        if ((int) $userCacheTree['invalidated_at'] > (int) $userCacheTree['timestamp']) {
+            return [
+                'state' => true,
+                'data' => [],
+            ];
+        }
         return [
             'state' => false,
             'data' => $userCacheTree['data'],

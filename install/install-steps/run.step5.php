@@ -1416,6 +1416,7 @@ class DatabaseInstaller
             `visible_folders` longtext NOT NULL,
             `timestamp` varchar(50) NOT NULL,
             `user_id` int(12) NOT NULL,
+            `invalidated_at` INT UNSIGNED DEFAULT 0,
             `folders` longtext DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX `idx_user_id` (`user_id`)

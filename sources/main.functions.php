@@ -3889,7 +3889,7 @@ function secureOutput(mixed $data, array $fields = []): mixed
  * @param string $field_update
  * @return void
  */
-function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '')
+function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '', string $visible_folders = '')
 {
     // Load class DB
     loadClasses('DB');
@@ -3901,41 +3901,106 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
         WHERE user_id = %i',
         $user_id
     );
-    
+
     if (is_null($userCacheId) === true || count($userCacheId) === 0) {
-        // insert in table
+        // Insert new cache entry
+        $insertData = array(
+            'data' => $data,
+            'timestamp' => time(),
+            'user_id' => $user_id,
+            'visible_folders' => $visible_folders,
+            'invalidated_at' => 0,
+        );
         DB::insert(
             prefixTable('cache_tree'),
-            array(
-                'data' => $data,
-                'timestamp' => time(),
-                'user_id' => $user_id,
-                'visible_folders' => '',
-            )
+            $insertData
+        );
+    } elseif (!empty($field_update)) {
+        // Update only a specific field (e.g. 'visible_folders' from items.queries.php)
+        DB::update(
+            prefixTable('cache_tree'),
+            [
+                $field_update => $data,
+            ],
+            'increment_id = %i',
+            $userCacheId['increment_id']
         );
     } else {
-        if (empty($field_update) === true) {
-            DB::update(
-                prefixTable('cache_tree'),
-                [
-                    'timestamp' => time(),
-                    'data' => $data,
-                ],
-                'increment_id = %i',
-                $userCacheId['increment_id']
-            );
-        /* USELESS
-        } else {
-            DB::update(
-                prefixTable('cache_tree'),
-                [
-                    $field_update => $data,
-                ],
-                'increment_id = %i',
-                $userCacheId['increment_id']
-            );*/
+        // Update data (and visible_folders if provided)
+        $updateFields = [
+            'timestamp' => time(),
+            'data' => $data,
+            'invalidated_at' => 0,
+        ];
+        if (!empty($visible_folders)) {
+            $updateFields['visible_folders'] = $visible_folders;
         }
+        DB::update(
+            prefixTable('cache_tree'),
+            $updateFields,
+            'increment_id = %i',
+            $userCacheId['increment_id']
+        );
     }
+}
+
+/**
+ * Invalidate tree cache for all users who have access to a specific folder.
+ * Replaces global last_folder_change with targeted per-user invalidation.
+ *
+ * @param int $folderId The folder that was changed (0 if folder deleted)
+ * @param array $additionalUserIds Optional extra user IDs to invalidate
+ * @return void
+ */
+function invalidateCacheForFolderUsers(int $folderId, array $additionalUserIds = []): void
+{
+    loadClasses('DB');
+
+    $affectedUsers = [];
+
+    // Find users who have access to this folder via roles
+    if ($folderId > 0) {
+        $affectedUsers = DB::queryFirstColumn(
+            'SELECT DISTINCT ur.user_id
+            FROM ' . prefixTable('users_roles') . ' ur
+            JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
+            WHERE rv.folder_id = %i',
+            $folderId
+        );
+    }
+
+    // Merge with additional users (personal folder owner, etc.)
+    if (!empty($additionalUserIds)) {
+        $affectedUsers = array_merge($affectedUsers, $additionalUserIds);
+    }
+
+    // Include admin users (they see all folders)
+    $adminUsers = DB::queryFirstColumn(
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE admin = 1'
+    );
+    $affectedUsers = array_unique(array_merge($affectedUsers, $adminUsers));
+
+    if (!empty($affectedUsers)) {
+        DB::query(
+            'UPDATE ' . prefixTable('cache_tree') . '
+            SET invalidated_at = %i
+            WHERE user_id IN %ls',
+            time(),
+            $affectedUsers
+        );
+    }
+
+    // Keep global last_folder_change as fallback for backward compatibility
+    DB::update(
+        prefixTable('misc'),
+        [
+            'valeur' => time(),
+            'updated_at' => time(),
+        ],
+        'type = %s AND intitule = %s',
+        'timestamp',
+        'last_folder_change'
+    );
 }
 
 /**
@@ -3998,12 +4063,19 @@ function loadFoldersListByCache(
     
     // Does this user has a tree cache
     $userCacheTree = DB::queryFirstRow(
-        'SELECT '.$fieldName.'
+        'SELECT '.$fieldName.', timestamp, IFNULL(invalidated_at, 0) as invalidated_at
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
         $session->get('user-id')
     );
     if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
+        // Check per-user invalidation
+        if ((int) $userCacheTree['invalidated_at'] > (int) $userCacheTree['timestamp']) {
+            return [
+                'state' => false,
+                'data' => [],
+            ];
+        }
         return [
             'state' => true,
             'data' => $userCacheTree[$fieldName],

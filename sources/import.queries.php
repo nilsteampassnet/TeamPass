@@ -1421,17 +1421,8 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             )
         );
 
-        // Indicate that a change has been done to force tree user reload
-        DB::update(
-            prefixTable('misc'),
-            array(
-                'valeur' => time(),
-                'updated_at' => time(),
-            ),
-            'type = %s AND intitule = %s',
-            'timestamp',
-            'last_folder_change'
-        );
+        // Invalidate cache for users with access to this folder
+        invalidateCacheForFolderUsers((int) $id);
 
         //For each role to which the user depends on, add the folder just created.
         // (if not personal, otherwise, add to user-personal_folders)

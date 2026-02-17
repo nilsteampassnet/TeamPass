@@ -218,6 +218,13 @@ $res = checkIndexExist(
     "ADD INDEX idx_user_id (user_id)"
 );
 
+// Add invalidated_at column for per-user targeted cache invalidation
+addColumnIfNotExist(
+    $pre . 'cache_tree',
+    'invalidated_at',
+    "INT UNSIGNED DEFAULT 0"
+);
+
 //---<END 3.1.7
 
 
