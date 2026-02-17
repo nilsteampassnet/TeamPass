@@ -28,7 +28,7 @@
 
 define('TP_VERSION', '3.1.6');
 define("UPGRADE_MIN_DATE", "1770966462");
-define('TP_VERSION_MINOR', '7');
+define('TP_VERSION_MINOR', '6');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -127,4 +127,5 @@ $utilitiesPages = array(
     'utilities.deletion' => 'utilities.deletion.php',
     'utilities.logs' => 'utilities.logs.php',
     'utilities.database' => 'utilities.database.php',
+    'utilities.health' => 'utilities.health.php',
 );
