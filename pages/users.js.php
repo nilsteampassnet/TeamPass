@@ -204,8 +204,153 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // Remove progress toast
             $('.toast').remove();
+
+            // Decorate users list with LDAP/AD account status icons
+            scheduleDecorateUsersLdapStatus();
         },
     });
+
+    // ---------------------------------------------------------------------
+    // LDAP/AD account status icons on main Users list
+    // ---------------------------------------------------------------------
+    var tpLdapStatusCache = {};
+    var tpLdapStatusDebounceTimer = null;
+    var tpLdapStatusRequestInFlight = false;
+
+    function scheduleDecorateUsersLdapStatus() {
+        // LDAP enabled?
+        if (parseInt(<?php echo (int) $SETTINGS['ldap_mode']; ?>) !== 1) {
+            return;
+        }
+        if (tpLdapStatusDebounceTimer !== null) {
+            clearTimeout(tpLdapStatusDebounceTimer);
+        }
+        tpLdapStatusDebounceTimer = setTimeout(function() {
+            decorateUsersLdapStatus();
+        }, 250);
+    }
+
+    function decorateUsersLdapStatus() {
+        if (tpLdapStatusRequestInFlight === true) {
+            // Let the current request finish; next draw will re-trigger.
+            return;
+        }
+
+        // Collect visible TeamPass user IDs from the current datatable page
+        var userIds = [];
+        $('#table-users tbody tr').each(function() {
+            var id = $(this).find('.tp-action[data-id]').first().data('id');
+            if (id !== undefined && id !== null && id !== '') {
+                userIds.push(parseInt(id, 10));
+            }
+        });
+
+        // Unique
+        userIds = userIds.filter(function(v, i, a) { return a.indexOf(v) === i; });
+
+        if (userIds.length === 0) {
+            return;
+        }
+
+        // Apply cached statuses immediately
+        userIds.forEach(function(uid) {
+            if (tpLdapStatusCache[uid] !== undefined) {
+                applyLdapStatusIcons(uid, tpLdapStatusCache[uid]);
+            }
+        });
+
+        // Query only missing ones
+        var missing = userIds.filter(function(uid) { return tpLdapStatusCache[uid] === undefined; });
+        if (missing.length === 0) {
+            return;
+        }
+
+        tpLdapStatusRequestInFlight = true;
+
+        const data_to_send = {
+            'user_ids': missing,
+        };
+
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'get_ldap_status_for_user_ids',
+                data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                tpLdapStatusRequestInFlight = false;
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (data.error === true || data.statuses === undefined) {
+                    // Silent fail: LDAP may be unreachable, no need to spam toasts on each draw.
+                    return;
+                }
+
+                Object.keys(data.statuses).forEach(function(k) {
+                    var uid = parseInt(k, 10);
+                    tpLdapStatusCache[uid] = data.statuses[k];
+                    applyLdapStatusIcons(uid, data.statuses[k]);
+                });
+
+                // Tooltips
+                $('.infotip').tooltip();
+            }
+        ).fail(function() {
+            tpLdapStatusRequestInFlight = false;
+        });
+    }
+
+    function applyLdapStatusIcons(userId, status) {
+        // Remove existing icons to avoid duplicates on redraw
+        $('#user-ldap-disabled-' + userId).remove();
+        $('#user-ldap-expired-' + userId).remove();
+        $('#user-ldap-missing-' + userId).remove();
+
+        var $login = $('#user-login-' + userId);
+        if ($login.length === 0) {
+            return;
+        }
+
+        if (status === null || status === undefined) {
+            return;
+        }
+
+        // Not found in LDAP/AD
+        if (status.ldapAccountMissing !== null && parseInt(status.ldapAccountMissing, 10) === 1) {
+            $login.before(
+                '<i class="fa-solid fa-user-xmark infotip text-muted mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_not_found')); ?>" ' +
+                'id="user-ldap-missing-' + userId + '"></i>'
+            );
+            return;
+        }
+
+        // Disabled in LDAP/AD
+        if (status.ldapAccountDisabled !== null && parseInt(status.ldapAccountDisabled, 10) === 1) {
+            $login.before(
+                '<i class="fa-solid fa-user-slash infotip text-danger mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_disabled')); ?>" ' +
+                'id="user-ldap-disabled-' + userId + '"></i>'
+            );
+        }
+
+        // Expired in LDAP/AD
+        if (status.ldapAccountExpired !== null && parseInt(status.ldapAccountExpired, 10) === 1) {
+            var expiresHint = '';
+            if (status.ldapAccountExpiresAt !== undefined && status.ldapAccountExpiresAt !== null) {
+                var d = new Date(parseInt(status.ldapAccountExpiresAt, 10) * 1000);
+                expiresHint = ' - ' + d.toLocaleDateString();
+            }
+            $login.before(
+                '<i class="fa-solid fa-hourglass-end infotip text-warning mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '" ' +
+                'id="user-ldap-expired-' + userId + '"></i>'
+            );
+        }
+    }
+
+
 
     // Prepare iCheck format for checkboxes
     $('input[type="checkbox"]').iCheck({
@@ -215,8 +360,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $("#warnings_display").on("ifChanged", function() {
         $('.form').addClass('hidden');
         $('#users-list').removeClass('hidden');
+        toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-        oTable.ajax.reload();
+
+        // Force LDAP status refresh (cache) when display settings change
+        tpLdapStatusCache = {};
+        tpLdapStatusRequestInFlight = false;
+
+        oTable.ajax.reload(function() {
+            toastr.remove();
+            scheduleDecorateUsersLdapStatus();
+        }, false);
     });
 
 
@@ -1514,8 +1668,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // --- END
             //
         } else if ($(this).data('action') === 'refresh') {
+            // Refresh main users datatable
+            toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-            oTable.ajax.reload();
+
+            // Force LDAP status refresh (cache)
+            tpLdapStatusCache = {};
+            tpLdapStatusRequestInFlight = false;
+
+            oTable.ajax.reload(function() {
+                toastr.remove();
+                scheduleDecorateUsersLdapStatus();
+            }, false);
             //
             // --- END
             //
@@ -2083,7 +2247,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 var remainingRows = $('#table-deleted-users tbody tr:visible').length;
                                 if (remainingRows === 0) {
                                     $('#table-deleted-users tbody').html(
-                                        '<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
+                                        '<tr><td colspan="6" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
                                     );
                                 }
 
@@ -2150,6 +2314,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         });
     });
+    // Purge selected deleted users
+    $('#btn-purge-selected-users').on('click', function() {
+        var btn = $(this);
+        var userIds = getSelectedDeletedUserIds();
+
+        if (userIds.length === 0) {
+            toastr.info('<?php echo $lang->get('deleted_users_select_at_least_one'); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("confirm_purge_selected_users")); ?>' + '<br><small>(' + userIds.length + ')</small>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                btn.prop('disabled', true);
+                processPurgeBatch(userIds, 0, btn);
+            }
+        });
+    });
+
 
     function refreshListDeletedUsers()
     {
@@ -2173,10 +2358,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 tbody.empty();
                 
                 if (data.result.users.length === 0) {
-                    tbody.append('<tr><td colspan="5" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
+                    tbody.append('<tr><td colspan="6" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
                 } else {
                     $.each(data.result.users, function(i, user) {
                         var row = '<tr>' +
+                            '<td class="text-center align-middle px-1">' +
+                                '<input type="checkbox" class="deleted-user-select" value="' + user.id + '">' +
+                            '</td>' +
                             '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
                             '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
                             '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
@@ -2194,12 +2382,29 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     });
                 }
                 
+                $('#deleted-users-check-all').prop('checked', false);
                 list.slideDown();
 
                 update_deleted_users_button(data.result.users.length);
             }
         );
     }
+
+
+    /**
+     * Deleted users - selection helpers
+     */
+    function getSelectedDeletedUserIds() {
+        return $('#table-deleted-users .deleted-user-select:checked').map(function() {
+            return parseInt($(this).val(), 10);
+        }).get();
+    }
+
+    // Check all in deleted users table
+    $(document).on('change', '#deleted-users-check-all', function() {
+        const checked = $(this).is(':checked');
+        $('#table-deleted-users .deleted-user-select').prop('checked', checked);
+    });
 
     /**
      * Perform the purge 
@@ -2414,7 +2619,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 
                 if (data.error === false) {
-                    toastr.success('User restored successfully');
+                    toastr.success(data.message);
                     // Rafraîchissez la liste des utilisateurs
                     location.reload();
                 } else {
