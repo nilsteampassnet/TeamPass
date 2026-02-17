@@ -114,6 +114,10 @@ var TP_HEALTH_L10N = {
     backup_last_compatible_backup: "<?php echo addslashes($lang->get('health_backup_last_compatible_backup')); ?>",
     backup_type_scheduled: "<?php echo addslashes($lang->get('health_backup_scheduled')); ?>",
     backup_type_onthefly: "<?php echo addslashes($lang->get('health_backup_onthefly')); ?>",
+    excluded_label: "<?php echo addslashes($lang->get('health_excluded_label')); ?>",
+    excluded_deleted_users: "<?php echo addslashes($lang->get('health_excluded_deleted_users')); ?>",
+    excluded_system_accounts: "<?php echo addslashes($lang->get('health_excluded_system_accounts')); ?>",
+    excluded_disabled_users: "<?php echo addslashes($lang->get('health_excluded_disabled_users')); ?>",
     export_filename_default: "<?php echo addslashes($lang->get('health_export_filename')); ?>"
 };
 
@@ -225,7 +229,22 @@ function tpRenderOverview(report) {
     // Migration progress
     var mig = report.overview && report.overview.migration ? report.overview.migration : null;
     if (mig && mig.users) {
-        $('#health-migration-users-text').text(tpEscapeHtml((mig.users.percent_migrated || 0) + '% (' + (mig.users.migrated || 0) + '/' + (mig.users.total || 0) + ')'));
+                var usersTxt = (mig.users.percent_migrated || 0) + '% (' + (mig.users.migrated || 0) + '/' + (mig.users.total || 0) + ')';
+        var excl = mig.users.excluded || {};
+        var exclParts = [];
+        if (Number(excl.system || 0) > 0) {
+            exclParts.push(TP_HEALTH_L10N.excluded_system_accounts + ' ' + Number(excl.system || 0));
+        }
+        if (Number(excl.deleted || 0) > 0) {
+            exclParts.push(TP_HEALTH_L10N.excluded_deleted_users + ' ' + Number(excl.deleted || 0));
+        }
+        if (Number(excl.disabled || 0) > 0) {
+            exclParts.push(TP_HEALTH_L10N.excluded_disabled_users + ' ' + Number(excl.disabled || 0));
+        }
+        if (exclParts.length) {
+            usersTxt += ' • ' + TP_HEALTH_L10N.excluded_label + ': ' + exclParts.join(' • ');
+        }
+        $('#health-migration-users-text').text(tpEscapeHtml(usersTxt));
         tpSetProgressBar($('#health-migration-users-bar'), mig.users.percent_migrated || 0);
     } else {
         $('#health-migration-users-text').text(TP_HEALTH_L10N.no_data);
@@ -501,6 +520,27 @@ function tpRenderCrypto(report) {
     $('#health-crypto-orphans').text(Number(share.orphans_total || 0));
     $('#health-crypto-integrity-issues').text(Number(integ.missing || 0) + Number(integ.mismatch || 0));
     $('#health-crypto-inconsistent-users').text(Number(inconsist.length || 0));
+
+    // Note: excluded users (system / deleted / disabled) for coherence with main dashboard
+    var note = '';
+    var migOv = (report.overview && report.overview.migration) ? report.overview.migration : {};
+    if (migOv && migOv.users && migOv.users.excluded) {
+        var e = migOv.users.excluded || {};
+        var parts = [];
+        if (Number(e.system || 0) > 0) {
+            parts.push(TP_HEALTH_L10N.excluded_system_accounts + ' ' + Number(e.system || 0));
+        }
+        if (Number(e.deleted || 0) > 0) {
+            parts.push(TP_HEALTH_L10N.excluded_deleted_users + ' ' + Number(e.deleted || 0));
+        }
+        if (Number(e.disabled || 0) > 0) {
+            parts.push(TP_HEALTH_L10N.excluded_disabled_users + ' ' + Number(e.disabled || 0));
+        }
+        if (parts.length) {
+            note = TP_HEALTH_L10N.excluded_label + ': ' + parts.join(' • ');
+        }
+    }
+    $('#health-crypto-note').text(tpEscapeHtml(note));
 
     var migOverview = (report.overview && report.overview.migration) ? report.overview.migration : {};
     var percentMigrated = 0;
