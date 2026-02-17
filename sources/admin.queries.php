@@ -3377,26 +3377,45 @@ case 'save_sending_statistics':
      */
     
     // Users statistics
+    // Exclude TeamPass system accounts (TP / OTV / API)
+    $usersBaseWhere = "deleted_at IS NULL AND LOWER(login) NOT IN ('tp','otv','api')";
+
     $usersActive = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
-        WHERE disabled = %i AND deleted_at IS NULL',
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE disabled = %i AND $usersBaseWhere",
         0
     );
-    
+
     $usersOnline = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
-        WHERE session_end > %i AND disabled = %i',
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE session_end > %i AND disabled = %i AND $usersBaseWhere",
         time(),
         0
     );
-    
+
     $usersBlocked = DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
-        WHERE disabled = %i AND deleted_at IS NULL',
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE disabled = %i AND $usersBaseWhere",
         1
     );
-    
-    // Items statistics
+
+    // Inactive users warned (as per Inactive Users Management)
+    $usersWarned = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE $usersBaseWhere
+        AND disabled = %i
+        AND admin = %i
+        AND special = %s
+        AND inactivity_warned_at IS NOT NULL
+        AND inactivity_warned_at <> ''
+        AND inactivity_warned_at <> '0'",
+        0,
+        0,
+        'none'
+    );
+
+
+// Items statistics
     $itemsTotal = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
         WHERE inactif = %i AND deleted_at IS NULL',
@@ -3464,6 +3483,7 @@ case 'save_sending_statistics':
                 'active' => (int) $usersActive,
                 'online' => (int) $usersOnline,
                 'blocked' => (int) $usersBlocked,
+                'warned' => (int) $usersWarned,
             ),
             'items' => array(
                 'total' => (int) $itemsTotal,
