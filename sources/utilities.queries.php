@@ -916,6 +916,14 @@ logItems(
             $now = time();
             $from = $now - 86400;
 
+            // Users exclusions (system accounts, API/OTV/TP, etc.)
+            $excludedUserIds = tpGetExcludedUserIds();
+            $excludedSql = '';
+            if (empty($excludedUserIds) === false) {
+                $excludedSql = ' AND id NOT IN (' . implode(',', array_map('intval', $excludedUserIds)) . ')';
+            }
+
+
             // ------------------------
             // Overview (same base as admin dashboard system health)
             // ------------------------
@@ -934,9 +942,9 @@ logItems(
                 $encryptionText = $lang->get('health_secure_file_missing');
             }
 
-            // Active sessions count
+            // Active sessions count (exclude soft-deleted + system accounts)
             $sessionsCount = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end > %i',
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end > %i AND disabled = 0 AND deleted_at IS NULL' . $excludedSql,
                 $now
             );
 
@@ -1177,22 +1185,16 @@ logItems(
             }
 
             // Users migration progress (computed)
-            $excludedUserIds = tpGetExcludedUserIds();
-            $excludedSql = '';
-            if (empty($excludedUserIds) === false) {
-                $excludedSql = ' AND id NOT IN (' . implode(',', array_map('intval', $excludedUserIds)) . ')';
-            }
-
             $usersTotal = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE 1=1' . $excludedSql
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0 AND deleted_at IS NULL' . $excludedSql
             );
             // Users with migrated keys (phpseclib v3) - same reference as scripts/repair_phpseclib_migration.php
             $usersV3Keys = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE encryption_version = 3' . $excludedSql
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE encryption_version = 3 AND disabled = 0 AND deleted_at IS NULL' . $excludedSql
             );
             // Users flagged as fully migrated (may be out-of-sync depending on migration history)
             $usersV3Flag = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE phpseclibv3_migration_completed = 1' . $excludedSql
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE phpseclibv3_migration_completed = 1 AND disabled = 0 AND deleted_at IS NULL' . $excludedSql
             );
 
             // Keep the main progress aligned on keys version (v3)
@@ -1202,9 +1204,34 @@ $usersNotMigrated = $usersTotal - $usersV3;
 
             // Personal items migration progress
             $usersPersonalMigrated = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE personal_items_migrated = 1' . $excludedSql
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE personal_items_migrated = 1 AND disabled = 0 AND deleted_at IS NULL' . $excludedSql
             );
             $usersPersonalPercent = $usersTotal > 0 ? round(($usersPersonalMigrated / $usersTotal) * 100, 2) : 0;
+
+            // Excluded users counts (for UI coherence with main dashboard)
+            $excludedCounts = array(
+                'system' => 0,
+                'deleted' => 0,
+                'disabled' => 0,
+            );
+
+            if (empty($excludedUserIds) === false) {
+                $excludedCounts['system'] = (int) DB::queryFirstField(
+                    'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE id IN %li',
+                    $excludedUserIds
+                );
+            }
+
+            // Soft-deleted users (excluding system accounts)
+            $excludedCounts['deleted'] = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE deleted_at IS NOT NULL' . $excludedSql
+            );
+
+            // Disabled users (excluding system accounts and excluding soft-deleted)
+            $excludedCounts['disabled'] = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 1 AND deleted_at IS NULL' . $excludedSql
+            );
+
 
             // Integrity hash check (same algorithm as scripts/fix_integrity_hash.php dry-run)
             $integrity = tpGetIntegrityHashStatus($SETTINGS, $excludedUserIds);
@@ -1397,6 +1424,7 @@ $recent = array();
                             'migrated_keys' => $usersV3Keys,
                             'migrated_flag' => $usersV3Flag,
                             'percent_migrated_flag' => $usersTotal > 0 ? round(($usersV3Flag / $usersTotal) * 100, 2) : 0,
+                            'excluded' => $excludedCounts,
                         ),
                         'personal_items' => array(
                             'total' => $usersTotal,
@@ -2414,7 +2442,21 @@ function tpGetExcludedUserIds(): array
         }
     }
 
-    $ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
+    
+    // Fallback: system accounts by login (TP / OTV / API)
+    // This ensures exclusions even if constants are not defined in some contexts.
+    try {
+        $rows = DB::query(
+            'SELECT id FROM ' . prefixTable('users') . ' WHERE UPPER(login) IN ("TP","OTV","API")'
+        );
+        foreach ($rows as $r) {
+            $ids[] = (int) ($r['id'] ?? 0);
+        }
+    } catch (Exception $e) {
+        // ignore
+    }
+
+$ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
         return is_int($v) && $v > 0;
     })));
 
