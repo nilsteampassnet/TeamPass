@@ -1701,7 +1701,7 @@ return array(
     'inactive_users_mgmt_msg_task_already_pending' => 'A task is already pending/running',
     'inactive_users_mgmt_msg_settings_saved' => 'Settings saved',
     'inactive_users_mgmt_email_subject' => 'Teampass – Inactive account notice',
-    'inactive_users_mgmt_email_body' => 'Hello #lastname#,<br><br>Your account <b>#login#</b> has been inactive for <b>#inactivity_days#</b> days.<br>If you do not log in within the next <b>#grace_days#</b> days, the following action will be applied: <b>#action#</b>.<br><br>You can log in here: <a href="#url#">#url#</a><br><br>Regards',
+    'inactive_users_mgmt_email_body' => 'Hello #firstname#,<br><br>Your account <b>#login#</b> has been inactive for <b>#inactivity_days#</b> days.<br>If you do not log in within the next <b>#grace_days#</b> days, the following action will be applied: <b>#action#</b>.<br><br>You can log in here: <a href="#url#">#url#</a><br><br>Regards',
     'inactive_users_mgmt_banner_enabled' => 'Automatic inactive users management is enabled: warning after <b>%s</b> days, then <b>%s</b> days later: <b>%s</b>.',
     'inactive_users_mgmt_banner_disabled' => 'Automatic inactive users management is disabled.',
     'inactive_users_mgmt_go_to_options' => 'Open Options',
