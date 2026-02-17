@@ -212,7 +212,7 @@ class PerformChecks
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
                 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'uploads', 'oauth', 'tools'
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools'
             ),
         );
         
@@ -249,8 +249,7 @@ class PerformChecks
             ($this->isValueInArray($pageVisited, $pagesRights['user']) === true)
         ) {
             return true;
-        }
-        
+        } 
         return false;
     }
 
