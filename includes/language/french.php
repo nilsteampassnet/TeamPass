@@ -1761,7 +1761,7 @@ return array(
     'inactive_users_mgmt_msg_task_already_pending' => 'Une tâche est déjà en attente/en cours',
     'inactive_users_mgmt_msg_settings_saved' => 'Paramètres enregistrés',
     'inactive_users_mgmt_email_subject' => 'Teampass – Notification d’inactivité',
-    'inactive_users_mgmt_email_body' => 'Bonjour #lastname#,<br><br>Votre compte <b>#login#</b> est inactif depuis <b>#inactivity_days#</b> jours.<br>Sans connexion dans les <b>#grace_days#</b> prochains jours, l’action suivante sera appliquée : <b>#action#</b>.<br><br>Vous pouvez vous connecter ici : <a href="#url#">#url#</a><br><br>Cordialement',
+    'inactive_users_mgmt_email_body' => 'Bonjour #firstname#,<br><br>Votre compte <b>#login#</b> est inactif depuis <b>#inactivity_days#</b> jours.<br>Sans connexion dans les <b>#grace_days#</b> prochains jours, l’action suivante sera appliquée : <b>#action#</b>.<br><br>Vous pouvez vous connecter ici : <a href="#url#">#url#</a><br><br>Cordialement',
     'inactive_users_mgmt_banner_enabled' => 'La gestion automatique des utilisateurs inactifs est activée : avertissement après <b>%s</b> jours, puis <b>%s</b> jours plus tard : <b>%s</b>.',
     'inactive_users_mgmt_banner_disabled' => 'La gestion automatique des utilisateurs inactifs est désactivée.',
     'inactive_users_mgmt_go_to_options' => 'Ouvrir Options',
