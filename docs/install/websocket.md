@@ -61,7 +61,7 @@ Add the following to your VirtualHost block (typically in your SSL vhost):
     RewriteRule ^/ws/?(.*)$ ws://127.0.0.1:8080/$1 [P,L]
 
     ProxyPass /ws/ ws://127.0.0.1:8080/
-    ProxyPassReverse /ws ws://127.0.0.1:8080/
+    ProxyPassReverse /ws/ ws://127.0.0.1:8080/
 </VirtualHost>
 ```
 
