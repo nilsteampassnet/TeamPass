@@ -2163,27 +2163,22 @@ switch ($inputData['type']) {
                 }
             }
 
-            // Remove the edition lock if no encryption steps are needed
-            if ($encryptionTaskIsRequested === false) {
-                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('Remove the edition lock if no encryption steps are needed');
-                }
-                DB::delete(
-                    prefixTable('items_edition'),
-                    'item_id = %i AND user_id = %i',
-                    $inputData['itemId'],
-                    $session->get('user-id')
-                );
+            // Remove the edition lock after a successful save
+            DB::delete(
+                prefixTable('items_edition'),
+                'item_id = %i AND user_id = %i',
+                $inputData['itemId'],
+                $session->get('user-id')
+            );
 
-                // Notify other users via WebSocket that this item is now free
-                emitEditionLockEvent(
-                    'stopped',
-                    (int) $inputData['itemId'],
-                    (int) $inputData['folderId'],
-                    $session->get('user-login') ?? '',
-                    (int) $session->get('user-id')
-                );
-            }
+            // Notify other users via WebSocket that this item is now free
+            emitEditionLockEvent(
+                'stopped',
+                (int) $inputData['itemId'],
+                (int) $inputData['folderId'],
+                $session->get('user-login') ?? '',
+                (int) $session->get('user-id')
+            );
 
             // Notifiy changes to the users
             notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
