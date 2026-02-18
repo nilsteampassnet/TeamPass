@@ -55,8 +55,44 @@
     return
   }
   
-  // Get WebSocket URL from PHP config
-  var wsUrl = window.TeamPassWebSocketUrl || 'ws://127.0.0.1:8080'
+  function getDefaultWsUrl () {
+    return (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws'
+  }
+
+  function normalizeWsUrl (rawUrl) {
+    var urlStr = (typeof rawUrl === 'string' && rawUrl.trim() !== '') ? rawUrl.trim() : getDefaultWsUrl()
+
+    // Support: host:port, /ws, ws://..., wss://...
+    if (!/^wss?:\/\//i.test(urlStr)) {
+      if (urlStr.charAt(0) === '/') {
+        urlStr = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + urlStr
+      } else {
+        urlStr = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + urlStr
+      }
+    }
+
+    try {
+      var u = new URL(urlStr)
+
+      // If TeamPass is served over HTTPS, WebSocket must be WSS
+      if (window.location.protocol === 'https:' && u.protocol === 'ws:') {
+        u.protocol = 'wss:'
+      }
+
+      // Reverse proxy route is /ws
+      if (!u.pathname || u.pathname === '/') {
+        u.pathname = '/ws'
+      }
+
+      // Keep consistent URL (avoid trailing slash issues)
+      return u.toString().replace(/\/$/, '')
+    } catch (e) {
+      return getDefaultWsUrl()
+    }
+  }
+
+  // Get WebSocket URL from PHP config (hardened)
+  var wsUrl = normalizeWsUrl(window.TeamPassWebSocketUrl)
 
   // Create global instance with token authentication
   var tpWs = new TeamPassWebSocket({
