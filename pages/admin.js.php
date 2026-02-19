@@ -489,6 +489,7 @@ function loadDashboardStats() {
                 $('#stat-users-active').text(data.users.active)
                 $('#stat-users-online').text(data.users.online)
                 $('#stat-users-blocked').text(data.users.blocked)
+                $('#stat-users-warned').text(data.users.warned !== undefined ? data.users.warned : '-')
                 
                 // Items stats
                 $('#stat-items-total').text(data.items.total)

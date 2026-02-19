@@ -163,8 +163,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         <h3 id="stat-users-active">-</h3>
                                         <p><?php echo $lang->get('active_users'); ?></p>
                                         <div class="small text-white">
-                                            <span><?php echo $lang->get('online'); ?>: <strong id="stat-users-online">-</strong></span><br>
-                                            <span><?php echo $lang->get('blocked'); ?>: <strong id="stat-users-blocked">-</strong></span>
+                                            <div><?php echo $lang->get('online'); ?>: <strong id="stat-users-online">-</strong></div>
+                                            <div class="d-flex justify-content-between">
+                                                <span><?php echo $lang->get('blocked'); ?>: <strong id="stat-users-blocked">-</strong></span>
+                                                <span><?php echo $lang->get('inactive_users_mgmt_badge_warned'); ?>: <strong id="stat-users-warned">-</strong></span>
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="icon">
