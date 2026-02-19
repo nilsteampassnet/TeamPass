@@ -76,6 +76,7 @@
 
       // If TeamPass is served over HTTPS, WebSocket must be WSS
       if (window.location.protocol === 'https:' && u.protocol === 'ws:') {
+        tpWsDebug('[TeamPass WS] ws:// forced to wss:// (HTTPS context) - ensure your WS server supports TLS or use a reverse proxy', 'warn')
         u.protocol = 'wss:'
       }
 
