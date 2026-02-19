@@ -76,10 +76,76 @@ if (isset($uri[0]) && $uri[0] === 'authorize') {
     // get infos from JWT parameters
     $userData = json_decode(getDataFromToken(), true);
 
+    // Populate folders_list from cache_tree (was removed from JWT to reduce token size).
+    // On cache miss or invalidation, rebuild from DB and refresh the cache.
+    if (empty($userData['data']['folders_list'])) {
+        $userId = (int) ($userData['data']['id'] ?? 0);
+        if ($userId > 0) {
+            $cacheRow = DB::queryFirstRow(
+                'SELECT folders, IFNULL(invalidated_at, 0) AS invalidated_at, timestamp
+                FROM ' . prefixTable('cache_tree') . '
+                WHERE user_id = %i',
+                $userId
+            );
+
+            $cacheValid = (
+                $cacheRow !== null
+                && !empty($cacheRow['folders'])
+                && $cacheRow['folders'] !== '[]'
+                && (int) $cacheRow['invalidated_at'] <= (int) $cacheRow['timestamp']
+            );
+
+            if ($cacheValid) {
+                $folderIds = json_decode($cacheRow['folders'], true);
+                if (is_array($folderIds) && count($folderIds) > 0) {
+                    $userData['data']['folders_list'] = implode(',', array_map('intval', $folderIds));
+                }
+            } else {
+                // Rebuild: recompute from DB and refresh cache_tree.folders
+                $userRow = DB::queryFirstRow(
+                    'SELECT id, groupes_visibles, fonction_id
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $userId
+                );
+                if ($userRow !== null) {
+                    require_once API_ROOT_PATH . "/Model/AuthModel.php";
+                    $authModel = new AuthModel();
+                    $ret = $authModel->buildUserFoldersList($userRow);
+                    $foldersJson = json_encode($ret['folders']);
+
+                    if ($cacheRow === null) {
+                        DB::insert(prefixTable('cache_tree'), [
+                            'user_id'         => $userId,
+                            'data'            => '[]',
+                            'visible_folders' => '[]',
+                            'folders'         => $foldersJson,
+                            'timestamp'       => time(),
+                            'invalidated_at'  => 0,
+                        ]);
+                    } else {
+                        DB::update(
+                            prefixTable('cache_tree'),
+                            ['folders' => $foldersJson, 'timestamp' => time(), 'invalidated_at' => 0],
+                            'user_id = %i',
+                            $userId
+                        );
+                    }
+
+                    if (!empty($ret['folders'])) {
+                        $userData['data']['folders_list'] = implode(',', array_map('intval', $ret['folders']));
+                    }
+                }
+            }
+        }
+    }
+
+
+
     // define the position of controller in $uri
     $controller = $uri[0];
     $action = $uri[1];
-    //error_log("API - controller: ".$controller." | action: ".$action." || ");//.print_r($userData, true)
+    
     if ($userData['error'] === true) {
         // Error management
         errorHdl(
