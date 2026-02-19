@@ -693,17 +693,31 @@ $inactive_blink_class = $inactive_never_connected_count > 0 ? 'blink_me' : '';
             <h5><?php echo $lang->get('deleted_users'); ?></h5>
         </div>
         <div class="card-body">
-            <button type="button" 
-                    class="btn btn-warning mb-3" 
-                    id="btn-purge-old-users"
-                    data-retention="90">
-                <i class="fas fa-broom"></i> <?php echo $lang->get('purge_users_90days'); ?>
-            </button>
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <button type="button"
+                            class="btn btn-warning"
+                            id="btn-purge-old-users"
+                            data-retention="90">
+                        <i class="fas fa-broom"></i> <?php echo $lang->get('purge_users_90days'); ?>
+                    </button>
+                </div>
+
+                <div class="col-md-8 text-right align-self-end">
+                    <button type="button" class="btn btn-danger btn-sm" id="btn-purge-selected-users">
+                        <i class="fas fa-trash"></i> <?php echo $lang->get('purge_selected'); ?>
+                    </button>
+                </div>
+            </div>
+
             
             <div id="deleted-users-list">
                 <table class="table table-striped" id="table-deleted-users">
                     <thead>
                         <tr>
+                            <th class="text-center align-middle px-1" style="width: 32px;">
+                                <input type="checkbox" id="deleted-users-check-all">
+                            </th>
                             <th class="align-middle text-left"><?php echo $lang->get('login'); ?></th>
                             <th class="align-middle text-left"><?php echo $lang->get('email'); ?></th>
                             <th><?php echo $lang->get('deleted_date'); ?></th>

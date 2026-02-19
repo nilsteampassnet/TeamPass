@@ -127,4 +127,5 @@ $utilitiesPages = array(
     'utilities.deletion' => 'utilities.deletion.php',
     'utilities.logs' => 'utilities.logs.php',
     'utilities.database' => 'utilities.database.php',
+    'utilities.health' => 'utilities.health.php',
 );

@@ -379,6 +379,13 @@ try {
                         $langUser = new Language($userLang);
 
                         $receiverName = trim((string)($u['name'] ?? '') . ' ' . (string)($u['lastname'] ?? ''));
+                        $firstName = trim((string)($u['name'] ?? ''));
+                        if ($firstName === '') {
+                            $firstName = trim((string)($u['lastname'] ?? ''));
+                        }
+                        if ($firstName === '') {
+                            $firstName = (string)($u['login'] ?? '');
+                        }
                         if ($receiverName === '') $receiverName = (string)($u['login'] ?? '');
 
                         $subject = (string)$langUser->get('inactive_users_mgmt_email_subject');
@@ -387,8 +394,8 @@ try {
 
                         $tpUrl = (string)($this->settings['cpassman_url'] ?? '');
                         $body = str_replace(
-                            ['#login#', '#lastname#', '#inactivity_days#', '#grace_days#', '#action#', '#url#'],
-                            [(string)($u['login'] ?? ''), (string)($u['lastname'] ?? ''), (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
+                            ['#login#', '#firstname#', '#lastname#', '#inactivity_days#', '#grace_days#', '#action#', '#url#'],
+                            [(string)($u['login'] ?? ''), $firstName, $firstName, (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
                             $bodyTpl
                         );
 
