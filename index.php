@@ -1373,7 +1373,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             task: <?php echo json_encode($lang->get('ws_task')); ?>,
             being_edited_by: <?php echo json_encode($lang->get('ws_being_edited_by')); ?>,
             item_now_available: <?php echo json_encode($lang->get('ws_item_now_available')); ?>,
-            item_edition_released: <?php echo json_encode($lang->get('ws_item_edition_released')); ?>
+            item_edition_released: <?php echo json_encode($lang->get('ws_item_edition_released')); ?>,
+            item_reloading: <?php echo json_encode($lang->get('ws_item_reloading')); ?>
         };
     </script>
     <script type="text/javascript" src="includes/js/teampass-websocket.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>

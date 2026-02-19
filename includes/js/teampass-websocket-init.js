@@ -165,6 +165,21 @@
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showNotification('info', L.item_updated, '"' + data.label + '" ' + L.item_updated_by + ' ' + data.updated_by)
         refreshItemsList()
+
+        // If the updated item is currently being viewed, reload its details
+        var currentItem = typeof store !== 'undefined' ? store.get('teampassItem') : null
+        if (currentItem && parseInt(currentItem.id) === parseInt(data.item_id)) {
+          if (typeof window.refreshItemDetails === 'function') {
+            toastr.remove()
+            toastr.info(
+              (L.item_reloading || 'Item was modified by another user and is being reloaded') +
+              ' <i class="fa-solid fa-circle-notch fa-spin ml-1"></i>',
+              '',
+              { timeOut: 0 }
+            )
+            window.refreshItemDetails(parseInt(data.item_id))
+          }
+        }
       }
     })
 

@@ -1769,6 +1769,7 @@ return array(
     'ws_being_edited_by' => 'Being edited by',
     'ws_item_now_available' => 'Item available',
     'ws_item_edition_released' => 'Item is now available for editing',
+    'ws_item_reloading' => 'Item was modified by another user and is being reloaded',
 
     // WebSocket admin panel
     'ws_status_disabled' => 'Disabled',
