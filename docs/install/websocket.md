@@ -58,10 +58,10 @@ Add the following to your VirtualHost block (typically in your SSL vhost):
     RewriteEngine On
     RewriteCond %{HTTP:Upgrade} websocket [NC]
     RewriteCond %{HTTP:Connection} upgrade [NC]
-    RewriteRule ^/ws$ ws://127.0.0.1:8080/ [P,L]
+    RewriteRule ^/ws/?(.*)$ ws://127.0.0.1:8080/$1 [P,L]
 
-    ProxyPass /ws ws://127.0.0.1:8080/
-    ProxyPassReverse /ws ws://127.0.0.1:8080/
+    ProxyPass /ws/ ws://127.0.0.1:8080/
+    ProxyPassReverse /ws/ ws://127.0.0.1:8080/
 </VirtualHost>
 ```
 
