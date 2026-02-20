@@ -186,7 +186,7 @@ class TaskWorker {
                         'session_end' => '',
                     ],
                     'id = %i',
-                    (int) $u['id']
+                    intval($u['id'])
                 );
             }
         } catch (Throwable) {
@@ -335,7 +335,7 @@ class TaskWorker {
         $reset = 0;
 
         foreach ($users as $u) {
-            $userId = (int)($u['id'] ?? 0);
+            $userId = intval($u['id'] ?? 0);
             if ($userId <= 0) continue;
 
             try {
@@ -345,7 +345,7 @@ class TaskWorker {
 
                 $warnedAt = $this->parseUserTs($u['inactivity_warned_at'] ?? null);
                 $actionAt = $this->parseUserTs($u['inactivity_action_at'] ?? null);
-                $storedAction = (string)($u['inactivity_action'] ?? '');
+                $storedAction = strval($u['inactivity_action'] ?? '');
 
                 // Reset tracking if user logged in after a warning
                 if ($warnedAt > 0 && $lastConnexionTs > 0 && $lastConnexionTs > $warnedAt) {
@@ -373,26 +373,26 @@ class TaskWorker {
 
                 // Warn if threshold reached and not warned yet
                 if ($warnedAt <= 0 && $lastActivityTs > 0 && $lastActivityTs <= $warnCutoff) {
-                    $email = trim((string)($u['email'] ?? ''));
+                    $email = trim(strval($u['email'] ?? ''));
                     $noEmail = 0;
 
                     if ($email === '') {
                         $noEmail = 1;
                         $warnedNoEmail++;
                     } else {
-                        $userLang = trim((string)($u['user_language'] ?? ''));
+                        $userLang = trim(strval($u['user_language'] ?? ''));
                         if ($userLang === '' || $userLang === '0') $userLang = 'english';
                         $langUser = new Language($userLang);
 
-                        $receiverName = trim((string)($u['name'] ?? '') . ' ' . (string)($u['lastname'] ?? ''));
-                        $firstName = trim((string)($u['name'] ?? ''));
+                        $receiverName = trim(strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? ''));
+                        $firstName = trim(strval($u['name'] ?? ''));
                         if ($firstName === '') {
-                            $firstName = trim((string)($u['lastname'] ?? ''));
+                            $firstName = trim(strval($u['lastname'] ?? ''));
                         }
                         if ($firstName === '') {
-                            $firstName = (string)($u['login'] ?? '');
+                            $firstName = strval($u['login'] ?? '');
                         }
-                        if ($receiverName === '') $receiverName = (string)($u['login'] ?? '');
+                        if ($receiverName === '') $receiverName = strval($u['login'] ?? '');
 
                         $subject = (string)$langUser->get('inactive_users_mgmt_email_subject');
                         $bodyTpl = (string)$langUser->get('inactive_users_mgmt_email_body');
@@ -401,7 +401,7 @@ class TaskWorker {
                         $tpUrl = (string)($this->settings['cpassman_url'] ?? '');
                         $body = str_replace(
                             ['#login#', '#firstname#', '#lastname#', '#inactivity_days#', '#grace_days#', '#action#', '#url#'],
-                            [(string)($u['login'] ?? ''), $firstName, $firstName, (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
+                            [strval($u['login'] ?? ''), $firstName, $firstName, (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
                             $bodyTpl
                         );
 
@@ -457,7 +457,7 @@ class TaskWorker {
     private function parseUserTs(mixed $value): int
     {
         if ($value === null) return 0;
-        $v = trim((string)$value);
+        $v = trim(strval($value));
         if ($v === '' || $v === '0') return 0;
 
         if (preg_match('/^[0-9]{13}$/', $v)) return (int) floor(((int)$v) / 1000);
@@ -503,7 +503,7 @@ class TaskWorker {
         $deletedSuffix = '_deleted_' . $timestamp;
 
         DB::update(prefixTable('users'), [
-            'login' => (string)$data_user['login'] . $deletedSuffix,
+            'login' => strval($data_user['login']) . $deletedSuffix,
             'deleted_at' => (string)$timestamp,
             'disabled' => 1,
             'special' => 'none',
@@ -573,12 +573,12 @@ class TaskWorker {
         $dt = date('Y-m-d H:i:s');
 
         foreach ($admins as $a) {
-            $email = (string)($a['email'] ?? '');
+            $email = strval($a['email'] ?? '');
             if ($email === '') {
                 continue;
             }
 
-            $ul = (string)($a['user_language'] ?? 'english');
+            $ul = strval($a['user_language'] ?? 'english');
             if ($ul === '' || $ul === '0') {
                 $ul = 'english';
             }
@@ -611,7 +611,7 @@ class TaskWorker {
                 $bodyTpl
             );
 
-            $receiverName = (string)($a['login'] ?? $lang->get('administrator'));
+            $receiverName = strval($a['login'] ?? $lang->get('administrator'));
             prepareSendingEmail($subject, $body, $email, $receiverName);
         }
     }
@@ -621,11 +621,11 @@ class TaskWorker {
     {
         $table = prefixTable('misc');
 
-        $exists = (int)DB::queryFirstField(
+        $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
             'settings',
             $key
-        );
+        ));
 
         if ($exists > 0) {
             DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
@@ -648,7 +648,7 @@ class TaskWorker {
             return $default;
         }
 
-        return (string) $val;
+        return strval($val);
     }
 
     private function purgeOldScheduledBackups(string $dir, int $retentionDays): int
@@ -857,7 +857,7 @@ class TaskWorker {
                 // Get the subtask data
                 $subtaskData = json_decode($subtask['task'], true);
 
-                if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . $subtaskData['step'], 'DEBUG');
+                if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . strval($subtaskData['step'] ?? ''), 'DEBUG');
 
                 // Mark subtask as in progress
                 DB::update(
@@ -879,7 +879,7 @@ class TaskWorker {
                         $this->generateUserFileKeys($subtaskData);
                         break;
                     default:
-                        throw new Exception("Type de sous-tâche inconnu (".$subtaskData['step'].")");
+                        throw new Exception("Type de sous-tâche inconnu (" . strval($subtaskData['step'] ?? '') . ")");
                 }                
         
                 // Mark subtask as completed
@@ -919,7 +919,7 @@ class TaskWorker {
             $this->taskId
         );
     
-        if ((int) $remainingSubtasks === 0) {
+        if (intval($remainingSubtasks) === 0) {
             $this->completeTask();
         }
     }

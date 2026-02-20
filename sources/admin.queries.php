@@ -383,7 +383,7 @@ switch ($post_type) {
                     prefixTable('log_items'),
                     array(
                         'id_item' => $item['id'],
-                        'date' => $rowTmp['date'] - 1,
+                        'date' => intval($rowTmp['date']) - 1,
                         'id_user' => empty($rowTmp['id_user']) === true ? 1 : $rowTmp['id_user'],
                         'action' => 'at_creation',
                         'raison' => '',
@@ -679,7 +679,7 @@ switch ($post_type) {
                             'current_field' => 'pw',
                             'value_id' => $record['id'],
                             'value' => $record['pw'],
-                            'current_sql' => 'UPDATE ' . prefixTable('items') . " SET pw = '" . $record['pw'] . "' WHERE id = '" . $record['id'] . "';",
+                            'current_sql' => 'UPDATE ' . prefixTable('items') . " SET pw = '" . strval($record['pw']) . "' WHERE id = '" . strval($record['id']) . "';",
                             'value2' => 'none',
                             'result' => 'none',
                         )
@@ -742,7 +742,7 @@ switch ($post_type) {
                             'current_field' => 'raison',
                             'value_id' => $record['increment_id'],
                             'value' => $record['raison'],
-                            'current_sql' => 'UPDATE ' . prefixTable('log_items') . " SET raison = '" . $record['raison'] . "' WHERE increment_id = '" . $record['increment_id'] . "';",
+                            'current_sql' => 'UPDATE ' . prefixTable('log_items') . " SET raison = '" . strval($record['raison']) . "' WHERE increment_id = '" . strval($record['increment_id']) . "';",
                             'value2' => 'none',
                             'result' => 'none',
                         )
@@ -807,7 +807,7 @@ switch ($post_type) {
                             'current_field' => 'data',
                             'value_id' => $record['id'],
                             'value' => $record['data'],
-                            'current_sql' => 'UPDATE ' . prefixTable('categories_items') . " SET data = '" . $record['data'] . "' WHERE id = '" . $record['id'] . "';",
+                            'current_sql' => 'UPDATE ' . prefixTable('categories_items') . " SET data = '" . strval($record['data']) . "' WHERE id = '" . strval($record['id']) . "';",
                             'value2' => 'none',
                             'result' => 'none',
                         )
@@ -874,20 +874,21 @@ switch ($post_type) {
                         )
                     );
                     $newID = DB::insertId();
+                    $recordFile = strval($record['file']);
 
-                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $record['file'])) {
+                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordFile)) {
                         // make a copy of file
                         if (!copy(
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file'],
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file'] . '.copy'
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '.copy'
                         )) {
                             $error = 'Copy not possible';
                             exit;
                         } else {
                             // prepare a bck of file (that will not be deleted)
-                            $backup_filename = $record['file'] . '.bck-change-sk.' . time();
+                            $backup_filename = $recordFile . '.bck-change-sk.' . time();
                             copy(
-                                $SETTINGS['path_to_upload_folder'] . '/' . $record['file'],
+                                $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
                                 $SETTINGS['path_to_upload_folder'] . '/' . $backup_filename
                             );
                         }
@@ -896,22 +897,22 @@ switch ($post_type) {
                         // STEP1 - Do decryption
                         prepareFileWithDefuse(
                             'decrypt',
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file'],
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file'] . '_encrypted'
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted'
                         );
 
                         // Do cleanup of files
-                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $record['file']);
+                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordFile);
 
                         // STEP2 - Do encryption
                         prepareFileWithDefuse(
                             'encryp',
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file'] . '_encrypted',
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['file']
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile
                         );
 
                         // Do cleanup of files
-                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $record['file'] . '_encrypted');
+                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted');
 
                         // Update backup table
                         DB::update(
@@ -1063,12 +1064,14 @@ switch ($post_type) {
                 );
             } elseif ($record['current_table'] === 'files') {
                 // restore backup file
-                if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $record['value'])) {
-                    unlink($SETTINGS['path_to_upload_folder'] . '/' . $record['value']);
-                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $record['value2'])) {
+                $recordValue = strval($record['value']);
+                $recordValue2 = strval($record['value2']);
+                if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordValue)) {
+                    unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordValue);
+                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordValue2)) {
                         rename(
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['value2'],
-                            $SETTINGS['path_to_upload_folder'] . '/' . $record['value']
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordValue2,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordValue
                         );
                     }
                 }
@@ -1134,8 +1137,8 @@ switch ($post_type) {
             WHERE current_table = 'files'"
         );
         foreach ($rows as $record) {
-            if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $record['value2'])) {
-                unlink($SETTINGS['path_to_upload_folder'] . '/' . $record['value2']);
+            if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . strval($record['value2']))) {
+                unlink($SETTINGS['path_to_upload_folder'] . '/' . strval($record['value2']));
             }
         }
 
@@ -1389,7 +1392,7 @@ switch ($post_type) {
                 FROM ' . prefixTable('files')
             );
             foreach ($rows as $record) {
-                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . $record['file'])) {
+                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . strval($record['file']))) {
                     $addFile = false;
                     if (($post_option === 'attachments-decrypt' && $record['status'] === 'encrypted')
                         || ($post_option === 'attachments-encrypt' && $record['status'] === 'clear')
@@ -1474,27 +1477,28 @@ switch ($post_type) {
                 );
 
                 // skip file is Coherancey not respected
-                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . $file_info['file'])) {
+                $fileInfoFile = strval($file_info['file']);
+                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile)) {
                     // Case where we want to decrypt
                     if ($post_option === 'decrypt') {
                         prepareFileWithDefuse(
                             'decrypt',
-                            $SETTINGS['path_to_upload_folder'] . '/' . $file_info['file'],
-                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $file_info['file'],
+                            $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile,
+                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
                         );
                         // Case where we want to encrypt
                     } elseif ($post_option === 'encrypt') {
                         prepareFileWithDefuse(
                             'encrypt',
-                            $SETTINGS['path_to_upload_folder'] . '/' . $file_info['file'],
-                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $file_info['file'],
+                            $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile,
+                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
                         );
                     }
                     // Do file cleanup
-                    fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $file_info['file'], $SETTINGS);
+                    fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile, $SETTINGS);
                     rename(
-                        $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $file_info['file'],
-                        $SETTINGS['path_to_upload_folder'] . '/' . $file_info['file']
+                        $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
+                        $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile
                     );
 
                     // store in DB
@@ -2296,16 +2300,16 @@ case 'get_operational_statistics':
         $tpApiLike = '%tp_src=api%';
 
         // ---- USERS (inventory / status)
-        $totalUsers = (int) DB::queryFirstField(
+        $totalUsers = intval(DB::queryFirstField(
             "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql}"
-        );
-        $disabledUsers = (int) DB::queryFirstField(
+        ));
+        $disabledUsers = intval(DB::queryFirstField(
             "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql} AND u.disabled = 1"
-        );
+        ));
         $enabledUsers = max(0, $totalUsers - $disabledUsers);
 
         // Users active in period (based on items logs + connections)
-        $activeUsers = (int) DB::queryFirstField(
+        $activeUsers = intval(DB::queryFirstField(
             "SELECT COUNT(DISTINCT t.user_id) AS c
             FROM (
                 SELECT li.id_user AS user_id
@@ -2333,7 +2337,7 @@ case 'get_operational_statistics':
             $nowTs,
             $includeApi,
             $tpApiLike
-        );
+        ));
         $inactiveUsers = max(0, $enabledUsers - $activeUsers);
 
         // Connections web vs api (filtered depending on include_api)
@@ -2409,10 +2413,10 @@ case 'get_operational_statistics':
 
         $series = array('labels' => array(), 'views' => array(), 'copies' => array(), 'pw_shown' => array());
         foreach ($seriesRows as $r) {
-            $series['labels'][] = (string) $r['g'];
-            $series['views'][] = (int) $r['views'];
-            $series['copies'][] = (int) $r['copies'];
-            $series['pw_shown'][] = (int) $r['pw_shown'];
+            $series['labels'][] = strval($r['g']);
+            $series['views'][] = intval($r['views']);
+            $series['copies'][] = intval($r['copies']);
+            $series['pw_shown'][] = intval($r['pw_shown']);
         }
 
         // Top users
@@ -2460,7 +2464,7 @@ case 'get_operational_statistics':
         );
 
         // ---- ROLES
-        $rolesTotal = (int) DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title'));
+        $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
 
         // Users total per role (excluding deleted users)
         $roleUsersTotalRows = DB::query(
@@ -2472,7 +2476,7 @@ case 'get_operational_statistics':
         );
         $roleUsersTotal = array();
         foreach ($roleUsersTotalRows as $r) {
-            $roleUsersTotal[(int) $r['role_id']] = (int) $r['c'];
+            $roleUsersTotal[intval($r['role_id'])] = intval($r['c']);
         }
 
         // Items accessible per role (nested set inheritance) - roles only apply to shared items
@@ -2488,7 +2492,7 @@ case 'get_operational_statistics':
         );
         $roleItemsAccessible = array();
         foreach ($roleItemsAccessibleRows as $r) {
-            $roleItemsAccessible[(int) $r['role_id']] = (int) $r['c'];
+            $roleItemsAccessible[intval($r['role_id'])] = intval($r['c']);
         }
 
         // Activity per role (based on user membership; folder access is evaluated separately)
@@ -2556,7 +2560,7 @@ case 'get_operational_statistics':
 
         // Enrich roles rows
         foreach ($topRoles as $k => $r) {
-            $rid = (int) $r['role_id'];
+            $rid = intval($r['role_id']);
             $topRoles[$k]['items_accessible'] = isset($roleItemsAccessible[$rid]) ? (int) $roleItemsAccessible[$rid] : 0;
             $topRoles[$k]['users_total'] = isset($roleUsersTotal[$rid]) ? (int) $roleUsersTotal[$rid] : 0;
         }
@@ -2613,9 +2617,9 @@ case 'get_operational_statistics':
             $pwMinComplexity
         );
 
-        $pwAssessedTotal = (int) ($passwordSecurityRow['assessed_total'] ?? 0);
-        $pwCompliant = (int) ($passwordSecurityRow['compliant'] ?? 0);
-        $pwUnknown = (int) ($passwordSecurityRow['unknown'] ?? 0);
+        $pwAssessedTotal = intval($passwordSecurityRow['assessed_total'] ?? 0);
+        $pwCompliant = intval($passwordSecurityRow['compliant'] ?? 0);
+        $pwUnknown = intval($passwordSecurityRow['unknown'] ?? 0);
         $pwNonCompliant = max(0, $pwAssessedTotal - $pwCompliant);
         $pwSecureScore = $pwAssessedTotal > 0 ? (int) round(($pwCompliant / $pwAssessedTotal) * 100) : null;
         if ($pwSecureScore !== null) {
@@ -2634,8 +2638,8 @@ case 'get_operational_statistics':
         );
         $complexity = array('labels' => array(), 'counts' => array());
         foreach ($complexityDist as $r) {
-            $complexity['labels'][] = (string) $r['complexity_level'];
-            $complexity['counts'][] = (int) $r['c'];
+            $complexity['labels'][] = strval($r['complexity_level']);
+            $complexity['counts'][] = intval($r['c']);
         }
 
         // Usage by personal/shared (period)
@@ -2663,10 +2667,10 @@ case 'get_operational_statistics':
             'shared' => array('views' => 0, 'copies' => 0, 'pw_shown' => 0),
         );
         foreach ($usageByPersoRows as $r) {
-            if ((int) $r['perso'] === 1) {
-                $usageByPerso['personal'] = array('views' => (int) $r['views'], 'copies' => (int) $r['copies'], 'pw_shown' => (int) $r['pw_shown']);
+            if (intval($r['perso']) === 1) {
+                $usageByPerso['personal'] = array('views' => intval($r['views']), 'copies' => intval($r['copies']), 'pw_shown' => intval($r['pw_shown']));
             } else {
-                $usageByPerso['shared'] = array('views' => (int) $r['views'], 'copies' => (int) $r['copies'], 'pw_shown' => (int) $r['pw_shown']);
+                $usageByPerso['shared'] = array('views' => intval($r['views']), 'copies' => intval($r['copies']), 'pw_shown' => intval($r['pw_shown']));
             }
         }
 
@@ -2718,17 +2722,17 @@ case 'get_operational_statistics':
                 'active_users' => $activeUsers,
                 'inactive_users' => $inactiveUsers,
                 'connections' => array(
-                    'api' => (int) ($connections['api'] ?? 0),
-                    'web' => (int) ($connections['web'] ?? 0),
-                    'total' => (int) ($connections['total'] ?? 0),
+                    'api' => intval($connections['api'] ?? 0),
+                    'web' => intval($connections['web'] ?? 0),
+                    'total' => intval($connections['total'] ?? 0),
                 ),
                 'actions' => array(
-                    'views' => (int) ($actions['views'] ?? 0),
-                    'copies' => (int) ($actions['copies'] ?? 0),
-                    'pw_shown' => (int) ($actions['pw_shown'] ?? 0),
-                    'created' => (int) ($actions['created'] ?? 0),
-                    'modified' => (int) ($actions['modified'] ?? 0),
-                    'api_views' => (int) ($actions['api_views'] ?? 0),
+                    'views' => intval($actions['views'] ?? 0),
+                    'copies' => intval($actions['copies'] ?? 0),
+                    'pw_shown' => intval($actions['pw_shown'] ?? 0),
+                    'created' => intval($actions['created'] ?? 0),
+                    'modified' => intval($actions['modified'] ?? 0),
+                    'api_views' => intval($actions['api_views'] ?? 0),
                 ),
                 'series' => $series,
                 'top' => $topUsers,
@@ -2737,8 +2741,8 @@ case 'get_operational_statistics':
                 'total' => $rolesTotal,
                 'active' => $rolesActive,
                 'kpis' => array(
-                    'users_active' => (int) ($rolesKpis['users_active'] ?? 0),
-                    'items_unique' => (int) ($rolesKpis['items_unique'] ?? 0),
+                    'users_active' => intval($rolesKpis['users_active'] ?? 0),
+                    'items_unique' => intval($rolesKpis['items_unique'] ?? 0),
                 ),
                 'top' => $topRoles,
             ),
@@ -2755,16 +2759,16 @@ case 'get_operational_statistics':
                     ),
                 ),
                 'inventory' => array(
-                    'total_active' => (int) ($itemsInventory['total_active'] ?? 0),
-                    'personal_active' => (int) ($itemsInventory['personal_active'] ?? 0),
-                    'shared_active' => (int) ($itemsInventory['shared_active'] ?? 0),
-                    'inactive_active' => (int) ($itemsInventory['inactive_active'] ?? 0),
-                    'deleted' => (int) ($itemsInventory['deleted'] ?? 0),
-                    'restricted' => (int) ($itemsInventory['restricted'] ?? 0),
-                    'avg_complexity' => $itemsInventory['avg_complexity'] !== null ? round((float) $itemsInventory['avg_complexity'], 1) : null,
-                    'unknown_complexity' => (int) ($itemsInventory['unknown_complexity'] ?? 0),
-                    'avg_pw_len' => $itemsInventory['avg_pw_len'] !== null ? round((float) $itemsInventory['avg_pw_len'], 1) : null,
-                    'stale_90' => (int) ($itemsInventory['stale_90'] ?? 0),
+                    'total_active' => intval($itemsInventory['total_active'] ?? 0),
+                    'personal_active' => intval($itemsInventory['personal_active'] ?? 0),
+                    'shared_active' => intval($itemsInventory['shared_active'] ?? 0),
+                    'inactive_active' => intval($itemsInventory['inactive_active'] ?? 0),
+                    'deleted' => intval($itemsInventory['deleted'] ?? 0),
+                    'restricted' => intval($itemsInventory['restricted'] ?? 0),
+                    'avg_complexity' => $itemsInventory['avg_complexity'] !== null ? round(floatval($itemsInventory['avg_complexity']), 1) : null,
+                    'unknown_complexity' => intval($itemsInventory['unknown_complexity'] ?? 0),
+                    'avg_pw_len' => $itemsInventory['avg_pw_len'] !== null ? round(floatval($itemsInventory['avg_pw_len']), 1) : null,
+                    'stale_90' => intval($itemsInventory['stale_90'] ?? 0),
                 ),
                 'complexity' => $complexity,
                 'usage_by_perso' => $usageByPerso,
@@ -3480,25 +3484,25 @@ case 'save_sending_statistics':
         array(
             'error' => false,
             'users' => array(
-                'active' => (int) $usersActive,
-                'online' => (int) $usersOnline,
-                'blocked' => (int) $usersBlocked,
-                'warned' => (int) $usersWarned,
+                'active' => intval($usersActive),
+                'online' => intval($usersOnline),
+                'blocked' => intval($usersBlocked),
+                'warned' => intval($usersWarned),
             ),
             'items' => array(
-                'total' => (int) $itemsTotal,
-                'shared' => (int) $itemsShared,
-                'personal' => (int) $itemsPersonal,
+                'total' => intval($itemsTotal),
+                'shared' => intval($itemsShared),
+                'personal' => intval($itemsPersonal),
             ),
             'folders' => array(
-                'total' => (int) $foldersTotal,
-                'public' => (int) $foldersPublic,
-                'personal' => (int) $foldersPersonal,
+                'total' => intval($foldersTotal),
+                'public' => intval($foldersPublic),
+                'personal' => intval($foldersPersonal),
             ),
             'logs' => array(
-                'actions' => (int) $logsActions,
-                'accesses' => (int) $logsAccesses,
-                'errors' => (int) $logsErrors,
+                'actions' => intval($logsActions),
+                'accesses' => intval($logsAccesses),
+                'errors' => intval($logsErrors),
             ),
         ),
         'encode'
@@ -3570,12 +3574,12 @@ case 'get_live_activity':
         }
         
         $activityList[] = array(
-            'timestamp' => (int) $activity['date'],
-            'user_id' => (int) $activity['id_user'],
+            'timestamp' => intval($activity['date']),
+            'user_id' => intval($activity['id_user']),
             'user_login' => $activity['login'] ?? $lang->get('unknown'),
             'action' => $activity['action'],
             'action_text' => strtolower($actionText),
-            'item_id' => $activity['id_item'] ? (int) $activity['id_item'] : null,
+            'item_id' => $activity['id_item'] ? intval($activity['id_item']) : null,
             'item_label' => $activity['label'] ?? null,
         );
     }
@@ -3618,7 +3622,7 @@ case 'get_system_status':
     
     $lastCronText = $lang->get('never');
     if ($lastCronLog && isset($lastCronLog['created_at'])) {
-        $timeDiff = time() - (int) $lastCronLog['created_at'];
+        $timeDiff = time() - intval($lastCronLog['created_at']);
         if ($timeDiff < 60) {
             $lastCronText = $timeDiff . 's ' . $lang->get('ago');
         } elseif ($timeDiff < 3600) {
@@ -3633,7 +3637,7 @@ case 'get_system_status':
     echo prepareExchangedData(
         array(
             'error' => false,
-            'tasks_queue' => (int) $tasksQueue,
+            'tasks_queue' => intval($tasksQueue),
             'last_cron' => $lastCronText,
         ),
         'encode'
@@ -3699,7 +3703,7 @@ case 'get_system_health':
         $cronStatus = 'success';
         $cronText = $lang->get('health_status_ok');
         
-        if (!$lastCron || (time() - (int) $lastCron) > 120) {
+        if (!$lastCron || (time() - intval($lastCron)) > 120) {
             $cronStatus = 'warning';
             $cronText = $lang->get('health_cron_delayed');
         }
@@ -3751,7 +3755,7 @@ case 'get_system_health':
                 'text' => $encryptionText,
             ),
             'sessions' => array(
-                'count' => (int) $sessionsCount,
+                'count' => intval($sessionsCount),
             ),
             'cron' => array(
                 'status' => $cronStatus,
@@ -4183,7 +4187,7 @@ function getPersonalItemsMigrationStats(array $SETTINGS): array
         [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
 
-    $progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
+    $progressPercent = intval($stats[0]['total_users']) > 0 ? (intval($stats[0]['migrated_users']) / intval($stats[0]['total_users'])) * 100 : 0;
 
     // Get users pending migration
     $pendingUsers = DB::query(
@@ -4274,7 +4278,7 @@ function getTransparentRecoveryStats(array $SETTINGS): array
     );
 
     // Calculate migration percentage
-    $migrationPercentage = $totalUsers > 0 ? round(($usersMigrated / $totalUsers) * 100, 2) : 0;
+    $migrationPercentage = intval($totalUsers) > 0 ? round((intval($usersMigrated) / intval($totalUsers)) * 100, 2) : 0;
 
     // Calculate failure rate (last 30 days)
     $totalAttempts30d = DB::queryFirstField(
@@ -4293,14 +4297,14 @@ function getTransparentRecoveryStats(array $SETTINGS): array
         time() - (30 * 86400)
     );
 
-    $failureRate = $totalAttempts30d > 0 ? round(($failures30d / $totalAttempts30d) * 100, 2) : 0;
+    $failureRate = intval($totalAttempts30d) > 0 ? round((intval($failures30d) / intval($totalAttempts30d)) * 100, 2) : 0;
 
     return [
-        'auto_recoveries_last_24h' => (int) $autoRecoveriesLast24h,
-        'failed_recoveries_total' => (int) $failedRecoveries,
-        'critical_failures_total' => (int) $criticalFailures,
-        'users_migrated' => (int) $usersMigrated,
-        'total_users' => (int) $totalUsers,
+        'auto_recoveries_last_24h' => intval($autoRecoveriesLast24h),
+        'failed_recoveries_total' => intval($failedRecoveries),
+        'critical_failures_total' => intval($criticalFailures),
+        'users_migrated' => intval($usersMigrated),
+        'total_users' => intval($totalUsers),
         'migration_percentage' => $migrationPercentage,
         'failure_rate_30d' => $failureRate,
         'recent_events' => $recentEvents,
@@ -4453,7 +4457,7 @@ function getAllFiles($dir): array
 
     foreach ($iterator as $file) {
         try {
-            if ($file->isFile()) {
+            if ($file instanceof \SplFileInfo && $file->isFile()) {
                 $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
                 $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
 
@@ -4674,7 +4678,7 @@ function getAllFilesWithHashes(string $dir): array
     );
 
     foreach ($iterator as $file) {
-        if ($file->isFile()) {
+        if ($file instanceof \SplFileInfo && $file->isFile()) {
             // Build relative path
             $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
             $relativePath = str_replace('\\', '/', $relativePath); // Normalize for Windows
@@ -4741,7 +4745,7 @@ function simulateUserKeyChangeDuration($userInfo): ?float
             TP_USER_ID
         );
         
-        $timeExecutionEstimation = round($duration * $rows['counter'], 0);
+        $timeExecutionEstimation = round($duration * intval($rows['counter']), 0);
         
         // Update variable
         DB::update(

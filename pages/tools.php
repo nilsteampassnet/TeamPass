@@ -146,9 +146,9 @@ if (is_null($tableExists) === true) {
         WHERE disabled = 0 AND (login NOT LIKE "%_deleted%")
         ORDER BY login');
     foreach ($users as $user) {
-        $selectOptions .= '<option value="'.$user['id'].'" data-pf="'.$user['personal_folder'].'" data-psk="'.$user['encrypted_psk'].'">'.$user['lastname'].' '.$user['name'].' ('.$user['login'].')'.
+        $selectOptions .= '<option value="'.strval($user['id']).'" data-pf="'.strval($user['personal_folder']).'" data-psk="'.strval($user['encrypted_psk'] ?? '').'">' . strval($user['lastname']).' '.strval($user['name']).' ('.strval($user['login']).')'.
             ((is_null($user['encrypted_psk']) === true || empty($user['encrypted_psk']) === true) ? ' - No user PSK exists in DB' : '').
-            ((int) $user['personal_folder'] !== 1 ? ' - Personal Folder disabled for user' : '').
+            (intval($user['personal_folder']) !== 1 ? ' - Personal Folder disabled for user' : '').
             '</option>';
     }
     ?>
@@ -227,7 +227,7 @@ foreach ($users as $user) {
         0,
         $user['id']
     );
-    $selectOptions .= '<option value="'.$user['id'].'">'.$user['lastname'].' '.$user['name'].' ('.$user['login'].')'.
+    $selectOptions .= '<option value="'.strval($user['id']).'">'.strval($user['lastname']).' '.strval($user['name']).' ('.strval($user['login']).')'.
         ' - '.DB::count().'/'.$nbItems.''.
         '</option>';
 }
@@ -309,7 +309,7 @@ if ($result > 0) {
 $selectOptions = '';
 // Get list of backups
 foreach ($backups as $bck) {
-    $selectOptions .= '<option value="'.$bck['operation_code'].'">'.$bck['login'].' - Backup date: '.$bck['created_at'].'</option>';
+    $selectOptions .= '<option value="'.strval($bck['operation_code']).'">'.strval($bck['login']).' - Backup date: '.strval($bck['created_at']).'</option>';
 }
 ?>
                     <div class='row mb-2'>

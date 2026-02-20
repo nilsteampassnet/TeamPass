@@ -379,7 +379,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             FROM " . prefixTable('users') . "
                                             WHERE disabled = 0 AND deleted_at IS NULL"
                                         );
-                                        $progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
+                                        $totalUsers = intval($stats[0]['total_users']);
+                                        $progressPercent = $totalUsers > 0
+                                            ? (intval($stats[0]['migrated_users']) / $totalUsers) * 100
+                                            : 0;
                                         if ($progressPercent !== 100) {
                                             ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -623,7 +626,7 @@ $dbSize = DB::queryFirstField(
     FROM information_schema.TABLES 
     WHERE table_schema = DATABASE()"
 );
-$dbSizeFormatted = $dbSize . ' MB';
+$dbSizeFormatted = strval($dbSize ?? '0') . ' MB';
 
 // Get other PHP info
 $phpVersion = phpversion();

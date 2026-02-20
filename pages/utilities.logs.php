@@ -234,7 +234,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     $rows = DB::query('SELECT id, name, lastname FROM ' . prefixTable('users') . ' WHERE admin = 0');
 foreach ($rows as $record) {
     echo '
-                                        <option value="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].'</option>';
+                                        <option value="'.strval($record['id']).'">'.strval($record['name']).' '.strval($record['lastname']).'</option>';
 }
                                     ?>
                                     </select>

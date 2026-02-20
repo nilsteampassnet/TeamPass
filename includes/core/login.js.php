@@ -449,7 +449,7 @@ declare(strict_types=1);
                                     "sources/main.queries.php", {
                                         type: "convert_items_with_personal_saltkey_progress",
                                         data: prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
-                                        key: '<?php echo $session->get('key'); ?>'
+                                        key: '<?php echo strval($session->get('key')); ?>'
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
@@ -630,7 +630,7 @@ declare(strict_types=1);
         // get some info
         var client_info = '';
         if (debugJavascript === true) {
-            console.log('KEY : <?php echo $session->get('key'); ?>')
+            console.log('KEY : <?php echo strval($session->get('key')); ?>')
         }
 
         // Get 2fa
@@ -656,9 +656,9 @@ declare(strict_types=1);
                 }
 
                 if (debugJavascript === true) {
-                    console.log("Recevied key "+data.key+' and local key<?php echo $session->get('key'); ?>')
+                    console.log("Recevied key "+data.key+' and local key<?php echo strval($session->get('key')); ?>')
                 }
-                if (data.key !== '<?php echo $session->get('key'); ?>') {
+                if (data.key !== '<?php echo strval($session->get('key')); ?>') {
                     // Update session
                     store.update(
                         'teampassUser', {},
@@ -789,7 +789,7 @@ declare(strict_types=1);
                 data: prepareExchangedData(
                     JSON.stringify(sharedData),
                     'encode',
-                    '<?php echo $session->get('key'); ?>'
+                    '<?php echo strval($session->get('key')); ?>'
                 ),
                 xhrFields: {
                     withCredentials: true
@@ -800,7 +800,7 @@ declare(strict_types=1);
                     var data = prepareExchangedData(
                         receivedData,
                         "decode",
-                        "<?php echo $session->get('key'); ?>"
+                        "<?php echo strval($session->get('key')); ?>"
                     );
                 } catch (e) {
                     // error
@@ -989,11 +989,11 @@ declare(strict_types=1);
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    key: "<?php echo $session->get('key'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
+                    key: "<?php echo strval($session->get('key')); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1046,11 +1046,11 @@ declare(strict_types=1);
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
+                key: "<?php echo strval($session->get('key')); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {

@@ -134,14 +134,14 @@ class BackgroundTasksHandler {
         }
 
         // Avoid duplicates: if a database_backup task is already pending or running, skip.
-        $pending = (int)DB::queryFirstField(
+        $pending = intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE process_type = %s
             AND is_in_progress IN (0,1)
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
             'database_backup'
-        );
+        ));
 
         if ($pending > 0) {
             if (LOG_TASKS === true) $this->logger->log('backup scheduler: a database_backup task is already pending/running', 'INFO');
@@ -205,14 +205,14 @@ class BackgroundTasksHandler {
             return;
         }
 
-        $pending = (int) DB::queryFirstField(
+        $pending = intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE process_type = %s
             AND is_in_progress IN (0,1)
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
             'inactive_users_housekeeping'
-        );
+        ));
         if ($pending > 0) {
             $newNext = $this->computeNextDailyRunAt($now + 60, $timeStr);
             $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$newNext);
@@ -364,7 +364,7 @@ class BackgroundTasksHandler {
             return $default;
         }
 
-        return (string)$val;
+        return strval($val);
     }
 
     /**
@@ -374,11 +374,11 @@ class BackgroundTasksHandler {
     {
         $table = prefixTable('misc');
 
-        $exists = (int)DB::queryFirstField(
+        $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
             'settings',
             $key
-        );
+        ));
 
         if ($exists > 0) {
             DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
@@ -620,7 +620,7 @@ class BackgroundTasksHandler {
             // Resource key conflict: skip if same key is already running
             if ($resourceKey !== null && in_array($resourceKey, $runningKeys, true)) {
                 if (LOG_TASKS === true) $this->logger->log(
-                    'Task ' . $task['increment_id'] . ' deferred: resource conflict (' . $resourceKey . ')',
+                    'Task ' . strval($task['increment_id']) . ' deferred: resource conflict (' . $resourceKey . ')',
                     'INFO'
                 );
                 continue;
@@ -628,13 +628,13 @@ class BackgroundTasksHandler {
 
             // Launch the task
             if (LOG_TASKS === true) $this->logger->log(
-                'Launching task ' . $task['increment_id'] . ' (' . $task['process_type'] . ')',
+                'Launching task ' . strval($task['increment_id']) . ' (' . strval($task['process_type']) . ')',
                 'INFO'
             );
 
             $process = $this->launchTask($task);
             if ($process !== null) {
-                $this->pool[(int) $task['increment_id']] = [
+                $this->pool[intval($task['increment_id'])] = [
                     'process' => $process,
                     'task' => $task,
                     'resourceKey' => $resourceKey,
@@ -739,14 +739,14 @@ class BackgroundTasksHandler {
         // Worker may have already handled the failure via handleTaskFailure()
         if ($currentStatus !== 'in_progress') {
             if (LOG_TASKS === true) $this->logger->log(
-                'Task ' . $taskId . ' process failed (exit ' . $process->getExitCode() . ') but worker already set status=' . $currentStatus,
+                'Task ' . $taskId . ' process failed (exit ' . strval($process->getExitCode()) . ') but worker already set status=' . strval($currentStatus),
                 'INFO'
             );
             return;
         }
 
         // Worker didn't update - mark as failed from handler side
-        $msg = 'Process exited with code ' . $process->getExitCode();
+        $msg = 'Process exited with code ' . strval($process->getExitCode());
         $stderr = $process->getErrorOutput();
         if (!empty($stderr)) {
             $msg .= ': ' . mb_substr($stderr, -500);
@@ -798,12 +798,12 @@ class BackgroundTasksHandler {
      * @return int The number of pending tasks.
      */
     private function countPendingTasks(): int {
-        return (int) DB::queryFirstField(
+        return intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 0
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
-        );
+        ));
     }
 
     /**
@@ -847,10 +847,10 @@ class BackgroundTasksHandler {
             case 'item_copy':
             case 'update_item':
             case 'item_update_create_keys':
-                return 'item:' . ($args['item_id'] ?? 0);
+                return 'item:' . strval($args['item_id'] ?? 0);
 
             case 'user_build_cache_tree':
-                return 'user:' . ($args['user_id'] ?? 0);
+                return 'user:' . strval($args['user_id'] ?? 0);
 
             case 'send_email':
                 // Emails never conflict with each other
@@ -984,9 +984,9 @@ class BackgroundTasksHandler {
             }
 
             foreach ($tempFiles as $fileEntry) {
-                $entryId = (int) $fileEntry['increment_id'];
-                $timestamp = (int) $fileEntry['intitule'];
-                $fileName = (string) $fileEntry['valeur'];
+                $entryId = intval($fileEntry['increment_id']);
+                $timestamp = intval($fileEntry['intitule']);
+                $fileName = strval($fileEntry['valeur']);
 
                 // Validate timestamp format
                 if ($timestamp <= 0) {

@@ -136,12 +136,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                 $rows = DB::query('SELECT * FROM ' . prefixTable('roles_title') . $where);
                                 foreach ($rows as $reccord) {
                                     echo '
-                                    <option value="' . $reccord['id'] . '"
+                                    <option value="' . strval($reccord['id']) . '"
                                         data-complexity-text="' . addslashes(TP_PW_COMPLEXITY[$reccord['complexity']][1]) . '"
                                         data-complexity-icon="' . TP_PW_COMPLEXITY[$reccord['complexity']][2] . '"
                                         data-complexity="' . TP_PW_COMPLEXITY[$reccord['complexity']][0] . '"
-                                        data-allow-edit-all="' . $reccord['allow_pw_change'] . '">'.
-                                        $reccord['title'] . '</option>';
+                                        data-allow-edit-all="' . strval($reccord['allow_pw_change']) . '">'.
+                                        strval($reccord['title']) . '</option>';
                                 }
                                 ?>
                             </select>

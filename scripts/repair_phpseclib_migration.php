@@ -91,11 +91,11 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
         API_USER_ID
     );
     $stats = $usersStats[0];
-    echo "    Total users: {$stats['total']}\n";
-    echo "    Users with v3 keys: {$stats['v3_users']}\n";
-    echo "    Users with v1 keys: {$stats['v1_users']}\n";
-    echo "    Migration completed: {$stats['migration_complete']}\n";
-    echo "    Migration incomplete: {$stats['migration_incomplete']}\n\n";
+    echo "    Total users: " . strval($stats['total']) . "\n";
+    echo "    Users with v3 keys: " . strval($stats['v3_users']) . "\n";
+    echo "    Users with v1 keys: " . strval($stats['v1_users']) . "\n";
+    echo "    Migration completed: " . strval($stats['migration_complete']) . "\n";
+    echo "    Migration incomplete: " . strval($stats['migration_incomplete']) . "\n\n";
 
     // 2. Check sharekeys by version
     echo "[2] Sharekeys Distribution by Version:\n";
@@ -107,8 +107,8 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
                 SUM(CASE WHEN encryption_version = 1 OR encryption_version IS NULL THEN 1 ELSE 0 END) as v1
             FROM " . prefixTable($table)
         );
-        $percentV3 = $tableStats['total'] > 0 ? round(($tableStats['v3'] / $tableStats['total']) * 100, 1) : 0;
-        echo "    {$table}: {$tableStats['total']} total, {$tableStats['v3']} v3 ({$percentV3}%), {$tableStats['v1']} v1\n";
+        $percentV3 = intval($tableStats['total']) > 0 ? round((intval($tableStats['v3']) / intval($tableStats['total'])) * 100, 1) : 0;
+        echo "    {$table}: " . strval($tableStats['total']) . " total, " . strval($tableStats['v3']) . " v3 ({$percentV3}%), " . strval($tableStats['v1']) . " v1\n";
     }
     echo "\n";
 
@@ -140,9 +140,9 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
                     WHERE user_id = %i AND encryption_version = 1",
                     $user['id']
                 );
-                $v1Count += (int) $count;
+                $v1Count += intval($count);
             }
-            echo "      - User ID {$user['id']} ({$user['login']}): {$v1Count} v1 sharekeys remaining\n";
+            echo "      - User ID " . strval($user['id']) . " (" . strval($user['login']) . "): {$v1Count} v1 sharekeys remaining\n";
         }
         echo "\n";
     }
@@ -165,7 +165,7 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     } else {
         echo "    Found " . count($potentialMismatch) . " user(s) with v3 keys but incomplete migration:\n";
         foreach ($potentialMismatch as $user) {
-            echo "      - User ID {$user['id']} ({$user['login']})\n";
+            echo "      - User ID " . strval($user['id']) . " (" . strval($user['login']) . ")\n";
         }
         echo "\n";
     }
@@ -178,8 +178,8 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
             "SELECT COUNT(*) FROM " . prefixTable($table) . "
             WHERE encryption_version IS NULL"
         );
-        if ((int) $nullCount > 0) {
-            echo "    {$table}: {$nullCount} rows with NULL encryption_version\n";
+        if (intval($nullCount) > 0) {
+            echo "    {$table}: " . strval($nullCount) . " rows with NULL encryption_version\n";
             $hasNullVersions = true;
         }
     }
@@ -221,7 +221,7 @@ if (isset($options['repair'])) {
                 'id = %i',
                 $user['id']
             );
-            echo "     Reset user ID {$user['id']} ({$user['login']}) - will retry migration on next login\n";
+            echo "     Reset user ID " . strval($user['id']) . " (" . strval($user['login']) . ") - will retry migration on next login\n";
         }
     } else {
         echo "     No users to reset.\n";
@@ -249,9 +249,9 @@ if (isset($options['reset-user'])) {
         exit(1);
     }
 
-    echo "User: {$user['login']} (ID: {$user['id']})\n";
-    echo "Current encryption_version: {$user['encryption_version']}\n";
-    echo "Current migration_completed: {$user['phpseclibv3_migration_completed']}\n\n";
+    echo "User: " . strval($user['login']) . " (ID: " . strval($user['id']) . ")\n";
+    echo "Current encryption_version: " . strval($user['encryption_version']) . "\n";
+    echo "Current migration_completed: " . strval($user['phpseclibv3_migration_completed']) . "\n\n";
 
     // Show sharekeys stats
     echo "Sharekeys for this user:\n";
@@ -265,7 +265,7 @@ if (isset($options['reset-user'])) {
             WHERE user_id = %i",
             $userId
         );
-        echo "  {$table}: {$stats['total']} total ({$stats['v3']} v3, {$stats['v1']} v1)\n";
+        echo "  {$table}: " . strval($stats['total']) . " total (" . strval($stats['v3']) . " v3, " . strval($stats['v1']) . " v1)\n";
     }
     echo "\n";
 

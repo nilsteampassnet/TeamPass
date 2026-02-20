@@ -86,9 +86,9 @@ if (empty($request->query->get('code')) === false
         filter_input(INPUT_GET, 'code', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
     );
     
-    if (DB::count() > 0  && (int) $data['timestamp'] === (int) filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT)) {
+    if (DB::count() > 0  && intval($data['timestamp']) === intval(filter_input(INPUT_GET, 'stamp', FILTER_VALIDATE_INT))) {
         // otv is too old
-        if ($data['time_limit'] < time() || ($data['views'] + 1) > $data['max_views']) {
+        if ($data['time_limit'] < time() || (intval($data['views']) + 1) > $data['max_views']) {
             $html = '<div class="text-center text-danger">
             <h3><i class="fas fa-exclamation-triangle mr-2"></i>Link is expired!</h3>
             </div>';
@@ -98,7 +98,7 @@ if (empty($request->query->get('code')) === false
         } else {
             // Check if user origine is allowed to see the item
             // If shared_globaly enabled, then link must contain the subdomain
-            if (empty($SETTINGS['shared_globaly']) === false && (int) $data['shared_globaly'] === 1 && str_contains(parse_url($_SERVER['REQUEST_URI'], PHP_URL_HOST), $SETTINGS['shared_globaly']) === false) {
+            if (empty($SETTINGS['shared_globaly']) === false && intval($data['shared_globaly']) === 1 && str_contains(parse_url($_SERVER['REQUEST_URI'], PHP_URL_HOST), $SETTINGS['shared_globaly']) === false) {
                 echo '
                 <div class="text-center text-danger">
                 <h3><i class="fas fa-exclamation-triangle mr-2"></i>This link is not valid!</h3>
@@ -122,20 +122,20 @@ if (empty($request->query->get('code')) === false
                 'SELECT * FROM '.prefixTable('automatic_del').' WHERE item_id=%i',
                 $data['item_id']
             );
-            if (DB::count() > 0 && isset($SETTINGS['enable_delete_after_consultation']) && (int) $SETTINGS['enable_delete_after_consultation'] === 1) {
-                if ((int) $dataDelete['del_enabled'] === 1) {
-                    if ((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] >= 1) {
+            if (DB::count() > 0 && isset($SETTINGS['enable_delete_after_consultation']) && intval($SETTINGS['enable_delete_after_consultation']) === 1) {
+                if (intval($dataDelete['del_enabled']) === 1) {
+                    if (intval($dataDelete['del_type']) === 1 && intval($dataDelete['del_value']) >= 1) {
                         // decrease counter
                         DB::update(
                             prefixTable('automatic_del'),
                             [
-                                'del_value' => $dataDelete['del_value'] - 1,
+                                'del_value' => intval($dataDelete['del_value']) - 1,
                             ],
                             'item_id = %i',
                             $data['item_id']
                         );
-                    } elseif (((int) $dataDelete['del_type'] === 1 && (int) $dataDelete['del_value'] <= 1)
-                        || ((int) $dataDelete['del_type'] === 2 && (int) $dataDelete['del_value'] < time())
+                    } elseif ((intval($dataDelete['del_type']) === 1 && intval($dataDelete['del_value']) <= 1)
+                        || (intval($dataDelete['del_type']) === 2 && intval($dataDelete['del_value']) < time())
                     ) {
                         // delete item
                         DB::delete(prefixTable('automatic_del'), 'item_id = %i', $data['item_id']);
@@ -151,7 +151,7 @@ if (empty($request->query->get('code')) === false
                         // log
                         logItems(
                             $SETTINGS,
-                            (int) $data['item_id'],
+                            intval($data['item_id']),
                             $dataItem['label'],
                             (int) OTV_USER_ID,
                             'at_delete',
@@ -174,8 +174,8 @@ if (empty($request->query->get('code')) === false
             );
             // get data
             $label = strip_tags($dataItem['label']);
-            $url = $dataItem['url'];
-            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags((string) $dataItem['description'], TP_ALLOWED_TAGS));
+            $url = strval($dataItem['url'] ?? '');
+            $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags(strval($dataItem['description'] ?? ''), TP_ALLOWED_TAGS));
             $login = str_replace('"', '&quot;', $dataItem['login']);
             // display data
             $html = '<div class="text-center">
@@ -190,12 +190,12 @@ if (empty($request->query->get('code')) === false
                 <tr><th>URL:</th><td>'.$url.'</td></tr>
                 </table></div>
                 <p class="mt-3 text-info"><i class="fas fa-info mr-2"></i>Copy carefully the data you need.<br>This page is visible until <b>'.
-                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $dataItem['time_limit']).'</b> OR <b>'.($dataItem['max_views'] - ($dataItem['views']+1)).' more time(s)</b>.</div>
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($dataItem['time_limit'])).'</b> OR <b>'.(intval($dataItem['max_views']) - (intval($dataItem['views'])+1)).' more time(s)</b>.</div>
                 </div>';
             // log
             logItems(
                 $SETTINGS,
-                (int) $data['item_id'],
+                intval($data['item_id']),
                 $dataItem['label'],
                 (int) OTV_USER_ID,
                 'at_shown',
@@ -206,7 +206,7 @@ if (empty($request->query->get('code')) === false
             DB::update(
                 prefixTable('otv'),
                 [
-                    'views' => $data['views'] + 1,
+                    'views' => intval($data['views']) + 1,
                 ],
                 'id = %i',
                 $data['id']

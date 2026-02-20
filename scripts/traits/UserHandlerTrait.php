@@ -43,7 +43,6 @@ trait UserHandlerTrait {
 
     /**
      * Generate user keys
-     * @param array $taskData Données de la tâche
      * @param array $arguments Arguments nécessaires pour la création des clés
      * @return void
      */
@@ -61,7 +60,7 @@ trait UserHandlerTrait {
     
         // Process each subtask
         foreach ($subtasks as $subtask) {
-            if (LOG_TASKS=== true) $this->logger->log("Processing subtask {$subtask['increment_id']} for task {$this->taskId}");
+            if (LOG_TASKS=== true) $this->logger->log("Processing subtask " . strval($subtask['increment_id']) . " for task {$this->taskId}");
             $this->processGenerateUserKeysSubtask($subtask, $arguments);
         }
     
@@ -70,11 +69,11 @@ trait UserHandlerTrait {
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
             $this->taskId
         );
-        if ((int) $remainingSubtasks === 0) {
+        if (intval($remainingSubtasks) === 0) {
             $this->completeTask();
 
             // Emit WebSocket event to notify user that keys are ready
-            $userId = (int) ($arguments['new_user_id'] ?? $arguments['user_id'] ?? 0);
+            $userId = intval($arguments['new_user_id'] ?? $arguments['user_id'] ?? 0);
             if ($userId > 0) {
                 emitWebSocketEvent(
                     'user_keys_ready',
@@ -113,7 +112,7 @@ trait UserHandlerTrait {
                 $subtask['increment_id']
             );
             
-            if (LOG_TASKS=== true) $this->logger->log("Subtask is in progress: ".$taskData['step'], 'INFO');
+            if (LOG_TASKS=== true) $this->logger->log("Subtask is in progress: " . strval($taskData['step'] ?? ''), 'INFO');
             switch ($taskData['step'] ?? '') {
                 case 'step0':
                     $this->generateNewUserStep0($arguments);
@@ -248,10 +247,10 @@ trait UserHandlerTrait {
             // Save the new sharekey correctly encrypted in DB
             insertOrUpdateSharekey(
                 prefixTable('sharekeys_items'),
-                (int) $record['id'],
-                (int) $arguments['new_user_id'],
+                intval($record['id']),
+                intval($arguments['new_user_id']),
                 $share_key_for_item
-            ); 
+            );
         }
 
         // Commit transaction
@@ -312,8 +311,8 @@ trait UserHandlerTrait {
             // Save the key in DB
             insertOrUpdateSharekey(
                 prefixTable('sharekeys_logs'),
-                (int) $record['increment_id'],
-                (int) $arguments['new_user_id'],
+                intval($record['increment_id']),
+                intval($arguments['new_user_id']),
                 $share_key_for_item
             );
         }
@@ -378,8 +377,8 @@ trait UserHandlerTrait {
             // Save the key in DB
             insertOrUpdateSharekey(
                 prefixTable('sharekeys_fields'),
-                (int) $record['id'],
-                (int) $arguments['new_user_id'],
+                intval($record['id']),
+                intval($arguments['new_user_id']),
                 $share_key_for_item
             );
         }
@@ -443,8 +442,8 @@ trait UserHandlerTrait {
             // Save the key in DB
             insertOrUpdateSharekey(
                 prefixTable('sharekeys_suggestions'),
-                (int) $record['id'],
-                (int) $arguments['new_user_id'],
+                intval($record['id']),
+                intval($arguments['new_user_id']),
                 $share_key_for_item
             );
         }
@@ -492,7 +491,7 @@ trait UserHandlerTrait {
                 FROM ' . prefixTable('sharekeys_files') . '
                 WHERE object_id = %i AND user_id = %i',
                 $record['id'],
-                (int) $record['perso'] === 0 ? $arguments['owner_id'] : $arguments['new_user_id']
+                intval($record['perso']) === 0 ? intval($arguments['owner_id']) : intval($arguments['new_user_id'])
             );
 
             // do we have any input? (#3481)
@@ -504,9 +503,9 @@ trait UserHandlerTrait {
             $itemKey = decryptUserObjectKey(
                 $currentUserKey['share_key'],
                 //$ownerInfo['private_key']
-                (int) $record['perso'] === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
+                intval($record['perso']) === 0 ? $ownerInfo['private_key'] : $userInfo['private_key']
             );
-            
+
             // Prevent to change key if its key is empty
             if (empty($itemKey) === true) {
                 continue;
@@ -518,8 +517,8 @@ trait UserHandlerTrait {
             // Save the key in DB
             insertOrUpdateSharekey(
                 prefixTable('sharekeys_files'),
-                (int) $record['id'],
-                (int) $arguments['new_user_id'],
+                intval($record['id']),
+                intval($arguments['new_user_id']),
                 $share_key_for_item
             );
         }
@@ -649,7 +648,7 @@ trait UserHandlerTrait {
                     WHERE perso = 1 AND id IN (SELECT object_id FROM ' . prefixTable('sharekeys_items') . ' WHERE user_id = %i AND share_key != "")',
                     $arguments['new_user_id']
                 );
-                if ((int) $personalItemsCount > 0) {
+                if (intval($personalItemsCount) > 0) {
                     $specialStatus = 'encrypt_personal_items_with_new_password';
                 }
             }

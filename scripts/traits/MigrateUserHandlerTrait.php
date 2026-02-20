@@ -28,17 +28,14 @@
 
 /**
  * Trait for user migration handling
- * 
+ *
  * Requires UserHandlerTrait to be used in the same class
- * 
- * @method array getOwnerInfos(int $owner_id, string $owner_pwd, ?int $only_personal_items = 0, ?string $owner_private_key = '') Get owner information (from UserHandlerTrait)
  */
 trait MigrateUserHandlerTrait {
     abstract protected function completeTask();
 
     /**
      * Generate user keys
-     * @param array $taskData Données de la tâche
      * @param array $arguments Arguments nécessaires pour la création des clés
      * @return void
      */
@@ -56,7 +53,7 @@ trait MigrateUserHandlerTrait {
     
         // Process each subtask
         foreach ($subtasks as $subtask) {
-            if (LOG_TASKS=== true) $this->logger->log("Processing subtask {$subtask['increment_id']} for task {$this->taskId}");
+            if (LOG_TASKS=== true) $this->logger->log("Processing subtask " . strval($subtask['increment_id']) . " for task {$this->taskId}");
             $this->processMigratePersonalItemsSubtask($subtask, $arguments);
         }
     
@@ -93,7 +90,7 @@ trait MigrateUserHandlerTrait {
                 $subtask['increment_id']
             );
             
-            if (LOG_TASKS=== true) $this->logger->log("Subtask is in progress: ".$taskData['step'], 'INFO');
+            if (LOG_TASKS=== true) $this->logger->log("Subtask is in progress: " . strval($taskData['step'] ?? ''), 'INFO');
             switch ($taskData['step'] ?? '') {
                 case 'user-personal-items-migration-step10':
                     $this->migratePersonalItemsStep10($taskData, $arguments);
@@ -213,7 +210,7 @@ trait MigrateUserHandlerTrait {
                 'sharekeys_items',
                 (string) $itemKey,
                 (string) $userInfo['public_key'],
-                (int) $item['id'],
+                intval($item['id']),
                 (int) $arguments['user_id']
             );
 
@@ -221,8 +218,8 @@ trait MigrateUserHandlerTrait {
             $this->createUserShareKey(
                 'sharekeys_items',
                 (string) $itemKey,
-                (string) $userTP['public_key'],
-                (int) $item['id'],
+                strval($userTP['public_key']),
+                intval($item['id']),
                 (int) TP_USER_ID
             );
         }
@@ -336,7 +333,7 @@ trait MigrateUserHandlerTrait {
                 'sharekeys_logs',
                 (string) $itemKey,
                 (string) $userInfo['public_key'],
-                (int) $record['id'],
+                intval($record['id']),
                 (int) $arguments['user_id'],
             );
 
@@ -344,8 +341,8 @@ trait MigrateUserHandlerTrait {
             $this->createUserShareKey(
                 'sharekeys_logs',
                 (string) $itemKey,
-                (string) $userTP['public_key'],
-                (int) $record['id'],
+                strval($userTP['public_key']),
+                intval($record['id']),
                 (int) TP_USER_ID,
             );
         }
@@ -411,7 +408,7 @@ trait MigrateUserHandlerTrait {
                     'sharekeys_fields',
                     (string) $itemKey,
                     (string) $userInfo['public_key'],
-                    (int) $record['id'],
+                    intval($record['id']),
                     (int) $arguments['user_id']
                 );
 
@@ -419,8 +416,8 @@ trait MigrateUserHandlerTrait {
                 $this->createUserShareKey(
                     'sharekeys_fields',
                     (string) $itemKey,
-                    (string) $userTP['public_key'],
-                    (int) $record['id'],
+                    strval($userTP['public_key']),
+                    intval($record['id']),
                     (int) TP_USER_ID
                 );
             }
@@ -490,7 +487,7 @@ trait MigrateUserHandlerTrait {
                 'sharekeys_suggestions',
                 (string) $itemKey,
                 (string) $userInfo['public_key'],
-                (int) $record['id'],
+                intval($record['id']),
                 (int) $arguments['user_id'],
             );
 
@@ -498,8 +495,8 @@ trait MigrateUserHandlerTrait {
             $this->createUserShareKey(
                 'sharekeys_fields',
                 (string) $itemKey,
-                (string) $userTP['public_key'],
-                (int) $record['id'],
+                strval($userTP['public_key']),
+                intval($record['id']),
                 (int) TP_USER_ID,
             );
         }
@@ -569,7 +566,7 @@ trait MigrateUserHandlerTrait {
                 'sharekeys_suggestions',
                 (string) $itemKey,
                 (string) $userInfo['public_key'],
-                (int) $record['id'],
+                intval($record['id']),
                 (int) $arguments['user_id'],
             );
 
@@ -577,8 +574,8 @@ trait MigrateUserHandlerTrait {
             $this->createUserShareKey(
                 'sharekeys_fields',
                 (string) $itemKey,
-                (string) $userTP['public_key'],
-                (int) $record['id'],
+                strval($userTP['public_key']),
+                intval($record['id']),
                 (int) TP_USER_ID,
             );
         }
