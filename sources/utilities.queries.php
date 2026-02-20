@@ -2345,19 +2345,23 @@ function tpGetSharekeysTableStats(string $tableName): array
     );
 }
 
+/**
+ * Identifies and counts orphaned records in sharekeys tables.
+ * Orphans are records linked to non-existent objects, non-existent users, 
+ * or inactive/deleted users.
+ * * @param string $shortTableName The short name of the sharekey table (e.g., 'sharekeys_items').
+ * @return array{missing_object: ?int, missing_user: int, inactive_user: int, orphans_total: int}
+ */
 function tpGetSharekeysOrphans(string $shortTableName): array
 {
     $shortTableName = trim($shortTableName);
     $tableName = prefixTable($shortTableName);
+    
     if (tpTableExists($tableName) === false) {
         return array();
     }
 
-    $missingObject = null;
-    $missingUser = null;
-    $inactiveUser = null;
-
-    // missing users
+    // Identify missing users (records with user_id not found in users table)
     $missingUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2365,7 +2369,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         WHERE u.id IS NULL'
     );
 
-    // inactive/deleted users
+    // Identify inactive or deleted users
     $inactiveUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2373,48 +2377,37 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         WHERE u.disabled = 1 OR u.deleted_at IS NOT NULL'
     );
 
-    // missing objects - depends on sharekeys table
-    if ($shortTableName === 'sharekeys_items' && tpTableExists(prefixTable('items')) === true) {
+    $missingObject = null;
+    $targetTable = '';
+
+    // Determine target object table based on sharekey context
+    switch ($shortTableName) {
+        case 'sharekeys_items':
+            $targetTable = 'items';
+            break;
+        case 'sharekeys_files':
+            $targetTable = 'files';
+            break;
+        case 'sharekeys_suggestions':
+            $targetTable = 'suggestion';
+            break;
+        case 'sharekeys_fields':
+            $targetTable = 'categories_items';
+            break;
+    }
+
+    // Identify missing objects if the target table exists
+    if (!empty($targetTable) && tpTableExists(prefixTable($targetTable))) {
         $missingObject = (int) DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('items') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_files' && tpTableExists(prefixTable('files')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('files') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_suggestions' && tpTableExists(prefixTable('suggestion')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('suggestion') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_fields' && tpTableExists(prefixTable('categories_items')) === true) {
-        // categories_items is used for custom fields binding
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('categories_items') . ' o ON o.id = s.object_id
+            LEFT JOIN ' . prefixTable($targetTable) . ' o ON o.id = s.object_id
             WHERE o.id IS NULL'
         );
     }
 
-    $orphansTotal = 0;
-    if ($missingObject !== null) {
-        $orphansTotal += $missingObject;
-    }
-    if ($missingUser !== null) {
-        $orphansTotal += $missingUser;
-    }
-    if ($inactiveUser !== null) {
-        $orphansTotal += $inactiveUser;
-    }
+    // Calculate total orphans
+    $orphansTotal = $missingUser + $inactiveUser + (int) $missingObject;
 
     return array(
         'missing_object' => $missingObject,

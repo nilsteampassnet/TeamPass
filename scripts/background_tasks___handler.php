@@ -26,6 +26,8 @@
  * @see       https://www.teampass.net
  */
 
+declare(strict_types=1);
+
 use Symfony\Component\Process\Process;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -33,17 +35,16 @@ require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
-    private $settings;
-    private $logger;
-    private $maxParallelTasks;
-    private $maxExecutionTime;
-    private $batchSize;
-    private $maxTimeBeforeRemoval;
-    private $lockFileHandle = null;
-    /** @var array Running process pool: [taskId => ['process' => Process, 'task' => array, 'resourceKey' => ?string]] */
-    private $pool = [];
-    /** @var string Path to the trigger file for urgent task notifications */
-    private $triggerFile;
+    private array $settings;
+    private TaskLogger $logger;
+    private int $maxParallelTasks;
+    private int $maxExecutionTime;
+    private int $batchSize;
+    private int $maxTimeBeforeRemoval;
+    private mixed $lockFileHandle = null;
+    /** @var array<int, array{process: Process, task: array<string, mixed>, resourceKey: ?string}> Running process pool */
+    private array $pool = [];
+    private string $triggerFile;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
@@ -78,7 +79,7 @@ class BackgroundTasksHandler {
     /**
      * Main function to process background tasks
      */
-    public function processBackgroundTasks() {
+    public function processBackgroundTasks(): bool {
         // Prevent multiple concurrent executions
         if (!$this->acquireProcessLock()) {
             if (LOG_TASKS === true) $this->logger->log('Process already running', 'INFO');
@@ -97,6 +98,7 @@ class BackgroundTasksHandler {
             $this->stopRunningProcesses();
             $this->releaseProcessLock();
         }
+        return true;
     }
     /**
      * Scheduler: enqueue a database_backup task when due.
@@ -176,14 +178,6 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Compute next run timestamp based on settings:
-     * - bck_scheduled_frequency: daily|weekly|monthly (default daily)
-     * - bck_scheduled_time: HH:MM (default 02:00)
-     * - bck_scheduled_dow: 1..7 (ISO, Mon=1) for weekly (default 1)
-     * - bck_scheduled_dom: 1..31 for monthly (default 1)
-     */
-    
-        /**
      * Scheduler: enqueue an inactive_users_housekeeping task when due (daily at a fixed time).
      */
     private function handleScheduledInactiveUsersMgmt(): void
@@ -252,7 +246,7 @@ class BackgroundTasksHandler {
         $tzName = $this->getTeampassTimezoneName();
         try {
             $tz = new DateTimeZone($tzName);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $tz = new DateTimeZone('UTC');
         }
 
@@ -283,13 +277,19 @@ class BackgroundTasksHandler {
     return (is_string($tz) && $tz !== '') ? $tz : 'UTC';
 }
     
+    /**
+     * Compute next run timestamp based on settings:
+     * - bck_scheduled_frequency: daily|weekly|monthly (default daily)
+     * - bck_scheduled_time: HH:MM (default 02:00)
+     * - bck_scheduled_dow: 1..7 (ISO, Mon=1) for weekly (default 1)
+     * - bck_scheduled_dom: 1..31 for monthly (default 1)
+     */
     private function computeNextBackupRunAt(int $fromTs): int
     {
-        // On se base sur la timezone PHP du serveur (simple et robuste)
         $tzName = $this->getTeampassTimezoneName();
         try {
             $tz = new DateTimeZone($tzName);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $tz = new DateTimeZone('UTC');
         }
 
@@ -415,7 +415,7 @@ class BackgroundTasksHandler {
     /**
      * Release the lock file.
      */
-    private function releaseProcessLock() {
+    private function releaseProcessLock(): void {
         if ($this->lockFileHandle !== null) {
             flock($this->lockFileHandle, LOCK_UN);
             fclose($this->lockFileHandle);
@@ -459,7 +459,7 @@ class BackgroundTasksHandler {
     /**
      * Cleanup stale tasks that have been running for too long or are marked as failed.
      */
-    private function cleanupStaleTasks() {
+    private function cleanupStaleTasks(): void {
         // Mark tasks as failed if they've been running too long
         DB::query(
             'UPDATE ' . prefixTable('background_tasks') . ' 
@@ -558,7 +558,7 @@ class BackgroundTasksHandler {
                 $process->checkTimeout();
             } catch (Throwable $e) {
                 $this->markTaskFailed($taskId, 'Process timeout: ' . $e->getMessage());
-                try { $process->stop(5); } catch (Throwable $ignored) {}
+                try { $process->stop(5); } catch (Throwable) {}
                 unset($this->pool[$taskId]);
                 continue;
             }
@@ -784,25 +784,13 @@ class BackgroundTasksHandler {
             if ($process->isRunning()) {
                 try {
                     $process->stop(10);
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     // best effort
                 }
                 $this->markTaskFailed($taskId, 'Handler shutdown: process forcibly stopped');
             }
         }
         $this->pool = [];
-    }
-
-    /**
-     * Count the number of currently running tasks.
-     * @return int The number of running tasks.
-     */
-    private function countRunningTasks(): int {
-        return DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . prefixTable('background_tasks') . '
-            WHERE is_in_progress = 1'
-        );
     }
 
     /**
@@ -878,7 +866,7 @@ class BackgroundTasksHandler {
      * Perform maintenance tasks.
      * This method cleans up old items, expired tokens, and finished tasks.
      */
-    private function performMaintenanceTasks() {
+    private function performMaintenanceTasks(): void {
         $this->cleanMultipleItemsEdition();
         $this->handleItemTokensExpiration();
         $this->cleanOldFinishedTasks();
@@ -889,7 +877,7 @@ class BackgroundTasksHandler {
      * Clean up multiple items edition.
      * This method removes duplicate entries in the items_edition table.
      */
-    private function cleanMultipleItemsEdition() {
+    private function cleanMultipleItemsEdition(): void {
         DB::query(
             'DELETE i1 FROM ' . prefixTable('items_edition') . ' i1
             JOIN (
@@ -905,7 +893,7 @@ class BackgroundTasksHandler {
      * Handle item tokens expiration.
      * This method removes expired tokens from the items_edition table.
      */
-    private function handleItemTokensExpiration() {
+    private function handleItemTokensExpiration(): void {
         // Use heartbeat timeout: locks not renewed within the timeout are considered stale
         $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
             ? EDITION_LOCK_HEARTBEAT_TIMEOUT
@@ -922,7 +910,7 @@ class BackgroundTasksHandler {
      * Clean up old finished tasks.
      * This method removes tasks that have been completed for too long.
      */
-    private function cleanOldFinishedTasks() {
+    private function cleanOldFinishedTasks(): void {
         // Timestamp cutoff for removal
         $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
     
