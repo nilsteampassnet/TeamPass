@@ -47,3 +47,6 @@ phpstan.neon
 .github/instructions/snyk_rules.instructions.md
 *debug*.php
 /scripts/_local/*
+
+# Auto Claude data directory
+.auto-claude/
