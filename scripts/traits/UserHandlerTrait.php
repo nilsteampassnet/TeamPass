@@ -29,14 +29,14 @@
 use TeampassClasses\Language\Language;
 
 trait UserHandlerTrait {
-    abstract protected function completeTask();
+    abstract protected function completeTask(): void;
 
     /**
      * Handle user build cache tree
      * @param array $arguments Useful arguments for the task
      * @return void
      */
-    private function handleUserBuildCacheTree($arguments) {
+    private function handleUserBuildCacheTree(array $arguments): void {
         performVisibleFoldersHtmlUpdate($arguments['user_id']);
     }
 
@@ -47,7 +47,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments nécessaires pour la création des clés
      * @return void
      */
-    private function generateUserKeys($arguments) {
+    private function generateUserKeys(array $arguments): void {
         // Get all subtasks related to this task
         $subtasks = DB::query(
             'SELECT * FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0 ORDER BY `task` ASC',
@@ -70,7 +70,7 @@ trait UserHandlerTrait {
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
             $this->taskId
         );
-        if ($remainingSubtasks == 0) {
+        if ((int) $remainingSubtasks === 0) {
             $this->completeTask();
 
             // Emit WebSocket event to notify user that keys are ready
@@ -97,7 +97,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task.
      * @return void
      */
-    private function processGenerateUserKeysSubtask(array $subtask, array $arguments) {
+    private function processGenerateUserKeysSubtask(array $subtask, array $arguments): void {
         try {
             $taskData = json_decode($subtask['task'], true);
             
@@ -177,7 +177,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      * @return void
      */
-    private function generateNewUserStep0($arguments) {
+    private function generateNewUserStep0(array $arguments): void {
         // CLear old sharekeys
         if ($arguments['user_self_change'] === 0) {
             if (LOG_TASKS=== true) $this->logger->log("Deleting old sharekeys for user {$arguments['new_user_id']}", 'INFO');
@@ -191,7 +191,7 @@ trait UserHandlerTrait {
      * @param array $taskData Task data
      * @param array $arguments Arguments for the task
      */
-    private function generateNewUserStep20($taskData, $arguments) {
+    private function generateNewUserStep20(array $taskData, array $arguments): void {
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -265,7 +265,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      * @return void
      */
-    private function generateNewUserStep30($taskData, $arguments) {
+    private function generateNewUserStep30(array $taskData, array $arguments): void {
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -329,7 +329,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      * @return void
      */
-    private function generateNewUserStep40($taskData, $arguments) {
+    private function generateNewUserStep40(array $taskData, array $arguments): void {
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -395,7 +395,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      * @return void
      */
-    private function generateNewUserStep50($taskData, $arguments) {
+    private function generateNewUserStep50(array $taskData, array $arguments): void {
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -460,7 +460,7 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      * @return void
      */
-    private function generateNewUserStep60($taskData, $arguments) {
+    private function generateNewUserStep60(array $taskData, array $arguments): void {
         // get user private key
         $ownerInfo = isset($arguments['owner_id']) && isset($arguments['creator_pwd']) 
             ? $this->getOwnerInfos($arguments['owner_id'], $arguments['creator_pwd']) 
@@ -533,15 +533,12 @@ trait UserHandlerTrait {
      * Generate new user keys - step 99
      * @param array $arguments Arguments for the task
      */
-    private function generateNewUserStep99($arguments) {
+    private function generateNewUserStep99(array $arguments): void {
         $lang = new Language('english');
         
         // IF USER IS NOT THE SAME
         if (isset($arguments['owner_id']) && (int) $arguments['new_user_id'] === (int) $arguments['owner_id']) {
-            return [
-                'new_index' => 0,
-                'new_action' => 'finished',
-            ];
+            return;
         }
         
         // update LOG

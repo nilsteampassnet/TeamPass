@@ -49,9 +49,9 @@ class BackgroundTasksHandler {
     public function __construct(array $settings) {
         $this->settings = $settings;
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
-        $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
-        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 600;
-        $this->batchSize = $settings['task_batch_size'] ?? 50;
+        $this->maxParallelTasks = (int) ($settings['max_parallel_tasks'] ?? 2);
+        $this->maxExecutionTime = (int) ($settings['task_maximum_run_time'] ?? 600);
+        $this->batchSize = (int) ($settings['task_batch_size'] ?? 50);
         // Tasks history retention (seconds)
         // Prefer new setting `tasks_history_delay` (stored in seconds in DB),
         // fallback to legacy `history_duration` (days) if present, otherwise 15 days.
@@ -166,9 +166,9 @@ class BackgroundTasksHandler {
             ]
         );
 
-    $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
-    $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
-    $this->upsertSettingValue('bck_scheduled_last_message', 'Task enqueued by scheduler');
+        $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
+        $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
+        $this->upsertSettingValue('bck_scheduled_last_message', 'Task enqueued by scheduler');
 
         // Compute next run
         $newNext = $this->computeNextBackupRunAt($now + 60);
@@ -266,16 +266,16 @@ class BackgroundTasksHandler {
     }
 
     private function getTeampassTimezoneName(): string
-{
-    // TeamPass stores timezone in teampass_misc: type='admin', intitule='timezone'
-    $tz = DB::queryFirstField(
-        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
-        'admin',
-        'timezone'
-    );
+    {
+        // TeamPass stores timezone in teampass_misc: type='admin', intitule='timezone'
+        $tz = DB::queryFirstField(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
+            'admin',
+            'timezone'
+        );
 
-    return (is_string($tz) && $tz !== '') ? $tz : 'UTC';
-}
+        return (is_string($tz) && $tz !== '') ? $tz : 'UTC';
+    }
     
     /**
      * Compute next run timestamp based on settings:
@@ -576,7 +576,7 @@ class BackgroundTasksHandler {
      * Respects exclusive task rules and resource key conflict detection.
      */
     private function fillPoolSlots(): void {
-        $maxPool = min((int) $this->maxParallelTasks, 2);
+        $maxPool = $this->maxParallelTasks;
         $availableSlots = $maxPool - count($this->pool);
         if ($availableSlots <= 0) return;
 
@@ -969,10 +969,10 @@ class BackgroundTasksHandler {
 
             // Retrieve all temp_file entries from database
             $tempFiles = DB::query(
-                'SELECT increment_id, intitule, valeur 
-                FROM %l 
+                'SELECT increment_id, intitule, valeur
+                FROM %l
                 WHERE type = %s',
-                'teampass_misc',
+                prefixTable('misc'),
                 'temp_file'
             );
 
@@ -1015,7 +1015,7 @@ class BackgroundTasksHandler {
                 // (file might already be deleted manually)
                 try {
                     DB::delete(
-                        'teampass_misc',
+                        prefixTable('misc'),
                         'increment_id = %i',
                         $entryId
                     );

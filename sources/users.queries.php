@@ -570,7 +570,7 @@ if (null !== $post_type) {
                     );
                     
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $userId);
 
                     // Count deleted users
                     $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
@@ -1256,7 +1256,7 @@ if (null !== $post_type) {
 
 
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $post_id);
                 } else {
                     // Get old data about user
                     $oldData = getUserCompleteData(null, $post_id);
@@ -1303,7 +1303,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $session->get('user-id'), $session->get('user-login'), $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $session->get('user-id'), $session->get('user-login'), (string) $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -4017,7 +4017,7 @@ function disableUsersBatch(array $userIds, int $disabledStatus, array $SETTINGS)
             $disabledStatus === 1 ? 'at_user_locked' : 'at_user_unlocked',
             (string) $session->get('user-id'),
             $session->get('user-login'),
-            $userId
+            (string) $userId
         );
 
         $done++;
@@ -4087,7 +4087,7 @@ function deleteUsersBatch(array $userIds, array $SETTINGS): array
                     $userId
                 );
 
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $userId);
 
                 DB::commit();
                 $done++;
@@ -4190,8 +4190,8 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'username'         => $SETTINGS['ldap_username'],
         'password'         => $SETTINGS['ldap_password'],
         'port'             => $SETTINGS['ldap_port'],
-        'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1,
+        'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1,
         'version'          => 3,
         'timeout'          => 5,
         'follow_referrals' => false,
@@ -4513,7 +4513,7 @@ function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
             'user_purged',
             (string) $session->get('user-id'),
             $session->get('login'),
-            $userId
+            (string) $userId
         );
         
         DB::commit();

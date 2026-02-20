@@ -1372,12 +1372,12 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @return void
  */
 function logEvents(
-    array $SETTINGS, 
-    string $type, 
-    string $label, 
-    string $who, 
-    ?string $login = null, 
-    $field_1 = null
+    array $SETTINGS,
+    string $type,
+    string $label,
+    string $who,
+    ?string $login = null,
+    string|null $field_1 = null
 ): void
 {
     if (empty($who)) {
@@ -1402,8 +1402,8 @@ function logEvents(
         $field_1 = $field_1_str;
     }
 
-        try {
-    DB::insert(
+    try {
+        DB::insert(
             prefixTable('log_system'),
             [
                 'type' => $type,
@@ -1413,7 +1413,6 @@ function logEvents(
                 'field_1' => $field_1 === null ? '' : $field_1,
             ]
         );
-    
     } catch (\Throwable $e) {
         // Logging must never break API or UI flows
         return;
@@ -1490,20 +1489,20 @@ function logItems(
         // Avoid duplicate "shown" logs caused by multiple API calls within a short window
         if ($action === 'at_shown') {
             try {
-            $existing = DB::queryFirstField(
-                'SELECT id FROM ' . prefixTable('log_items') . '
-                WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
-                ORDER BY date DESC
-                LIMIT 1',
-                $item_id,
-                $id_user,
-                $action,
-                $eventTime - 5,
-                $sourceMarker
-            );
-        } catch (\Throwable $e) {
-            $existing = null; // Never block API calls because of logging
-        }
+                $existing = DB::queryFirstField(
+                    'SELECT id FROM ' . prefixTable('log_items') . '
+                    WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
+                    ORDER BY date DESC
+                    LIMIT 1',
+                    $item_id,
+                    $id_user,
+                    $action,
+                    $eventTime - 5,
+                    $sourceMarker
+                );
+            } catch (\Throwable $e) {
+                $existing = null; // Never block API calls because of logging
+            }
             if (!empty($existing)) {
                 return;
             }
@@ -1514,19 +1513,18 @@ function logItems(
 
     // Insert log in DB
     try {
-    DB::insert(
-        prefixTable('log_items'),
-        [
-            'id_item' => $item_id,
-            'date' => $eventTime,
-            'id_user' => $id_user,
-            'action' => $action,
-            'raison' => $raisonForDb,
-            'old_value' => $old_value,
-            'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
-        ]
-    );
-    
+        DB::insert(
+            prefixTable('log_items'),
+            [
+                'id_item' => $item_id,
+                'date' => $eventTime,
+                'id_user' => $id_user,
+                'action' => $action,
+                'raison' => $raisonForDb,
+                'old_value' => $old_value,
+                'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
+            ]
+        );
     } catch (\Throwable $e) {
         // Logging must never break API or UI flows
         return;
@@ -1563,7 +1561,7 @@ function logItems(
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         // Extract reason
-        $attribute = is_null($raisonForSyslog) === true ? Array('') : explode(' : ', $raisonForSyslog);
+        $attribute = is_null($raisonForSyslog) === true ? [''] : explode(' : ', $raisonForSyslog);
         // Get item info if not known
         if (empty($item_label) === true) {
             try {

@@ -139,7 +139,9 @@ class TaskWorker {
         }
 
         if (!is_dir($targetDir)) {
-            if (!@mkdir($targetDir, 0770, true) && !is_dir($targetDir)) {
+            // mkdir can fail if the directory was created concurrently; the second is_dir check handles that race
+            $mkdirResult = mkdir($targetDir, 0770, true);
+            if ($mkdirResult === false && !is_dir($targetDir)) {
                 throw new Exception('Cannot create backup target dir: ' . $targetDir);
             }
         }
@@ -153,43 +155,43 @@ class TaskWorker {
             throw new Exception('Missing encryption key (bck_script_passkey).');
         }
 
-// Auto-disconnect connected users before running a scheduled backup.
-// Exclude the user who enqueued the task (manual run), if provided.
-try {
-    if (function_exists('loadClasses') && !class_exists('DB')) {
-        loadClasses('DB');
-    }
-    $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
-    $now = time();
+        // Auto-disconnect connected users before running a scheduled backup.
+        // Exclude the user who enqueued the task (manual run), if provided.
+        try {
+            if (function_exists('loadClasses') && !class_exists('DB')) {
+                loadClasses('DB');
+            }
+            $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
+            $now = time();
 
-    if ($excludeUserId > 0) {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-            $now,
-            $excludeUserId
-        );
-    } else {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
-            $now
-        );
-    }
+            if ($excludeUserId > 0) {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+                    $now,
+                    $excludeUserId
+                );
+            } else {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
+                    $now
+                );
+            }
 
-    foreach ($connectedUsers as $u) {
-        DB::update(
-            prefixTable('users'),
-            [
-                'key_tempo' => '',
-                'timestamp' => '',
-                'session_end' => '',
-            ],
-            'id = %i',
-            (int) $u['id']
-        );
-    }
-} catch (Throwable) {
-    // Best effort only - do not block backups if disconnection cannot be done
-}
+            foreach ($connectedUsers as $u) {
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'key_tempo' => '',
+                        'timestamp' => '',
+                        'session_end' => '',
+                    ],
+                    'id = %i',
+                    (int) $u['id']
+                );
+            }
+        } catch (Throwable) {
+            // Best effort only - do not block backups if disconnection cannot be done
+        }
 
         $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
             'output_dir' => $targetDir,
@@ -200,16 +202,17 @@ try {
             throw new Exception($res['message'] ?? 'Backup failed');
         }
 
-        
-// Best effort: write metadata sidecar next to the backup file
-try {
-    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
-    }
-} catch (Throwable) {
-    // do not block backups if metadata cannot be written
-}
-// Store a tiny summary for the task completion "arguments" field (no secrets)
+
+        // Best effort: write metadata sidecar next to the backup file
+        try {
+            if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
+            }
+        } catch (Throwable) {
+            // do not block backups if metadata cannot be written
+        }
+
+        // Store a tiny summary for the task completion "arguments" field (no secrets)
         $this->taskData['backup_file'] = $res['filename'] ?? '';
         $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
         $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);

@@ -1101,7 +1101,7 @@ logItems(
 
                 // Orphans (objects + users)
                 $orphans = tpGetSharekeysOrphans($t);
-                if (empty($orphans) === false) {
+                if (isset($orphans['orphans_total']) && $orphans['orphans_total'] > 0) {
                     $sharekeysOrphans[$t] = $orphans;
                     $sharekeysOrphansTotal += (int) ($orphans['orphans_total'] ?? 0);
                 }
@@ -2266,34 +2266,34 @@ function tpGetTopTablesInfo(int $limit = 20, string $dbName = ''): array
         }
     }
 
+    // Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
+    if (empty($rows) === true) {
+        try {
+            $st = DB::query('SHOW TABLE STATUS');
+            $rows = array();
+            foreach ($st as $r) {
+                $rows[] = array(
+                    'table_name' => (string) ($r['Name'] ?? ''),
+                    'engine' => (string) ($r['Engine'] ?? ''),
+                    'table_rows' => (int) ($r['Rows'] ?? 0),
+                    'data_length' => (float) ($r['Data_length'] ?? 0),
+                    'index_length' => (float) ($r['Index_length'] ?? 0),
+                    'data_free' => (float) ($r['Data_free'] ?? 0),
+                );
+            }
 
-// Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
-if (empty($rows) === true) {
-    try {
-        $st = DB::query('SHOW TABLE STATUS');
-        $rows = array();
-        foreach ($st as $r) {
-            $rows[] = array(
-                'table_name' => (string) ($r['Name'] ?? ''),
-                'engine' => (string) ($r['Engine'] ?? ''),
-                'table_rows' => (int) ($r['Rows'] ?? 0),
-                'data_length' => (float) ($r['Data_length'] ?? 0),
-                'index_length' => (float) ($r['Index_length'] ?? 0),
-                'data_free' => (float) ($r['Data_free'] ?? 0),
-            );
+            usort($rows, static function (array $a, array $b): int {
+                $sizeA = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
+                $sizeB = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
+                return $sizeB <=> $sizeA;
+            });
+
+            $rows = array_slice($rows, 0, $limit);
+        } catch (Exception $e) {
+            $rows = array();
         }
-
-        usort($rows, static function ($a, $b) {
-            $sa = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
-            $sb = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
-            return $sb <=> $sa;
-        });
-
-        $rows = array_slice($rows, 0, $limit);
-    } catch (Exception $e) {
-        $rows = array();
     }
-}
+
     $out = array();
     foreach ($rows as $r) {
         $sizeBytes = (float) (($r['data_length'] ?? 0) + ($r['index_length'] ?? 0));
@@ -3279,12 +3279,12 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
             }
         }
 
-        $mtime = (int) @filemtime($fp);
+        $mtime = (int) filemtime($fp);
         $items[] = array(
             'name' => $bn,
             'mtime' => $mtime,
             'mtime_human' => $mtime > 0 ? date('Y-m-d H:i:s', $mtime) : '',
-            'size_mb' => round(((float) @filesize($fp)) / 1024 / 1024, 2),
+            'size_mb' => round(((float) filesize($fp)) / 1024 / 1024, 2),
             'schema_level' => $schemaLevel,
             'tp_files_version' => $tpFilesVersion,
             'comment' => $comment,
@@ -3369,11 +3369,8 @@ function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int
 
             $mtime = (int) ($f['mtime'] ?? 0);
             $sizeMb = isset($f['size_mb']) ? (float) $f['size_mb'] : null;
-            $comment = isset($f['comment']) && is_scalar($f['comment']) ? (string) $f['comment'] : null;
-            $comment = $comment !== null ? trim($comment) : null;
-            if ($comment === '') {
-                $comment = null;
-            }
+            $rawComment = isset($f['comment']) && is_scalar($f['comment']) ? trim((string) $f['comment']) : '';
+            $comment = $rawComment !== '' ? $rawComment : null;
 
             $schemaLevel = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
             $tpFilesVersion = isset($f['tp_files_version']) && is_scalar($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
