@@ -351,10 +351,14 @@ if ($res === false) {
 }
 // --->
 
-// <---
+// ============================================
 // Add new settings
+// ============================================
 $settings = [
     ['phpseclibv3_native', '0'],
+    ['websocket_enabled', '0'],
+    ['websocket_port', '8080'],
+    ['websocket_host', '127.0.0.1'],
 ];
 
 foreach ($settings as $setting) {
@@ -429,6 +433,21 @@ if (mysqli_num_rows($result) > 0) {
 }
 
 // --->
+
+
+// Indexes for performance
+$res = checkIndexExist(
+    $pre . 'cache_tree',
+    'idx_user_id',
+    "ADD INDEX idx_user_id (user_id)"
+);
+
+// Add invalidated_at column for per-user targeted cache invalidation
+addColumnIfNotExist(
+    $pre . 'cache_tree',
+    'invalidated_at',
+    "INT UNSIGNED DEFAULT 0"
+);
 
 //---<END 3.1.6
 
