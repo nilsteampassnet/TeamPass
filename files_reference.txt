@@ -135,7 +135,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 786d30dd34e2de6304161b937fb11366
+includes/config/include.php cbfe8ba97b5a7477c70f37e4f6959431
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 9f0da13e0ef1c37503e76a4b9e132ea3
@@ -411,7 +411,7 @@ install/install-steps/run.step1.php 8b1ba5c686fc0552aede791d76253488
 install/install-steps/run.step2.php 8c73cf8ddc2e4188464cab21bd7d7eef
 install/install-steps/run.step3.php 507708fc9f73dce06a053a56f5a188af
 install/install-steps/run.step4.php ecb48b08ac44262ed57e99ee79a74df6
-install/install-steps/run.step5.php 29d0e1b956bd6f64038a76372b9d57d8
+install/install-steps/run.step5.php 03260c1ae7dd6faf11b00028df30cd1a
 install/install-steps/run.step6.php 9e56b58eed2bba2debb354b6e5b66bc6
 install/install.php f12aaf9064df9c9ebe1518594e9121c8
 install/js/aes.min.js deaf035d40420d4ce6d4018e0bd63801
@@ -437,7 +437,7 @@ install/upgrade_run_3.0.0_suggestions.php bb9df8e6fb5f722a79d18511fd985867
 install/upgrade_run_3.0.0_users.php ac633429d54c78de7364cba14e80993a
 install/upgrade_run_3.0.php 91d44bf4f1e183c0d6426e6907b141b3
 install/upgrade_run_3.1.5.php 265735032a3344071caf23f6921b5317
-install/upgrade_run_3.1.6.php 76ec9776d67fa9c4f55913fa3e78c7db
+install/upgrade_run_3.1.6.php 4a56e5d372d447044ac6f5ce3a9826c8
 install/upgrade_run_3.1.php 1541696565ec2674b8111312a312daae
 install/upgrade_scripts_manager.php d3706eb68c54d09989572b6aaa82332e
 licences/LICENSE_COMPLIANCE_REPORT.md 9b2b77eca6b849c9fe031d6825eb67f8
