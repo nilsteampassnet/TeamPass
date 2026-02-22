@@ -2431,6 +2431,69 @@ if (null !== $post_type) {
         /*
          * ADD USER FROM LDAP OR OAUTH2
          */
+        /*
+        * GET LDAP STATUS FOR A LIST OF TEAMPASS USER IDS (for main users list)
+        */
+        case 'get_ldap_status_for_user_ids':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check rights
+            if ($session->get('user-admin') !== 1 && $session->get('user-can_manage_all_users') !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // LDAP enabled?
+            if (isset($SETTINGS['ldap_mode']) === false || (int) $SETTINGS['ldap_mode'] !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'statuses' => array(),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userIds = isset($dataReceived['user_ids']) && is_array($dataReceived['user_ids'])
+                ? array_values(array_unique(array_map('intval', $dataReceived['user_ids'])))
+                : array();
+
+            if (empty($userIds)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'statuses' => array(),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                getLdapStatusForUserIds($userIds, $SETTINGS),
+                'encode'
+            );
+
+            break;
+
+
         case 'add_user_from_ad':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -3384,6 +3447,18 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Check if user is admin
+            if ($session->get('user-admin') !== 1 && $session->get('user-can_manage_all_users') !== 1) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
             // Prepare variables
             $userId = (int) filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
         
@@ -3395,19 +3470,28 @@ if (null !== $post_type) {
                 break;
             }
             
-            $result = purgeDeletedUserById($userId);
-            $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
+            $result = purgeDeletedUserById($userId, false);
+
+            // Rebuild tree outside of the purge transaction if needed
+            if (isset($result['error']) === true && (bool) $result['error'] === false && isset($result['tree_changed']) === true && (bool) $result['tree_changed'] === true) {
+                $treeLocal = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $treeLocal->rebuild();
+            }
+
+            $deletedAccountsCount = (int) DB::queryFirstField(
+                "SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL"
+            );
 
             echo prepareExchangedData(
                 [
-                    'error' => false,
+                    'error' => (bool) $result['error'],
+                    'message' => $result['message'],
                     'result' => $result,
                     'deleted_accounts_count' => $deletedAccountsCount,
                 ],
                 'encode'
             );
-            
-            break;
+break;
 
         case 'get_purgeable_users':
             // Check KEY
@@ -3520,22 +3604,55 @@ if (null !== $post_type) {
             
             $purgedCount = 0;
             $errors = [];
-            $cutoffTimestamp = time() - ((int)$daysRetention * 86400);        
-                        
+            $treeNeedsRebuild = false;
+
             foreach ($userIds as $userId) {
-                $userId = (int)$userId;
-                
+                $userId = (int) $userId;
+
                 try {
-                    $result = purgeDeletedUserById($userId);
+                    $result = purgeDeletedUserById($userId, false);
+
+                    if (!empty($result['tree_changed'])) {
+                        $treeNeedsRebuild = true;
+                    }
+
+                    if (!empty($result['error'])) {
+                        $errors[] = str_replace(
+                            ['%id%', '%message%'],
+                            [(string) $userId, (string) $result['message']],
+                            $lang->get('user_purge_failed_for_id')
+                        );
+                        continue;
+                    }
+
                     $purgedCount++;
-                    
                 } catch (Exception $e) {
                     DB::rollback();
-                    $errors[] = "User ID $userId: " . $e->getMessage();
+                    $errors[] = str_replace(
+                        ['%id%', '%message%'],
+                        [(string) $userId, (string) $e->getMessage()],
+                        $lang->get('user_purge_failed_for_id')
+                    );
                 }
             }
-            
-            $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
+
+            // Rebuild tree once for this batch if needed
+            if ($treeNeedsRebuild === true) {
+                try {
+                    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                    $tree->rebuild();
+                } catch (Exception $e) {
+                    $errors[] = str_replace(
+                        ['%id%', '%message%'],
+                        ['-', (string) $e->getMessage()],
+                        $lang->get('user_purge_failed_for_id')
+                    );
+                }
+            }
+
+            $deletedAccountsCount = (int) DB::queryFirstField(
+                "SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL"
+            );
 
             echo prepareExchangedData(
                 [
@@ -3543,13 +3660,12 @@ if (null !== $post_type) {
                     'purged_count' => $purgedCount,
                     'total_in_batch' => count($userIds),
                     'errors' => $errors,
-                    'message' => $purgedCount . ' user(s) purged in this batch',
+                    'message' => str_replace('%count%', (string) $purgedCount, $lang->get('users_purged_in_batch')),
                     'deletedAccountsCount' => $deletedAccountsCount,
                 ],
                 'encode'
             );
-            
-            break;
+break;
 
         case 'restore_user':
             // Check KEY
@@ -3565,9 +3681,12 @@ if (null !== $post_type) {
             }
 
             // Check if user is admin
-            if ($session->get('user-admin') !== 1) {
+            if ($session->get('user-admin') !== 1 && $session->get('user-can_manage_all_users') !== 1) {
                 echo prepareExchangedData(
-                    array('error' => true, 'message' => 'Insufficient rights'),
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed'),
+                    ],
                     'encode'
                 );
                 break;
@@ -3584,7 +3703,7 @@ if (null !== $post_type) {
             
             if ($data_user === null) {
                 echo prepareExchangedData(
-                    array('error' => true, 'message' => 'User not found'),
+                    array('error' => true, 'message' => $lang->get('user_not_found_or_not_deleted')),
                     'encode'
                 );
                 break;
@@ -3606,7 +3725,7 @@ if (null !== $post_type) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => 'Cannot restore user: an active user with login "' . $originalLogin . '" already exists (ID: ' . $existingUser['id'] . ')'
+                        'message' => str_replace(['%login%', '%id%'], [$originalLogin, (string) $existingUser['id']], $lang->get('user_restore_active_user_exists'))
                     ),
                     'encode'
                 );
@@ -3626,7 +3745,7 @@ if (null !== $post_type) {
             );
             
             echo prepareExchangedData(
-                array('error' => false, 'message' => 'User restored successfully'),
+                array('error' => false, 'message' => $lang->get('user_restored_successfully')),
                 'encode'
             );
             break;
@@ -3989,16 +4108,242 @@ function deleteUsersBatch(array $userIds, array $SETTINGS): array
 }
 
 
+
+/**
+ * Escape a value for usage in an LDAP filter (RFC 4515).
+ */
+function tpLdapEscapeFilterValue(string $value): string
+{
+    // Use native ldap_escape when available
+    if (function_exists('ldap_escape')) {
+        // LDAP_ESCAPE_FILTER constant exists in ext/ldap
+        if (defined('LDAP_ESCAPE_FILTER')) {
+            return ldap_escape($value, '', LDAP_ESCAPE_FILTER);
+        }
+        return ldap_escape($value);
+    }
+
+    $map = array(
+        '\\' => '\5c',
+        '*'  => '\2a',
+        '('  => '\28',
+        ')'  => '\29',
+        "\x00" => '\00',
+    );
+
+    return strtr($value, $map);
+}
+
+/**
+ * Retrieve LDAP/AD status (disabled/expired) for a list of TeamPass user IDs.
+ * This is designed for the main Users page to avoid fetching the full LDAP directory.
+ */
+function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    $statuses = array();
+
+    // Initialize with defaults (unknown)
+    foreach ($userIds as $uid) {
+        $uid = (int) $uid;
+        if ($uid > 0) {
+            $statuses[$uid] = array(
+                'ldapAccountMissing' => null,
+                'ldapAccountDisabled' => null,
+                'ldapAccountExpired' => null,
+                'ldapAccountExpiresAt' => null,
+            );
+        }
+    }
+
+    // Fetch Teampass users logins (LDAP-authenticated only)
+    $rows = DB::query(
+        'SELECT id, login, auth_type FROM ' . prefixTable('users') . ' WHERE id IN %li',
+        $userIds
+    );
+
+    $idToLogin = array();
+    $logins = array();
+    foreach ($rows as $r) {
+        if (isset($r['auth_type']) === true && $r['auth_type'] === 'ldap') {
+            $id = (int) $r['id'];
+            $login = (string) $r['login'];
+            if (!empty($login)) {
+                $idToLogin[$id] = $login;
+                $logins[] = $login;
+            }
+        }
+    }
+
+    if (empty($logins)) {
+        return array(
+            'error' => false,
+            'statuses' => $statuses,
+        );
+    }
+
+    // Build ldap configuration array
+    $config = [
+        'hosts'            => explode(',', (string) $SETTINGS['ldap_hosts']),
+        'base_dn'          => $SETTINGS['ldap_bdn'],
+        'username'         => $SETTINGS['ldap_username'],
+        'password'         => $SETTINGS['ldap_password'],
+        'port'             => $SETTINGS['ldap_port'],
+        'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
+        'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'version'          => 3,
+        'timeout'          => 5,
+        'follow_referrals' => false,
+        'options' => [
+            LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
+        ]
+    ];
+
+    $connection = new Connection($config);
+
+    try {
+        $connection->connect();
+    } catch (\LdapRecord\Auth\BindException $e) {
+        return array(
+            'error' => true,
+            'message' => $lang->get('ldap_connection_error'),
+            'statuses' => $statuses,
+        );
+    }
+
+    $attr = (string) $SETTINGS['ldap_user_attribute'];
+
+    // Build OR filter for requested logins
+    $orParts = '';
+    foreach ($logins as $login) {
+        $orParts .= '(' . $attr . '=' . tpLdapEscapeFilterValue($login) . ')';
+    }
+    $orFilter = '(|' . $orParts . ')';
+
+    // Combine with object filter
+    $objectFilter = (string) $SETTINGS['ldap_user_object_filter'];
+    $finalFilter = '(&' . $objectFilter . $orFilter . ')';
+
+    // Attributes needed for status detection
+    $adQueryAttributes = array_values(array_unique(array(
+        $attr,
+        'useraccountcontrol', 'userAccountControl',
+        'accountexpires', 'accountExpires',
+        'shadowexpire',
+    )));
+
+    try {
+        $results = $connection->query()
+            ->select($adQueryAttributes)
+            ->rawfilter($finalFilter)
+            ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
+            ->whereHas($attr)
+            ->get();
+    } catch (\Exception $e) {
+        return array(
+            'error' => true,
+            'message' => $lang->get('ldap_query_error'),
+            'statuses' => $statuses,
+        );
+    }
+
+    // Build login -> status map
+    $loginStatus = array();
+    foreach ($results as $adUser) {
+        if (isset($adUser[$attr][0]) === false) {
+            continue;
+        }
+        $userLogin = (string) $adUser[$attr][0];
+
+        $tmp = array(
+            'ldapAccountMissing' => 0,
+            'ldapAccountDisabled' => null,
+            'ldapAccountExpired' => null,
+            'ldapAccountExpiresAt' => null,
+        );
+
+        // Disabled
+        $uacRaw = null;
+        if (isset($adUser['useraccountcontrol'][0]) === true) {
+            $uacRaw = $adUser['useraccountcontrol'][0];
+        } elseif (isset($adUser['userAccountControl'][0]) === true) {
+            $uacRaw = $adUser['userAccountControl'][0];
+        }
+        if ($uacRaw !== null && is_numeric($uacRaw)) {
+            $uac = (int) $uacRaw;
+            $tmp['ldapAccountDisabled'] = (($uac & 2) === 2) ? 1 : 0;
+        }
+
+        // Expired
+        $expiresRaw = null;
+        if (isset($adUser['accountexpires'][0]) === true) {
+            $expiresRaw = $adUser['accountexpires'][0];
+        } elseif (isset($adUser['accountExpires'][0]) === true) {
+            $expiresRaw = $adUser['accountExpires'][0];
+        }
+
+        if ($expiresRaw !== null) {
+            $expiresRawStr = trim((string) $expiresRaw);
+            if ($expiresRawStr !== '' &&
+                $expiresRawStr !== '0' &&
+                $expiresRawStr !== '9223372036854775807' &&
+                $expiresRawStr !== '18446744073709551615'
+            ) {
+                if (is_numeric($expiresRawStr)) {
+                    $filetime = (int) $expiresRawStr;
+                    if ($filetime > 0) {
+                        $unix = (int) (intdiv($filetime, 10000000) - 11644473600);
+                        $tmp['ldapAccountExpiresAt'] = $unix;
+                        $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+                    }
+                }
+            } else {
+                $tmp['ldapAccountExpired'] = 0;
+                $tmp['ldapAccountExpiresAt'] = null;
+            }
+        } elseif (isset($adUser['shadowexpire'][0]) === true && is_numeric($adUser['shadowexpire'][0])) {
+            $shadowDays = (int) $adUser['shadowexpire'][0];
+            if ($shadowDays > 0) {
+                $unix = $shadowDays * 86400;
+                $tmp['ldapAccountExpiresAt'] = $unix;
+                $tmp['ldapAccountExpired'] = ($unix <= time()) ? 1 : 0;
+            } else {
+                $tmp['ldapAccountExpired'] = 0;
+            }
+        }
+
+        $loginStatus[$userLogin] = $tmp;
+    }
+
+    // Map back to user ids
+    foreach ($idToLogin as $id => $login) {
+        if (isset($loginStatus[$login]) === true) {
+            $statuses[$id] = $loginStatus[$login];
+        } else {
+            // LDAP authenticated in Teampass but not found in LDAP directory
+            $statuses[$id]['ldapAccountMissing'] = 1;
+        }
+    }
+
+    return array(
+        'error' => false,
+        'statuses' => $statuses,
+    );
+}
+
+
 /**
  * Purge deleted user by ID
  * 
  * @param int $userId
  * @return array
  */
-function purgeDeletedUserById($userId): array
+function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
+    $treeChanged = false;
     
     // Vérifier que l'utilisateur est bien marqué deleted
     $user = DB::queryFirstRow(
@@ -4012,7 +4357,8 @@ function purgeDeletedUserById($userId): array
     if (!$user) {
         return [
             'error' => true,
-            'message' => 'User not found or not deleted'
+            'message' => $lang->get('user_not_found_or_not_deleted'),
+            'tree_changed' => false,
         ];
     }
 
@@ -4083,9 +4429,12 @@ function purgeDeletedUserById($userId): array
                     DB::delete(prefixTable('log_items'), 'id_item = %i', $item['id']);
                 }
             }
-            // rebuild tree
-            $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-            $tree->rebuild();
+            $treeChanged = true;
+            if ($rebuildTree === true) {
+                // rebuild tree
+                $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+                $tree->rebuild();
+            }
         }
 
         // Delete objects keys
@@ -4171,14 +4520,16 @@ function purgeDeletedUserById($userId): array
         
         return [
             'error' => false,
-            'message' => $lang->get('user_purged_successfully')
+            'message' => $lang->get('user_purged_successfully'),
+            'tree_changed' => $treeChanged,
         ];
         
     } catch (Exception $e) {
         DB::rollback();
         return [
             'error' => true,
-            'message' => $e->getMessage()
+            'message' => $e->getMessage(),
+            'tree_changed' => $treeChanged,
         ];
     }
 }

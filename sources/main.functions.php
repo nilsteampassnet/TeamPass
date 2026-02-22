@@ -2331,7 +2331,27 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
                 $userPwd,
                 'cbc'
             );
-            return base64_encode((string) $result['data']);
+            $decrypted = (string) $result['data'];
+
+            // CRITICAL: Validate the result is a valid RSA private key (PEM format).
+            // AES-CBC without MAC has no integrity check: decryption with the wrong
+            // algorithm (SHA-256 on SHA-1 data) can silently "succeed" with garbage
+            // data if PKCS7 padding accidentally validates (~0.4% probability).
+            // RSA private keys always begin with '-----BEGIN', so if the decrypted
+            // data doesn't match, the wrong algorithm was used - retry with SHA-1.
+            if ($result['version_used'] === 3 && strpos($decrypted, '-----BEGIN') === false) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS decryptPrivateKey: SHA-256 produced invalid PEM (false positive PKCS7), retrying with SHA-1');
+                }
+                $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                    base64_decode($userPrivateKey),
+                    $userPwd,
+                    'cbc',
+                    'sha1'
+                );
+            }
+
+            return base64_encode($decrypted);
         } catch (Exception $e) {
             // Log error for debugging
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -2417,7 +2437,26 @@ function decryptPrivateKeyWithMigration(
         $decrypted = $result['data'];
         $versionUsed = $result['version_used'];
 
-        if (!empty($decrypted)) {
+        // CRITICAL: Validate the result is a valid RSA private key (PEM format).
+        // AES-CBC without MAC has no integrity check: decryption with the wrong
+        // algorithm (SHA-256 on SHA-1 data) can silently "succeed" with garbage
+        // data if PKCS7 padding accidentally validates (~0.4% probability).
+        // RSA private keys always begin with '-----BEGIN', so if the decrypted
+        // data doesn't match, the wrong algorithm was used - retry with SHA-1.
+        if ($versionUsed === 3 && strpos((string) $decrypted, '-----BEGIN') === false) {
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Migration Notice - User ' . $userId . ': SHA-256 produced invalid PEM (false positive PKCS7 padding), retrying with SHA-1');
+            }
+            $decrypted = CryptoManager::aesDecrypt(
+                base64_decode($userPrivateKey),
+                $userPwd,
+                'cbc',
+                'sha1'
+            );
+            $versionUsed = 1;
+        }
+
+        if (!empty($decrypted) && strpos((string) $decrypted, '-----BEGIN') !== false) {
             $privateKeyClear = base64_encode($decrypted);
 
             // Check if migration is needed
@@ -2436,7 +2475,7 @@ function decryptPrivateKeyWithMigration(
             ];
         }
 
-        // Empty decrypted data
+        // Empty or invalid decrypted data
         return [
             'private_key_clear' => '',
             'migration_error' => true,
@@ -2873,6 +2912,11 @@ function doDataDecryption(string $data, string $key): string
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
 
+    // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
+    if (empty($key)) {
+        return '';
+    }
+
     try {
         // Decrypt using CryptoManager (phpseclib v3)
         $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
@@ -2959,7 +3003,9 @@ function decryptUserObjectKey(string $key, string $privateKey): string
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - decrypt - '.$e->getMessage());
         }
-        return 'Exception: could not decrypt object';
+        // Return empty string (not an error string) so callers can safely detect failure
+        // via empty() check without accidentally using the string as an encryption key
+        return '';
     }
 }
 
@@ -3029,7 +3075,9 @@ function decryptUserObjectKeyWithMigration(
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
             error_log('TEAMPASS Error - decryptWithMigration - ' . $e->getMessage());
         }
-        return 'Exception: could not decrypt object';
+        // Return empty string (not an error string) so callers can safely detect failure
+        // via empty() check without accidentally using the string as an encryption key
+        return '';
     }
 }
 

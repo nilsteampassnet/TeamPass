@@ -128,8 +128,9 @@ class AuthModel
                     $userInfo['id']
                 );
 
-                // get user folders list
+                // get user folders list and persist in cache_tree
                 $ret = $this->buildUserFoldersList($userInfo);
+                $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
 
                 // Load config
                 $configManager = new ConfigManager();
@@ -174,8 +175,8 @@ class AuthModel
                     (string) $inputData['login'],
                     (string) $userInfo['email'],
                     (int) $userInfo['personal_folder'],
-                    (string) implode(",", $ret['folders']),
-                    (string) implode(",", $ret['items']),
+                    '', // folders_list — kept empty, extension uses writableFolders endpoint                                
+                    '', // restricted_items_list — kept empty, no longer computed at auth time  
                     (string) $keyTempo,
                     (string) base64_encode($sessionKey), // Session key for decrypting private key
                     (int) $userInfo['admin'],
@@ -300,19 +301,15 @@ class AuthModel
      * @param array $userInfo
      * @return array
      */
-    private function buildUserFoldersList(array $userInfo): array
+    public function buildUserFoldersList(array $userInfo): array
     {
         //Build tree
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-        
+
         // Start by adding the manually added folders
         $allowedFolders = array_map('intval', explode(";", $userInfo['groupes_visibles']));
         $readOnlyFolders = [];
         $allowedFoldersByRoles = [];
-        $restrictedFoldersForItems = [];
-        $foldersLimited = [];
-        $foldersLimitedFull = [];
-        $restrictedItems = [];
         $personalFolders = [];
 
         $userFunctionId = explode(";", $userInfo['fonction_id']);
@@ -343,39 +340,6 @@ class AuthModel
             }
         }
         
-        // Does this user is allowed to see other items
-        $inc = 0;
-        $rows = DB::query(
-            'SELECT id, id_tree 
-            FROM ' . prefixTable('items') . '
-            WHERE restricted_to LIKE %s'.
-            (count($userFunctionId) > 0 ? ' AND id_tree NOT IN %li' : ''),
-            $userInfo['id'],
-            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
-        );
-        foreach ($rows as $record) {
-            // Exclude restriction on item if folder is fully accessible
-            $restrictedFoldersForItems[$inc] = $record['id_tree'];
-            ++$inc;
-        }
-
-        // Check for the users roles if some specific rights exist on items
-        $rows = DB::query(
-            'SELECT i.id_tree, r.item_id
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('restriction_to_roles') . ' AS r ON (r.item_id=i.id)
-            WHERE '.(count($userFunctionId) > 0 ? ' id_tree NOT IN %li AND ' : '').' i.id_tree != ""
-            ORDER BY i.id_tree ASC',
-            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
-        );
-        foreach ($rows as $record) {
-            $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-            //array_push($foldersLimitedFull, $record['item_id']);
-            array_push($restrictedItems, $record['item_id']);
-            array_push($foldersLimitedFull, $record['id_tree']);
-            ++$inc;
-        }
-
         // Add all personal folders
         $rows = DB::queryFirstRow(
             'SELECT id 
@@ -394,22 +358,56 @@ class AuthModel
             }
         }
 
-        // All folders visibles
+        // All accessible folders
         return [
-            'folders' => array_unique(
-            array_filter(
-                array_merge(
-                    $allowedFolders,
-                    $foldersLimitedFull,
-                    $allowedFoldersByRoles,
-                    $restrictedFoldersForItems,
-                    $readOnlyFolders,
-                    $personalFolders
+            'folders' => array_values(array_unique(
+                array_filter(
+                    array_merge(
+                        $allowedFolders,
+                        $allowedFoldersByRoles,
+                        $readOnlyFolders,
+                        $personalFolders
+                    )
                 )
-                )
-            ),
-            'items' => array_unique($restrictedItems),
+            )),
         ];
     }
     //end buildUserFoldersList
+
+    /**
+     * Store the accessible folders list in cache_tree for API use.
+     * Called at authentication time so the list is ready for subsequent API requests.
+     *
+     * @param int   $userId
+     * @param array $folders Array of integer folder IDs
+     * @return void
+     */
+    private function storeFoldersCache(int $userId, array $folders): void
+    {
+        $foldersJson = json_encode($folders);
+
+        $existing = DB::queryFirstRow(
+            'SELECT increment_id FROM ' . prefixTable('cache_tree') . ' WHERE user_id = %i',
+            $userId
+        );
+
+        if ($existing === null) {
+            DB::insert(prefixTable('cache_tree'), [
+                'user_id'         => $userId,
+                'data'            => '[]',
+                'visible_folders' => '[]',
+                'folders'         => $foldersJson,
+                'timestamp'       => time(),
+                'invalidated_at'  => 0,
+            ]);
+        } else {
+            DB::update(
+                prefixTable('cache_tree'),
+                ['folders' => $foldersJson, 'timestamp' => time(), 'invalidated_at' => 0],
+                'increment_id = %i',
+                (int) $existing['increment_id']
+            );
+        }
+    }
+    //end storeFoldersCache
 }

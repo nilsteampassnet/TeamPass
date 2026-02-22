@@ -247,23 +247,26 @@ trait MigrateUserHandlerTrait {
         if (empty($itemKey) === true) {
             $share_key_for_item = '';
         } else {
-            // Encrypt Item key
+            // Encrypt Item key - encryptUserObjectKey always uses phpseclib v3 (RSA SHA-256)
             $share_key_for_item = encryptUserObjectKey($itemKey, $publicKey);
         }
-        
+
         // Save the new sharekey correctly encrypted in DB
+        // encryption_version=3 must be set explicitly: the DB column DEFAULT is 1 but
+        // encryptUserObjectKey() always uses phpseclib v3 (RSA-OAEP SHA-256)
         $affected = DB::update(
             prefixTable($table),
             array(
                 'object_id' => $recordId,
                 'user_id' => $userId,
                 'share_key' => $share_key_for_item,
+                'encryption_version' => 3,
             ),
             'object_id = %i AND user_id = %i',
             $recordId,
             $userId
         );
-        
+
         // If now row was updated, it means the user has no key for this item, so we need to insert it
         if ($affected === 0) {
             DB::insert(
@@ -272,6 +275,7 @@ trait MigrateUserHandlerTrait {
                     'object_id' => $recordId,
                     'user_id' => $userId,
                     'share_key' => $share_key_for_item,
+                    'encryption_version' => 3,
                 )
             );
         }
