@@ -90,12 +90,17 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
         SSH_USER_ID,
         API_USER_ID
     );
-    $stats = $usersStats[0];
-    echo "    Total users: " . strval($stats['total']) . "\n";
-    echo "    Users with v3 keys: " . strval($stats['v3_users']) . "\n";
-    echo "    Users with v1 keys: " . strval($stats['v1_users']) . "\n";
-    echo "    Migration completed: " . strval($stats['migration_complete']) . "\n";
-    echo "    Migration incomplete: " . strval($stats['migration_incomplete']) . "\n\n";
+    $stats    = $usersStats[0];
+    $stTotal  = intval($stats['total'] ?? 0);
+    $stV3     = intval($stats['v3_users'] ?? 0);
+    $stV1     = intval($stats['v1_users'] ?? 0);
+    $stDone   = intval($stats['migration_complete'] ?? 0);
+    $stIncomp = intval($stats['migration_incomplete'] ?? 0);
+    echo "    Total users: {$stTotal}\n";
+    echo "    Users with v3 keys: {$stV3}\n";
+    echo "    Users with v1 keys: {$stV1}\n";
+    echo "    Migration completed: {$stDone}\n";
+    echo "    Migration incomplete: {$stIncomp}\n\n";
 
     // 2. Check sharekeys by version
     echo "[2] Sharekeys Distribution by Version:\n";
@@ -107,8 +112,11 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
                 SUM(CASE WHEN encryption_version = 1 OR encryption_version IS NULL THEN 1 ELSE 0 END) as v1
             FROM " . prefixTable($table)
         );
-        $percentV3 = intval($tableStats['total']) > 0 ? round((intval($tableStats['v3']) / intval($tableStats['total'])) * 100, 1) : 0;
-        echo "    {$table}: " . strval($tableStats['total']) . " total, " . strval($tableStats['v3']) . " v3 ({$percentV3}%), " . strval($tableStats['v1']) . " v1\n";
+        $tblTotal  = intval($tableStats['total'] ?? 0);
+        $tblV3     = intval($tableStats['v3'] ?? 0);
+        $tblV1     = intval($tableStats['v1'] ?? 0);
+        $percentV3 = $tblTotal > 0 ? round(($tblV3 / $tblTotal) * 100, 1) : 0;
+        echo "    {$table}: {$tblTotal} total, {$tblV3} v3 ({$percentV3}%), {$tblV1} v1\n";
     }
     echo "\n";
 
@@ -132,17 +140,18 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     } else {
         echo "    Found " . count($inconsistentUsers) . " user(s) marked as migrated but with v1 sharekeys:\n";
         foreach ($inconsistentUsers as $user) {
+            $incUserId    = intval($user['id'] ?? 0);
+            $incUserLogin = strval($user['login'] ?? '');
             // Count v1 sharekeys for this user
             $v1Count = 0;
             foreach ($sharekeysTablesList as $table) {
-                $count = DB::queryFirstField(
+                $v1Count += intval(DB::queryFirstField(
                     "SELECT COUNT(*) FROM " . prefixTable($table) . "
                     WHERE user_id = %i AND encryption_version = 1",
-                    $user['id']
-                );
-                $v1Count += intval($count);
+                    $incUserId
+                ));
             }
-            echo "      - User ID " . strval($user['id']) . " (" . strval($user['login']) . "): {$v1Count} v1 sharekeys remaining\n";
+            echo "      - User ID {$incUserId} ({$incUserLogin}): {$v1Count} v1 sharekeys remaining\n";
         }
         echo "\n";
     }
@@ -165,7 +174,9 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     } else {
         echo "    Found " . count($potentialMismatch) . " user(s) with v3 keys but incomplete migration:\n";
         foreach ($potentialMismatch as $user) {
-            echo "      - User ID " . strval($user['id']) . " (" . strval($user['login']) . ")\n";
+            $pmUserId    = intval($user['id'] ?? 0);
+            $pmUserLogin = strval($user['login'] ?? '');
+            echo "      - User ID {$pmUserId} ({$pmUserLogin})\n";
         }
         echo "\n";
     }
@@ -174,12 +185,13 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     echo "[5] Sharekeys with NULL/Missing encryption_version:\n";
     $hasNullVersions = false;
     foreach ($sharekeysTablesList as $table) {
-        $nullCount = DB::queryFirstField(
+        $nullCountRaw = DB::queryFirstField(
             "SELECT COUNT(*) FROM " . prefixTable($table) . "
             WHERE encryption_version IS NULL"
         );
-        if (intval($nullCount) > 0) {
-            echo "    {$table}: " . strval($nullCount) . " rows with NULL encryption_version\n";
+        $nullCount = intval($nullCountRaw);
+        if ($nullCount > 0) {
+            echo "    {$table}: {$nullCount} rows with NULL encryption_version\n";
             $hasNullVersions = true;
         }
     }
@@ -249,14 +261,17 @@ if (isset($options['reset-user'])) {
         exit(1);
     }
 
-    echo "User: " . strval($user['login']) . " (ID: " . strval($user['id']) . ")\n";
-    echo "Current encryption_version: " . strval($user['encryption_version']) . "\n";
-    echo "Current migration_completed: " . strval($user['phpseclibv3_migration_completed']) . "\n\n";
+    $userLogin   = strval($user['login'] ?? '');
+    $userEncV    = intval($user['encryption_version'] ?? 1);
+    $userMigDone = intval($user['phpseclibv3_migration_completed'] ?? 0);
+    echo "User: {$userLogin} (ID: {$userId})\n";
+    echo "Current encryption_version: {$userEncV}\n";
+    echo "Current migration_completed: {$userMigDone}\n\n";
 
     // Show sharekeys stats
     echo "Sharekeys for this user:\n";
     foreach ($sharekeysTablesList as $table) {
-        $stats = DB::queryFirstRow(
+        $stats    = DB::queryFirstRow(
             "SELECT
                 COUNT(*) as total,
                 SUM(CASE WHEN encryption_version = 3 THEN 1 ELSE 0 END) as v3,
@@ -265,7 +280,10 @@ if (isset($options['reset-user'])) {
             WHERE user_id = %i",
             $userId
         );
-        echo "  {$table}: " . strval($stats['total']) . " total (" . strval($stats['v3']) . " v3, " . strval($stats['v1']) . " v1)\n";
+        $skTotal = intval($stats['total'] ?? 0);
+        $skV3    = intval($stats['v3'] ?? 0);
+        $skV1    = intval($stats['v1'] ?? 0);
+        echo "  {$table}: {$skTotal} total ({$skV3} v3, {$skV1} v1)\n";
     }
     echo "\n";
 
