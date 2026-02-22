@@ -2271,9 +2271,12 @@ function formatSizeUnits(int $bytes): string
  */
 function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
 {
-    // Sanitize
-    $antiXss = new AntiXSS();
-    $userPwd = $antiXss->xss_clean($userPwd);
+    // NOTE: xss_clean() is intentionally NOT applied to $userPwd here.
+    // Passwords used as AES key material must be treated as raw binary strings,
+    // not as HTML content. Applying xss_clean() causes a mismatch between the
+    // password stored in users.pw (raw, Defuse-encrypted) and the actual AES key
+    // derivation input, breaking decryption for any migration path that uses the
+    // stored password directly (see private_key_xss_migration column).
 
     // Generate RSA key pair using CryptoManager (phpseclib v3)
     $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
@@ -2318,47 +2321,70 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
  */
 function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
-    // Sanitize
-    $antiXss = new AntiXSS();
-    $userPwd = $antiXss->xss_clean($userPwd);
-    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+    // NOTE: xss_clean() is intentionally NOT applied to $userPwd here.
+    // See generateUserKeys() for the rationale.
+    //
+    // This function tries decryption in two passes to support the transition period
+    // while the private_key_xss_migration is in progress:
+    //   Pass 1 — raw password: correct for all users migrated (or newly created)
+    //             after the xss_clean removal fix.
+    //   Pass 2 — xss_clean'd password: backward-compat fallback for users whose
+    //             private key was encrypted with the sanitized password (pre-fix).
+    //             This pass is skipped when xss_clean() does not modify the password
+    //             (i.e. no <, > or HTML-special chars present).
+    //
+    // The transparent login-time migration in decryptPrivateKeyWithMigration()
+    // detects Pass 2 success and re-encrypts the key with the raw password,
+    // making future logins use Pass 1 only.
 
     if (empty($userPwd) === false) {
-        try {
-            // Decrypt using CryptoManager with version detection (tries SHA-256 then SHA-1)
-            $result = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
-                base64_decode($userPrivateKey),
-                $userPwd,
-                'cbc'
-            );
-            $decrypted = (string) $result['data'];
+        $keyRaw = base64_decode($userPrivateKey);
 
-            // CRITICAL: Validate the result is a valid RSA private key (PEM format).
-            // AES-CBC without MAC has no integrity check: decryption with the wrong
-            // algorithm (SHA-256 on SHA-1 data) can silently "succeed" with garbage
-            // data if PKCS7 padding accidentally validates (~0.4% probability).
-            // RSA private keys always begin with '-----BEGIN', so if the decrypted
-            // data doesn't match, the wrong algorithm was used - retry with SHA-1.
-            if ($result['version_used'] === 3 && strpos($decrypted, '-----BEGIN') === false) {
-                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                    error_log('TEAMPASS decryptPrivateKey: SHA-256 produced invalid PEM (false positive PKCS7), retrying with SHA-1');
+        /**
+         * Decrypt $keyRaw with $pwd and return the PEM string, or '' on failure.
+         * Also handles the SHA-256 false-positive PKCS7 padding (~0.4% probability).
+         */
+        $tryDecrypt = static function (string $pwd) use ($keyRaw): string {
+            try {
+                $result    = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection($keyRaw, $pwd, 'cbc');
+                $decrypted = (string) $result['data'];
+
+                // PKCS7 false-positive guard: SHA-256 can silently "succeed" with
+                // garbage. RSA private keys always begin with '-----BEGIN'.
+                if ($result['version_used'] === 3 && strpos($decrypted, '-----BEGIN') === false) {
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS decryptPrivateKey: SHA-256 produced invalid PEM (false positive PKCS7), retrying with SHA-1');
+                    }
+                    $decrypted = (string) \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt($keyRaw, $pwd, 'cbc', 'sha1');
                 }
-                $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-                    base64_decode($userPrivateKey),
-                    $userPwd,
-                    'cbc',
-                    'sha1'
-                );
-            }
 
-            return base64_encode($decrypted);
-        } catch (Exception $e) {
-            // Log error for debugging
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Error - decryptPrivateKey failed: ' . $e->getMessage());
+                return (strpos($decrypted, '-----BEGIN') !== false) ? $decrypted : '';
+            } catch (Exception $e) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS decryptPrivateKey attempt failed: ' . $e->getMessage());
+                }
+                return '';
             }
-            // Return empty string on decryption failure
-            return '';
+        };
+
+        // Pass 1: raw password (correct for migrated / new users)
+        $decrypted = $tryDecrypt($userPwd);
+        if ($decrypted !== '') {
+            return base64_encode($decrypted);
+        }
+
+        // Pass 2: xss_clean'd password (backward-compat for pre-fix users)
+        $antiXss      = new AntiXSS();
+        $cleanedPwd   = $antiXss->xss_clean($userPwd);
+        if ($cleanedPwd !== $userPwd) {
+            $decrypted = $tryDecrypt($cleanedPwd);
+            if ($decrypted !== '') {
+                return base64_encode($decrypted);
+            }
+        }
+
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS Error - decryptPrivateKey: both raw and xss_clean passes failed');
         }
     }
     return '';
@@ -2374,11 +2400,10 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
  */
 function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
 {
-    // Sanitize
-    $antiXss = new AntiXSS();
-    $userPwd = $antiXss->xss_clean($userPwd);
-    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
-
+    // NOTE: xss_clean() is intentionally NOT applied to $userPwd here.
+    // See generateUserKeys() for the rationale.
+    // $userPrivateKey is base64-encoded binary — xss_clean is a no-op on base64
+    // chars but is removed for consistency and to avoid confusion.
     if (empty($userPwd) === false) {
         try {
             // Encrypt using CryptoManager (phpseclib v3, SHA-256)
@@ -2423,77 +2448,104 @@ function decryptPrivateKeyWithMigration(
     int $userId,
     int $encryptionVersion
 ): array {
-    $antiXss = new AntiXSS();
-    $userPwd = $antiXss->xss_clean($userPwd);
-    $userPrivateKey = $antiXss->xss_clean($userPrivateKey);
+    // NOTE: xss_clean() is NOT applied to $userPwd upfront (see generateUserKeys()).
+    //
+    // This function implements two-pass decryption to support the transparent
+    // migration of users whose private key was historically encrypted with
+    // xss_clean($password) instead of the raw password:
+    //
+    //   Pass 1 — raw password:       correct for all migrated / new users.
+    //   Pass 2 — xss_clean'd pass:   backward-compat for pre-fix users.
+    //             Triggered only when xss_clean() actually modifies the password.
+    //             On success, sets needs_xss_migration=true so the caller can
+    //             re-encrypt the key with the raw password and set the DB flag.
+    //
+    // Return array includes:
+    //   'needs_xss_migration' (bool) — true when Pass 2 was needed (re-encrypt required)
 
-    try {
-        // Use automatic version detection (tries SHA-256 first, then SHA-1)
-        $result = CryptoManager::aesDecryptWithVersionDetection(
-            base64_decode($userPrivateKey),
-            $userPwd,
-            'cbc'
-        );
-        $decrypted = $result['data'];
-        $versionUsed = $result['version_used'];
+    $keyRaw = base64_decode($userPrivateKey);
 
-        // CRITICAL: Validate the result is a valid RSA private key (PEM format).
-        // AES-CBC without MAC has no integrity check: decryption with the wrong
-        // algorithm (SHA-256 on SHA-1 data) can silently "succeed" with garbage
-        // data if PKCS7 padding accidentally validates (~0.4% probability).
-        // RSA private keys always begin with '-----BEGIN', so if the decrypted
-        // data doesn't match, the wrong algorithm was used - retry with SHA-1.
-        if ($versionUsed === 3 && strpos((string) $decrypted, '-----BEGIN') === false) {
+    /**
+     * Attempt to decrypt $keyRaw with $pwd (SHA-256 first, then SHA-1 fallback).
+     * Returns ['decrypted' => string PEM, 'version_used' => int] or null on failure.
+     *
+     * @return array{decrypted: string, version_used: int}|null
+     */
+    $attemptDecrypt = static function (string $pwd) use ($keyRaw, $userId): ?array {
+        try {
+            $result      = CryptoManager::aesDecryptWithVersionDetection($keyRaw, $pwd, 'cbc');
+            $decrypted   = (string) $result['data'];
+            $versionUsed = (int) $result['version_used'];
+
+            // PKCS7 false-positive guard: SHA-256 can silently "succeed" with garbage.
+            // RSA private keys always begin with '-----BEGIN'.
+            if ($versionUsed === 3 && strpos($decrypted, '-----BEGIN') === false) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Notice - User ' . $userId . ': SHA-256 produced invalid PEM (false positive PKCS7 padding), retrying with SHA-1');
+                }
+                $decrypted   = (string) CryptoManager::aesDecrypt($keyRaw, $pwd, 'cbc', 'sha1');
+                $versionUsed = 1;
+            }
+
+            if (!empty($decrypted) && strpos($decrypted, '-----BEGIN') !== false) {
+                return ['decrypted' => $decrypted, 'version_used' => $versionUsed];
+            }
+        } catch (Exception $e) {
             if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Migration Notice - User ' . $userId . ': SHA-256 produced invalid PEM (false positive PKCS7 padding), retrying with SHA-1');
+                error_log('TEAMPASS Migration Error - User ' . $userId . ' decryption attempt failed: ' . $e->getMessage());
             }
-            $decrypted = CryptoManager::aesDecrypt(
-                base64_decode($userPrivateKey),
-                $userPwd,
-                'cbc',
-                'sha1'
-            );
-            $versionUsed = 1;
         }
+        return null;
+    };
 
-        if (!empty($decrypted) && strpos((string) $decrypted, '-----BEGIN') !== false) {
-            $privateKeyClear = base64_encode($decrypted);
+    // ── Pass 1: raw password ──────────────────────────────────────────────────
+    $passResult     = $attemptDecrypt($userPwd);
+    $xssMigNeeded   = false;
 
-            // Check if migration is needed
-            $needsMigration = ($versionUsed === 1);
+    // ── Pass 2: xss_clean'd password (backward-compat fallback) ──────────────
+    if ($passResult === null) {
+        $antiXss    = new AntiXSS();
+        $cleanedPwd = $antiXss->xss_clean($userPwd);
 
-            // Log if DB version doesn't match actual version used
-            if ($versionUsed !== $encryptionVersion && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Migration Notice - User ' . $userId . ' encryption_version mismatch: DB says ' . $encryptionVersion . ' but v' . $versionUsed . ' was used for decryption');
+        if ($cleanedPwd !== $userPwd) {
+            // Password was modified by xss_clean — try the sanitized form
+            $passResult = $attemptDecrypt($cleanedPwd);
+            if ($passResult !== null) {
+                $xssMigNeeded = true;
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Notice - User ' . $userId . ': private key decrypted with xss_clean password; needs_xss_migration=true');
+                }
             }
-
-            return [
-                'private_key_clear' => $privateKeyClear,
-                'migration_error' => false,
-                'needs_migration' => $needsMigration,
-                'version_used' => $versionUsed,
-            ];
         }
+    }
 
-        // Empty or invalid decrypted data
-        return [
-            'private_key_clear' => '',
-            'migration_error' => true,
-            'needs_migration' => false,
-        ];
-
-    } catch (Exception $e) {
-        // Decryption failed with both versions
+    if ($passResult === null) {
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Migration Error - User ' . $userId . ' private key decryption failed: ' . $e->getMessage());
+            error_log('TEAMPASS Migration Error - User ' . $userId . ': private key decryption failed with both raw and xss_clean passwords');
         }
-
         return [
-            'private_key_clear' => '',
-            'migration_error' => true,
-            'needs_migration' => false,
+            'private_key_clear'    => '',
+            'migration_error'      => true,
+            'needs_migration'      => false,
+            'needs_xss_migration'  => false,
         ];
     }
+
+    $privateKeyClear = base64_encode($passResult['decrypted']);
+    $versionUsed     = $passResult['version_used'];
+    $needsMigration  = ($versionUsed === 1);
+
+    if ($versionUsed !== $encryptionVersion && defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+        error_log('TEAMPASS Migration Notice - User ' . $userId . ' encryption_version mismatch: DB says ' . $encryptionVersion . ' but v' . $versionUsed . ' was used for decryption');
+    }
+
+    return [
+        'private_key_clear'   => $privateKeyClear,
+        'migration_error'     => false,
+        'needs_migration'     => $needsMigration,
+        'needs_xss_migration' => $xssMigNeeded,
+        'version_used'        => $versionUsed,
+    ];
 }
 
 /**
