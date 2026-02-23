@@ -135,7 +135,7 @@ includes/.externals/tp.config.php 361da70add00e1069f22191dbb07503c
 includes/avatars/.htaccess df51d5d900c2228ec1349362838401e7
 includes/avatars/empty_file.txt d41d8cd98f00b204e9800998ecf8427e
 includes/config/.htaccess 51622ead2639d535e7a955a8a7a10613
-includes/config/include.php 786d30dd34e2de6304161b937fb11366
+includes/config/include.php b347887e61e138656ca0fcee6664cd92
 includes/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 includes/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 includes/core/load.js.php 9f0da13e0ef1c37503e76a4b9e132ea3
@@ -411,7 +411,7 @@ install/install-steps/run.step1.php 8b1ba5c686fc0552aede791d76253488
 install/install-steps/run.step2.php 8c73cf8ddc2e4188464cab21bd7d7eef
 install/install-steps/run.step3.php 507708fc9f73dce06a053a56f5a188af
 install/install-steps/run.step4.php ecb48b08ac44262ed57e99ee79a74df6
-install/install-steps/run.step5.php 29d0e1b956bd6f64038a76372b9d57d8
+install/install-steps/run.step5.php 03260c1ae7dd6faf11b00028df30cd1a
 install/install-steps/run.step6.php 9e56b58eed2bba2debb354b6e5b66bc6
 install/install.php f12aaf9064df9c9ebe1518594e9121c8
 install/js/aes.min.js deaf035d40420d4ce6d4018e0bd63801
@@ -437,7 +437,7 @@ install/upgrade_run_3.0.0_suggestions.php bb9df8e6fb5f722a79d18511fd985867
 install/upgrade_run_3.0.0_users.php ac633429d54c78de7364cba14e80993a
 install/upgrade_run_3.0.php 91d44bf4f1e183c0d6426e6907b141b3
 install/upgrade_run_3.1.5.php 265735032a3344071caf23f6921b5317
-install/upgrade_run_3.1.6.php 76ec9776d67fa9c4f55913fa3e78c7db
+install/upgrade_run_3.1.6.php 75c9a5ffb4670f35367455a317f59dc4
 install/upgrade_run_3.1.php 1541696565ec2674b8111312a312daae
 install/upgrade_scripts_manager.php d3706eb68c54d09989572b6aaa82332e
 licences/LICENSE_COMPLIANCE_REPORT.md 9b2b77eca6b849c9fe031d6825eb67f8
@@ -3739,7 +3739,7 @@ scripts/background_tasks___handler.php 61998193c8573cb15037b6f16ddc6669
 scripts/background_tasks___worker.php b1d04773deac30d241b90287e954f5a2
 scripts/fix_integrity_hash.php 9d8ce50635d01559953f3c843a58851f
 scripts/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
-scripts/migrate_tp_user_to_v3.php 09fc4cacb27ab0a51065a3c20818e289
+scripts/migrate_tp_user_to_v3.php 37f56977db07c30e88392a130bc10864
 scripts/repair_phpseclib_migration.php b040efc05d63850241e83d2ed05e317c
 scripts/restore.php 4f68fc89e7147a88e36dc069be0eeeb5
 scripts/taskLogger.php 84eb8ab9036d22ff39bb10c18273d7d0
@@ -3766,7 +3766,7 @@ sources/fields.queries.php 65fa7383fe3a0714e0620cc6b7ab3a2d
 sources/find.queries.php 7542e0891da4b9ef390231e2fd3f651e
 sources/folders.class.php 7562079251a5ed25d65a9e7a043b7648
 sources/folders.queries.php 0d5ba6588aa019a4bfcedc5288febab0
-sources/identify.php c2497c3778c678b88d46ae5fa34a1762
+sources/identify.php 65f015b304ebbf8149d13ecc4a2d000e
 sources/import.queries.php 7607ecc6f8de202b709ce3ad1a1be67a
 sources/inactive_users_mgmt.queries.php 23bab1ccc263be056eaf895089c6360d
 sources/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
@@ -3774,7 +3774,7 @@ sources/items.logs.php e35ec78cc5888411563d16bf781cbb48
 sources/items.queries.php a3d38d425149899270a3cbbcf93591f6
 sources/ldap.queries.php c8df58059007855e5191a566d89acdf4
 sources/logs.datatables.php fa96c1f7c90fbeb46069337ddba58c2d
-sources/main.functions.php 36fd10b8bc9b2dc4d755b97cb0599996
+sources/main.functions.php 3c356cb15e509bbb5610c049f8199e12
 sources/main.queries.php 9250f74af592944963354f16c0145288
 sources/oauth.php 993e612416ad6b4b5c10b64958ab3725
 sources/phpseclibv3_migration.queries.php 9da371c5ab6849c541bd95633071e360

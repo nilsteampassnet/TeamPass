@@ -168,41 +168,104 @@ if (empty($tpPrivateKeyEnc)) {
     exit(1);
 }
 
-$privateKeyRaw = base64_decode($tpPrivateKeyEnc);
-$detectedAesVersion = 0;
-$privateKeyClear    = '';
+$privateKeyRaw           = base64_decode($tpPrivateKeyEnc);
+$detectedAesVersion      = 0;
+$privateKeyClear         = '';
+// $tpUserPasswordEffective tracks which form of the password successfully decrypted
+// the private key. generateUserKeys() runs xss_clean() internally before AES key
+// derivation, but users.pw stores the raw password (via Defuse). They differ when
+// the password contains characters modified by AntiXSS (e.g. '<' or '>').
+$tpUserPasswordEffective = $tpUserPasswordClear;
 
-try {
-    $result      = CryptoManager::aesDecryptWithVersionDetection($privateKeyRaw, $tpUserPasswordClear, 'cbc');
-    $decrypted   = strval($result['data']);
-    $versionUsed = intval($result['version_used']);
+/**
+ * Attempt to AES-decrypt the private key blob and validate the PEM output.
+ * Tries SHA-256 first (v3), then SHA-1 (v1), with a PEM validity check.
+ *
+ * @param string $password The AES key derivation password to try.
+ * @return array{decrypted: string, version: int}
+ * @throws Exception If decryption fails with both algorithms.
+ */
+$attemptKeyDecrypt = static function (string $password) use ($privateKeyRaw): array {
+    $result    = CryptoManager::aesDecryptWithVersionDetection($privateKeyRaw, $password, 'cbc');
+    $decrypted = strval($result['data']);
+    $version   = intval($result['version_used']);
 
-    // PEM validation: AES-CBC false positives (~0.4%) produce non-PEM garbage.
-    // RSA private keys always begin with '-----BEGIN'. If SHA-256 produces garbage,
-    // fall back to SHA-1.
-    if ($versionUsed === 3 && strpos($decrypted, '-----BEGIN') === false) {
+    // AES-CBC has no MAC: SHA-256 can silently "succeed" with garbage (~0.4% chance
+    // that PKCS7 padding accidentally validates). RSA private keys always begin with
+    // '-----BEGIN', so if the result is not PEM, retry with SHA-1.
+    if ($version === 3 && strpos($decrypted, '-----BEGIN') === false) {
         echo "  SHA-256 produced invalid PEM (false positive PKCS7 padding) — retrying with SHA-1...\n";
-        $decrypted   = (string) CryptoManager::aesDecrypt($privateKeyRaw, $tpUserPasswordClear, 'cbc', 'sha1');
-        $versionUsed = 1;
+        $decrypted = (string) CryptoManager::aesDecrypt($privateKeyRaw, $password, 'cbc', 'sha1');
+        $version   = 1;
     }
 
-    if (empty($decrypted) || strpos($decrypted, '-----BEGIN') === false) {
-        echo "  ERROR: Could not produce a valid PEM key from TP_USER's private key.\n";
+    return ['decrypted' => $decrypted, 'version' => $version];
+};
+
+// ── Attempt 1: raw Defuse-decrypted password ──────────────────────────────
+$step3FirstError     = '';
+$rawAttemptSucceeded = false;
+try {
+    ['decrypted' => $decrypted, 'version' => $versionUsed] = $attemptKeyDecrypt($tpUserPasswordClear);
+    if (!empty($decrypted) && strpos($decrypted, '-----BEGIN') !== false) {
+        $rawAttemptSucceeded = true;
+        $detectedAesVersion  = $versionUsed;
+        $privateKeyClear     = $decrypted;
+        // $tpUserPasswordEffective already set to $tpUserPasswordClear
+    } else {
+        $step3FirstError = 'Decrypted data is not a valid RSA PEM key';
+    }
+} catch (Exception $e) {
+    $step3FirstError = $e->getMessage();
+}
+
+// ── Attempt 2: AntiXSS-sanitized password (fallback) ─────────────────────
+// generateUserKeys() calls $antiXss->xss_clean($userPwd) before using the
+// password for AES key derivation, but the password stored in users.pw via
+// Defuse encryption is the RAW value. When the password contains characters
+// that xss_clean() modifies (e.g. '<', '>' from the symbol set of
+// ComputerPasswordGenerator), the two values differ and the raw password
+// cannot decrypt the private key.
+if (!$rawAttemptSucceeded) {
+    $antiXss                 = new \voku\helper\AntiXSS();
+    $tpUserPasswordSanitized = $antiXss->xss_clean($tpUserPasswordClear);
+
+    if ($tpUserPasswordSanitized === $tpUserPasswordClear) {
+        // AntiXSS made no changes — the failure is not an xss_clean mismatch.
+        echo "  ERROR: Decryption failed with raw password.\n";
+        echo "  Details: " . $step3FirstError . "\n";
+        echo "  AntiXSS did not modify the password, so the mismatch hypothesis does not apply.\n";
         echo "  The stored password or application master key may have changed since installation.\n\n";
         exit(1);
     }
 
-    $detectedAesVersion = $versionUsed;
-    $privateKeyClear    = $decrypted;
+    echo "  Raw password failed — retrying with AntiXSS-sanitized password...\n";
+    echo "  Reason: The password contains characters modified by xss_clean() (e.g. '<' or '>').\n";
+    echo "          generateUserKeys() sanitizes the password internally before AES key derivation,\n";
+    echo "          but users.pw stores the raw password. This mismatch prevented decryption.\n";
 
-    $aesLabel = $detectedAesVersion === 3 ? 'AES-SHA-256 (v3) — no re-encryption needed' : 'AES-SHA-1 (v1) — WILL re-encrypt to SHA-256';
-    echo "  Detected: {$aesLabel}\n";
-    echo "  PEM header: '" . substr($privateKeyClear, 0, 27) . "...'\n\n";
-
-} catch (Exception $e) {
-    echo "  ERROR: Exception while decrypting private key: " . $e->getMessage() . "\n\n";
-    exit(1);
+    try {
+        ['decrypted' => $decrypted, 'version' => $versionUsed] = $attemptKeyDecrypt($tpUserPasswordSanitized);
+        if (empty($decrypted) || strpos($decrypted, '-----BEGIN') === false) {
+            echo "  ERROR: AntiXSS-sanitized password also produced an invalid PEM result.\n";
+            echo "  The private key data may be corrupted in the database.\n\n";
+            exit(1);
+        }
+        $detectedAesVersion      = $versionUsed;
+        $privateKeyClear         = $decrypted;
+        $tpUserPasswordEffective = $tpUserPasswordSanitized;
+        echo "  Decryption succeeded with AntiXSS-sanitized password.\n";
+    } catch (Exception $e) {
+        echo "  ERROR: Both raw and AntiXSS-sanitized passwords failed.\n";
+        echo "  Raw password error:       " . $step3FirstError . "\n";
+        echo "  Sanitized password error: " . $e->getMessage() . "\n\n";
+        exit(1);
+    }
 }
+
+$aesLabel = $detectedAesVersion === 3 ? 'AES-SHA-256 (v3) — no re-encryption needed' : 'AES-SHA-1 (v1) — WILL re-encrypt to SHA-256';
+echo "  Detected: {$aesLabel}\n";
+echo "  PEM header: '" . substr($privateKeyClear, 0, 27) . "...'\n\n";
 
 // ─────────────────────────────────────────────────────────────
 // STEP 4 — Re-encrypt private key if AES-SHA-1
@@ -213,11 +276,14 @@ $newEncryptedPrivateKey = '';
 if ($detectedAesVersion === 1) {
     echo "[4] Re-encrypting TP_USER private key: AES-SHA-1 → AES-SHA-256...\n";
     try {
-        $reEncrypted = CryptoManager::aesEncrypt($privateKeyClear, $tpUserPasswordClear, 'cbc', 'sha256');
+        // Use $tpUserPasswordEffective: either the raw password (normal case) or the
+        // AntiXSS-sanitized password (when xss_clean modified the original password).
+        // This must match the password used by decryptPrivateKey() for future operations.
+        $reEncrypted = CryptoManager::aesEncrypt($privateKeyClear, $tpUserPasswordEffective, 'cbc', 'sha256');
         $newEncryptedPrivateKey = base64_encode($reEncrypted);
 
         // Verify round-trip
-        $verifyDecrypted = (string) CryptoManager::aesDecrypt($reEncrypted, $tpUserPasswordClear, 'cbc', 'sha256');
+        $verifyDecrypted = (string) CryptoManager::aesDecrypt($reEncrypted, $tpUserPasswordEffective, 'cbc', 'sha256');
         if ($verifyDecrypted !== $privateKeyClear) {
             echo "  ERROR: Round-trip verification failed! Aborting for safety.\n\n";
             exit(1);

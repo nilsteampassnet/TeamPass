@@ -1278,6 +1278,8 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
 
     $privateKeyClear = $decryptResult['private_key_clear'];
 
+    $migrationSuccess = false; // tracks v1→v3 (SHA-1→SHA-256) migration success
+
     // If migration is needed, perform it now
     if ($decryptResult['needs_migration'] === true) {
         $migrationSuccess = migrateAllUserKeysToV3(
@@ -1298,6 +1300,45 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
                 error_log('TEAMPASS Migration Warning - User ' . $userInfo['id'] . ' migration to v3 failed, staying in v1');
             }
         }
+    }
+
+    // Handle XSS migration: re-encrypt private key with raw password when it was
+    // historically encrypted with xss_clean($password) instead of the raw password.
+    // When needs_migration is ALSO true, migrateAllUserKeysToV3() above already used
+    // the raw $passwordClear + SHA-256, so both issues are fixed in one pass.
+    $xssMigrationDone = false;
+    if ($decryptResult['needs_xss_migration'] === false) {
+        // Key confirmed to use raw password already — nothing to do
+        $xssMigrationDone = true;
+    } elseif ($decryptResult['needs_xss_migration'] === true && $decryptResult['needs_migration'] === false) {
+        // Key uses xss_clean'd password but SHA-256 — re-encrypt with raw password
+        try {
+            $reEncrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                base64_decode($privateKeyClear),
+                $passwordClear,
+                'cbc',
+                'sha256'
+            );
+            $updateData['private_key'] = base64_encode($reEncrypted);
+            $xssMigrationDone = true;
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS XSS Migration - User ' . $userInfo['id'] . ' private key re-encrypted with raw password (SHA-256)');
+            }
+        } catch (Exception $e) {
+            // Log but do not block login — two-pass decryption will still work next time
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS XSS Migration Error - User ' . $userInfo['id'] . ' re-encryption failed: ' . $e->getMessage());
+            }
+        }
+    } elseif ($decryptResult['needs_xss_migration'] === true && $decryptResult['needs_migration'] === true) {
+        // Both migrations needed — migrateAllUserKeysToV3() above handled both with raw password + SHA-256
+        $xssMigrationDone = $migrationSuccess;
+    }
+
+    // Update DB flag once key is confirmed to use raw password in AES key derivation.
+    // NULL = not yet verified; 1 = confirmed (key uses raw password, xss_clean removed).
+    if ($xssMigrationDone) {
+        $updateData['private_key_xss_migration'] = 1;
     }
 
     try {

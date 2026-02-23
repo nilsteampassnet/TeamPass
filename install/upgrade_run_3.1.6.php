@@ -434,8 +434,39 @@ if (mysqli_num_rows($result) > 0) {
 
 // --->
 
+
+// Indexes for performance
+$res = checkIndexExist(
+    $pre . 'cache_tree',
+    'idx_user_id',
+    "ADD INDEX idx_user_id (user_id)"
+);
+
+// Add invalidated_at column for per-user targeted cache invalidation
+addColumnIfNotExist(
+    $pre . 'cache_tree',
+    'invalidated_at',
+    "INT UNSIGNED DEFAULT 0"
+);
+
 //---<END 3.1.6
 
+// ============================================
+// STEP: Add private_key_xss_migration tracking column
+// ============================================
+// Tracks whether a user's private key has been re-encrypted with the raw password
+// (fixing the historical bug where xss_clean() was applied to the password before
+// AES key derivation in generateUserKeys/encryptPrivateKey, causing a mismatch
+// between the stored Defuse-encrypted password and the actual AES key material).
+// NULL = not yet attempted, 1 = migrated (key encrypted with raw password)
+$res = addColumnIfNotExist(
+    $pre . 'users',
+    'private_key_xss_migration',
+    "TINYINT(1) NULL DEFAULT NULL COMMENT 'NULL=not attempted, 1=done: private key uses raw password (xss_clean removed from AES key derivation)'"
+);
+if ($res === false) {
+    $error[] = "Failed to add private_key_xss_migration to users table - MySQL Error: " . mysqli_error($db_link);
+}
 
 // Close connection
 mysqli_close($db_link);
