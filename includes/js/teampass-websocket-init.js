@@ -202,6 +202,14 @@
       }
     })
 
+    tpWs.on('item_copied', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('success', L.new_item,
+          '"' + data.label + '" ' + (L.item_copied_by || 'copied by') + ' ' + data.copied_by)
+        refreshItemsList()
+      }
+    })
+
     // Edition lock events
     tpWs.on('item_edition_started', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
@@ -319,16 +327,30 @@
   function subscribeToFolder(folderId) {
     if (!folderId || !tpWs.isConnectedNow()) return
 
-    // Unsubscribe from previous folder
+    // Unsubscribe from previous folder and clear its lock indicators
     if (currentFolderId && currentFolderId !== folderId) {
       tpWs.unsubscribeFromFolder(currentFolderId).catch(function() {})
+      if (window.tpLockedItems) {
+        Object.keys(window.tpLockedItems).forEach(function(itemId) {
+          removeEditionLockIndicator(itemId)
+        })
+        window.tpLockedItems = {}
+      }
     }
 
     currentFolderId = folderId
 
     tpWs.subscribeToFolder(folderId)
-      .then(function() {
+      .then(function(response) {
         tpWsDebug('[TeamPass WS] Subscribed to folder ' + folderId, 'log')
+        // Sync initial lock state: show badges for items already locked in this folder
+        if (response && Array.isArray(response.locked_items)) {
+          if (!window.tpLockedItems) window.tpLockedItems = {}
+          response.locked_items.forEach(function(lock) {
+            window.tpLockedItems[lock.item_id] = lock.user_login
+            showEditionLockIndicator(lock.item_id, lock.user_login)
+          })
+        }
       })
       .catch(function(err) {
         tpWsDebug('[TeamPass WS] Failed to subscribe to folder ' + folderId + " - " + err, 'error')

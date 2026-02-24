@@ -282,6 +282,15 @@ if (
         logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
     }
 
+    // Notify other open tabs via WebSocket before invalidating the session.
+    // The user ID must be captured here as it is no longer accessible after invalidate().
+    $expiredUserId = (int) $session->get('user-id');
+    if ($expiredUserId > 0) {
+        emitWebSocketEvent('session_expired', 'user', $expiredUserId, [
+            'reason' => 'session_timeout',
+        ]);
+    }
+
     // erase session table
     $session->invalidate();
     //Redirection

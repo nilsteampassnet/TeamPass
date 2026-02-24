@@ -303,6 +303,32 @@ class ConnectionManager
     }
 
     /**
+     * Sync a user's folder subscriptions against a fresh set of accessible folder IDs.
+     *
+     * Unsubscribes from any folder no longer in $accessibleFolderIds and updates
+     * conn->userData so subsequent permission checks reflect the current state.
+     *
+     * @param int   $userId              The user whose permissions changed
+     * @param int[] $accessibleFolderIds Current authoritative list from DB
+     */
+    public function syncUserFolderAccess(int $userId, array $accessibleFolderIds): void
+    {
+        // Unsubscribe from every folder the user is no longer allowed to access
+        foreach (array_keys($this->folderSubscriptions) as $folderId) {
+            if (!in_array((int) $folderId, $accessibleFolderIds, true)) {
+                $this->unsubscribeFromFolder($userId, (int) $folderId);
+            }
+        }
+
+        // Refresh accessible_folders in all active connections of this user
+        foreach ($this->getUserConnections($userId) as $conn) {
+            if (isset($conn->userData)) {
+                $conn->userData['accessible_folders'] = $accessibleFolderIds;
+            }
+        }
+    }
+
+    /**
      * Get list of all active resource IDs (for cleanup purposes)
      *
      * @return int[]

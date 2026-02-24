@@ -179,6 +179,11 @@ class EventBroadcaster
                         (int) $event['target_id'],
                         $message
                     );
+                    // On permission change, resync the user's folder subscriptions
+                    // against current DB state so revoked folders are unsubscribed immediately.
+                    if ($event['event_type'] === 'folder_permission_changed') {
+                        $this->syncUserFolderAccess((int) $event['target_id']);
+                    }
                 }
                 break;
 
@@ -221,6 +226,46 @@ class EventBroadcaster
         }
 
         return true;
+    }
+
+    /**
+     * Query current accessible folders for a user and sync their subscriptions.
+     *
+     * Called after dispatching a folder_permission_changed event so that the user's
+     * in-daemon connection state reflects the DB truth without waiting for reconnection.
+     *
+     * @param int $userId The user whose permissions just changed
+     */
+    private function syncUserFolderAccess(int $userId): void
+    {
+        try {
+            // Authoritative folder list: roles the user belongs to → folders those roles cover
+            $folderIds = \DB::queryFirstColumn(
+                'SELECT DISTINCT rv.folder_id
+                 FROM %l rv
+                 JOIN %l ur ON rv.role_id = ur.role_id
+                 WHERE ur.user_id = %i AND rv.type != %s',
+                $this->tablePrefix . 'roles_values',
+                $this->tablePrefix . 'users_roles',
+                $userId,
+                ''
+            );
+
+            $this->connections->syncUserFolderAccess(
+                $userId,
+                array_map('intval', $folderIds ?: [])
+            );
+
+            $this->logger->debug('Synced folder access for user', [
+                'user_id'           => $userId,
+                'accessible_folders' => count($folderIds ?: []),
+            ]);
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to sync folder access for user', [
+                'user_id' => $userId,
+                'error'   => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

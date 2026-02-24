@@ -135,13 +135,45 @@ class MessageHandler
                 'folder_id' => $folderId,
             ]);
 
+            // Fetch currently active edition locks for this folder so the client
+            // can display lock badges for items already being edited by other users.
+            $lockedItems = [];
+            try {
+                $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+                $heartbeatTimeout = 300; // must match EDITION_LOCK_HEARTBEAT_TIMEOUT
+                $rows = \DB::query(
+                    'SELECT ie.item_id, u.login AS user_login
+                     FROM %l ie
+                     JOIN %l i ON ie.item_id = i.id
+                     JOIN %l u ON ie.user_id = u.id
+                     WHERE i.id_tree = %i AND ie.timestamp >= %i',
+                    $tablePrefix . 'items_edition',
+                    $tablePrefix . 'items',
+                    $tablePrefix . 'users',
+                    $folderId,
+                    time() - $heartbeatTimeout
+                );
+                foreach ($rows as $row) {
+                    $lockedItems[] = [
+                        'item_id'    => (int) $row['item_id'],
+                        'user_login' => (string) $row['user_login'],
+                    ];
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to fetch locked items for folder', [
+                    'folder_id' => $folderId,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+
             return [
-                'type' => 'response',
-                'status' => 'success',
-                'action' => 'subscribed',
-                'channel' => 'folder',
-                'folder_id' => $folderId,
-                'request_id' => $requestId,
+                'type'         => 'response',
+                'status'       => 'success',
+                'action'       => 'subscribed',
+                'channel'      => 'folder',
+                'folder_id'    => $folderId,
+                'locked_items' => $lockedItems,
+                'request_id'   => $requestId,
             ];
         }
 

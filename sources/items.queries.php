@@ -3668,6 +3668,20 @@ switch ($inputData['type']) {
                 ),
                 'encode'
             );
+            break;
+        }
+
+        // Reject deletion if item is currently being edited by another user
+        $lockCheck = isItemLocked(intval($inputData['itemId']), $session, intval($session->get('user-id')));
+        if ($lockCheck['status'] === true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_item_currently_being_updated'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         // delete item consists in disabling it
@@ -5165,6 +5179,19 @@ switch ($inputData['type']) {
                 array(
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Reject move if item is currently being edited by another user
+        $lockCheck = isItemLocked(intval($inputData['itemId']), $session, intval($session->get('user-id')));
+        if ($lockCheck['status'] === true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_item_currently_being_updated'),
                 ),
                 'encode'
             );

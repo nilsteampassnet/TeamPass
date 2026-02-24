@@ -577,6 +577,11 @@ if (null !== $post_type) {
 
                     DB::commit();
 
+                    // Force-disconnect the deleted user if currently connected via WebSocket
+                    emitWebSocketEvent('session_expired', 'user', intval($userId), [
+                        'reason' => 'account_deleted',
+                    ]);
+
                     //Send back
                     echo prepareExchangedData(
                         array(
@@ -2978,6 +2983,13 @@ if (null !== $post_type) {
                     $session->get('user-login'),
                     $post_id
                 );
+
+                // Force-disconnect the disabled user if currently connected via WebSocket
+                if ((int) $post_user_disabled === 1) {
+                    emitWebSocketEvent('session_expired', 'user', intval($post_id), [
+                        'reason' => 'account_disabled',
+                    ]);
+                }
             } else {
                 echo prepareExchangedData(
                     array(

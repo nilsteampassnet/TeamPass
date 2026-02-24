@@ -781,6 +781,32 @@ class TaskWorker {
             $this->taskId
         );
 
+        // Notify target user for task types not covered by emitItemEncryptionEvent()
+        if ($this->processType === 'create_user_keys') {
+            $targetUserId = (int) ($this->taskData['new_user_id'] ?? 0);
+            if ($targetUserId > 0) {
+                // user_keys_ready triggers a page reload so the user can access encrypted content
+                emitWebSocketEvent('user_keys_ready', 'user', $targetUserId, [
+                    'task_id'   => $this->taskId,
+                    'task_type' => $this->processType,
+                    'status'    => 'completed',
+                ]);
+            }
+        } elseif ($this->processType === 'migrate_user_personal_items') {
+            $targetUserId = (int) ($this->taskData['new_user_id'] ?? 0);
+            if ($targetUserId > 0) {
+                emitTaskProgress(
+                    $targetUserId,
+                    (string) $this->taskId,
+                    $this->processType,
+                    1,
+                    1,
+                    'completed',
+                    'Personal items migration completed'
+                );
+            }
+        }
+
         if (LOG_TASKS=== true) $this->logger->log('Finishing task: ' . $this->taskId, 'DEBUG');
     }
 

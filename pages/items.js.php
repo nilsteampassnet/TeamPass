@@ -1774,6 +1774,20 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             console.log(data);
         }
 
+        // Block deletion if item is currently being edited by another user
+        if (window.tpLockedItems && window.tpLockedItems[itemId]) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            requestRunning = false;
+            return false;
+        }
+
         // Launch action
         $.post(
             'sources/items.queries.php', {
@@ -7168,6 +7182,19 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     toastr.remove();
                     toastr.error(
                         '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // Block move if item is currently being edited by another user
+                if (window.tpLockedItems && window.tpLockedItems[ui.draggable.data('item-id')]) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
                         '', {
                             timeOut: 5000,
                             progressBar: true
