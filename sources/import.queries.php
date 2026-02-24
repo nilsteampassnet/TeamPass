@@ -1128,7 +1128,7 @@ switch ($inputData['type']) {
             'level' => 1,
             'isPF' => $destinationFolderInfos['importPF'],
         ];
-        $startPathLevel = 1;
+        $startPathLevel = (int) $destinationFolderInfos['startPathLevel'];
 
         foreach($post_folders as $folder) {
             // get parent id
@@ -1404,7 +1404,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             array(
                 'parent_id' => (int) $parentId,
                 'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
-                'nlevel' => (int) $folderLevel,
+                'nlevel' => (int) ($folderLevel + $startPathLevel),
                 'categories' => '',
                 'personal_folder' => $isPersonalFolder,
             )
@@ -1438,15 +1438,38 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         if ( $isPersonalFolder ) {
             SessionManager::addRemoveFromSessionArray('user-personal_folders', [$id], 'add');
         } else {
-            foreach ($session->get('system-array_roles') as $role) {
-                DB::insert(
-                    prefixTable('roles_values'),
-                    array(
-                        'role_id' => $role['id'],
-                        'folder_id' => $id,
-                        'type' => 'W',
-                    )
+            // Copy permissions from parent folder (ensures visibility in UI)
+            $parentRights = [];
+            if ((int) $parentId > 0) {
+                $parentRights = DB::query(
+                    'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                    (int) $parentId
                 );
+            }
+
+            if (empty($parentRights) === false) {
+                foreach ($parentRights as $record) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        array(
+                            'role_id' => (int) $record['role_id'],
+                            'folder_id' => (int) $id,
+                            'type' => (string) $record['type'],
+                        )
+                    );
+                }
+            } else {
+                // Fallback: apply current user roles (legacy behavior)
+                foreach ((array) $session->get('system-array_roles') as $role) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        array(
+                            'role_id' => $role['id'],
+                            'folder_id' => $id,
+                            'type' => 'W',
+                        )
+                    );
+                }
             }
         }
 
@@ -1464,7 +1487,34 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         $folderTitle,
         $parentId
     );
-    return $data['id'];
+
+    $existingId = (int) ($data['id'] ?? 0);
+
+    // If folder exists but has no permissions, copy them from parent (ensures visibility in UI)
+    if ((int) $isPersonalFolder === 0 && $existingId > 0) {
+        $countPermsRow = DB::queryFirstRow(
+            'SELECT COUNT(*) AS c FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+            $existingId
+        );
+        if ((int) ($countPermsRow['c'] ?? 0) === 0 && (int) $parentId > 0) {
+            $parentRights = DB::query(
+                'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                (int) $parentId
+            );
+            foreach ($parentRights as $record) {
+                DB::insert(
+                    prefixTable('roles_values'),
+                    array(
+                        'role_id' => (int) $record['role_id'],
+                        'folder_id' => (int) $existingId,
+                        'type' => (string) $record['type'],
+                    )
+                );
+            }
+        }
+    }
+
+    return $existingId;
 }
 
 /**
