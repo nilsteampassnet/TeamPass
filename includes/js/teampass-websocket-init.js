@@ -169,7 +169,19 @@
         // If the updated item is currently being viewed, reload its details
         var currentItem = typeof store !== 'undefined' ? store.get('teampassItem') : null
         if (currentItem && parseInt(currentItem.id) === parseInt(data.item_id)) {
-          if (typeof window.refreshItemDetails === 'function') {
+          // Detect if the user is actively editing this item (.form-item visible = not hidden)
+          var isEditing = typeof $ !== 'undefined' && !$('.form-item').hasClass('hidden')
+          if (isEditing) {
+            // Warn without reloading to avoid losing unsaved changes
+            toastr.remove()
+            toastr.warning(
+              (L.item_modified_while_editing ||
+                'This item was just modified by ' + data.updated_by +
+                '. Save or discard your changes before reloading.'),
+              L.conflict_warning || 'Edit conflict',
+              { timeOut: 0, closeButton: true }
+            )
+          } else if (typeof window.refreshItemDetails === 'function') {
             toastr.remove()
             toastr.info(
               (L.item_reloading || 'Item was modified by another user and is being reloaded') +
@@ -240,6 +252,18 @@
       // May need to refresh accessible folders
       if (typeof refreshUserFolders === 'function') {
         refreshUserFolders()
+      }
+    })
+
+    // Field schema events (admin operations: add/edit/delete categories and fields)
+    tpWs.on('fields_updated', function(data) {
+      showNotification('info',
+        L.fields_updated || 'Fields updated',
+        (L.fields_schema_changed || 'Field definitions were modified by') + ' ' + (data.changed_by || '')
+      )
+      // Signal items.js.php to refresh custom fields on next item open
+      if (typeof $ !== 'undefined') {
+        $(document).trigger('teampass:fields:updated', [data])
       }
     })
 

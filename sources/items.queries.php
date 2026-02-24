@@ -4974,7 +4974,7 @@ switch ($inputData['type']) {
 
         // Load item data
         $data_item = DB::queryFirstRow(
-            'SELECT id_tree
+            'SELECT id_tree, label
             FROM ' . prefixTable('items') . '
             WHERE id = %i',
             $data['id_item']
@@ -5021,6 +5021,16 @@ switch ($inputData['type']) {
             if ($fileToDelete && strpos($fileToDelete, $SETTINGS['path_to_upload_folder']) === 0) {
                 fileDelete($fileToDelete, $SETTINGS);
             }
+
+            // Notify other folder members that the item was modified
+            emitItemEvent(
+                'updated',
+                intval($data['id_item']),
+                intval($data_item['id_tree']),
+                $data_item['label'] ?? '',
+                $session->get('user-login') ?? '',
+                intval($session->get('user-id'))
+            );
         }
 
         echo (string) prepareExchangedData(

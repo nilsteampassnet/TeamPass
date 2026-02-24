@@ -168,9 +168,9 @@ if (null !== $post_type) {
                     $arrCategories,
                     array(
                         'category' => true,
-                        'id' => (int) $record['id'],
+                        'id' => intval($record['id']),
                         'title' => $record['title'],
-                        'order' => (int) $record['order'],
+                        'order' => intval($record['order']),
                         'folders' => $arrayFolders,
                         //$foldersNumList,
                     )
@@ -219,15 +219,15 @@ if (null !== $post_type) {
                             $arrCategories,
                             array(
                                 'category' => false,
-                                'id' => (int) $field['id'],
+                                'id' => intval($field['id']),
                                 'title' => $field['title'],
-                                'order' => (int) $field['order'],
-                                'encrypted' => (int) $field['encrypted_data'],
+                                'order' => intval($field['order']),
+                                'encrypted' => intval($field['encrypted_data']),
                                 'type' => $field['type'],
-                                'masked' => (int) $field['masked'],
+                                'masked' => intval($field['masked']),
                                 'roles' => $arrayRoles,
                                 //'role' => $field['role_visibility'],
-                                'mandatory' => (int) $field['is_mandatory'],
+                                'mandatory' => intval($field['is_mandatory']),
                                 'regex' => $field['regex'],
                             )
                         );
@@ -318,6 +318,13 @@ if (null !== $post_type) {
                 []
             );
 
+            // Notify all users that field schema has changed
+            emitWebSocketEvent('fields_updated', 'broadcast', null, [
+                'action'     => 'category_added',
+                'label'      => $post_label,
+                'changed_by' => $session->get('user-login') ?? '',
+            ]);
+
             echo prepareExchangedData(
                 [
                     'error' => false,
@@ -396,6 +403,13 @@ if (null !== $post_type) {
             handleFoldersCategories(
                 []
             );
+
+            // Notify all users that field schema has changed
+            emitWebSocketEvent('fields_updated', 'broadcast', null, [
+                'action'     => 'category_updated',
+                'label'      => $post_label,
+                'changed_by' => $session->get('user-login') ?? '',
+            ]);
 
             echo prepareExchangedData(
                 array(
@@ -497,6 +511,13 @@ if (null !== $post_type) {
             handleFoldersCategories(
                 []
             );
+
+            // Notify all users that field schema has changed
+            emitWebSocketEvent('fields_updated', 'broadcast', null, [
+                'action'     => 'deleted',
+                'item_type'  => $post_action,
+                'changed_by' => $session->get('user-login') ?? '',
+            ]);
 
             echo prepareExchangedData(
                 array(
@@ -624,6 +645,13 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Notify all users that field schema has changed
+            emitWebSocketEvent('fields_updated', 'broadcast', null, [
+                'action'     => 'field_updated',
+                'label'      => $post_label,
+                'changed_by' => $session->get('user-login') ?? '',
+            ]);
+
             echo prepareExchangedData(
                 [
                     'error' => false,
@@ -706,6 +734,13 @@ if (null !== $post_type) {
                 []
             );
 
+            // Notify all users that field schema has changed
+            emitWebSocketEvent('fields_updated', 'broadcast', null, [
+                'action'     => 'field_added',
+                'label'      => $post_label,
+                'changed_by' => $session->get('user-login') ?? '',
+            ]);
+
             echo prepareExchangedData(
                 [
                     'error' => false,
@@ -745,7 +780,7 @@ function calculateOrder($id, $position)
         );
 
         if (DB::count() > 0) {
-            $orderNewCategory = (int) $data['position'] - 1;
+            $orderNewCategory = intval($data['position']) - 1;
 
             // Manage case of top
             if ((int) $orderNewCategory === 0) {

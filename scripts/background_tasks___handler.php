@@ -891,7 +891,7 @@ class BackgroundTasksHandler {
 
     /**
      * Handle item tokens expiration.
-     * This method removes expired tokens from the items_edition table.
+     * This method emits edition_stopped events for stale locks, then removes them.
      */
     private function handleItemTokensExpiration(): void {
         // Use heartbeat timeout: locks not renewed within the timeout are considered stale
@@ -899,10 +899,33 @@ class BackgroundTasksHandler {
             ? EDITION_LOCK_HEARTBEAT_TIMEOUT
             : 300;
 
+        $cutoff = time() - $heartbeatTimeout;
+
+        // Fetch stale locks with item and user info before deleting,
+        // so we can notify connected clients to remove lock badges
+        $staleLocks = DB::query(
+            'SELECT ie.item_id, ie.user_id, i.id_tree AS folder_id, i.label, u.login
+             FROM ' . prefixTable('items_edition') . ' ie
+             JOIN ' . prefixTable('items') . ' i ON ie.item_id = i.id
+             JOIN ' . prefixTable('users') . ' u ON ie.user_id = u.id
+             WHERE ie.timestamp < %i',
+            $cutoff
+        );
+
+        foreach ($staleLocks as $lock) {
+            emitEditionLockEvent(
+                'stopped',
+                intval($lock['item_id']),
+                intval($lock['folder_id']),
+                strval($lock['login']),
+                intval($lock['user_id'])
+            );
+        }
+
         DB::query(
             'DELETE FROM ' . prefixTable('items_edition') . '
             WHERE timestamp < %i',
-            time() - $heartbeatTimeout
+            $cutoff
         );
     }
 
