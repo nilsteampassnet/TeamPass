@@ -133,10 +133,12 @@ $lastFolderChange = DB::queryFirstRow(
 if (DB::count() === 0) {
     $lastFolderChange['valeur'] = 0;
 }
+/** @var int|string $lastFolderChangeValeur */
+$lastFolderChangeValeur = $lastFolderChange['valeur'] ?? 0;
 
 // Should we use a cache or refresh the tree
 $goTreeRefresh = loadTreeStrategy(
-    (int) $lastFolderChange['valeur'],
+    (int) $lastFolderChangeValeur,
     (int) $inputData['userTreeLastRefresh'],
     (null === $session->get('user-tree_structure') || empty($session->get('user-tree_structure')) === true) ? [] : $session->get('user-tree_structure'),
     (int) $inputData['userId'],
@@ -802,7 +804,6 @@ function buildVisibleFoldersFromTree(
  * @param array $userSessionTreeStructure
  * @param integer $userId
  * @param integer $forceRefresh
- * @param array $SETTINGS
  * @return array
  */
 function loadTreeStrategy(
@@ -848,7 +849,11 @@ function loadTreeStrategy(
     );
     if (empty($userCacheTree['data']) === false && $userCacheTree['data'] !== '[]') {
         // Check per-user invalidation
-        if ((int) $userCacheTree['invalidated_at'] > (int) $userCacheTree['timestamp']) {
+        /** @var int|string $invalidatedAt */
+        $invalidatedAt = $userCacheTree['invalidated_at'];
+        /** @var int|string $cacheTimestamp */
+        $cacheTimestamp = $userCacheTree['timestamp'];
+        if ((int) $invalidatedAt > (int) $cacheTimestamp) {
             return [
                 'state' => true,
                 'data' => [],

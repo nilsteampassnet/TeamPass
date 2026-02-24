@@ -179,7 +179,7 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
             $lastExec,
             [
                 'task' => loadLastTasksExec_getBadge($row['process_type']),
-                'datetime' => date($datetimeFormat, (int) $row['max(finished_at)'])
+                'datetime' => date($datetimeFormat, intval($row['max(finished_at)']))
             ]
         );
     }
@@ -196,7 +196,7 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
             $lastExec,
             [
                 'task' => loadLastTasksExec_getBadge($row['process_type']),
-                'datetime' => date($datetimeFormat, (int) $row['max_finished_at'])
+                'datetime' => date($datetimeFormat, intval($row['max_finished_at']))
             ]
         );
     }
