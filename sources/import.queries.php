@@ -488,12 +488,59 @@ switch ($inputData['type']) {
         // Prepare some variables
         $folderCreationError = [];
 
+        // Ensure folders created by import inherit permissions from parent (prevents invisible folders in UI)
+        $ensureFolderPermissions = function (int $folderId, int $parentId, string $defaultAccessRight) use ($session): void {
+            if ($folderId === 0 || $parentId === 0) {
+                return;
+            }
+
+            $countPerms = DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                $folderId
+            );
+
+            if ((int) $countPerms > 0) {
+                return;
+            }
+
+            $parentRights = DB::query(
+                'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                $parentId
+            );
+
+            if (empty($parentRights) === false) {
+                foreach ($parentRights as $record) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        [
+                            'role_id' => (int) $record['role_id'],
+                            'folder_id' => (int) $folderId,
+                            'type' => (string) $record['type'],
+                        ]
+                    );
+                }
+                return;
+            }
+
+            // Fallback: apply current user roles (keeps legacy behavior if parent has no explicit rights)
+            foreach ((array) $session->get('system-array_roles') as $role) {
+                DB::insert(
+                    prefixTable('roles_values'),
+                    [
+                        'role_id' => (int) $role['id'],
+                        'folder_id' => (int) $folderId,
+                        'type' => $defaultAccessRight !== '' ? $defaultAccessRight : 'W',
+                    ]
+                );
+            }
+        };
+
         // Get all folders from objects in DB
         foreach ($itemsPath as $item) {
             $path = $item['folder'];
             $importId = $item['increment_id']; // Entry ID in items_importations
 
-            $parts = explode("\\", $path); // Décomposer le chemin en sous-dossiers
+            $parts = preg_split('/[\/\\\\]+/', (string) $path, -1, PREG_SPLIT_NO_EMPTY); // Décomposer le chemin en sous-dossiers (supporte / et \\)
             $currentPath = "";
             $parentId = $dataReceived['folderId']; // Strating with provided folder
 
@@ -515,6 +562,9 @@ switch ($inputData['type']) {
                 );
 
                 if ($existingId) {
+                    if ((int) $personalFolder === 0) {
+                        $ensureFolderPermissions((int) $existingId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                    }
                     $folderIdMap[$currentPath] = $existingId;
                     $parentId = $existingId;
                 } else {
@@ -554,6 +604,9 @@ switch ($inputData['type']) {
 
                         // Save ID in map to avoid recreating it
                         $folderIdMap[$currentPath] = $newFolderId;
+                        if ((int) $personalFolder === 0) {
+                            $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                        }
                         $parentId = $newFolderId;
                     } elseif ($creationStatus['error'] === true && $creationStatus['message'] !== '' && empty($creationStatus['newId'])) {
                         // Error during folder creation
@@ -571,6 +624,9 @@ switch ($inputData['type']) {
                             $currentFolder
                         );
                         $newFolderId = $ret['id'];
+                        if ((int) $personalFolder === 0) {
+                            $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                        }
                         $parentId = $newFolderId;
                     }
                 }
