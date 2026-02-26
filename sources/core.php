@@ -349,7 +349,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
 
         syslog(
             LOG_WARNING,
-            'Unlog user: ' . date('Y/m/d H:i:s') . " {$server['remote_addr']} ({$server['http_user_agent']})"
+            'Unlog user: ' . date('Y/m/d H:i:s') . ' ' . strval($server['remote_addr']) . ' (' . strval($server['http_user_agent']) . ')'
         );
         // erase session table
         $session->invalidate();
@@ -461,7 +461,7 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
             $data['groupes_visibles'] ?? [],
             $data['groupes_interdits'] ?? [],
             $data['admin'],
-            is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
+            is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : strval($data['fonction_id']) . ';' . strval($data['roles_from_ad_groups'])),
             $SETTINGS
         );
         if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
@@ -593,4 +593,4 @@ if (
 
 /* CHECK NUMBER OF USER ONLINE */
 $onlineCount = DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
-$session->set('system-nb_users_online', (int) $onlineCount);
+$session->set('system-nb_users_online', intval($onlineCount));
