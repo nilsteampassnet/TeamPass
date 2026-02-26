@@ -574,6 +574,13 @@ When making changes to core functionality:
 3. Update version constants in `/includes/config/include.php`
 4. Test upgrade path from previous version
 
+### Managing PR from github
+
+For any new PR, always perform as this:
+1. Analyses le probleme initiale ainsi que les changements de cette PR.                                         
+2. Confirmes que le fix est adapté.                                                                             
+3. Assures toi que ce fix est compatible avec PHPStan level en vigueur
+
 ## Important Files and Their Purposes
 
 - **index.php** - Application entry point, session validation, page routing
