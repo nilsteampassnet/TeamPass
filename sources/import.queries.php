@@ -360,7 +360,7 @@ switch ($inputData['type']) {
 
                     // Store unique folders
                     // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-                    $folders = preg_split('/[\/\\\\]/', $folder);
+                    $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
                     foreach ($folders as $folder) {
                         if (!empty($folder)) {
                             $uniqueFolders[$folder] = $folder;
@@ -392,7 +392,7 @@ switch ($inputData['type']) {
             // Store unique folders
             // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
             if (isset($folder)) {
-                $folders = preg_split('/[\/\\\\]/', $folder);
+                $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
                 foreach ($folders as $folder) {
                     if (!empty($folder)) {
                         $uniqueFolders[$folder] = $folder;
@@ -540,7 +540,7 @@ switch ($inputData['type']) {
             $path = $item['folder'];
             $importId = $item['increment_id']; // Entry ID in items_importations
 
-            $parts = preg_split('/[\/\\\\]+/', (string) $path, -1, PREG_SPLIT_NO_EMPTY); // Décomposer le chemin en sous-dossiers (supporte / et \\)
+            $parts = preg_split('/[\/\\\\]+/', (string) $path, -1, PREG_SPLIT_NO_EMPTY) ?: []; // Décomposer le chemin en sous-dossiers (supporte / et \\)
             $currentPath = "";
             $parentId = $dataReceived['folderId']; // Strating with provided folder
 
