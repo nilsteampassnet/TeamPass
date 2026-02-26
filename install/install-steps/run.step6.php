@@ -96,7 +96,7 @@ echo json_encode($response);
  * 
  * @param array $inputData
  * 
- * @return string
+ * @return array
  */
 function checks($inputData): array
 {

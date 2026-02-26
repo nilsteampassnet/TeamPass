@@ -521,7 +521,7 @@ foreach ($sharekeysTablesList as $tbl) {
             DB::commit();
         } catch (Exception $e) {
             DB::rollback();
-            echo "    ERROR: Batch at offset={$offset} rolled back: " . $e->getMessage() . "\n";
+            echo "    ERROR: Batch after {$totalProcessed} rows rolled back: " . $e->getMessage() . "\n";
             $tableErrors += count($rows);
         }
 

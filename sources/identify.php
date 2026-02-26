@@ -1805,10 +1805,14 @@ function finalizeAuthentication(
 /**
  * Undocumented function.
  *
- * @param string $username      User name
- * @param string $passwordClear User password in clear
- * @param array $retLDAP       Received data from LDAP
- * @param array $SETTINGS      Teampass settings
+ * @param string $login          Login
+ * @param string $passwordClear  User password in clear
+ * @param string $userEmail      User email
+ * @param string $userName       User name
+ * @param string $userLastname   User lastname
+ * @param string $authType       Authentication type
+ * @param array  $userGroups     User groups
+ * @param array  $SETTINGS       Teampass settings
  *
  * @return array
  */
@@ -2109,9 +2113,9 @@ function duoMFACheck(
  *
  * @param string                $username               Username
  * @param string|array|resource $dataReceived           DataReceived
- * @param array                 $sessionPwdAttempts     Nb of pwd attempts
- * @param array                 $saved_state            Saved state
- * @param array                 $duo_status             Duo status
+ * @param int                   $sessionPwdAttempts     Nb of pwd attempts
+ * @param string                $saved_state            Saved state
+ * @param string                $duo_status             Duo status
  * @param array                 $SETTINGS               Teampass settings
  *
  * @return array
@@ -2277,7 +2281,7 @@ function duoMFAPerform(
  * @param string                $passwordClear Password in clear
  * @param array|string          $userInfo      Array of user data
  *
- * @return arrau
+ * @return array
  */
 function checkCredentials($passwordClear, $userInfo): array
 {
@@ -2556,7 +2560,6 @@ class initialChecks {
  * @param integer $sessionAdmin
  * @param string $sessionUrl
  * @param string $user2faSelection
- * @param boolean $oauth2Token
  * @return array
  */
 function identifyDoInitialChecks(

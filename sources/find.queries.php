@@ -321,9 +321,9 @@ if (null === $request->query->get('type')) {
 
             if ((int) $accessLevel === 0) {
                 $right = 0;
-            } elseif ((10 <= (int) $accessLevel) && ((int) $accessLevel < 20)) {
+            } elseif ((10 <= (int) $accessLevel) && ((int) $accessLevel < 20)) { // @phpstan-ignore smaller.invalid
                 $right = 20;
-            } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) {
+            } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) { // @phpstan-ignore smaller.invalid
                 $right = 60;
             } elseif ((int) $accessLevel === 30) {
                 $right = 70;

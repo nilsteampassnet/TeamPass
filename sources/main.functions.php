@@ -616,9 +616,8 @@ function identUserGetPFList(
  * Update the CACHE table.
  *
  * @param string $action   What to do
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
- * 
+ *
  * @return void
  */
 function updateCacheTable(string $action, ?int $ident = null): void
@@ -1287,7 +1286,7 @@ function GenerateCryptKey(
  * @param int     $size      Length
  * @param bool $secure Secure
  * @param bool $numerals Numerics
- * @param bool $uppercase Uppercase letters
+ * @param bool $capitalize Uppercase letters
  * @param bool $symbols Symbols
  * @param bool $lowercase Lowercase
  * @param array   $SETTINGS  SETTINGS
@@ -1367,7 +1366,7 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $label    Label
  * @param string $who      Who
  * @param string $login    Login
- * @param string|int $field_1  Field
+ * @param string|null $field_1  Field
  * 
  * @return void
  */
@@ -1859,10 +1858,9 @@ function checkCFconsistency(int $source_id, int $target_id): bool
  * Will encrypte/decrypt a fil eusing Defuse.
  *
  * @param string $type        can be either encrypt or decrypt
- * @param string $source_file path to source file
- * @param string $target_file path to target file
- * @param array  $SETTINGS    Settings
- * @param string $password    A password
+ * @param string  $source_file path to source file
+ * @param string  $target_file path to target file
+ * @param string|null $password    A password
  *
  * @return string|bool
  */
@@ -1912,10 +1910,9 @@ function prepareFileWithDefuse(
 /**
  * Encrypt a file with Defuse.
  *
- * @param string $source_file path to source file
- * @param string $target_file path to target file
- * @param array  $SETTINGS    Settings
- * @param string $password    A password
+ * @param string  $source_file path to source file
+ * @param string  $target_file path to target file
+ * @param string|null $password    A password
  *
  * @return string|bool
  */
@@ -3296,8 +3293,6 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param int    $post_folder_is_personal Personal
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
- * @param array  $SETTINGS                Teampass settings
- * @param int    $user_id                 User ID if needed
  * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
  * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
  * @param array  $objectKeyArray          Array of objects
@@ -3695,7 +3690,7 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
 /**
  * Permits to check if user ID is valid
  *
- * @param integer $post_user_id
+ * @param mixed $userId
  * @return bool
  */
 function isUserIdValid($userId): bool
@@ -3813,7 +3808,7 @@ function isSetArrayOfValues(array $arrayOfValues): bool
  * Return true if all set
  * Return false if one of them is not set
  *
- * @param array $arrayOfValues
+ * @param array $arrayOfVars
  * @param integer|string $value
  * @return boolean
  */
@@ -3833,7 +3828,7 @@ function isArrayOfVarsEqualToValue(
 /**
  * Checks if at least one variable in array is equal to value
  *
- * @param array $arrayOfValues
+ * @param array $arrayOfVars
  * @param integer|string $value
  * @return boolean
  */

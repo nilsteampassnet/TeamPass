@@ -3656,10 +3656,7 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
 /**
  * Change user LDAP auth password
  *
- * @param integer $post_user_id
- * @param string $post_current_pwd
- * @param string $post_new_pwd
- * @param array $SETTINGS
+ * @param int $duration Duration in seconds to add
  * @return string
  */
 function increaseSessionDuration(
