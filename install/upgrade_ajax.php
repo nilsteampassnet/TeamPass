@@ -122,11 +122,11 @@ define("DB_ENCODING", "' . DB_ENCODING . '");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 define("DB_SSL", array(
-    "key" => "' . DB_SSL['key'] . '",
-    "cert" => "' . DB_SSL['cert'] . '",
-    "ca_cert" => "' . DB_SSL['ca_cert'] . '",
-    "ca_path" => "' . DB_SSL['ca_path'] . '",
-    "cipher" => "' . DB_SSL['cipher'] . '"
+    "key" => "' . (is_array(DB_SSL) ? DB_SSL['key'] : '') . '",
+    "cert" => "' . (is_array(DB_SSL) ? DB_SSL['cert'] : '') . '",
+    "ca_cert" => "' . (is_array(DB_SSL) ? DB_SSL['ca_cert'] : '') . '",
+    "ca_path" => "' . (is_array(DB_SSL) ? DB_SSL['ca_path'] : '') . '",
+    "cipher" => "' . (is_array(DB_SSL) ? DB_SSL['cipher'] : '') . '"
 ));
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10

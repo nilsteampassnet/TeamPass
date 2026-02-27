@@ -2358,7 +2358,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
     $tableName = prefixTable($shortTableName);
     
     if (tpTableExists($tableName) === false) {
-        return array();
+        return ['missing_object' => null, 'missing_user' => 0, 'inactive_user' => 0, 'orphans_total' => 0];
     }
 
     // Identify missing users (records with user_id not found in users table)

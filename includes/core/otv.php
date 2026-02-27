@@ -159,7 +159,7 @@ if (empty($request->query->get('code')) === false
                             'at_automatically_deleted'
                         );
                         echo '<div style="padding:10px; margin:90px 30px 30px 30px; text-align:center;" class="ui-widget-content ui-state-error ui-corner-all"><i class="fas fa-warning fa-2x"></i>&nbsp;'.
-                        addslashes($lang['not_allowed_to_see_pw_is_expired']).'</div>';
+                        addslashes($lang->get('not_allowed_to_see_pw_is_expired')).'</div>';
                         return false;
                     }
                 }

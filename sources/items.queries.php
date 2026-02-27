@@ -777,7 +777,7 @@ switch ($inputData['type']) {
                                     $lang->get('email_subject_item_updated'),
                                     str_replace(
                                         array('#label', '#link'),
-                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID) . strval($lang['email_body3'])),
+                                            array($path, $SETTINGS['email_server_url'] . '/index.php?page=items&group=' . $inputData['folderId'] . '&id=' . strval($newID) . strval($lang->get('email_body3'))),
                                             $lang->get('new_item_email_body')
                                     ),
                                     $emailAddress,

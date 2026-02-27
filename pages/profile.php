@@ -295,7 +295,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $lang['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang['days'] . '.';
+                                            $numDaysBeforePwExpiration = $lang->get('index_pw_expiration') . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang->get('days') . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">

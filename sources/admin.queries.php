@@ -1927,7 +1927,7 @@ switch ($post_type) {
         }
 
         // send data
-        echo '[{"result" : "' . addslashes($lang['done']) . '" , "error" : ""}]';
+        echo '[{"result" : "' . addslashes($lang->get('done')) . '" , "error" : ""}]';
         break;
 
     case 'save_agses_options':
@@ -2042,7 +2042,7 @@ switch ($post_type) {
         }
 
         // send data
-        echo '[{"result" : "' . addslashes($lang['done']) . '" , "error" : ""}]';
+        echo '[{"result" : "' . addslashes($lang->get('done')) . '" , "error" : ""}]';
         break;
 
     case 'save_option_change':

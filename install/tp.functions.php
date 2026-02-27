@@ -80,15 +80,16 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 //    "cipher" => ""
 //));';
 } else {
+    $dbSslArray = is_array(DB_SSL) ? DB_SSL : [];
     $settingsTxt .= '
 //define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 define("DB_SSL", array(
-    "key" => "'.DB_SSL['key'].'",
-    "cert" => "'.DB_SSL['cert'].'",
-    "ca_cert" => ""'.DB_SSL['ca_cert'].',
-    "ca_path" => "'.DB_SSL['ca_path'].'",
-    "cipher" => "'.DB_SSL['cipher'].'"
+    "key" => "'.($dbSslArray['key'] ?? '').'",
+    "cert" => "'.($dbSslArray['cert'] ?? '').'",
+    "ca_cert" => "'.($dbSslArray['ca_cert'] ?? '').'",
+    "ca_path" => "'.($dbSslArray['ca_path'] ?? '').'",
+    "cipher" => "'.($dbSslArray['cipher'] ?? '').'"
 ));';
 }
 
