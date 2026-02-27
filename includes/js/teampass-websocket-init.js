@@ -1,0 +1,530 @@
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      teampass-websocket-init.js
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+/**
+ * This file initializes the WebSocket connection and sets up
+ * event handlers for real-time notifications in TeamPass.
+ */
+
+'use strict';
+
+(function(window, $) {
+
+  // Check if WebSocket client is available
+  if (typeof TeamPassWebSocket === 'undefined') {
+    tpWsDebug('[TeamPass WS Init] TeamPassWebSocket not loaded', 'warn')
+    return
+  }
+
+  // Check if WebSocket is enabled (set by PHP)
+  if (typeof window.TeamPassWebSocketEnabled === 'undefined' || !window.TeamPassWebSocketEnabled) {
+    tpWsDebug('[TeamPass WS Init] WebSocket is disabled', 'log')
+    return
+  }
+
+  // Language strings (injected by PHP via window.TeamPassWsLang)
+  var L = window.TeamPassWsLang || {}
+
+  // Check if we have an authentication token
+  if (typeof window.TeamPassWebSocketToken === 'undefined' || !window.TeamPassWebSocketToken) {
+    tpWsDebug('[TeamPass WS Init] No WebSocket token available', 'log')
+    return
+  }
+  
+  function getDefaultWsUrl () {
+    return (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + '/ws'
+  }
+
+  function normalizeWsUrl (rawUrl) {
+    var urlStr = (typeof rawUrl === 'string' && rawUrl.trim() !== '') ? rawUrl.trim() : getDefaultWsUrl()
+
+    // Support: host:port, /ws, ws://..., wss://...
+    if (!/^wss?:\/\//i.test(urlStr)) {
+      if (urlStr.charAt(0) === '/') {
+        urlStr = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + urlStr
+      } else {
+        urlStr = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + urlStr
+      }
+    }
+
+    try {
+      var u = new URL(urlStr)
+
+      // If TeamPass is served over HTTPS, WebSocket must be WSS
+      if (window.location.protocol === 'https:' && u.protocol === 'ws:') {
+        tpWsDebug('[TeamPass WS] ws:// forced to wss:// (HTTPS context) - ensure your WS server supports TLS or use a reverse proxy', 'warn')
+        u.protocol = 'wss:'
+      }
+
+      // Reverse proxy route is /ws
+      if (!u.pathname || u.pathname === '/') {
+        u.pathname = '/ws'
+      }
+
+      // Keep consistent URL (avoid trailing slash issues)
+      return u.toString().replace(/\/$/, '')
+    } catch (e) {
+      return getDefaultWsUrl()
+    }
+  }
+
+  // Get WebSocket URL from PHP config (hardened)
+  var wsUrl = normalizeWsUrl(window.TeamPassWebSocketUrl)
+
+  // Create global instance with token authentication
+  var tpWs = new TeamPassWebSocket({
+    debug: window.TeamPassWebSocketDebug || false,
+    url: wsUrl,
+    token: window.TeamPassWebSocketToken,
+  })
+
+  // Store reference globally
+  window.tpWebSocket = tpWs
+
+  // Current folder tracking
+  var currentFolderId = null
+
+  /**
+   * Initialize WebSocket connection
+   */
+  function init() {
+    tpWs
+      .onOpen(function() {
+        tpWsDebug('[TeamPass WS] Connected to server', 'log')
+
+        // Subscribe to current folder if any
+        if (currentFolderId) {
+          subscribeToFolder(currentFolderId)
+        }
+
+        // Show subtle connection indicator
+        updateConnectionStatus(true)
+      })
+      .onClose(function(event) {
+        tpWsDebug('[TeamPass WS] Disconnected - ' + event.code, 'log')
+        updateConnectionStatus(false)
+
+        // Show notification only if not intentional
+        if (event.code !== 1000) {
+          showNotification('warning', L.realtime_connection_lost, L.reconnecting)
+        }
+      })
+      .onReconnecting(function(attempt, delay) {
+        tpWsDebug('[TeamPass WS] Reconnecting, attempt' + attempt, 'log')
+      })
+      .onError(function(error) {
+        tpWsDebug('[TeamPass WS] Error' + error, 'error')
+      })
+
+    // Set up event handlers
+    setupEventHandlers()
+
+    // Connect
+    tpWs.connect().catch(function(err) {
+      tpWsDebug('[TeamPass WS] Initial connection failed' + err, 'error')
+    })
+  }
+
+  /**
+   * Set up handlers for various WebSocket events
+   */
+  function setupEventHandlers() {
+    // Item events
+    tpWs.on('item_created', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('success', L.new_item, '"' + data.label + '" ' + L.item_created_by + ' ' + data.created_by)
+        refreshItemsList()
+      }
+    })
+
+    tpWs.on('item_updated', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('info', L.item_updated, '"' + data.label + '" ' + L.item_updated_by + ' ' + data.updated_by)
+        refreshItemsList()
+
+        // If the updated item is currently being viewed, reload its details
+        var currentItem = typeof store !== 'undefined' ? store.get('teampassItem') : null
+        if (currentItem && parseInt(currentItem.id) === parseInt(data.item_id)) {
+          // Detect if the user is actively editing this item (.form-item visible = not hidden)
+          var isEditing = typeof $ !== 'undefined' && !$('.form-item').hasClass('hidden')
+          if (isEditing) {
+            // Warn without reloading to avoid losing unsaved changes
+            toastr.remove()
+            toastr.warning(
+              (L.item_modified_while_editing ||
+                'This item was just modified by ' + data.updated_by +
+                '. Save or discard your changes before reloading.'),
+              L.conflict_warning || 'Edit conflict',
+              { timeOut: 0, closeButton: true }
+            )
+          } else if (typeof window.refreshItemDetails === 'function') {
+            toastr.remove()
+            toastr.info(
+              (L.item_reloading || 'Item was modified by another user and is being reloaded') +
+              ' <i class="fa-solid fa-circle-notch fa-spin ml-1"></i>',
+              '',
+              { timeOut: 0 }
+            )
+            window.refreshItemDetails(parseInt(data.item_id))
+          }
+        }
+      }
+    })
+
+    tpWs.on('item_deleted', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('warning', L.item_deleted, '"' + data.label + '" ' + L.item_deleted_by + ' ' + data.deleted_by)
+        refreshItemsList()
+      }
+    })
+
+    tpWs.on('item_copied', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showNotification('success', L.new_item,
+          '"' + data.label + '" ' + (L.item_copied_by || 'copied by') + ' ' + data.copied_by)
+        refreshItemsList()
+      }
+    })
+
+    // Edition lock events
+    tpWs.on('item_edition_started', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        showEditionLockIndicator(data.item_id, data.user_login)
+      }
+      // Track locked items globally
+      if (!window.tpLockedItems) window.tpLockedItems = {}
+      window.tpLockedItems[data.item_id] = data.user_login
+    })
+
+    tpWs.on('item_edition_stopped', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        removeEditionLockIndicator(data.item_id)
+      }
+      // Remove from global tracking
+      if (window.tpLockedItems) {
+        delete window.tpLockedItems[data.item_id]
+      }
+      // Notify user if they previously tried to edit this item
+      if (window.tpBlockedEditItemId && window.tpBlockedEditItemId === data.item_id) {
+        showNotification('success',
+          L.item_now_available || 'Item available',
+          (L.item_edition_released || 'Item is now available for editing') +
+          ' (' + data.user_login + ')'
+        )
+        window.tpBlockedEditItemId = null
+      }
+    })
+
+    // Folder events
+    tpWs.on('folder_created', function(data) {
+      showNotification('success', L.new_folder, '"' + data.title + '" ' + L.folder_created)
+      refreshFolderTree()
+    })
+
+    tpWs.on('folder_updated', function(data) {
+      showNotification('info', L.folder_updated, '"' + data.title + '" ' + L.folder_has_been_updated)
+      refreshFolderTree()
+    })
+
+    tpWs.on('folder_deleted', function(data) {
+      showNotification('warning', L.folder_deleted, L.folder_has_been_deleted)
+      refreshFolderTree()
+    })
+
+    tpWs.on('folder_permission_changed', function(data) {
+      showNotification('info', L.permissions_changed, L.folder_permissions_changed)
+      // May need to refresh accessible folders
+      if (typeof refreshUserFolders === 'function') {
+        refreshUserFolders()
+      }
+    })
+
+    // Field schema events (admin operations: add/edit/delete categories and fields)
+    tpWs.on('fields_updated', function(data) {
+      showNotification('info',
+        L.fields_updated || 'Fields updated',
+        (L.fields_schema_changed || 'Field definitions were modified by') + ' ' + (data.changed_by || '')
+      )
+      // Signal items.js.php to refresh custom fields on next item open
+      if (typeof $ !== 'undefined') {
+        $(document).trigger('teampass:fields:updated', [data])
+      }
+    })
+
+    // User events
+    tpWs.on('user_keys_ready', function(data) {
+      showNotification('success', L.account_ready, L.account_operational)
+      // Refresh page to show full interface
+      if (typeof window.location.reload === 'function') {
+        setTimeout(function() {
+          window.location.reload()
+        }, 2000)
+      }
+    })
+
+    // Task progress events
+    tpWs.on('task_progress', function(data) {
+      updateTaskProgress(data)
+    })
+
+    tpWs.on('task_completed', function(data) {
+      handleTaskCompleted(data)
+    })
+
+    // Session events
+    tpWs.on('session_expired', function(data) {
+      showNotification('error', L.session_expired, data.reason || L.please_reconnect)
+      setTimeout(function() {
+        window.location.href = 'includes/core/logout.php?session_expired=1'
+      }, 2000)
+    })
+
+    // System events
+    tpWs.on('system_maintenance', function(data) {
+      showNotification('warning', L.maintenance, data.message)
+    })
+
+    // Reconnection failed
+    tpWs.on('reconnect_failed', function() {
+      showNotification('error', L.connection_lost, L.unable_to_reconnect)
+    })
+
+    // Debug: log all events
+    if (window.TeamPassWebSocketDebug) {
+      tpWs.on('*', function(eventName, data) {
+        tpWsDebug('[TeamPass WS Event] ' + eventName + " - " + data, 'log')
+      })
+    }
+  }
+
+  /**
+   * Subscribe to a folder for real-time updates
+   */
+  function subscribeToFolder(folderId) {
+    if (!folderId || !tpWs.isConnectedNow()) return
+
+    // Unsubscribe from previous folder and clear its lock indicators
+    if (currentFolderId && currentFolderId !== folderId) {
+      tpWs.unsubscribeFromFolder(currentFolderId).catch(function() {})
+      if (window.tpLockedItems) {
+        Object.keys(window.tpLockedItems).forEach(function(itemId) {
+          removeEditionLockIndicator(itemId)
+        })
+        window.tpLockedItems = {}
+      }
+    }
+
+    currentFolderId = folderId
+
+    tpWs.subscribeToFolder(folderId)
+      .then(function(response) {
+        tpWsDebug('[TeamPass WS] Subscribed to folder ' + folderId, 'log')
+        // Sync initial lock state: show badges for items already locked in this folder
+        if (response && Array.isArray(response.locked_items)) {
+          if (!window.tpLockedItems) window.tpLockedItems = {}
+          response.locked_items.forEach(function(lock) {
+            window.tpLockedItems[lock.item_id] = lock.user_login
+            showEditionLockIndicator(lock.item_id, lock.user_login)
+          })
+        }
+      })
+      .catch(function(err) {
+        tpWsDebug('[TeamPass WS] Failed to subscribe to folder ' + folderId + " - " + err, 'error')
+      })
+  }
+
+  /**
+   * Update connection status indicator
+   */
+  function updateConnectionStatus(connected) {
+    var indicator = document.getElementById('ws-connection-status')
+    if (!indicator) {
+      // Create indicator if it doesn't exist
+      indicator = document.createElement('span')
+      indicator.id = 'ws-connection-status'
+      indicator.style.cssText = 'position:fixed;bottom:10px;right:10px;width:10px;height:10px;' +
+        'border-radius:50%;opacity:0.7;z-index:9999;transition:background-color 0.3s;'
+
+      document.body.appendChild(indicator)
+    }
+
+    indicator.style.backgroundColor = connected ? '#28a745' : '#dc3545'
+    indicator.title = connected ? (L.realtime_connected || 'Real-time: connected') : (L.realtime_disconnected || 'Real-time: disconnected')
+  }
+
+  /**
+   * Show notification using Toastr or fallback
+   */
+  function showNotification(type, title, message, timeOut = 10000) {
+    if (typeof toastr !== 'undefined') {
+      toastr[type](message, title, { timeOut: timeOut, extendedTimeOut: 3000, progressBar: true })
+    } else if (typeof alertify !== 'undefined') {
+      alertify[type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'success'](title + ': ' + message)
+    } else {
+      tpWsDebug('[TeamPass WS Notification] ' + type +" - " + title + " - " + message, 'log')
+    }
+  }
+
+  /**
+   * Refresh items list in current view
+   */
+  function refreshItemsList() {
+    // Try to call existing TeamPass refresh function
+    if (typeof window.refreshVisibleItems === 'function') {
+      window.refreshVisibleItems()
+    } else if (typeof window.loadItems === 'function') {
+      window.loadItems()
+    } else if (typeof $ !== 'undefined' && $('#items-list').length) {
+      // Trigger a custom event that pages can listen to
+      $(document).trigger('teampass:items:refresh')
+    }
+  }
+
+  /**
+   * Refresh folder tree
+   */
+  function refreshFolderTree() {
+    if (typeof window.refreshTree === 'function') {
+      window.refreshTree()
+    } else if (typeof $ !== 'undefined' && $('#jstree').length) {
+      $('#jstree').jstree('refresh')
+    } else {
+      $(document).trigger('teampass:folders:refresh')
+    }
+  }
+
+  /**
+   * Update task progress UI
+   */
+  function updateTaskProgress(data) {
+    var progressId = 'task-progress-' + data.task_id
+
+    // Try to find existing progress bar
+    var progressBar = document.getElementById(progressId)
+
+    if (!progressBar && typeof $ !== 'undefined') {
+      // Create progress notification if using Toastr
+      if (typeof toastr !== 'undefined' && data.percent < 100) {
+        toastr.info(
+          '<div class="progress"><div class="progress-bar" id="' + progressId + '" style="width:' + data.percent + '%"></div></div>' +
+          '<small>' + data.task_type + ': ' + data.progress + '/' + data.total + '</small>',
+          L.progress || 'Progress',
+          { timeOut: 0, extendedTimeOut: 0, closeButton: true }
+        )
+      }
+    } else if (progressBar) {
+      progressBar.style.width = data.percent + '%'
+    }
+
+    // Trigger custom event
+    $(document).trigger('teampass:task:progress', [data])
+  }
+
+  /**
+   * Handle task completion
+   */
+  function handleTaskCompleted(data) {
+    var type = data.status === 'completed' ? 'success' : 'error'
+    var message = data.message || (data.status === 'completed' ? (L.operation_completed || 'Operation completed') : (L.operation_failed || 'Operation failed'))
+
+    showNotification(type, data.task_type || (L.task || 'Task'), message, 5000)
+
+    // Auto-refresh item details when encryption task completes for the viewed item
+    if (data.status === 'completed' && data.task_type === 'Item encryption' && data.item_id) {
+      if (store.get('teampassItem').id == data.item_id) {
+        if (typeof window.refreshItemDetails === 'function') {
+          window.refreshItemDetails(data.item_id)
+        }
+      }
+    }
+
+    // Trigger custom event
+    $(document).trigger('teampass:task:completed', [data])
+  }
+
+  /**
+   * Show lock indicator on an item row in the items list
+   */
+  function showEditionLockIndicator(itemId, userLogin) {
+    if (typeof $ === 'undefined') return
+
+    var $row = $('#list-item-row_' + itemId)
+    if ($row.length === 0) return
+
+    // Don't add duplicate indicator
+    if ($row.find('.edition-lock-badge').length > 0) return
+
+    var badge = $('<span class="edition-lock-badge badge badge-warning ml-2" ' +
+      'title="' + (L.being_edited_by || 'Being edited by') + ' ' + userLogin + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + userLogin +
+      '</span>')
+
+    $row.find('.list-item-row-description').first().after(badge)
+  }
+
+  /**
+   * Remove lock indicator from an item row
+   */
+  function removeEditionLockIndicator(itemId) {
+    if (typeof $ === 'undefined') return
+    $('#list-item-row_' + itemId).find('.edition-lock-badge').remove()
+  }
+
+  /**
+   * Refresh user folders after a permission change
+   *
+   * Triggers a custom jQuery event that items.js.php listens to.
+   * This avoids scope/timing issues since items.js.php has direct
+   * access to refreshVisibleFolders(), store, and jstree.
+   */
+  function refreshUserFolders() {
+    if (typeof $ !== 'undefined') {
+      $(document).trigger('teampass:permissions:refresh')
+    }
+  }
+
+  // Expose functions globally
+  window.tpWsSubscribeToFolder = subscribeToFolder
+  window.tpWsShowNotification = showNotification
+  window.tpWsShowEditionLock = showEditionLockIndicator
+  window.tpWsRemoveEditionLock = removeEditionLockIndicator
+  window.refreshUserFolders = refreshUserFolders
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init)
+  } else {
+    init()
+  }
+
+})(window, typeof jQuery !== 'undefined' ? jQuery : null);
+
+function tpWsDebug(msg, logType = 'log') {
+  if (debugJavascript) {
+    logType === 'error' ? console.error(msg) : logType === 'warn' ? console.warn(msg) : console.log(msg)
+  }
+}

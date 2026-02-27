@@ -1101,7 +1101,7 @@ logItems(
 
                 // Orphans (objects + users)
                 $orphans = tpGetSharekeysOrphans($t);
-                if (empty($orphans) === false) {
+                if (isset($orphans['orphans_total']) && $orphans['orphans_total'] > 0) {
                     $sharekeysOrphans[$t] = $orphans;
                     $sharekeysOrphansTotal += (int) ($orphans['orphans_total'] ?? 0);
                 }
@@ -2266,34 +2266,34 @@ function tpGetTopTablesInfo(int $limit = 20, string $dbName = ''): array
         }
     }
 
+    // Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
+    if (empty($rows) === true) {
+        try {
+            $st = DB::query('SHOW TABLE STATUS');
+            $rows = array();
+            foreach ($st as $r) {
+                $rows[] = array(
+                    'table_name' => (string) ($r['Name'] ?? ''),
+                    'engine' => (string) ($r['Engine'] ?? ''),
+                    'table_rows' => (int) ($r['Rows'] ?? 0),
+                    'data_length' => (float) ($r['Data_length'] ?? 0),
+                    'index_length' => (float) ($r['Index_length'] ?? 0),
+                    'data_free' => (float) ($r['Data_free'] ?? 0),
+                );
+            }
 
-// Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
-if (empty($rows) === true) {
-    try {
-        $st = DB::query('SHOW TABLE STATUS');
-        $rows = array();
-        foreach ($st as $r) {
-            $rows[] = array(
-                'table_name' => (string) ($r['Name'] ?? ''),
-                'engine' => (string) ($r['Engine'] ?? ''),
-                'table_rows' => (int) ($r['Rows'] ?? 0),
-                'data_length' => (float) ($r['Data_length'] ?? 0),
-                'index_length' => (float) ($r['Index_length'] ?? 0),
-                'data_free' => (float) ($r['Data_free'] ?? 0),
-            );
+            usort($rows, static function (array $a, array $b): int {
+                $sizeA = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
+                $sizeB = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
+                return $sizeB <=> $sizeA;
+            });
+
+            $rows = array_slice($rows, 0, $limit);
+        } catch (Exception $e) {
+            $rows = array();
         }
-
-        usort($rows, static function ($a, $b) {
-            $sa = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
-            $sb = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
-            return $sb <=> $sa;
-        });
-
-        $rows = array_slice($rows, 0, $limit);
-    } catch (Exception $e) {
-        $rows = array();
     }
-}
+
     $out = array();
     foreach ($rows as $r) {
         $sizeBytes = (float) (($r['data_length'] ?? 0) + ($r['index_length'] ?? 0));
@@ -2345,19 +2345,23 @@ function tpGetSharekeysTableStats(string $tableName): array
     );
 }
 
+/**
+ * Identifies and counts orphaned records in sharekeys tables.
+ * Orphans are records linked to non-existent objects, non-existent users, 
+ * or inactive/deleted users.
+ * * @param string $shortTableName The short name of the sharekey table (e.g., 'sharekeys_items').
+ * @return array{missing_object: ?int, missing_user: int, inactive_user: int, orphans_total: int}
+ */
 function tpGetSharekeysOrphans(string $shortTableName): array
 {
     $shortTableName = trim($shortTableName);
     $tableName = prefixTable($shortTableName);
+    
     if (tpTableExists($tableName) === false) {
-        return array();
+        return ['missing_object' => null, 'missing_user' => 0, 'inactive_user' => 0, 'orphans_total' => 0];
     }
 
-    $missingObject = null;
-    $missingUser = null;
-    $inactiveUser = null;
-
-    // missing users
+    // Identify missing users (records with user_id not found in users table)
     $missingUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2365,7 +2369,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         WHERE u.id IS NULL'
     );
 
-    // inactive/deleted users
+    // Identify inactive or deleted users
     $inactiveUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2373,48 +2377,37 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         WHERE u.disabled = 1 OR u.deleted_at IS NOT NULL'
     );
 
-    // missing objects - depends on sharekeys table
-    if ($shortTableName === 'sharekeys_items' && tpTableExists(prefixTable('items')) === true) {
+    $missingObject = null;
+    $targetTable = '';
+
+    // Determine target object table based on sharekey context
+    switch ($shortTableName) {
+        case 'sharekeys_items':
+            $targetTable = 'items';
+            break;
+        case 'sharekeys_files':
+            $targetTable = 'files';
+            break;
+        case 'sharekeys_suggestions':
+            $targetTable = 'suggestion';
+            break;
+        case 'sharekeys_fields':
+            $targetTable = 'categories_items';
+            break;
+    }
+
+    // Identify missing objects if the target table exists
+    if (!empty($targetTable) && tpTableExists(prefixTable($targetTable))) {
         $missingObject = (int) DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('items') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_files' && tpTableExists(prefixTable('files')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('files') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_suggestions' && tpTableExists(prefixTable('suggestion')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('suggestion') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_fields' && tpTableExists(prefixTable('categories_items')) === true) {
-        // categories_items is used for custom fields binding
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('categories_items') . ' o ON o.id = s.object_id
+            LEFT JOIN ' . prefixTable($targetTable) . ' o ON o.id = s.object_id
             WHERE o.id IS NULL'
         );
     }
 
-    $orphansTotal = 0;
-    if ($missingObject !== null) {
-        $orphansTotal += $missingObject;
-    }
-    if ($missingUser !== null) {
-        $orphansTotal += $missingUser;
-    }
-    if ($inactiveUser !== null) {
-        $orphansTotal += $inactiveUser;
-    }
+    // Calculate total orphans
+    $orphansTotal = $missingUser + $inactiveUser + (int) $missingObject;
 
     return array(
         'missing_object' => $missingObject,
@@ -3286,12 +3279,12 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
             }
         }
 
-        $mtime = (int) @filemtime($fp);
+        $mtime = (int) filemtime($fp);
         $items[] = array(
             'name' => $bn,
             'mtime' => $mtime,
             'mtime_human' => $mtime > 0 ? date('Y-m-d H:i:s', $mtime) : '',
-            'size_mb' => round(((float) @filesize($fp)) / 1024 / 1024, 2),
+            'size_mb' => round(((float) filesize($fp)) / 1024 / 1024, 2),
             'schema_level' => $schemaLevel,
             'tp_files_version' => $tpFilesVersion,
             'comment' => $comment,
@@ -3376,11 +3369,8 @@ function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int
 
             $mtime = (int) ($f['mtime'] ?? 0);
             $sizeMb = isset($f['size_mb']) ? (float) $f['size_mb'] : null;
-            $comment = isset($f['comment']) && is_scalar($f['comment']) ? (string) $f['comment'] : null;
-            $comment = $comment !== null ? trim($comment) : null;
-            if ($comment === '') {
-                $comment = null;
-            }
+            $rawComment = isset($f['comment']) && is_scalar($f['comment']) ? trim((string) $f['comment']) : '';
+            $comment = $rawComment !== '' ? $rawComment : null;
 
             $schemaLevel = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
             $tpFilesVersion = isset($f['tp_files_version']) && is_scalar($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';

@@ -1260,7 +1260,7 @@ function changePassword(
             insertPrivateKeyWithCurrentFlag($post_user_id, $newEncryptedPrivateKey);
 
             // update LOG
-            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), $post_user_id);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), (string) $post_user_id);
 
             // Send back
             return prepareExchangedData(
@@ -1715,7 +1715,11 @@ function generateBugReport(
             $url_found = $value;
             if (empty($url_found) === false) {
                 $tmp = parse_url($url_found);
-                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
+                if (is_array($tmp) && isset($tmp['scheme'])) {
+                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
+                } else {
+                    $anonym_url = '<anonym_url>';
+                }
                 $value = $anonym_url;
             } else {
                 $value = '';
@@ -1728,10 +1732,8 @@ function generateBugReport(
         }
 
         // Clear some vars
-        foreach ($config_exclude_vars as $var) {
-            if ($key === $var) {
-                $value = '<removed>';
-            }
+        if (in_array($key, $config_exclude_vars, true)) {
+            $value = '<removed>';
         }
 
         // Complete line to display
@@ -1766,6 +1768,10 @@ function generateBugReport(
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
+    $dbVersion = ($link === false) ? $lang->get('undefined') : mysqli_get_server_info($link);
+    if ($link !== false) {
+        mysqli_close($link);
+    }
 
     // Now prepare text
     $txt = '### Page on which it happened
@@ -1788,7 +1794,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . ($link === false ? $lang->get('undefined') : mysqli_get_server_info($link)) . '
+**Database:** ' . $dbVersion . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -3650,10 +3656,7 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
 /**
  * Change user LDAP auth password
  *
- * @param integer $post_user_id
- * @param string $post_current_pwd
- * @param string $post_new_pwd
- * @param array $SETTINGS
+ * @param int $duration Duration in seconds to add
  * @return string
  */
 function increaseSessionDuration(

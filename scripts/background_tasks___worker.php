@@ -26,6 +26,8 @@
  * @see       https://www.teampass.net
  */
 
+declare(strict_types=1);
+
 use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\Language\Language;
 require_once __DIR__.'/../sources/main.functions.php';
@@ -45,11 +47,11 @@ class TaskWorker {
     use MigrateUserHandlerTrait;
     use PhpseclibV3MigrationTrait;
 
-    private $taskId;
-    private $processType;
-    private $taskData;
-    private $settings;
-    private $logger;
+    private int $taskId;
+    private string $processType;
+    private array $taskData;
+    private array $settings;
+    private TaskLogger $logger;
 
     public function __construct(int $taskId, string $processType, array $taskData) {
         $this->taskId = $taskId;
@@ -68,7 +70,7 @@ class TaskWorker {
      * 
      * @return void
      */
-    public function execute() {
+    public function execute(): void {
         try {
             if (LOG_TASKS=== true) $this->logger->log('Processing task: ' . print_r($this->taskData, true), 'DEBUG');
             // Dispatch selon le type de processus
@@ -101,7 +103,7 @@ class TaskWorker {
                     $this->handleDatabaseBackup($this->taskData);
                     break;
                 case 'inactive_users_housekeeping':
-                    $this->handleInactiveUsersHousekeeping($this->taskData);
+                    $this->handleInactiveUsersHousekeeping();
                     break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
@@ -110,6 +112,7 @@ class TaskWorker {
             // Mark the task as completed
             try {
                 $this->completeTask();
+                $this->emitItemEncryptionEvent('completed');
             } catch (Exception $e) {
                 $this->handleTaskFailure($e);
             }
@@ -136,7 +139,9 @@ class TaskWorker {
         }
 
         if (!is_dir($targetDir)) {
-            if (!@mkdir($targetDir, 0770, true) && !is_dir($targetDir)) {
+            // mkdir can fail if the directory was created concurrently; the second is_dir check handles that race
+            $mkdirResult = mkdir($targetDir, 0770, true);
+            if ($mkdirResult === false && !is_dir($targetDir)) {
                 throw new Exception('Cannot create backup target dir: ' . $targetDir);
             }
         }
@@ -150,43 +155,43 @@ class TaskWorker {
             throw new Exception('Missing encryption key (bck_script_passkey).');
         }
 
-// Auto-disconnect connected users before running a scheduled backup.
-// Exclude the user who enqueued the task (manual run), if provided.
-try {
-    if (function_exists('loadClasses') && !class_exists('DB')) {
-        loadClasses('DB');
-    }
-    $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
-    $now = time();
+        // Auto-disconnect connected users before running a scheduled backup.
+        // Exclude the user who enqueued the task (manual run), if provided.
+        try {
+            if (function_exists('loadClasses') && !class_exists('DB')) {
+                loadClasses('DB');
+            }
+            $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
+            $now = time();
 
-    if ($excludeUserId > 0) {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-            $now,
-            $excludeUserId
-        );
-    } else {
-        $connectedUsers = DB::query(
-            'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
-            $now
-        );
-    }
+            if ($excludeUserId > 0) {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+                    $now,
+                    $excludeUserId
+                );
+            } else {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
+                    $now
+                );
+            }
 
-    foreach ($connectedUsers as $u) {
-        DB::update(
-            prefixTable('users'),
-            [
-                'key_tempo' => '',
-                'timestamp' => '',
-                'session_end' => '',
-            ],
-            'id = %i',
-            (int) $u['id']
-        );
-    }
-} catch (Throwable $ignored) {
-    // Best effort only - do not block backups if disconnection cannot be done
-}
+            foreach ($connectedUsers as $u) {
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'key_tempo' => '',
+                        'timestamp' => '',
+                        'session_end' => '',
+                    ],
+                    'id = %i',
+                    intval($u['id'])
+                );
+            }
+        } catch (Throwable) {
+            // Best effort only - do not block backups if disconnection cannot be done
+        }
 
         $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
             'output_dir' => $targetDir,
@@ -197,16 +202,17 @@ try {
             throw new Exception($res['message'] ?? 'Backup failed');
         }
 
-        
-// Best effort: write metadata sidecar next to the backup file
-try {
-    if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
-        tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
-    }
-} catch (Throwable $ignored) {
-    // do not block backups if metadata cannot be written
-}
-// Store a tiny summary for the task completion "arguments" field (no secrets)
+
+        // Best effort: write metadata sidecar next to the backup file
+        try {
+            if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
+            }
+        } catch (Throwable) {
+            // do not block backups if metadata cannot be written
+        }
+
+        // Store a tiny summary for the task completion "arguments" field (no secrets)
         $this->taskData['backup_file'] = $res['filename'] ?? '';
         $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
         $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
@@ -238,7 +244,7 @@ try {
             $this->updateSchedulerState('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
             try {
                 $this->queueScheduledBackupReportEmail('completed', 'Backup created: ' . ($this->taskData['backup_file'] ?? ''));
-            } catch (Throwable $ignored) {
+            } catch (Throwable) {
                 // best effort only - never block the backup process
             }
         }
@@ -255,7 +261,7 @@ try {
     /**
      * Housekeeping: warn inactive users then disable/soft-delete/hard-delete after grace period.
      */
-    private function handleInactiveUsersHousekeeping(array $taskData): void
+    private function handleInactiveUsersHousekeeping(): void
     {
         if (function_exists('loadClasses') && !class_exists('DB')) {
             loadClasses('DB');
@@ -329,7 +335,7 @@ try {
         $reset = 0;
 
         foreach ($users as $u) {
-            $userId = (int)($u['id'] ?? 0);
+            $userId = intval($u['id'] ?? 0);
             if ($userId <= 0) continue;
 
             try {
@@ -339,7 +345,7 @@ try {
 
                 $warnedAt = $this->parseUserTs($u['inactivity_warned_at'] ?? null);
                 $actionAt = $this->parseUserTs($u['inactivity_action_at'] ?? null);
-                $storedAction = (string)($u['inactivity_action'] ?? '');
+                $storedAction = strval($u['inactivity_action'] ?? '');
 
                 // Reset tracking if user logged in after a warning
                 if ($warnedAt > 0 && $lastConnexionTs > 0 && $lastConnexionTs > $warnedAt) {
@@ -367,26 +373,26 @@ try {
 
                 // Warn if threshold reached and not warned yet
                 if ($warnedAt <= 0 && $lastActivityTs > 0 && $lastActivityTs <= $warnCutoff) {
-                    $email = trim((string)($u['email'] ?? ''));
+                    $email = trim(strval($u['email'] ?? ''));
                     $noEmail = 0;
 
                     if ($email === '') {
                         $noEmail = 1;
                         $warnedNoEmail++;
                     } else {
-                        $userLang = trim((string)($u['user_language'] ?? ''));
+                        $userLang = trim(strval($u['user_language'] ?? ''));
                         if ($userLang === '' || $userLang === '0') $userLang = 'english';
                         $langUser = new Language($userLang);
 
-                        $receiverName = trim((string)($u['name'] ?? '') . ' ' . (string)($u['lastname'] ?? ''));
-                        $firstName = trim((string)($u['name'] ?? ''));
+                        $receiverName = trim(strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? ''));
+                        $firstName = trim(strval($u['name'] ?? ''));
                         if ($firstName === '') {
-                            $firstName = trim((string)($u['lastname'] ?? ''));
+                            $firstName = trim(strval($u['lastname'] ?? ''));
                         }
                         if ($firstName === '') {
-                            $firstName = (string)($u['login'] ?? '');
+                            $firstName = strval($u['login'] ?? '');
                         }
-                        if ($receiverName === '') $receiverName = (string)($u['login'] ?? '');
+                        if ($receiverName === '') $receiverName = strval($u['login'] ?? '');
 
                         $subject = (string)$langUser->get('inactive_users_mgmt_email_subject');
                         $bodyTpl = (string)$langUser->get('inactive_users_mgmt_email_body');
@@ -395,7 +401,7 @@ try {
                         $tpUrl = (string)($this->settings['cpassman_url'] ?? '');
                         $body = str_replace(
                             ['#login#', '#firstname#', '#lastname#', '#inactivity_days#', '#grace_days#', '#action#', '#url#'],
-                            [(string)($u['login'] ?? ''), $firstName, $firstName, (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
+                            [strval($u['login'] ?? ''), $firstName, $firstName, (string)$inactivityDays, (string)$graceDays, $actionLabel, $tpUrl],
                             $bodyTpl
                         );
 
@@ -448,10 +454,10 @@ try {
         }
     }
 
-    private function parseUserTs($value): int
+    private function parseUserTs(mixed $value): int
     {
         if ($value === null) return 0;
-        $v = trim((string)$value);
+        $v = trim(strval($value));
         if ($v === '' || $v === '0') return 0;
 
         if (preg_match('/^[0-9]{13}$/', $v)) return (int) floor(((int)$v) / 1000);
@@ -497,7 +503,7 @@ try {
         $deletedSuffix = '_deleted_' . $timestamp;
 
         DB::update(prefixTable('users'), [
-            'login' => (string)$data_user['login'] . $deletedSuffix,
+            'login' => strval($data_user['login']) . $deletedSuffix,
             'deleted_at' => (string)$timestamp,
             'disabled' => 1,
             'special' => 'none',
@@ -567,12 +573,12 @@ try {
         $dt = date('Y-m-d H:i:s');
 
         foreach ($admins as $a) {
-            $email = (string)($a['email'] ?? '');
+            $email = strval($a['email'] ?? '');
             if ($email === '') {
                 continue;
             }
 
-            $ul = (string)($a['user_language'] ?? 'english');
+            $ul = strval($a['user_language'] ?? 'english');
             if ($ul === '' || $ul === '0') {
                 $ul = 'english';
             }
@@ -605,7 +611,7 @@ try {
                 $bodyTpl
             );
 
-            $receiverName = (string)($a['login'] ?? $lang->get('administrator'));
+            $receiverName = strval($a['login'] ?? $lang->get('administrator'));
             prepareSendingEmail($subject, $body, $email, $receiverName);
         }
     }
@@ -615,11 +621,11 @@ try {
     {
         $table = prefixTable('misc');
 
-        $exists = (int)DB::queryFirstField(
+        $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
             'settings',
             $key
-        );
+        ));
 
         if ($exists > 0) {
             DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
@@ -642,7 +648,7 @@ try {
             return $default;
         }
 
-        return (string) $val;
+        return strval($val);
     }
 
     private function purgeOldScheduledBackups(string $dir, int $retentionDays): int
@@ -676,7 +682,79 @@ try {
         return $deleted;
     }
 
-    private function completeTask() {
+    /**
+     * Emit a WebSocket event for item encryption tasks (new_item, item_copy, item_update_create_keys).
+     * No-op for other task types or when no valid author is found.
+     */
+    private function emitItemEncryptionEvent(string $status): void
+    {
+        if (!in_array($this->processType, ['new_item', 'item_copy', 'item_update_create_keys'], true)) {
+            return;
+        }
+
+        $authorId = (int) ($this->taskData['author'] ?? 0);
+        if ($authorId <= 0) {
+            return;
+        }
+
+        $messages = [
+            'completed' => 'Item encryption keys generated successfully',
+            'failed'    => 'Failed to generate item encryption keys',
+        ];
+
+        emitWebSocketEvent(
+            'task_completed',
+            'user',
+            $authorId,
+            [
+                'task_id'      => $this->taskId,
+                'task_type'    => 'Item encryption',
+                'status'       => $status,
+                'message'      => $messages[$status] ?? '',
+                'item_id'      => (int) ($this->taskData['item_id'] ?? 0),
+                'process_type' => $this->processType,
+            ]
+        );
+    }
+
+    /**
+     * Build the anonymized arguments JSON string to store on task completion.
+     * Sensitive data (passwords, keys) is intentionally excluded.
+     */
+    private function buildCompletionArguments(): string
+    {
+        if ($this->processType === 'send_email') {
+            return (string) json_encode([
+                'email' => $this->taskData['receivers'],
+                'login' => $this->taskData['receiver_name'],
+            ]);
+        }
+
+        if ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
+            return (string) json_encode([
+                'user_id' => $this->taskData['new_user_id'],
+            ]);
+        }
+
+        if ($this->processType === 'item_update_create_keys') {
+            return (string) json_encode([
+                'item_id' => $this->taskData['item_id'],
+                'author'  => $this->taskData['author'],
+            ]);
+        }
+
+        if ($this->processType === 'database_backup') {
+            return (string) json_encode([
+                'file'       => $this->taskData['backup_file'] ?? '',
+                'size_bytes' => $this->taskData['backup_size_bytes'] ?? 0,
+                'encrypted'  => $this->taskData['backup_encrypted'] ?? false,
+            ]);
+        }
+
+        return '';
+    }
+
+    private function completeTask(): void {
         // Prepare data for updating the task status
         $updateData = [
             'is_in_progress' => -1,
@@ -685,38 +763,8 @@ try {
             'error_message' => null,   // <-- on efface toute erreur précédente
         ];
 
-        // Prepare anonimzation of arguments
-        if ($this->processType === 'send_email') {
-            $arguments = json_encode(
-                [
-                    'email' => $this->taskData['receivers'],
-                    'login' => $this->taskData['receiver_name'],
-                ]
-            );
-        } elseif ($this->processType === 'create_user_keys' || $this->processType === 'migrate_user_personal_items') {
-            $arguments = json_encode(
-                [
-                    'user_id' => $this->taskData['new_user_id'],
-                ]
-            );
-        } elseif ($this->processType === 'item_update_create_keys') {
-            $arguments = json_encode(
-                [
-                    'item_id' => $this->taskData['item_id'],
-                    'author' => $this->taskData['author'],
-                ]
-            );
-        } elseif ($this->processType === 'database_backup') {
-            $arguments = json_encode(
-                [
-                    'file' => $this->taskData['backup_file'] ?? '',
-                    'size_bytes' => $this->taskData['backup_size_bytes'] ?? 0,
-                    'encrypted' => $this->taskData['backup_encrypted'] ?? false,
-                ]
-            );
-        } else {
-            $arguments = '';
-        }
+        // Anonymize arguments for storage
+        $arguments = $this->buildCompletionArguments();
 
         if (LOG_TASKS=== true) $this->logger->log('Process: '.$this->processType.' -- '.print_r($arguments, true), 'DEBUG');
 
@@ -733,6 +781,32 @@ try {
             $this->taskId
         );
 
+        // Notify target user for task types not covered by emitItemEncryptionEvent()
+        if ($this->processType === 'create_user_keys') {
+            $targetUserId = (int) ($this->taskData['new_user_id'] ?? 0);
+            if ($targetUserId > 0) {
+                // user_keys_ready triggers a page reload so the user can access encrypted content
+                emitWebSocketEvent('user_keys_ready', 'user', $targetUserId, [
+                    'task_id'   => $this->taskId,
+                    'task_type' => $this->processType,
+                    'status'    => 'completed',
+                ]);
+            }
+        } elseif ($this->processType === 'migrate_user_personal_items') {
+            $targetUserId = (int) ($this->taskData['new_user_id'] ?? 0);
+            if ($targetUserId > 0) {
+                emitTaskProgress(
+                    $targetUserId,
+                    (string) $this->taskId,
+                    $this->processType,
+                    1,
+                    1,
+                    'completed',
+                    'Personal items migration completed'
+                );
+            }
+        }
+
         if (LOG_TASKS=== true) $this->logger->log('Finishing task: ' . $this->taskId, 'DEBUG');
     }
 
@@ -744,7 +818,7 @@ try {
      * @param Exception $e The exception that occurred during task processing.
      * @return void
      */
-    private function handleTaskFailure(Throwable $e) {
+    private function handleTaskFailure(Throwable $e): void {
         DB::update(
             prefixTable('background_tasks'),
             [
@@ -758,12 +832,14 @@ try {
         );
         $this->logger->log('Task failure: ' . $e->getMessage(), 'ERROR');
 
+        $this->emitItemEncryptionEvent('failed');
+
         // If a scheduled backup failed, update scheduler state and optionally send email report (via background tasks)
         if ($this->processType === 'database_backup' && (string)($this->taskData['source'] ?? '') === 'scheduler') {
             try {
                 $this->updateSchedulerState('failed', $e->getMessage());
                 $this->queueScheduledBackupReportEmail('failed', $e->getMessage());
-            } catch (Throwable $ignored) {
+            } catch (Throwable) {
                 // best effort only
             }
         }
@@ -787,7 +863,7 @@ try {
      * @param array $arguments Arguments for the subtasks.
      * @return void
      */
-    private function processSubTasks($arguments) {
+    private function processSubTasks(array $arguments): void {
         if (LOG_TASKS=== true) $this->logger->log('processSubTasks: '.print_r($arguments, true), 'DEBUG');
         // Get all subtasks related to this task
         $subtasks = DB::query(
@@ -807,7 +883,7 @@ try {
                 // Get the subtask data
                 $subtaskData = json_decode($subtask['task'], true);
 
-                if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . $subtaskData['step'], 'DEBUG');
+                if (LOG_TASKS=== true) $this->logger->log('Processing subtask: ' . strval($subtaskData['step'] ?? ''), 'DEBUG');
 
                 // Mark subtask as in progress
                 DB::update(
@@ -829,7 +905,7 @@ try {
                         $this->generateUserFileKeys($subtaskData);
                         break;
                     default:
-                        throw new Exception("Type de sous-tâche inconnu (".$subtaskData['step'].")");
+                        throw new Exception("Type de sous-tâche inconnu (" . strval($subtaskData['step'] ?? '') . ")");
                 }                
         
                 // Mark subtask as completed
@@ -869,7 +945,7 @@ try {
             $this->taskId
         );
     
-        if ($remainingSubtasks == 0) {
+        if (intval($remainingSubtasks) === 0) {
             $this->completeTask();
         }
     }

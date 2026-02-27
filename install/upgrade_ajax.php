@@ -122,11 +122,11 @@ define("DB_ENCODING", "' . DB_ENCODING . '");
 define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 define("DB_SSL", array(
-    "key" => "' . DB_SSL['key'] . '",
-    "cert" => "' . DB_SSL['cert'] . '",
-    "ca_cert" => "' . DB_SSL['ca_cert'] . '",
-    "ca_path" => "' . DB_SSL['ca_path'] . '",
-    "cipher" => "' . DB_SSL['cipher'] . '"
+    "key" => "' . (is_array(DB_SSL) ? DB_SSL['key'] : '') . '",
+    "cert" => "' . (is_array(DB_SSL) ? DB_SSL['cert'] : '') . '",
+    "ca_cert" => "' . (is_array(DB_SSL) ? DB_SSL['ca_cert'] : '') . '",
+    "ca_path" => "' . (is_array(DB_SSL) ? DB_SSL['ca_path'] : '') . '",
+    "cipher" => "' . (is_array(DB_SSL) ? DB_SSL['cipher'] : '') . '"
 ));
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
@@ -385,23 +385,13 @@ if (isset($post_type)) {
             }
 
             if (!extension_loaded('openssl')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"openssl\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"openssl\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
-            }
-            if (!extension_loaded('gd')) {
-                //$okExtensions = false;
-                $txt .= '<span>PHP extension \"gd\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"gd\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('mbstring')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"mbstring\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
@@ -409,23 +399,13 @@ if (isset($post_type)) {
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('bcmath')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"bcmath\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
                 $txt .= '<span>PHP extension \"bcmath\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
-            }
-            if (!extension_loaded('iconv')) {
-                //$okExtensions = false;
-                $txt .= '<span>PHP extension \"iconv\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"iconv\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
             if (!extension_loaded('xml')) {
-                //$okExtensions = false;
                 $txt .= '<span>PHP extension \"xml\"' .
                     '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
             } else {
@@ -439,12 +419,18 @@ if (isset($post_type)) {
                 $txt .= '<span>PHP extension \"curl\"' .
                     '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
             }
-            if (!extension_loaded('gmp')) {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
-            } else {
-                $txt .= '<span>PHP extension \"gmp\"' .
-                    '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
+            // pcntl and posix are CLI-only extensions, not available in web SAPI
+            // Use shell check to verify they are installed for CLI
+            $cliModules = [];
+            exec('php -m 2>/dev/null', $cliModules);
+            foreach (['posix', 'pcntl'] as $cliExt) {
+                if (!in_array($cliExt, $cliModules, true)) {
+                    $txt .= '<span>PHP extension \"' . $cliExt . '\"' .
+                        '<i class=\"fa-solid fa-circle-minus text-danger ml-2\"></i></span><br />';
+                } else {
+                    $txt .= '<span>PHP extension \"' . $cliExt . '\"' .
+                        '<i class=\"fa-solid fa-circle-check text-success ml-2\"></i></span><br />';
+                }
             }
             if (ini_get('max_execution_time') < 30) {
                 $txt .= '<span>PHP \"Maximum ' .

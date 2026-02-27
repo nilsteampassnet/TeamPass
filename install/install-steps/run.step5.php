@@ -91,7 +91,7 @@ echo json_encode($response);
  * 
  * @param array $inputData
  * 
- * @return string
+ * @return array
  */
 function checks($inputData): array
 {
@@ -694,7 +694,11 @@ class DatabaseInstaller
             array('admin', 'inactive_users_mgmt_last_run_at', '0'),
             array('admin', 'inactive_users_mgmt_last_status', ''),
             array('admin', 'inactive_users_mgmt_last_message', ''),
-            array('admin', 'inactive_users_mgmt_last_details', '')
+            array('admin', 'inactive_users_mgmt_last_details', ''),
+            array('admin', 'phpseclibv3_native', '1'),
+            array('admin', 'websocket_enabled', '0'),
+            array('admin', 'websocket_port', '8080'),
+            array('admin', 'websocket_host', '127.0.0.1')
         );
         foreach ($aMiscVal as $elem) {
             //Check if exists before inserting
@@ -1412,10 +1416,10 @@ class DatabaseInstaller
             `visible_folders` longtext NOT NULL,
             `timestamp` varchar(50) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `folders` longtext DEFAULT NULL,
             `invalidated_at` INT UNSIGNED DEFAULT 0,
+            `folders` longtext DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
-            INDEX idx_user_id (user_id)
+            INDEX `idx_user_id` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
@@ -1674,6 +1678,64 @@ class DatabaseInstaller
                 KEY `item_idx` (`item_id`),
                 KEY `accessed_idx` (`accessed_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table websocket_events
+    private function websocket_events()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "websocket_events` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `event_type` VARCHAR(50) NOT NULL COMMENT 'Type of event (item_created, item_updated, etc.)',
+                `target_type` ENUM('user', 'folder', 'broadcast') NOT NULL COMMENT 'Target type for routing',
+                `target_id` INT UNSIGNED NULL COMMENT 'Target ID (user_id or folder_id)',
+                `payload` JSON NOT NULL COMMENT 'Event payload data',
+                `processed` TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Has this event been broadcast?',
+                `processed_at` TIMESTAMP NULL COMMENT 'When was this event processed',
+                INDEX `idx_unprocessed` (`processed`, `created_at`),
+                INDEX `idx_cleanup` (`processed`, `processed_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            COMMENT='WebSocket events queue for real-time notifications';"
+        );
+    }
+
+    // Create table websocket_connections
+    private function websocket_connections()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "websocket_connections` (
+                `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                `user_id` INT UNSIGNED NOT NULL COMMENT 'Connected user ID',
+                `resource_id` VARCHAR(50) NOT NULL COMMENT 'Ratchet connection resource ID',
+                `connected_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `disconnected_at` TIMESTAMP NULL,
+                `ip_address` VARCHAR(45) NULL COMMENT 'Client IP address',
+                `user_agent` TEXT NULL COMMENT 'Client user agent',
+                INDEX `idx_user` (`user_id`),
+                INDEX `idx_active` (`disconnected_at`),
+                INDEX `idx_resource` (`resource_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            COMMENT='WebSocket connection tracking for monitoring';"
+        );
+    }
+
+    // Create table websocket_tokens
+    private function websocket_tokens()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "websocket_tokens` (
+        `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,                                                           
+        `user_id` INT UNSIGNED NOT NULL,                                                                        
+        `token` VARCHAR(64) NOT NULL,                                                                           
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,                                                       
+        `expires_at` TIMESTAMP NOT NULL,                                                                        
+        `used` TINYINT(1) UNSIGNED DEFAULT 0,                                                                   
+        UNIQUE INDEX `idx_token` (`token`),                                                                     
+        INDEX `idx_user` (`user_id`),                                                                           
+        INDEX `idx_expires` (`expires_at`)                                                                      
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
         );
     }
 

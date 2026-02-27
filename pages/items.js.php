@@ -105,8 +105,51 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         initialPageLoad = true,
         previousSelectedFolder = -1,
         intervalId = false,
+        editionLockInterval = null,
         debugJavascript = false,
         loadingToast = '';
+
+    /**
+     * Start edition lock heartbeat via AJAX.
+     * Sends a renew_lock request every 60 seconds to keep the lock alive.
+     */
+    function startEditionLockHeartbeat(itemId) {
+        stopEditionLockHeartbeat()
+        if (!itemId) return
+
+        editionLockInterval = setInterval(function() {
+            var data = {
+                'item_id': parseInt(itemId),
+                'action': 'renew_lock',
+            }
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'handle_item_edition_lock',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                }
+            )
+            if (debugJavascript === true) console.log('Lock heartbeat sent for item ' + itemId)
+        }, 10000)
+
+        if (debugJavascript === true) console.log('Edition lock heartbeat started for item ' + itemId)
+    }
+
+    /**
+     * Stop edition lock heartbeat
+     */
+    function stopEditionLockHeartbeat() {
+        if (editionLockInterval !== null) {
+            clearInterval(editionLockInterval)
+            editionLockInterval = null
+            if (debugJavascript === true) console.log('Edition lock heartbeat stopped')
+        }
+    }
+
+    // Clean up edition lock on page unload (tab close, navigation away)
+    $(window).on('beforeunload', function() {
+        stopEditionLockHeartbeat()
+    })
 
     // Manage memory
     browserSession(
@@ -133,21 +176,82 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         'core': {
             'animation': 0,
             'check_callback': true,
-            'data': {
-                'url': './sources/tree.php',
-                'dataType': 'json',
-                'icons': false,
-                'data': function(node) {
-                    if (debugJavascript === true) {
-                        console.info('Les répertoires sont chargés');
-                        console.log(node);
-                    }
-                    return {
-                        'id': node.id.split('_')[1],
-                        'force_refresh': store.get('teampassApplication') !== undefined ?
-                            store.get('teampassApplication').jstreeForceRefresh : 0
-                    };
+            'data': function(node, callback) {
+                if (debugJavascript === true) {
+                    console.info('Les répertoires sont chargés');
+                    console.log(node);
                 }
+                var treeVersion = ''
+                try { treeVersion = localStorage.getItem('tp_tree_version') || '' } catch(e) {}
+
+                var forceRefresh = store.get('teampassApplication') !== undefined ?
+                    store.get('teampassApplication').jstreeForceRefresh : 0
+
+                // Clear localStorage version on force refresh to get fresh data
+                if (parseInt(forceRefresh) === 1) {
+                    treeVersion = ''
+                    try { localStorage.removeItem('tp_tree_version') } catch(e) {}
+                }
+
+                $.ajax({
+                    url: './sources/tree.php',
+                    dataType: 'json',
+                    data: {
+                        'id': node.id.split('_')[1],
+                        'force_refresh': forceRefresh,
+                        'tree_version': treeVersion
+                    },
+                    success: function(response) {
+                        if (response && response.unchanged === true) {
+                            // Use cached data from localStorage
+                            try {
+                                var cached = JSON.parse(localStorage.getItem('tp_tree_data'))
+                                if (cached) {
+                                    callback(cached)
+                                    return
+                                }
+                            } catch(e) {}
+                            // Fallback: if cache corrupted, reload without version
+                            $.ajax({
+                                url: './sources/tree.php',
+                                dataType: 'json',
+                                data: {
+                                    'id': node.id.split('_')[1],
+                                    'force_refresh': 1
+                                },
+                                success: function(resp) {
+                                    var treeData = resp.tree || resp
+                                    try {
+                                        localStorage.setItem('tp_tree_version', resp.version || '')
+                                        localStorage.setItem('tp_tree_data', JSON.stringify(treeData))
+                                    } catch(e) {}
+                                    callback(treeData)
+                                }
+                            })
+                        } else if (response && response.tree) {
+                            // New data received
+                            try {
+                                localStorage.setItem('tp_tree_version', response.version || '')
+                                localStorage.setItem('tp_tree_data', JSON.stringify(response.tree))
+                            } catch(e) {}
+                            callback(response.tree)
+                        } else {
+                            // Fallback for unexpected response format (raw array)
+                            callback(response)
+                        }
+                    },
+                    error: function() {
+                        // On error, try localStorage fallback
+                        try {
+                            var cached = JSON.parse(localStorage.getItem('tp_tree_data'))
+                            if (cached) {
+                                callback(cached)
+                                return
+                            }
+                        } catch(e) {}
+                        callback([])
+                    }
+                })
             },
             'strings': {
                 'Loading ...': '<?php echo $lang->get('loading'); ?>...'
@@ -213,6 +317,11 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         previousSelectedFolder = selectedFolderId;
         initialPageLoad = false;
+
+        // Subscribe to WebSocket notifications for this folder
+        if (typeof window.tpWsSubscribeToFolder === 'function') {
+            window.tpWsSubscribeToFolder(selectedFolderId);
+        }
     })
     // Search in tree
     .bind('search.jstree', function(e, data) {
@@ -249,7 +358,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     ) {
         // Show cog
         toastr.remove();
-        loadingToast = loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Store current view
         savePreviousView();
@@ -283,22 +392,23 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
     });
 
-    // load list of visible folders for current user
-    // Refresh data later to avoid php session lock which slows page display.
-    $(this).delay(500).queue(function() {
-        refreshVisibleFolders(true);
+    // Load list of visible folders once jstree data is ready
+    // Uses loaded.jstree event instead of arbitrary 500ms delay
+    $('#jstree').one('loaded.jstree', function() {
+        internalRefreshVisibleFolders(true);
 
         // show correct folder in Tree
         let groupe_id = store.get('teampassApplication').itemsListFolderId;
-        if (groupe_id !== false && 
+        if (groupe_id !== false &&
             ($('#jstree').jstree('get_selected', true)[0] === undefined ||
             'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id)
         ) {
             $('#jstree').jstree('deselect_all');
             $('#jstree').jstree('select_node', '#li_' + groupe_id);
+        } else {
+            // No folder to auto-select, dismiss loading toastr
+            toastr.remove();
         }
-
-        $(this).dequeue();
     });
 
     // What do we do if a folder is selected?
@@ -437,6 +547,38 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             .removeClass('pointer_none');
     }
 
+
+    /**
+     * Update an existing toast in place: change message, type (color), and auto-close delay.
+     * Falls back to creating a new toast if the original was already dismissed.
+     *
+     * @param {jQuery}  $toast   - The jQuery element returned by toastr.info/success/etc.
+     * @param {string}  type     - 'success', 'error', 'warning', or 'info'
+     * @param {string}  message  - New HTML message content
+     * @param {object}  [options] - { timeOut: ms (default 3000, 0 = no auto-close) }
+     */
+    function toastrUpdate($toast, type, message, options) {
+        if (!$toast || !$toast.length || !$toast.is(':visible')) {
+            toastr[type](message, '', options)
+            return
+        }
+        var opts = options || {}
+        var timeOut = opts.timeOut !== undefined ? opts.timeOut : 3000
+
+        // Update message
+        $toast.find('.toast-message').html(message)
+
+        // Update type/color
+        $toast.removeClass('toast-info toast-success toast-error toast-warning')
+            .addClass('toast-' + type)
+
+        // Auto-close after delay
+        if (timeOut > 0) {
+            setTimeout(function () {
+                toastr.clear($toast)
+            }, timeOut)
+        }
+    }
 
     // Manage folders action
     $('.tp-action').click(function() {
@@ -1035,7 +1177,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         } else if ($(this).data('item-action') === 'reload') {            
             if (debugJavascript === true) console.info('RELOAD ITEM');
             toastr.remove();
-            toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             $.when(
                 Details(store.get('teampassItem').id, 'show', true)
@@ -1144,18 +1286,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             // Handle delete task
             $("#modal-btn-items-delete-launch").on("click", function() {
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                loadingToast = toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
                 
                 var selectedItemIds = getSelectedItemIds();
 
                 if (selectedItemIds.length === 0) {
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         '<?php echo $lang->get('no_item_selected'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                     $("#items-delete-user-confirm").modal('hide');
                     return false;
@@ -1177,31 +1315,24 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         $("#items-delete-user-confirm").modal('hide');
 
                         if (data.error === true) {
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 data.message,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         }
-                        
+
                         // Inform user
-                        toastr.remove();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('message'); ?>',
-                            '', {
-                                timeOut: 3000
-                            }
+                            { timeOut: 3000 }
                         );
 
                         // Reset the checkbox
                         $('#items-selection-checkbox').iCheck('uncheck');
 
                         // Force refresh of the tree
-                        refreshVisibleFolders(true)
+                        internalRefreshVisibleFolders(true)
 
                         // Reload items list
                         ListerItems(
@@ -1210,15 +1341,6 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             0,
                             0,
                             true
-                        );
-                        
-                        // Inform user
-                        toastr.remove();
-                        toastr.success(
-                            '<?php echo $lang->get('message'); ?>',
-                            '', {
-                                timeOut: 3000
-                            }
                         );
                     }
                 );
@@ -1295,6 +1417,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         if ($(this).hasClass('but-back-to-item') === false) {
             // Is this form the edition one?
             if ($(this).hasClass('item-edit') === true) {
+                // Stop edition lock heartbeat
+                stopEditionLockHeartbeat();
+
                 // release existing edition lock
                 data = {
                     'item_id': store.get('teampassItem').id,
@@ -1572,8 +1697,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Prepare data
         var data = {
@@ -1594,25 +1719,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error !== false) {
                     // Show error
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     $('#folders-tree-card').removeClass('hidden');
                     $('.form-item-share').addClass('hidden');
 
                     // Inform user
-                    toastr.remove();
-                    toastr.info(
+                    toastrUpdate(loadingToast, 'info',
                         '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     // Clear
@@ -1639,8 +1757,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     function goDeleteItem(itemId, itemKey, folderId, hasAccessLevel, closeItemCard = true)
     {
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1654,6 +1772,20 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
         if (debugJavascript === true) {
             console.log(data);
+        }
+
+        // Block deletion if item is currently being edited by another user
+        if (window.tpLockedItems && window.tpLockedItems[itemId]) {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            requestRunning = false;
+            return false;
         }
 
         // Launch action
@@ -1670,16 +1802,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 if (typeof data !== 'undefined' && data.error !== true) {
                     $('.form-item-action, .item-details-card-menu').addClass('hidden');
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
-                    
+
                     // Refresh tree
                     refreshTree(folderId, true);
+                    // Refresh items list to remove deleted item
+                    ListerItems(folderId, '', 0);
                     // Close
                     if (closeItemCard === true) {
                         closeItemDetailsCard();
@@ -1687,13 +1818,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     requestRunning = false;
                 } else {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 }
             }
@@ -1763,7 +1890,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show cog
         toastr.remove();
-        toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -1792,11 +1919,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Warn user
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     // Select folder of new item in jstree
@@ -1814,19 +1939,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         'show',
                         true
                     );
-                    
+
                     // Close
                     $('#folders-tree-card').removeClass('hidden');
                     $('.form-item-copy').addClass('hidden');
                 } else {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 }
             }
@@ -1858,8 +1979,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
             // Show cog
             toastr.remove();
-            toastr.info(
+            loadingToast = toastr.info(
                 '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
+                '', { timeOut: 0 }
             );
 
             // Force user did a change to false
@@ -1886,21 +2008,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     if (debugJavascript === true) console.log(data);
                     //check if format error
                     if (data.error === true) {
-                        toastr.remove();
-                        toastr.error(
+                        toastrUpdate(loadingToast, 'error',
                             data.message,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
+                            { timeOut: 5000 }
                         );
                     } else {
                         // Warn user
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
+                            { timeOut: 1000 }
                         );
 
                         // Info
@@ -1920,21 +2036,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 },
                 function(data) {
                     if (data[0].error != "") {
-                        toastr.remove();
-                        toastr.error(
+                        toastrUpdate(loadingToast, 'error',
                             data[0].error,
-                            '', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
+                            { timeOut: 5000 }
                         );
                     } else {
                         $('#form-item-server-cron-frequency').val(0).change();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
+                            { timeOut: 1000 }
                         );
                     }
                 },
@@ -1967,8 +2077,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -2000,21 +2110,15 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Warn user
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                     // Clear form
                     $('.form-item-suggestion').html('');
@@ -2068,8 +2172,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
         // Force user did a change to false
         userDidAChange = false;
@@ -2081,13 +2185,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             formIconSelected = fieldDomPurifier('#form-folder-add-icon-selected', false, false, false);
         if (formLabel === false || formIcon === false || formIconSelected === false) {
             // Label is empty
-            toastr.remove();
-            toastr.warning(
+            toastrUpdate(loadingToast, 'warning',
                 'XSS attempt detected. Field has been emptied.',
-                'Error', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
+                { timeOut: 5000 }
             );
             return false;
         }
@@ -2118,17 +2218,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 }
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     if ($('#form-folder-add').data('action') === 'add') {
                         // select new folder on jstree
                         $('#jstree').jstree('deselect_all');
@@ -2158,12 +2254,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Back to list
                     closeItemDetailsCard();
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                 }
                 // Enable the parent in select
@@ -2233,8 +2326,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
         
         // Show cog
-        toastr
-            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
 
         var selectedFolders = [],
@@ -2258,17 +2351,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree(data.parent_id, true);
                     // Refresh list of items inside the folder
@@ -2276,12 +2365,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Back to list
                     closeItemDetailsCard();
                     // Warn user
-                    toastr.remove();
-                    toastr.success(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
                 }
 
@@ -2320,8 +2406,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show cog
         toastr.remove();
-        toastr
-            .info('<?php echo $lang->get('please_wait_folders_in_construction'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        loadingToast = toastr
+            .info('<?php echo $lang->get('please_wait_folders_in_construction'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
         
         // Launch action
         var data = {
@@ -2343,17 +2429,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 if (data.error === true) {
                     // ERROR
-                    toastr.remove();
-                    toastr.error(
+                    toastrUpdate(loadingToast, 'error',
                         data.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+                        { timeOut: 5000 }
                     );
                 } else {
                     // Refresh list of folders
-                    refreshVisibleFolders(true);
+                    internalRefreshVisibleFolders(true);
                     // Refresh tree
                     refreshTree($('#form-folder-copy-destination option:selected').val(), true);
                     // Refresh list of items inside the folder
@@ -2374,18 +2456,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             itemList += '<li>' + item + '</li>';
                         });
                         itemList += '</ul>';
-                        toastr.remove();
-                        toastr.warning(
+                        toastrUpdate(loadingToast, 'warning',
                             '<?php echo $lang->get('some_items_not_copied_empty_password'); ?>:<br>' + itemList,
-                            '<?php echo $lang->get('caution'); ?>'
+                            { timeOut: 0 }
                         );
                     } else {
-                        toastr.remove();
-                        toastr.success(
+                        toastrUpdate(loadingToast, 'success',
                             '<?php echo $lang->get('success'); ?>',
-                            '', {
-                                timeOut: 4000
-                            }
+                            { timeOut: 4000 }
                         );
                     }
                 }
@@ -2408,7 +2486,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      */
     function closeItemDetailsCard() {
         if (debugJavascript === true) console.log('CLOSE - user did a change? ' + userDidAChange + " - User previous view: " + store.get('teampassUser').previousView);
-        if (userDidAChange === true) {
+        if (userDidAChange === true && $('.form-item').hasClass('hidden') === false) {
             toastr
                 .warning(
                     '<?php echo $lang->get('changes_ongoing'); ?><br>' +
@@ -2560,7 +2638,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
@@ -2586,7 +2664,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
@@ -2596,7 +2674,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
@@ -3003,7 +3081,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
             BeforeUpload: function(up, file) {
                 fileId = file.id;
                 toastr.remove();         
-                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>');
+                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>', '', { timeOut: 0 });
                 // Show file name
                 $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
 
@@ -3211,9 +3289,10 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show loading
         toastr.remove();
-        toastr.info(
+        loadingToast = toastr.info(
             '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>',
-            '<?php echo $lang->get('please_wait'); ?>'
+            '<?php echo $lang->get('please_wait'); ?>',
+            { timeOut: 0 }
         );
 
         // Loop on all changed fields
@@ -3449,13 +3528,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
                             $("#div_dialog_message").dialog("open");
 
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         }
@@ -3464,41 +3539,161 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             console.log(data);
                         }
                         if (data.error === true) {
-                            toastr.remove();
-                            toastr.error(
+                            toastrUpdate(loadingToast, 'error',
                                 data.message,
-                                '', {
-                                    timeOut: 5000,
-                                    progressBar: true
-                                }
+                                { timeOut: 5000 }
                             );
                             return false;
                         } else {
+                            // Stop edition lock heartbeat on successful save
+                            stopEditionLockHeartbeat()
+
                             // Refresh tree
                             if ($('#form-item-button-save').data('action') === 'update_item') {
                                 if ($('#form-item-folder').val() !== '' &&
                                     originalFolderId !== $('#form-item-folder').val()
                                 ) {
-                                    refreshTree($('#form-item-folder').val(), false);
+                                    // Pass empty node_to_select: we handle select_node ourselves below
+                                    // to avoid triggering a duplicate ListerItems via select_node.jstree handler
+                                    refreshTree('', false);
                                 }
+                                // Save server response flag before local var shadows it
+                                var encryptionTaskCreated = data.encryption_task_created === true;
+
                                 // Send query to confirm attachments
-                                var data = {
+                                var confirmData = {
                                     'item_id': store.get('teampassItem').id,
                                 }
                                 $.post(
                                     "sources/items.queries.php", {
                                         type: 'confirm_attachments',
-                                        data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                                        data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
                                     }
                                 );
 
-                                // Select new folder of item in jstree
+                                // Prevent duplicate ListerItems via jstree select_node event handler
+                                startedItemsListQuery = true;
+
+                                // Select folder of item in jstree
                                 $('#jstree').jstree('deselect_all');
                                 $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
 
+                                // Refresh list of items (single call, not duplicated by jstree handler)
+                                ListerItems($('#form-item-folder').val(), '', 0);
+
+                                // Reset flags
+                                userDidAChange = false;
+                                userUploadedFile = false;
+
+                                // Hide edit form
+                                $('.form-item, #form-item-attachments-zone').addClass('hidden');
+
+                                // Show parent row but pre-hide tree/list to prevent visual flash
+                                $('#folder-tree-container, #items-list-container').addClass('hidden');
+                                $('#folders-tree-card').removeClass('hidden');
+
+                                // Show item container immediately with loading spinner
+                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                $('#items-details-container')
+                                    .removeClass('col-md-5 hidden')
+                                    .addClass('col-md-12')
+                                    .prepend(
+                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
+                                            '<div class="text-center text-muted">' +
+                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
+                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
+                                            '</div>' +
+                                        '</div>'
+                                    );
+
+                                // Show loading toast
+                                toastr.clear(loadingToast);
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+
+                                // Reload item details
+                                // If an encryption task was created, the WebSocket task_completed
+                                // event will trigger Details() when encryption finishes.
+                                // Otherwise, call Details() immediately (no duplication risk).
+                                if (encryptionTaskCreated !== true) {
+                                    Details(store.get('teampassItem').id, 'show', true);
+                                }
+                                return;
+
                             } else if ($('#form-item-button-save').data('action') === 'new_item') {
-                                window.location.href = './index.php?page=items&group='+$('#form-item-folder').val()+'&id='+data.item_id;
+                                // Refresh tree to update folder item count
+                                // Pass empty node_to_select: we handle select_node ourselves below
+                                // to avoid a race condition where the async jstree refresh
+                                // triggers a second ListerItems via the select_node.jstree handler
+                                refreshTree('', true);
+
+                                // Confirm attachments
+                                var confirmData = {
+                                    'item_id': data.item_id,
+                                }
+                                $.post(
+                                    "sources/items.queries.php", {
+                                        type: 'confirm_attachments',
+                                        data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
+                                        key: '<?php echo $session->get('key'); ?>'
+                                    }
+                                );
+
+                                // Update store with new item id
+                                store.update(
+                                    'teampassItem',
+                                    function(teampassItem) {
+                                        teampassItem.id = parseInt(data.item_id);
+                                        teampassItem.isNewItem = 0;
+                                    }
+                                );
+
+                                // Select folder in jstree (prevent duplicate ListerItems via event handler)
+                                startedItemsListQuery = true;
+                                $('#jstree').jstree('deselect_all');
+                                $('#jstree').jstree('select_node', '#li_' + $('#form-item-folder').val());
+
+                                // Refresh list of items in background
+                                ListerItems($('#form-item-folder').val(), '', 0);
+
+                                // Reset flags
+                                userDidAChange = false;
+                                userUploadedFile = false;
+
+                                // Hide edit form immediately
+                                $('.form-item, #form-item-attachments-zone').addClass('hidden');
+
+                                // Show parent row but pre-hide tree/list to prevent visual flash
+                                // (#items-details-container is inside #folders-tree-card, so the row must be visible)
+                                $('#folder-tree-container, #items-list-container').addClass('hidden');
+                                $('#folders-tree-card').removeClass('hidden');
+
+                                // Show item container immediately with loading spinner
+                                // (spinner is removed by Details() via .delete-after-usage at line 5093)
+                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                $('#items-details-container')
+                                    .removeClass('col-md-5 hidden')
+                                    .addClass('col-md-12')
+                                    .prepend(
+                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
+                                            '<div class="text-center text-muted">' +
+                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
+                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
+                                            '</div>' +
+                                        '</div>'
+                                    );
+
+                                // Show loading toast
+                                toastr.clear(loadingToast);
+                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+
+                                // Load item details
+                                // If an encryption task was created, the WebSocket task_completed
+                                // event will trigger Details() when encryption finishes.
+                                // Otherwise (personal folder), call Details() immediately.
+                                if (data.encryption_task_created !== true) {
+                                    Details(data.item_id, 'show', true);
+                                }
                                 return;
                             } else {
                                 refreshTree($('#form-item-folder').val(), true);
@@ -3508,12 +3703,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             ListerItems($('#form-item-folder').val(), '', 0);
 
                             // Inform user
-                            toastr.remove();
-                            toastr.info(
+                            toastrUpdate(loadingToast, 'success',
                                 '<?php echo $lang->get('success'); ?>',
-                                '', {
-                                    timeOut: 1000
-                                }
+                                { timeOut: 1000 }
                             );
 
                             // Close
@@ -3816,9 +4008,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
      *
      * @return void
      */
-    function refreshVisibleFolders(forceRefreshCache = false) {
+    function internalRefreshVisibleFolders(forceRefreshCache = false) {
+        var foldersVersion = ''
+        try { foldersVersion = localStorage.getItem('tp_folders_version') || '' } catch(e) {}
+        // Clear version on force refresh
+        if (forceRefreshCache === true) {
+            foldersVersion = ''
+            try { localStorage.removeItem('tp_folders_version') } catch(e) {}
+        }
+
         var data = {
             'force_refresh_cache': forceRefreshCache,
+            'folders_version': foldersVersion,
         }
         if (debugJavascript === true) {
             console.log('Refresh visible folders');
@@ -3838,6 +4039,17 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     console.log('TREE');
                     console.log(data);
                 }
+
+                // Handle unchanged response — use cached folders from store
+                if (typeof data !== 'undefined' && data.unchanged === true) {
+                    if (debugJavascript === true) {
+                        console.log('Folders unchanged, using cached data');
+                    }
+                    // Store version
+                    try { localStorage.setItem('tp_folders_version', data.folders_version || '') } catch(e) {}
+                    return;
+                }
+
                 //check if format error
                 if (typeof data !== 'undefined' && data.error !== true) {
                     // Build html lists
@@ -3897,6 +4109,13 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             teampassUser.folders = html_visible;
                         }
                     );
+
+                    // Store version for client-side caching
+                    try {
+                        if (data.folders_version) {
+                            localStorage.setItem('tp_folders_version', data.folders_version)
+                        }
+                    } catch(e) {}
 
                     // remove ROOT option if exists
                     $('#form-item-copy-destination option[value="0"]').remove();
@@ -4058,22 +4277,32 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
         }
 
         if (do_refresh === true || store.get('teampassApplication').jstreeForceRefresh === 1) {
+            // Clear client-side tree cache on force refresh
+            try {
+                localStorage.removeItem('tp_tree_version');
+                localStorage.removeItem('tp_tree_data');
+            } catch(e) {}
             $('#jstree').jstree(true).refresh();
-        }
 
-        if (node_to_select !== '') {
-            $('#jstree').jstree('deselect_all');
-
-            $('#jstree')
-                .one('refresh.jstree', function(e, data) {
+            // Wait for jstree refresh to complete before refreshing visible folders
+            if (node_to_select !== '') {
+                $('#jstree').one('refresh.jstree', function(e, data) {
                     data.instance.select_node('#li_' + node_to_select);
+                    internalRefreshVisibleFolders(true);
                 });
+            } else {
+                $('#jstree').one('refresh.jstree', function() {
+                    internalRefreshVisibleFolders(true);
+                });
+            }
+        } else {
+            if (node_to_select !== '') {
+                $('#jstree').jstree('deselect_all');
+                $('#jstree').jstree('select_node', '#li_' + node_to_select);
+            }
+            // No jstree refresh needed, call immediately
+            internalRefreshVisibleFolders(true);
         }
-
-        $(this).delay(500).queue(function() {
-            refreshVisibleFolders(true);
-            $(this).dequeue();
-        });
     }
 
     /**
@@ -4410,6 +4639,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     function sList(listOfItems) {
         if (debugJavascript === true) {
+            console.log('DEBUG: sList start')
             console.log(listOfItems);
         }
         var counter = 0,
@@ -4918,8 +5148,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 toastr.error(
                     '<?php echo $lang->get('error_item_currently_being_updated').'<br/>'.
                         $lang->get('remaining_lock_time'); ?>' +
-                        (retData.edition_locked_delay === null ? 
-                        '' 
+                        (retData.edition_locked_delay === null ?
+                        ''
                         :
                         ' : ' + retData.edition_locked_delay + ' <?php echo $lang->get('seconds');?>'),
                     '', {
@@ -4927,11 +5157,18 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                         progressBar: true
                     }
                 );
+                // Track this item so WebSocket can notify when it becomes available
+                window.tpBlockedEditItemId = parseInt(itemId);
                 // Finished
                 requestRunning = false;
                 return false;
             }
             
+            // Start edition lock heartbeat when editing is allowed
+            if (actionType === 'edit' && retData.edition_locked !== true) {
+                startEditionLockHeartbeat(itemId)
+            }
+
             // Is the user allowed?
             if (retData.access === false
                 || (actionType === 'edit' && retData.edit === false)
@@ -5418,8 +5655,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                         .removeClass('hidden')
                                         .children(".card-item-field-value")
                                         .html(
-                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>' +
-                                            '<input type="text" style="width:0px; height:0px; border:0px;" id="hidden-card-item-field-value-' + field.id + '" value="' + (field.value) + '">'
+                                            '<span data-field-id="' + field.id + '" class="pointer replace-asterisk"><?php echo $var['hidden_asterisk']; ?></span>'
+                                        )
+                                        .append(
+                                            $('<input>', {
+                                                type: 'text',
+                                                style: 'width:0px; height:0px; border:0px;',
+                                                id: 'hidden-card-item-field-value-' + field.id,
+                                            }).val(field.value)
                                         )
                                     $('#card-item-field-' + field.id)
                                         .children(".btn-copy-clipboard-clear")
@@ -5429,7 +5672,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                                     $('#card-item-field-' + field.id)
                                         .removeClass('hidden')
                                         .children(".card-item-field-value")
-                                        .html(field.value);
+                                        .text(field.value);
                                 }
                                 // Item edit form
                                 $('#form-item-field-' + field.id)
@@ -5746,12 +5989,9 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                     // Inform user
                     //toastr.remove();
-                    toastr.clear(loadingToast);
-                    toastr.info(
+                    toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
-                        }
+                        { timeOut: 1000 }
                     );
 
                     return true;
@@ -6687,6 +6927,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                             progressBar: true
                         }
                     );
+                    // Track this item so WebSocket can notify when it becomes available
+                    window.tpBlockedEditItemId = parseInt(store.get('teampassItem').id);
                     // Finished
                     requestRunning = false;
                     return false;
@@ -6948,6 +7190,19 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     return false;
                 }
 
+                // Block move if item is currently being edited by another user
+                if (window.tpLockedItems && window.tpLockedItems[ui.draggable.data('item-id')]) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
                 // Warn user that it starts
                 toastr.info(
                     '<i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><?php echo $lang->get('please_wait'); ?>'
@@ -7069,6 +7324,100 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 $('#jstree').jstree('deselect_all');
                 $('#jstree').jstree('select_node', '#li_' + folder_id);
             }
+        });
+
+        // WebSocket: Expose item details refresh for real-time updates
+        window.refreshItemDetails = function(itemId) {
+            Details(itemId, 'show', true);
+        };
+
+        // WebSocket: Expose refresh function for real-time updates
+        window.refreshVisibleItems = function() {
+            var currentFolder = store.get('teampassApplication') ? store.get('teampassApplication').selectedFolder : null;
+            if (currentFolder) {
+                ListerItems(currentFolder, '', 0);
+            }
+        };
+
+        // WebSocket: Listen for refresh events
+        $(document).on('teampass:items:refresh', function() {
+            window.refreshVisibleItems();
+        });
+
+        // WebSocket: Expose tree refresh function
+        window.refreshTree = function() {
+            $('#jstree').jstree('refresh');
+        };
+
+        // WebSocket: Expose visible folders refresh function
+        window.refreshVisibleFolders = function(forceRefreshCache) {
+            internalRefreshVisibleFolders(forceRefreshCache);
+        };
+
+        $(document).on('teampass:folders:refresh', function() {
+            window.refreshTree();
+        });
+
+        // WebSocket: Handle role permission changes
+        // Refreshes session rights via AJAX, then forces jstree rebuild
+        $(document).on('teampass:permissions:refresh', function() {
+            // Force tree.php to bypass its cache on next call
+            store.update('teampassApplication', function(teampassApplication) {
+                teampassApplication.jstreeForceRefresh = 1;
+            });
+
+            // Clear client-side tree/folders cache
+            try {
+                localStorage.removeItem('tp_tree_version');
+                localStorage.removeItem('tp_tree_data');
+                localStorage.removeItem('tp_folders_version');
+            } catch(e) {}
+
+            // AJAX call to items.queries.php goes through core.php
+            // which recalculates identifyUserRights() from DB
+            $.post(
+                'sources/items.queries.php', {
+                    type: 'refresh_visible_folders',
+                    data: prepareExchangedData(JSON.stringify({'force_refresh_cache': true}), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'refresh_visible_folders');
+                    if (typeof data !== 'undefined' && data.error !== true) {
+                        // Update folder select elements
+                        var html_visible = '';
+                        if (typeof data.html_json !== 'undefined' && typeof data.html_json.folders !== 'undefined') {
+                            var foldersArray = Array.isArray(data.html_json.folders) ? data.html_json.folders : [data.html_json.folders];
+                            if (data.html_json.can_create_root_folder === 1) {
+                                html_visible = '<option value="0"><?php echo $lang->get('root'); ?></option>';
+                            }
+                            $.each(foldersArray, function(i, value) {
+                                html_visible += '<option value="' + value.id + '"' +
+                                    ((value.disabled === 1) ? ' disabled="disabled"' : '') +
+                                    ' data-parent-id="' + value.parent_id + '">' +
+                                    '&nbsp;'.repeat(value.level) +
+                                    value.title + (value.path !== '' ? ' [' + value.path + ']' : '') + '</option>';
+                            });
+                            $('#form-item-folder, #form-item-copy-destination, #form-folder-add-parent,' +
+                                    '#form-folder-delete-selection, #form-folder-copy-source, #form-folder-copy-destination')
+                                .find('option').remove().end()
+                                .append(html_visible);
+                            store.update('teampassUser', function(teampassUser) {
+                                teampassUser.folders = html_visible;
+                            });
+                        }
+
+                        // Now refresh jstree with force_refresh=1
+                        $('#jstree').jstree('refresh');
+                        $('#jstree').one('refresh.jstree', function() {
+                            store.update('teampassApplication', function(teampassApplication) {
+                                teampassApplication.jstreeForceRefresh = 0;
+                            });
+                            toastr.remove();
+                        });
+                    }
+                }
+            );
         });
     });
 </script>

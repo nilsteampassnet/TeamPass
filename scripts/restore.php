@@ -208,9 +208,9 @@ if (!is_array($payload)) {
 }
 
 $now = time();
-$status = (string) ($payload['status'] ?? '');
-$expiresAt = (int) ($payload['expires_at'] ?? 0);
-$payloadFilePath = (string) (($payload['file']['path'] ?? ''));
+$status = strval($payload['status'] ?? '');
+$expiresAt = intval($payload['expires_at'] ?? 0);
+$payloadFilePath = strval($payload['file']['path'] ?? '');
 
 if ($status !== 'pending') {
     $log('ERROR', 'Authorization token is not pending (status=' . $status . ').');
@@ -321,12 +321,12 @@ try {
 if (!empty($webUsers) && $forceDisconnect === false) {
     $log('ERROR', 'Active web sessions detected. Re-run with --force-disconnect or disconnect users first.');
     foreach ($webUsers as $u) {
-        $log('ERROR', 'WEB user connected: ' . ($u['login'] ?? '') . ' (' . ($u['name'] ?? '') . ' ' . ($u['lastname'] ?? '') . ')');
+        $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
     }
     if (!empty($apiUsers)) {
         $log('WARN', 'API activity detected as well (best-effort detection):');
         foreach ($apiUsers as $u) {
-            $log('WARN', 'API activity: ' . ($u['login'] ?? '') . ' (' . ($u['name'] ?? '') . ' ' . ($u['lastname'] ?? '') . ')');
+            $log('WARN', 'API activity: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
         }
     }
     // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
@@ -363,7 +363,7 @@ tpRestoreAuthorizationUpdatePayload($authId, $payload);
 if (!empty($apiUsers)) {
     $log('WARN', 'API activity detected (best-effort): those sessions may not be revocable. Proceeding.');
     foreach ($apiUsers as $u) {
-        $log('WARN', 'API activity: ' . ($u['login'] ?? '') . ' (' . ($u['name'] ?? '') . ' ' . ($u['lastname'] ?? '') . ')');
+        $log('WARN', 'API activity: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
     }
 }
 
@@ -430,12 +430,12 @@ try {
     $secrets = $payload['secrets'] ?? [];
     if (is_array($secrets)) {
         if (!empty($secrets['encryptionKey'])) {
-            $tmp = cryption((string) $secrets['encryptionKey'], '', 'decrypt', $SETTINGS);
+            $tmp = cryption(strval($secrets['encryptionKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
             if ($k !== '') $keysToTry[] = $k;
         }
         if (!empty($secrets['overrideKey'])) {
-            $tmp = cryption((string) $secrets['overrideKey'], '', 'decrypt', $SETTINGS);
+            $tmp = cryption(strval($secrets['overrideKey']), '', 'decrypt', $SETTINGS);
             $k = isset($tmp['string']) ? (string) $tmp['string'] : '';
             if ($k !== '') $keysToTry[] = $k;
         }

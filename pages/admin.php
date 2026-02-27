@@ -287,6 +287,21 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('health_unknown_files'); ?></span>
                                                 <span class="badge badge-warning" id="health-unknown-files">-</span>
                                             </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                <span><i class="fas fa-plug text-info"></i> <?php echo $lang->get('websocket'); ?></span>
+                                                <span>
+                                                    <button class="btn btn-xs btn-default ml-2" id="btn-websocket-action" style="display:none;" title="">
+                                                        <i class="fas fa-play"></i>
+                                                    </button>
+                                                    <button class="btn btn-xs btn-default ml-1" id="btn-websocket-refresh" title="Refresh">
+                                                        <i class="fas fa-sync-alt"></i>
+                                                    </button>
+                                                    <span class="badge badge-secondary align-items-right" id="health-websocket">-</span>
+                                                </span>
+                                            </li>
+                                            <li class="list-group-item small text-muted" id="websocket-details" style="display:none;">
+                                                <div id="websocket-details-content"></div>
+                                            </li>
                                         </ul>
                                     </div>
                                     <div class="overlay" id="loading-health" style="display:none;">
@@ -364,7 +379,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             FROM " . prefixTable('users') . "
                                             WHERE disabled = 0 AND deleted_at IS NULL"
                                         );
-                                        $progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
+                                        $totalUsers = intval($stats[0]['total_users']);
+                                        $progressPercent = $totalUsers > 0
+                                            ? (intval($stats[0]['migrated_users']) / $totalUsers) * 100
+                                            : 0;
                                         if ($progressPercent !== 100) {
                                             ?>
                                         <li class="list-group-item d-flex justify-content-between align-items-center">
@@ -608,7 +626,7 @@ $dbSize = DB::queryFirstField(
     FROM information_schema.TABLES 
     WHERE table_schema = DATABASE()"
 );
-$dbSizeFormatted = $dbSize . ' MB';
+$dbSizeFormatted = strval($dbSize ?? '0') . ' MB';
 
 // Get other PHP info
 $phpVersion = phpversion();

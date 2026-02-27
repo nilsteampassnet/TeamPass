@@ -77,7 +77,7 @@ foreach ($completTree as $child) {
         0,
         $child->id
     );
-    $ret[$child->id]['itemsCount'] = (int) $get['num_results'];
+    $ret[$child->id]['itemsCount'] = intval($get['num_results']);
     $ret[$child->id]['id'] = $child->id;
 
     // get number of subfolders
@@ -93,7 +93,7 @@ foreach ($completTree as $child) {
             0,
             implode(',', $nodeDescendants)
         );
-        $ret[$child->id]['ItemsSubfoldersCount'] = (int) $get['num_results'];
+        $ret[$child->id]['ItemsSubfoldersCount'] = intval($get['num_results']);
     } else {
         $ret[$child->id]['ItemsSubfoldersCount'] = 0;
     }

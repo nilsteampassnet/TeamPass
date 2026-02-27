@@ -266,7 +266,7 @@ $rows = DB::query(
                                     ORDER BY title ASC'
 );
 foreach ($rows as $record) {
-    echo '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
+    echo '<option value="' . strval($record['id']) . '">' . addslashes(strval($record['title'])) . '</option>';
 }
                                         ?>
                                     </select>

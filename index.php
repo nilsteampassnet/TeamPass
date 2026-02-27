@@ -1091,7 +1091,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <!-- Main Footer -->
             <footer class="main-footer">
                 <!-- To the right -->
-                <div class="float-right d-none d-sm-inline">
+                <div class="float-right d-none d-sm-inline" id="footer-version">
                     <?php echo $lang->get('version_alone'); ?>&nbsp;<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>
                 </div>
                 <!-- Default to the left -->
@@ -1333,11 +1333,66 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
+    <!-- WebSocket real-time notifications -->
+    <?php
+    $websocketEnabled = isset($SETTINGS['websocket_enabled']) && $SETTINGS['websocket_enabled'] === '1';
+    if ($websocketEnabled && isset($session) && $session->has('user-id')) {
+        // Generate a WebSocket authentication token for this user
+        $wsToken = generateWebSocketToken((int) $session->get('user-id'));
+        $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+        $wsPort = $SETTINGS['websocket_port'] ?? '8080';
+    ?>
+    <script type="text/javascript">
+        window.TeamPassWebSocketEnabled = true;
+        window.TeamPassWebSocketDebug = <?php echo (isset($SETTINGS['debug_mode']) && $SETTINGS['debug_mode'] === '1') ? 'true' : 'false'; ?>;
+        window.TeamPassWebSocketToken = <?php echo $wsToken ? json_encode($wsToken) : 'null'; ?>;
+        window.TeamPassWebSocketUrl = 'ws://<?php echo $wsHost . ':' . $wsPort; ?>';
+        window.TeamPassWsLang = {
+            realtime_connection_lost: <?php echo json_encode($lang->get('ws_realtime_connection_lost')); ?>,
+            reconnecting: <?php echo json_encode($lang->get('ws_reconnecting')); ?>,
+            new_item: <?php echo json_encode($lang->get('ws_new_item')); ?>,
+            item_created_by: <?php echo json_encode($lang->get('ws_item_created_by')); ?>,
+            item_updated: <?php echo json_encode($lang->get('ws_item_updated')); ?>,
+            item_updated_by: <?php echo json_encode($lang->get('ws_item_updated_by')); ?>,
+            item_deleted: <?php echo json_encode($lang->get('ws_item_deleted')); ?>,
+            item_deleted_by: <?php echo json_encode($lang->get('ws_item_deleted_by')); ?>,
+            new_folder: <?php echo json_encode($lang->get('ws_new_folder')); ?>,
+            folder_created: <?php echo json_encode($lang->get('ws_folder_created')); ?>,
+            folder_updated: <?php echo json_encode($lang->get('ws_folder_updated')); ?>,
+            folder_has_been_updated: <?php echo json_encode($lang->get('ws_folder_has_been_updated')); ?>,
+            folder_deleted: <?php echo json_encode($lang->get('ws_folder_deleted')); ?>,
+            folder_has_been_deleted: <?php echo json_encode($lang->get('ws_folder_has_been_deleted')); ?>,
+            permissions_changed: <?php echo json_encode($lang->get('ws_permissions_changed')); ?>,
+            folder_permissions_changed: <?php echo json_encode($lang->get('ws_folder_permissions_changed')); ?>,
+            account_ready: <?php echo json_encode($lang->get('ws_account_ready')); ?>,
+            account_operational: <?php echo json_encode($lang->get('ws_account_operational')); ?>,
+            session_expired: <?php echo json_encode($lang->get('ws_session_expired')); ?>,
+            please_reconnect: <?php echo json_encode($lang->get('ws_please_reconnect')); ?>,
+            maintenance: <?php echo json_encode($lang->get('ws_maintenance')); ?>,
+            connection_lost: <?php echo json_encode($lang->get('ws_connection_lost')); ?>,
+            unable_to_reconnect: <?php echo json_encode($lang->get('ws_unable_to_reconnect')); ?>,
+            realtime_connected: <?php echo json_encode($lang->get('ws_realtime_connected')); ?>,
+            realtime_disconnected: <?php echo json_encode($lang->get('ws_realtime_disconnected')); ?>,
+            progress: <?php echo json_encode($lang->get('ws_progress')); ?>,
+            operation_completed: <?php echo json_encode($lang->get('ws_operation_completed')); ?>,
+            operation_failed: <?php echo json_encode($lang->get('ws_operation_failed')); ?>,
+            task: <?php echo json_encode($lang->get('ws_task')); ?>,
+            being_edited_by: <?php echo json_encode($lang->get('ws_being_edited_by')); ?>,
+            item_now_available: <?php echo json_encode($lang->get('ws_item_now_available')); ?>,
+            item_edition_released: <?php echo json_encode($lang->get('ws_item_edition_released')); ?>,
+            item_reloading: <?php echo json_encode($lang->get('ws_item_reloading')); ?>
+        };
+    </script>
+    <script type="text/javascript" src="includes/js/teampass-websocket.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="includes/js/teampass-websocket-init.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <?php
+    }
+    ?>
+
     <?php
     // Include phpseclib v3 migration modal if migration is in progress
     if (isset($session)
         && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)
-
     ) {
         include_once 'includes/core/phpseclibv3_migration_modal.php';
     }

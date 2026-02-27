@@ -142,7 +142,7 @@ echo "Checking $totalUsers users with transparent recovery data...\n\n";
 foreach ($users as $user) {
     $expectedHash = hash_hmac(
         'sha256',
-        $user['user_derivation_seed'] . $user['public_key'],
+        strval($user['user_derivation_seed']) . strval($user['public_key']),
         $serverSecret
     );
 
@@ -185,10 +185,10 @@ foreach ($users as $user) {
 
     // Output status for problematic users
     if ($needsFix || ($verifyBackup && $backupStatus === 'DECRYPT FAILED')) {
-        echo "[{$hashStatus}] {$user['login']} (ID: {$user['id']})\n";
+        echo "[{$hashStatus}] " . strval($user['login']) . " (ID: " . strval($user['id']) . ")\n";
 
         if ($hashStatus === 'MISMATCH') {
-            echo "         Hash stored:   {$user['key_integrity_hash']}\n";
+            echo "         Hash stored:   " . strval($user['key_integrity_hash']) . "\n";
             echo "         Hash expected: {$expectedHash}\n";
         }
 
@@ -244,7 +244,7 @@ if (!empty($usersWithIssues)) {
     echo "\n=== CRITICAL: Users with unrecoverable backup ===\n";
     echo "These users will NOT be able to use transparent recovery even after hash fix:\n\n";
     foreach ($usersWithIssues as $issue) {
-        echo "  - {$issue['login']} (ID: {$issue['id']})\n";
+        echo "  - " . strval($issue['login']) . " (ID: " . strval($issue['id']) . ")\n";
         echo "    {$issue['issue']}\n";
     }
     echo "\nFor these users, the public_key likely changed after the backup was created.\n";

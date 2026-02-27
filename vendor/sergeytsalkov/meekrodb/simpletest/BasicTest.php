@@ -265,9 +265,20 @@ class BasicTest extends SimpleTest {
     $this->assert($rows[1]['password'] === 'somethingelse');
     $this->assert($rows[1]['username'] === '2ofmany');
     
-    $nullrow = DB::queryOneRow("SELECT * FROM accounts WHERE username LIKE %ss", '3ofman');
-    $this->assert($nullrow['password'] === NULL);
-    $this->assert($nullrow['user.age'] === '15');
+    $rows = DB::query("SELECT * FROM accounts WHERE username LIKE %ss", 'ofman');
+    $this->assert(count($rows) === 3);
+
+    $row = DB::queryOneRow("SELECT * FROM accounts WHERE username LIKE %ssb", '3ofman');
+    $this->assert($row['password'] === NULL);
+    $this->assert($row['user.age'] === '15');
+
+    $rows = DB::query("SELECT * FROM accounts WHERE username LIKE %sse", 'ofman');
+    $this->assert(count($rows) === 0);
+
+    $rows = DB::query("SELECT * FROM accounts WHERE username LIKE %sse ORDER BY username DESC", 'ofmany');
+    $this->assert(count($rows) === 3);
+    $this->assert($rows[0]['password'] === NULL);
+    $this->assert($rows[0]['user.age'] === '15');
   }
   
   

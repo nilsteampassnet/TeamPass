@@ -101,6 +101,13 @@ $session->invalidate();
     store.remove('teampassItem');
     store.remove('userOauth2Info');
 
+    // Clear tree/folders client-side cache
+    try {
+        localStorage.removeItem('tp_tree_version');
+        localStorage.removeItem('tp_tree_data');
+        localStorage.removeItem('tp_folders_version');
+    } catch(e) {}
+
     // Restore jstree state
     if (jstree_save !== null) {
         store.set('jstree', jstree_save);

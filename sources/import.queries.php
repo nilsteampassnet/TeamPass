@@ -360,7 +360,7 @@ switch ($inputData['type']) {
 
                     // Store unique folders
                     // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-                    $folders = preg_split('/[\/\\\\]/', $folder);
+                    $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
                     foreach ($folders as $folder) {
                         if (!empty($folder)) {
                             $uniqueFolders[$folder] = $folder;
@@ -392,7 +392,7 @@ switch ($inputData['type']) {
             // Store unique folders
             // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
             if (isset($folder)) {
-                $folders = preg_split('/[\/\\\\]/', $folder);
+                $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
                 foreach ($folders as $folder) {
                     if (!empty($folder)) {
                         $uniqueFolders[$folder] = $folder;
@@ -488,12 +488,59 @@ switch ($inputData['type']) {
         // Prepare some variables
         $folderCreationError = [];
 
+        // Ensure folders created by import inherit permissions from parent (prevents invisible folders in UI)
+        $ensureFolderPermissions = function (int $folderId, int $parentId, string $defaultAccessRight) use ($session): void {
+            if ($folderId === 0 || $parentId === 0) {
+                return;
+            }
+
+            $countPerms = DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                $folderId
+            );
+
+            if ((int) $countPerms > 0) {
+                return;
+            }
+
+            $parentRights = DB::query(
+                'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                $parentId
+            );
+
+            if (empty($parentRights) === false) {
+                foreach ($parentRights as $record) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        [
+                            'role_id' => (int) $record['role_id'],
+                            'folder_id' => (int) $folderId,
+                            'type' => (string) $record['type'],
+                        ]
+                    );
+                }
+                return;
+            }
+
+            // Fallback: apply current user roles (keeps legacy behavior if parent has no explicit rights)
+            foreach ((array) $session->get('system-array_roles') as $role) {
+                DB::insert(
+                    prefixTable('roles_values'),
+                    [
+                        'role_id' => (int) $role['id'],
+                        'folder_id' => (int) $folderId,
+                        'type' => $defaultAccessRight !== '' ? $defaultAccessRight : 'W',
+                    ]
+                );
+            }
+        };
+
         // Get all folders from objects in DB
         foreach ($itemsPath as $item) {
             $path = $item['folder'];
             $importId = $item['increment_id']; // Entry ID in items_importations
 
-            $parts = explode("\\", $path); // Décomposer le chemin en sous-dossiers
+            $parts = preg_split('/[\/\\\\]+/', (string) $path, -1, PREG_SPLIT_NO_EMPTY) ?: []; // Décomposer le chemin en sous-dossiers (supporte / et \\)
             $currentPath = "";
             $parentId = $dataReceived['folderId']; // Strating with provided folder
 
@@ -515,6 +562,9 @@ switch ($inputData['type']) {
                 );
 
                 if ($existingId) {
+                    if ((int) $personalFolder === 0) {
+                        $ensureFolderPermissions((int) $existingId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                    }
                     $folderIdMap[$currentPath] = $existingId;
                     $parentId = $existingId;
                 } else {
@@ -554,6 +604,9 @@ switch ($inputData['type']) {
 
                         // Save ID in map to avoid recreating it
                         $folderIdMap[$currentPath] = $newFolderId;
+                        if ((int) $personalFolder === 0) {
+                            $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                        }
                         $parentId = $newFolderId;
                     } elseif ($creationStatus['error'] === true && $creationStatus['message'] !== '' && empty($creationStatus['newId'])) {
                         // Error during folder creation
@@ -571,6 +624,9 @@ switch ($inputData['type']) {
                             $currentFolder
                         );
                         $newFolderId = $ret['id'];
+                        if ((int) $personalFolder === 0) {
+                            $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                        }
                         $parentId = $newFolderId;
                     }
                 }
@@ -1128,7 +1184,7 @@ switch ($inputData['type']) {
             'level' => 1,
             'isPF' => $destinationFolderInfos['importPF'],
         ];
-        $startPathLevel = 1;
+        $startPathLevel = (int) $destinationFolderInfos['startPathLevel'];
 
         foreach($post_folders as $folder) {
             // get parent id
@@ -1404,7 +1460,7 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             array(
                 'parent_id' => (int) $parentId,
                 'title' => (string) html_entity_decode(stripslashes($folderTitle), ENT_QUOTES, 'UTF-8'),
-                'nlevel' => (int) $folderLevel,
+                'nlevel' => (int) ($folderLevel + $startPathLevel),
                 'categories' => '',
                 'personal_folder' => $isPersonalFolder,
             )
@@ -1421,32 +1477,46 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
             )
         );
 
-        // Indicate that a change has been done to force tree user reload
-        DB::update(
-            prefixTable('misc'),
-            array(
-                'valeur' => time(),
-                'updated_at' => time(),
-            ),
-            'type = %s AND intitule = %s',
-            'timestamp',
-            'last_folder_change'
-        );
+        // Invalidate cache for users with access to this folder
+        invalidateCacheForFolderUsers((int) $id);
 
         //For each role to which the user depends on, add the folder just created.
         // (if not personal, otherwise, add to user-personal_folders)
         if ( $isPersonalFolder ) {
             SessionManager::addRemoveFromSessionArray('user-personal_folders', [$id], 'add');
         } else {
-            foreach ($session->get('system-array_roles') as $role) {
-                DB::insert(
-                    prefixTable('roles_values'),
-                    array(
-                        'role_id' => $role['id'],
-                        'folder_id' => $id,
-                        'type' => 'W',
-                    )
+            // Copy permissions from parent folder (ensures visibility in UI)
+            $parentRights = [];
+            if ((int) $parentId > 0) {
+                $parentRights = DB::query(
+                    'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                    (int) $parentId
                 );
+            }
+
+            if (empty($parentRights) === false) {
+                foreach ($parentRights as $record) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        array(
+                            'role_id' => (int) $record['role_id'],
+                            'folder_id' => (int) $id,
+                            'type' => (string) $record['type'],
+                        )
+                    );
+                }
+            } else {
+                // Fallback: apply current user roles (legacy behavior)
+                foreach ((array) $session->get('system-array_roles') as $role) {
+                    DB::insert(
+                        prefixTable('roles_values'),
+                        array(
+                            'role_id' => $role['id'],
+                            'folder_id' => $id,
+                            'type' => 'W',
+                        )
+                    );
+                }
             }
         }
 
@@ -1464,7 +1534,34 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
         $folderTitle,
         $parentId
     );
-    return $data['id'];
+
+    $existingId = (int) ($data['id'] ?? 0);
+
+    // If folder exists but has no permissions, copy them from parent (ensures visibility in UI)
+    if ((int) $isPersonalFolder === 0 && $existingId > 0) {
+        $countPermsRow = DB::queryFirstRow(
+            'SELECT COUNT(*) AS c FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+            $existingId
+        );
+        if ((int) ($countPermsRow['c'] ?? 0) === 0 && (int) $parentId > 0) {
+            $parentRights = DB::query(
+                'SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i',
+                (int) $parentId
+            );
+            foreach ($parentRights as $record) {
+                DB::insert(
+                    prefixTable('roles_values'),
+                    array(
+                        'role_id' => (int) $record['role_id'],
+                        'folder_id' => (int) $existingId,
+                        'type' => (string) $record['type'],
+                    )
+                );
+            }
+        }
+    }
+
+    return $existingId;
 }
 
 /**

@@ -403,7 +403,7 @@ class CryptoManager
      * Create AES cipher instance with custom options
      *
      * @param string $mode AES mode (cbc, ctr, ecb, cfb, ofb, gcm)
-     * @return AES|\Crypt_AES AES cipher instance
+     * @return AES AES cipher instance
      * @throws Exception
      */
     public static function createAESCipher(string $mode = 'cbc'): object

@@ -31,6 +31,10 @@ class Encryption
     {
         $json = json_decode(base64_decode($encryptedString), true);
 
+        if (!is_array($json)) {
+            return null;
+        }
+
         try {
             $salt = hex2bin($json["salt"]);
             $iv = hex2bin($json["iv"]);

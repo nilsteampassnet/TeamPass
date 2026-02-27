@@ -65,7 +65,7 @@ trait PhpseclibV3MigrationTrait {
         // Process each subtask
         foreach ($subtasks as $subtask) {
             if (LOG_TASKS === true) {
-                $this->logger->log("Processing phpseclibv3_migration subtask {$subtask['increment_id']} for task {$this->taskId}");
+                $this->logger->log("Processing phpseclibv3_migration subtask " . strval($subtask['increment_id']) . " for task {$this->taskId}");
             }
             $this->processPhpseclibV3MigrationSubtask($subtask, $arguments);
         }
@@ -107,7 +107,7 @@ trait PhpseclibV3MigrationTrait {
             );
 
             if (LOG_TASKS === true) {
-                $this->logger->log("phpseclibv3_migration subtask in progress: " . ($taskData['step'] ?? 'unknown'), 'INFO');
+                $this->logger->log("phpseclibv3_migration subtask in progress: " . strval($taskData['step'] ?? 'unknown'), 'INFO');
             }
 
             // Route to appropriate handler based on step
@@ -121,7 +121,7 @@ trait PhpseclibV3MigrationTrait {
                     break;
 
                 default:
-                    throw new Exception("Unknown phpseclibv3_migration step: " . ($taskData['step'] ?? 'none'));
+                    throw new Exception("Unknown phpseclibv3_migration step: " . strval($taskData['step'] ?? 'none'));
             }
 
             // Mark subtask as completed
@@ -138,7 +138,7 @@ trait PhpseclibV3MigrationTrait {
             );
 
             if (LOG_TASKS === true) {
-                $this->logger->log("phpseclibv3_migration subtask completed: " . ($taskData['step'] ?? 'unknown'), 'SUCCESS');
+                $this->logger->log("phpseclibv3_migration subtask completed: " . strval($taskData['step'] ?? 'unknown'), 'SUCCESS');
             }
 
         } catch (Exception $e) {
@@ -264,7 +264,7 @@ trait PhpseclibV3MigrationTrait {
 
                 if (LOG_TASKS === true) {
                     $this->logger->log(
-                        "Failed to migrate sharekey {$sharekey['increment_id']} in {$table}: " . $e->getMessage(),
+                        "Failed to migrate sharekey " . strval($sharekey['increment_id']) . " in {$table}: " . $e->getMessage(),
                         'ERROR'
                     );
                 }
@@ -314,8 +314,8 @@ trait PhpseclibV3MigrationTrait {
                  WHERE user_id = %i AND encryption_version = 1 AND share_key != ""',
                 $userId
             );
-            $sharekeysTablesV1Count[$table] = (int) $count;
-            $totalV1Remaining += (int) $count;
+            $sharekeysTablesV1Count[$table] = intval($count);
+            $totalV1Remaining += intval($count);
         }
 
         // Log remaining v1 sharekeys

@@ -79,8 +79,19 @@ switch ($type) {
 
     case 'extension':
         $extension = $inputData['name'] ?? '';
-        if ($extension && extension_loaded($extension)) {
-            $response['success'] = true;
+        if ($extension) {
+            // pcntl and posix are CLI-only extensions, not available in web SAPI
+            // Use shell check to verify they are installed for CLI
+            if (in_array($extension, ['pcntl', 'posix'], true)) {
+                $output = [];
+                $code = -1;
+                exec('php -m 2>/dev/null', $output, $code);
+                if ($code === 0 && in_array($extension, $output, true)) {
+                    $response['success'] = true;
+                }
+            } elseif (extension_loaded($extension)) {
+                $response['success'] = true;
+            }
         }
         break;
 

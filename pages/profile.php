@@ -143,7 +143,7 @@ $userInfo = DB::queryFirstRow(
 if (empty($userInfo['avatar']) === true) {
     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
 } else {
-    $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . $userInfo['avatar'];
+    $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . strval($userInfo['avatar']);
 }
 
 // Get Groups name
@@ -210,19 +210,19 @@ foreach ($session->get('user-roles_array') as $role) {
                         <ul class="list-group list-group-unbordered mb-3">
                             <li class="list-group-item">
                                 <b><?php echo $lang->get('created_items'); ?></b>
-                                <a class="float-right"><?php echo $userItemsNumber; ?></a>
+                                <a class="float-right"><?php echo strval($userItemsNumber); ?></a>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo $lang->get('modification_performed'); ?></b>
-                                <a class="float-right"><?php echo $userModificationNumber; ?></a>
+                                <a class="float-right"><?php echo strval($userModificationNumber); ?></a>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo $lang->get('items_opened'); ?></b>
-                                <a class="float-right"><?php echo $userSeenItemsNumber; ?></a>
+                                <a class="float-right"><?php echo strval($userSeenItemsNumber); ?></a>
                             </li>
                             <li class="list-group-item">
                                 <b><?php echo $lang->get('passwords_seen'); ?></b>
-                                <a class="float-right"><?php echo $userSeenPasswordsNumber; ?></a>
+                                <a class="float-right"><?php echo strval($userSeenPasswordsNumber); ?></a>
                             </li>
                         </ul>
                     </div>
@@ -279,7 +279,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         // Handle last password change string
                                         if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
                                             if (isset($SETTINGS['date_format']) === true) {
-                                                $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) $userInfo['last_pw_change']);
+                                                $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], intval($userInfo['last_pw_change']));
                                             } else {
                                                 $last_pw_change = date('d/m/Y', (int) $session->get('user-last_pw_change'));
                                             }
@@ -295,7 +295,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                         ) {
                                             $numDaysBeforePwExpiration = '';
                                         } else {
-                                            $numDaysBeforePwExpiration = $lang['index_pw_expiration'] . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang['days'] . '.';
+                                            $numDaysBeforePwExpiration = $lang->get('index_pw_expiration') . ' ' . $session->get('user-num_days_before_exp') . ' ' . $lang->get('days') . '.';
                                         }
                                         echo '
                                     <li class="list-group-item">
@@ -360,7 +360,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             if (empty($record['NULL']) === false) {
                                                 $text .= ' ' . $lang->get('for') . ' <span class="font-weight-light">' . addslashes($record['NULL']) . '</span>';
                                             }
-                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date']) . ' - ' . $text . '</li>';
+                                            echo '<li class="list-group-item">' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])) . ' - ' . $text . '</li>';
                                         }
                                         ?>
                                     </ul>
@@ -418,10 +418,10 @@ foreach ($session->get('user-roles_array') as $role) {
                                             <select class="form-control" id="profile-user-language">
                                                 <?php
                                                     foreach ($languages as $language) {
-                                                        echo '<option value="' . $language['name'] . '"',
-                                                        strtolower($session->get('user-language')) === strtolower($language['name']) ?
+                                                        echo '<option value="' . strval($language['name']) . '"',
+                                                        strtolower(strval($session->get('user-language'))) === strtolower(strval($language['name'])) ?
                                                         ' selected="selected"' : '',
-                                                    '>' . $language['label'] . '</option>';
+                                                    '>' . strval($language['label']) . '</option>';
                                                     }
                                                 ?>
                                             </select>

@@ -492,17 +492,8 @@ if (null !== $post_type) {
                 $dataFolder['id']
             );
 
-            // Update timestamp
-            DB::update(
-                prefixTable('misc'),
-                array(
-                    'valeur' => time(),
-                    'updated_at' => time(),
-                ),
-                'type = %s AND intitule = %s',
-                'timestamp',
-                'last_folder_change'
-            );
+            // Invalidate cache for users with access to this folder
+            invalidateCacheForFolderUsers((int) $dataFolder['id']);
 
             //Add complexity
             DB::update(
@@ -522,6 +513,18 @@ if (null !== $post_type) {
             );
 
             $tree->rebuild();
+
+            // Emit WebSocket event for real-time notification
+            if ($error === false) {
+                emitFolderEvent(
+                    'updated',
+                    (int) $dataFolder['id'],
+                    $inputData['title'] ?? $dataFolder['title'],
+                    $session->get('user-login') ?? '',
+                    (int) $inputData['parentId'],
+                    (int) $session->get('user-id')
+                );
+            }
 
             echo prepareExchangedData(
                 array(
@@ -638,6 +641,18 @@ if (null !== $post_type) {
                 SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$creationStatus['newId']], 'add');
             }
 
+            // Emit WebSocket event for real-time notification
+            if ($creationStatus['error'] === false && $creationStatus['newId'] !== 0) {
+                emitFolderEvent(
+                    'created',
+                    (int) $creationStatus['newId'],
+                    $inputData['title'] ?? '',
+                    $session->get('user-login') ?? '',
+                    (int) $inputData['parentId'],
+                    (int) $session->get('user-id')
+                );
+            }
+
             echo prepareExchangedData(
                 array(
                     'error' => $creationStatus['error'],
@@ -722,6 +737,7 @@ if (null !== $post_type) {
 
             //decrypt and retreive data in JSON format
             $folderForDel = array();
+            $foldersDeletedInfo = array(); // For WebSocket notifications
 
             // Start transaction
             DB::startTransaction();
@@ -808,6 +824,13 @@ if (null !== $post_type) {
                             //array for delete folder
                             $folderForDel[] = $thisSubFolders->id;
 
+                            // Store info for WebSocket notification
+                            $foldersDeletedInfo[] = [
+                                'folder_id' => (int) $thisSubFolders->id,
+                                'title' => (string) $thisSubFolders->title,
+                                'parent_id' => (int) $thisSubFolders->parent_id,
+                            ];
+
                             //delete items & logs
                             $itemsInSubFolder = DB::query(
                                 'SELECT id FROM ' . prefixTable('items') . ' 
@@ -851,46 +874,43 @@ if (null !== $post_type) {
                 }
             }
 
-            // Add new task for building user cache tree
-            if ((int) $session->get('user-admin') !== 1) {
-                DB::insert(
-                    prefixTable('background_tasks'),
-                    array(
-                        'created_at' => time(),
-                        'process_type' => 'user_build_cache_tree',
-                        'arguments' => json_encode([
-                            'user_id' => (int) $session->get('user-id'),
-                        ], JSON_HEX_QUOT | JSON_HEX_TAG),
-                        'updated_at' => null,
-                        'finished_at' => null,
-                        'output' => null,
-                    )
+            // Collect affected users BEFORE deleting folders/roles
+            $folderForDel = array_unique($folderForDel);
+            $affectedUserIds = [];
+            if (!empty($folderForDel)) {
+                $affectedUserIds = DB::queryFirstColumn(
+                    'SELECT DISTINCT ur.user_id FROM ' . prefixTable('users_roles') . ' ur
+                    JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
+                    WHERE rv.folder_id IN %ls',
+                    $folderForDel
                 );
             }
 
             // delete folders
-            $folderForDel = array_unique($folderForDel);
             foreach ($folderForDel as $fol) {
                 DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
             }
 
-            // Update timestamp
-            DB::update(
-                prefixTable('misc'),
-                array(
-                    'valeur' => time(),
-                    'updated_at' => time(),
-                ),
-                'type = %s AND intitule = %s',
-                'timestamp',
-                'last_folder_change'
-            );
+            // Invalidate cache for affected users
+            invalidateCacheForFolderUsers(0, $affectedUserIds);
 
             // Commit transaction
             DB::commit();
 
             //rebuild tree
             $tree->rebuild();
+
+            // Emit WebSocket events for deleted folders
+            foreach ($foldersDeletedInfo as $deletedFolder) {
+                emitFolderEvent(
+                    'deleted',
+                    (int) $deletedFolder['folder_id'],
+                    $deletedFolder['title'],
+                    $session->get('user-login') ?? '',
+                    (int) $deletedFolder['parent_id'],
+                    (int) $session->get('user-id')
+                );
+            }
 
             echo prepareExchangedData(
                 array(
@@ -1261,17 +1281,8 @@ if (null !== $post_type) {
             // rebuild tree
             $tree->rebuild();
 
-            // Update timestamp
-            DB::update(
-                prefixTable('misc'),
-                array(
-                    'valeur' => time(),
-                    'updated_at' => time(),
-                ),
-                'type = %s AND intitule = %s',
-                'timestamp',
-                'last_folder_change'
-            );
+            // Invalidate cache for users with access to destination folder
+            invalidateCacheForFolderUsers((int) $post_target_folder_id);
 
             $data = array(
                 'error' => '',

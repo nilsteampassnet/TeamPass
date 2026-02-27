@@ -26,6 +26,8 @@
  * @see       https://www.teampass.net
  */
 
+declare(strict_types=1);
+
 use Symfony\Component\Process\Process;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -33,24 +35,23 @@ require_once __DIR__.'/../sources/main.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
-    private $settings;
-    private $logger;
-    private $maxParallelTasks;
-    private $maxExecutionTime;
-    private $batchSize;
-    private $maxTimeBeforeRemoval;
-    private $lockFileHandle = null;
-    /** @var array Running process pool: [taskId => ['process' => Process, 'task' => array, 'resourceKey' => ?string]] */
-    private $pool = [];
-    /** @var string Path to the trigger file for urgent task notifications */
-    private $triggerFile;
+    private array $settings;
+    private TaskLogger $logger;
+    private int $maxParallelTasks;
+    private int $maxExecutionTime;
+    private int $batchSize;
+    private int $maxTimeBeforeRemoval;
+    private mixed $lockFileHandle = null;
+    /** @var array<int, array{process: Process, task: array<string, mixed>, resourceKey: ?string}> Running process pool */
+    private array $pool = [];
+    private string $triggerFile;
 
     public function __construct(array $settings) {
         $this->settings = $settings;
         $this->logger = new TaskLogger($settings, LOG_TASKS_FILE);
-        $this->maxParallelTasks = $settings['max_parallel_tasks'] ?? 2;
-        $this->maxExecutionTime = $settings['task_maximum_run_time'] ?? 600;
-        $this->batchSize = $settings['task_batch_size'] ?? 50;
+        $this->maxParallelTasks = (int) ($settings['max_parallel_tasks'] ?? 2);
+        $this->maxExecutionTime = (int) ($settings['task_maximum_run_time'] ?? 600);
+        $this->batchSize = (int) ($settings['task_batch_size'] ?? 50);
         // Tasks history retention (seconds)
         // Prefer new setting `tasks_history_delay` (stored in seconds in DB),
         // fallback to legacy `history_duration` (days) if present, otherwise 15 days.
@@ -78,7 +79,7 @@ class BackgroundTasksHandler {
     /**
      * Main function to process background tasks
      */
-    public function processBackgroundTasks() {
+    public function processBackgroundTasks(): bool {
         // Prevent multiple concurrent executions
         if (!$this->acquireProcessLock()) {
             if (LOG_TASKS === true) $this->logger->log('Process already running', 'INFO');
@@ -97,6 +98,7 @@ class BackgroundTasksHandler {
             $this->stopRunningProcesses();
             $this->releaseProcessLock();
         }
+        return true;
     }
     /**
      * Scheduler: enqueue a database_backup task when due.
@@ -132,14 +134,14 @@ class BackgroundTasksHandler {
         }
 
         // Avoid duplicates: if a database_backup task is already pending or running, skip.
-        $pending = (int)DB::queryFirstField(
+        $pending = intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE process_type = %s
             AND is_in_progress IN (0,1)
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
             'database_backup'
-        );
+        ));
 
         if ($pending > 0) {
             if (LOG_TASKS === true) $this->logger->log('backup scheduler: a database_backup task is already pending/running', 'INFO');
@@ -164,9 +166,9 @@ class BackgroundTasksHandler {
             ]
         );
 
-    $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
-    $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
-    $this->upsertSettingValue('bck_scheduled_last_message', 'Task enqueued by scheduler');
+        $this->upsertSettingValue('bck_scheduled_last_run_at', (string)$now);
+        $this->upsertSettingValue('bck_scheduled_last_status', 'queued');
+        $this->upsertSettingValue('bck_scheduled_last_message', 'Task enqueued by scheduler');
 
         // Compute next run
         $newNext = $this->computeNextBackupRunAt($now + 60);
@@ -176,14 +178,6 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Compute next run timestamp based on settings:
-     * - bck_scheduled_frequency: daily|weekly|monthly (default daily)
-     * - bck_scheduled_time: HH:MM (default 02:00)
-     * - bck_scheduled_dow: 1..7 (ISO, Mon=1) for weekly (default 1)
-     * - bck_scheduled_dom: 1..31 for monthly (default 1)
-     */
-    
-        /**
      * Scheduler: enqueue an inactive_users_housekeeping task when due (daily at a fixed time).
      */
     private function handleScheduledInactiveUsersMgmt(): void
@@ -211,14 +205,14 @@ class BackgroundTasksHandler {
             return;
         }
 
-        $pending = (int) DB::queryFirstField(
+        $pending = intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE process_type = %s
             AND is_in_progress IN (0,1)
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
             'inactive_users_housekeeping'
-        );
+        ));
         if ($pending > 0) {
             $newNext = $this->computeNextDailyRunAt($now + 60, $timeStr);
             $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$newNext);
@@ -252,7 +246,7 @@ class BackgroundTasksHandler {
         $tzName = $this->getTeampassTimezoneName();
         try {
             $tz = new DateTimeZone($tzName);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $tz = new DateTimeZone('UTC');
         }
 
@@ -272,24 +266,30 @@ class BackgroundTasksHandler {
     }
 
     private function getTeampassTimezoneName(): string
-{
-    // TeamPass stores timezone in teampass_misc: type='admin', intitule='timezone'
-    $tz = DB::queryFirstField(
-        'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
-        'admin',
-        'timezone'
-    );
+    {
+        // TeamPass stores timezone in teampass_misc: type='admin', intitule='timezone'
+        $tz = DB::queryFirstField(
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
+            'admin',
+            'timezone'
+        );
 
-    return (is_string($tz) && $tz !== '') ? $tz : 'UTC';
-}
+        return (is_string($tz) && $tz !== '') ? $tz : 'UTC';
+    }
     
+    /**
+     * Compute next run timestamp based on settings:
+     * - bck_scheduled_frequency: daily|weekly|monthly (default daily)
+     * - bck_scheduled_time: HH:MM (default 02:00)
+     * - bck_scheduled_dow: 1..7 (ISO, Mon=1) for weekly (default 1)
+     * - bck_scheduled_dom: 1..31 for monthly (default 1)
+     */
     private function computeNextBackupRunAt(int $fromTs): int
     {
-        // On se base sur la timezone PHP du serveur (simple et robuste)
         $tzName = $this->getTeampassTimezoneName();
         try {
             $tz = new DateTimeZone($tzName);
-        } catch (Throwable $e) {
+        } catch (Throwable) {
             $tz = new DateTimeZone('UTC');
         }
 
@@ -364,7 +364,7 @@ class BackgroundTasksHandler {
             return $default;
         }
 
-        return (string)$val;
+        return strval($val);
     }
 
     /**
@@ -374,11 +374,11 @@ class BackgroundTasksHandler {
     {
         $table = prefixTable('misc');
 
-        $exists = (int)DB::queryFirstField(
+        $exists = intval(DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . $table . ' WHERE type = %s AND intitule = %s',
             'settings',
             $key
-        );
+        ));
 
         if ($exists > 0) {
             DB::update($table, ['valeur' => $value], 'type = %s AND intitule = %s', 'settings', $key);
@@ -415,7 +415,7 @@ class BackgroundTasksHandler {
     /**
      * Release the lock file.
      */
-    private function releaseProcessLock() {
+    private function releaseProcessLock(): void {
         if ($this->lockFileHandle !== null) {
             flock($this->lockFileHandle, LOCK_UN);
             fclose($this->lockFileHandle);
@@ -459,7 +459,7 @@ class BackgroundTasksHandler {
     /**
      * Cleanup stale tasks that have been running for too long or are marked as failed.
      */
-    private function cleanupStaleTasks() {
+    private function cleanupStaleTasks(): void {
         // Mark tasks as failed if they've been running too long
         DB::query(
             'UPDATE ' . prefixTable('background_tasks') . ' 
@@ -558,7 +558,7 @@ class BackgroundTasksHandler {
                 $process->checkTimeout();
             } catch (Throwable $e) {
                 $this->markTaskFailed($taskId, 'Process timeout: ' . $e->getMessage());
-                try { $process->stop(5); } catch (Throwable $ignored) {}
+                try { $process->stop(5); } catch (Throwable) {}
                 unset($this->pool[$taskId]);
                 continue;
             }
@@ -576,7 +576,7 @@ class BackgroundTasksHandler {
      * Respects exclusive task rules and resource key conflict detection.
      */
     private function fillPoolSlots(): void {
-        $maxPool = min((int) $this->maxParallelTasks, 2);
+        $maxPool = $this->maxParallelTasks;
         $availableSlots = $maxPool - count($this->pool);
         if ($availableSlots <= 0) return;
 
@@ -620,7 +620,7 @@ class BackgroundTasksHandler {
             // Resource key conflict: skip if same key is already running
             if ($resourceKey !== null && in_array($resourceKey, $runningKeys, true)) {
                 if (LOG_TASKS === true) $this->logger->log(
-                    'Task ' . $task['increment_id'] . ' deferred: resource conflict (' . $resourceKey . ')',
+                    'Task ' . strval($task['increment_id']) . ' deferred: resource conflict (' . $resourceKey . ')',
                     'INFO'
                 );
                 continue;
@@ -628,13 +628,13 @@ class BackgroundTasksHandler {
 
             // Launch the task
             if (LOG_TASKS === true) $this->logger->log(
-                'Launching task ' . $task['increment_id'] . ' (' . $task['process_type'] . ')',
+                'Launching task ' . strval($task['increment_id']) . ' (' . strval($task['process_type']) . ')',
                 'INFO'
             );
 
             $process = $this->launchTask($task);
             if ($process !== null) {
-                $this->pool[(int) $task['increment_id']] = [
+                $this->pool[intval($task['increment_id'])] = [
                     'process' => $process,
                     'task' => $task,
                     'resourceKey' => $resourceKey,
@@ -739,14 +739,14 @@ class BackgroundTasksHandler {
         // Worker may have already handled the failure via handleTaskFailure()
         if ($currentStatus !== 'in_progress') {
             if (LOG_TASKS === true) $this->logger->log(
-                'Task ' . $taskId . ' process failed (exit ' . $process->getExitCode() . ') but worker already set status=' . $currentStatus,
+                'Task ' . $taskId . ' process failed (exit ' . strval($process->getExitCode()) . ') but worker already set status=' . strval($currentStatus),
                 'INFO'
             );
             return;
         }
 
         // Worker didn't update - mark as failed from handler side
-        $msg = 'Process exited with code ' . $process->getExitCode();
+        $msg = 'Process exited with code ' . strval($process->getExitCode());
         $stderr = $process->getErrorOutput();
         if (!empty($stderr)) {
             $msg .= ': ' . mb_substr($stderr, -500);
@@ -784,7 +784,7 @@ class BackgroundTasksHandler {
             if ($process->isRunning()) {
                 try {
                     $process->stop(10);
-                } catch (Throwable $e) {
+                } catch (Throwable) {
                     // best effort
                 }
                 $this->markTaskFailed($taskId, 'Handler shutdown: process forcibly stopped');
@@ -794,28 +794,16 @@ class BackgroundTasksHandler {
     }
 
     /**
-     * Count the number of currently running tasks.
-     * @return int The number of running tasks.
-     */
-    private function countRunningTasks(): int {
-        return DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . prefixTable('background_tasks') . '
-            WHERE is_in_progress = 1'
-        );
-    }
-
-    /**
      * Count the number of pending tasks (not started and not finished).
      * @return int The number of pending tasks.
      */
     private function countPendingTasks(): int {
-        return (int) DB::queryFirstField(
+        return intval(DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . prefixTable('background_tasks') . '
             WHERE is_in_progress = 0
             AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
-        );
+        ));
     }
 
     /**
@@ -859,10 +847,10 @@ class BackgroundTasksHandler {
             case 'item_copy':
             case 'update_item':
             case 'item_update_create_keys':
-                return 'item:' . ($args['item_id'] ?? 0);
+                return 'item:' . strval($args['item_id'] ?? 0);
 
             case 'user_build_cache_tree':
-                return 'user:' . ($args['user_id'] ?? 0);
+                return 'user:' . strval($args['user_id'] ?? 0);
 
             case 'send_email':
                 // Emails never conflict with each other
@@ -878,7 +866,7 @@ class BackgroundTasksHandler {
      * Perform maintenance tasks.
      * This method cleans up old items, expired tokens, and finished tasks.
      */
-    private function performMaintenanceTasks() {
+    private function performMaintenanceTasks(): void {
         $this->cleanMultipleItemsEdition();
         $this->handleItemTokensExpiration();
         $this->cleanOldFinishedTasks();
@@ -889,7 +877,7 @@ class BackgroundTasksHandler {
      * Clean up multiple items edition.
      * This method removes duplicate entries in the items_edition table.
      */
-    private function cleanMultipleItemsEdition() {
+    private function cleanMultipleItemsEdition(): void {
         DB::query(
             'DELETE i1 FROM ' . prefixTable('items_edition') . ' i1
             JOIN (
@@ -903,13 +891,41 @@ class BackgroundTasksHandler {
 
     /**
      * Handle item tokens expiration.
-     * This method removes expired tokens from the items_edition table.
+     * This method emits edition_stopped events for stale locks, then removes them.
      */
-    private function handleItemTokensExpiration() {
+    private function handleItemTokensExpiration(): void {
+        // Use heartbeat timeout: locks not renewed within the timeout are considered stale
+        $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+            ? EDITION_LOCK_HEARTBEAT_TIMEOUT
+            : 300;
+
+        $cutoff = time() - $heartbeatTimeout;
+
+        // Fetch stale locks with item and user info before deleting,
+        // so we can notify connected clients to remove lock badges
+        $staleLocks = DB::query(
+            'SELECT ie.item_id, ie.user_id, i.id_tree AS folder_id, i.label, u.login
+             FROM ' . prefixTable('items_edition') . ' ie
+             JOIN ' . prefixTable('items') . ' i ON ie.item_id = i.id
+             JOIN ' . prefixTable('users') . ' u ON ie.user_id = u.id
+             WHERE ie.timestamp < %i',
+            $cutoff
+        );
+
+        foreach ($staleLocks as $lock) {
+            emitEditionLockEvent(
+                'stopped',
+                intval($lock['item_id']),
+                intval($lock['folder_id']),
+                strval($lock['login']),
+                intval($lock['user_id'])
+            );
+        }
+
         DB::query(
             'DELETE FROM ' . prefixTable('items_edition') . '
             WHERE timestamp < %i',
-            time() - ($this->settings['delay_item_edition'] * 60 ?: EDITION_LOCK_PERIOD)
+            $cutoff
         );
     }
 
@@ -917,7 +933,7 @@ class BackgroundTasksHandler {
      * Clean up old finished tasks.
      * This method removes tasks that have been completed for too long.
      */
-    private function cleanOldFinishedTasks() {
+    private function cleanOldFinishedTasks(): void {
         // Timestamp cutoff for removal
         $cutoffTimestamp = time() - $this->maxTimeBeforeRemoval;
     
@@ -976,10 +992,10 @@ class BackgroundTasksHandler {
 
             // Retrieve all temp_file entries from database
             $tempFiles = DB::query(
-                'SELECT increment_id, intitule, valeur 
-                FROM %l 
+                'SELECT increment_id, intitule, valeur
+                FROM %l
                 WHERE type = %s',
-                'teampass_misc',
+                prefixTable('misc'),
                 'temp_file'
             );
 
@@ -991,9 +1007,9 @@ class BackgroundTasksHandler {
             }
 
             foreach ($tempFiles as $fileEntry) {
-                $entryId = (int) $fileEntry['increment_id'];
-                $timestamp = (int) $fileEntry['intitule'];
-                $fileName = (string) $fileEntry['valeur'];
+                $entryId = intval($fileEntry['increment_id']);
+                $timestamp = intval($fileEntry['intitule']);
+                $fileName = strval($fileEntry['valeur']);
 
                 // Validate timestamp format
                 if ($timestamp <= 0) {
@@ -1022,7 +1038,7 @@ class BackgroundTasksHandler {
                 // (file might already be deleted manually)
                 try {
                     DB::delete(
-                        'teampass_misc',
+                        prefixTable('misc'),
                         'increment_id = %i',
                         $entryId
                     );
