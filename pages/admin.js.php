@@ -73,6 +73,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     exit;
 }
 
+// Identify TeamPass system users (API/TP/OTV)
+$systemUsersLogins = ['API', 'TP', 'OTV'];
+
+// For Migration Statistics display: exclude TeamPass system users
+$transparentRecoveryTotalUsersNoSystem = (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls',
+    $systemUsersLogins
+);
+$transparentRecoveryMigratedUsersNoSystem = (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls AND user_derivation_seed IS NOT NULL AND private_key_backup IS NOT NULL',
+    $systemUsersLogins
+);
+
+
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
@@ -88,6 +102,47 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 var requestRunning = false,
     debugJavascript = false;
+
+// ===================================
+// MIGRATION STATS - I18N + COUNTERS
+// ===================================
+const TP_MIGRATION_STATS_I18N = {
+    title: <?php echo json_encode($lang->get('migration_stats_title')); ?>,
+    transparentRecoveryTitle: <?php echo json_encode($lang->get('perform_transparent_recovery_check')); ?>,
+    personalItemsMigrationTitle: <?php echo json_encode($lang->get('get_personal_items_migration_status')); ?>,
+    migratedUsers: <?php echo json_encode($lang->get('migration_stats_migrated_users')); ?>,
+    pendingUsers: <?php echo json_encode($lang->get('migration_stats_pending_users')); ?>,
+    totalUsers: <?php echo json_encode($lang->get('migration_stats_total_users')); ?>,
+    progress: <?php echo json_encode($lang->get('migration_stats_progress')); ?>,
+    migrationProgress: <?php echo json_encode($lang->get('migration_stats_migration_progress')); ?>,
+    autoRecoveries24h: <?php echo json_encode($lang->get('migration_stats_auto_recoveries_24h')); ?>,
+    totalFailures: <?php echo json_encode($lang->get('migration_stats_total_failures')); ?>,
+    criticalFailures: <?php echo json_encode($lang->get('migration_stats_critical_failures')); ?>,
+    failureRate30d: <?php echo json_encode($lang->get('migration_stats_failure_rate_30d')); ?>,
+    recentEvents: <?php echo json_encode($lang->get('migration_stats_recent_events')); ?>,
+    noRecentEvents: <?php echo json_encode($lang->get('migration_stats_no_recent_events')); ?>,
+    user: <?php echo json_encode($lang->get('migration_stats_user')); ?>,
+    close: <?php echo json_encode($lang->get('close')); ?>,
+    allUsersMigrated: <?php echo json_encode($lang->get('migration_stats_all_users_migrated')); ?>,
+    noUsersMigratedYet: <?php echo json_encode($lang->get('migration_stats_no_users_migrated_yet')); ?>,
+    tableUserId: <?php echo json_encode($lang->get('migration_stats_table_user_id')); ?>,
+    tableLogin: <?php echo json_encode($lang->get('migration_stats_table_login')); ?>,
+    tableEmail: <?php echo json_encode($lang->get('migration_stats_table_email')); ?>,
+    tableLastLogin: <?php echo json_encode($lang->get('migration_stats_table_last_login')); ?>,
+    never: <?php echo json_encode($lang->get('migration_stats_never')); ?>,
+    colorRed: <?php echo json_encode($lang->get('migration_stats_color_red')); ?>,
+    colorGray: <?php echo json_encode($lang->get('migration_stats_color_gray')); ?>,
+    legendNeverLoggedIn: <?php echo json_encode($lang->get('migration_stats_legend_never_logged_in')); ?>,
+    legendInactive30d: <?php echo json_encode($lang->get('migration_stats_legend_inactive_30d')); ?>
+};
+
+const TP_SYSTEM_USER_LOGINS = <?php echo json_encode($systemUsersLogins); ?>;
+
+const TP_TRANSPARENT_RECOVERY_USER_COUNTS = {
+    totalUsers: <?php echo $transparentRecoveryTotalUsersNoSystem; ?>,
+    migratedUsers: <?php echo $transparentRecoveryMigratedUsersNoSystem; ?>
+};
+
 
 /**
  * ADMIN
@@ -1238,8 +1293,15 @@ function performTransparentRecoveryCheck()
             }
             
             let stats = data.stats;
-            
-            // Build full html
+
+// Exclude TeamPass system users from displayed counters (API/TP/OTV)
+const displayedTotalUsers = TP_TRANSPARENT_RECOVERY_USER_COUNTS.totalUsers;
+const displayedMigratedUsers = TP_TRANSPARENT_RECOVERY_USER_COUNTS.migratedUsers;
+const displayedMigrationPercentage = displayedTotalUsers > 0
+    ? ((displayedMigratedUsers / displayedTotalUsers) * 100).toFixed(2)
+    : '100.00';
+
+// Build full html
             let html = '<div class="container-fluid p-0">';
             
             // === Main stats ===
@@ -1247,24 +1309,24 @@ function performTransparentRecoveryCheck()
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-success">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-success mb-0">' + stats.users_migrated + '</h4>' +
-                            '<small class="text-muted">Migrated Users</small>' +
+                            '<h4 class="text-success mb-0">' + displayedMigratedUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.migratedUsers + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-info">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-info mb-0">' + stats.total_users + '</h4>' +
-                            '<small class="text-muted">Total Users</small>' +
+                            '<h4 class="text-info mb-0">' + displayedTotalUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalUsers + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-primary">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-primary mb-0">' + stats.migration_percentage + '%</h4>' +
-                            '<small class="text-muted">Progress</small>' +
+                            '<h4 class="text-primary mb-0">' + displayedMigrationPercentage + '%</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.progress + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -1272,12 +1334,12 @@ function performTransparentRecoveryCheck()
 
             // === Progress bar ===
             html += '<div class="mb-3">' +
-                        '<label class="font-weight-bold mb-1">Migration Progress</label>' +
+                        '<label class="font-weight-bold mb-1">' + TP_MIGRATION_STATS_I18N.migrationProgress + '</label>' +
                         '<div class="progress" style="height: 25px;">' +
                             '<div class="progress-bar progress-bar-striped bg-success" ' +
                                 'role="progressbar" ' +
-                                'style="width: ' + stats.migration_percentage + '%">' +
-                                stats.migration_percentage + '%' +
+                                'style="width: ' + displayedMigrationPercentage + '%">' +
+                                displayedMigrationPercentage + '%' +
                             '</div>' +
                         '</div>' +
                     '</div>';
@@ -1288,7 +1350,7 @@ function performTransparentRecoveryCheck()
                             '<div class="card text-center border-warning">' +
                                 '<div class="card-body py-2">' +
                                     '<h5 class="text-warning mb-0">' + stats.auto_recoveries_last_24h + '</h5>' +
-                                    '<small class="text-muted">Auto Recoveries (24h)</small>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.autoRecoveries24h + '</small>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -1296,7 +1358,7 @@ function performTransparentRecoveryCheck()
                             '<div class="card text-center border-danger">' +
                                 '<div class="card-body py-2">' +
                                     '<h5 class="text-danger mb-0">' + stats.failed_recoveries_total + '</h5>' +
-                                    '<small class="text-muted">Total Failures</small>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalFailures + '</small>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -1304,7 +1366,7 @@ function performTransparentRecoveryCheck()
                             '<div class="card text-center border-danger">' +
                                 '<div class="card-body py-2">' +
                                     '<h5 class="text-danger mb-0">' + stats.critical_failures_total + '</h5>' +
-                                    '<small class="text-muted">Critical Failures</small>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.criticalFailures + '</small>' +
                                 '</div>' +
                             '</div>' +
                         '</div>' +
@@ -1314,7 +1376,7 @@ function performTransparentRecoveryCheck()
             html += '<div class="mb-3">' +
                         '<div class="card border-secondary">' +
                             '<div class="card-body py-2 d-flex justify-content-between align-items-center">' +
-                                '<span class="font-weight-bold">Failure Rate (30 days)</span>' +
+                                '<span class="font-weight-bold">' + TP_MIGRATION_STATS_I18N.failureRate30d + '</span>' +
                                 '<span class="badge badge-secondary badge-pill" style="font-size: 1.1rem;">' +
                                     stats.failure_rate_30d + '%' +
                                 '</span>' +
@@ -1327,7 +1389,7 @@ function performTransparentRecoveryCheck()
                         '<div class="card-header bg-dark text-white py-2">' +
                             '<h6 class="mb-0">' +
                                 '<i class="fas fa-history mr-2"></i>' +
-                                'Recent Events (' + stats.recent_events.length + ')' +
+                                TP_MIGRATION_STATS_I18N.recentEvents + ' (' + stats.recent_events.length + ')' +
                             '</h6>' +
                         '</div>' +
                         '<div class="card-body p-0">' +
@@ -1335,14 +1397,14 @@ function performTransparentRecoveryCheck()
             
             // Events list
             if (stats.recent_events.length === 0) {
-                html += '<div class="text-center p-3 text-muted">No recent events</div>';
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.noRecentEvents + '</div>';
             } else {
                 html += '<ul class="list-group list-group-flush">';
                 
                 $.each(stats.recent_events, function(i, event) {
                     // Format the date
                     let eventDate = new Date(event.date * 1000);
-                    let formattedDate = eventDate.toLocaleString('fr-FR', {
+                    let formattedDate = eventDate.toLocaleString(undefined, {
                         day: '2-digit',
                         month: '2-digit',
                         year: 'numeric',
@@ -1373,7 +1435,7 @@ function performTransparentRecoveryCheck()
                                         '<br>' +
                                         '<small class="text-muted ml-4">' + formattedDate + '</small>' +
                                     '</div>' +
-                                    '<span class="badge badge-secondary">User ' + event.login + '</span>' +
+                                    '<span class="badge badge-secondary">' + TP_MIGRATION_STATS_I18N.user + ' ' + event.login + '</span>' +
                                 '</div>' +
                             '</li>';
                 });
@@ -1389,10 +1451,10 @@ function performTransparentRecoveryCheck()
             // Show modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-chart-bar fa-lg mr-2"></i>Migration statistics',
+                '<i class="fas fa-chart-bar fa-lg mr-2"></i>' + TP_MIGRATION_STATS_I18N.transparentRecoveryTitle,
                 html,
                 '',
-                'Close',
+                TP_MIGRATION_STATS_I18N.close,
                 true
             );
 
@@ -1448,8 +1510,20 @@ function performPersonalItemsMigrationCheck()
             
             // Get statistics values
             let stats = data.stats;
-            
-            // Build full html
+
+// Exclude TeamPass system users (API/TP/OTV) from the personal items migration statistics
+const systemLogins = Array.isArray(TP_SYSTEM_USER_LOGINS) ? TP_SYSTEM_USER_LOGINS : [];
+const isSystemUser = (login) => systemLogins.includes(login);
+
+const doneUsers = (Array.isArray(stats.doneUsers) ? stats.doneUsers : []).filter((u) => !isSystemUser(u.login));
+const pendingUsers = (Array.isArray(stats.pendingUsers) ? stats.pendingUsers : []).filter((u) => !isSystemUser(u.login));
+
+const displayedTotalUsers = doneUsers.length + pendingUsers.length;
+const displayedProgressPercent = displayedTotalUsers > 0
+    ? (doneUsers.length / displayedTotalUsers) * 100
+    : 100;
+
+// Build full html
             let html = '<div class="container-fluid p-0">';
             
             // === Main stats ===
@@ -1457,24 +1531,24 @@ function performPersonalItemsMigrationCheck()
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-success">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-success mb-0">' + stats.doneUsers.length + '</h4>' +
-                            '<small class="text-muted">Migrated Users</small>' +
+                            '<h4 class="text-success mb-0">' + doneUsers.length + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.migratedUsers + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-warning">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-warning mb-0">' + stats.pendingUsers.length + '</h4>' +
-                            '<small class="text-muted">Pending Users</small>' +
+                            '<h4 class="text-warning mb-0">' + pendingUsers.length + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.pendingUsers + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
                 '<div class="col-md-4 mb-2">' +
                     '<div class="card text-center border-info">' +
                         '<div class="card-body py-2">' +
-                            '<h4 class="text-info mb-0">' + stats.totalUsers + '</h4>' +
-                            '<small class="text-muted">Total Users</small>' +
+                            '<h4 class="text-info mb-0">' + displayedTotalUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalUsers + '</small>' +
                         '</div>' +
                     '</div>' +
                 '</div>' +
@@ -1482,12 +1556,12 @@ function performPersonalItemsMigrationCheck()
 
             // === Progress bar ===
             html += '<div class="mb-3">' +
-                        '<label class="font-weight-bold mb-1">Migration Progress</label>' +
+                        '<label class="font-weight-bold mb-1">' + TP_MIGRATION_STATS_I18N.migrationProgress + '</label>' +
                         '<div class="progress" style="height: 25px;">' +
                             '<div class="progress-bar progress-bar-striped bg-success" ' +
                                 'role="progressbar" ' +
-                                'style="width: ' + stats.progressPercent + '%">' +
-                                Math.round(stats.progressPercent) + '%' +
+                                'style="width: ' + displayedProgressPercent + '%">' +
+                                Math.round(displayedProgressPercent) + '%' +
                             '</div>' +
                         '</div>' +
                     '</div>';
@@ -1497,33 +1571,33 @@ function performPersonalItemsMigrationCheck()
                         '<div class="card-header bg-success text-white py-2">' +
                             '<h6 class="mb-0">' +
                                 '<i class="fas fa-check-circle mr-2"></i>' +
-                                'Migrated Users (' + stats.doneUsers.length + ')' +
+                                TP_MIGRATION_STATS_I18N.migratedUsers + ' (' + doneUsers.length + ')' +
                             '</h6>' +
                         '</div>' +
                         '<div class="card-body p-0">' +
                             '<div style="max-height: 250px; overflow-y: auto;">';
             
             // Migrated users list
-            if (stats.doneUsers.length === 0) {
-                html += '<div class="text-center p-3 text-muted">No users migrated yet</div>';
+            if (doneUsers.length === 0) {
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.noUsersMigratedYet + '</div>';
             } else {
                 html += '<table class="table table-sm table-hover mb-0">' +
                             '<thead class="thead-light">' +
                                 '<tr>' +
-                                    '<th style="width: 15%;">User ID</th>' +
-                                    '<th style="width: 25%;">Login</th>' +
-                                    '<th style="width: 35%;">Email</th>' +
-                                    '<th style="width: 25%;">Last Login</th>' +
+                                    '<th style="width: 15%;">' + TP_MIGRATION_STATS_I18N.tableUserId + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLogin + '</th>' +
+                                    '<th style="width: 35%;">' + TP_MIGRATION_STATS_I18N.tableEmail + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLastLogin + '</th>' +
                                 '</tr>' +
                             '</thead>' +
                             '<tbody>';
                 
-                $.each(stats.doneUsers, function(i, user) {
+                $.each(doneUsers, function(i, user) {
                     // Format the date
                     let lastLogin = '-';
                     if (user.last_connexion && user.last_connexion !== '' && user.last_connexion !== null) {
                         let loginDate = new Date(user.last_connexion * 1000);
-                        lastLogin = loginDate.toLocaleString('en-GB', {
+                        lastLogin = loginDate.toLocaleString(undefined, {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -1553,35 +1627,35 @@ function performPersonalItemsMigrationCheck()
                         '<div class="card-header bg-warning text-dark py-2">' +
                             '<h6 class="mb-0">' +
                                 '<i class="fas fa-clock mr-2"></i>' +
-                                'Pending Users (' + stats.pendingUsers.length + ')' +
+                                TP_MIGRATION_STATS_I18N.pendingUsers + ' (' + pendingUsers.length + ')' +
                             '</h6>' +
                         '</div>' +
                         '<div class="card-body p-0">' +
                             '<div style="max-height: 250px; overflow-y: auto;">';
             
             // Pending users list
-            if (stats.pendingUsers.length === 0) {
-                html += '<div class="text-center p-3 text-muted">All users migrated!</div>';
+            if (pendingUsers.length === 0) {
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.allUsersMigrated + '</div>';
             } else {
                 html += '<table class="table table-sm table-hover mb-0">' +
                             '<thead class="thead-light">' +
                                 '<tr>' +
-                                    '<th style="width: 15%;">User ID</th>' +
-                                    '<th style="width: 25%;">Login</th>' +
-                                    '<th style="width: 35%;">Email</th>' +
-                                    '<th style="width: 25%;">Last Login</th>' +
+                                    '<th style="width: 15%;">' + TP_MIGRATION_STATS_I18N.tableUserId + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLogin + '</th>' +
+                                    '<th style="width: 35%;">' + TP_MIGRATION_STATS_I18N.tableEmail + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLastLogin + '</th>' +
                                 '</tr>' +
                             '</thead>' +
                             '<tbody>';
                 
-                $.each(stats.pendingUsers, function(i, user) {
+                $.each(pendingUsers, function(i, user) {
                     // Format the date
-                    let lastLogin = '<span class="text-danger font-italic">Never</span>';
+                    let lastLogin = '<span class="text-danger font-italic">' + TP_MIGRATION_STATS_I18N.never + '</span>';
                     let rowClass = '';
                     
                     if (user.last_connexion && user.last_connexion !== '' && user.last_connexion !== null) {
                         let loginDate = new Date(user.last_connexion * 1000);
-                        lastLogin = loginDate.toLocaleString('en-GB', {
+                        lastLogin = loginDate.toLocaleString(undefined, {
                             day: '2-digit',
                             month: '2-digit',
                             year: 'numeric',
@@ -1623,8 +1697,8 @@ function performPersonalItemsMigrationCheck()
             html += '<div class="mt-3">' +
                         '<small class="text-muted">' +
                             '<i class="fas fa-info-circle mr-1"></i>' +
-                            '<span class="badge badge-danger mr-1">Red</span> = Never logged in | ' +
-                            '<span class="badge badge-secondary mr-1">Gray</span> = Inactive for 30+ days' +
+                            '<span class="badge badge-danger mr-1">' + TP_MIGRATION_STATS_I18N.colorRed + '</span> = ' + TP_MIGRATION_STATS_I18N.legendNeverLoggedIn + ' | ' +
+                            '<span class="badge badge-secondary mr-1">' + TP_MIGRATION_STATS_I18N.colorGray + '</span> = ' + TP_MIGRATION_STATS_I18N.legendInactive30d +
                         '</small>' +
                     '</div>';
 
@@ -1633,10 +1707,10 @@ function performPersonalItemsMigrationCheck()
             // Show modal
             showModalDialogBox(
                 '#warningModal',
-                '<i class="fas fa-chart-bar fa-lg mr-2"></i>Migration statistics',
+                '<i class="fas fa-chart-bar fa-lg mr-2"></i>' + TP_MIGRATION_STATS_I18N.personalItemsMigrationTitle,
                 html,
                 '',
-                'Close',
+                TP_MIGRATION_STATS_I18N.close,
                 true
             );
 
