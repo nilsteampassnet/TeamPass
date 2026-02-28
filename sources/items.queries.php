@@ -7511,29 +7511,29 @@ function getItemRestrictedUsersList($itemId, $userId)
  */
 function isItemLocked(int $itemId, $session, int $userId, string $actionType = ''): array
 {
+    global $SETTINGS;
+
+    // itemId=0 means a new item that does not exist yet, never locked
+    if ($itemId === 0) {
+        return ['status' => false];
+    }
+
     $now = time();
     $editionLocks = DB::query(
         'SELECT timestamp, user_id, increment_id
          FROM ' . prefixTable('items_edition') . '
-         WHERE item_id = %i 
+         WHERE item_id = %i
          ORDER BY increment_id DESC',
         $itemId
     );
 
     // Check if there are any locks for this item
-    if (count($editionLocks) === 0 && $actionType === 'edit') {
+    if (count($editionLocks) === 0) {
         // If no locks exist and the action is 'edit', create a new lock
-        createEditionLock($itemId, $userId, $now);
-
-        // Notify other users via WebSocket that this item is now being edited
-        $folderId = getItemFolderIdFromDb($itemId);
-        if ($folderId !== null) {
-            emitEditionLockEvent('started', $itemId, $folderId, $session->get('user-login') ?? '', $userId);
+        if ($actionType === 'edit') {
+            createEditionLock($itemId, $userId, $now);
         }
-
-        return [
-            'status' => false,
-        ];
+        return ['status' => false];
     }
 
     // Check if the last lock is older than the defined period
