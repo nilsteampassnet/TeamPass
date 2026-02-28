@@ -7328,22 +7328,27 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
 {
     global $SETTINGS;
 
+    // itemId=0 means a new item that does not exist yet, never locked
+    if ($itemId === 0) {
+        return ['status' => false];
+    }
+
     $now = time();
     $editionLocks = DB::query(
         'SELECT timestamp, user_id, increment_id
          FROM ' . prefixTable('items_edition') . '
-         WHERE item_id = %i 
+         WHERE item_id = %i
          ORDER BY increment_id DESC',
         $itemId
     );
 
     // Check if there are any locks for this item
-    if (count($editionLocks) === 0 && $actionType === 'edit') {
+    if (count($editionLocks) === 0) {
         // If no locks exist and the action is 'edit', create a new lock
-        createEditionLock($itemId, $userId, $now);
-        return [
-            'status' => false,
-        ];
+        if ($actionType === 'edit') {
+            createEditionLock($itemId, $userId, $now);
+        }
+        return ['status' => false];
     }
 
     // Check if the last lock is older than the defined period
@@ -7631,7 +7636,7 @@ function getRoleBasedAccess($session, int $treeId): array
  * @param bool $access Indicates if the user has access
  * @param bool $edit Indicates if the user has edit rights
  * @param bool $delete Indicates if the user has delete rights
- * @param bool $editionLocked Indicates if the edition is locked
+ * @param array $editionLocked Indicates if the edition is locked
  * 
  * @return array An array containing the access rights information
  */
