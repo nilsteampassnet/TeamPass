@@ -335,12 +335,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                         </li>
                                         <?php
 
+// Identify TeamPass system users (API/TP/OTV)
+$systemUsersLogins = ['API', 'TP', 'OTV'];
+
                                         // Has the transparent recovery migration been done?
                                         DB::query(
                                             "SELECT id FROM " . prefixTable('users') . "
                                             WHERE (user_derivation_seed IS NULL
                                             OR private_key_backup IS NULL)
-                                            AND disabled = 0"
+                                            AND disabled = 0
+                                            AND deleted_at IS NULL
+                                            AND login NOT IN %ls",
+                                            $systemUsersLogins
                                         );
                                         if (DB::count() !== 0) {
                                             ?>
@@ -362,7 +368,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                 SUM(CASE WHEN personal_items_migrated = 1 THEN 1 ELSE 0 END) as migrated_users,
                                                 SUM(CASE WHEN personal_items_migrated = 0 THEN 1 ELSE 0 END) as pending_users
                                             FROM " . prefixTable('users') . "
-                                            WHERE disabled = 0 AND deleted_at IS NULL"
+                                            WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls",
+                                            $systemUsersLogins
                                         );
                                         $progressPercent = ($stats[0]['migrated_users'] / $stats[0]['total_users']) * 100;
                                         if ($progressPercent !== 100) {
