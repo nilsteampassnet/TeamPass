@@ -449,8 +449,6 @@ addColumnIfNotExist(
     "INT UNSIGNED DEFAULT 0"
 );
 
-//---<END 3.1.6
-
 // ============================================
 // STEP: Add private_key_xss_migration tracking column
 // ============================================
@@ -467,6 +465,48 @@ $res = addColumnIfNotExist(
 if ($res === false) {
     $error[] = "Failed to add private_key_xss_migration to users table - MySQL Error: " . mysqli_error($db_link);
 }
+
+// ============================================
+// STEP: Fix ldap_groups_roles data integrity (#3956)
+// Remove duplicate and corrupted entries caused by the INT→VARCHAR
+// migration bug where all group IDs were stored as '0', then add a
+// UNIQUE constraint to prevent future duplicates.
+// ============================================
+
+// Step A: delete duplicates - keep only the most recent entry per ldap_group_id
+mysqli_query(
+    $db_link,
+    "DELETE t1 FROM `" . $pre . "ldap_groups_roles` t1
+     INNER JOIN `" . $pre . "ldap_groups_roles` t2
+       ON t1.ldap_group_id = t2.ldap_group_id
+      AND t1.increment_id < t2.increment_id"
+);
+if (mysqli_error($db_link)) {
+    $error[] = "Failed to remove duplicate ldap_groups_roles entries - MySQL Error: " . mysqli_error($db_link);
+}
+
+// Step B: delete entries inherited from the INT(12) column bug (group_id stored as '0' or empty)
+mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "ldap_groups_roles`
+     WHERE ldap_group_id = '0' OR ldap_group_id = ''"
+);
+if (mysqli_error($db_link)) {
+    $error[] = "Failed to remove corrupted ldap_groups_roles entries - MySQL Error: " . mysqli_error($db_link);
+}
+
+// Step C: add UNIQUE constraint if it does not already exist
+$res = checkIndexExist(
+    $pre . 'ldap_groups_roles',
+    'UNIQUE_LDAP_GROUP_ID',
+    "ADD UNIQUE KEY `UNIQUE_LDAP_GROUP_ID` (`ldap_group_id`(255))"
+);
+if ($res === false) {
+    $error[] = "Failed to add unique key on ldap_groups_roles.ldap_group_id - MySQL Error: " . mysqli_error($db_link);
+}
+
+
+//---<END 3.1.6
 
 // Close connection
 mysqli_close($db_link);

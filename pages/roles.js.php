@@ -790,7 +790,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 roleId = parseInt($('.select-role').val()),
                 groupTitle = $('.select-role option:selected').text();
 
-            if (roleId === '') {
+            if (isNaN(roleId)) {
                 return false;
             }
 
