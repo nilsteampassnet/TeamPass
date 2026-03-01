@@ -297,6 +297,20 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $refreshedUserInfo = getUserCompleteData($username);
         if ($refreshedUserInfo !== false && !empty($refreshedUserInfo)) {
             $userInfo = $refreshedUserInfo + $dataReceived;
+            // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
+            $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+                (string) ($userInfo['fonction_id'] ?? ''),
+                is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+            );
+            // Re-add session-derived flags that getUserCompleteData() does not return.
+            // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
+            // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
+            // treats the request as a plain-password attempt and returns error_bad_credentials
+            // for any user whose auth_type is 'oauth2'.
+            $userInfo['oauth2_login_ongoing'] = filter_var(
+                $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
+            ) ?? false;
         }
     }
 
@@ -330,12 +344,28 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             addFailedAuthentication($username, getClientIpServer());
         }
 
-        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()        
+        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
         echo prepareExchangedData(
             [
                 'error' => true,
                 'message' => $lang->get($userOauth2['message']),
                 'extra' => 'oauth2_user_not_found',
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // If a new OAuth2 user was just created, stop here and wait for async key generation
+    // (mirrors the same early-return logic used for LDAP user creation above)
+    if (isset($userOauth2['retExternalAD']['has_been_created']) === true
+        && (int) $userOauth2['retExternalAD']['has_been_created'] === 1
+    ) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => '',
+                'extra' => 'ad_user_created',
             ],
             'encode'
         );
@@ -2499,6 +2529,24 @@ class initialChecks {
             $data['oauth2_login_ongoing']
         );
 
+        // For a new OAuth2 user, inject profile fields (name, email, groups) from the
+        // OAuth2 session into $data so that externalAdCreateUser() can store them.
+        // Without this, name/lastname/email remain empty in teampass_users and the
+        // confirmation email is never sent (UserHandlerTrait checks !empty(email)).
+        if ($data['oauth2_user_not_exists'] === true) {
+            $oauth2SessionInfo = $session->get('userOauth2Info') ?? [];
+            foreach (['mail', 'givenName', 'givenname', 'surname', 'displayName', 'groups', 'userPrincipalName'] as $field) {
+                if (isset($oauth2SessionInfo[$field])) {
+                    $data[$field] = $oauth2SessionInfo[$field];
+                }
+            }
+            // Azure AD sometimes returns null for 'mail' (accounts without a dedicated mailbox).
+            // Fall back to userPrincipalName so the confirmation email can still be sent.
+            if (empty($data['mail']) && !empty($data['userPrincipalName'])) {
+                $data['mail'] = $data['userPrincipalName'];
+            }
+        }
+
         return $data;
     }
 
@@ -2530,7 +2578,7 @@ class initialChecks {
                 ],
                 1
             ) === true)
-            && (((int) $admin !== 1 && $userMfaEnabled === true) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
+            && (((int) $admin !== 1 && (int) $userMfaEnabled === 1) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
             && $mfa === true
         ) {
             throw new Exception(
@@ -3201,7 +3249,6 @@ function identifyDoMFAChecks(
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':
             $ret = googleMFACheck(

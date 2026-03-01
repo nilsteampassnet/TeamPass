@@ -177,10 +177,23 @@ class ActiveDirectoryExtra extends BaseGroup
             $user = User::find($userDN);
             $groups = $user->groups()->paginate();
             foreach ($groups as $group) {
-                array_push(
-                    $groupsArr,
-                    $group[$idAttribute][0]
-                );
+                if (!isset($group[$idAttribute][0])) {
+                    continue;
+                }
+                if ($idAttribute === 'objectguid') {
+                    try {
+                        $bin = $group[$idAttribute][0];
+                        $adGroupId = strtolower(vsprintf(
+                            '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x',
+                            array_values(unpack('C16', $bin))
+                        ));
+                    } catch (\Throwable $e) {
+                        continue;
+                    }
+                } else {
+                    $adGroupId = strtolower((string) $group[$idAttribute][0]);
+                }
+                $groupsArr[] = $adGroupId;
             }
         } catch (\LdapRecord\Auth\BindException $e) {
             // Do nothing

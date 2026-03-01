@@ -562,6 +562,13 @@ if (null !== $post_type) {
                 $post_roleId
             );
 
+            // Remove item restrictions linked to this role
+            DB::delete(
+                prefixTable('restriction_to_roles'),
+                'role_id = %i',
+                $post_roleId
+            );
+
             // ensure categories are set
             handleFoldersCategories(
                 []
@@ -647,16 +654,14 @@ if (null !== $post_type) {
                         WHERE a.ldap_group_id = %s',
                         $key
                     );
-                    $counter = DB::count();
-                    
                     array_push(
                         $retAD,
                         [
                             'ad_group_id' => $key,
                             'ad_group_title' => $group['ad_group_title'],
-                            'role_id' => ($counter > 0) ? (int) $role_detail['role_id'] : $group['role_id'],
-                            'id' => ($counter > 0) ? (int) $role_detail['increment_id'] : $group['id'],
-                            'role_title' => ($counter > 0) ? $role_detail['title'] : $group['role_title'],
+                            'role_id' => ($role_detail !== null) ? (int) $role_detail['role_id'] : $group['role_id'],
+                            'id' => ($role_detail !== null) ? (int) $role_detail['increment_id'] : $group['id'],
+                            'role_title' => ($role_detail !== null) ? $role_detail['title'] : $group['role_title'],
                         ]
                     );
                 }

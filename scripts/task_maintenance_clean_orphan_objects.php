@@ -74,7 +74,7 @@ function cleanOrphanObjects(): void
     DB::query(
         'DELETE k.* FROM ' . prefixTable('sharekeys_items') . ' k
         LEFT JOIN ' . prefixTable('users') . ' u ON k.user_id = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        WHERE u.id IS NULL'
     );
 
     // Delete all item keys for which no item exist
@@ -110,7 +110,7 @@ function cleanOrphanObjects(): void
     DB::query(
         'DELETE l.* FROM ' . prefixTable('log_system') . ' l
         LEFT JOIN ' . prefixTable('users') . ' u ON l.qui = u.id
-        WHERE u.id IS NULL OR u.deleted_at IS NOT NULL'
+        WHERE u.id IS NULL'
     );
 
 

@@ -3239,6 +3239,7 @@ function encryptFile(string $fileInName, string $fileInPath): array
     // Generate an object key
     $objectKey = uniqidReal(32);
     // Set it as password
+    $cipher->setIV(str_repeat("\0", 16));
     $cipher->setPassword($objectKey);
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
@@ -3284,6 +3285,7 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
     // Set the object key
+    $cipher->setIV(str_repeat("\0", 16));
     $cipher->setPassword(base64_decode($key));
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
