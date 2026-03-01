@@ -42,8 +42,7 @@ if (
     isset($SETTINGS['maintenance_mode']) === true
     && (int) $SETTINGS['maintenance_mode'] === 1
     && isset($session_user_admin)
-    && ($session_user_admin === null
-        || (int) $session_user_admin === 1)
+    && (int) $session_user_admin === 1
 ) {
     ?>
     <script type="text/javascript">

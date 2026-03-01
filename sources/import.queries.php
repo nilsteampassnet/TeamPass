@@ -288,16 +288,14 @@ switch ($inputData['type']) {
         $interpreter->addObserver(function (array $row) use (&$valuesToImport, $header) {
             $rowData = array_combine($header, $row);
 
-            if ($rowData !== false) {
-                $valuesToImport[] = array(
-                    'Label' => isset($rowData['label']) ? trim($rowData['label']) : '',
-                    'Login' => isset($rowData['login']) ? trim($rowData['login']) : '',
-                    'Password' => isset($rowData['password']) ? trim($rowData['password']) : '',
-                    'url' => isset($rowData['url']) ? trim($rowData['url']) : '',
-                    'Comments' => isset($rowData['description']) ? trim($rowData['description']) : '',
-                    'Folder' => isset($rowData['folder']) ? trim($rowData['folder']) : '',
-                );
-            }
+            $valuesToImport[] = array(
+                'Label' => isset($rowData['label']) ? trim($rowData['label']) : '',
+                'Login' => isset($rowData['login']) ? trim($rowData['login']) : '',
+                'Password' => isset($rowData['password']) ? trim($rowData['password']) : '',
+                'url' => isset($rowData['url']) ? trim($rowData['url']) : '',
+                'Comments' => isset($rowData['description']) ? trim($rowData['description']) : '',
+                'Folder' => isset($rowData['folder']) ? trim($rowData['folder']) : '',
+            );
         });
 
         // Launch parsing with `Lexer`
@@ -571,7 +569,7 @@ switch ($inputData['type']) {
                     // Insert folder and get its ID
                     $params = [
                         'title' => (string) $currentFolder,
-                        'parent_id' => isset($parentId) && $parentId !== null ? (int) $parentId : 0,
+                        'parent_id' => isset($parentId) ? (int) $parentId : 0,
                         'personal_folder' => (int) $personalFolder,
                         'complexity' => $dataReceived['folderPasswordComplexity'] ?? 0,
                         'duration' => 0,
@@ -1325,7 +1323,7 @@ switch ($inputData['type']) {
             );
 
             //if asked, anyone in role can modify
-            if ($inputData['editRole'] === 1) {
+            if ((int) $inputData['editRole'] === 1) {
                 foreach ($session->get('system-array_roles') as $role) {
                     DB::insert(
                         prefixTable('restriction_to_roles'),
@@ -1625,7 +1623,7 @@ function sanitiseString($str, $crLFReplacement)
     $str = str_replace('\\', '&#92;', $str);
     $str = str_replace('"', '&quot;', $str);
     if (!empty($str)) {
-        addslashes($str);
+        $str = addslashes($str);
     }
 
     return $str;
