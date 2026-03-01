@@ -4182,11 +4182,13 @@ switch ($inputData['type']) {
                     }
 
                     // Does this item has restriction to groups of users?
+                    // Use INNER JOIN to exclude orphaned entries from deleted roles
                     $item_is_restricted_to_role = false;
                     DB::queryFirstRow(
-                        'SELECT role_id
-                        FROM ' . prefixTable('restriction_to_roles') . '
-                        WHERE item_id = %i',
+                        'SELECT r.role_id
+                        FROM ' . prefixTable('restriction_to_roles') . ' AS r
+                        INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
+                        WHERE r.item_id = %i',
                         $record['id']
                     );
                     if (DB::count() > 0) {
