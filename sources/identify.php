@@ -297,6 +297,11 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $refreshedUserInfo = getUserCompleteData($username);
         if ($refreshedUserInfo !== false && !empty($refreshedUserInfo)) {
             $userInfo = $refreshedUserInfo + $dataReceived;
+            // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
+            $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+                (string) ($userInfo['fonction_id'] ?? ''),
+                is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+            );
         }
     }
 
@@ -2532,7 +2537,7 @@ class initialChecks {
                 ],
                 1
             ) === true)
-            && (((int) $admin !== 1 && $userMfaEnabled === true) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
+            && (((int) $admin !== 1 && (int) $userMfaEnabled === 1) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
             && $mfa === true
         ) {
             throw new Exception(
@@ -3202,7 +3207,6 @@ function identifyDoMFAChecks(
 {
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
-    
     switch ($userInitialData['user_mfa_mode']) {
         case 'google':
             $ret = googleMFACheck(
