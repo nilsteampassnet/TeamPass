@@ -339,7 +339,40 @@ function safeParseJSONMaybe(data) {
 }
 
 /**
- * Handles the preparation of data exchanged between client and server, 
+ * Detects whether a string looks like a TeamPass session-expired HTML page.
+ * error.php outputs this HTML when the session is no longer valid (ERR_NOT_ALLOWED,
+ * ERR_SESS_EXPIRED, ERR_VALID_SESSION). Checking for these literals avoids
+ * displaying the raw HTML dump to the user.
+ * @param {string} str
+ * @returns {boolean}
+ */
+function isSessionExpiredHtml(str) {
+    return str.includes('For security reason, you have been disconnected') ||
+           str.includes('ERROR NOT ALLOWED') ||
+           str.includes('ERROR SESSION EXPIRED')
+}
+
+/**
+ * Shows a clean "session expired" modal instead of the raw HTML error dump.
+ * @returns {false}
+ */
+function jsonSessionExpiredHdl() {
+    showModalDialogBox(
+        '#warningModal',
+        '<i class="fas fa-sign-out-alt fa-lg text-danger mr-2"></i> Session expired',
+        '<p>For security reasons, your session has expired.</p>' +
+        '<p><a class="btn btn-primary btn-sm mt-2" href="./index.php">' +
+        '<i class="fas fa-sign-in-alt mr-1"></i>Log in again</a></p>',
+        '',
+        'Close',
+        false,
+        false
+    )
+    return false
+}
+
+/**
+ * Handles the preparation of data exchanged between client and server,
  * including optional encryption/decryption using the configured key.
  * * This function has been enhanced for:
  * 1. Robust data ENCODING: Always normalizes the payload to a safe string before encryption (using tpSafePlain).
@@ -367,10 +400,14 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                 return purifyData(parsed.value, false, false, false, bStringify);
             } else {
                 // Handle non-JSON server response gracefully with detailed error info
+                const rawStr = String(parsed.value)
+                if (isSessionExpiredHtml(rawStr)) {
+                    return jsonSessionExpiredHdl()
+                }
                 return jsonErrorHdl(
                     '<b>Server response is not valid JSON</b>'
                     + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                    + '<div><br><b>Raw data:</b><br>' + sanitizeDom(String(parsed.value)) + '</div>'
+                    + '<div><br><b>Raw data:</b><br>' + sanitizeDom(rawStr) + '</div>'
                 );
             }
         } else {
@@ -383,20 +420,28 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                 
                 if (!parsed.ok) {
                     // Handle case where decryption works, but the content is not valid JSON
+                    const decryptedRawStr = String(decryptedStr)
+                    if (isSessionExpiredHtml(decryptedRawStr)) {
+                        return jsonSessionExpiredHdl()
+                    }
                     return jsonErrorHdl(
                         '<b>Decrypted payload is not valid JSON</b>'
                         + (fileName ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                        + '<div><br><b>Raw decrypted data:</b><br>' + sanitizeDom(String(decryptedStr)) + '</div>'
+                        + '<div><br><b>Raw decrypted data:</b><br>' + sanitizeDom(decryptedRawStr) + '</div>'
                     );
                 }
                 
                 return purifyData(parsed.value, false, false, false, bStringify);
             } catch (e) {
                 // Handle case where decryption itself failed (e.g., bad key, corrupted data)
+                const encRawStr = String(data)
+                if (isSessionExpiredHtml(encRawStr)) {
+                    return jsonSessionExpiredHdl()
+                }
                 return jsonErrorHdl(
                     '<b>Decryption error occurred</b><div>' + e + '</div>'
                     + (fileName !== '' ? '<br><b>Informations:</b><div>  - File: ' + fileName + '<br>  - Function: ' + functionName + '</div>' : '')
-                    + '<div><br><b>Raw answer from server:</b><br>' + sanitizeDom(String(data)) + '</div>'
+                    + '<div><br><b>Raw answer from server:</b><br>' + sanitizeDom(encRawStr) + '</div>'
                 );
             }
         }
