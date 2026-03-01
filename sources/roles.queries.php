@@ -594,6 +594,13 @@ if (null !== $post_type) {
                 $post_roleId
             );
 
+            // Remove item restrictions linked to this role
+            DB::delete(
+                prefixTable('restriction_to_roles'),
+                'role_id = %i',
+                $post_roleId
+            );
+
             // ensure categories are set
             handleFoldersCategories(
                 []

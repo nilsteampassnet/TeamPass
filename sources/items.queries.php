@@ -4283,8 +4283,19 @@ switch ($inputData['type']) {
                         $record['perso'] = 1;
                     }
 
-                    // Does this item has restriction to groups of users? (batch pre-fetched)
-                    $item_is_restricted_to_role = isset($batchRestrictedToRoles[$record['id']]);
+                    // Does this item has restriction to groups of users?
+                    // Use INNER JOIN to exclude orphaned entries from deleted roles
+                    $item_is_restricted_to_role = false;
+                    DB::queryFirstRow(
+                        'SELECT r.role_id
+                        FROM ' . prefixTable('restriction_to_roles') . ' AS r
+                        INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
+                        WHERE r.item_id = %i',
+                        $record['id']
+                    );
+                    if (DB::count() > 0) {
+                        $item_is_restricted_to_role = true;
+                    }
 
                     // Has this item a restriction to Groups of Users (batch pre-fetched)
                     $user_is_included_in_role = isset($batchUserIncludedInRole[$record['id']]);
