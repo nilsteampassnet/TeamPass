@@ -2354,10 +2354,10 @@ function tpGetSharekeysOrphans(string $shortTableName): array
     }
 
     $missingObject = null;
-    $missingUser = null;
-    $inactiveUser = null;
+    $missingUser = 0;
+    $inactiveUser = 0;
 
-    // missing users
+    // missing users (hard deleted users)
     $missingUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2365,13 +2365,8 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         WHERE u.id IS NULL'
     );
 
-    // inactive/deleted users
-    $inactiveUser = (int) DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM ' . $tableName . ' s
-        INNER JOIN ' . prefixTable('users') . ' u ON u.id = s.user_id
-        WHERE u.disabled = 1 OR u.deleted_at IS NOT NULL'
-    );
+    // Soft-deleted/disabled users are not considered "orphans" here as the user record still exists.
+    // Sharekeys may be needed if the account is restored/re-enabled.
 
     // missing objects - depends on sharekeys table
     if ($shortTableName === 'sharekeys_items' && tpTableExists(prefixTable('items')) === true) {
@@ -2405,15 +2400,9 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         );
     }
 
-    $orphansTotal = 0;
+    $orphansTotal = $missingUser;
     if ($missingObject !== null) {
         $orphansTotal += $missingObject;
-    }
-    if ($missingUser !== null) {
-        $orphansTotal += $missingUser;
-    }
-    if ($inactiveUser !== null) {
-        $orphansTotal += $inactiveUser;
     }
 
     return array(
@@ -2423,6 +2412,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
         'orphans_total' => $orphansTotal,
     );
 }
+
 
 function tpGetExcludedUserIds(): array
 {

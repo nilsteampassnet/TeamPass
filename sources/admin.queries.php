@@ -3093,6 +3093,7 @@ case 'save_sending_statistics':
                 'message' => $ret['message'],
                 'files' => json_encode($ret['array'], JSON_FORCE_OBJECT),
                 'ignoredNumber' => count($ignoredFilesKeys),
+                'warnings' => $ret['warnings'],
             ),
             'encode'
         );
@@ -4192,59 +4193,70 @@ function filesIntegrityCheck($baseDir): array
  * @param string $dir
  * @return array
  */
-function getAllFiles($dir): array
+function getAllFiles($dir, array &$warnings = []): array
 {
     $files = [];
     $excludeDirs = ['upload', 'files', 'install', '_tools', 'random_compat', 'avatars']; // Répertoires à exclure
     $excludeFilePrefixes = ['csrfp.config.php', 'settings.php', 'version-commit.php', 'phpstan.neon']; // Fichiers à exclure par préfixe
 
-    $iterator = new RecursiveIteratorIterator(
-        new RecursiveCallbackFilterIterator(
-            new RecursiveDirectoryIterator(
-                $dir,
-                FilesystemIterator::SKIP_DOTS
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveCallbackFilterIterator(
+                new RecursiveDirectoryIterator(
+                    $dir,
+                    FilesystemIterator::SKIP_DOTS
+                ),
+                function ($current, $key, $iterator) use (&$warnings) {
+                    // Ignore hidden files and folders
+                    if ($current->getFilename()[0] === '.') {
+                        return false;
+                    }
+                    // Skip unreadable directories and record a warning
+                    if ($current->isDir() && !$current->isReadable()) {
+                        $warnings[] = $current->getPathname();
+                        return false;
+                    }
+                    return true;
+                }
             ),
-            function ($current, $key, $iterator) {
-                // Ignore hidden files and folders
-                if ($current->getFilename()[0] === '.') {
-                    return false;
-                }
-                return true;
-            }
-        ),
-        RecursiveIteratorIterator::SELF_FIRST
-    );
+            RecursiveIteratorIterator::SELF_FIRST,
+            RecursiveIteratorIterator::CATCH_GET_CHILD
+        );
 
-    foreach ($iterator as $file) {
-        try {
-            if ($file->isFile()) {
-                $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
-                $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
+        foreach ($iterator as $file) {
+            try {
+                if ($file->isFile()) {
+                    $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                    $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
 
-                // Split relatif path into parts
-                $pathParts = explode('/', $relativePath);
+                    // Split relatif path into parts
+                    $pathParts = explode('/', $relativePath);
 
-                // Check if any part of the path is in the excludeDirs array
-                foreach ($pathParts as $part) {
-                    if (in_array($part, $excludeDirs, true)) {
-                        continue 2; // Skip the file
+                    // Check if any part of the path is in the excludeDirs array
+                    foreach ($pathParts as $part) {
+                        if (in_array($part, $excludeDirs, true)) {
+                            continue 2; // Skip the file
+                        }
                     }
-                }
 
-                // Check if the file name starts with any of the prefixes in excludeFilePrefixes
-                $filename = basename($relativePath);
-                foreach ($excludeFilePrefixes as $prefix) {
-                    if (strpos($filename, $prefix) === 0) {
-                        continue 2; // Skip the file
+                    // Check if the file name starts with any of the prefixes in excludeFilePrefixes
+                    $filename = basename($relativePath);
+                    foreach ($excludeFilePrefixes as $prefix) {
+                        if (strpos($filename, $prefix) === 0) {
+                            continue 2; // Skip the file
+                        }
                     }
-                }
 
-                // If OK then add to the list
-                $files[] = $relativePath;
+                    // If OK then add to the list
+                    $files[] = $relativePath;
+                }
+            } catch (UnexpectedValueException $e) {
+                $warnings[] = $e->getMessage();
+                continue;
             }
-        } catch (UnexpectedValueException $e) {
-            continue; // Ignore the file if an error occurs
         }
+    } catch (UnexpectedValueException $e) {
+        $warnings[] = $e->getMessage();
     }
 
     return $files;
@@ -4374,7 +4386,8 @@ function verifyFileHashes($baseDir, $referenceFile): array
     // Load reference data (file => hash)
     $referenceData = parseReferenceFile($referenceFile);
     // Get list of all current files in the project
-    $allFiles = getAllFiles($baseDir);
+    $warnings = [];
+    $allFiles = getAllFiles($baseDir, $warnings);
     $issues = [];
 
     // Compare current files to reference
@@ -4398,7 +4411,8 @@ function verifyFileHashes($baseDir, $referenceFile): array
     return [
         'error' => !empty($issues),
         'array' => $issues,
-        'message' => empty($issues) ? 'Project files integrity check is successful.' : 'Integrity issues found.'
+        'message' => empty($issues) ? 'Project files integrity check is successful.' : 'Integrity issues found.',
+        'warnings' => $warnings,
     ];
 }
 
