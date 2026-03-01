@@ -262,6 +262,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <i class="fas fa-heartbeat"></i> 
                                             <?php echo $lang->get('system_health'); ?>
                                         </h3>
+                                        <div class="card-tools">
+                                            <a href="index.php?page=utilities.health">
+                                                <i class="fa-solid fa-arrow-up-right-from-square pointer" id="open-health-system"></i>
+                                            </a>
+                                        </div>
                                     </div>
                                     <div class="card-body">
                                         <ul class="list-group list-group-flush">

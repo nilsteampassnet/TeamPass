@@ -1968,4 +1968,5 @@ return array(
     'migration_stats_color_gray' => 'Gris',
     'migration_stats_legend_never_logged_in' => 'Jamais connecté',
     'migration_stats_legend_inactive_30d' => 'Inactif depuis 30+ jours',
+
 );

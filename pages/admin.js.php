@@ -1122,9 +1122,21 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
                 return false;
             }
             
+            // Build warnings block (directories that could not be scanned)
+            let warningsHtml = '';
+            if (data.warnings && data.warnings.length > 0) {
+                warningsHtml = '<div class="alert alert-warning py-2 mb-2" role="alert">' +
+                    '<i class="fa-solid fa-triangle-exclamation mr-2"></i>' +
+                    '<strong>Warning:</strong> The following directories could not be scanned (permission denied):<ul class="mb-0 mt-1">';
+                data.warnings.forEach(function(w) {
+                    warningsHtml += '<li><code>' + $('<div>').text(w).html() + '</code></li>';
+                });
+                warningsHtml += '</ul></div>';
+            }
+
             let html = '';
             if (data.error === false) {
-                html = '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
+                html = warningsHtml + '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
             } else {
                 // Create a list
                 let ul = '<div class="border rounded p-2" style="max-height: 400px; overflow-y: auto;"><ul id="files-integrity-result" class="">';
@@ -1135,7 +1147,7 @@ function performProjectFilesIntegrityCheck(refreshingData = false)
                 });
 
                 // Prepare the HTML
-                html = '<b>' + numberOfFiles + '</b> <?php echo $lang->get('files_are_not_expected_ones'); ?>.' + 
+                html = warningsHtml + '<b>' + numberOfFiles + '</b> <?php echo $lang->get('files_are_not_expected_ones'); ?>.' +
                     '<div class="alert alert-light" role="alert" id="files-integrity-result-container">' +
                     '<div class="alert alert-warning" role="alert"><?php echo $lang->get('unknown_files_should_be_deleted'); ?>' +
                     '<div class="btn-group ml-2" role="group">'+
