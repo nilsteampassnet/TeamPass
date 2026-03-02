@@ -305,8 +305,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // if user doesn't exist in Teampass then return error
     if ($userInitialData['error'] === true) {
         // Add log on error unless skip_anti_bruteforce flag is set to true
-        if (empty($userInitialData['skip_anti_bruteforce'])
-            || !$userInitialData['skip_anti_bruteforce']) {
+        if (empty($userInitialData['skip_anti_bruteforce'])) {
 
             // Add failed authentication log
             addFailedAuthentication($username, getClientIpServer());
@@ -360,7 +359,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // private_key and trigger a redundant second attemptTransparentRecovery() call.
     if ($userLdap['error'] === false) {
         $refreshedUserInfo = getUserCompleteData($username);
-        if ($refreshedUserInfo !== false && !empty($refreshedUserInfo)) {
+        if ($refreshedUserInfo !== null && !empty($refreshedUserInfo)) {
             $userInfo = $refreshedUserInfo + $dataReceived;
             // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
             $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
@@ -375,7 +374,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             $userInfo['oauth2_login_ongoing'] = filter_var(
                 $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false,
                 FILTER_VALIDATE_BOOLEAN
-            ) ?? false;
+            );
         }
     }
 
@@ -610,7 +609,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 (string) $sessionUrl,
                 (int) $sessionPwdAttempts,
                 (string) $return,
-                (array) $userInfo ?? [],
+                (array) $userInfo,
                 true  // success
             ),
             'encode',
@@ -627,7 +626,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 (string) $sessionUrl,
                 0,
                 (string) $return,
-                (array) $userInfo ?? [],
+                (array) $userInfo,
                 false,  // not success
                 'user_is_locked',
                 $lang->get('account_is_locked')
@@ -643,7 +642,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             (string) $sessionUrl,
             (int) $sessionPwdAttempts,
             (string) $return,
-            (array) $userInfo ?? [],
+            (array) $userInfo,
             false,  // not success
             true,
             $lang->get('error_not_allowed_to_authenticate')
@@ -792,9 +791,6 @@ function buildUserSession(
     try {
         $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
     } catch (Exception $e) {
-        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Error - buildUserSession: ' . $e->getMessage() . ' for user ' . ($userInfo['login'] ?? $userInfo['id']));
-        }
         return [
             'error' => true,
             'message' => $e->getMessage(),
@@ -1089,7 +1085,7 @@ function setupUserRolesAndPermissions($session, array &$userInfo, array $SETTING
     $session = SessionManager::getSession();
 
     // User's roles - Convert , to ; if needed
-    if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== -1) {
+    if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== false) {
         $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
     }
     
@@ -1386,15 +1382,8 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
 
         if ($migrationSuccess) {
             // Migration successful - encryption_version updated in DB by migrateAllUserKeysToV3
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Migration - User ' . $userInfo['id'] . ' successfully migrated to v3');
-            }
-        } else {
-            // Migration failed but decryption worked, so continue with v1
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Migration Warning - User ' . $userInfo['id'] . ' migration to v3 failed, staying in v1');
-            }
         }
+        // Migration failed but decryption worked, so continue with v1
     }
 
     // Handle XSS migration: re-encrypt private key with raw password when it was
@@ -1416,14 +1405,9 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
             );
             $updateData['private_key'] = base64_encode($reEncrypted);
             $xssMigrationDone = true;
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS XSS Migration - User ' . $userInfo['id'] . ' private key re-encrypted with raw password (SHA-256)');
-            }
         } catch (Exception $e) {
             // Log but do not block login — two-pass decryption will still work next time
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS XSS Migration Error - User ' . $userInfo['id'] . ' re-encryption failed: ' . $e->getMessage());
-            }
+            error_log('TEAMPASS XSS Migration Error - User ' . $userInfo['id'] . ' re-encryption failed: ' . $e->getMessage());
         }
     } elseif ($decryptResult['needs_xss_migration'] === true && $decryptResult['needs_migration'] === true) {
         // Both migrations needed — migrateAllUserKeysToV3() above handled both with raw password + SHA-256
@@ -1439,10 +1423,6 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
     try {
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
-            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-                error_log('TEAMPASS Transparent Recovery - Creating backup for user ' . ($userInfo['login'] ?? 'unknown'));
-            }
-
             $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
             // Encrypt private key backup using CryptoManager (use v3 if migration happened, otherwise v1)
             $backupHashAlgorithm = ($decryptResult['needs_migration'] === true) ? 'sha256' : 'sha1';
@@ -1471,10 +1451,7 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         ];
     } catch (Exception $e) {
         // Exception during backup creation - log but don't fail login
-        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
-            error_log('TEAMPASS Error - prepareUserEncryptionKeys backup creation failed: ' . $e->getMessage());
-        }
-
+        error_log('TEAMPASS Error - prepareUserEncryptionKeys backup creation failed: ' . $e->getMessage());
         return [
             'public_key' => $userInfo['public_key'],
             'private_key_clear' => $privateKeyClear,
@@ -2490,7 +2467,6 @@ function identifyGetUserCredentials(
 ): array
 {
     if ((int) $SETTINGS['enable_http_request_login'] === 1
-        && $serverPHPAuthUser !== null
         && (int) $SETTINGS['maintenance_mode'] === 1
     ) {
         if (strpos($serverPHPAuthUser, '@') !== false) {
@@ -2583,7 +2559,7 @@ class initialChecks {
         }
 
         // We cannot create a user with LDAP if the OAuth2 login is ongoing
-        $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) ?? false;
+        $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN);
     
         $data['ldap_user_to_be_created'] = (
             filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
@@ -2716,7 +2692,7 @@ function identifyDoInitialChecks(
             'error' => true,
             'array' => [
                 'error' => true,
-                'message' => null !== $e->getMessage() && $e->getMessage() === 'error_user_deleted_exists' ? $lang->get('error_user_deleted_exists') : $lang->get('error_bad_credentials'),
+                'message' => $e->getMessage() === 'error_user_deleted_exists' ? $lang->get('error_user_deleted_exists') : $lang->get('error_bad_credentials'),
             ]
         ];
     }
@@ -2949,7 +2925,7 @@ function shouldUserAuthWithOauth2(
                     'oauth2Connection' => true,
                     'userPasswordVerified' => true,
                 ];
-            } elseif ((string) $userInfo['auth_type'] === 'oauth2' || (bool) $userInfo['oauth2_login_ongoing'] === true) {
+            } elseif ((string) $userInfo['auth_type'] === 'oauth2' || $userInfo['oauth2_login_ongoing'] === true) {
                 // OAuth2 login request on OAuth2 user account.
                 return [
                     'error' => false,
@@ -3214,7 +3190,7 @@ function createOauth2User(
             is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
             is_null($userInfo['surname']) ? '' : $userInfo['surname'],
             'oauth2',
-            is_null($userInfo['groups']) ? [] : $userInfo['groups'],
+            $userInfo['groups'],
             $SETTINGS
         );
         $userInfo = array_merge($userInfo, $ret);
@@ -3383,15 +3359,14 @@ function identifyDoMFAChecks(
                     'duo_url_ready' => true,
                     'mfaQRCodeInfos' => false,
                 ];
-            } else if ($ret['error'] === false) {
+            } else {
                 return [
                     'error' => false,
                     'mfaData' => $ret,
                     'mfaQRCodeInfos' => false,
                 ];
             }
-            break;
-        
+
         default:
             logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
             return [
@@ -3400,14 +3375,6 @@ function identifyDoMFAChecks(
                 'mfaQRCodeInfos' => false,
             ];
     }
-
-    // If something went wrong, let's catch and return an error
-    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
-    return [
-        'error' => true,
-        'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
-        'mfaQRCodeInfos' => false,
-    ];
 }
 
 function identifyDoAzureChecks(

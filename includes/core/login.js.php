@@ -122,7 +122,7 @@ declare(strict_types=1);
 
             // Auto login with OAuth2 provider
             if (autoLogin === 1 && loginForm === 0) {
-                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             }
         }
 
@@ -155,7 +155,7 @@ declare(strict_types=1);
                 console.log('User starts auth through Duo');
             }
             
-            launchIdentify(true, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
+            launchIdentify(true, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         }
 
         // Click on log in button
@@ -165,7 +165,7 @@ declare(strict_types=1);
             }
             // Clear userOauth2Info
             store.set('userOauth2Info', '');
-            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
+            launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
         // Click on log in button with Azure Entra
@@ -175,7 +175,7 @@ declare(strict_types=1);
                 console.log('User starts auth through button but_login_with_oauth2 click');
             }
                 $('#but_login_with_oauth2, #but_identify_user').prop('disabled', true);
-                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             });
         }
         
@@ -217,13 +217,13 @@ declare(strict_types=1);
 
     $('.submit-button').keypress(function(event) {
         if (event.keyCode === 10 || event.keyCode === 13) {
-            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+            launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
             event.preventDefault();
         }
     });
 
     $('#yubico_key').change(function(event) {
-        launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+        launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
         event.preventDefault();
     });
 
