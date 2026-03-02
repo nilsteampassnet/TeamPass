@@ -107,6 +107,71 @@ if ($post_type === 'identify_user') {
         'key' => $session->get('key'),
     ]);
     return false;
+} elseif ($post_type === 'get2FAMethodsForUser') {
+    //--------
+    // Get MFA methods required for a specific user based on their roles
+    //--------
+    //
+
+    $login = empty($post_login) === false ? $post_login : '';
+
+    $needsMfa = false;
+    $anyMfaEnabled = isOneVarOfArrayEqualToValue(
+        [
+            (int) ($SETTINGS['google_authentication'] ?? 0),
+            (int) ($SETTINGS['yubico_authentication'] ?? 0),
+            (int) ($SETTINGS['duo'] ?? 0),
+            (int) ($SETTINGS['agses_authentication_enabled'] ?? 0),
+        ],
+        1
+    );
+
+    if ($anyMfaEnabled === true && empty($login) === false) {
+        $userInfo = DB::queryFirstRow(
+            'SELECT u.admin, u.mfa_enabled,
+                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END SEPARATOR ";") AS fonction_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END SEPARATOR ";") AS roles_from_ad_groups
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+            WHERE u.login=%s AND u.disabled=0 AND u.deleted_at IS NULL
+            GROUP BY u.id',
+            $login
+        );
+
+        if ($userInfo !== null) {
+            // Merge manual roles and AD-sourced roles, same as identifyUserDetails()
+            $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
+            if (empty($userInfo['roles_from_ad_groups']) === false) {
+                $fonctionId = empty($fonctionId) === true
+                    ? (string) $userInfo['roles_from_ad_groups']
+                    : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
+            }
+
+            $mfaForRoles = is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles'];
+            $userNeedsMfaByRole = mfa_auth_requested_roles($fonctionId, $mfaForRoles);
+
+            $isAdmin = (int) $userInfo['admin'] === 1;
+            $adminMfaRequired = isKeyExistingAndEqual('admin_2fa_required', 1, $SETTINGS) === true;
+
+            $needsMfa = ($isAdmin === false && (int) $userInfo['mfa_enabled'] === 1 && $userNeedsMfaByRole === true)
+                || ($isAdmin === true && $adminMfaRequired === true);
+        }
+    }
+
+    echo json_encode([
+        'ret' => prepareExchangedData(
+            [
+                'mfa_required' => $needsMfa,
+                'agses'  => $needsMfa === true && isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true,
+                'google' => $needsMfa === true && isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true,
+                'yubico' => $needsMfa === true && isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true,
+                'duo'    => $needsMfa === true && isKeyExistingAndEqual('duo', 1, $SETTINGS) === true,
+            ],
+            'encode'
+        ),
+        'key' => $session->get('key'),
+    ]);
+    return false;
 } elseif ($post_type === 'initiateSSOLogin') {
     //--------
     // Do initiateSSOLogin
