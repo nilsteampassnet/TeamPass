@@ -141,23 +141,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             itemsHtml = '',
                             folderContainsItemsTpl = '<?php echo addslashes($lang->get('recycled_bin_folder_contains_items')); ?>';
                         // Folders list
-                        // Folders list
-$.each(data.folders, function(index, value) {
-    var folderLabel = (value.path ? value.path : value.label);
-    var folderExtra = '';
-    if (typeof value.items_count !== 'undefined' && parseInt(value.items_count) > 0) {
-        folderExtra = '<br><small class="text-muted">' +
-            '<i class="fa-regular fa-file-lines mr-1"></i>' +
-            folderContainsItemsTpl.replace('%s', value.items_count) +
-            '</small>';
-    }
+                        $.each(data.folders, function(index, value) {
+                            var folderLabel = (value.path ? value.path : value.label);
+                            var folderExtra = '';
+                            if (typeof value.items_count !== 'undefined' && parseInt(value.items_count) > 0) {
+                                folderExtra = '<br><small class="text-muted">' +
+                                    '<i class="fa-regular fa-file-lines mr-1"></i>' +
+                                    folderContainsItemsTpl.replace('%s', value.items_count) +
+                                    '</small>';
+                            }
 
-    foldersHtml += '<tr class="icheck-toggle">' +
-        '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
-        '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
-        '</tr>';
-});
-$('#recycled-folders').html(foldersHtml);
+                            var deletedDate = (typeof value.date !== 'undefined' && value.date ? value.date : '');
+                            var deletedBy = '';
+                            if (typeof value.name !== 'undefined' && value.name) {
+                                deletedBy += value.name;
+                            }
+                            if (typeof value.login !== 'undefined' && value.login) {
+                                deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
+                            }
+
+                            foldersHtml += '<tr class="icheck-toggle">' +
+                                '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
+                                '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
+                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + deletedDate + '</td>' +
+                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + deletedBy + '</td>' +
+                                '</tr>';
+                        });
+                        $('#recycled-folders').html(foldersHtml);
                     }
                     
 
