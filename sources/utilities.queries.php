@@ -1708,6 +1708,28 @@ $report = array(
             }
 
             $logPath = '/var/log/apache2/teampass_error.log';
+            $logDir = dirname($logPath);
+
+            // If directory is not traversable by the webserver user, file_exists() on the file will return false.
+            if (file_exists($logDir) === true && is_dir($logDir) === true && is_executable($logDir) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'result' => array(
+                            'access' => 'not_readable',
+                            'log_path' => $logPath,
+                            'lines' => $lines,
+                            'fix_commands' => array(
+                                'sudo usermod -aG $(stat -c %G ' . $logDir . ') www-data',
+                                'sudo systemctl restart apache2',
+                                'sudo systemctl restart $(systemctl list-units --type=service --all | awk "/php.*fpm/ {print $1}") 2>/dev/null || true',
+                            ),
+                        ),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
             if (file_exists($logPath) === false) {
                 echo prepareExchangedData(
@@ -1737,10 +1759,9 @@ $report = array(
                             'log_path' => $logPath,
                             'lines' => $lines,
                             'fix_commands' => array(
-                                'sudo usermod -aG adm www-data',
+                                'sudo usermod -aG $(stat -c %G ' . $logDir . ') www-data',
                                 'sudo systemctl restart apache2',
-                                "sudo systemctl list-units --type=service | grep -E 'php.*fpm'",
-                                'sudo systemctl restart <php-fpm-service>',
+                                'sudo systemctl restart $(systemctl list-units --type=service --all | awk "/php.*fpm/ {print $1}") 2>/dev/null || true',
                             ),
                         ),
                     ),
