@@ -1,6 +1,9 @@
 [mysqld]
 # TeamPass MariaDB Configuration
 
+# SQL mode: avoid strict mode issues during install/upgrade
+sql_mode = NO_ENGINE_SUBSTITUTION
+
 # Character set
 character-set-server = utf8mb4
 collation-server = utf8mb4_unicode_ci
