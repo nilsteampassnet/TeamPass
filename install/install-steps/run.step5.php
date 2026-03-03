@@ -1516,7 +1516,8 @@ class DatabaseInstaller
             `ldap_group_id` VARCHAR(500) NOT NULL,
             `ldap_group_label` VARCHAR(255) NOT NULL,
             PRIMARY KEY (`increment_id`),
-            KEY `ROLE` (`role_id`)
+            UNIQUE KEY `UNIQUE_LDAP_GROUP_ID` (`ldap_group_id`(255)),
+            KEY `ROLE` (`role_id`),
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

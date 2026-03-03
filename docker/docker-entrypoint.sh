@@ -172,9 +172,11 @@ main() {
     # Set permissions
     set_permissions
 
-    # Configure PHP-FPM to listen on 127.0.0.1:9000
+    # Configure PHP-FPM to listen on 127.0.0.1:9000 and run as nginx user
     if [ -f /usr/local/etc/php-fpm.d/www.conf ]; then
         sed -i 's/listen = .*/listen = 127.0.0.1:9000/' /usr/local/etc/php-fpm.d/www.conf
+        sed -i 's/^user = .*/user = nginx/' /usr/local/etc/php-fpm.d/www.conf
+        sed -i 's/^group = .*/group = nginx/' /usr/local/etc/php-fpm.d/www.conf
     fi
 
     # Configure cron job for scheduler
