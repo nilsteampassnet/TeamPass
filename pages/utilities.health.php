@@ -611,6 +611,33 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="card">
                             <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-bug mr-2"></i><?php echo $lang->get('health_corrupted_items'); ?></h3>
+                                <div class="card-tools">
+                                    <button type="button" class="btn btn-primary btn-sm" id="health-corrupted-items-scan-btn">
+                                        <i class="fas fa-search mr-1"></i><?php echo $lang->get('health_corrupted_items_scan'); ?>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" id="health-corrupted-items-show-btn" disabled>
+                                        <i class="fas fa-list mr-1"></i><?php echo $lang->get('health_corrupted_items_show_list'); ?>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between">
+                                    <div class="mr-3">
+                                        <span class="h4 mb-0" id="health-corrupted-items-count">0</span>
+                                        <small class="text-muted ml-2" id="health-corrupted-items-last-scan"></small>
+                                    </div>
+                                    <div class="text-muted small" id="health-corrupted-items-note">
+                                        <?php echo $lang->get('health_corrupted_items_note'); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+
+                        <div class="card">
+                            <div class="card-header">
                                 <h3 class="card-title"><i class="fas fa-exchange-alt mr-2"></i><?php echo $lang->get('health_phpseclib_migration'); ?></h3>
                             </div>
                             <div class="card-body">
@@ -898,6 +925,44 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <div class="card">
                             <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('health_apache_error_log'); ?></h3>
+                                <div class="card-tools">
+                                    <div class="input-group input-group-sm" style="width: 320px;">
+                                        <div class="input-group-prepend">
+                                            <span class="input-group-text"><?php echo $lang->get('health_apache_log_lines'); ?></span>
+                                        </div>
+                                        <select class="custom-select" id="health-apache-log-lines">
+                                            <option value="50" selected>50</option>
+                                            <option value="100">100</option>
+                                            <option value="200">200</option>
+                                            <option value="500">500</option>
+                                            <option value="1000">1000</option>
+                                        </select>
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-primary" id="health-apache-log-check-btn">
+                                                <i class="fas fa-search mr-1"></i><?php echo $lang->get('health_apache_log_check'); ?>
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" id="health-apache-log-copy-btn" disabled>
+                                                <i class="fas fa-copy mr-1"></i><?php echo $lang->get('copy'); ?>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-danger" id="health-apache-log-error" style="display:none;"></div>
+                                <div class="alert alert-warning" id="health-apache-log-fix" style="display:none;">
+                                    <div class="mb-2" id="health-apache-log-fix-text"></div>
+                                    <pre class="mb-0" id="health-apache-log-fix-cmd" style="white-space: pre-wrap;"></pre>
+                                </div>
+                                <pre id="health-apache-log-content" class="p-2" style="display:none; max-height: 380px; overflow:auto; background-color: #f8f9fa; border: 1px solid #dee2e6; white-space: pre-wrap;"></pre>
+                            </div>
+                        </div>
+
+
+
+                        <div class="card">
+                            <div class="card-header">
                                 <h3 class="card-title"><i class="fas fa-tags mr-2"></i><?php echo $lang->get('health_top_labels'); ?></h3>
                             </div>
                             <div class="card-body">
@@ -960,4 +1025,40 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
             </div><!-- /.card-body -->
         </div><!-- /.card -->
 
-    </section>
+    
+
+        <div class="modal fade" id="health-corrupted-items-modal" tabindex="-1" role="dialog" aria-labelledby="healthCorruptedItemsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="healthCorruptedItemsModalLabel"><?php echo $lang->get('health_corrupted_items'); ?></h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $lang->get('close'); ?>">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="small text-muted mb-2" id="health-corrupted-items-modal-note"></div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                <tr>
+                                    <th><?php echo $lang->get('id'); ?></th>
+                                    <th><?php echo $lang->get('label'); ?></th>
+                                    <th><?php echo $lang->get('health_reason'); ?></th>
+                                    <th><?php echo $lang->get('health_corrupted_len_stored'); ?></th>
+                                    <th><?php echo $lang->get('health_corrupted_len_actual'); ?></th>
+                                    <th><?php echo $lang->get('health_updated'); ?></th>
+                                </tr>
+                                </thead>
+                                <tbody id="health-corrupted-items-list"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</section>
