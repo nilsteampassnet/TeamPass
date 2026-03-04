@@ -163,8 +163,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             foldersHtml += '<tr class="icheck-toggle">' +
                                 '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
                                 '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
-                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + deletedDate + '</td>' +
-                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + deletedBy + '</td>' +
+                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(deletedDate) + '</td>' +
+                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(deletedBy) + '</td>' +
                                 '</tr>';
                         });
                         $('#recycled-folders').html(foldersHtml);

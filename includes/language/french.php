@@ -1997,4 +1997,5 @@ return array(
     'health_apache_log_check' => 'Vérifier',
     'health_apache_log_fix_hint' => 'Pour autoriser l’accès, exécute les commandes ci-dessous puis réessaie.',
     'health_apache_log_fix_hint_missing' => 'Vérifie le chemin ErrorLog de ton vhost Apache et le nom du fichier de log.',
+
 );

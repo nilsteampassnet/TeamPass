@@ -89,6 +89,9 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
     }
 
     $tpPrivateKeyB64 = decryptPrivateKey($tpPassword, (string) $tpPk['private_key']);
+    if ($tpPrivateKeyB64 === '') {
+        throw new RuntimeException('Failed to decrypt TP_USER private key. Check master encryption key.');
+    }
 
     $tpSharekeys = DB::query(
         'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.pw, i.pw_len, i.created_at, i.updated_at
@@ -104,6 +107,9 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
 
     foreach ($tpSharekeys as $row) {
         try {
+            // Intentionally using decryptUserObjectKey() (not decryptUserObjectKeyWithMigration())
+            // because this is a read-only diagnostic tool: we must not write to the DB during a scan.
+            // v1 sharekeys are still decryptable via the built-in fallback.
             $itemKey = decryptUserObjectKey((string) $row['share_key'], $tpPrivateKeyB64);
             if ($itemKey === '') {
                 $corrupted[] = array(
@@ -180,6 +186,7 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
         'items' => $corrupted,
         'truncated' => count($corrupted) >= $limit,
         'limit' => $limit,
+        'ok_count' => $ok,
     );
 }
 
