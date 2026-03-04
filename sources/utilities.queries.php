@@ -160,6 +160,37 @@ if (null !== $post_type) {
     }
 
     $deletedChildren = tpBuildDeletedFoldersChildrenMap($deletedFolders);
+
+    // Retrieve deletion date/user for deleted folders.
+    // - Date is stored in misc.created_at (available in tpGetDeletedFoldersFromMisc())
+    // - User is inferred from items logs (at_delete) in the same folder (and, if needed, inherited from children)
+    $directDeletionInfo = tpGetDirectDeletionInfoForDeletedFoldersFromItemsLogs($deletedFolderIds);
+    $resolvedDeletionInfoMemo = array();
+
+    // Load users related to deletion info
+    $deletedByUserIds = array();
+    foreach ($deletedFolderIds as $dfId) {
+        $info = tpResolveDeletedFolderDeletionInfo((int) $dfId, $deletedFolders, $deletedChildren, $directDeletionInfo, $resolvedDeletionInfoMemo);
+        if ($info['user_id'] !== null && (int) $info['user_id'] > 0) {
+            $deletedByUserIds[(int) $info['user_id']] = true;
+        }
+    }
+
+    $usersById = array();
+    if (empty($deletedByUserIds) === false) {
+        $rowsUsers = DB::query(
+            'SELECT id, login, name, lastname
+            FROM ' . prefixTable('users') . '
+            WHERE id IN %li',
+            array_map('intval', array_keys($deletedByUserIds))
+        );
+        foreach ($rowsUsers as $rowUser) {
+            $usersById[(int) $rowUser['id']] = array(
+                'login' => (string) ($rowUser['login'] ?? ''),
+                'name' => trim((string) ($rowUser['name'] ?? '') . ' ' . (string) ($rowUser['lastname'] ?? '')),
+            );
+        }
+    }
     $subtreeCountMemo = array();
 
     // Build folders array with full path + count of deleted items in this folder subtree
@@ -172,11 +203,28 @@ if (null !== $post_type) {
 
         $itemsCount = tpComputeDeletedFolderSubtreeItemsCount((int) $folderId, $deletedChildren, $directDeletedItemsCount, $subtreeCountMemo);
 
+        $info = tpResolveDeletedFolderDeletionInfo((int) $folderId, $deletedFolders, $deletedChildren, $directDeletionInfo, $resolvedDeletionInfoMemo);
+        $deletedAt = (int) ($folderInfo['deleted_at'] ?? 0);
+        if ($info['date'] !== null && (int) $info['date'] > 0) {
+            $deletedAt = (int) $info['date'];
+        }
+
+        $deletedByUserId = $info['user_id'] !== null ? (int) $info['user_id'] : 0;
+        $deletedByLogin = '';
+        $deletedByName = '';
+        if ($deletedByUserId > 0 && isset($usersById[$deletedByUserId]) === true) {
+            $deletedByLogin = (string) ($usersById[$deletedByUserId]['login'] ?? '');
+            $deletedByName = (string) ($usersById[$deletedByUserId]['name'] ?? '');
+        }
+
         $arrFolders[] = array(
             'id' => (int) $folderId,
             'label' => (string) ($folderInfo['title'] ?? ''),
             'path' => $path,
             'items_count' => (int) $itemsCount,
+            'date' => $deletedAt > 0 ? date($SETTINGS['date_format'], $deletedAt) : '',
+            'login' => $deletedByLogin,
+            'name' => $deletedByName,
         );
     }
 
@@ -1022,6 +1070,7 @@ logItems(
             // Database health
             // ------------------------
             $dbVersion = (string) DB::queryFirstField('SELECT VERSION()');
+            $dbVersionShort = tpFormatDbVersionShort($dbVersion);
             $latStart = microtime(true);
             DB::query('SELECT 1');
             $latencyMs = round((microtime(true) - $latStart) * 1000, 2);
@@ -1199,7 +1248,7 @@ logItems(
 
             // Keep the main progress aligned on keys version (v3)
             $usersV3 = $usersV3Keys;
-$usersNotMigrated = $usersTotal - $usersV3;
+            $usersNotMigrated = $usersTotal - $usersV3;
             $usersPercent = $usersTotal > 0 ? round(($usersV3 / $usersTotal) * 100, 2) : 0;
 
             // Personal items migration progress
@@ -1345,7 +1394,7 @@ $usersNotMigrated = $usersTotal - $usersV3;
                     }
                 }
             }
-$recentRaw = DB::query(
+            $recentRaw = DB::query(
                 'SELECT type, date, label, qui
                 FROM ' . prefixTable('log_system') . '
                 WHERE (date+0) BETWEEN %i AND %i
@@ -1380,7 +1429,7 @@ $recentRaw = DB::query(
                 );
             }
 
-$recent = array();
+            $recent = array();
             foreach ($recentRaw as $r) {
                 $ts = (int) ($r['date'] ?? 0);
                 $recent[] = array(
@@ -1390,6 +1439,26 @@ $recent = array();
                     'label' => (string) ($r['label'] ?? ''),
                     'qui' => (string) ($r['qui'] ?? ''),
                 );
+            }
+
+                        // Corrupted items (last scan stored in session - scan is on-demand)
+            $corruptedItemsMeta = array(
+                'has_result' => false,
+                'count' => 0,
+                'last_scan_at' => 0,
+                'last_scan_at_human' => '',
+                'truncated' => false,
+                'limit' => 0,
+            );
+
+            $sessionMeta = $session->get('health-corrupted-items-meta');
+            if (is_array($sessionMeta) === true) {
+                $corruptedItemsMeta['has_result'] = true;
+                $corruptedItemsMeta['count'] = (int) ($sessionMeta['count'] ?? 0);
+                $corruptedItemsMeta['last_scan_at'] = (int) ($sessionMeta['last_scan_at'] ?? 0);
+                $corruptedItemsMeta['last_scan_at_human'] = (string) ($sessionMeta['last_scan_at_human'] ?? '');
+                $corruptedItemsMeta['truncated'] = (bool) ($sessionMeta['truncated'] ?? false);
+                $corruptedItemsMeta['limit'] = (int) ($sessionMeta['limit'] ?? 0);
             }
 
             $report = array(
@@ -1455,13 +1524,15 @@ $recent = array();
                     'checks' => $systemChecks,
                 ),
                 'database' => array(
-                    'version' => $dbVersion,
+                    'version' => $dbVersionShort,
+                    'version_full' => $dbVersion,
                     'latency_ms' => $latencyMs,
                     'size_mb' => $dbSizeMb,
                     'tables_overview' => $dbTables,
                     'tables_top' => $dbTablesTop,
                 ),
                 'crypto' => array(
+                    'corrupted_items' => $corruptedItemsMeta,
                     'sharekeys' => array(
                         'tables' => $sharekeysStats,
                         'items_perso' => $sharekeysItemsPerso,
@@ -1494,6 +1565,227 @@ $recent = array();
                 'encode'
             );
             break;
+
+        // Corrupted items scan (on-demand)
+        case 'health_scan_corrupted_items':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            } elseif ($session->get('user-read_only') === 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $scriptPath = __DIR__ . '/../scripts/scan_corrupted_items.php';
+            if (file_exists($scriptPath) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => sprintf($lang->get('health_corrupted_script_missing_fmt'), $scriptPath),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once $scriptPath;
+
+            if (function_exists('tpScanCorruptedItemsViaTpUser') === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('health_corrupted_script_invalid'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $limit = 2000;
+            try {
+                /** @var array $scanResult */
+                $scanResult = tpScanCorruptedItemsViaTpUser($limit);
+
+                $meta = array(
+                    'count' => (int) ($scanResult['count'] ?? 0),
+                    'last_scan_at' => time(),
+                    'last_scan_at_human' => date('Y-m-d H:i:s'),
+                    'truncated' => (bool) ($scanResult['truncated'] ?? false),
+                    'limit' => (int) ($scanResult['limit'] ?? $limit),
+                );
+
+                $session->set('health-corrupted-items-meta', $meta);
+                $session->set('health-corrupted-items-list', (array) ($scanResult['items'] ?? array()));
+
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'result' => $meta,
+                    ),
+                    'encode'
+                );
+            } catch (Exception $e) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $e->getMessage(),
+                    ),
+                    'encode'
+                );
+            }
+            break;
+
+        case 'health_get_corrupted_items_list':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $meta = $session->get('health-corrupted-items-meta');
+            $items = $session->get('health-corrupted-items-list');
+
+            if (is_array($meta) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('health_corrupted_no_result'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'meta' => $meta,
+                    'items' => is_array($items) ? $items : array(),
+                ),
+                'encode'
+            );
+            break;
+
+        // Apache error log (on-demand check)
+        case 'health_check_apache_error_log':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            $lines = (int) ($dataReceived['lines'] ?? 200);
+            if ($lines < 10) {
+                $lines = 10;
+            } elseif ($lines > 1000) {
+                $lines = 1000;
+            }
+
+            $logPath = '/var/log/apache2/teampass_error.log';
+            $logDir = dirname($logPath);
+
+            // If directory is not traversable by the webserver user, file_exists() on the file will return false.
+            if (file_exists($logDir) === true && is_dir($logDir) === true && is_executable($logDir) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'result' => array(
+                            'access' => 'not_readable',
+                            'log_path' => $logPath,
+                            'lines' => $lines,
+                            'fix_commands' => array(
+                                'sudo usermod -aG $(stat -c %G ' . $logDir . ') www-data',
+                                'sudo systemctl restart apache2',
+                                'sudo systemctl restart $(systemctl list-units --type=service --all | awk "/php.*fpm/ {print $1}") 2>/dev/null || true',
+                            ),
+                        ),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (file_exists($logPath) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'result' => array(
+                            'access' => 'not_found',
+                            'log_path' => $logPath,
+                            'lines' => $lines,
+                            'fix_commands' => array(
+                                'grep -R "ErrorLog" -n /etc/apache2/sites-enabled /etc/apache2/sites-available | grep -i teampass',
+                                'ls -la /var/log/apache2 | grep -i teampass',
+                            ),
+                        ),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (is_readable($logPath) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'result' => array(
+                            'access' => 'not_readable',
+                            'log_path' => $logPath,
+                            'lines' => $lines,
+                            'fix_commands' => array(
+                                'sudo usermod -aG $(stat -c %G ' . $logDir . ') www-data',
+                                'sudo systemctl restart apache2',
+                                'sudo systemctl restart $(systemctl list-units --type=service --all | awk "/php.*fpm/ {print $1}") 2>/dev/null || true',
+                            ),
+                        ),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $content = tpTailFileLines($logPath, $lines, 1024 * 1024 * 2);
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'result' => array(
+                        'access' => 'ok',
+                        'log_path' => $logPath,
+                        'lines' => $lines,
+                        'content' => $content,
+                    ),
+                ),
+                'encode'
+            );
+            break;
+
     }
 }
 
@@ -1617,7 +1909,7 @@ function tpGetDeletedFoldersFromMisc(): array
     $deletedFolders = array();
 
     $rows = DB::query(
-        'SELECT valeur
+        'SELECT intitule, valeur, created_at
         FROM ' . prefixTable('misc') . '
         WHERE type = %s',
         'folder_deleted'
@@ -1634,6 +1926,8 @@ function tpGetDeletedFoldersFromMisc(): array
         $deletedFolders[$folderId]['id'] = $folderId;
         $deletedFolders[$folderId]['parent_id'] = (int) ($folderData['parent_id'] ?? 0);
         $deletedFolders[$folderId]['title'] = (string) ($folderData['title'] ?? '');
+        // Deletion timestamp (created_at from misc)
+        $deletedFolders[$folderId]['deleted_at'] = (int) ($record['created_at'] ?? 0);
     }
 
     return $deletedFolders;
@@ -1715,6 +2009,142 @@ function tpComputeDeletedFolderSubtreeItemsCount(int $folderId, array $childrenM
     $memo[$folderId] = $count;
 
     return $count;
+}
+
+/**
+ * Retrieve direct deletion information (date and user) for deleted folders from items logs.
+ *
+ * The folder deletion itself is stored in `misc` (type=folder_deleted) but doesn't store the user.
+ * When a folder is deleted, Teampass logs deletion for each item with action `at_delete`.
+ * We infer the folder deletion actor from the latest `at_delete` log among items directly inside the folder.
+ *
+ * @return array<int, array{user_id:int, date:int}>
+ */
+function tpGetDirectDeletionInfoForDeletedFoldersFromItemsLogs(array $folderIds): array
+{
+    if (empty($folderIds) === true) {
+        return array();
+    }
+
+    $folderIds = array_values(array_unique(array_map('intval', $folderIds)));
+
+    $rows = DB::query(
+        'SELECT m.folder_id AS folder_id, m.max_date AS max_date, MIN(l.id_user) AS id_user
+        FROM (
+            SELECT i.id_tree AS folder_id, MAX(CAST(l.date AS UNSIGNED)) AS max_date
+            FROM ' . prefixTable('log_items') . ' AS l
+            INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id)
+            WHERE l.action = %s
+              AND i.id_tree IN %li
+            GROUP BY i.id_tree
+        ) AS m
+        INNER JOIN ' . prefixTable('log_items') . ' AS l ON (l.action = %s AND CAST(l.date AS UNSIGNED) = m.max_date)
+        INNER JOIN ' . prefixTable('items') . ' AS i ON (l.id_item = i.id AND i.id_tree = m.folder_id)
+        GROUP BY m.folder_id, m.max_date',
+        'at_delete',
+        $folderIds,
+        'at_delete'
+    );
+
+    $map = array();
+    foreach ($rows as $row) {
+        $folderId = (int) ($row['folder_id'] ?? 0);
+        if ($folderId <= 0) {
+            continue;
+        }
+
+        $map[$folderId] = array(
+            'user_id' => (int) ($row['id_user'] ?? 0),
+            'date' => (int) ($row['max_date'] ?? 0),
+        );
+    }
+
+    return $map;
+}
+
+/**
+ * Resolve deletion date/user for a deleted folder.
+ *
+ * Priority:
+ *  - If deletion info exists in the misc JSON payload (future-proof)
+ *  - Else infer from direct items logs (same folder)
+ *  - Else inherit from first descendant folder that has the info
+ *
+ * @param array<int, array<string, mixed>> $deletedFolders
+ * @param array<int, array<int>> $childrenMap
+ * @param array<int, array{user_id:int, date:int}> $directDeletionInfo
+ * @param array<int, array{user_id:int|null, date:int|null}> $memo
+ *
+ * @return array{user_id:int|null, date:int|null}
+ */
+function tpResolveDeletedFolderDeletionInfo(
+    int $folderId,
+    array $deletedFolders,
+    array $childrenMap,
+    array $directDeletionInfo,
+    array &$memo
+): array {
+    if (isset($memo[$folderId]) === true) {
+        return $memo[$folderId];
+    }
+
+    $resolved = array(
+        'user_id' => null,
+        'date' => null,
+    );
+
+    $fd = $deletedFolders[$folderId] ?? null;
+    if (is_array($fd) === true) {
+        // Date
+        if (isset($fd['deleted_at']) === true && is_numeric($fd['deleted_at']) === true && (int) $fd['deleted_at'] > 0) {
+            $resolved['date'] = (int) $fd['deleted_at'];
+        } elseif (isset($fd['created_at']) === true && is_numeric($fd['created_at']) === true && (int) $fd['created_at'] > 0) {
+            $resolved['date'] = (int) $fd['created_at'];
+        }
+
+        // User id (future-proof if stored in JSON payload)
+        foreach (array('deleted_by', 'deleted_by_user_id', 'user_id', 'id_user') as $key) {
+            if (isset($fd[$key]) === true && is_numeric($fd[$key]) === true && (int) $fd[$key] > 0) {
+                $resolved['user_id'] = (int) $fd[$key];
+                break;
+            }
+        }
+    }
+
+    // Direct logs
+    if ($resolved['user_id'] === null && isset($directDeletionInfo[$folderId]) === true) {
+        $uid = (int) ($directDeletionInfo[$folderId]['user_id'] ?? 0);
+        if ($uid > 0) {
+            $resolved['user_id'] = $uid;
+        }
+        if ($resolved['date'] === null || (int) $resolved['date'] <= 0) {
+            $dt = (int) ($directDeletionInfo[$folderId]['date'] ?? 0);
+            if ($dt > 0) {
+                $resolved['date'] = $dt;
+            }
+        }
+    }
+
+    // Inherit from children if still missing
+    if (($resolved['user_id'] === null || $resolved['date'] === null) && isset($childrenMap[$folderId]) === true) {
+        foreach ($childrenMap[$folderId] as $childId) {
+            $childInfo = tpResolveDeletedFolderDeletionInfo((int) $childId, $deletedFolders, $childrenMap, $directDeletionInfo, $memo);
+            if ($resolved['user_id'] === null && $childInfo['user_id'] !== null) {
+                $resolved['user_id'] = $childInfo['user_id'];
+            }
+            if (($resolved['date'] === null || (int) $resolved['date'] <= 0) && $childInfo['date'] !== null && (int) $childInfo['date'] > 0) {
+                $resolved['date'] = $childInfo['date'];
+            }
+
+            if ($resolved['user_id'] !== null && $resolved['date'] !== null) {
+                break;
+            }
+        }
+    }
+
+    $memo[$folderId] = $resolved;
+
+    return $resolved;
 }
 
 /**
@@ -1845,6 +2275,82 @@ function tpHardDeleteItem(int $itemId): void
  * Utilities / Health helpers
  * ------------------------------
  */
+
+function tpFormatDbVersionShort(string $version): string
+{
+    $version = trim($version);
+    if ($version === '') {
+        return '';
+    }
+
+    // Typical MariaDB example: 11.4.7-MariaDB-0ubuntu0.24.04.1
+    if (preg_match('/^(\d+(?:\.\d+){1,3})-(MariaDB|MySQL)/i', $version, $m) === 1) {
+        return $m[1] . '-' . $m[2];
+    }
+
+    // Fallback: keep first numeric part
+    if (preg_match('/^(\d+(?:\.\d+){1,3})/', $version, $m) === 1) {
+        return $m[1];
+    }
+
+    return $version;
+}
+
+function tpTailFileLines(string $path, int $lines, int $maxBytes = 2097152): string
+{
+    if ($lines <= 0 || is_readable($path) === false) {
+        return '';
+    }
+
+    $fp = @fopen($path, 'rb');
+    if ($fp === false) {
+        return '';
+    }
+
+    $chunkSize = 4096;
+    $buffer = '';
+    $bytesRead = 0;
+
+    // Go to end of file
+    if (fseek($fp, 0, SEEK_END) !== 0) {
+        fclose($fp);
+        return '';
+    }
+
+    $pos = (int) ftell($fp);
+    while ($pos > 0 && substr_count($buffer, "\n") <= $lines && $bytesRead < $maxBytes) {
+        $read = min($chunkSize, $pos);
+        $pos -= $read;
+
+        if (fseek($fp, $pos, SEEK_SET) !== 0) {
+            break;
+        }
+
+        $chunk = fread($fp, $read);
+        if ($chunk === false || $chunk === '') {
+            break;
+        }
+
+        $buffer = $chunk . $buffer;
+        $bytesRead += strlen($chunk);
+    }
+
+    fclose($fp);
+
+    $parts = preg_split("/\r\n|\n|\r/", $buffer);
+    if (is_array($parts) === false) {
+        return $buffer;
+    }
+
+    // Remove trailing empty line if the file ends with a newline
+    if (count($parts) > 0 && $parts[count($parts) - 1] === '') {
+        array_pop($parts);
+    }
+
+    $parts = array_slice($parts, -$lines);
+
+    return implode("\n", $parts);
+}
 
 function tpGetCpuCores(): int
 {
@@ -2451,7 +2957,7 @@ function tpGetExcludedUserIds(): array
         // ignore
     }
 
-$ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
+    $ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
         return $v > 0;
     })));
 
