@@ -225,7 +225,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('settings_default_session_expiration_time'); ?>
                             </div>
                             <div class='col-2 mb-2'>
-                                <input type='number' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo htmlspecialchars($SETTINGS['default_session_expiration_time']) ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='default_session_expiration_time' value='<?php echo htmlspecialchars($SETTINGS['default_session_expiration_time'] ?? '60'); ?>'>
                             </div>
                         </div>
 
@@ -237,7 +237,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2 mb-2'>
-                                <input type='number' class='form-control form-control-sm' id='maximum_session_expiration_time' value='<?php echo htmlspecialchars($SETTINGS['maximum_session_expiration_time']) ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='maximum_session_expiration_time' value='<?php echo htmlspecialchars($SETTINGS['maximum_session_expiration_time'] ?? '60'); ?>'>
                             </div>
                         </div>
 
@@ -331,7 +331,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_maximum_length']) ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_maximum_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_maximum_length'] ?? '60'); ?>'>
                             </div>
                         </div>
 
@@ -340,7 +340,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('password_length_by_default'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='pwd_default_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_default_length']) ?? '14'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='pwd_default_length' value='<?php echo htmlspecialchars($SETTINGS['pwd_default_length'] ?? '14'); ?>'>
                             </div>
                         </div>
 
@@ -400,7 +400,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('pw_life_duration'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo htmlspecialchars($SETTINGS['pw_life_duration']) ?? '5'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='pw_life_duration' value='<?php echo htmlspecialchars($SETTINGS['pw_life_duration'] ?? '5'); ?>'>
                             </div>
                         </div>
 
@@ -409,7 +409,7 @@ $zones = timezone_list();
                                 <?php echo $lang->get('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication']) ?? '0'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '0'); ?>'>
                             </div>
                         </div>
 
@@ -499,7 +499,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='transparent_key_recovery_pbkdf2_iterations' value='<?php echo htmlspecialchars($SETTINGS['transparent_key_recovery_pbkdf2_iterations']) ?? '60'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='transparent_key_recovery_pbkdf2_iterations' value='<?php echo htmlspecialchars($SETTINGS['transparent_key_recovery_pbkdf2_iterations'] ?? '60'); ?>'>
                             </div>
                         </div>
 
@@ -540,7 +540,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-4'>
-                                <input type='text' class='form-control form-control-sm' id='websocket_host' value='<?php echo htmlspecialchars($SETTINGS['websocket_host']) ?? '127.0.0.1'; ?>'>
+                                <input type='text' class='form-control form-control-sm' id='websocket_host' value='<?php echo htmlspecialchars($SETTINGS['websocket_host'] ?? '127.0.0.1'); ?>'>
                             </div>
                         </div>
                         
@@ -552,7 +552,7 @@ $zones = timezone_list();
                                 </small>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='websocket_port' value='<?php echo htmlspecialchars($SETTINGS['websocket_port']) ?? '8080'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='websocket_port' value='<?php echo htmlspecialchars($SETTINGS['websocket_port'] ?? '8080'); ?>'>
                             </div>
                         </div>
 
@@ -1060,7 +1060,7 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                                 <?php echo $lang->get('settings_otv_expiration_period'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo htmlspecialchars($SETTINGS['otv_expiration_period']) ?? '7'; ?>'>
+                                <input type='number' class='form-control form-control-sm' id='otv_expiration_period' value='<?php echo htmlspecialchars($SETTINGS['otv_expiration_period'] ?? '7'); ?>'>
                             </div>
                         </div>
 

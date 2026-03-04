@@ -207,7 +207,7 @@ if (null !== $post_type) {
     // Prepare paths for existing folders
     $treeIds = array();
     foreach ($rows as $record) {
-        if (isset($record['id_tree']) === true && $record['id_tree'] !== null) {
+        if (isset($record['id_tree']) === true) {
             $treeIds[] = (int) $record['id_tree'];
         }
     }
@@ -631,7 +631,7 @@ logItems(
                 empty($post_date_from) === false
                 && empty($post_date_to) === false
                 && empty($post_log_type) === false
-                && ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1)
+                && ($session->has('user-admin') && (int) $session->get('user-admin') === 1)
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(
@@ -1101,9 +1101,9 @@ logItems(
 
                 // Orphans (objects + users)
                 $orphans = tpGetSharekeysOrphans($t);
-                if (isset($orphans['orphans_total']) && $orphans['orphans_total'] > 0) {
+                if ($orphans['orphans_total'] > 0) {
                     $sharekeysOrphans[$t] = $orphans;
-                    $sharekeysOrphansTotal += (int) ($orphans['orphans_total'] ?? 0);
+                    $sharekeysOrphansTotal += (int) $orphans['orphans_total'];
                 }
             }
 
@@ -1522,7 +1522,7 @@ function tpParseFolderDeletedValeur(string $valeur): array
     $parts = array_map('trim', explode(',', $valeur));
 
     return array(
-        'id' => (int) ($parts[0] ?? 0),
+        'id' => (int) $parts[0],
         'parent_id' => (int) ($parts[1] ?? 0),
         'title' => (string) ($parts[2] ?? ''),
         'nleft' => (int) ($parts[3] ?? 0),
@@ -1853,7 +1853,7 @@ function tpGetCpuCores(): int
         $content = @file_get_contents($cpuinfo);
         if ($content !== false) {
             preg_match_all('/^processor\s*:/m', $content, $m);
-            $count = isset($m[0]) ? count($m[0]) : 0;
+            $count = count($m[0]);
             if ($count > 0) {
                 return $count;
             }
@@ -2075,7 +2075,7 @@ function tpIniSizeToBytes(string $value): int
         return 0;
     }
 
-    $num = (float) ($m[1] ?? 0);
+    $num = (float) $m[1];
     $unit = (string) ($m[2] ?? 'b');
 
     switch ($unit) {
@@ -2283,8 +2283,8 @@ function tpGetTopTablesInfo(int $limit = 20, string $dbName = ''): array
             }
 
             usort($rows, static function (array $a, array $b): int {
-                $sizeA = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
-                $sizeB = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
+                $sizeA = (float) ($a['data_length'] + $a['index_length']);
+                $sizeB = (float) ($b['data_length'] + $b['index_length']);
                 return $sizeB <=> $sizeA;
             });
 
@@ -2358,7 +2358,7 @@ function tpGetSharekeysOrphans(string $shortTableName): array
     $tableName = prefixTable($shortTableName);
     
     if (tpTableExists($tableName) === false) {
-        return array();
+        return array('missing_object' => null, 'missing_user' => 0, 'inactive_user' => 0, 'orphans_total' => 0);
     }
 
     $missingObject = null;
@@ -2452,7 +2452,7 @@ function tpGetExcludedUserIds(): array
     }
 
 $ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
-        return is_int($v) && $v > 0;
+        return $v > 0;
     })));
 
     return $ids;
@@ -2940,12 +2940,9 @@ function tpGetBackupsStatus(array $SETTINGS): array
     );
 
     foreach ($sources as $src) {
-        if (is_array($src) === false || isset($src['files']) === false) {
-            continue;
-        }
-        $type = (string) ($src['type'] ?? 'unknown');
+        $type = (string) $src['type'];
         $files = $src['files'];
-        if (is_array($files) === false || isset($files['error']) === true || empty($files) === true) {
+        if (isset($files['error']) === true || empty($files) === true) {
             continue;
         }
 
@@ -2954,8 +2951,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
                 continue;
             }
 
-            $schemaLevel = isset($f['schema_level']) && $f['schema_level'] !== null ? (string) $f['schema_level'] : '';
-            $tpFilesVersion = isset($f['tp_files_version']) && $f['tp_files_version'] !== null ? (string) $f['tp_files_version'] : '';
+            $schemaLevel = isset($f['schema_level']) ? (string) $f['schema_level'] : '';
+            $tpFilesVersion = isset($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
 
             $compatibility = 'unknown';
             if ($expectedSchemaLevel !== '' && $schemaLevel !== '') {
@@ -3044,14 +3041,14 @@ function tpGetBackupsStatus(array $SETTINGS): array
     if (empty($taskLogs) === true && empty($tasks) === false) {
         foreach ($tasks as $t) {
             $taskLogs[] = array(
-                'created_at' => (int) ($t['created_at'] ?? 0),
-                'created_at_human' => (string) ($t['created_at_human'] ?? ''),
-                'job' => (string) ($t['process_type'] ?? ''),
-                'status' => (string) ($t['status'] ?? ''),
-                'updated_at' => (int) ($t['created_at'] ?? 0),
-                'updated_at_human' => (string) ($t['created_at_human'] ?? ''),
-                'finished_at' => (int) ($t['finished_at'] ?? 0),
-                'finished_at_human' => (string) ($t['finished_at_human'] ?? ''),
+                'created_at' => (int) $t['created_at'],
+                'created_at_human' => (string) $t['created_at_human'],
+                'job' => (string) $t['process_type'],
+                'status' => (string) $t['status'],
+                'updated_at' => (int) $t['created_at'],
+                'updated_at_human' => (string) $t['created_at_human'],
+                'finished_at' => (int) $t['finished_at'],
+                'finished_at_human' => (string) $t['finished_at_human'],
                 'treated_objects' => '',
             );
         }
@@ -3210,13 +3207,13 @@ function tpListBackupFiles(string $dir, string $prefix, int $limit = 10, array $
     }
 
     usort($items, static function (array $a, array $b): int {
-        return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
+        return ((int) $b['mtime']) <=> ((int) $a['mtime']);
     });
 
     $items = array_slice($items, 0, $limit);
 
     foreach ($items as $k => $v) {
-        $items[$k]['mtime_human'] = isset($v['mtime']) ? date('Y-m-d H:i:s', (int) $v['mtime']) : '';
+        $items[$k]['mtime_human'] = date('Y-m-d H:i:s', (int) $v['mtime']);
     }
 
     return $items;
@@ -3243,7 +3240,7 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
 
     $items = array();
     foreach ($paths as $fp) {
-        if (is_string($fp) === false || $fp === '' || is_file($fp) === false) {
+        if ($fp === '' || is_file($fp) === false) {
             continue;
         }
 
@@ -3294,7 +3291,7 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
     }
 
     usort($items, static function (array $a, array $b): int {
-        return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
+        return ((int) $b['mtime']) <=> ((int) $a['mtime']);
     });
 
     if ($limit <= 0) {

@@ -277,7 +277,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                     <?php
                                     if (null !== $session->get('user-last_pw_change') && ! empty($session->get('user-last_pw_change') === true)) {
                                         // Handle last password change string
-                                        if ($session->has('user-last_pw_change') && null !== $session->get('user-last_pw_change')) {
+                                        if ($session->has('user-last_pw_change')) {
                                             if (isset($SETTINGS['date_format']) === true) {
                                                 $last_pw_change = date($SETTINGS['date_format']." ".$SETTINGS['time_format'], intval($userInfo['last_pw_change']));
                                             } else {
@@ -434,11 +434,11 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-split_view_mode">
                                                 
-                                                <option value="0" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') && null !== $session->get('user-split_view_mode') && $session->get('user-split_view_mode') === 0 ? 'selected' : '';?>>
+                                                <option value="0" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') === 0 ? 'selected' : '';?>>
                                                     <?php echo $lang->get('no'); ?>
                                                 </option>
                                                 
-                                                <option value="1" <?php echo $session->has('user-split_view_mode') && $session->get('user-split_view_mode') && null !== $session->get('user-split_view_mode') && (int) $session->get('user-split_view_mode') === 1 ? 'selected' : '';?>>
+                                                <option value="1" <?php echo $session->has('user-split_view_mode') && (int) $session->get('user-split_view_mode') === 1 ? 'selected' : '';?>>
                                                     <?php echo $lang->get('yes'); ?>
                                                 </option>
                                             </select>
@@ -450,11 +450,11 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="col-sm-10">
                                             <select class="form-control" id="profile-user-show_subfolders">
                                                 
-                                                <option value="0" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') && null !== $session->get('user-show_subfolders') && $session->get('user-show_subfolders') === 0 ? 'selected' : '';?>>
+                                                <option value="0" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') === 0 ? 'selected' : '';?>>
                                                     <?php echo $lang->get('no'); ?>
                                                 </option>
 
-                                                <option value="1" <?php echo $session->has('user-show_subfolders') && $session->get('user-show_subfolders') && null !== $session->get('user-show_subfolders') && (int) $session->get('user-show_subfolders') === 1 ? 'selected' : '';?>>
+                                                <option value="1" <?php echo $session->has('user-show_subfolders') && (int) $session->get('user-show_subfolders') === 1 ? 'selected' : '';?>>
                                                     <?php echo $lang->get('yes'); ?>
                                                 </option>
                                             </select>

@@ -198,14 +198,14 @@ class TaskWorker {
             'filename_prefix' => 'scheduled-',
         ]);
 
-        if (($res['success'] ?? false) !== true) {
-            throw new Exception($res['message'] ?? 'Backup failed');
+        if ($res['success'] !== true) {
+            throw new Exception($res['message']);
         }
 
 
         // Best effort: write metadata sidecar next to the backup file
         try {
-            if (!empty($res['filepath']) && is_string($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+            if (!empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
                 tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
             }
         } catch (Throwable) {
@@ -213,9 +213,9 @@ class TaskWorker {
         }
 
         // Store a tiny summary for the task completion "arguments" field (no secrets)
-        $this->taskData['backup_file'] = $res['filename'] ?? '';
-        $this->taskData['backup_size_bytes'] = (int)($res['size_bytes'] ?? 0);
-        $this->taskData['backup_encrypted'] = (bool)($res['encrypted'] ?? false);
+        $this->taskData['backup_file'] = $res['filename'];
+        $this->taskData['backup_size_bytes'] = (int)$res['size_bytes'];
+        $this->taskData['backup_encrypted'] = (bool)$res['encrypted'];
 
         // Retention purge (scheduled backups only)
         $backupSource = (string)($taskData['source'] ?? '');
@@ -227,7 +227,7 @@ class TaskWorker {
         // keep for debug/trace
         $this->taskData['output_dir'] = $backupDir;
 
-        if ($backupSource === 'scheduler' && $backupDir !== '') {
+        if ($backupSource === 'scheduler') {
             $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
             $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
 
@@ -305,7 +305,7 @@ class TaskWorker {
                 $excludeIds[] = (int) constant($c);
             }
         }
-        $excludeIds = array_values(array_unique(array_filter($excludeIds, fn($v) => (int)$v > 0)));
+        $excludeIds = array_values(array_unique($excludeIds));
 
         $sql = 'SELECT id, login, email, name, lastname, user_language,
                     admin, special, disabled, deleted_at,

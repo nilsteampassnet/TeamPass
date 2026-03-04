@@ -115,7 +115,7 @@ if ($length !== -1) {
 
 //Ordering
 if ($request->query->has('order')) {
-    $order = $request->query->get('order');
+    $order = $request->query->all('order');
 
     // Vérifiez si la direction 'dir' est définie et est valide
     if (isset($order[0]['dir']) && in_array($order[0]['dir'], $aSortTypes)) {

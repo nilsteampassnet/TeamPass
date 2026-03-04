@@ -102,18 +102,9 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         error_log('TEAMPASS-Error-Wrong key or modified ciphertext: ' . $ex->getMessage());
         $err = 'wrong_key_or_modified_ciphertext';
-    } catch (CryptoException\BadFormatException $ex) {
-        error_log('TEAMPASS-Error-Bad format exception: ' . $ex->getMessage());
-        $err = 'bad_format';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
         $err = 'environment_error';
-    } catch (CryptoException\IOException $ex) {
-        error_log('TEAMPASS-Error-IO: ' . $ex->getMessage());
-        $err = 'io_error';
-    } catch (Exception $ex) {
-        error_log('TEAMPASS-Error-Unexpected exception: ' . $ex->getMessage());
-        $err = 'unexpected_error';
     }
 
     return [
@@ -325,7 +316,7 @@ function identAdmin(string $idFonctions)
     $session->set('user-accessible_folders', $groupesVisibles);
 
     // get complete list of ROLES
-    $tmp = array_filter(explode(';', $idFonctions !== null ? $idFonctions : ''));
+    $tmp = array_filter(explode(';', $idFonctions));
     $rows = DB::query(
         'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'
@@ -364,7 +355,7 @@ function convertToArray($element): array
             trimElement($element, ';')
         );
     }
-    return is_array($element) === true ? $element : [];
+    return $element;
 }
 
 /**
@@ -402,8 +393,8 @@ function identUser(
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
-    $noAccessFolders = convertToArray($noAccessFolders) ?? [];
-    $userRoles = convertToArray($userRoles) ?? [];
+    $noAccessFolders = convertToArray($noAccessFolders);
+    $userRoles = convertToArray($userRoles);
     $allowedFolders = [];//convertToArray($allowedFolders) ?? [];
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
@@ -1179,8 +1170,8 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             $data = html_entity_decode(html_entity_decode(/** @scrutinizer ignore-type */$data)); // @codeCoverageIgnore Is always a string (not an array)
         }
 
-        // Check if $data is a valid string before json_decode
-        if (is_string($data) && !empty($data)) {
+        // Check if $data is not empty before json_decode
+        if (!empty($data)) {
             // Return data array
             return json_decode($data, true);
         }
@@ -1872,15 +1863,10 @@ function prepareFileWithDefuse(
 ) {
     // Load AntiXSS
     $antiXss = new AntiXSS();
-    // Protect against bad inputs
-    if (is_array($source_file) === true || is_array($target_file) === true) {
-        return 'error_cannot_be_array';
-    }
-
     // Sanitize
     $source_file = $antiXss->xss_clean($source_file);
     $target_file = $antiXss->xss_clean($target_file);
-    if (empty($password) === true || is_null($password) === true) {
+    if (empty($password) === true) {
         // get KEY to define password
         $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
         $password = Key::loadFromAsciiSafeString($ascii_key);
@@ -1928,8 +1914,6 @@ function defuseFileEncrypt(
             $target_file,
             $password
         );
-    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
         $err = 'environment_error';
@@ -2267,7 +2251,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
  *
- * @return string|object
+ * @return string
  */
 function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
@@ -2571,9 +2555,7 @@ function migrateAllUserKeysToV3(
         );
 
         // Store migrated private key in dedicated table
-        if (isset($updateData['private_key'])) {
-            insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
-        }
+        insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
 
         // Log successful migration
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -3447,7 +3429,7 @@ function isBase64(string $str): bool
  *
  * @param string $field Parameter
  *
- * @return array|bool|resource|string
+ * @return array|bool|string
  */
 function filterString(string $field)
 {
@@ -3542,10 +3524,10 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
 function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // Return if technical accounts
-    if ($userId === OTV_USER_ID
-        || $userId === SSH_USER_ID
-        || $userId === API_USER_ID
-        || $userId === TP_USER_ID
+    if ($userId === (int) OTV_USER_ID
+        || $userId === (int) SSH_USER_ID
+        || $userId === (int) API_USER_ID
+        || $userId === (int) TP_USER_ID
     ) {
         return false;
     }
@@ -3672,7 +3654,7 @@ function mfa_auth_requested_roles(string $userRolesIds, string $mfaRoles): bool
  */
 function cleanStringForExport(string $text, bool $emptyCheckOnly = false): string
 {
-    if (is_null($text) === true || empty($text) === true) {
+    if (empty($text) === true) {
         return '';
     }
     // only expected to check if $text was empty
@@ -5730,11 +5712,6 @@ function checkAndMigratePersonalItems($userId, $privateKeyDecrypted, $passwordCl
  */
 function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecrypted, string $passwordClear): void
 {
-    // Check if forced migration is enabled
-    if (!defined('FORCE_PHPSECLIBV3_MIGRATION') || FORCE_PHPSECLIBV3_MIGRATION !== true) {
-        return; // Forced migration disabled, use progressive migration instead
-    }
-
     $session = SessionManager::getSession();
 
     // Check if user already completed forced migration

@@ -110,7 +110,6 @@ trait MigrateUserHandlerTrait {
                 case 'user-personal-items-migration-step-final':
                     $this->migratePersonalItemsStepFinal($arguments);
                     break;
-                break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }

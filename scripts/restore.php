@@ -463,7 +463,7 @@ try {
     $log('WARN', 'Unable to decrypt instance backup key: ' . $e->getMessage());
 }
 
-$keysToTry = array_values(array_unique(array_filter($keysToTry, function ($v) { return $v !== ''; })));
+$keysToTry = array_values(array_unique($keysToTry));
 
 // Decrypt backup file to temp SQL
 // IMPORTANT: do NOT use tempnam() here. It creates the file and can break Defuse file decrypt.
@@ -479,7 +479,7 @@ $tmpSql = rtrim((string) sys_get_temp_dir(), '/\\') . '/defuse_temp_restore_' . 
 $dec = tpDefuseDecryptWithCandidates($file, $tmpSql, $keysToTry, $SETTINGS);
 if (empty($dec['success'])) {
     @unlink($tmpSql);
-    $log('ERROR', 'Decrypt failed: ' . (string) ($dec['message'] ?? ''));
+    $log('ERROR', 'Decrypt failed: ' . (string) $dec['message']);
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
     $payload['error'] = 'decrypt_failed';

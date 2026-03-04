@@ -198,7 +198,7 @@ trait UserHandlerTrait {
         $userInfo = $this->getOwnerInfos(
             $arguments['new_user_id'],
             empty($arguments['new_user_pwd']) === false ? $arguments['new_user_pwd'] : $arguments['new_user_code'],
-            ((int) $arguments['only_personal_items'] ?? 0) === 1 ? 1 : 0,
+            ((int) ($arguments['only_personal_items'] ?? 0)) === 1 ? 1 : 0,
             $arguments['new_user_private_key'] ?? ''
         );
 

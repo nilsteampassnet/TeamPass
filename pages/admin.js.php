@@ -239,7 +239,7 @@ $('.toggle').on('toggle', function(e, active) {
 
 // <- PREPARE SELECT2
 $('.select2').select2({
-    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'EN'; ?>'
+    language: '<?php echo $session->get('user-language_code') ?? 'EN'; ?>'
 });
 
 /**

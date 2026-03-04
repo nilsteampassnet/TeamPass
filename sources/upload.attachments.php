@@ -312,7 +312,7 @@ if (file_exists($targetDir) === false) {
 }
 
 // Remove old temp files
-if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
+if (is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($file = readdir($dir)) !== false) {
         $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $file;
 

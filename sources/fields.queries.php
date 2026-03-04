@@ -197,7 +197,7 @@ if (null !== $post_type) {
                         } else {
                             //echo $field['role_visibility'];
                             foreach (explode(',', $field['role_visibility']) as $role) {
-                                if (empty($role) === false && $role !== null) {
+                                if (empty($role) === false) {
                                     $data = DB::queryFirstRow(
                                         'SELECT title
                                         FROM '.prefixTable('roles_title').'
@@ -584,7 +584,7 @@ if (null !== $post_type) {
                         'encrypted_data' => $post_encrypted,
                         'is_mandatory' => $post_mandatory,
                         'masked' => $post_masked,
-                        'role_visibility' => is_null($post_roles) === true || count($post_roles) ===0 ? '' : implode(',', $post_roles),
+                        'role_visibility' => count($post_roles) === 0 ? '' : implode(',', $post_roles),
                         'order' => calculateOrder($post_fieldId, $post_order),
                     ),
                     'id = %i',

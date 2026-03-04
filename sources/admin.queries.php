@@ -3252,7 +3252,7 @@ case 'save_sending_statistics':
 
         echo prepareExchangedData(
             array(
-                'estimatedTime' => round($duration, 0) ?? null, // Estimated time in seconds
+                'estimatedTime' => round($duration, 0), // Estimated time in seconds
                 'proposedDuration' => $proposedDuration, // New proposed value if current setting is not sufficient
                 'currentDuration' => (int) $SETTINGS['task_maximum_run_time'], // Current setting
                 'setupProposal' => $isCurrentSettingSufficient, // true if current setting is sufficient, false otherwise
@@ -4164,8 +4164,7 @@ case 'export_statistics':
     );
     
     exit;
-    break;
-    
+
 }
 
 /**
@@ -4379,20 +4378,14 @@ function deleteFiles(array $files, bool $ignoreErrors = false): array
         // Try to delete the file
         $deleteResult = '';//@unlink($normalizedPath);
         
-        if ($deleteResult) {
-            $results[$normalizedPath] = [
-                'success' => true,
-                'error' => '',
-            ];
-        } else {
-            $results[$normalizedPath] = [
-                'success' => false,
-                'error' => $lang->get('failed_to_delete')
-            ];
-            
-            if (!$ignoreErrors) {
-                return $results;
-            }
+        // $deleteResult is always '' (unlink disabled), deletion always fails
+        $results[$normalizedPath] = [
+            'success' => false,
+            'error' => $lang->get('failed_to_delete')
+        ];
+
+        if (!$ignoreErrors) {
+            return $results;
         }
     }
     
@@ -4714,9 +4707,9 @@ function getAllFilesWithHashes(string $dir): array
  *                        - 'id': User ID
  *                        - 'public_key': User's public key
  *                        - 'private_key': User's private key
- * @return float|null Estimated time in seconds to re-encrypt all items, or null if no items found
+ * @return float Estimated time in seconds to re-encrypt all items, or 0 if no items found
  */
-function simulateUserKeyChangeDuration($userInfo): ?float
+function simulateUserKeyChangeDuration($userInfo): float
 {
     $startTime = microtime(true);
     $timeExecutionEstimation = null;
@@ -4971,7 +4964,7 @@ function wsReadFrame($socket): ?string
     }
 
     // Unmask if needed
-    if ($masked && $mask !== null) {
+    if ($masked) {
         for ($i = 0; $i < $length; $i++) {
             $payload[$i] = $payload[$i] ^ $mask[$i % 4];
         }

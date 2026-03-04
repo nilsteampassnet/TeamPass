@@ -931,7 +931,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php echo $session->get('user-language_code') ?? 'en'; ?>'
                 });
                 
                 // Add track-change class
@@ -3019,9 +3019,8 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
     $mime_types = [];
     if (
-        isset($SETTINGS['upload_all_extensions_file']) === false
-        || (isset($SETTINGS['upload_all_extensions_file']) === true
-            && (int) $SETTINGS['upload_all_extensions_file'] === 0)
+        !isset($SETTINGS['upload_all_extensions_file'])
+        || (int) $SETTINGS['upload_all_extensions_file'] === 0
     ) {
         $mime_types = [
             [
@@ -6183,7 +6182,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 // Prepare Select2 inputs
                 $('.select2').select2({
-                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>',
+                    language: '<?php echo $session->get('user-language_code') ?? 'en'; ?>',
                     theme: "bootstrap4",
                 });
 
@@ -6192,7 +6191,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                     todayHighlight: true,
                     todayBtn: true,
-                    language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                    language: '<?php echo $session->get('user-language_code') ?? 'en'; ?>'
                 });
 
                 // Prepare Date range picker with time picker
@@ -6498,7 +6497,7 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                 format: '<?php echo str_replace(['Y', 'M'], ['yyyy', 'mm'], $SETTINGS['date_format']); ?>',
                 todayHighlight: true,
                 todayBtn: true,
-                language: '<?php echo $userLang = $session->get('user-language_code'); echo isset($userLang) === null ? $userLang : 'en'; ?>'
+                language: '<?php echo $session->get('user-language_code') ?? 'en'; ?>'
             });
 
             $('#warningModal #add-history-label').focus();

@@ -279,9 +279,9 @@ switch ($inputData['type']) {
 
             //-> DO A SET OF CHECKS
             // Perform a check in case of Read-Only user creating an item in his PF
-            if ($session->get('user-read_only') === 1
+            if ((int) $session->get('user-read_only') === 1
                 && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
-                || $post_folder_is_personal !== 1)
+                || (int) $post_folder_is_personal !== 1)
             ) {
                 echo (string) prepareExchangedData(
                     array(
@@ -307,7 +307,7 @@ switch ($inputData['type']) {
 
             // perform a check in case of Read-Only user creating an item in his PF
             if (
-                $session->get('user-read_only') === 1
+                (int) $session->get('user-read_only') === 1
                 && in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
             ) {
                 echo (string) prepareExchangedData(
@@ -426,7 +426,7 @@ switch ($inputData['type']) {
             ) {
                 // Handle case where pw is empty
                 // if not allowed then warn user
-                if (($session->has('user-create_item_without_password') && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
+                if (($session->has('user-create_item_without_password')
                         && (int) $session->get('user-create_item_without_password') !== 1) ||
                     empty($post_password) === false ||
                     (int) $post_folder_is_personal === 1
@@ -458,7 +458,7 @@ switch ($inputData['type']) {
                         'login' => $post_login,
                         'inactif' => 0,
                         'restricted_to' => empty($post_restricted_to) === true ?
-                            '' : (is_array($post_restricted_to) === true ? implode(';', $post_restricted_to) : $post_restricted_to),
+                            '' : implode(';', $post_restricted_to),
                         'perso' => ((int) $post_folder_is_personal === 1) ?
                             1 : 0,
                         'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
@@ -571,24 +571,15 @@ switch ($inputData['type']) {
                             )
                         );
                     } else {
-                        // Delete if empty
-                        if (empty($post_template_id) === true) {
-                            DB::delete(
-                                prefixTable('templates'),
-                                'item_id = %i',
-                                $newID
-                            );
-                        } else {
-                            // Update value
-                            DB::update(
-                                prefixTable('templates'),
-                                array(
-                                    'category_id' => $post_template_id,
-                                ),
-                                'item_id = %i',
-                                $newID
-                            );
-                        }
+                        // Update value
+                        DB::update(
+                            prefixTable('templates'),
+                            array(
+                                'category_id' => $post_template_id,
+                            ),
+                            'item_id = %i',
+                            $newID
+                        );
                     }
                 }
 
@@ -596,8 +587,6 @@ switch ($inputData['type']) {
                 if (
                     isset($SETTINGS['enable_delete_after_consultation']) === true
                     && (int) $SETTINGS['enable_delete_after_consultation'] === 1
-                    && is_null($post_to_be_deleted_after_x_views) === false
-                    && is_null($post_to_be_deleted_after_date) === false
                 ) {
                     if (
                         empty($post_to_be_deleted_after_date) === false
@@ -636,8 +625,7 @@ switch ($inputData['type']) {
                     }
                 }
                 if (
-                    $post_restricted_to !== null
-                    && $data !== null
+                    $data !== null
                     && $data['restricted_to'] !== $post_restricted_to
                     && (int) $SETTINGS['restricted_to'] === 1
                 ) {
@@ -668,24 +656,19 @@ switch ($inputData['type']) {
                     && (int) $SETTINGS['restricted_to_roles'] === 1
                 ) {
                     // add roles for item
-                    if (
-                        is_array($post_restricted_to_roles) === true
-                        && count($post_restricted_to_roles) > 0
-                    ) {
-                        foreach ($post_restricted_to_roles as $role) {
-                            if (count($role) > 1) {
-                                $role = $role[1];
-                            } else {
-                                $role = $role[0];
-                            }
-                            DB::insert(
-                                prefixTable('restriction_to_roles'),
-                                array(
-                                    'role_id' => $role,
-                                    'item_id' => $inputData['itemId'],
-                                )
-                            );
+                    foreach ($post_restricted_to_roles as $role) {
+                        if (count($role) > 1) {
+                            $role = $role[1];
+                        } else {
+                            $role = $role[0];
                         }
+                        DB::insert(
+                            prefixTable('restriction_to_roles'),
+                            array(
+                                'role_id' => $role,
+                                'item_id' => $inputData['itemId'],
+                            )
+                        );
                     }
                 }
 
@@ -769,7 +752,7 @@ switch ($inputData['type']) {
                     );
 
                     // send email
-                    if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
+                    if (count($post_diffusion_list) > 0) {
                         $cpt = 0;
                         foreach ($post_diffusion_list as $emailAddress) {
                             if (empty($emailAddress) === false) {
@@ -945,9 +928,9 @@ switch ($inputData['type']) {
         //-> DO A SET OF CHECKS
         // Perform a check in case of Read-Only user creating an item in his PF
         if (
-            $session->get('user-read_only') === 1
+            (int) $session->get('user-read_only') === 1
             && (in_array($inputData['folderId'], $session->get('user-personal_folders')) === false
-                || $post_folder_is_personal !== 1)
+                || (int) $post_folder_is_personal !== 1)
         ) {
             echo (string) prepareExchangedData(
                 array(
@@ -1305,7 +1288,7 @@ switch ($inputData['type']) {
                     'login' => $post_login,
                     'url' => $post_url,
                     'id_tree' => $inputData['folderId'],
-                    'restricted_to' => empty($post_restricted_to) === true || count($post_restricted_to) === 0 ? '' : implode(';', $post_restricted_to),
+                    'restricted_to' => empty($post_restricted_to) === true ? '' : implode(';', $post_restricted_to),
                     'anyone_can_modify' => (int) $post_anyone_can_modify,
                     'complexity_level' => (int) $post_complexity_level,
                     'encryption_type' => TP_ENCRYPTION_NAME,
@@ -1397,13 +1380,11 @@ switch ($inputData['type']) {
                                     $newId
                                 );
 
-                                if ($encryptedFieldIsChanged === false) {
-                                    array_push(
-                                        $tasksToBePerformed,
-                                        'item_field'
-                                    );
-                                    $encryptedFieldIsChanged = true;
-                                }
+                                array_push(
+                                    $tasksToBePerformed,
+                                    'item_field'
+                                );
+                                $encryptedFieldIsChanged = true;
                             } else {
                                 // update value
                                 DB::update(
@@ -1487,13 +1468,11 @@ switch ($inputData['type']) {
                                         true,   // delete all
                                     );
 
-                                    if ($encryptedFieldIsChanged === false) {
-                                        array_push(
-                                            $tasksToBePerformed,
-                                            'item_field'
-                                        );
-                                        $encryptedFieldIsChanged = true;
-                                    }
+                                    array_push(
+                                        $tasksToBePerformed,
+                                        'item_field'
+                                    );
+                                    $encryptedFieldIsChanged = true;
                                 } else {
                                     $encrypt['string'] = $field['value'];
                                     $encrypt['type'] = 'not_set';
@@ -1726,8 +1705,7 @@ switch ($inputData['type']) {
 
             // get readable list of restriction
             if (
-                is_array($post_restricted_to) === true
-                && count($post_restricted_to) > 0
+                count($post_restricted_to) > 0
                 && isset($SETTINGS['restricted_to']) === true
                 && (int) $SETTINGS['restricted_to'] === 1
             ) {
@@ -1762,8 +1740,7 @@ switch ($inputData['type']) {
 
             // Manage retriction_to_roles
             if (
-                is_array($post_restricted_to_roles) === true
-                && count($post_restricted_to_roles) > 0
+                count($post_restricted_to_roles) > 0
                 && isset($SETTINGS['restricted_to_roles']) === true
                 && (int) $SETTINGS['restricted_to_roles'] === 1
             ) {
@@ -1795,38 +1772,33 @@ switch ($inputData['type']) {
                 );
 
                 // add roles for item
-                if (
-                    is_array($post_restricted_to_roles) === true
-                    && count($post_restricted_to_roles) > 0
-                ) {
-                    foreach ($post_restricted_to_roles as $role) {
-                        DB::insert(
-                            prefixTable('restriction_to_roles'),
-                            array(
-                                'role_id' => $role,
-                                'item_id' => $inputData['itemId'],
-                            )
-                        );
-                        $dataTmp = DB::queryFirstRow(
-                            'SELECT title
-                            FROM ' . prefixTable('roles_title') . '
-                            WHERE id = %i',
-                            $role
-                        );
+                foreach ($post_restricted_to_roles as $role) {
+                    DB::insert(
+                        prefixTable('restriction_to_roles'),
+                        array(
+                            'role_id' => $role,
+                            'item_id' => $inputData['itemId'],
+                        )
+                    );
+                    $dataTmp = DB::queryFirstRow(
+                        'SELECT title
+                        FROM ' . prefixTable('roles_title') . '
+                        WHERE id = %i',
+                        $role
+                    );
 
-                        // Add to array
-                        array_push(
-                            $arrayOfRestrictionRoles,
-                            $dataTmp['title']
-                        );
-                    }
+                    // Add to array
+                    array_push(
+                        $arrayOfRestrictionRoles,
+                        $dataTmp['title']
+                    );
+                }
 
-                    if ((int) $SETTINGS['restricted_to'] === 1) {
-                        $diffRolesRestiction = array_diff(
-                            $arrayOfRestrictionRoles,
-                            $arrayOfRestrictionRolesOld
-                        );
-                    }
+                if ((int) $SETTINGS['restricted_to'] === 1) {
+                    $diffRolesRestiction = array_diff(
+                        $arrayOfRestrictionRoles,
+                        $arrayOfRestrictionRolesOld
+                    );
                 }
             }
             // Update CACHE table
@@ -2005,7 +1977,7 @@ switch ($inputData['type']) {
                 );
             }
             // EMAIL
-            if ($post_email !== null && $data['email'] !== null && strcmp($data['email'], $post_email) !== 0) {
+            if ($data['email'] !== null && strcmp($data['email'], $post_email) !== 0) {
                 // Store updates performed
                 array_push(
                     $arrayOfChanges,
@@ -2127,16 +2099,14 @@ switch ($inputData['type']) {
             foreach ($rows as $record) {
                 if ($record['raison'] === NULL) continue;
                 $reason = explode(':', $record['raison']);
-                if (count($reason) > 0) {
-                    $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])) . ' - '
-                        . strval($record['login']) . ' - ' . $lang->get($record['action']) . ' - '
-                        . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
-                            : $lang->get(trim($reason[0]))) : '');
-                    if (empty($history)) {
-                        $history = $sentence;
-                    } else {
-                        $history .= '<br />' . $sentence;
-                    }
+                $sentence = date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])) . ' - '
+                    . strval($record['login']) . ' - ' . $lang->get($record['action']) . ' - '
+                    . (empty($record['raison']) === false ? (count($reason) > 1 ? $lang->get(trim($reason[0])) . ' : ' . $reason[1]
+                        : $lang->get(trim($reason[0]))) : '');
+                if (empty($history)) {
+                    $history = $sentence;
+                } else {
+                    $history .= '<br />' . $sentence;
                 }
             }
 
@@ -2144,7 +2114,7 @@ switch ($inputData['type']) {
             $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
 
             // Send email
-            if (is_array($post_diffusion_list) === true && count($post_diffusion_list) > 0) {
+            if (count($post_diffusion_list) > 0) {
                 $cpt = 0;
                 foreach ($post_diffusion_list as $emailAddress) {
                     if (empty($emailAddress) === false) {
@@ -2886,8 +2856,7 @@ switch ($inputData['type']) {
                 && intval($dataItem['anyone_can_modify']) === 1
                 && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) || (int) $session->get('user-admin') === 1)
                 && $restrictionActive === false)
-            || (null !== $inputData['folderId']
-                && isset($session__list_restricted_folders_for_items[$inputData['folderId']])
+            || (isset($session__list_restricted_folders_for_items[$inputData['folderId']])
                 && in_array($inputData['id'], $session__list_restricted_folders_for_items[$inputData['folderId']])
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
@@ -2969,7 +2938,7 @@ switch ($inputData['type']) {
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['pw_length'] = strlen($pw);
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
-            $arrData['email'] = empty($dataItem['email']) === true || $dataItem['email'] === null ? '' : $dataItem['email'];
+            $arrData['email'] = empty($dataItem['email']) === true ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
             $arrData['folder'] = $dataItem['id_tree'];
             $arrData['description'] = $dataItem['description'];
@@ -3421,7 +3390,7 @@ switch ($inputData['type']) {
             $returnArray['otp_secret'] = (string) $secret;
 
             // Add this item to the latests list
-            if ($session->has('user-latest_items') && $session->has('user-latest_items') && null !== $session->get('user-latest_items') && isset($SETTINGS['max_latest_items']) && 
+            if ($session->has('user-latest_items') && isset($SETTINGS['max_latest_items']) &&
                 in_array($dataItem['id'], $session->get('user-latest_items')) === false
             ) {
                 if (count($session->get('user-latest_items')) >= $SETTINGS['max_latest_items']) {
@@ -3616,7 +3585,7 @@ switch ($inputData['type']) {
             $filters
         );
         
-        if (empty($inputData['itemId']) === true && (empty($inputData['itemKey']) === true || is_null($inputData['itemKey']) === true)) {
+        if (empty($inputData['itemId']) === true && empty($inputData['itemKey']) === true) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
@@ -4149,7 +4118,7 @@ switch ($inputData['type']) {
             }
             $uniqueLoadData['categoriesStructure'] = $categoriesStructure;
 
-            if ($session->has('system-list_folders_editable_by_role') && $session->has('system-list_folders_editable_by_role') && null !== $session->get('system-list_folders_editable_by_role')) {
+            if ($session->has('system-list_folders_editable_by_role')) {
                 $list_folders_editable_by_role = in_array($inputData['id'], $session->get('system-list_folders_editable_by_role'));
             } else {
                 $list_folders_editable_by_role = '';
@@ -4381,8 +4350,8 @@ switch ($inputData['type']) {
                         $right = 70;
                         // ---
                         // ----- END CASE 1 -----
-                    } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') && $session->has('user-manager') && (int) $session->get('user-manager') && null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
-                            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && $session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
+                    } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') === 1)
+                            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
                         && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
                         && intval($record['perso']) !== 1
                         && $user_is_in_restricted_list === true
@@ -5101,7 +5070,7 @@ switch ($inputData['type']) {
             SessionManager::addRemoveFromSessionArray('user-favorites', [$itemId], 'remove');
 
             // refresh session fav list
-            if ($session->has('user-favorites_tab') && $session->has('user-favorites_tab') && null !== $session->get('user-favorites_tab')) {
+            if ($session->has('user-favorites_tab')) {
                 $user_favorites_tab = $session->get('user-favorites_tab');
                 foreach ($user_favorites_tab as $key => $value) {
                     if ($key === $inputData['id']) {
@@ -5832,7 +5801,7 @@ switch ($inputData['type']) {
         $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
         // perform a check in case of Read-Only user creating an item in his PF
-        if ($session->get('user-read_only') === 1) {
+        if ((int) $session->get('user-read_only') === 1) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,

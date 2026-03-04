@@ -52,6 +52,7 @@ $SETTINGS = $configManager->getAllSettings();
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $get = [];
 $get['user_id'] = $request->query->get('user_id');
+$get['token'] = $request->query->get('token');
 
 // Update table by deleting ID
 if ($session->has('user-id') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {

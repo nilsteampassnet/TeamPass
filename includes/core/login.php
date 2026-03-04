@@ -183,9 +183,9 @@ echo '
         </div>';
 // 2FA auth selector
 $mfaHtmlPart = '
-        <input type="hidden" id="2fa_user_selection" value="'.htmlspecialchars((isset($get['post_type']) === true && $get['post_type'] === 'duo') ? 'duo' : ''). '">
-        <input type="hidden" id="duo_code" value="'.htmlspecialchars(isset($get['duo_code']) === true && is_null($get['duo_code']) === false ? $get['duo_code'] : ''). '">
-        <input type="hidden" id="duo_state" value="'.htmlspecialchars(isset($get['duo_state']) === true && is_null($get['duo_state']) === false ? $get['duo_state'] : ''). '">
+        <input type="hidden" id="2fa_user_selection" value="'.htmlspecialchars($get['post_type'] === 'duo' ? 'duo' : ''). '">
+        <input type="hidden" id="duo_code" value="'.htmlspecialchars(isset($get['duo_code']) === true ? (string) $get['duo_code'] : ''). '">
+        <input type="hidden" id="duo_state" value="'.htmlspecialchars(isset($get['duo_state']) === true ? (string) $get['duo_state'] : ''). '">
         <div class="row mb-3 hidden" id="2fa_methods_selector">
             <div class="col-12">
                 <h8 class="login-box-msg">' . $lang->get('2fa_authentication_selector') . '</h8>

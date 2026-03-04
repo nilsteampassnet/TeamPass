@@ -515,16 +515,14 @@ if (null !== $post_type) {
             $tree->rebuild();
 
             // Emit WebSocket event for real-time notification
-            if ($error === false) {
-                emitFolderEvent(
-                    'updated',
-                    (int) $dataFolder['id'],
-                    $inputData['title'] ?? $dataFolder['title'],
-                    $session->get('user-login') ?? '',
-                    (int) $inputData['parentId'],
-                    (int) $session->get('user-id')
-                );
-            }
+            emitFolderEvent(
+                'updated',
+                (int) $dataFolder['id'],
+                $inputData['title'] ?? $dataFolder['title'],
+                $session->get('user-login') ?? '',
+                (int) $inputData['parentId'],
+                (int) $session->get('user-id')
+            );
 
             echo prepareExchangedData(
                 array(

@@ -432,7 +432,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         * Refresh list of last items seen
         */
         case 'refresh_list_items_seen'://action_user
-            if ($session->has('user-id') || (int) $session->get('user-id') && null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
+            if ($session->has('user-id')) {
                 return refreshUserItemsSeenList(
                     $SETTINGS
                 );
@@ -783,7 +783,7 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
             return handleUserKeys(
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $userPassword,
-                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? (int) $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
                 (bool) filter_var($dataReceived['send_email_to_user'], FILTER_VALIDATE_BOOLEAN),
@@ -1745,7 +1745,7 @@ function generateBugReport(
 
     // Prepare last PHP error line (avoid undefined indexes)
     $php_last_error = $lang->get('none');
-    if (is_array($err) === true && isset($err['message'], $err['file'], $err['line']) === true) {
+    if (is_array($err) === true) {
         $php_last_error = $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')';
     }
 
@@ -1910,7 +1910,7 @@ function isUserPasswordCorrect(
                     $result = decryptPrivateKey($key, $userInfo['private_key']);
                     
                     // If decryption is ok
-                    if (is_string($result) && $result !== '') {
+                    if ($result !== '') {
                         $privateKeyDecrypted = $result;
                         break;
                     }
@@ -2021,7 +2021,7 @@ function changePrivateKeyEncryptionPassword(
             }
             
             // Should fail here to avoid break user private key.
-            if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {
+            if (strlen($hashedPrivateKey) < 30) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                     error_log("Error reencrypt user private key. User ID: {$post_user_id}, Given OTP: '{$post_current_code}'");
                 }
@@ -3624,8 +3624,8 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
         // Attempt to decrypt the private key with the previous password
         $privateKey = decryptPrivateKey($previousPassword, $encryptedPrivateKey);
         
-        // If decryption succeeded (key not null)
-        if ($privateKey !== null) {
+        // If decryption succeeded (non-empty key)
+        if ($privateKey !== '') {
             // Select one personal item share_key to test decryption
             $currentUserItemKey = DB::queryFirstRow(
                 'SELECT si.share_key, si.increment_id, i.perso
