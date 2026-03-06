@@ -213,8 +213,8 @@ if (null !== $post_type) {
         $deletedByLogin = '';
         $deletedByName = '';
         if ($deletedByUserId > 0 && isset($usersById[$deletedByUserId]) === true) {
-            $deletedByLogin = (string) ($usersById[$deletedByUserId]['login'] ?? '');
-            $deletedByName = (string) ($usersById[$deletedByUserId]['name'] ?? '');
+            $deletedByLogin = (string) $usersById[$deletedByUserId]['login'];
+            $deletedByName = (string) $usersById[$deletedByUserId]['name'];
         }
 
         $arrFolders[] = array(
@@ -2113,12 +2113,12 @@ function tpResolveDeletedFolderDeletionInfo(
 
     // Direct logs
     if ($resolved['user_id'] === null && isset($directDeletionInfo[$folderId]) === true) {
-        $uid = (int) ($directDeletionInfo[$folderId]['user_id'] ?? 0);
+        $uid = (int) $directDeletionInfo[$folderId]['user_id'];
         if ($uid > 0) {
             $resolved['user_id'] = $uid;
         }
-        if ($resolved['date'] === null || (int) $resolved['date'] <= 0) {
-            $dt = (int) ($directDeletionInfo[$folderId]['date'] ?? 0);
+        if ($resolved['date'] === null) {
+            $dt = (int) $directDeletionInfo[$folderId]['date'];
             if ($dt > 0) {
                 $resolved['date'] = $dt;
             }

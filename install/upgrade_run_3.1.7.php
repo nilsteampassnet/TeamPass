@@ -232,6 +232,7 @@ addColumnIfNotExist(
 mysqli_close($db_link);
 
 // Finished
+// @phpstan-ignore greater.alwaysFalse (error array reserved for future use)
 echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($error) : '').'"}]';
 
 

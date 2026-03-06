@@ -346,6 +346,7 @@ foreach ($iumSettings as $setting) {
     }
 }
 
+// @phpstan-ignore identical.alwaysFalse (mysqli_query may return false on error despite PHPDoc)
 if ($res === false) {
     $error[] = "Failed to add phpseclibv3_migration_task_id to users table - MySQL Error: " . mysqli_error($db_link);
 }
@@ -501,6 +502,7 @@ $res = checkIndexExist(
     'UNIQUE_LDAP_GROUP_ID',
     "ADD UNIQUE KEY `UNIQUE_LDAP_GROUP_ID` (`ldap_group_id`(255))"
 );
+// @phpstan-ignore identical.alwaysFalse (checkIndexExist may return false on error despite PHPDoc)
 if ($res === false) {
     $error[] = "Failed to add unique key on ldap_groups_roles.ldap_group_id - MySQL Error: " . mysqli_error($db_link);
 }

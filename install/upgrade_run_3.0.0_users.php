@@ -202,7 +202,7 @@ if (null !== $post_step) {
             }
             
             // Treat the 1st user in the list
-            if (count($listOfUsers) > 0 || (count($listOfUsers) === 0 && empty($post_number) === false && $post_extra !== 'all_users_created')) {
+            if (count($listOfUsers) > 0 || (empty($post_number) === false && $post_extra !== 'all_users_created')) {
                 $usersArray = [];
                 // Get info about user
                 $userQuery = mysqli_fetch_array(
@@ -299,7 +299,6 @@ if (null !== $post_step) {
 
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE
@@ -319,7 +318,6 @@ if (null !== $post_step) {
                     echo '[{"finish":"1" , "next":"step3", "error":"Public key is null; provided key is '.$post_user_info.'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
                     mysqli_close($db_link);
                     exit();
-                    break;
                 } else {
                     /// get innffo for TP__USEER___IID
                     $userQuery = mysqli_fetch_array(
@@ -331,11 +329,11 @@ if (null !== $post_step) {
                         )
                     );
 
-                    $userInfo['public_key'] ==  $userQuery['public_key'];
-                    $userInfo['private_key'] ==  $userQuery['private_key'];
-                    $userInfo['login'] ==  $userQuery['login'];
-                    $userInfo['name'] ==  $userQuery['name'];
-                    $userInfo['lastname'] ==  $userQuery['lastname'];
+                    $userInfo['public_key'] = $userQuery['public_key'];
+                    $userInfo['private_key'] = $userQuery['private_key'];
+                    $userInfo['login'] = $userQuery['login'];
+                    $userInfo['name'] = $userQuery['name'];
+                    $userInfo['lastname'] = $userQuery['lastname'];
                 }
             }
 
@@ -355,11 +353,11 @@ if (null !== $post_step) {
                     )
                 );
                 $adminPrivateKey = decryptPrivateKey($adminPwd, $adminQuery['private_key']);
+                // @phpstan-ignore identical.alwaysFalse (decryptPrivateKey may return false despite PHPDoc)
                 if ($adminPrivateKey === false) {
                     echo '[{"finish":"1" , "next":"step3", "error":"Admin PWD is null; provided key is '.$post_admin_info[1].'" , "data" : "" , "number":"' . $post_number . '" , "loop_finished" : "true"}]';
                     mysqli_close($db_link);
                     exit();
-                    break;
                 }
                 $_SESSION['admin_private_key'] = $adminPrivateKey;
             }
@@ -437,7 +435,6 @@ if (null !== $post_step) {
             
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE
@@ -520,7 +517,6 @@ if (null !== $post_step) {
 
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE
@@ -602,7 +598,6 @@ if (null !== $post_step) {
 
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE
@@ -685,7 +680,6 @@ if (null !== $post_step) {
 
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE
@@ -773,7 +767,6 @@ if (null !== $post_step) {
 
             mysqli_close($db_link);
             exit();
-            break;
 
             /*
         * CASE

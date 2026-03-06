@@ -312,7 +312,7 @@ function populateItemsTable_CreatedAt($pre)
 
     // Generate lists of items to update
     while ($item = mysqli_fetch_assoc($items)) {
-        if (empty((string) $item['datetime']) === false && is_null($item['datetime']) === false) {
+        if (empty((string) $item['datetime']) === false) {
             $ids[] = $item['id'];
             $updateCases[] = "WHEN id = " . $item['id'] . " THEN '" . $item['datetime'] . "'";
         }
@@ -403,9 +403,6 @@ function installPurgeUnnecessaryKeys(bool $allUsers, int $user_id, string $pre)
 
     // Do init
     $allUsers = $allUsers === true ? true : false;
-    if (is_null($user_id)) {
-        $user_id = 0;
-    }
 
     if ($allUsers === true) {
         $users = mysqli_query(
@@ -432,10 +429,6 @@ function installPurgeUnnecessaryKeys(bool $allUsers, int $user_id, string $pre)
 function installPurgeUnnecessaryKeysForUser(int $user_id, string $pre)
 {
     global $db_link;
-
-    if (is_null($user_id)) {
-        $user_id = 0;
-    }
 
     // Start transaction to avoid autocommit
     mysqli_begin_transaction($db_link, MYSQLI_TRANS_START_READ_WRITE);

@@ -113,9 +113,9 @@ function cryptionForInstall(string $message, string $ascii_key, string $type, ?a
     $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
-    // convert KEY
-    $key = Key::loadFromAsciiSafeString($ascii_key);
     try {
+        // convert KEY (throws BadFormatException if key is malformed)
+        $key = Key::loadFromAsciiSafeString($ascii_key);
         if ($type === 'encrypt') {
             $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
@@ -130,12 +130,6 @@ function cryptionForInstall(string $message, string $ascii_key, string $type, ?a
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
         $err = 'environment_error';
-    } catch (CryptoException\IOException $ex) {
-        error_log('TEAMPASS-Error-IO: ' . $ex->getMessage());
-        $err = 'io_error';
-    } catch (Exception $ex) {
-        error_log('TEAMPASS-Error-Unexpected exception: ' . $ex->getMessage());
-        $err = 'unexpected_error';
     }
 
     return [

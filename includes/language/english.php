@@ -1937,7 +1937,6 @@ return array(
     'health_apache_log_check' => 'Check',
     'health_apache_log_fix_hint' => 'To allow access, run the commands below then retry.',
     'health_apache_log_fix_hint_missing' => 'Check your Apache vhost ErrorLog path and the log file name.',
-    );
 
     // WebSocket real-time notifications
     'ws_realtime_connection_lost' => 'Real-time connection lost',

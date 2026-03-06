@@ -288,12 +288,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     && $_SESSION['user_granted'] === '1'
 ) {
     // Do we have all database settings
-    if (null !== DB_HOST
-        && null !== DB_USER
-        && null !== DB_PASSWD
-        && null !== DB_NAME
-        && null !== DB_PREFIX
-        && null !== DB_PORT
+    if (defined('DB_HOST')
+        && defined('DB_USER')
+        && defined('DB_PASSWD')
+        && defined('DB_NAME')
+        && defined('DB_PREFIX')
+        && defined('DB_PORT')
     ) {
         $dbSettings = true;
     } else {

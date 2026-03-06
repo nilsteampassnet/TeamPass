@@ -673,7 +673,7 @@ function populateUsersTable($pre)
         WHERE ls.type = 'user_mngt' AND ls.label = 'at_user_added'"
     );
     while ($user = mysqli_fetch_assoc($users)) {
-        if (empty((string) $user['datetime']) === false && is_null($user['datetime']) === false) {
+        if (empty((string) $user['datetime']) === false) {
             // update created_at field
             mysqli_query(
                 $db_link,
@@ -688,7 +688,7 @@ function populateUsersTable($pre)
         "select u.id as uid, (select date from " . $pre . "log_system where type = 'user_mngt' and field_1=uid order by date DESC limit 1) as datetime from `" . $pre . "users` as u;"
     );
     while ($user = mysqli_fetch_assoc($users)) {
-        if (empty((string) $user['datetime']) === false && is_null($user['datetime']) === false) {
+        if (empty((string) $user['datetime']) === false) {
             // update updated_at field
             mysqli_query(
                 $db_link,

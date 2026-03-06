@@ -171,10 +171,6 @@ while ($file_info = mysqli_fetch_array($rows)) {
                 $err = $ex;
             } catch (CryptoException\EnvironmentIsBrokenException $ex) {
                 $err = $ex;
-            } catch (CryptoException\CryptoException $ex) {
-                $err = $ex;
-            } catch (CryptoException\IOException $ex) {
-                $err = $ex;
             }
             if (empty($err) === false) {
                 echo $err;
