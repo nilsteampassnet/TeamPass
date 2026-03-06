@@ -282,8 +282,10 @@ class DatabaseInstaller
                 `object_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 `share_key` text NOT NULL,
+                `encryption_version` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
                 PRIMARY KEY (`increment_id`),
-                UNIQUE KEY idx_unique_object_user (object_id, user_id)
+                UNIQUE KEY idx_unique_object_user (object_id, user_id),
+                KEY `encryption_version` (`encryption_version`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
