@@ -4771,7 +4771,7 @@ switch ($inputData['type']) {
                 FROM ' . prefixTable('users') . ' AS u
                 INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
                 WHERE u.admin = 0 AND ur.source = %s
-                GROUP BY u.id',
+                GROUP BY u.id, u.login, u.email, u.name, u.lastname',
                 'manual'
             );
             foreach ($rows2 as $record2) {
@@ -5431,6 +5431,19 @@ switch ($inputData['type']) {
         // Update cache table
         updateCacheTable('update_value', (int) $inputData['itemId']);
 
+        // Notify via WebSocket: item moved from source folder and arrived in destination folder.
+        // Both folders' subscribers receive the event (excluding the user who performed the move).
+        $movePayload = [
+            'item_id'        => (int) $inputData['itemId'],
+            'from_folder_id' => (int) $dataSource['id_tree'],
+            'to_folder_id'   => (int) $inputData['folderId'],
+            'label'          => $dataSource['label'],
+            'moved_by'       => $session->get('user-login') ?? '',
+        ];
+        $moveExclude = (int) $session->get('user-id');
+        emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $movePayload, $moveExclude);
+        emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $movePayload, $moveExclude);
+
         $returnValues = array(
             'error' => '',
             'message' => '',
@@ -5750,6 +5763,18 @@ switch ($inputData['type']) {
                     $session->get('user-login'),
                     'at_moved : ' . strval($dataSource['title']) . ' -> ' . strval($dataDestination['title'])
                 );
+
+                // Notify via WebSocket: item moved (source and destination folders)
+                $massMovePayload = [
+                    'item_id'        => (int) $item_id,
+                    'from_folder_id' => (int) $dataSource['id_tree'],
+                    'to_folder_id'   => (int) $inputData['folderId'],
+                    'label'          => $dataSource['label'],
+                    'moved_by'       => $session->get('user-login') ?? '',
+                ];
+                $massMoveExclude = (int) $session->get('user-id');
+                emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $massMovePayload, $massMoveExclude);
+                emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $massMovePayload, $massMoveExclude);
             }
         }
 
@@ -6426,18 +6451,32 @@ switch ($inputData['type']) {
         }
         // Refresh role-based folder access from database
         // Ensures real-time visibility when admin changes role permissions
+        // Use subqueries for aggregations (MySQL ONLY_FULL_GROUP_BY compatibility)
         $userData = DB::queryFirstRow(
             'SELECT u.admin,
-            GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-            GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
-            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups
+            agg_groups.groupes_visibles,
+            agg_gforbid.groupes_interdits,
+            agg_roles.fonction_id,
+            agg_roles.roles_from_ad_groups
             FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-            LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-            WHERE u.id = %s
-            GROUP BY u.id',
+            LEFT JOIN (
+                SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+                FROM ' . prefixTable('users_groups') . '
+                GROUP BY user_id
+            ) agg_groups ON agg_groups.user_id = u.id
+            LEFT JOIN (
+                SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+                FROM ' . prefixTable('users_groups_forbidden') . '
+                GROUP BY user_id
+            ) agg_gforbid ON agg_gforbid.user_id = u.id
+            LEFT JOIN (
+                SELECT user_id,
+                    GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id,
+                    GROUP_CONCAT(DISTINCT CASE WHEN source = "ad" THEN role_id END ORDER BY role_id SEPARATOR ";") AS roles_from_ad_groups
+                FROM ' . prefixTable('users_roles') . '
+                GROUP BY user_id
+            ) agg_roles ON agg_roles.user_id = u.id
+            WHERE u.id = %s',
             $session->get('user-id')
         );
 
@@ -7512,6 +7551,12 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
         // If no locks exist and the action is 'edit', create a new lock
         if ($actionType === 'edit') {
             createEditionLock($itemId, $userId, $now);
+
+            // Notify other users via WebSocket that this item is now being edited
+            $folderId = getItemFolderIdFromDb($itemId);
+            if ($folderId !== null) {
+                emitEditionLockEvent('started', $itemId, $folderId, $session->get('user-login') ?? '', $userId);
+            }
         }
         return ['status' => false];
     }

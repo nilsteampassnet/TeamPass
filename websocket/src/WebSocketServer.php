@@ -23,6 +23,15 @@ class WebSocketServer implements MessageComponentInterface
     private Logger $logger;
     private array $config;
 
+    /** @var array<string, list<int>> Failed auth timestamps indexed by IP */
+    private array $failedAuthByIp = [];
+
+    /** Maximum failed auth attempts per IP within the window before blocking */
+    private const MAX_FAILED_AUTH = 10;
+
+    /** Sliding window for failed auth rate limiting (seconds) */
+    private const FAILED_AUTH_WINDOW_SEC = 60;
+
     public function __construct(
         ConnectionManager $connections,
         AuthValidator $authValidator,
@@ -53,6 +62,19 @@ class WebSocketServer implements MessageComponentInterface
         // Extract query parameters from WebSocket handshake
         $queryString = $conn->httpRequest->getUri()->getQuery();
         parse_str($queryString, $params);
+
+        // Reject IPs that have exceeded the failed-auth rate limit
+        $remoteIp = $conn->remoteAddress ?? '';
+        if ($this->isAuthRateLimited($remoteIp)) {
+            $this->logger->warning('Auth rate limit exceeded by IP', ['ip' => $remoteIp]);
+            $conn->send(json_encode([
+                'type' => 'error',
+                'error_code' => 'rate_limited',
+                'message' => 'Too many failed authentication attempts.',
+            ]));
+            $conn->close();
+            return;
+        }
 
         // Extract cookies from HTTP headers
         $cookies = $this->extractCookies($conn);
@@ -99,6 +121,9 @@ class WebSocketServer implements MessageComponentInterface
                 'has_token' => !empty($params['token']),
                 'has_session' => !empty($cookies['PHPSESSID']),
             ]);
+
+            // Record the failure for rate limiting before closing
+            $this->recordFailedAuth($remoteIp);
 
             $conn->send(json_encode([
                 'type' => 'error',
@@ -149,8 +174,10 @@ class WebSocketServer implements MessageComponentInterface
             'total_connections' => $this->connections->getConnectionCount(),
         ]);
 
-        // Send connection confirmation
-        $conn->send(json_encode([
+        // Send connection confirmation.
+        // If authenticated via a single-use WS token, include a reconnect_token
+        // so the client can reconnect without a new page-load token.
+        $connectedMsg = [
             'type' => 'connected',
             'user_id' => $userData['user_id'],
             'user_login' => $userData['user_login'],
@@ -158,7 +185,11 @@ class WebSocketServer implements MessageComponentInterface
             'config' => [
                 'ping_interval' => $this->config['ping_interval_sec'] ?? 30,
             ],
-        ]));
+        ];
+        if (!empty($userData['reconnect_token'])) {
+            $connectedMsg['reconnect_token'] = $userData['reconnect_token'];
+        }
+        $conn->send(json_encode($connectedMsg));
     }
 
     /**
@@ -379,6 +410,42 @@ class WebSocketServer implements MessageComponentInterface
         }
 
         return $cookies;
+    }
+
+    /**
+     * Check whether an IP address has exceeded the failed-auth rate limit.
+     */
+    private function isAuthRateLimited(string $ip): bool
+    {
+        if ($ip === '') {
+            return false;
+        }
+
+        $now = time();
+        $windowStart = $now - self::FAILED_AUTH_WINDOW_SEC;
+
+        if (!isset($this->failedAuthByIp[$ip])) {
+            return false;
+        }
+
+        // Keep only timestamps within the current window
+        $this->failedAuthByIp[$ip] = array_values(
+            array_filter($this->failedAuthByIp[$ip], fn(int $ts): bool => $ts > $windowStart)
+        );
+
+        return count($this->failedAuthByIp[$ip]) >= self::MAX_FAILED_AUTH;
+    }
+
+    /**
+     * Record a failed authentication attempt for an IP address.
+     */
+    private function recordFailedAuth(string $ip): void
+    {
+        if ($ip === '') {
+            return;
+        }
+
+        $this->failedAuthByIp[$ip][] = time();
     }
 
     /**

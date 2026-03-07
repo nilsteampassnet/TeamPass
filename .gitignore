@@ -48,3 +48,8 @@ phpstan.neon
 *debug*.php
 /scripts/_local/*
 /.auto-claude/*
+/coverage/*
+.phpunit.result.cache
+.phpunit.cache/
+tests/_output/
+tests/_support/_generated/

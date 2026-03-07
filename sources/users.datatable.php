@@ -176,28 +176,33 @@ if ((int) $session->get('user-admin') === 0
     }
 }
 
-// Base query with LEFT JOIN (all roles sources)
-$baseQuery = 'FROM '.prefixTable('users').' AS u
-    LEFT JOIN '.prefixTable('users_roles').' AS ur ON (u.id = ur.user_id)';
+// Base query (no direct JOIN - aggregation done via subqueries for MySQL ONLY_FULL_GROUP_BY compatibility)
+$baseQuery = 'FROM '.prefixTable('users').' AS u';
 
 // Count total records
 $rows = DB::query(
-    'SELECT u.id '.$baseQuery.$sWhere.' GROUP BY u.id'
+    'SELECT u.id '.$baseQuery.$sWhere
 );
 $iTotal = count($rows);
 
 // Get paginated data with all fields
 $rows = DB::query(
     'SELECT u.*,
-        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-        GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
+        agg_roles.fonction_id,
+        agg_roles.roles_from_ad_groups,
         CASE
             WHEN u.pw LIKE "$2y$10$%" THEN 1
             ELSE 0
         END AS pw_passwordlib
-    '.$baseQuery.
-    $sWhere.
-    ' GROUP BY u.id '.
+    '.$baseQuery.'
+    LEFT JOIN (
+        SELECT user_id,
+            GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id,
+            GROUP_CONCAT(DISTINCT CASE WHEN source = "ad" THEN role_id END ORDER BY role_id SEPARATOR ";") AS roles_from_ad_groups
+        FROM '.prefixTable('users_roles').'
+        GROUP BY user_id
+    ) agg_roles ON agg_roles.user_id = u.id '.
+    $sWhere.' '.
     $sOrder.
     $sLimit
 );

@@ -4832,6 +4832,16 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
         // Show tooltips
         $('.infotip').tooltip();
+
+        // Apply edition lock badges for items already being edited.
+        // The WebSocket subscribe response may have arrived before the DOM
+        // rows existed (race condition between WS and AJAX), so we re-apply
+        // any known locks now that the rows are in the DOM.
+        if (window.tpLockedItems && typeof window.tpWsShowEditionLock === 'function') {
+            Object.keys(window.tpLockedItems).forEach(function(itemId) {
+                window.tpWsShowEditionLock(parseInt(itemId), window.tpLockedItems[itemId])
+            })
+        }
     }
 
     $(document).on('click', '.open-folder', function() {
@@ -5482,6 +5492,14 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
                     // Prepare card
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
+
+                    // Remove any stale edition lock badge from a previously viewed item
+                    $('#items-details-container').find('.edition-lock-detail-badge').remove();
+                    // If this item is already being edited by another user, show the lock badge
+                    if (window.tpLockedItems && window.tpLockedItems[data.id] &&
+                        typeof window.tpWsShowEditionLockDetail === 'function') {
+                        window.tpWsShowEditionLockDetail(data.id, window.tpLockedItems[data.id]);
+                    }
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
                     $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));
                     if (data.description === '') {
@@ -7191,6 +7209,21 @@ $var['hidden_asterisk'] = '<i class="fa-solid fa-asterisk mr-2"></i><i class="fa
 
                 // Block move if item is currently being edited by another user
                 if (window.tpLockedItems && window.tpLockedItems[ui.draggable.data('item-id')]) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('error_item_currently_being_updated'); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // Block move if item is currently open in the detail panel (being read or edited)
+                const $detailContainer = $('#items-details-container');
+                if (!$detailContainer.hasClass('hidden') &&
+                    parseInt($detailContainer.data('id')) === parseInt(ui.draggable.data('item-id'))) {
                     toastr.remove();
                     toastr.error(
                         '<?php echo $lang->get('error_item_currently_being_updated'); ?>',

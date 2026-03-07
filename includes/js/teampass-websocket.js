@@ -326,6 +326,11 @@
         break
 
       case 'connected':
+        // Store the reconnect token issued by the server so it is used
+        // for subsequent connections instead of the short-lived URL token.
+        if (message.reconnect_token) {
+          this.token = message.reconnect_token
+        }
         this._emit('connected', message)
         break
 

@@ -872,6 +872,14 @@ Version upgrades managed through `/install/upgrade_run_*.php` scripts.
 - Secure all user inputs (SQLi, XSS).
 - Do not invent things; rely strictly on factual data.
 
+### SQL Compatibility (ONLY_FULL_GROUP_BY)
+All SQL queries must be compatible with MySQL's default `ONLY_FULL_GROUP_BY` mode (enabled by default since MySQL 5.7.5). Rules to follow:
+- Every non-aggregated column in `SELECT` must appear in the `GROUP BY` clause, OR be functionally dependent on the `GROUP BY` key (e.g. the grouped column is the table's primary key).
+- Never use `SELECT *` with a partial `GROUP BY` (unless all table columns are listed in GROUP BY).
+- Prefer `SELECT DISTINCT` over `GROUP BY` when no aggregation is needed.
+- Subquery aggregations (`GROUP_CONCAT`, `COUNT`, `SUM`, `MAX`, etc.) are fine as long as the non-aggregated SELECT columns are in the GROUP BY.
+- Aliases defined in SELECT can be referenced in GROUP BY (MySQL extension, valid).
+
 You are working on an existing project.
 Absolute priority: integrate with the current code rather than proposing an ideal architecture. Each modification must be minimal, local, and compatible with the rest of the project. If a global improvement is possible, suggest it at the end as a separate recommendation.
 
