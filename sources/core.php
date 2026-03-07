@@ -87,9 +87,8 @@ $get['action'] = $request->query->get('action');
 $get['type'] = $request->query->get('type');
 $get['page'] = $request->query->get('page');
 
-// Redirect needed?
-if (isset($server['https']) === true
-    && $server['https'] !== 'on'
+// Redirect needed? (only if not already on HTTPS and STS is enabled)
+if ($server['https'] === false
     && isset($SETTINGS['enable_sts']) === true
     && (int) $SETTINGS['enable_sts'] === 1
 ) {
@@ -154,14 +153,12 @@ if (
             return false;
         }
 
-        if (is_dir($SETTINGS['cpassman_dir'] . '/install')) {
-            // Set the permissions on the install directory and delete
-            // is server Windows or Linux?
-            if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-                recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0755, 0440);
-            }
-            delTree($SETTINGS['cpassman_dir'] . '/install');
+        // Set the permissions on the install directory and delete
+        // is server Windows or Linux?
+        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
+            recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0755, 0440);
         }
+        delTree($SETTINGS['cpassman_dir'] . '/install');
 
         // Delete temporary install table
         DB::query('DROP TABLE IF EXISTS `_install`');
@@ -178,7 +175,12 @@ if (
 // Load Languages stuff
 if (isset($languagesList) === false) {
     $languagesList = [];
-    $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
+    $rows = DB::query(
+        'SELECT * 
+        FROM ' . prefixTable('languages') . ' 
+        GROUP BY name, label, code, flag, id, code_poeditor 
+        ORDER BY name ASC'
+    );
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
         if ($session->get('user-language') === $record['name'] ) {
@@ -193,7 +195,7 @@ if (isset($languagesList) === false) {
 if ($session->has('user-timezone') && null !== $session->get('user-timezone') && $session->get('user-timezone') !== 'not_defined') {
     // use user timezone
     date_default_timezone_set($session->get('user-timezone'));
-} elseif (isset($SETTINGS['timezone']) === false || $SETTINGS['timezone'] === null) {
+} elseif (isset($SETTINGS['timezone']) === false) {
     // use server timezone
     date_default_timezone_set('UTC');
     $SETTINGS['timezone'] = 'UTC';
@@ -282,6 +284,15 @@ if (
         logEvents($SETTINGS, 'user_connection', 'disconnect', (string) $session->get('user-id'), $session->get('user-login'));
     }
 
+    // Notify other open tabs via WebSocket before invalidating the session.
+    // The user ID must be captured here as it is no longer accessible after invalidate().
+    $expiredUserId = (int) $session->get('user-id');
+    if ($expiredUserId > 0) {
+        emitWebSocketEvent('session_expired', 'user', $expiredUserId, [
+            'reason' => 'session_timeout',
+        ]);
+    }
+
     // erase session table
     $session->invalidate();
     //Redirection
@@ -296,7 +307,7 @@ if (
 // CHECK IF UPDATE IS NEEDED
 if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !== false
         || empty($SETTINGS['update_needed']) === true))
-    && ($session->has('user-admin') && $session->get('user-admin') && null !== $session->get('user-admin') && $session->get('user-admin') === 1)
+    && ($session->has('user-admin') && $session->get('user-admin') === 1)
 ) {
     $row = DB::queryFirstRow(
         'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type=%s_type AND intitule=%s_intitule',
@@ -318,9 +329,9 @@ if ((isset($SETTINGS['update_needed']) === true && ($SETTINGS['update_needed'] !
 * reject all others
 */
 if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenance_mode'] === 1) {
-    if ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') !== 1) {
+    if ($session->has('user-admin') && (int) $session->get('user-admin') !== 1) {
         // Update table by deleting ID
-        if ($session->has('user-id') && null !== $session->get('user-id')) {
+        if ($session->has('user-id')) {
             DB::update(
                 prefixTable('users'),
                 [
@@ -340,7 +351,7 @@ if (isset($SETTINGS['maintenance_mode']) === true && (int) $SETTINGS['maintenanc
 
         syslog(
             LOG_WARNING,
-            'Unlog user: ' . date('Y/m/d H:i:s') . " {$server['remote_addr']} ({$server['http_user_agent']})"
+            'Unlog user: ' . date('Y/m/d H:i:s') . ' ' . strval($server['remote_addr']) . ' (' . strval($server['http_user_agent']) . ')'
         );
         // erase session table
         $session->invalidate();
@@ -381,7 +392,7 @@ if (
     }
     
     if (isset($cert_name) === true && empty($cert_name) === false && $cert_name !== $cert_issuer) {
-        if (isset($server['https'])) {
+        if ($server['https'] === true) {
             header('Strict-Transport-Security: max-age=500');
             $session->set('system-error_sts', 0);
         }
@@ -391,7 +402,7 @@ if (
 }
 
 /* LOAD INFORMATION CONCERNING USER */
-if ($session->has('user-timezone') && null !== $session->get('user-id') && empty($session->get('user-id')) === false) {
+if ($session->has('user-timezone') && empty($session->get('user-id')) === false) {
     // query on user
     $data =DB::queryFirstRow(
         'SELECT u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.last_connexion, u.auth_type, u.last_pw_change, u.deleted_at,
@@ -404,12 +415,12 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
         LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
         LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
         WHERE u.id = %s
-        GROUP BY u.id',
+        GROUP BY u.id, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.last_connexion, u.auth_type, u.last_pw_change, u.deleted_at',
         $session->get('user-id')
     );
     
     //Check if user has been deleted or unlogged
-    if (empty($data) === true || (isset($data['deleted_at']) && $data['deleted_at'] !== null)) {
+    if (empty($data) === true || (isset($data['deleted_at']) && !empty($data['deleted_at']))) {
         // erase session table
         $session->invalidate();
         //redirection to index
@@ -452,10 +463,10 @@ if ($session->has('user-timezone') && null !== $session->get('user-id') && empty
             $data['groupes_visibles'] ?? [],
             $data['groupes_interdits'] ?? [],
             $data['admin'],
-            is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : $data['fonction_id'] . ';' . $data['roles_from_ad_groups']),
+            is_null($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : (empty($data['roles_from_ad_groups']) === true ? $data['fonction_id'] : strval($data['fonction_id']) . ';' . strval($data['roles_from_ad_groups'])),
             $SETTINGS
         );
-        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') && null !== $session->get('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
+        if ($session->has('user-can_create_root_folder') && (int) $session->get('user-can_create_root_folder') === 1) {
             SessionManager::addRemoveFromSessionArray('user-accessible_folders', [0], 'add');
         }
 
@@ -583,5 +594,5 @@ if (
 }
 
 /* CHECK NUMBER OF USER ONLINE */
-DB::query('SELECT * FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
-$session->set('system-nb_users_online', DB::count());
+$onlineCount = DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE timestamp>=%i', time() - 600);
+$session->set('system-nb_users_online', intval($onlineCount));

@@ -41,11 +41,12 @@ define('TP_COPYRIGHT', '2009-'.date('Y'));
 define('TP_ALLOWED_TAGS', '<b><i><sup><sub><em><strong><u><br><br /><a><strike><ul><blockquote><blockquote><img><li><h1><h2><h3><h4><h5><ol><small><font>');
 define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 1000);
-define('WIP', false);
+define('WIP', (bool) getenv('TEAMPASS_DEBUG'));
 define('UPGRADE_SEND_EMAILS', true);
 define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
-define('LOG_TO_SERVER', false);         // Defines if logs are sent to the server
+define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 600);  // Lock expires after 5 minutes without heartbeat renewal
+define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
 

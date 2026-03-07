@@ -265,14 +265,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <span>Directory "/files/" is writable</span><br />
                             <span>Directory "/upload/" is writable</span><br />
                             <span>PHP extension "openssl" is loaded</span><br />
-                            <span>PHP extension "gd" is loaded</span><br />
                             <span>PHP extension "mbstring" is loaded</span><br />
                             <span>PHP extension "bcmath" is loaded</span><br />
-                            <span>PHP extension "iconv" is loaded</span><br />
                             <span>PHP extension "xml" is loaded</span><br />
                             <span>PHP extension "curl" is loaded</span><br />
-                            <span>PHP extension "gmp" is loaded</span><br />
-                            <span>PHP extension "mcrypt" is loaded</span><br />
+                            <span>PHP extension "posix" is loaded</span><br />
+                            <span>PHP extension "pcntl" is loaded</span><br />
                             <span>PHP version is greater or equal to '.MIN_PHP_VERSION.'</span><br />
                             <span>SQL version is greater or equal to MySQL '.MIN_MYSQL_VERSION.' or MariaDB '.MIN_MARIADB_VERSION.'</span><br />
                             <span>Tasks manager has no tasks behind</span><br />
@@ -290,12 +288,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     && $_SESSION['user_granted'] === '1'
 ) {
     // Do we have all database settings
-    if (null !== DB_HOST
-        && null !== DB_USER
-        && null !== DB_PASSWD
-        && null !== DB_NAME
-        && null !== DB_PREFIX
-        && null !== DB_PORT
+    if (defined('DB_HOST')
+        && defined('DB_USER')
+        && defined('DB_PASSWD')
+        && defined('DB_NAME')
+        && defined('DB_PREFIX')
+        && defined('DB_PORT')
     ) {
         $dbSettings = true;
     } else {

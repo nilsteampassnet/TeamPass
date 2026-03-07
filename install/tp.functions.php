@@ -80,15 +80,17 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 //    "cipher" => ""
 //));';
 } else {
+    // @phpstan-ignore function.impossibleType (DB_SSL may be false or an array depending on SSL configuration)
+    $dbSslArray = is_array(DB_SSL) ? DB_SSL : ['key' => '', 'cert' => '', 'ca_cert' => '', 'ca_path' => '', 'cipher' => ''];
     $settingsTxt .= '
 //define("DB_SSL", false); // if DB over SSL then comment this line
 // if DB over SSL then uncomment the following lines
 define("DB_SSL", array(
-    "key" => "'.DB_SSL['key'].'",
-    "cert" => "'.DB_SSL['cert'].'",
-    "ca_cert" => ""'.DB_SSL['ca_cert'].',
-    "ca_path" => "'.DB_SSL['ca_path'].'",
-    "cipher" => "'.DB_SSL['cipher'].'"
+    "key" => "'.$dbSslArray['key'].'",
+    "cert" => "'.$dbSslArray['cert'].'",
+    "ca_cert" => "'.$dbSslArray['ca_cert'].'",
+    "ca_path" => "'.$dbSslArray['ca_path'].'",
+    "cipher" => "'.$dbSslArray['cipher'].'"
 ));';
 }
 
@@ -161,10 +163,9 @@ function defuseCryption($message, $ascii_key, $type)
         $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
     }
     
-    // convert KEY
-    $key = Key::loadFromAsciiSafeString($ascii_key);
-
     try {
+        // convert KEY (throws BadFormatException if key is malformed)
+        $key = Key::loadFromAsciiSafeString($ascii_key);
         if ($type === 'encrypt') {
             $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
@@ -175,10 +176,6 @@ function defuseCryption($message, $ascii_key, $type)
     } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
-    } catch (CryptoException\CryptoException $ex) {
-        $err = $ex;
-    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 
@@ -241,7 +238,7 @@ function addColumnIfNotExist($dbname, $column, $columnAttr = "VARCHAR(255) NULL"
             return true;
         }
     }
-    if (!$exists && empty($column) === false) {
+    if (empty($column) === false) {
         return mysqli_query($db_link, "ALTER TABLE `$dbname` ADD `$column`  $columnAttr");
     }
 
@@ -644,21 +641,15 @@ function deleteAllFolder(string $str)
  */
 function encryptFollowingDefuseForInstall($message, $ascii_key): array
 {
-    // convert KEY
-    $key = Key::loadFromAsciiSafeString($ascii_key);
     $err = "";
 
     try {
+        // convert KEY (throws BadFormatException if key is malformed)
+        $key = Key::loadFromAsciiSafeString($ascii_key);
         $text = Crypto::encrypt($message, $key);
-    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = 'an attack! either the wrong key was loaded, or the ciphertext has changed since it was created either corrupted in the database or intentionally modified by someone trying to carry out an attack.';
     } catch (CryptoException\BadFormatException $ex) {
         $err = $ex;
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
-        $err = $ex;
-    } catch (CryptoException\CryptoException $ex) {
-        $err = $ex;
-    } catch (CryptoException\IOException $ex) {
         $err = $ex;
     }
 

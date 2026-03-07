@@ -133,6 +133,7 @@ foreach ($val as $elem) {
         "SELECT COUNT(*) FROM ".$pre."misc
         WHERE type='".$elem[0]."' AND intitule='".$elem[1]."'"
     );
+    // @phpstan-ignore if.alwaysFalse (mysqli_error returns non-empty string on error despite type hint)
     if (mysqli_error($db_link)) {
         echo '[{"finish":"1", "msg":"", "error":"MySQL Error! Last input is "'.$elem[1].'"}]';
         exit();
@@ -146,12 +147,14 @@ foreach ($val as $elem) {
                 ('".$elem[0]."', '".$elem[1]."', '".
                 str_replace("'", "", $elem[2])."');"
             );
+            // @phpstan-ignore if.alwaysFalse (mysqli_error returns non-empty string on error despite type hint)
             if (mysqli_error($db_link)) {
                 echo '[{"finish":"1", "msg":"", "error":"MySQL Error1! '.addslashes(mysqli_error($db_link)).'"}]';
                 exit();
             }
         } else {
             // Force update for some settings
+            // @phpstan-ignore identical.alwaysTrue ($elem[3] type depends on caller context)
             if ($elem[3] === 1) {
                 $queryRes = mysqli_query(
                     $db_link,
@@ -159,6 +162,7 @@ foreach ($val as $elem) {
                     SET `valeur` = '".$elem[2]."'
                     WHERE `type` = '".$elem[0]."' AND `intitule` = '".$elem[1]."'"
                 );
+                // @phpstan-ignore if.alwaysFalse (mysqli_error returns non-empty string on error despite type hint)
                 if (mysqli_error($db_link)) {
                     echo '[{"finish":"1", "msg":"", "error":"MySQL Error2! '.addslashes(mysqli_error($db_link)).'"}]';
                     exit();
@@ -1638,13 +1642,15 @@ try {
 //--->BEGIN 3.0.0.22
 
 // Change column increment_id to auto increment in cache_tree table
-$columns = mysqli_query($db_link, "SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS
+$columnsResult = mysqli_query($db_link, "SELECT count(*) FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = '".$database."'
     AND TABLE_NAME = '" . $pre . "cache_tree'
     AND COLUMN_NAME = 'increment_id'
     AND EXTRA like '%auto_increment%'");
+$columnsRow = $columnsResult ? mysqli_fetch_row($columnsResult) : [0];
+$columnsCount = (int) ($columnsRow[0] ?? 0);
 
-if ($columns === 0) {
+if ($columnsCount === 0) {
     try {
         // Drop primary key
         mysqli_query(

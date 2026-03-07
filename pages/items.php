@@ -88,33 +88,6 @@ if ((int) $session_user_admin === 1) {
     $session->set('user-accessible_folders', $session->get('user-personal_visible_folders'));
 }
 
-// Get list of users
-$usersList = [];
-$rows = DB::query('SELECT id,login,email FROM ' . prefixTable('users') . ' ORDER BY login ASC');
-foreach ($rows as $record) {
-    $userLoginSafe = htmlspecialchars($record['login'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    $usersList[$userLoginSafe] = [
-        'id' => $record['id'],
-        'login' => $userLoginSafe,
-        'email' => htmlspecialchars($record['email'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-    ];
-}
-// Get list of roles
-$arrRoles = [];
-$listRoles = '';
-$rows = DB::query('SELECT id,title FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC');
-foreach ($rows as $reccord) {
-    $arrRoles[$reccord['title']] = [
-        'id' => $reccord['id'],
-        'title' => $reccord['title'],
-    ];
-    if (empty($listRoles)) {
-        $listRoles = $reccord['id'] . '#' . $reccord['title'];
-    } else {
-        $listRoles .= ';' . $reccord['id'] . '#' . $reccord['title'];
-    }
-}
-
 ?>
 
 <!-- Content Header (Page header) -->

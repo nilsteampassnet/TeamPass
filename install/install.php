@@ -221,10 +221,10 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 									<li>PHP extension <code>mbstring</code> is loaded&nbsp;<span id="check9"></span></li>
 									<li>PHP extension <code>openssl</code> is loaded&nbsp;<span id="check10"></span></li>
 									<li>PHP extension <code>bcmath</code> is loaded&nbsp;<span id="check11"></span></li>
-									<li>PHP extension <code>iconv</code> is loaded&nbsp;<span id="check12"></span></li>
 									<li>PHP extension <code>xml</code> is loaded&nbsp;<span id="check13"></span></li>
-									<li>PHP extension <code>gd</code> is loaded&nbsp;<span id="check14"></span></li>
 									<li>PHP extension <code>curl</code> is loaded&nbsp;<span id="check15"></span></li>
+									<li>PHP extension <code>posix</code> is loaded&nbsp;<span id="check20"></span></li>
+									<li>PHP extension <code>pcntl</code> is loaded&nbsp;<span id="check19"></span></li>
 									<li>PHP version is greater or equal to <code><?php echo MIN_PHP_VERSION;?></code>&nbsp;<span id="check17"></span></li>
 									<li>Execution time limit is at least <code>30s</code>&nbsp;<span id="check18"></span></li>
 								</ul>

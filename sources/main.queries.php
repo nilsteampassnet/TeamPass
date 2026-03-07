@@ -432,7 +432,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         * Refresh list of last items seen
         */
         case 'refresh_list_items_seen'://action_user
-            if ($session->has('user-id') || (int) $session->get('user-id') && null !== $session->get('user-id') || (int) $session->get('user-id') > 0) {
+            if ($session->has('user-id')) {
                 return refreshUserItemsSeenList(
                     $SETTINGS
                 );
@@ -783,7 +783,7 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
             return handleUserKeys(
                 (int) filter_var($filtered_user_id, FILTER_SANITIZE_NUMBER_INT),
                 (string) $userPassword,
-                (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? (int) $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                 (string) filter_var($dataReceived['encryption_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) filter_var($dataReceived['delete_existing_keys'], FILTER_VALIDATE_BOOLEAN),
                 (bool) filter_var($dataReceived['send_email_to_user'], FILTER_VALIDATE_BOOLEAN),
@@ -1260,7 +1260,7 @@ function changePassword(
             insertPrivateKeyWithCurrentFlag($post_user_id, $newEncryptedPrivateKey);
 
             // update LOG
-            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), $post_user_id);
+            logEvents($SETTINGS, 'user_mngt', 'at_user_pwd_changed', (string) $session->get('user-id'), $session->get('user-login'), (string) $post_user_id);
 
             // Send back
             return prepareExchangedData(
@@ -1715,7 +1715,11 @@ function generateBugReport(
             $url_found = $value;
             if (empty($url_found) === false) {
                 $tmp = parse_url($url_found);
-                $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
+                if (is_array($tmp) && isset($tmp['scheme'])) {
+                    $anonym_url = $tmp['scheme'] . '://<anonym_url>' . (isset($tmp['path']) === true ? $tmp['path'] : '');
+                } else {
+                    $anonym_url = '<anonym_url>';
+                }
                 $value = $anonym_url;
             } else {
                 $value = '';
@@ -1728,10 +1732,8 @@ function generateBugReport(
         }
 
         // Clear some vars
-        foreach ($config_exclude_vars as $var) {
-            if ($key === $var) {
-                $value = '<removed>';
-            }
+        if (in_array($key, $config_exclude_vars, true)) {
+            $value = '<removed>';
         }
 
         // Complete line to display
@@ -1743,7 +1745,7 @@ function generateBugReport(
 
     // Prepare last PHP error line (avoid undefined indexes)
     $php_last_error = $lang->get('none');
-    if (is_array($err) === true && isset($err['message'], $err['file'], $err['line']) === true) {
+    if (is_array($err) === true) {
         $php_last_error = $err['message'] . ' - ' . $err['file'] . ' (' . $err['line'] . ')';
     }
 
@@ -1766,6 +1768,10 @@ function generateBugReport(
         define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
     }
     $link = mysqli_connect(DB_HOST, DB_USER, DB_PASSWD_CLEAR, DB_NAME, (int) DB_PORT, null);
+    $dbVersion = ($link === false) ? $lang->get('undefined') : mysqli_get_server_info($link);
+    if ($link !== false) {
+        mysqli_close($link);
+    }
 
     // Now prepare text
     $txt = '### Page on which it happened
@@ -1788,7 +1794,7 @@ Tell us what happens instead
 
 **Web server:** ' . $_SERVER['SERVER_SOFTWARE'] . '
 
-**Database:** ' . ($link === false ? $lang->get('undefined') : mysqli_get_server_info($link)) . '
+**Database:** ' . $dbVersion . '
 
 **PHP version:** ' . PHP_VERSION . '
 
@@ -1904,7 +1910,7 @@ function isUserPasswordCorrect(
                     $result = decryptPrivateKey($key, $userInfo['private_key']);
                     
                     // If decryption is ok
-                    if (is_string($result) && $result !== '') {
+                    if ($result !== '') {
                         $privateKeyDecrypted = $result;
                         break;
                     }
@@ -2015,7 +2021,7 @@ function changePrivateKeyEncryptionPassword(
             }
             
             // Should fail here to avoid break user private key.
-            if (strlen($privateKey) === 0 || strlen($hashedPrivateKey) < 30) {
+            if (strlen($hashedPrivateKey) < 30) {
                 if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
                     error_log("Error reencrypt user private key. User ID: {$post_user_id}, Given OTP: '{$post_current_code}'");
                 }
@@ -3618,8 +3624,8 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
         // Attempt to decrypt the private key with the previous password
         $privateKey = decryptPrivateKey($previousPassword, $encryptedPrivateKey);
         
-        // If decryption succeeded (key not null)
-        if ($privateKey !== null) {
+        // If decryption succeeded (non-empty key)
+        if ($privateKey !== '') {
             // Select one personal item share_key to test decryption
             $currentUserItemKey = DB::queryFirstRow(
                 'SELECT si.share_key, si.increment_id, i.perso
@@ -3650,10 +3656,7 @@ function findValidPreviousPrivateKey($previousPassword, $userId) {
 /**
  * Change user LDAP auth password
  *
- * @param integer $post_user_id
- * @param string $post_current_pwd
- * @param string $post_new_pwd
- * @param array $SETTINGS
+ * @param int $duration Duration in seconds to add
  * @return string
  */
 function increaseSessionDuration(

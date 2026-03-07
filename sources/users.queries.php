@@ -240,14 +240,14 @@ if (null !== $post_type) {
             $is_admin = filter_var($dataReceived['admin'], FILTER_SANITIZE_NUMBER_INT);
             $is_manager = filter_var($dataReceived['manager'], FILTER_SANITIZE_NUMBER_INT);
             $is_hr = filter_var($dataReceived['hr'], FILTER_SANITIZE_NUMBER_INT);
-            $is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT) || 0;
+            $is_read_only = filter_var($dataReceived['read_only'], FILTER_SANITIZE_NUMBER_INT);
             $has_personal_folder = filter_var($dataReceived['personal_folder'], FILTER_SANITIZE_NUMBER_INT);
             $new_folder_role_domain = filter_var($dataReceived['new_folder_role_domain'], FILTER_SANITIZE_NUMBER_INT);
             $domain = filter_var($dataReceived['domain'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $is_administrated_by = filter_var($dataReceived['isAdministratedByRole'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT) ?? [];
-            $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT) ?? [];
-            $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT) ?? [];
+            $groups = filter_var_array($dataReceived['groups'], FILTER_SANITIZE_NUMBER_INT);
+            $allowed_flds = filter_var_array($dataReceived['allowed_flds'], FILTER_SANITIZE_NUMBER_INT);
+            $forbidden_flds = filter_var_array($dataReceived['forbidden_flds'], FILTER_SANITIZE_NUMBER_INT);
             $post_root_level = filter_var($dataReceived['form-create-root-folder'], FILTER_SANITIZE_NUMBER_INT);
             $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -452,7 +452,7 @@ if (null !== $post_type) {
                 handleUserKeys(
                     (int) $new_user_id,
                     (string) $password,
-                    (int) isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
+                    isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? (int) $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH,
                     "",
                     true,
                     true,
@@ -570,12 +570,17 @@ if (null !== $post_type) {
                     );
                     
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $userId);
 
                     // Count deleted users
                     $deletedAccountsCount = (int) DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
 
                     DB::commit();
+
+                    // Force-disconnect the deleted user if currently connected via WebSocket
+                    emitWebSocketEvent('session_expired', 'user', intval($userId), [
+                        'reason' => 'account_deleted',
+                    ]);
 
                     //Send back
                     echo prepareExchangedData(
@@ -805,7 +810,7 @@ if (null !== $post_type) {
                 // get FUNCTIONS
                 $functionsList = array();
                 $selected = '';
-                $users_functions = array_filter(array_unique(explode(';', empty($rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups']) === true ? '' : $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
+                $users_functions = array_filter(array_unique(explode(';', $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
                 $session->set('user-roles_array', explode(';', $session->get('user-roles')));
                 $rows = DB::query('
@@ -968,8 +973,8 @@ if (null !== $post_type) {
 
                 $arrData['error'] = false;
                 $arrData['login'] = $rowUser['login'];
-                $arrData['name'] = empty($rowUser['name']) === false && $rowUser['name'] !== NULL ? $rowUser['name'] : '';
-                $arrData['lastname'] = empty($rowUser['lastname']) === false && $rowUser['lastname'] !== NULL ? $rowUser['lastname'] : '';
+                $arrData['name'] = empty($rowUser['name']) === false ? $rowUser['name'] : '';
+                $arrData['lastname'] = empty($rowUser['lastname']) === false ? $rowUser['lastname'] : '';
                 $arrData['email'] = $rowUser['email'];
                 $arrData['function'] = $functionsList;
                 $arrData['managedby'] = $managedBy;
@@ -1093,7 +1098,7 @@ if (null !== $post_type) {
             $adRoles = array_column($adRolesResult, 'role_id');
 
             $fonctions = [];
-            if (!is_null($post_groups) && !empty($adRoles)) {
+            if (!empty($adRoles)) {
                 foreach ($post_groups as $post_group) {
                     if (!in_array($post_group, $adRoles)) {
                         $fonctions[] = $post_group;
@@ -1256,7 +1261,7 @@ if (null !== $post_type) {
 
 
                     // update LOG
-                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $post_id);
+                    logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $post_id);
                 } else {
                     // Get old data about user
                     $oldData = getUserCompleteData(null, $post_id);
@@ -1270,7 +1275,7 @@ if (null !== $post_type) {
 
                     // Has the groups changed? If yes then ask for a keys regeneration
                     $arrOldData = array_filter(explode(';', $oldData['fonction_id']));
-                    $post_groups = is_null($post_groups) === true ? array() : array_filter($post_groups);
+                    $post_groups = array_filter($post_groups);
 
                     if ($arrOldData != $post_groups && (int) $oldData['admin'] !== 1) {
                         $action_to_perform_after = 'encrypt_keys';
@@ -1303,7 +1308,7 @@ if (null !== $post_type) {
 
                     // update LOG
                     if ($oldData['email'] !== $post_email) {
-                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $session->get('user-id'), $session->get('user-login'), $post_id);
+                        logEvents($SETTINGS, 'user_mngt', 'at_user_email_changed:' . $oldData['email'], (string) $session->get('user-id'), $session->get('user-login'), (string) $post_id);
                     }
                 }
                 echo prepareExchangedData(
@@ -1529,17 +1534,30 @@ if (null !== $post_type) {
 
             // Requête adaptée avec les nouvelles tables relationnelles
             if ((int) $session->get('user-admin') === 0 && (int) $session->get('user-can_manage_all_users') === 0) {
-                $rows = DB::query(
+                // Use subqueries for aggregations (MySQL ONLY_FULL_GROUP_BY compatibility)
+            $rows = DB::query(
                     'SELECT u.*,
-                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    agg_roles.fonction_id,
+                    agg_groups.groupes_visibles,
+                    agg_gforbid.groupes_interdits
                     FROM ' . prefixTable('users') . ' AS u
-                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-                    WHERE u.admin = %i AND u.isAdministratedByRole IN %ls AND u.deleted_at IS NULL AND u.disabled = %i
-                    GROUP BY u.id',
+                    LEFT JOIN (
+                        SELECT user_id,
+                            GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id
+                        FROM ' . prefixTable('users_roles') . '
+                        GROUP BY user_id
+                    ) agg_roles ON agg_roles.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+                        FROM ' . prefixTable('users_groups') . '
+                        GROUP BY user_id
+                    ) agg_groups ON agg_groups.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+                        FROM ' . prefixTable('users_groups_forbidden') . '
+                        GROUP BY user_id
+                    ) agg_gforbid ON agg_gforbid.user_id = u.id
+                    WHERE u.admin = %i AND u.isAdministratedByRole IN %ls AND u.deleted_at IS NULL AND u.disabled = %i',
                     0,
                     array_filter($session->get('user-roles_array')),
                     0
@@ -1547,15 +1565,27 @@ if (null !== $post_type) {
             } else {
                 $rows = DB::query(
                     'SELECT u.*,
-                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-                    GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits
+                    agg_roles.fonction_id,
+                    agg_groups.groupes_visibles,
+                    agg_gforbid.groupes_interdits
                     FROM ' . prefixTable('users') . ' AS u
-                    LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-                    WHERE u.admin = %i AND u.deleted_at IS NULL AND u.disabled = %i
-                    GROUP BY u.id',
+                    LEFT JOIN (
+                        SELECT user_id,
+                            GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id
+                        FROM ' . prefixTable('users_roles') . '
+                        GROUP BY user_id
+                    ) agg_roles ON agg_roles.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+                        FROM ' . prefixTable('users_groups') . '
+                        GROUP BY user_id
+                    ) agg_groups ON agg_groups.user_id = u.id
+                    LEFT JOIN (
+                        SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+                        FROM ' . prefixTable('users_groups_forbidden') . '
+                        GROUP BY user_id
+                    ) agg_gforbid ON agg_gforbid.user_id = u.id
+                    WHERE u.admin = %i AND u.deleted_at IS NULL AND u.disabled = %i',
                     0,
                     0
                 );
@@ -2257,9 +2287,8 @@ if (null !== $post_type) {
 
                 // Is user in Teampass ?
                 $userLogin = $adUser[$SETTINGS['ldap_user_attribute']][0];
-                if (null !== $userLogin) {
-                    // Get his ID
-                    $userInfo = getUserCompleteData($userLogin);
+                // Get his ID
+                $userInfo = getUserCompleteData($userLogin);
                     
                     // Get user's Teampass roles (titles) if user exists in Teampass
                     $userTeampassRoles = [];
@@ -2399,7 +2428,6 @@ if (null !== $post_type) {
                     $tmp['ldap_user_groups'] = array_values(array_unique($userGroups));
 
                     array_push($adUsersToSync, $tmp);
-                }
             }
 
             // Get all groups in Teampass
@@ -2973,11 +3001,18 @@ if (null !== $post_type) {
                 logEvents(
                     $SETTINGS,
                     'user_mngt',
-                    $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
+                    (int) $post_user_disabled === 1 ? 'at_user_locked' : 'at_user_unlocked',
                     (string) $session->get('user-id'),
                     $session->get('user-login'),
                     $post_id
                 );
+
+                // Force-disconnect the disabled user if currently connected via WebSocket
+                if ((int) $post_user_disabled === 1) {
+                    emitWebSocketEvent('session_expired', 'user', intval($post_id), [
+                        'reason' => 'account_disabled',
+                    ]);
+                }
             } else {
                 echo prepareExchangedData(
                     array(
@@ -3591,7 +3626,7 @@ break;
             );
             
             // Ensure user id has been provided
-            if (empty($userIds) || !is_array($userIds)) {
+            if (empty($userIds)) {
                 echo prepareExchangedData(
                     [
                         'error' => true,
@@ -3778,7 +3813,7 @@ break;
         // Check that operation is allowed
         if (in_array(
             $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses-usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
+            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses_usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
         )) {
             DB::update(
                 prefixTable('users'),
@@ -3804,7 +3839,7 @@ break;
                 'treeloadstrategy' => 'user-tree_load_strategy',
                 'usertimezone' => 'user-timezone',
                 'userlanguage' => 'user-language',
-                'agses-usercardid' => null, 
+                'agses_usercardid' => null, 
                 'email' => 'user-email',
                 'split_view_mode' => 'user-split_view_mode',
                 'show_subfolders' => 'user-show_subfolders',
@@ -3848,7 +3883,7 @@ break;
             $id[1]
         );
         // Display info
-        if (filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
+        if ((int) filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
             echo 'Oui';
         } else {
             echo 'Non';
@@ -4017,7 +4052,7 @@ function disableUsersBatch(array $userIds, int $disabledStatus, array $SETTINGS)
             $disabledStatus === 1 ? 'at_user_locked' : 'at_user_unlocked',
             (string) $session->get('user-id'),
             $session->get('user-login'),
-            $userId
+            (string) $userId
         );
 
         $done++;
@@ -4087,7 +4122,7 @@ function deleteUsersBatch(array $userIds, array $SETTINGS): array
                     $userId
                 );
 
-                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), $userId);
+                logEvents($SETTINGS, 'user_mngt', 'at_user_deleted', (string) $session->get('user-id'), $session->get('user-login'), (string) $userId);
 
                 DB::commit();
                 $done++;
@@ -4190,8 +4225,8 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'username'         => $SETTINGS['ldap_username'],
         'password'         => $SETTINGS['ldap_password'],
         'port'             => $SETTINGS['ldap_port'],
-        'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1 ? true : false,
-        'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1 ? true : false,
+        'use_ssl'          => (int) $SETTINGS['ldap_ssl'] === 1,
+        'use_tls'          => (int) $SETTINGS['ldap_tls'] === 1,
         'version'          => 3,
         'timeout'          => 5,
         'follow_referrals' => false,
@@ -4513,7 +4548,7 @@ function purgeDeletedUserById(int $userId, bool $rebuildTree = true): array
             'user_purged',
             (string) $session->get('user-id'),
             $session->get('login'),
-            $userId
+            (string) $userId
         );
         
         DB::commit();

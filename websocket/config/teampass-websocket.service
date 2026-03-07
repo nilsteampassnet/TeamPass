@@ -1,0 +1,16 @@
+[Unit]
+Description=TeamPass WebSocket Server
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/html/TeamPass
+ExecStart=/usr/bin/php websocket/bin/server.php
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

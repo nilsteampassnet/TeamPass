@@ -134,11 +134,11 @@ $lang = new Language($session->get('user-language') ?? 'english');
                                     ?>
                                     <tr>
                                         <td>
-                                            <i class="fas fa-external-link-alt pointer mr-2 fav-open" data-tree-id="<?php echo $data['id_tree']; ?>" data-item-id="<?php echo $data['id']; ?>"></i>
-                                            <i class="fas fa-trash pointer text-danger mr-2 fav-trash" data-item-id="<?php echo $data['id']; ?>"></i>
+                                            <i class="fas fa-external-link-alt pointer mr-2 fav-open" data-tree-id="<?php echo strval($data['id_tree']); ?>" data-item-id="<?php echo strval($data['id']); ?>"></i>
+                                            <i class="fas fa-trash pointer text-danger mr-2 fav-trash" data-item-id="<?php echo strval($data['id']); ?>"></i>
                                         </td>
-                                        <td><?php echo $data['label']; ?></td>
-                                        <td><?php echo $data['description']; ?></td>
+                                        <td><?php echo strval($data['label']); ?></td>
+                                        <td><?php echo strval($data['description']); ?></td>
                                         <td><?php echo $data['title'] === $session->get('user-id') ? $session->get('user-login') : $data['title']; ?></td>
                                     </tr>
                         <?php

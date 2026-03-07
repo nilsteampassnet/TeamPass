@@ -207,93 +207,125 @@ if (null !== $post_type) {
             // Prepare variables
             $post_selectedFolders = filter_var_array($dataReceived['selectedFolders'], FILTER_SANITIZE_NUMBER_INT);
             $post_access = filter_var($dataReceived['access'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_roleId = filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
-            $post_propagate = filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
+            $post_roleId = (int) filter_var($dataReceived['roleId'], FILTER_SANITIZE_NUMBER_INT);
+            $post_propagate = (int) filter_var($dataReceived['propagate'], FILTER_SANITIZE_NUMBER_INT);
 
-            // Loop on selection
-            foreach ($post_selectedFolders as $folderId) {
-                // delete
-                //db::debugmode(true);
-                DB::delete(
-                    prefixTable('roles_values'),
-                    'folder_id = %i AND role_id = %i',
-                    $folderId,
-                    $post_roleId
+            // Validate role ID
+            if ($post_roleId <= 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
                 );
-
-                //Store in DB if "access" is not empty (no access to folder)
-                if (!empty($post_access)) {
-                    DB::insert(
-                        prefixTable('roles_values'),
-                        array(
-                            'folder_id' => $folderId,
-                            'role_id' => $post_roleId,
-                            'type' => $post_access,
-                        )
-                    );
-                }
-
-                // Manage descendants
-                if ((int) $post_propagate === 1) {
-                    $descendants = $tree->getDescendants($folderId);
-                    foreach ($descendants as $node) {
-                        // delete
-                        DB::delete(
-                            prefixTable('roles_values'),
-                            'folder_id = %i AND role_id = %i',
-                            $node->id,
-                            $post_roleId
-                        );
-
-                        //Store in DB if "access" is not empty (no access to folder)        
-                        if (!empty($post_access)) {
-                            DB::insert(
-                                prefixTable('roles_values'),
-                                array(
-                                    'folder_id' => $node->id,
-                                    'role_id' => $post_roleId,
-                                    'type' => $post_access,
-                                )
-                            );
-                        }
-                    }
-                }
+                break;
             }
 
-            /*
-            // update folders rights for users in cache_tree
-            // Requested for real-time changes
-            $rows = DB::query(
-                'SELECT increment_id, folders
-                FROM ' . prefixTable('cache_tree'),
-            );
+            // Validate access type
+            $allowedAccessTypes = ['W', 'R', 'ND', 'NE', 'NDNE', ''];
+            if (in_array($post_access, $allowedAccessTypes, true) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
 
-            foreach($rows as $row) {
-                if ($row['folders'] === '' || $post_selectedFolders === null) {
+            // Collect all target folder IDs (selected + descendants), deduplicated
+            $allFolderIds = [];
+            foreach ($post_selectedFolders as $folderId) {
+                $folderId = (int) $folderId;
+                if ($folderId <= 0) {
                     continue;
                 }
-                // get visible folders
-                $arr = json_decode($row['folders'], true);
-                
-                foreach($arr as $folder) {
-                    if (in_array($folder, $post_selectedFolders) === true) {
-                        unset($arr[$folder]);
+                $allFolderIds[] = $folderId;
+
+                // Add descendants if propagation is enabled
+                if ($post_propagate === 1) {
+                    $descendants = $tree->getDescendants($folderId);
+                    foreach ($descendants as $node) {
+                        $allFolderIds[] = (int) $node->id;
                     }
                 }
-                print_r($arr);
-
-                // update
-                /*DB::update(
-                    prefixTable('cache_tree'),
-                    array(
-                        'folders' => json_encode($arr),
-                    ),
-                    'increment_id = %i',
-                    $row['increment_id']
-                );*/
-                /*
             }
-            */
+            $allFolderIds = array_values(array_unique(array_filter($allFolderIds)));
+
+            if (empty($allFolderIds)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Perform atomic update within a transaction
+            try {
+                DB::startTransaction();
+
+                // Batch delete all existing entries for these folders + role
+                DB::delete(
+                    prefixTable('roles_values'),
+                    'role_id = %i AND folder_id IN %li',
+                    $post_roleId,
+                    $allFolderIds
+                );
+
+                // Insert new entries if access is not empty (empty = no access)
+                if ($post_access !== '') {
+                    foreach ($allFolderIds as $folderId) {
+                        DB::insert(
+                            prefixTable('roles_values'),
+                            array(
+                                'folder_id' => $folderId,
+                                'role_id' => $post_roleId,
+                                'type' => $post_access,
+                            )
+                        );
+                    }
+                }
+
+                DB::commit();
+            } catch (Exception $e) {
+                DB::rollback();
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Notify connected users with this role via WebSocket
+            $usersWithRole = DB::queryFirstColumn(
+                'SELECT DISTINCT user_id FROM ' . prefixTable('users_roles') . '
+                WHERE role_id = %i',
+                $post_roleId
+            );
+            $currentUserId = (int) $session->get('user-id');
+            foreach ($usersWithRole as $userId) {
+                if ((int) $userId === $currentUserId) {
+                    continue;
+                }
+                emitWebSocketEvent(
+                    'folder_permission_changed',
+                    'user',
+                    (int) $userId,
+                    [
+                        'role_id' => $post_roleId,
+                        'folders' => $allFolderIds,
+                        'access' => $post_access,
+                    ]
+                );
+            }
 
             echo prepareExchangedData(
                 array(

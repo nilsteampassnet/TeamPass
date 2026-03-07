@@ -233,7 +233,7 @@ if (isset($options['repair'])) {
                 'id = %i',
                 $user['id']
             );
-            echo "     Reset user ID {$user['id']} ({$user['login']}) - will retry migration on next login\n";
+            echo "     Reset user ID " . strval($user['id']) . " (" . strval($user['login']) . ") - will retry migration on next login\n";
         }
     } else {
         echo "     No users to reset.\n";

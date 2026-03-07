@@ -205,7 +205,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     </div>
 
                     <div class="card-footer<?php
-                                            echo $session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
+                                            echo $session->has('user-admin') && (int) $session->get('user-admin') === 1 ? '' : ' hidden';
                                             ?>">
                         <div class="form-group">
                             <h5><i class="fas fa-broom mr-2"></i><?php echo $lang->get('purge') . ' ' . $lang->get('date_range'); ?></h5>
@@ -234,7 +234,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     $rows = DB::query('SELECT id, name, lastname FROM ' . prefixTable('users') . ' WHERE admin = 0');
 foreach ($rows as $record) {
     echo '
-                                        <option value="'.$record['id'].'">'.$record['name'].' '.$record['lastname'].'</option>';
+                                        <option value="'.strval($record['id']).'">'.strval($record['name']).' '.strval($record['lastname']).'</option>';
 }
                                     ?>
                                     </select>

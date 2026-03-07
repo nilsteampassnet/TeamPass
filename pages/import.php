@@ -87,7 +87,7 @@ if ((int) $session->get('user-admin') === 1) {
     $folderOptions = '';
     $rows = DB::query('SELECT id, title FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i', 0);
     foreach ($rows as $record) {
-        $folderOptions .= '<option value="' . $record['id'] . '">' . htmlspecialchars($record['title'], ENT_QUOTES, 'UTF-8') . '</option>';
+        $folderOptions .= '<option value="' . strval($record['id']) . '">' . htmlspecialchars(strval($record['title']), ENT_QUOTES, 'UTF-8') . '</option>';
     }
 }
 

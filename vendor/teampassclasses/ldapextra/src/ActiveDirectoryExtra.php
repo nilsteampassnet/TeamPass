@@ -159,7 +159,6 @@ class ActiveDirectoryExtra extends BaseGroup
         return $members;
     }
 
-
     function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
     {
         // init

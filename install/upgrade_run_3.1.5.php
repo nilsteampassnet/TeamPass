@@ -268,7 +268,7 @@ foreach ($indexes_to_add as $index_config) {
     $table = $pre . $index_config['table'];
     $index_name = $index_config['index'];
     $columns = $index_config['columns'];
-    $is_unique = isset($index_config['unique']) && $index_config['unique'] === true;
+    $is_unique = $index_config['unique'] === true;
     
     // Check if index exists
     $result = mysqli_query(

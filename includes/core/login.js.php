@@ -40,6 +40,8 @@ declare(strict_types=1);
 ?>
 <script type="text/javascript">
     var debugJavascript = false;
+    var mfaStepPending = false;
+    var cachedMfaData = null;
 
     // On page load
     $(function() {
@@ -120,7 +122,7 @@ declare(strict_types=1);
 
             // Auto login with OAuth2 provider
             if (autoLogin === 1 && loginForm === 0) {
-                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             }
         }
 
@@ -153,7 +155,7 @@ declare(strict_types=1);
                 console.log('User starts auth through Duo');
             }
             
-            launchIdentify(true, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
+            launchIdentify(true, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         }
 
         // Click on log in button
@@ -163,7 +165,7 @@ declare(strict_types=1);
             }
             // Clear userOauth2Info
             store.set('userOauth2Info', '');
-            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>');
+            launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
         // Click on log in button with Azure Entra
@@ -173,7 +175,7 @@ declare(strict_types=1);
                 console.log('User starts auth through button but_login_with_oauth2 click');
             }
                 $('#but_login_with_oauth2, #but_identify_user').prop('disabled', true);
-                launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
+                launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', false, true);
             });
         }
         
@@ -204,24 +206,24 @@ declare(strict_types=1);
                 return loadSettings();
             })()
         ).then(function() {
-            showMFAMethod();
+            // MFA display is deferred to after user-specific check
         });
 
     } else {
-        showMFAMethod();
+        // MFA display is deferred to after user-specific check
     }
 
 
 
     $('.submit-button').keypress(function(event) {
         if (event.keyCode === 10 || event.keyCode === 13) {
-            launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+            launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
             event.preventDefault();
         }
     });
 
     $('#yubico_key').change(function(event) {
-        launchIdentify(false, '<?php isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
+        launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>', '');
         event.preventDefault();
     });
 
@@ -449,7 +451,7 @@ declare(strict_types=1);
                                     "sources/main.queries.php", {
                                         type: "convert_items_with_personal_saltkey_progress",
                                         data: prepareExchangedData(JSON.stringify(data), "encode", store.get('teampassUser').sessionKey),
-                                        key: '<?php echo $session->get('key'); ?>'
+                                        key: '<?php echo strval($session->get('key')); ?>'
                                     },
                                     function(data) {
                                         data = prepareExchangedData(data, store.get('teampassUser').sessionKey);
@@ -560,7 +562,7 @@ declare(strict_types=1);
     });
 
     /**
-     * 
+     *
      */
     function launchIdentify(isDuo, redirect, psk, oauth2 = false) {
         if (redirect == undefined) {
@@ -589,63 +591,45 @@ declare(strict_types=1);
             }
             return false;
         }
-        
-        // 2FA method
-        var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
-        //console.log(user2FaMethod)
-        if (user2FaMethod === "yubico" && $("#yubico_key").val() === "") {
-            $("#yubico_key").addClass("ui-state-error");
-            return false;
-        } 
-        /*else if (user2FaMethod === "google" && $("#ga_code").val() === "") {
-            $("#ga_code").addClass("ui-state-error");
-            return false;
-        }*/
 
-        if (isDuo !== true) {
-            // launch identification
-            toastr.remove();
-            toastr.info(
-                '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                '', {
-                    positionClass: "toast-top-center"
-                }
-            );
+        // Yubico check only relevant when MFA step is already showing
+        if (mfaStepPending === true) {
+            var user2FaMethod = $("input[name=2fa_selector_select]:checked").data('mfa');
+            if (user2FaMethod === "yubico" && $("#yubico_key").val() === "") {
+                $("#yubico_key").addClass("ui-state-error");
+                return false;
+            }
         }
 
-        // Clear localstorage
-        store.remove('teampassApplication');
-        store.remove('teampassSettings');
-        store.remove('teampassUser');
-        store.remove('teampassItem');
-        store.remove('userOauth2Info');
-
-        //create random string
-        var randomstring = CreateRandomString(10);
-
-        // get timezone
-        var d = new Date();
-        var TimezoneOffset = d.getTimezoneOffset() * 60;
-
-        // get some info
-        var client_info = '';
-        if (debugJavascript === true) {
-            console.log('KEY : <?php echo $session->get('key'); ?>')
+        // If MFA panel is already shown (user is providing 2FA code), or Duo callback
+        if (mfaStepPending === true || isDuo === true) {
+            if (isDuo !== true) {
+                toastr.remove();
+                toastr.info(
+                    '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                    '', {
+                        positionClass: "toast-top-center"
+                    }
+                );
+            }
+            mfaStepPending = false;
+            buildMfaDataAndIdentify(isDuo, redirect, psk, cachedMfaData);
+            return;
         }
 
-        // Get 2fa
+        // First step: check if this specific user needs MFA based on their roles
         $.post(
             'sources/identify.php', {
-                type: 'get2FAMethods'
+                type: 'get2FAMethodsForUser',
+                login: $('#login').val()
             },
-            function(data) {
-                data = JSON.parse(data);
+            function(response) {
+                response = JSON.parse(response);
 
-                // Handle the case where the user doesn't exists.
-                if (data.error === true) {
+                if (response.error === true) {
                     toastr.remove();
                     toastr.error(
-                        data.message,
+                        response.message,
                         '<?php echo $lang->get('caution'); ?>', {
                             timeOut: 5000,
                             progressBar: true,
@@ -656,10 +640,9 @@ declare(strict_types=1);
                 }
 
                 if (debugJavascript === true) {
-                    console.log("Recevied key "+data.key+' and local key<?php echo $session->get('key'); ?>')
+                    console.log('Received key ' + response.key + ' and local key <?php echo strval($session->get('key')); ?>')
                 }
-                if (data.key !== '<?php echo $session->get('key'); ?>') {
-                    // Update session
+                if (response.key !== '<?php echo strval($session->get('key')); ?>') {
                     store.update(
                         'teampassUser', {},
                         function(teampassUser) {
@@ -669,21 +652,14 @@ declare(strict_types=1);
                             teampassUser.page_reload = 1;
                         }
                     );
-
-                    // Reload login page.
                     document.location.reload(true);
-
                     return false;
                 }
 
+                var data;
                 try {
-                    data = prepareExchangedData(
-                        data.ret,
-                        "decode",
-                        data.key
-                    );
+                    data = prepareExchangedData(response.ret, "decode", response.key);
                 } catch (e) {
-                    // error
                     toastr.remove();
                     toastr.error(
                         '<?php echo $lang->get('server_answer_error'); ?>',
@@ -695,79 +671,130 @@ declare(strict_types=1);
                     );
                     return false;
                 }
+
                 if (debugJavascript === true) {
-                    console.info('Get 2FA Methods answer:');
+                    console.info('Get 2FA Methods for user answer:');
                     console.log(data);
                 }
 
-                let mfaData = {},
-                    mfaMethod = '';
-
-                // Get selected user MFA method
-                if ($(".2fa_selector_select").length > 1) {
-                    mfaMethod = $(".2fa_selector_select:checked").data('mfa');
+                if (data.mfa_required === false) {
+                    // No MFA needed for this user - proceed directly to authentication
+                    toastr.remove();
+                    toastr.info(
+                        '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+                        '', {
+                            positionClass: "toast-top-center"
+                        }
+                    );
+                    buildMfaDataAndIdentify(isDuo, redirect, psk, data);
                 } else {
-                    if (data.google === true) {
-                        mfaMethod = 'google';
-                    } else if (data.duo === true) {
-                        mfaMethod = 'duo';
-                    } else if (data.yubico === true) {
-                        mfaMethod = 'yubico';
-                    }
+                    // MFA required - show the appropriate 2FA UI
+                    cachedMfaData = data;
+                    mfaStepPending = true;
+                    showMFAMethodForUser(data);
                 }
-
-                // Google 2FA
-                if (mfaMethod === 'google' && data.google === true) {
-                    mfaData['GACode'] = $('#ga_code').val();
-                }
-
-                // Yubico
-                if (mfaMethod === 'yubico' && data.yubico === true) {
-                    if ($('#yubico_key').val() !== undefined && $('#yubico_key').val() !== '') {
-                        mfaData['yubico_key'] = $('#yubico_key').val();
-                        mfaData['yubico_user_id'] = $('#yubico_user_id').val();
-                        mfaData['yubico_user_key'] = $('#yubico_user_key').val();
-                    } else {
-                        $('#yubico_key').focus();
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('press_your_yubico_key'); ?>',
-                            '<?php echo $lang->get('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true,
-                                positionClass: "toast-top-center"
-                            }
-                        );
-                        return false;
-                    }
-                }
-
-                // Other values
-                mfaData['login'] = ($('#login').val());
-                mfaData['pw'] = ($('#pw').val());
-                mfaData['duree_session'] = ($('#session_duration').val());
-                mfaData['screenHeight'] = $('body').innerHeight();
-                mfaData['randomstring'] = randomstring;
-                mfaData['TimezoneOffset'] = TimezoneOffset;
-                mfaData['client'] = client_info;
-                mfaData['user_2fa_selection'] = mfaMethod;
-                
-                if (isDuo === true && $("#duo_code").val() !== "" && $("#duo_state").val() !== "") {
-                    mfaData['duo_code'] = sanitizeString($("#duo_code").val());
-                    mfaData['duo_state'] = sanitizeString($("#duo_state").val());
-                    mfaData['user_2fa_selection'] = 'duo';
-                } else if(mfaMethod === 'duo' && isDuo !== true) {
-                    mfaData['duo_status'] = 'start_duo_auth';
-                }
-
-                if (debugJavascript === true) {
-                    console.log('Data submitted to identifyUser:');
-                    console.log({...mfaData, ...store.get('userOauth2Info')});
-                }
-                
-                identifyUser(redirect, psk, mfaData, randomstring, store.get('userOauth2Info'));
             }
         );
+    }
+
+    /**
+     * Builds MFA data payload and calls identifyUser
+     *
+     * @param {boolean} isDuo
+     * @param {string} redirect
+     * @param {string} psk
+     * @param {object|null} availableMfaMethods - response from get2FAMethodsForUser
+     */
+    function buildMfaDataAndIdentify(isDuo, redirect, psk, availableMfaMethods) {
+        // Clear localstorage
+        store.remove('teampassApplication');
+        store.remove('teampassSettings');
+        store.remove('teampassUser');
+        store.remove('teampassItem');
+        store.remove('userOauth2Info');
+
+        var randomstring = CreateRandomString(10);
+        var d = new Date();
+        var TimezoneOffset = d.getTimezoneOffset() * 60;
+        var client_info = '';
+
+        if (debugJavascript === true) {
+            console.log('KEY : <?php echo strval($session->get('key')); ?>')
+        }
+
+        let mfaData = {},
+            mfaMethod = '';
+
+        // Determine selected MFA method.
+        // Prefer the hidden input #2fa_user_selection (reliably set by showMFAMethodForUser),
+        // then fall back to the checked radio button, then to the first enabled method.
+        if (availableMfaMethods !== null && availableMfaMethods.mfa_required === true) {
+            const hiddenSelection = $('#2fa_user_selection').val();
+            if (hiddenSelection && hiddenSelection !== '') {
+                mfaMethod = hiddenSelection;
+            } else if ($(".2fa_selector_select:checked").length > 0) {
+                mfaMethod = $(".2fa_selector_select:checked").data('mfa') || '';
+            } else {
+                if (availableMfaMethods.google === true) {
+                    mfaMethod = 'google';
+                } else if (availableMfaMethods.duo === true) {
+                    mfaMethod = 'duo';
+                } else if (availableMfaMethods.yubico === true) {
+                    mfaMethod = 'yubico';
+                }
+            }
+        }
+
+        // Google 2FA
+        if (mfaMethod === 'google' && availableMfaMethods !== null && availableMfaMethods.google === true) {
+            mfaData['GACode'] = $('#ga_code').val();
+        }
+
+        // Yubico
+        if (mfaMethod === 'yubico' && availableMfaMethods !== null && availableMfaMethods.yubico === true) {
+            if ($('#yubico_key').val() !== undefined && $('#yubico_key').val() !== '') {
+                mfaData['yubico_key'] = $('#yubico_key').val();
+                mfaData['yubico_user_id'] = $('#yubico_user_id').val();
+                mfaData['yubico_user_key'] = $('#yubico_user_key').val();
+            } else {
+                $('#yubico_key').focus();
+                toastr.remove();
+                toastr.info(
+                    '<?php echo $lang->get('press_your_yubico_key'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true,
+                        positionClass: "toast-top-center"
+                    }
+                );
+                return false;
+            }
+        }
+
+        // Other values
+        mfaData['login'] = ($('#login').val());
+        mfaData['pw'] = ($('#pw').val());
+        mfaData['duree_session'] = ($('#session_duration').val());
+        mfaData['screenHeight'] = $('body').innerHeight();
+        mfaData['randomstring'] = randomstring;
+        mfaData['TimezoneOffset'] = TimezoneOffset;
+        mfaData['client'] = client_info;
+        mfaData['user_2fa_selection'] = mfaMethod;
+
+        if (isDuo === true && $("#duo_code").val() !== "" && $("#duo_state").val() !== "") {
+            mfaData['duo_code'] = sanitizeString($("#duo_code").val());
+            mfaData['duo_state'] = sanitizeString($("#duo_state").val());
+            mfaData['user_2fa_selection'] = 'duo';
+        } else if (mfaMethod === 'duo' && isDuo !== true) {
+            mfaData['duo_status'] = 'start_duo_auth';
+        }
+
+        if (debugJavascript === true) {
+            console.log('Data submitted to identifyUser:');
+            console.log({...mfaData, ...store.get('userOauth2Info')});
+        }
+
+        identifyUser(redirect, psk, mfaData, randomstring, store.get('userOauth2Info'));
     }
 
     //Identify user
@@ -789,7 +816,7 @@ declare(strict_types=1);
                 data: prepareExchangedData(
                     JSON.stringify(sharedData),
                     'encode',
-                    '<?php echo $session->get('key'); ?>'
+                    '<?php echo strval($session->get('key')); ?>'
                 ),
                 xhrFields: {
                     withCredentials: true
@@ -800,7 +827,7 @@ declare(strict_types=1);
                     var data = prepareExchangedData(
                         receivedData,
                         "decode",
-                        "<?php echo $session->get('key'); ?>"
+                        "<?php echo strval($session->get('key')); ?>"
                     );
                 } catch (e) {
                     // error
@@ -832,6 +859,35 @@ declare(strict_types=1);
                             positionClass: "toast-bottom-right"
                         }
                     );
+                    return false;
+                }
+
+                // Server detected that MFA is required but no 2FA code was provided.
+                // This can happen if get2FAMethodsForUser returned mfa_required:false incorrectly.
+                // Show the 2FA form as a fallback.
+                if (data.value === '2fa_not_set' || data.error === '2fa_not_set') {
+                    toastr.remove();
+                    mfaStepPending = true;
+                    if (cachedMfaData !== null) {
+                        showMFAMethodForUser(cachedMfaData);
+                    } else {
+                        $.post(
+                            'sources/identify.php', {
+                                type: 'get2FAMethodsForUser',
+                                login: old_data.login
+                            },
+                            function(resp) {
+                                resp = JSON.parse(resp);
+                                if (resp.key === '<?php echo strval($session->get('key')); ?>') {
+                                    try {
+                                        var mfaMethods = prepareExchangedData(resp.ret, 'decode', resp.key);
+                                        cachedMfaData = mfaMethods;
+                                        showMFAMethodForUser(mfaMethods);
+                                    } catch (e) { /* ignore */ }
+                                }
+                            }
+                        );
+                    }
                     return false;
                 }
 
@@ -989,11 +1045,11 @@ declare(strict_types=1);
                 'sources/main.queries.php', {
                     type: 'ga_generate_qr',
                     type_category: 'action_user',
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    key: "<?php echo $session->get('key'); ?>"
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
+                    key: "<?php echo strval($session->get('key')); ?>"
                 },
                 function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
                     if (debugJavascript === true) console.log(data);
 
                     if (data.error !== false) {
@@ -1046,11 +1102,11 @@ declare(strict_types=1);
             'sources/main.queries.php', {
                 type: 'ga_generate_qr',
                 type_category: 'action_user',
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: "<?php echo $session->get('key'); ?>"
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo strval($session->get('key')); ?>"),
+                key: "<?php echo strval($session->get('key')); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                data = prepareExchangedData(data, 'decode', '<?php echo strval($session->get('key')); ?>');
                 if (debugJavascript === true) console.log(data);
 
                 if (data.error !== false) {
@@ -1079,27 +1135,40 @@ declare(strict_types=1);
     }
 
     /**
-     * Permits to manage the MFA method to show
+     * Legacy function kept for compatibility - MFA display is now deferred
+     * to after user-specific check via showMFAMethodForUser()
      *
      * @return void
      */
     function showMFAMethod() {
-        var twoFaMethods = (parseInt(store.get('teampassSettings').google_authentication) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').agses_authentication_enabled) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').duo) === 1 ? 1 : 0) +
-            (parseInt(store.get('teampassSettings').yubico_authentication) === 1 ? 1 : 0);
+        // MFA selector is hidden by default and shown only after verifying
+        // that the specific user belongs to a role that requires MFA.
+        // See showMFAMethodForUser() called from launchIdentify().
+    }
+
+    /**
+     * Shows the appropriate MFA method UI based on user-specific data
+     * returned by the get2FAMethodsForUser endpoint.
+     *
+     * @param {object} data - decoded response from get2FAMethodsForUser
+     * @return void
+     */
+    function showMFAMethodForUser(data) {
+        var twoFaMethods = (data.google === true ? 1 : 0) +
+            (data.agses === true ? 1 : 0) +
+            (data.duo === true ? 1 : 0) +
+            (data.yubico === true ? 1 : 0);
 
         if (twoFaMethods > 1) {
-            // Show only expected MFA
+            // Multiple methods - show selector
             $('#2fa_methods_selector').removeClass('hidden');
 
-            // At least 2 2FA methods have to be shown
             var loginButMethods = ['google', 'agses', 'duo'];
 
             // Show methods
             $("#2fa_selector").removeClass("hidden");
 
-            // Hide login button
+            // Hide login button until a method is selected
             $('#div-login-button').addClass('hidden');
 
             // Unselect any method
@@ -1115,10 +1184,14 @@ declare(strict_types=1);
 
             // Handle click
             $('.radiosforbuttons-2fa_selector_select')
+                .off('click')
                 .click(function() {
                     $('.div-2fa-method').addClass('hidden');
 
-                    var twofaMethod = $(this).text().toLowerCase();
+                    // Read data-mfa from the corresponding radio input (by index) to get the
+                    // exact method key ('duo', 'google', 'yubico') instead of the button label text.
+                    var idx = $('.radiosforbuttons-2fa_selector_select').index(this);
+                    var twofaMethod = $('.2fa_selector_select').eq(idx).data('mfa') || $(this).text().toLowerCase();
                     if (debugJavascript === true) console.log(twofaMethod)
 
                     // Save user choice
@@ -1144,18 +1217,25 @@ declare(strict_types=1);
                     }
                 });
         } else if (twoFaMethods === 1) {
-            // Show only expected MFA
+            // Single method - show it directly and pre-set the hidden selection input
             $('#2fa_methods_selector').addClass('hidden');
-            // One 2FA method is expected
-            if (parseInt(store.get('teampassSettings').google_authentication) === 1) {
+            $('#div-login-button').removeClass('hidden');
+
+            if (data.google === true) {
+                $('#2fa_user_selection').val('google');
                 $('#div-2fa-google').removeClass('hidden');
-            } else if (parseInt(store.get('teampassSettings').yubico_authentication) === 1) {
+                $('#ga_code').focus();
+            } else if (data.yubico === true) {
+                $('#2fa_user_selection').val('yubico');
                 $('#div-2fa-yubico').removeClass('hidden');
+                $('#yubico_key').focus();
+            } else if (data.duo === true) {
+                $('#2fa_user_selection').val('duo');
+                $('#div-2fa-duo').removeClass('hidden');
+            } else if (data.agses === true) {
+                $('#2fa_user_selection').val('agses');
+                startAgsesAuth();
             }
-            $('#login').focus();
-        } else {
-            // No 2FA methods is expected
-            $('#2fa_methods_selector').addClass('hidden');
         }
     }
 </script>

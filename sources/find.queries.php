@@ -105,7 +105,7 @@ $sWhere = 'c.id_tree IN %ls_idtree';
 //limit search to the visible folders
 
 if (null === $request->query->get('limited')
-    || (null !== $request->query->get('limited') && $request->query->get('limited') === 'false')
+    || $request->query->get('limited') === 'false'
 ) {
     $folders = $session->get('user-accessible_folders');
 } else {
@@ -321,12 +321,6 @@ if (null === $request->query->get('type')) {
 
             if ((int) $accessLevel === 0) {
                 $right = 0;
-            } elseif ((10 <= (int) $accessLevel) && ((int) $accessLevel < 20)) {
-                $right = 20;
-            } elseif ((20 <= (int) $accessLevel) && ((int) $accessLevel < 30)) {
-                $right = 60;
-            } elseif ((int) $accessLevel === 30) {
-                $right = 70;
             } else {
                 $right = 10;
             }
@@ -422,7 +416,7 @@ if (null === $request->query->get('type')) {
     $sOutput .= '"recordsFiltered": ' . $iTotal . ' }';
     // file deepcode ignore XSS: data is secured
     echo ($sOutput);
-} elseif (null !== $request->query->get('type') && ($request->query->get('type') === 'search_for_items' || $request->query->get('type') === 'search_for_items_with_tags')) {
+} elseif ($request->query->get('type') === 'search_for_items' || $request->query->get('type') === 'search_for_items_with_tags') {
     include_once 'main.functions.php';
     include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
 
@@ -552,8 +546,8 @@ if (null === $request->query->get('type')) {
             $itemIsPersonal = true;
             $right = 70;
         // ----- END CASE 1 -----
-        } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') && null !== $session->get('user-manager') && (int) $session->get('user-manager') === 1)
-            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') && null !== $session->get('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
+        } elseif ((($session->has('user-manager') && (int) $session->get('user-manager') === 1)
+            || ($session->has('user-can_manage_all_users') && (int) $session->get('user-can_manage_all_users') === 1))
             && (isset($SETTINGS['manager_edit']) === true && (int) $SETTINGS['manager_edit'] === 1)
             && $record['perso'] !== 1
         ) {
@@ -570,7 +564,7 @@ if (null === $request->query->get('type')) {
             // Allow all rights
             $right = 70;
         // ----- END CASE 4 -----
-        } elseif ($user_is_included_in_role === true
+        } elseif ($user_is_included_in_role === 1
             && $record['perso'] !== 1
             && (int) $session->get('user-read_only') === 0
         ) {
@@ -601,7 +595,7 @@ if (null === $request->query->get('type')) {
         // ----- END CASE 8 -----
         } elseif (((empty($record['restricted_to']) === false
             && in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === false)
-            || ($user_is_included_in_role === false && $item_is_restricted_to_role === true))
+            || ($user_is_included_in_role === 0 && $item_is_restricted_to_role === 1))
             && $record['perso'] !== 1
             && (int) $session->get('user-read_only') === 0
         ) {
@@ -653,8 +647,6 @@ if (null === $request->query->get('type')) {
                 $right = 20;
             } elseif ($accessLevel === 2) {
                 $right = 60;
-            } elseif ($accessLevel === 3) {
-                $right = 70;
             } else {
                 $right = 10;
             }
@@ -664,7 +656,7 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['rights'] = $right;
         $arr_data[$record['id']]['perso'] = 'fa-tag mi-red';
         $arr_data[$record['id']]['sk'] = $itemIsPersonal === true ? 1 : 0;
-        $arr_data[$record['id']]['display'] = $right > 0 ? 1 : 0;
+        $arr_data[$record['id']]['display'] = 1;
         $arr_data[$record['id']]['open_edit'] = in_array($right, [40, 50, 60, 70]) === true ? 1 : 0;
         $arr_data[$record['id']]['canMove'] = in_array($right, [30, 60, 70]) === true ? 1 : 0;
         //*************** */
@@ -699,7 +691,7 @@ if (null === $request->query->get('type')) {
             // test charset => may cause a json error if is not utf8
             if (empty($pw) === true) {
                 $arr_data[$record['id']]['pw_status'] = 'pw_is_empty';
-            } elseif (isUTF8($pw) === false) {
+            } elseif (isUTF8($pw) === 0) {
                 $arr_data[$record['id']]['pw_status'] = 'encryption_error';
             }
         }
@@ -710,7 +702,7 @@ if (null === $request->query->get('type')) {
             $arr_data[$record['id']]['is_favorite'] = 0;
         }
 
-        $arr_data[$record['id']]['display_item'] = $displayItem === true ? 1 : 0;
+        $arr_data[$record['id']]['display_item'] = 0;
     }
 
     $returnValues = [

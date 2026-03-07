@@ -451,9 +451,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
         //Finish the line
         $sOutput_item .= '], ';
-        if ($get_item_in_list === true) {
-            $sOutput .= $sOutput_item;
-        }
+        $sOutput .= $sOutput_item;
     }
     if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, '', -2);
@@ -544,9 +542,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
         //Finish the line
         $sOutput_item .= '], ';
-        if ($get_item_in_list === true) {
-            $sOutput .= $sOutput_item;
-        }
+        $sOutput .= $sOutput_item;
     }
     if ($iFilteredTotal > 0) {
         $sOutput = substr_replace($sOutput, '', -2);
@@ -873,8 +869,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col3
         if ($record['admin'] === '1') {
             $user_role = $lang->get('god');
-        } elseif ($lang->get('gestionnaire') === 1) {
-            $user_role = $lang->get('gestionnaire');
         } else {
             $user_role = $lang->get('user');
         }

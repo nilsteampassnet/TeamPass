@@ -135,9 +135,10 @@ EOT
         $bin7zip = '';
         if ($hasSystem7zip = (bool) $finder->find('7z', null, ['C:\Program Files\7-Zip'])) {
             $bin7zip = '7z';
-        }
-        if (!Platform::isWindows() && !$hasSystem7zip && $hasSystem7zip = (bool) $finder->find('7zz')) {
+        } elseif (!Platform::isWindows() && $hasSystem7zip = (bool) $finder->find('7zz')) {
             $bin7zip = '7zz';
+        } elseif (!Platform::isWindows() && $hasSystem7zip = (bool) $finder->find('7za')) {
+            $bin7zip = '7za';
         }
 
         $io->write(

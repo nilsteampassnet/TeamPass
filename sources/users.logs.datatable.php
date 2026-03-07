@@ -216,7 +216,7 @@ foreach ($rows as $record) {
         || $record['action'] === $inputData['userId']
     ) {
         if (strpos($record['label'], 'at_') === 0) {
-            if (strpos($record['label'], '#') >= 0) {
+            if (strpos($record['label'], '#') !== false) {
                 $col2 = preg_replace('/#[\s\S]+?#/', '', $lang->get($record['label']));
             } else {
                 $col2 = str_replace('"', '\"', $lang->get($record['label']));

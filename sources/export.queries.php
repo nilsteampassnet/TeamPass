@@ -733,9 +733,6 @@ if (null !== $post_type) {
                                 ) ||
                                 (
                                     empty($record['restricted_to']) === false && in_array($session->get('user-id'), $restricted_users_array) === false
-                                ) || 
-                                (
-                                    in_array($record['folder_id'], $session->get('user-accessible_folders'))
                                 )
                             )                                
                             && (in_array($record['item_id'], $idsList) === false)

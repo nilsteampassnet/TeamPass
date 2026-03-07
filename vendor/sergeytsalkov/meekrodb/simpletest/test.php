@@ -20,7 +20,7 @@ function microtime_float()
 
 ini_set('date.timezone', 'America/Los_Angeles');
 
-error_reporting(E_ALL | E_STRICT);
+error_reporting(PHP_VERSION_ID > 80400 ? E_ALL : E_ALL | E_STRICT);
 require_once __DIR__ . '/../db.class.php';
 require_once __DIR__ . '/test_setup.php'; //test config values go here
 // WARNING: ALL tables in the database will be dropped before the tests, including non-test related tables. 

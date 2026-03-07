@@ -153,7 +153,7 @@ if (null !== $post_type) {
                                 //exclude this case
                             } else {
                                 //encrypt PW
-                                if (empty($post_salt_key) === false && null !== $post_salt_key) {
+                                if (empty($post_salt_key) === false) {
                                     $pw = cryption(
                                         $record['pw'],
                                         $post_salt_key,

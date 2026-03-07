@@ -213,8 +213,8 @@ if (null !== $post_type) {
         $deletedByLogin = '';
         $deletedByName = '';
         if ($deletedByUserId > 0 && isset($usersById[$deletedByUserId]) === true) {
-            $deletedByLogin = (string) ($usersById[$deletedByUserId]['login'] ?? '');
-            $deletedByName = (string) ($usersById[$deletedByUserId]['name'] ?? '');
+            $deletedByLogin = (string) $usersById[$deletedByUserId]['login'];
+            $deletedByName = (string) $usersById[$deletedByUserId]['name'];
         }
 
         $arrFolders[] = array(
@@ -255,7 +255,7 @@ if (null !== $post_type) {
     // Prepare paths for existing folders
     $treeIds = array();
     foreach ($rows as $record) {
-        if (isset($record['id_tree']) === true && $record['id_tree'] !== null) {
+        if (isset($record['id_tree']) === true) {
             $treeIds[] = (int) $record['id_tree'];
         }
     }
@@ -679,7 +679,7 @@ logItems(
                 empty($post_date_from) === false
                 && empty($post_date_to) === false
                 && empty($post_log_type) === false
-                && ($session->has('user-admin') && (int) $session->get('user-admin') && null !== $session->get('user-admin') && (int) $session->get('user-admin') === 1)
+                && ($session->has('user-admin') && (int) $session->get('user-admin') === 1)
             ) {
                 if ($post_log_type === 'items') {
                     DB::query(
@@ -1150,9 +1150,9 @@ logItems(
 
                 // Orphans (objects + users)
                 $orphans = tpGetSharekeysOrphans($t);
-                if (empty($orphans) === false) {
+                if ($orphans['orphans_total'] > 0) {
                     $sharekeysOrphans[$t] = $orphans;
-                    $sharekeysOrphansTotal += (int) ($orphans['orphans_total'] ?? 0);
+                    $sharekeysOrphansTotal += (int) $orphans['orphans_total'];
                 }
             }
 
@@ -1248,7 +1248,7 @@ logItems(
 
             // Keep the main progress aligned on keys version (v3)
             $usersV3 = $usersV3Keys;
-$usersNotMigrated = $usersTotal - $usersV3;
+            $usersNotMigrated = $usersTotal - $usersV3;
             $usersPercent = $usersTotal > 0 ? round(($usersV3 / $usersTotal) * 100, 2) : 0;
 
             // Personal items migration progress
@@ -1394,7 +1394,7 @@ $usersNotMigrated = $usersTotal - $usersV3;
                     }
                 }
             }
-$recentRaw = DB::query(
+            $recentRaw = DB::query(
                 'SELECT type, date, label, qui
                 FROM ' . prefixTable('log_system') . '
                 WHERE (date+0) BETWEEN %i AND %i
@@ -1429,7 +1429,7 @@ $recentRaw = DB::query(
                 );
             }
 
-$recent = array();
+            $recent = array();
             foreach ($recentRaw as $r) {
                 $ts = (int) ($r['date'] ?? 0);
                 $recent[] = array(
@@ -1461,7 +1461,7 @@ $recent = array();
                 $corruptedItemsMeta['limit'] = (int) ($sessionMeta['limit'] ?? 0);
             }
 
-$report = array(
+            $report = array(
                 'generated_at' => $now,
                 'generated_at_human' => date('Y-m-d H:i:s', $now),
                 'export_filename' => $lang->get('health_export_filename'),
@@ -1814,7 +1814,7 @@ function tpParseFolderDeletedValeur(string $valeur): array
     $parts = array_map('trim', explode(',', $valeur));
 
     return array(
-        'id' => (int) ($parts[0] ?? 0),
+        'id' => (int) $parts[0],
         'parent_id' => (int) ($parts[1] ?? 0),
         'title' => (string) ($parts[2] ?? ''),
         'nleft' => (int) ($parts[3] ?? 0),
@@ -2113,12 +2113,12 @@ function tpResolveDeletedFolderDeletionInfo(
 
     // Direct logs
     if ($resolved['user_id'] === null && isset($directDeletionInfo[$folderId]) === true) {
-        $uid = (int) ($directDeletionInfo[$folderId]['user_id'] ?? 0);
+        $uid = (int) $directDeletionInfo[$folderId]['user_id'];
         if ($uid > 0) {
             $resolved['user_id'] = $uid;
         }
-        if ($resolved['date'] === null || (int) $resolved['date'] <= 0) {
-            $dt = (int) ($directDeletionInfo[$folderId]['date'] ?? 0);
+        if ($resolved['date'] === null) {
+            $dt = (int) $directDeletionInfo[$folderId]['date'];
             if ($dt > 0) {
                 $resolved['date'] = $dt;
             }
@@ -2359,7 +2359,7 @@ function tpGetCpuCores(): int
         $content = @file_get_contents($cpuinfo);
         if ($content !== false) {
             preg_match_all('/^processor\s*:/m', $content, $m);
-            $count = isset($m[0]) ? count($m[0]) : 0;
+            $count = count($m[0]);
             if ($count > 0) {
                 return $count;
             }
@@ -2581,7 +2581,7 @@ function tpIniSizeToBytes(string $value): int
         return 0;
     }
 
-    $num = (float) ($m[1] ?? 0);
+    $num = (float) $m[1];
     $unit = (string) ($m[2] ?? 'b');
 
     switch ($unit) {
@@ -2772,34 +2772,34 @@ function tpGetTopTablesInfo(int $limit = 20, string $dbName = ''): array
         }
     }
 
+    // Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
+    if (empty($rows) === true) {
+        try {
+            $st = DB::query('SHOW TABLE STATUS');
+            $rows = array();
+            foreach ($st as $r) {
+                $rows[] = array(
+                    'table_name' => (string) ($r['Name'] ?? ''),
+                    'engine' => (string) ($r['Engine'] ?? ''),
+                    'table_rows' => (int) ($r['Rows'] ?? 0),
+                    'data_length' => (float) ($r['Data_length'] ?? 0),
+                    'index_length' => (float) ($r['Index_length'] ?? 0),
+                    'data_free' => (float) ($r['Data_free'] ?? 0),
+                );
+            }
 
-// Final fallback: SHOW TABLE STATUS without filter (works even without information_schema privileges)
-if (empty($rows) === true) {
-    try {
-        $st = DB::query('SHOW TABLE STATUS');
-        $rows = array();
-        foreach ($st as $r) {
-            $rows[] = array(
-                'table_name' => (string) ($r['Name'] ?? ''),
-                'engine' => (string) ($r['Engine'] ?? ''),
-                'table_rows' => (int) ($r['Rows'] ?? 0),
-                'data_length' => (float) ($r['Data_length'] ?? 0),
-                'index_length' => (float) ($r['Index_length'] ?? 0),
-                'data_free' => (float) ($r['Data_free'] ?? 0),
-            );
+            usort($rows, static function (array $a, array $b): int {
+                $sizeA = (float) ($a['data_length'] + $a['index_length']);
+                $sizeB = (float) ($b['data_length'] + $b['index_length']);
+                return $sizeB <=> $sizeA;
+            });
+
+            $rows = array_slice($rows, 0, $limit);
+        } catch (Exception $e) {
+            $rows = array();
         }
-
-        usort($rows, static function ($a, $b) {
-            $sa = (float) (($a['data_length'] ?? 0) + ($a['index_length'] ?? 0));
-            $sb = (float) (($b['data_length'] ?? 0) + ($b['index_length'] ?? 0));
-            return $sb <=> $sa;
-        });
-
-        $rows = array_slice($rows, 0, $limit);
-    } catch (Exception $e) {
-        $rows = array();
     }
-}
+
     $out = array();
     foreach ($rows as $r) {
         $sizeBytes = (float) (($r['data_length'] ?? 0) + ($r['index_length'] ?? 0));
@@ -2851,19 +2851,27 @@ function tpGetSharekeysTableStats(string $tableName): array
     );
 }
 
+/**
+ * Identifies and counts orphaned records in sharekeys tables.
+ * Orphans are records linked to non-existent objects, non-existent users, 
+ * or inactive/deleted users.
+ * * @param string $shortTableName The short name of the sharekey table (e.g., 'sharekeys_items').
+ * @return array{missing_object: ?int, missing_user: int, inactive_user: int, orphans_total: int}
+ */
 function tpGetSharekeysOrphans(string $shortTableName): array
 {
     $shortTableName = trim($shortTableName);
     $tableName = prefixTable($shortTableName);
+    
     if (tpTableExists($tableName) === false) {
-        return array();
+        return array('missing_object' => null, 'missing_user' => 0, 'inactive_user' => 0, 'orphans_total' => 0);
     }
 
     $missingObject = null;
     $missingUser = 0;
     $inactiveUser = 0;
 
-    // missing users (hard deleted users)
+    // Identify missing users (records with user_id not found in users table)
     $missingUser = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . $tableName . ' s
@@ -2874,34 +2882,31 @@ function tpGetSharekeysOrphans(string $shortTableName): array
     // Soft-deleted/disabled users are not considered "orphans" here as the user record still exists.
     // Sharekeys may be needed if the account is restored/re-enabled.
 
-    // missing objects - depends on sharekeys table
-    if ($shortTableName === 'sharekeys_items' && tpTableExists(prefixTable('items')) === true) {
+    $missingObject = null;
+    $targetTable = '';
+
+    // Determine target object table based on sharekey context
+    switch ($shortTableName) {
+        case 'sharekeys_items':
+            $targetTable = 'items';
+            break;
+        case 'sharekeys_files':
+            $targetTable = 'files';
+            break;
+        case 'sharekeys_suggestions':
+            $targetTable = 'suggestion';
+            break;
+        case 'sharekeys_fields':
+            $targetTable = 'categories_items';
+            break;
+    }
+
+    // Identify missing objects if the target table exists
+    if (!empty($targetTable) && tpTableExists(prefixTable($targetTable))) {
         $missingObject = (int) DB::queryFirstField(
             'SELECT COUNT(*)
             FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('items') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_files' && tpTableExists(prefixTable('files')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('files') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_suggestions' && tpTableExists(prefixTable('suggestion')) === true) {
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('suggestion') . ' o ON o.id = s.object_id
-            WHERE o.id IS NULL'
-        );
-    } elseif ($shortTableName === 'sharekeys_fields' && tpTableExists(prefixTable('categories_items')) === true) {
-        // categories_items is used for custom fields binding
-        $missingObject = (int) DB::queryFirstField(
-            'SELECT COUNT(*)
-            FROM ' . $tableName . ' s
-            LEFT JOIN ' . prefixTable('categories_items') . ' o ON o.id = s.object_id
+            LEFT JOIN ' . prefixTable($targetTable) . ' o ON o.id = s.object_id
             WHERE o.id IS NULL'
         );
     }
@@ -2952,8 +2957,8 @@ function tpGetExcludedUserIds(): array
         // ignore
     }
 
-$ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
-        return is_int($v) && $v > 0;
+    $ids = array_values(array_unique(array_filter($ids, static function ($v): bool {
+        return $v > 0;
     })));
 
     return $ids;
@@ -3441,12 +3446,9 @@ function tpGetBackupsStatus(array $SETTINGS): array
     );
 
     foreach ($sources as $src) {
-        if (is_array($src) === false || isset($src['files']) === false) {
-            continue;
-        }
-        $type = (string) ($src['type'] ?? 'unknown');
+        $type = (string) $src['type'];
         $files = $src['files'];
-        if (is_array($files) === false || isset($files['error']) === true || empty($files) === true) {
+        if (isset($files['error']) === true || empty($files) === true) {
             continue;
         }
 
@@ -3455,8 +3457,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
                 continue;
             }
 
-            $schemaLevel = isset($f['schema_level']) && $f['schema_level'] !== null ? (string) $f['schema_level'] : '';
-            $tpFilesVersion = isset($f['tp_files_version']) && $f['tp_files_version'] !== null ? (string) $f['tp_files_version'] : '';
+            $schemaLevel = isset($f['schema_level']) ? (string) $f['schema_level'] : '';
+            $tpFilesVersion = isset($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';
 
             $compatibility = 'unknown';
             if ($expectedSchemaLevel !== '' && $schemaLevel !== '') {
@@ -3545,14 +3547,14 @@ function tpGetBackupsStatus(array $SETTINGS): array
     if (empty($taskLogs) === true && empty($tasks) === false) {
         foreach ($tasks as $t) {
             $taskLogs[] = array(
-                'created_at' => (int) ($t['created_at'] ?? 0),
-                'created_at_human' => (string) ($t['created_at_human'] ?? ''),
-                'job' => (string) ($t['process_type'] ?? ''),
-                'status' => (string) ($t['status'] ?? ''),
-                'updated_at' => (int) ($t['created_at'] ?? 0),
-                'updated_at_human' => (string) ($t['created_at_human'] ?? ''),
-                'finished_at' => (int) ($t['finished_at'] ?? 0),
-                'finished_at_human' => (string) ($t['finished_at_human'] ?? ''),
+                'created_at' => (int) $t['created_at'],
+                'created_at_human' => (string) $t['created_at_human'],
+                'job' => (string) $t['process_type'],
+                'status' => (string) $t['status'],
+                'updated_at' => (int) $t['created_at'],
+                'updated_at_human' => (string) $t['created_at_human'],
+                'finished_at' => (int) $t['finished_at'],
+                'finished_at_human' => (string) $t['finished_at_human'],
                 'treated_objects' => '',
             );
         }
@@ -3711,13 +3713,13 @@ function tpListBackupFiles(string $dir, string $prefix, int $limit = 10, array $
     }
 
     usort($items, static function (array $a, array $b): int {
-        return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
+        return ((int) $b['mtime']) <=> ((int) $a['mtime']);
     });
 
     $items = array_slice($items, 0, $limit);
 
     foreach ($items as $k => $v) {
-        $items[$k]['mtime_human'] = isset($v['mtime']) ? date('Y-m-d H:i:s', (int) $v['mtime']) : '';
+        $items[$k]['mtime_human'] = date('Y-m-d H:i:s', (int) $v['mtime']);
     }
 
     return $items;
@@ -3744,7 +3746,7 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
 
     $items = array();
     foreach ($paths as $fp) {
-        if (is_string($fp) === false || $fp === '' || is_file($fp) === false) {
+        if ($fp === '' || is_file($fp) === false) {
             continue;
         }
 
@@ -3782,12 +3784,12 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
             }
         }
 
-        $mtime = (int) @filemtime($fp);
+        $mtime = (int) filemtime($fp);
         $items[] = array(
             'name' => $bn,
             'mtime' => $mtime,
             'mtime_human' => $mtime > 0 ? date('Y-m-d H:i:s', $mtime) : '',
-            'size_mb' => round(((float) @filesize($fp)) / 1024 / 1024, 2),
+            'size_mb' => round(((float) filesize($fp)) / 1024 / 1024, 2),
             'schema_level' => $schemaLevel,
             'tp_files_version' => $tpFilesVersion,
             'comment' => $comment,
@@ -3795,7 +3797,7 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
     }
 
     usort($items, static function (array $a, array $b): int {
-        return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
+        return ((int) $b['mtime']) <=> ((int) $a['mtime']);
     });
 
     if ($limit <= 0) {
@@ -3872,11 +3874,8 @@ function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int
 
             $mtime = (int) ($f['mtime'] ?? 0);
             $sizeMb = isset($f['size_mb']) ? (float) $f['size_mb'] : null;
-            $comment = isset($f['comment']) && is_scalar($f['comment']) ? (string) $f['comment'] : null;
-            $comment = $comment !== null ? trim($comment) : null;
-            if ($comment === '') {
-                $comment = null;
-            }
+            $rawComment = isset($f['comment']) && is_scalar($f['comment']) ? trim((string) $f['comment']) : '';
+            $comment = $rawComment !== '' ? $rawComment : null;
 
             $schemaLevel = isset($f['schema_level']) && is_scalar($f['schema_level']) ? (string) $f['schema_level'] : '';
             $tpFilesVersion = isset($f['tp_files_version']) && is_scalar($f['tp_files_version']) ? (string) $f['tp_files_version'] : '';

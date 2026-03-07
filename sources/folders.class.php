@@ -195,7 +195,7 @@ class FolderManager
      * @param array $data
      * @param integer $complexity
      * @param integer $parent_id
-     * @return array|boolean
+     * @return array
      */
     private function checkComplexityLevel(
         $data,
@@ -253,7 +253,7 @@ class FolderManager
             if (isset($options['setFolderCategories']) && $options['setFolderCategories'] === true) {
                 $this->setFolderCategories($newId);
             }
-            $this->updateTimestamp();
+            $this->updateTimestamp((int) $newId);
             if (isset($options['rebuildFolderTree']) && $options['rebuildFolderTree'] === true) {
                 $this->rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId);
             }
@@ -327,14 +327,11 @@ class FolderManager
     }
 
     /**
-     * Updates the last folder change timestamp.
+     * Invalidate cache for users with access to the given folder.
      */
-    private function updateTimestamp()
+    private function updateTimestamp(int $folderId)
     {
-        DB::update(prefixTable('misc'), [
-            'valeur' => time(),
-            'updated_at' => time(),
-        ], 'type = %s AND intitule = %s', 'timestamp', 'last_folder_change');
+        invalidateCacheForFolderUsers($folderId);
     }
 
     /**
@@ -418,7 +415,7 @@ class FolderManager
      */
     private function manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin)
     {
-        if ($parent_id !== 0 && $this->settings['subfolder_rights_as_parent'] ?? false) {
+        if ($parent_id !== 0 && $this->settings['subfolder_rights_as_parent']) {
             $rows = DB::query('SELECT role_id, type FROM ' . prefixTable('roles_values') . ' WHERE folder_id = %i', $parent_id);
             foreach ($rows as $record) {
                 DB::insert(prefixTable('roles_values'), [

@@ -477,7 +477,7 @@ if (function_exists('tpDefuseDecryptWithCandidates') === false) {
             if (!empty($r['success'])) {
                 return ['success' => true, 'message' => '', 'key_used' => $k];
             }
-            $lastMsg = tpSafeUtf8String((string)($r['message'] ?? ''));
+            $lastMsg = tpSafeUtf8String((string)$r['message']);
         }
 
         return ['success' => false, 'message' => ($lastMsg !== '' ? $lastMsg : 'Unable to decrypt')];
@@ -504,7 +504,7 @@ if (function_exists('tpGetSchemaLevel') === false) {
     {
         if (defined('UPGRADE_MIN_DATE')) {
             $v = (string) UPGRADE_MIN_DATE;
-            if ($v !== '' && preg_match('/^\d+$/', $v) === 1) {
+            if (preg_match('/^\d+$/', $v) === 1) {
                 return $v;
             }
         }
@@ -635,7 +635,7 @@ if (function_exists('tpGetBackupSchemaLevelFromMetaOrFilename') === false) {
         $meta = tpReadBackupMetadata($backupFilePath);
         if (!empty($meta['schema_level']) && is_scalar($meta['schema_level'])) {
             $v = (string) $meta['schema_level'];
-            if ($v !== '' && preg_match('/^\d+$/', $v) === 1) {
+            if (preg_match('/^\d+$/', $v) === 1) {
                 return $v;
             }
         }
@@ -701,7 +701,7 @@ if (function_exists('tpListOrphanBackupMetaFiles') === false) {
 
         $orphans = [];
         foreach ($paths as $metaPath) {
-            if (!is_string($metaPath) || $metaPath === '') {
+            if ($metaPath === '') {
                 continue;
             }
             $basePath = substr($metaPath, 0, -strlen('.meta.json'));

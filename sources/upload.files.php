@@ -228,15 +228,7 @@ if ($file) {
     $originalName = $file->getClientOriginalName();
     if (is_string($originalName)) {
         // Get file extension
-        $ext = pathinfo($originalName, PATHINFO_EXTENSION);
-        if (is_string($ext)) {
-            $ext = strtolower($ext);
-        } else {
-            // Case where the file extension is not a string
-            error_log('Invalid file name: ' . $file_name . '.');
-            echo handleUploadError('Invalid file extension.');
-            return false;
-        }
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
     } else {
         // Case where the file name is not a string
         error_log('Invalid file name: ' . $file_name . '.');
@@ -301,7 +293,7 @@ if (!file_exists($targetDir)) {
 }
 
 // Remove old temp files
-if ($cleanupTargetDir && is_dir($targetDir) && ($dir = opendir($targetDir))) {
+if (is_dir($targetDir) && ($dir = opendir($targetDir))) {
     while (($fileClean = readdir($dir)) !== false) {
         $tmpfilePath = $targetDir . DIRECTORY_SEPARATOR . $fileClean;
 
@@ -328,7 +320,7 @@ $contentType = $_SERVER['CONTENT_TYPE']
 
 // Handle non multipart uploads older WebKit versions didn't support multipart in HTML5
 if (strpos($contentType, 'multipart') !== false) {
-    if ($file && $file->isValid()) {
+    if ($file->isValid()) {
         // Path for the temporary file
         $tempFilePath = "{$filePath}.part";
         

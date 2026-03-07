@@ -619,7 +619,8 @@ class MeekroDB {
       'l' => function($arg) use ($t) { return strval($arg); },
       't' => function($arg) use ($t) { return $t->escapeTS($arg); },
       'ss' => function($arg) use ($t) { return $t->escape("%" . str_replace(array('%', '_'), array('\%', '\_'), $arg) . "%"); },
-
+      'ssb' => function($arg) use ($t) { return $t->escape(str_replace(array('%', '_'), array('\%', '\_'), $arg) . "%"); },
+      'sse' => function($arg) use ($t) { return $t->escape("%" . str_replace(array('%', '_'), array('\%', '\_'), $arg)); },
       'ls' => function($arg) use ($t) { return array_map(array($t, 'escape'), $arg); },
       'li' => function($arg) use ($t) { return array_map(array($t, 'intval'), $arg); },
       'ld' => function($arg) use ($t) { return array_map('doubleval', $arg); },

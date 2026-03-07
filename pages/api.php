@@ -221,15 +221,15 @@ function getDomainFromSettingsUrl(string $url): string
                                             <?php
                                             foreach ($rowsKeys as $key) {
                                                 echo '
-                                                    <tr data-id="' . $key['increment_id'] . '">
+                                                    <tr data-id="' . strval($key['increment_id']) . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-key" title="' . $lang->get('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-key pointer">' . $key['label'] . '</span></td>
-                                                    <td>' . $key['value']. '</td>   
-                                                    <td><i class="fas '.((int) $key['enabled'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_create'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_read'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_update'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_delete'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . $key['increment_id'] . '"></i></td>                   
+                                                    <td><span class="edit-api-key pointer">' . strval($key['label']) . '</span></td>
+                                                    <td>' . strval($key['value']). '</td>
+                                                    <td><i class="fas '.(intval($key['enabled']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_create']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_read']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_update']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_delete']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -282,10 +282,10 @@ function getDomainFromSettingsUrl(string $url): string
                                             <?php
                                             foreach ($rowsIps as $ip) {
                                                 echo '
-                                                <tr data-id="' . $ip['increment_id'] . '">
+                                                <tr data-id="' . strval($ip['increment_id']) . '">
                                                     <td width="50px"><i class="fas fa-trash infotip pointer delete-api-ip" title="' . $lang->get('del_button') . '"></i></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="label">' . $ip['label'] . '</span></td>
-                                                    <td><span class="edit-api-ip pointer" data-field="value">' . $ip['value'] . '</span></td>
+                                                    <td><span class="edit-api-ip pointer" data-field="label">' . strval($ip['label']) . '</span></td>
+                                                    <td><span class="edit-api-ip pointer" data-field="value">' . strval($ip['value']) . '</span></td>
                                                 </tr>';
                                             } ?>
                                         </tbody>
@@ -354,13 +354,13 @@ function getDomainFromSettingsUrl(string $url): string
                                             <?php
                                             foreach ($rowsKeys as $key) {
                                                 echo '
-                                                    <tr data-id="' . $key['increment_id'] . '">
-                                                    <td>' . $key['name'] . ' ' . $key['lastname'] . ' (<i>'.$key['login'].'</i>)</td>
-                                                    <td><i class="fas '.((int) $key['enabled'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_create'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_read'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_update'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . $key['increment_id'] . '"></i></td>
-                                                    <td><i class="fas '.((int) $key['allowed_to_delete'] === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . $key['increment_id'] . '"></i></td>
+                                                    <tr data-id="' . strval($key['increment_id']) . '">
+                                                    <td>' . strval($key['name']) . ' ' . strval($key['lastname']) . ' (<i>'.strval($key['login']).'</i>)</td>
+                                                    <td><i class="fas '.(intval($key['enabled']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="enabled" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_create']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_create" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_read']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_read" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_update']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_update" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
+                                                    <td><i class="fas '.(intval($key['allowed_to_delete']) === 1 ? 'fa-toggle-on text-info' : 'fa-toggle-off').' mr-1 text-center pointer api-clickme-action" data-field="allowed_to_delete" data-increment-id="' . strval($key['increment_id']) . '"></i></td>
                                                 </tr>';
                                             } ?>
                                         </tbody>

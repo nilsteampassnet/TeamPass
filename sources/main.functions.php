@@ -50,7 +50,6 @@ use TeampassClasses\ConfigManager\ConfigManager;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
-use Symfony\Component\Process\Process;
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -103,18 +102,9 @@ function cryption(string $message, string $ascii_key, string $type, ?array $SETT
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         error_log('TEAMPASS-Error-Wrong key or modified ciphertext: ' . $ex->getMessage());
         $err = 'wrong_key_or_modified_ciphertext';
-    } catch (CryptoException\BadFormatException $ex) {
-        error_log('TEAMPASS-Error-Bad format exception: ' . $ex->getMessage());
-        $err = 'bad_format';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
         $err = 'environment_error';
-    } catch (CryptoException\IOException $ex) {
-        error_log('TEAMPASS-Error-IO: ' . $ex->getMessage());
-        $err = 'io_error';
-    } catch (Exception $ex) {
-        error_log('TEAMPASS-Error-Unexpected exception: ' . $ex->getMessage());
-        $err = 'unexpected_error';
     }
 
     return [
@@ -315,9 +305,7 @@ function identAdmin(string $idFonctions)
     $session->set('user-no_access_folders', []);
     $session->set('user-personal_visible_folders', []);
     $session->set('user-read_only_folders', []);
-    $session->set('system-list_restricted_folders_for_items', []);
     $session->set('system-list_folders_editable_by_role', []);
-    $session->set('user-list_folders_limited', []);
     $session->set('user-forbiden_personal_folders', []);
     
     // Get list of Folders
@@ -328,7 +316,7 @@ function identAdmin(string $idFonctions)
     $session->set('user-accessible_folders', $groupesVisibles);
 
     // get complete list of ROLES
-    $tmp = array_filter(explode(';', $idFonctions !== null ? $idFonctions : ''));
+    $tmp = array_filter(explode(';', $idFonctions));
     $rows = DB::query(
         'SELECT * FROM ' . prefixTable('roles_title') . '
         ORDER BY title ASC'
@@ -367,7 +355,7 @@ function convertToArray($element): array
             trimElement($element, ';')
         );
     }
-    return is_array($element) === true ? $element : [];
+    return $element;
 }
 
 /**
@@ -401,16 +389,13 @@ function identUser(
     $personalFolders = [];
     $readOnlyFolders = [];
     $noAccessPersonalFolders = [];
-    $restrictedFoldersForItems = [];
-    $foldersLimited = [];
-    $foldersLimitedFull = [];
     $allowedFoldersByRoles = [];
     $globalsUserId = $session->get('user-id');
     $globalsPersonalFolders = $session->get('user-personal_folder_enabled');
     // Ensure consistency in array format
-    $noAccessFolders = convertToArray($noAccessFolders) ?? [];
-    $userRoles = convertToArray($userRoles) ?? [];
-    $allowedFolders = convertToArray($allowedFolders) ?? [];
+    $noAccessFolders = convertToArray($noAccessFolders);
+    $userRoles = convertToArray($userRoles);
+    $allowedFolders = [];//convertToArray($allowedFolders) ?? [];
     $session->set('user-allowed_folders_by_definition', $allowedFolders);
     
     // Get list of folders depending on Roles
@@ -423,42 +408,6 @@ function identUser(
     $allowedFoldersByRoles = $arrays['allowedFoldersByRoles'];
     $readOnlyFolders = $arrays['readOnlyFolders'];
 
-    // Does this user is allowed to see other items
-    $inc = 0;
-    $rows = DB::query(
-        'SELECT id, id_tree FROM ' . prefixTable('items') . '
-            WHERE restricted_to LIKE %ss AND inactif = %s'.
-            (count($allowedFolders) > 0 ? ' AND id_tree NOT IN ('.implode(',', $allowedFolders).')' : ''),
-        $globalsUserId,
-        '0'
-    );
-    foreach ($rows as $record) {
-        // Exclude restriction on item if folder is fully accessible
-        //if (in_array($record['id_tree'], $allowedFolders) === false) {
-            $restrictedFoldersForItems[$record['id_tree']][$inc] = $record['id'];
-            ++$inc;
-        //}
-    }
-
-    // Check for the users roles if some specific rights exist on items
-    $rows = DB::query(
-        'SELECT i.id_tree, r.item_id
-        FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('restriction_to_roles') . ' as r ON (r.item_id=i.id)
-        WHERE i.id_tree <> "" '.
-        (count($userRoles) > 0 ? 'AND r.role_id IN %li ' : '').
-        'ORDER BY i.id_tree ASC',
-        $userRoles
-    );
-    $inc = 0;
-    foreach ($rows as $record) {
-        //if (isset($record['id_tree'])) {
-            $foldersLimited[$record['id_tree']][$inc] = $record['item_id'];
-            array_push($foldersLimitedFull, $record['id_tree']);
-            ++$inc;
-        //}
-    }
-
     // Get list of Personal Folders
     $arrays = identUserGetPFList(
         $globalsPersonalFolders,
@@ -466,9 +415,7 @@ function identUser(
         $globalsUserId,
         $personalFolders,
         $noAccessPersonalFolders,
-        $foldersLimitedFull,
         $allowedFoldersByRoles,
-        array_keys($restrictedFoldersForItems),
         $readOnlyFolders,
         $noAccessFolders,
         isset($SETTINGS['enable_pf_feature']) === true ? $SETTINGS['enable_pf_feature'] : 0,
@@ -477,15 +424,14 @@ function identUser(
     $allowedFolders = $arrays['allowedFolders'];
     $personalFolders = $arrays['personalFolders'];
     $noAccessPersonalFolders = $arrays['noAccessPersonalFolders'];
-
+    
     // Return data
     $session->set('user-accessible_folders', array_unique(array_merge($allowedFolders, $personalFolders), SORT_NUMERIC));
     $session->set('user-read_only_folders', $readOnlyFolders);
     $session->set('user-no_access_folders', $noAccessFolders);
     $session->set('user-personal_folders', $personalFolders);
-    $session->set('user-list_folders_limited', $foldersLimited);
+    //$session->set('user-list_folders_limited', $foldersLimited);
     $session->set('system-list_folders_editable_by_role', $allowedFoldersByRoles, 'SESSION');
-    $session->set('system-list_restricted_folders_for_items', $restrictedFoldersForItems);
     $session->set('user-forbiden_personal_folders', $noAccessPersonalFolders);
     // Folders and Roles numbers
     DB::queryFirstRow('SELECT id FROM ' . prefixTable('nested_tree') . '');
@@ -524,10 +470,18 @@ function identUser(
  */
 function identUserGetFoldersFromRoles(array $userRoles, array $allowedFoldersByRoles = [], array $readOnlyFolders = [], array $allowedFolders = []) : array
 {
+    // No roles means no role-based folder access
+    if (count($userRoles) === 0) {
+        return [
+            'readOnlyFolders' => $readOnlyFolders,
+            'allowedFoldersByRoles' => $allowedFoldersByRoles
+        ];
+    }
+
     $rows = DB::query(
         'SELECT *
         FROM ' . prefixTable('roles_values') . '
-        WHERE type IN %ls'.(count($userRoles) > 0 ? ' AND role_id IN %li' : ''),
+        WHERE type IN %ls AND role_id IN %li',
         ['W', 'ND', 'NE', 'NDNE', 'R'],
         $userRoles,
     );
@@ -562,9 +516,7 @@ function identUserGetFoldersFromRoles(array $userRoles, array $allowedFoldersByR
  * @param int $globalsUserId
  * @param array $personalFolders
  * @param array $noAccessPersonalFolders
- * @param array $foldersLimitedFull
  * @param array $allowedFoldersByRoles
- * @param array $restrictedFoldersForItems
  * @param array $readOnlyFolders
  * @param array $noAccessFolders
  * @param int $enablePfFeature
@@ -578,9 +530,7 @@ function identUserGetPFList(
     $globalsUserId,
     $personalFolders,
     $noAccessPersonalFolders,
-    $foldersLimitedFull,
     $allowedFoldersByRoles,
-    $restrictedFoldersForItems,
     $readOnlyFolders,
     $noAccessFolders,
     $enablePfFeature,
@@ -637,9 +587,7 @@ function identUserGetPFList(
     // All folders visibles
     $allowedFolders = array_unique(array_merge(
         $allowedFolders,
-        $foldersLimitedFull,
         $allowedFoldersByRoles,
-        $restrictedFoldersForItems,
         $readOnlyFolders
     ), SORT_NUMERIC);
     // Exclude from allowed folders all the specific user forbidden folders
@@ -659,9 +607,8 @@ function identUserGetPFList(
  * Update the CACHE table.
  *
  * @param string $action   What to do
- * @param array  $SETTINGS Teampass settings
  * @param int    $ident    Ident format
- * 
+ *
  * @return void
  */
 function updateCacheTable(string $action, ?int $ident = null): void
@@ -1223,8 +1170,8 @@ function prepareExchangedData($data, string $type, ?string $key = null)
             $data = html_entity_decode(html_entity_decode(/** @scrutinizer ignore-type */$data)); // @codeCoverageIgnore Is always a string (not an array)
         }
 
-        // Check if $data is a valid string before json_decode
-        if (is_string($data) && !empty($data)) {
+        // Check if $data is not empty before json_decode
+        if (!empty($data)) {
             // Return data array
             return json_decode($data, true);
         }
@@ -1330,7 +1277,7 @@ function GenerateCryptKey(
  * @param int     $size      Length
  * @param bool $secure Secure
  * @param bool $numerals Numerics
- * @param bool $uppercase Uppercase letters
+ * @param bool $capitalize Uppercase letters
  * @param bool $symbols Symbols
  * @param bool $lowercase Lowercase
  * @param array   $SETTINGS  SETTINGS
@@ -1410,17 +1357,17 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
  * @param string $label    Label
  * @param string $who      Who
  * @param string $login    Login
- * @param string|int $field_1  Field
+ * @param string|null $field_1  Field
  * 
  * @return void
  */
 function logEvents(
-    array $SETTINGS, 
-    string $type, 
-    string $label, 
-    string $who, 
-    ?string $login = null, 
-    $field_1 = null
+    array $SETTINGS,
+    string $type,
+    string $label,
+    string $who,
+    ?string $login = null,
+    string|null $field_1 = null
 ): void
 {
     if (empty($who)) {
@@ -1445,8 +1392,8 @@ function logEvents(
         $field_1 = $field_1_str;
     }
 
-        try {
-    DB::insert(
+    try {
+        DB::insert(
             prefixTable('log_system'),
             [
                 'type' => $type,
@@ -1456,7 +1403,6 @@ function logEvents(
                 'field_1' => $field_1 === null ? '' : $field_1,
             ]
         );
-    
     } catch (\Throwable $e) {
         // Logging must never break API or UI flows
         return;
@@ -1533,20 +1479,20 @@ function logItems(
         // Avoid duplicate "shown" logs caused by multiple API calls within a short window
         if ($action === 'at_shown') {
             try {
-            $existing = DB::queryFirstField(
-                'SELECT id FROM ' . prefixTable('log_items') . '
-                WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
-                ORDER BY date DESC
-                LIMIT 1',
-                $item_id,
-                $id_user,
-                $action,
-                $eventTime - 5,
-                $sourceMarker
-            );
-        } catch (\Throwable $e) {
-            $existing = null; // Never block API calls because of logging
-        }
+                $existing = DB::queryFirstField(
+                    'SELECT id FROM ' . prefixTable('log_items') . '
+                    WHERE id_item = %i AND id_user = %i AND action = %s AND date >= %i AND raison LIKE %ss
+                    ORDER BY date DESC
+                    LIMIT 1',
+                    $item_id,
+                    $id_user,
+                    $action,
+                    $eventTime - 5,
+                    $sourceMarker
+                );
+            } catch (\Throwable $e) {
+                $existing = null; // Never block API calls because of logging
+            }
             if (!empty($existing)) {
                 return;
             }
@@ -1557,19 +1503,18 @@ function logItems(
 
     // Insert log in DB
     try {
-    DB::insert(
-        prefixTable('log_items'),
-        [
-            'id_item' => $item_id,
-            'date' => $eventTime,
-            'id_user' => $id_user,
-            'action' => $action,
-            'raison' => $raisonForDb,
-            'old_value' => $old_value,
-            'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
-        ]
-    );
-    
+        DB::insert(
+            prefixTable('log_items'),
+            [
+                'id_item' => $item_id,
+                'date' => $eventTime,
+                'id_user' => $id_user,
+                'action' => $action,
+                'raison' => $raisonForDb,
+                'old_value' => $old_value,
+                'encryption_type' => is_null($encryption_type) === true ? TP_ENCRYPTION_NAME : $encryption_type,
+            ]
+        );
     } catch (\Throwable $e) {
         // Logging must never break API or UI flows
         return;
@@ -1606,7 +1551,7 @@ function logItems(
     // SYSLOG
     if (isset($SETTINGS['syslog_enable']) === true && (int) $SETTINGS['syslog_enable'] === 1) {
         // Extract reason
-        $attribute = is_null($raisonForSyslog) === true ? Array('') : explode(' : ', $raisonForSyslog);
+        $attribute = is_null($raisonForSyslog) === true ? [''] : explode(' : ', $raisonForSyslog);
         // Get item info if not known
         if (empty($item_label) === true) {
             try {
@@ -1655,24 +1600,28 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsUserId = $session->get('user-id');
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
-    // send email to user that what to be notified
-    $notification = DB::queryFirstField(
-        'SELECT email
+
+    // Get all subscribers' emails as an array
+    $emails = DB::queryFirstColumn(
+        'SELECT u.email
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
         WHERE n.item_id = %i AND n.user_id != %i',
         $item_id,
         $globalsUserId
     );
+
     if (DB::count() > 0) {
         // Prepare path
         $path = geItemReadablePath($item_id, '', $SETTINGS);
+
         // Get list of changes
         $htmlChanges = '<ul>';
         foreach ($changes as $change) {
             $htmlChanges .= '<li>' . $change . '</li>';
         }
         $htmlChanges .= '</ul>';
+
         // send email
         DB::insert(
             prefixTable('emails'),
@@ -1684,7 +1633,7 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
                     [$label, $path, (string) $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
                     $lang->get('email_body_item_updated')
                 ),
-                'receivers' => implode(',', $notification),
+                'receivers' => implode(',', $emails),
                 'status' => '',
             ]
         );
@@ -1900,10 +1849,9 @@ function checkCFconsistency(int $source_id, int $target_id): bool
  * Will encrypte/decrypt a fil eusing Defuse.
  *
  * @param string $type        can be either encrypt or decrypt
- * @param string $source_file path to source file
- * @param string $target_file path to target file
- * @param array  $SETTINGS    Settings
- * @param string $password    A password
+ * @param string  $source_file path to source file
+ * @param string  $target_file path to target file
+ * @param string|null $password    A password
  *
  * @return string|bool
  */
@@ -1915,15 +1863,10 @@ function prepareFileWithDefuse(
 ) {
     // Load AntiXSS
     $antiXss = new AntiXSS();
-    // Protect against bad inputs
-    if (is_array($source_file) === true || is_array($target_file) === true) {
-        return 'error_cannot_be_array';
-    }
-
     // Sanitize
     $source_file = $antiXss->xss_clean($source_file);
     $target_file = $antiXss->xss_clean($target_file);
-    if (empty($password) === true || is_null($password) === true) {
+    if (empty($password) === true) {
         // get KEY to define password
         $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
         $password = Key::loadFromAsciiSafeString($ascii_key);
@@ -1953,10 +1896,9 @@ function prepareFileWithDefuse(
 /**
  * Encrypt a file with Defuse.
  *
- * @param string $source_file path to source file
- * @param string $target_file path to target file
- * @param array  $SETTINGS    Settings
- * @param string $password    A password
+ * @param string  $source_file path to source file
+ * @param string  $target_file path to target file
+ * @param string|null $password    A password
  *
  * @return string|bool
  */
@@ -1972,8 +1914,6 @@ function defuseFileEncrypt(
             $target_file,
             $password
         );
-    } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
-        $err = 'wrong_key';
     } catch (CryptoException\EnvironmentIsBrokenException $ex) {
         error_log('TEAMPASS-Error-Environment: ' . $ex->getMessage());
         $err = 'environment_error';
@@ -2148,7 +2088,6 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
     
     $session = SessionManager::getSession();
     $session_groupes_visibles = $session->get('user-accessible_folders');
-    $session_list_restricted_folders_for_items = $session->get('system-list_restricted_folders_for_items');
     // Load item data
     $data = DB::queryFirstRow(
         'SELECT id_tree
@@ -2158,12 +2097,7 @@ function accessToItemIsGranted(int $item_id, array $SETTINGS)
     );
     // Check if user can access this folder
     if (in_array($data['id_tree'], $session_groupes_visibles) === false) {
-        // Now check if this folder is restricted to user
-        if (isset($session_list_restricted_folders_for_items[$data['id_tree']]) === true
-            && in_array($item_id, $session_list_restricted_folders_for_items[$data['id_tree']]) === false
-        ) {
-            return 'ERR_FOLDER_NOT_ALLOWED';
-        }
+        return 'ERR_FOLDER_NOT_ALLOWED';
     }
 
     return true;
@@ -2317,7 +2251,7 @@ function generateUserKeys(string $userPwd, ?array $SETTINGS = null): array
  * @param string $userPwd        User password
  * @param string $userPrivateKey User private key
  *
- * @return string|object
+ * @return string
  */
 function decryptPrivateKey(string $userPwd, string $userPrivateKey)
 {
@@ -2621,9 +2555,7 @@ function migrateAllUserKeysToV3(
         );
 
         // Store migrated private key in dedicated table
-        if (isset($updateData['private_key'])) {
-            insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
-        }
+        insertPrivateKeyWithCurrentFlag($userId, $updateData['private_key']);
 
         // Log successful migration
         if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
@@ -3343,8 +3275,6 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param int    $post_folder_is_personal Personal
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
- * @param array  $SETTINGS                Teampass settings
- * @param int    $user_id                 User ID if needed
  * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
  * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
  * @param array  $objectKeyArray          Array of objects
@@ -3499,7 +3429,7 @@ function isBase64(string $str): bool
  *
  * @param string $field Parameter
  *
- * @return array|bool|resource|string
+ * @return array|bool|string
  */
 function filterString(string $field)
 {
@@ -3594,10 +3524,10 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
 function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
 {
     // Return if technical accounts
-    if ($userId === OTV_USER_ID
-        || $userId === SSH_USER_ID
-        || $userId === API_USER_ID
-        || $userId === TP_USER_ID
+    if ($userId === (int) OTV_USER_ID
+        || $userId === (int) SSH_USER_ID
+        || $userId === (int) API_USER_ID
+        || $userId === (int) TP_USER_ID
     ) {
         return false;
     }
@@ -3724,7 +3654,7 @@ function mfa_auth_requested_roles(string $userRolesIds, string $mfaRoles): bool
  */
 function cleanStringForExport(string $text, bool $emptyCheckOnly = false): string
 {
-    if (is_null($text) === true || empty($text) === true) {
+    if (empty($text) === true) {
         return '';
     }
     // only expected to check if $text was empty
@@ -3742,7 +3672,7 @@ function cleanStringForExport(string $text, bool $emptyCheckOnly = false): strin
 /**
  * Permits to check if user ID is valid
  *
- * @param integer $post_user_id
+ * @param mixed $userId
  * @return bool
  */
 function isUserIdValid($userId): bool
@@ -3860,7 +3790,7 @@ function isSetArrayOfValues(array $arrayOfValues): bool
  * Return true if all set
  * Return false if one of them is not set
  *
- * @param array $arrayOfValues
+ * @param array $arrayOfVars
  * @param integer|string $value
  * @return boolean
  */
@@ -3880,7 +3810,7 @@ function isArrayOfVarsEqualToValue(
 /**
  * Checks if at least one variable in array is equal to value
  *
- * @param array $arrayOfValues
+ * @param array $arrayOfVars
  * @param integer|string $value
  * @return boolean
  */
@@ -4036,7 +3966,7 @@ function secureOutput(mixed $data, array $fields = []): mixed
  * @param string $field_update
  * @return void
  */
-function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '')
+function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, string $field_update = '', string $visible_folders = '')
 {
     // Load class DB
     loadClasses('DB');
@@ -4048,41 +3978,106 @@ function cacheTreeUserHandler(int $user_id, string $data, array $SETTINGS, strin
         WHERE user_id = %i',
         $user_id
     );
-    
+
     if (is_null($userCacheId) === true || count($userCacheId) === 0) {
-        // insert in table
+        // Insert new cache entry
+        $insertData = array(
+            'data' => $data,
+            'timestamp' => time(),
+            'user_id' => $user_id,
+            'visible_folders' => $visible_folders,
+            'invalidated_at' => 0,
+        );
         DB::insert(
             prefixTable('cache_tree'),
-            array(
-                'data' => $data,
-                'timestamp' => time(),
-                'user_id' => $user_id,
-                'visible_folders' => '',
-            )
+            $insertData
+        );
+    } elseif (!empty($field_update)) {
+        // Update only a specific field (e.g. 'visible_folders' from items.queries.php)
+        DB::update(
+            prefixTable('cache_tree'),
+            [
+                $field_update => $data,
+            ],
+            'increment_id = %i',
+            $userCacheId['increment_id']
         );
     } else {
-        if (empty($field_update) === true) {
-            DB::update(
-                prefixTable('cache_tree'),
-                [
-                    'timestamp' => time(),
-                    'data' => $data,
-                ],
-                'increment_id = %i',
-                $userCacheId['increment_id']
-            );
-        /* USELESS
-        } else {
-            DB::update(
-                prefixTable('cache_tree'),
-                [
-                    $field_update => $data,
-                ],
-                'increment_id = %i',
-                $userCacheId['increment_id']
-            );*/
+        // Update data (and visible_folders if provided)
+        $updateFields = [
+            'timestamp' => time(),
+            'data' => $data,
+            'invalidated_at' => 0,
+        ];
+        if (!empty($visible_folders)) {
+            $updateFields['visible_folders'] = $visible_folders;
         }
+        DB::update(
+            prefixTable('cache_tree'),
+            $updateFields,
+            'increment_id = %i',
+            $userCacheId['increment_id']
+        );
     }
+}
+
+/**
+ * Invalidate tree cache for all users who have access to a specific folder.
+ * Replaces global last_folder_change with targeted per-user invalidation.
+ *
+ * @param int $folderId The folder that was changed (0 if folder deleted)
+ * @param array $additionalUserIds Optional extra user IDs to invalidate
+ * @return void
+ */
+function invalidateCacheForFolderUsers(int $folderId, array $additionalUserIds = []): void
+{
+    loadClasses('DB');
+
+    $affectedUsers = [];
+
+    // Find users who have access to this folder via roles
+    if ($folderId > 0) {
+        $affectedUsers = DB::queryFirstColumn(
+            'SELECT DISTINCT ur.user_id
+            FROM ' . prefixTable('users_roles') . ' ur
+            JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
+            WHERE rv.folder_id = %i',
+            $folderId
+        );
+    }
+
+    // Merge with additional users (personal folder owner, etc.)
+    if (!empty($additionalUserIds)) {
+        $affectedUsers = array_merge($affectedUsers, $additionalUserIds);
+    }
+
+    // Include admin users (they see all folders)
+    $adminUsers = DB::queryFirstColumn(
+        'SELECT id FROM ' . prefixTable('users') . ' WHERE admin = 1'
+    );
+    $affectedUsers = array_unique(array_merge($affectedUsers, $adminUsers));
+
+    if (!empty($affectedUsers)) {
+        DB::query(
+            'UPDATE ' . prefixTable('cache_tree') . '
+            SET invalidated_at = %i
+            WHERE user_id IN %ls',
+            time(),
+            $affectedUsers
+        );
+    }
+
+    // Keep global last_folder_change as fallback for backward compatibility
+    DB::update(
+        prefixTable('misc'),
+        [
+            'valeur' => time(),
+            'updated_at' => time(),
+        ],
+        'type = %s AND intitule = %s',
+        'timestamp',
+        'last_folder_change'
+    );
 }
 
 /**
@@ -4145,12 +4140,19 @@ function loadFoldersListByCache(
     
     // Does this user has a tree cache
     $userCacheTree = DB::queryFirstRow(
-        'SELECT '.$fieldName.'
+        'SELECT '.$fieldName.', timestamp, IFNULL(invalidated_at, 0) as invalidated_at
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id = %i',
         $session->get('user-id')
     );
     if (empty($userCacheTree[$fieldName]) === false && $userCacheTree[$fieldName] !== '[]') {
+        // Check per-user invalidation
+        if ((int) $userCacheTree['invalidated_at'] > (int) $userCacheTree['timestamp']) {
+            return [
+                'state' => false,
+                'data' => [],
+            ];
+        }
         return [
             'state' => true,
             'data' => $userCacheTree[$fieldName],
@@ -4771,6 +4773,7 @@ function storeTask(
                 'arguments' => json_encode([
                     'item_id' => $item_id,
                     'object_key' => $object_keys,
+                    'author' => $user_id,
                 ]),
                 'item_id' => $item_id,
             )
@@ -4819,10 +4822,13 @@ function storeTask(
             )
         );
     }
+
+    // Trigger immediate execution of the background handler
+    triggerBackgroundHandler();
 }
 
 /**
- * 
+ *
  */
 function createTaskForItem(
     string $processType,
@@ -4914,6 +4920,9 @@ function createTaskForItem(
                 break;
         }
     }
+
+    // Trigger immediate execution of the background handler
+    triggerBackgroundHandler();
 }
 
 
@@ -5532,7 +5541,7 @@ function EnsurePersonalItemHasOnlyKeysForOwner(int $userId, int $itemId): bool
     );
     DB::delete(
         prefixTable('sharekeys_fields'),
-        'object_id IN (SELECT id FROM '.prefixTable('fields').' WHERE id_item = %i) AND user_id NOT IN %ls',
+        'object_id IN (SELECT id FROM '.prefixTable('categories_items').' WHERE item_id = %i) AND user_id NOT IN %ls',
         $itemId,
         [$userId, TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
     );
@@ -5703,11 +5712,6 @@ function checkAndMigratePersonalItems($userId, $privateKeyDecrypted, $passwordCl
  */
 function triggerPhpseclibV3MigrationOnLogin(int $userId, string $privateKeyDecrypted, string $passwordClear): void
 {
-    // Check if forced migration is enabled
-    if (!defined('FORCE_PHPSECLIBV3_MIGRATION') || FORCE_PHPSECLIBV3_MIGRATION !== true) {
-        return; // Forced migration disabled, use progressive migration instead
-    }
-
     $session = SessionManager::getSession();
 
     // Check if user already completed forced migration
@@ -6075,26 +6079,49 @@ function getUserCompleteData($login = null, $userId = null)
     
     // Get user with all related data
     // Note: pk.private_key overrides u.private_key (from users table) to read from user_private_keys
+    // Use subqueries for aggregations to avoid GROUP BY on the main query
+    // This ensures compatibility with MySQL ONLY_FULL_GROUP_BY mode
     $data = DB::queryFirstRow(
         'SELECT u.*,
          pk.private_key AS private_key,
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
-         GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-         GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
-         GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
-         GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
+         agg_groups.groupes_visibles,
+         agg_gforbid.groupes_interdits,
+         agg_roles.fonction_id,
+         agg_roles.roles_from_ad_groups,
+         agg_fav.favourites,
+         agg_latest.latest_items
         FROM ' . prefixTable('users') . ' AS u
         LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
         LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-        LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-        LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-        LEFT JOIN ' . prefixTable('users_favorites') . ' AS uf ON (u.id = uf.user_id)
-        LEFT JOIN ' . prefixTable('users_latest_items') . ' AS ul ON (u.id = ul.user_id)
-        WHERE ' . $whereClause . '
-        GROUP BY u.id',
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+            FROM ' . prefixTable('users_groups') . '
+            GROUP BY user_id
+        ) agg_groups ON agg_groups.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+            FROM ' . prefixTable('users_groups_forbidden') . '
+            GROUP BY user_id
+        ) agg_gforbid ON agg_gforbid.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN source = "ad" THEN role_id END ORDER BY role_id SEPARATOR ";") AS roles_from_ad_groups
+            FROM ' . prefixTable('users_roles') . '
+            GROUP BY user_id
+        ) agg_roles ON agg_roles.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(item_id ORDER BY created_at SEPARATOR ";") AS favourites
+            FROM ' . prefixTable('users_favorites') . '
+            GROUP BY user_id
+        ) agg_fav ON agg_fav.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(item_id ORDER BY accessed_at DESC SEPARATOR ";") AS latest_items
+            FROM ' . prefixTable('users_latest_items') . '
+            GROUP BY user_id
+        ) agg_latest ON agg_latest.user_id = u.id
+        WHERE ' . $whereClause,
         $whereParam
     );
     
@@ -6535,11 +6562,400 @@ function triggerBackgroundHandler(): void
     // The file content includes timestamp for debugging purposes
     file_put_contents($triggerFile, (string) time());
 
-    // Create the process to run the handler script
-    // If a handler is already running, it will detect the trigger file
-    // If no handler is running, this new process will handle the tasks
-    $process = new Process(['php', __DIR__.'/../scripts/background_tasks___handler.php']);
-    
-    // Run it asynchronously to avoid blocking the UI
-    $process->start();
+    // Launch the handler as a fully detached background process.
+    // We use exec() instead of Symfony Process because Process::start() creates
+    // pipes for stdout/stderr. When the parent request ends and pipes are closed,
+    // the child receives SIGPIPE and dies silently on the first write (log, error, etc.).
+    // Redirecting to /dev/null with & ensures true fire-and-forget detachment.
+    $cmd = escapeshellarg(getPHPBinary())
+        . ' ' . escapeshellarg(__DIR__ . '/../scripts/background_tasks___handler.php')
+        . ' > /dev/null 2>&1 &';
+    exec($cmd);
+}
+
+/**
+ * Emit a WebSocket event for real-time notifications
+ *
+ * This function inserts an event into the websocket_events table,
+ * which is then picked up by the WebSocket server and broadcast
+ * to connected clients.
+ *
+ * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
+ * @param string $targetType Target type for routing: 'user', 'folder', or 'broadcast'
+ * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
+ * @param array $payload Event payload data to send to clients
+ * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
+ * @return bool True if event was queued successfully, false otherwise
+ *
+ * @example
+ * // Notify all users viewing a folder that an item was updated
+ * emitWebSocketEvent(
+ *     'item_updated',
+ *     'folder',
+ *     $folderId,
+ *     [
+ *         'item_id' => $itemId,
+ *         'folder_id' => $folderId,
+ *         'label' => $itemLabel,
+ *         'updated_by' => $userLogin
+ *     ],
+ *     $currentUserId // Don't notify the user who made the change
+ * );
+ *
+ * @example
+ * // Notify a specific user that their encryption keys are ready
+ * emitWebSocketEvent(
+ *     'user_keys_ready',
+ *     'user',
+ *     $userId,
+ *     ['status' => 'ready', 'message' => 'Your account is now ready']
+ * );
+ *
+ * @example
+ * // Broadcast to all connected users (e.g., maintenance notice)
+ * emitWebSocketEvent(
+ *     'system_maintenance',
+ *     'broadcast',
+ *     null,
+ *     ['message' => 'System will restart in 5 minutes']
+ * );
+ */
+function emitWebSocketEvent(
+    string $eventType,
+    string $targetType,
+    ?int $targetId,
+    array $payload,
+    ?int $excludeUserId = null
+): bool {
+    // Check if WebSocket is enabled
+    try {
+        $wsEnabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'websocket_enabled'
+        );
+
+        if ($wsEnabled !== '1') {
+            // WebSocket not enabled, silently skip
+            return false;
+        }
+    } catch (Exception $e) {
+        // Table might not exist yet (before migration)
+        return false;
+    }
+
+    // Validate target type
+    if (!in_array($targetType, ['user', 'folder', 'broadcast'], true)) {
+        error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
+        return false;
+    }
+
+    // Add exclude_user_id to payload if specified
+    if ($excludeUserId !== null) {
+        $payload['exclude_user_id'] = $excludeUserId;
+    }
+
+    // Add timestamp to payload
+    $payload['server_timestamp'] = time();
+
+    try {
+        DB::insert(
+            prefixTable('websocket_events'),
+            [
+                'event_type' => $eventType,
+                'target_type' => $targetType,
+                'target_id' => $targetId,
+                'payload' => json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+            ]
+        );
+
+        return true;
+
+    } catch (Exception $e) {
+        error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Emit a WebSocket event for item operations
+ *
+ * Convenience wrapper for item-related events.
+ *
+ * @param string $action Action performed: 'created', 'updated', 'deleted', 'copied'
+ * @param int $itemId The item ID
+ * @param int $folderId The folder ID containing the item
+ * @param string $label The item label
+ * @param string $userLogin The user who performed the action
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitItemEvent(
+    string $action,
+    int $itemId,
+    int $folderId,
+    string $label,
+    string $userLogin,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'item_' . $action;
+
+    $payload = [
+        'item_id' => $itemId,
+        'folder_id' => $folderId,
+        'label' => $label,
+        $action . '_by' => $userLogin,
+    ];
+
+    return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for item edition lock changes
+ *
+ * Notifies folder subscribers when an item is being edited or released.
+ *
+ * @param string $action 'started' or 'stopped'
+ * @param int $itemId The item ID
+ * @param int $folderId The folder ID containing the item
+ * @param string $userLogin The user who locked/unlocked
+ * @param int $userId The user ID who locked/unlocked
+ * @return bool True if event was queued
+ */
+function emitEditionLockEvent(
+    string $action,
+    int $itemId,
+    int $folderId,
+    string $userLogin,
+    int $userId
+): bool {
+    $eventType = 'item_edition_' . $action;
+
+    $payload = [
+        'item_id' => $itemId,
+        'folder_id' => $folderId,
+        'user_login' => $userLogin,
+        'user_id' => $userId,
+    ];
+
+    // For 'started', exclude the user who locked (they know they're editing)
+    $excludeUserId = ($action === 'started') ? $userId : null;
+
+    return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Get the folder ID (id_tree) of an item
+ *
+ * @param int $itemId The item ID
+ * @return int|null The folder ID or null if not found
+ */
+function getItemFolderIdFromDb(int $itemId): ?int
+{
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM %l WHERE id = %i',
+        prefixTable('items'),
+        $itemId
+    );
+    return $item ? (int) $item['id_tree'] : null;
+}
+
+/**
+ * Emit a WebSocket event for folder operations
+ *
+ * Convenience wrapper for folder-related events.
+ *
+ * @param string $action Action performed: 'created', 'updated', 'deleted'
+ * @param int $folderId The folder ID
+ * @param string $title The folder title
+ * @param string $userLogin The user who performed the action
+ * @param int|null $parentId Parent folder ID (for created events)
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitFolderEvent(
+    string $action,
+    int $folderId,
+    string $title,
+    string $userLogin,
+    ?int $parentId = null,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'folder_' . $action;
+
+    $payload = [
+        'folder_id' => $folderId,
+        'title' => $title,
+        $action . '_by' => $userLogin,
+    ];
+
+    if ($parentId !== null) {
+        $payload['parent_id'] = $parentId;
+    }
+
+    // For folder events, broadcast to parent folder subscribers
+    $targetFolderId = $parentId ?? $folderId;
+
+    return emitWebSocketEvent($eventType, 'folder', $targetFolderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for task progress
+ *
+ * Used to notify users about long-running background tasks.
+ *
+ * @param int $userId Target user ID
+ * @param string $taskId Unique task identifier
+ * @param string $taskType Type of task (encryption, import, export, ldap_sync, etc.)
+ * @param int $progress Current progress count
+ * @param int $total Total items to process
+ * @param string $status Status: 'in_progress', 'completed', 'failed'
+ * @param string|null $message Optional status message
+ * @return bool True if event was queued
+ */
+function emitTaskProgress(
+    int $userId,
+    string $taskId,
+    string $taskType,
+    int $progress,
+    int $total,
+    string $status = 'in_progress',
+    ?string $message = null
+): bool {
+    $eventType = $status === 'in_progress' ? 'task_progress' : 'task_completed';
+
+    $payload = [
+        'task_id' => $taskId,
+        'task_type' => $taskType,
+        'progress' => $progress,
+        'total' => $total,
+        'status' => $status,
+        'percent' => $total > 0 ? round(($progress / $total) * 100, 1) : 0,
+    ];
+
+    if ($message !== null) {
+        $payload['message'] = $message;
+    }
+
+    return emitWebSocketEvent($eventType, 'user', $userId, $payload);
+}
+
+/**
+ * Generate a temporary WebSocket authentication token for a user
+ *
+ * This token is used to authenticate WebSocket connections since
+ * the WebSocket server cannot read encrypted PHP sessions.
+ *
+ * @param int $userId User ID
+ * @param int $validitySeconds Token validity duration in seconds (default: 1 hour)
+ * @return string|null The generated token, or null on failure
+ */
+function generateWebSocketToken(int $userId, int $validitySeconds = 60): ?string
+{
+    // Check if WebSocket is enabled
+    try {
+        $wsEnabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'websocket_enabled'
+        );
+
+        if ($wsEnabled !== '1') {
+            return null;
+        }
+    } catch (Exception $e) {
+        return null;
+    }
+
+    // Generate a secure random token
+    $token = bin2hex(random_bytes(32)); // 64 characters
+
+    try {
+        // Delete all existing tokens for this user (one token per user is enough)
+        DB::query(
+            'DELETE FROM %l WHERE user_id = %i',
+            prefixTable('websocket_tokens'),
+            $userId
+        );
+
+        // Insert new token with expiration calculated by MySQL to avoid timezone issues
+        DB::query(
+            'INSERT INTO %l (user_id, token, expires_at, used) VALUES (%i, %s, DATE_ADD(NOW(), INTERVAL %i SECOND), 0)',
+            prefixTable('websocket_tokens'),
+            $userId,
+            $token,
+            $validitySeconds
+        );
+
+        return $token;
+
+    } catch (Exception $e) {
+        error_log("generateWebSocketToken: Failed - " . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Validate a WebSocket authentication token
+ *
+ * @param string $token The token to validate
+ * @return array|null User data if valid, null otherwise
+ */
+function validateWebSocketToken(string $token): ?array
+{
+    try {
+        // Find the token with user info
+        $tokenData = DB::queryFirstRow(
+            'SELECT wt.*, u.login, u.admin
+             FROM %l wt
+             JOIN %l u ON wt.user_id = u.id
+             WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
+            prefixTable('websocket_tokens'),
+            prefixTable('users'),
+            $token
+        );
+
+        if (!$tokenData) {
+            return null;
+        }
+
+        $userId = (int) $tokenData['user_id'];
+
+        // Get user's accessible folders from users_groups table
+        $userGroups = DB::queryFirstColumn(
+            'SELECT group_id FROM %l WHERE user_id = %i',
+            prefixTable('users_groups'),
+            $userId
+        );
+        $accessibleFolders = array_map('intval', $userGroups ?: []);
+
+        // Get user's roles from users_roles table
+        $userRoles = DB::queryFirstColumn(
+            'SELECT role_id FROM %l WHERE user_id = %i',
+            prefixTable('users_roles'),
+            $userId
+        );
+
+        // Get folders accessible via roles
+        if (!empty($userRoles)) {
+            $roleFolders = DB::queryFirstColumn(
+                'SELECT DISTINCT folder_id FROM %l WHERE role_id IN %ls',
+                prefixTable('roles_values'),
+                $userRoles
+            );
+            $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
+        }
+
+        return [
+            'user_id' => $userId,
+            'user_login' => $tokenData['login'],
+            'accessible_folders' => $accessibleFolders,
+            'is_admin' => $tokenData['admin'] === '1',
+            'auth_method' => 'ws_token',
+        ];
+
+    } catch (Exception $e) {
+        error_log("validateWebSocketToken: Failed - " . $e->getMessage());
+        return null;
+    }
 }

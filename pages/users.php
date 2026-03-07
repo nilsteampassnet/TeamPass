@@ -102,14 +102,14 @@ $rows = DB::query(
 );
 foreach ($rows as $record) {
     if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $session->get('user-roles_array')) === true) {
-        $optionsManagedBy .= '<option value="' . $record['id'] . '">' . $lang->get('managers_of') . ' ' . addslashes($record['title']) . '</option>';
+        $optionsManagedBy .= '<option value="' . strval($record['id']) . '">' . $lang->get('managers_of') . ' ' . addslashes(strval($record['title'])) . '</option>';
     }
     if (
         (int) $session->get('user-admin') === 1
         || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
-            && (in_array($record['id'], $userRoles) === true) || (int) $record['creator_id'] === (int) $session->get('user-id'))
+            && (in_array($record['id'], $userRoles) === true) || intval($record['creator_id']) === intval($session->get('user-id')))
     ) {
-        $optionsRoles .= '<option value="' . $record['id'] . '">' . addslashes($record['title']) . '</option>';
+        $optionsRoles .= '<option value="' . strval($record['id']) . '">' . addslashes(strval($record['title'])) . '</option>';
     }
 }
 
@@ -138,14 +138,13 @@ $showNewUser = $request->query->get('action') === 'new';
  * Counts the number of users who are disabled (deleted) in the database.
  * Assumes the database connection is established and the table is {teampass_users}.
  *
- * @param void
  * @return int The count of disabled users.
  */
 function count_deleted_users() : int
 {
     // Table is teampass_users with the prefix {teampass_users} in MeekroDB context.
     // 'disabled = 1' indicates a deleted/disabled user account.
-    return (int)DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL");
+    return intval(DB::queryFirstField("SELECT COUNT(id) FROM " . prefixTable('users') . " WHERE deleted_at IS NOT NULL"));
 }
 
 /**
@@ -157,14 +156,14 @@ function count_deleted_users() : int
  */
 function count_never_connected_active_users() : int
 {
-    return (int)DB::queryFirstField(
+    return intval(DB::queryFirstField(
         "SELECT COUNT(id)
          FROM " . prefixTable('users') . "
          WHERE deleted_at IS NULL
          AND disabled = 0
          AND LOWER(login) NOT IN ('api','otv','tp')
          AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
-    );
+    ));
 }
 
 

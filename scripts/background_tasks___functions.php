@@ -138,8 +138,8 @@ function clearTasksLog()
 /**
  * Permits to run a task
  *
- * @param array $message
- * @param string $SETTINGS
+ * @param string $message
+ * @param array $SETTINGS
  * @return void
  */
 function provideLog(string $message, array $SETTINGS)
@@ -244,7 +244,7 @@ function performVisibleFoldersHtmlUpdate (int $user_id)
                 'timestamp' => time(),
             ),
             'increment_id = %i',
-            (int) $cache_tree['increment_id']
+            intval($cache_tree['increment_id'])
         );
     } else {
         // Create new cache_tree entry for this user
@@ -290,7 +290,7 @@ function buildUserVisibleFolderIds(int $user_id, $tree): array
     );
 
     foreach ($roleFolders as $row) {
-        $visibleFolders[] = (int) $row['folder_id'];
+        $visibleFolders[] = intval($row['folder_id']);
     }
 
     // Get folders directly allowed to the user via users_groups
@@ -300,7 +300,7 @@ function buildUserVisibleFolderIds(int $user_id, $tree): array
     );
 
     foreach ($userGroups as $groupId) {
-        $visibleFolders[] = (int) $groupId;
+        $visibleFolders[] = intval($groupId);
     }
 
     // Get user's personal folder if it exists
@@ -310,7 +310,7 @@ function buildUserVisibleFolderIds(int $user_id, $tree): array
     );
 
     if (!empty($personalFolder)) {
-        $visibleFolders[] = (int) $personalFolder['id'];
+        $visibleFolders[] = intval($personalFolder['id']);
 
         // Get all descendants of personal folder
         $descendants = $tree->getDescendants($personalFolder['id'], false, false, true);
