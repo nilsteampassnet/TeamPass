@@ -20,6 +20,7 @@
    - [Create an item](#create-item)
    - [Update an item](#update-item)
    - [Delete an item](#delete-item)
+   - [List Tags](#list-tags)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
    - [Create a folder](#create-folder)
@@ -672,6 +673,39 @@ curl -X DELETE "https://your-teampass.com/api/index.php/item/delete" \
   -d '{
     "id": 123
   }'
+```
+
+---
+
+### Get all tags {#all-tags}
+
+> 📋 Returns the complete list of unique tags existing in the database
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `item/allTags` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/item/allTags` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+["confidential", "finance", "infra", "web"]
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List of tags returned successfully |
+| 422 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ---

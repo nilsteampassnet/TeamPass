@@ -622,6 +622,53 @@ class ItemController extends BaseController
 
 
     /**
+     * Get all unique tags from the database
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function allTagsAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = '';
+        $responseData = '';
+        $strErrorHeader = '';
+
+        if (strtoupper($requestMethod) === 'GET') {
+            try {
+                $rows = DB::query(
+                    'SELECT DISTINCT tag FROM ' . prefixTable('tags') . ' ORDER BY tag ASC'
+                );
+
+                $tags = array_column($rows, 'tag');
+                $responseData = json_encode($tags);
+            } catch (\Error $e) {
+                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+    //end allTagsAction()
+
+
+    /**
      * Update an existing item
      * Updates an item based upon provided parameters and item ID
      *
