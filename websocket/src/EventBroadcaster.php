@@ -81,18 +81,22 @@ class EventBroadcaster
      */
     public function pollAndBroadcast(): void
     {
-        try {
-            $batchSize = $this->config['poll_batch_size'] ?? 100;
-            $tableName = $this->tablePrefix . 'websocket_events';
+        $batchSize = $this->config['poll_batch_size'] ?? 100;
+        $tableName = $this->tablePrefix . 'websocket_events';
 
-            // Fetch unprocessed events
+        // Wrap in a transaction with FOR UPDATE to prevent double-processing
+        // if two daemon instances happen to run simultaneously.
+        try {
+            \DB::startTransaction();
+
             $events = \DB::query(
-                'SELECT * FROM %l WHERE processed = 0 ORDER BY created_at ASC LIMIT %i',
+                'SELECT * FROM %l WHERE processed = 0 ORDER BY created_at ASC LIMIT %i FOR UPDATE',
                 $tableName,
                 $batchSize
             );
 
             if (empty($events)) {
+                \DB::commit();
                 return;
             }
 
@@ -101,15 +105,8 @@ class EventBroadcaster
 
             foreach ($events as $event) {
                 try {
-                    $dispatched = $this->dispatchEvent($event);
-
-                    if ($dispatched) {
-                        $processedIds[] = (int) $event['id'];
-                    } else {
-                        // No clients to dispatch to, still mark as processed
-                        $processedIds[] = (int) $event['id'];
-                    }
-
+                    $this->dispatchEvent($event);
+                    $processedIds[] = (int) $event['id'];
                 } catch (Exception $e) {
                     $this->logger->error('Failed to dispatch event', [
                         'event_id' => $event['id'],
@@ -120,30 +117,27 @@ class EventBroadcaster
                 }
             }
 
-            // Mark processed events
+            // Mark all processed events in a single statement inside the transaction
             if (!empty($processedIds)) {
                 \DB::query(
                     'UPDATE %l SET processed = 1, processed_at = NOW() WHERE id IN %li',
                     $tableName,
                     $processedIds
                 );
-
-                $this->logger->debug('Events processed', [
-                    'count' => count($processedIds),
-                ]);
             }
 
-            // Log failures but don't retry immediately (will be picked up next poll)
+            \DB::commit();
+
+            if (!empty($processedIds)) {
+                $this->logger->debug('Events processed', ['count' => count($processedIds)]);
+            }
             if (!empty($failedIds)) {
-                $this->logger->warning('Some events failed to dispatch', [
-                    'failed_count' => count($failedIds),
-                ]);
+                $this->logger->warning('Some events failed to dispatch', ['failed_count' => count($failedIds)]);
             }
 
         } catch (Exception $e) {
-            $this->logger->error('Poll error', [
-                'error' => $e->getMessage(),
-            ]);
+            try { \DB::rollback(); } catch (Exception $rb) { /* ignore rollback error */ }
+            $this->logger->error('Poll error', ['error' => $e->getMessage()]);
         }
     }
 
@@ -275,20 +269,25 @@ class EventBroadcaster
     {
         try {
             $retentionHours = $this->config['event_retention_hours'] ?? 24;
-            $tableName = $this->tablePrefix . 'websocket_events';
+            $eventsTable = $this->tablePrefix . 'websocket_events';
+            $tokensTable = $this->tablePrefix . 'websocket_tokens';
 
-            $result = \DB::query(
+            // Remove processed events older than the retention window
+            \DB::query(
                 'DELETE FROM %l WHERE processed = 1 AND processed_at < DATE_SUB(NOW(), INTERVAL %i HOUR)',
-                $tableName,
+                $eventsTable,
                 $retentionHours
             );
+            $deletedEvents = \DB::affectedRows();
 
-            $deletedCount = \DB::affectedRows();
+            // Remove expired WS tokens (initial 60s tokens and stale reconnect tokens)
+            \DB::query('DELETE FROM %l WHERE expires_at < NOW()', $tokensTable);
+            $deletedTokens = \DB::affectedRows();
 
-            if ($deletedCount > 0) {
-                $this->logger->info('Cleaned up old events', [
-                    'deleted_count' => $deletedCount,
-                    'retention_hours' => $retentionHours,
+            if ($deletedEvents > 0 || $deletedTokens > 0) {
+                $this->logger->info('Periodic cleanup completed', [
+                    'deleted_events' => $deletedEvents,
+                    'deleted_tokens' => $deletedTokens,
                 ]);
             }
 

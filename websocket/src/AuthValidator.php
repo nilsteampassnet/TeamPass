@@ -154,7 +154,7 @@ class AuthValidator
                 $pos = strpos($sessionData, '|', $offset);
                 $name = substr($sessionData, $offset, $pos - $offset);
                 $offset = $pos + 1;
-                $data = @unserialize(substr($sessionData, $offset));
+                $data = @unserialize(substr($sessionData, $offset), ['allowed_classes' => false]);
                 if ($data !== false) {
                     $result[$name] = $data;
                 }
@@ -193,12 +193,14 @@ class AuthValidator
         }
 
         try {
-            // Find the token in database with user info
+            // Find a valid, unused token in database with user info and actual permissions
             $tokenData = \DB::queryFirstRow(
-                'SELECT wt.*, u.login, u.admin
+                'SELECT wt.*, u.login, u.admin,
+                        u.api_allowed_to_create, u.api_allowed_to_read,
+                        u.api_allowed_to_update, u.api_allowed_to_delete
                  FROM %l wt
                  JOIN %l u ON wt.user_id = u.id
-                 WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
+                 WHERE wt.token = %s AND wt.used = 0 AND wt.expires_at > NOW() AND u.disabled = 0',
                 $this->tablePrefix . 'websocket_tokens',
                 $this->tablePrefix . 'users',
                 $token
@@ -207,6 +209,14 @@ class AuthValidator
             if (!$tokenData) {
                 return null;
             }
+
+            // Mark token as used immediately (single-use enforcement)
+            \DB::update(
+                $this->tablePrefix . 'websocket_tokens',
+                ['used' => 1],
+                'id = %i',
+                (int) $tokenData['id']
+            );
 
             $userId = (int) $tokenData['user_id'];
 
@@ -235,20 +245,51 @@ class AuthValidator
                 $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
             }
 
+            // Generate a long-lived reconnect token sent over the secure WS channel
+            $reconnectToken = $this->generateReconnectToken($userId);
+
             return [
                 'user_id' => $userId,
                 'user_login' => $tokenData['login'],
                 'accessible_folders' => $accessibleFolders,
                 'is_admin' => $tokenData['admin'] === '1',
                 'auth_method' => 'ws_token',
+                'reconnect_token' => $reconnectToken,
+                // Reflect the user's actual API permissions instead of granting full CRUD blindly
                 'permissions' => [
-                    'read' => true,
-                    'create' => true,
-                    'update' => true,
-                    'delete' => true,
+                    'read'   => (int) ($tokenData['api_allowed_to_read']   ?? 1) === 1,
+                    'create' => (int) ($tokenData['api_allowed_to_create'] ?? 0) === 1,
+                    'update' => (int) ($tokenData['api_allowed_to_update'] ?? 0) === 1,
+                    'delete' => (int) ($tokenData['api_allowed_to_delete'] ?? 0) === 1,
                 ],
             ];
 
+        } catch (Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Generate a long-lived reconnect token for an authenticated user.
+     *
+     * Called after a successful initial WS token validation so the client
+     * can reconnect without needing a new page-load token.
+     * The token is transmitted only over the encrypted WS channel.
+     *
+     * @param int $userId
+     * @return string|null 64-char hex token, or null on failure
+     */
+    private function generateReconnectToken(int $userId): ?string
+    {
+        try {
+            $token = bin2hex(random_bytes(32)); // 64 hex chars
+            \DB::query(
+                'INSERT INTO %l (user_id, token, expires_at, used) VALUES (%i, %s, DATE_ADD(NOW(), INTERVAL 3600 SECOND), 0)',
+                $this->tablePrefix . 'websocket_tokens',
+                $userId,
+                $token
+            );
+            return $token;
         } catch (Exception $e) {
             return null;
         }

@@ -39,6 +39,9 @@ header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST, GET");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: DENY");
+header("Referrer-Policy: no-referrer");
 require __DIR__ . "/inc/bootstrap.php";
 
 // sanitize url segments

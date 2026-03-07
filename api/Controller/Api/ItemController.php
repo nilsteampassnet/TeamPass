@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 /**
  * Teampass - a collaborative passwords manager.
  * ---
@@ -90,13 +92,13 @@ class ItemController extends BaseController
                 // convert the folders to an array
                 $arrQueryStringParams['folders'] = explode(',', str_replace( array('[',']') , ''  , $arrQueryStringParams['folders']));
 
-                // ensure to only use the intersection
-                $foldersList = implode(',', array_intersect($arrQueryStringParams['folders'], $userData['folders_list']));
+                // ensure to only use the intersection, sanitized as strict integers
+                $foldersList = implode(',', array_filter(array_map('intval', array_intersect($arrQueryStringParams['folders'], $userData['folders_list']))));
 
                 // build sql where clause
                 if (!empty($foldersList)) {
                     // build sql where clause
-                    $sqlExtra .= ' AND i.id_tree IN ('.$foldersList.')';
+                    $sqlExtra .= ' AND i.id_tree IN (' . $foldersList . ')';
                 } else {
                     // Send error
                     $this->sendOutput(
@@ -137,7 +139,8 @@ class ItemController extends BaseController
                     }
                 }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.4';
+                error_log('ItemController::inFoldersAction error: ' . $e->getMessage());
+                $strErrorDesc = 'Something went wrong. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
@@ -303,9 +306,12 @@ class ItemController extends BaseController
         $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
-        $sql_constraint = ' AND (i.id_tree IN ('.$userData['folders_list'].')';
+        // Sanitize folder/item IDs from JWT claims as strict integers before SQL interpolation
+        $safeFolders = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['folders_list'])))) ?: '0';
+        $sql_constraint = ' AND (i.id_tree IN (' . $safeFolders . ')';
         if (!empty($userData['restricted_items_list'])) {
-            $sql_constraint .= 'OR i.id IN ('.$userData['restricted_items_list'].')';
+            $safeRestricted = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['restricted_items_list'])))) ?: '0';
+            $sql_constraint .= ' OR i.id IN (' . $safeRestricted . ')';
         }
         $sql_constraint .= ')';
 
@@ -316,15 +322,21 @@ class ItemController extends BaseController
             // SQL where clause with item id
             if (isset($arrQueryStringParams['id']) === true) {
                 // build sql where clause by ID
-                $sqlExtra .= ' AND i.id = '.$arrQueryStringParams['id'] . $sql_constraint;
+                $sqlExtra .= ' AND i.id = ' . (int) $arrQueryStringParams['id'] . $sql_constraint;
                 $showItem = true;
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
-                $sqlExtra .= ' AND i.label '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE "%'.$arrQueryStringParams['label'].'%"' : ' = '.$arrQueryStringParams['label']) . $sql_constraint;
+                $isLikeLabel = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
+                $escapedLabel = $isLikeLabel
+                    ? DB::escape('%' . $arrQueryStringParams['label'] . '%')
+                    : DB::escape($arrQueryStringParams['label']);
+                $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE ' : '= ') . $escapedLabel . $sql_constraint;
                 $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
-                $sqlExtra .= ' AND i.description '.(isset($arrQueryStringParams['like']) === true && (int) $arrQueryStringParams['like'] === 1 ? ' LIKE '.$arrQueryStringParams['description'] : ' = '.$arrQueryStringParams['description']).$sql_constraint;
+                $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
+                $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE ' : '= ') . $escapedDesc . $sql_constraint;
             } else {
                 // Send error
                 $this->sendOutput(
@@ -347,7 +359,8 @@ class ItemController extends BaseController
                     $responseData = json_encode($arrItems);
                 }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.6';
+                error_log('ItemController::getAction error: ' . $e->getMessage());
+                $strErrorDesc = 'Something went wrong. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
@@ -403,10 +416,12 @@ class ItemController extends BaseController
                 $userData['folders_list'] = [];
             }*/
 
-            // Build SQL constraint for accessible folders
-            $sql_constraint = ' AND (i.id_tree IN (' . $userData['folders_list'] . ')';
+            // Build SQL constraint for accessible folders — sanitize JWT claims as strict integers
+            $safeFoldersFbu = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['folders_list'])))) ?: '0';
+            $sql_constraint = ' AND (i.id_tree IN (' . $safeFoldersFbu . ')';
             if (!empty($userData['restricted_items_list'])) {
-                $sql_constraint .= ' OR i.id IN (' . $userData['restricted_items_list'] . ')';
+                $safeRestrictedFbu = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['restricted_items_list'])))) ?: '0';
+                $sql_constraint .= ' OR i.id IN (' . $safeRestrictedFbu . ')';
             }
             $sql_constraint .= ')';
 
@@ -432,35 +447,37 @@ class ItemController extends BaseController
                         "%".$searchUrl."%"
                     );
 
+                    // Fetch all sharekeys for matched items in a single query (avoids N+1)
+                    $itemIds = array_column($rows, 'id');
+                    $accessibleItemIds = [];
+                    if (!empty($itemIds)) {
+                        $shareKeyRows = DB::query(
+                            'SELECT object_id FROM ' . prefixTable('sharekeys_items') . '
+                            WHERE user_id = %i AND object_id IN %li',
+                            $userData['id'],
+                            $itemIds
+                        );
+                        foreach ($shareKeyRows as $sk) {
+                            $accessibleItemIds[(int) $sk['object_id']] = true;
+                        }
+                    }
+
                     $ret = [];
                     foreach ($rows as $row) {
-                        // Get user's sharekey for this item
-                        $shareKey = DB::queryfirstrow(
-                            'SELECT share_key
-                            FROM ' . prefixTable('sharekeys_items') . '
-                            WHERE user_id = %i AND object_id = %i',
-                            $userData['id'],
-                            $row['id']
-                        );
-
-                        // Skip if no sharekey found (user doesn't have access)
-                        if (DB::count() === 0) {
+                        // Skip items for which the user has no sharekey
+                        if (!isset($accessibleItemIds[(int) $row['id']])) {
                             continue;
                         }
 
-                        // Build response
-                        array_push(
-                            $ret,
-                            [
-                                'id' => (int) $row['id'],
-                                'label' => $row['label'],
-                                'login' => $row['login'],
-                                'url' => $row['url'],
-                                'folder_id' => (int) $row['id_tree'],
-                                'has_otp' => (int) $row['has_otp'],
-                                'favicon_url' => (string) $row['favicon_url'],
-                            ]
-                        );
+                        $ret[] = [
+                            'id' => (int) $row['id'],
+                            'label' => $row['label'],
+                            'login' => $row['login'],
+                            'url' => $row['url'],
+                            'folder_id' => (int) $row['id_tree'],
+                            'has_otp' => (int) $row['has_otp'],
+                            'favicon_url' => (string) $row['favicon_url'],
+                        ];
                     }
 
                     if (!empty($ret)) {
@@ -471,7 +488,8 @@ class ItemController extends BaseController
                     }
                 }
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                error_log('ItemController error: ' . $e->getMessage());
+                $strErrorDesc = 'Something went wrong. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
@@ -597,7 +615,8 @@ class ItemController extends BaseController
                     }
                 }
             } catch (\Error $e) {
-                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                error_log('ItemController error: ' . $e->getMessage());
+                $strErrorDesc = 'Something went wrong. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
@@ -644,7 +663,8 @@ class ItemController extends BaseController
                 $tags = array_column($rows, 'tag');
                 $responseData = json_encode($tags);
             } catch (\Error $e) {
-                $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                error_log('ItemController error: ' . $e->getMessage());
+                $strErrorDesc = 'Something went wrong. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {

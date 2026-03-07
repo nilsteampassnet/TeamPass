@@ -6827,7 +6827,7 @@ function emitTaskProgress(
  * @param int $validitySeconds Token validity duration in seconds (default: 1 hour)
  * @return string|null The generated token, or null on failure
  */
-function generateWebSocketToken(int $userId, int $validitySeconds = 3600): ?string
+function generateWebSocketToken(int $userId, int $validitySeconds = 60): ?string
 {
     // Check if WebSocket is enabled
     try {
