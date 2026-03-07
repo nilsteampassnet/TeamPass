@@ -119,6 +119,28 @@ var TP_HEALTH_L10N = {
     excluded_system_accounts: "<?php echo addslashes($lang->get('health_excluded_system_accounts')); ?>",
     excluded_disabled_users: "<?php echo addslashes($lang->get('health_excluded_disabled_users')); ?>",
     export_filename_default: "<?php echo addslashes($lang->get('health_export_filename')); ?>"
+    ,
+    corrupted_scan_running: "<?php echo addslashes($lang->get('health_corrupted_scan_running')); ?>",
+    corrupted_scan_failed: "<?php echo addslashes($lang->get('health_corrupted_scan_failed')); ?>",
+    corrupted_no_result: "<?php echo addslashes($lang->get('health_corrupted_no_result')); ?>",
+    corrupted_truncated_note_fmt: "<?php echo addslashes($lang->get('health_corrupted_truncated_note_fmt')); ?>",
+    corrupted_script_missing_fmt: "<?php echo addslashes($lang->get('health_corrupted_script_missing_fmt')); ?>",
+    corrupted_script_invalid: "<?php echo addslashes($lang->get('health_corrupted_script_invalid')); ?>",
+    corrupted_reason_empty_key: "<?php echo addslashes($lang->get('health_corrupted_reason_empty_key')); ?>",
+    corrupted_reason_decrypt_failed: "<?php echo addslashes($lang->get('health_corrupted_reason_decrypt_failed')); ?>",
+    corrupted_reason_binary_bytes: "<?php echo addslashes($lang->get('health_corrupted_reason_binary_bytes')); ?>",
+    corrupted_reason_len_mismatch: "<?php echo addslashes($lang->get('health_corrupted_reason_len_mismatch')); ?>",
+    corrupted_reason_exception_fmt: "<?php echo addslashes($lang->get('health_corrupted_reason_exception_fmt')); ?>",
+
+    apache_log_checking: "<?php echo addslashes($lang->get('health_apache_log_loading')); ?>",
+    apache_log_failed: "<?php echo addslashes($lang->get('health_apache_log_failed')); ?>",
+    apache_log_not_found_fmt: "<?php echo addslashes($lang->get('health_apache_log_not_found_fmt')); ?>",
+    apache_log_not_readable_fmt: "<?php echo addslashes($lang->get('health_apache_log_not_readable_fmt')); ?>",
+    apache_log_fix_hint: "<?php echo addslashes($lang->get('health_apache_log_fix_hint')); ?>",
+    apache_log_fix_hint_missing: "<?php echo addslashes($lang->get('health_apache_log_fix_hint_missing')); ?>",
+    copied: "<?php echo addslashes($lang->get('copied')); ?>",
+    clipboard_error: "<?php echo addslashes($lang->get('clipboard_error')); ?>"
+
 };
 
 $(document).ready(function() {
@@ -128,6 +150,22 @@ $(document).ready(function() {
 
     $('#health-export-btn').on('click', function() {
         tpDownloadReportJson();
+    });
+
+    $('#health-corrupted-items-scan-btn').on('click', function() {
+        tpScanCorruptedItems();
+    });
+
+    $('#health-corrupted-items-show-btn').on('click', function() {
+        tpShowCorruptedItemsList();
+    });
+
+    $('#health-apache-log-check-btn').on('click', function() {
+        tpCheckApacheErrorLog();
+    });
+
+    $('#health-apache-log-copy-btn').on('click', function() {
+        tpCopyApacheErrorLogToClipboard();
     });
 
     tpLoadHealthReport();
@@ -368,6 +406,7 @@ function tpRenderDatabase(report) {
     var db = report.database || {};
 
     $('#health-db-version').text(tpEscapeHtml(db.version || ''));
+    $('#health-db-version').attr('title', String(db.version_full || db.version || ''));
     $('#health-db-latency').text(tpEscapeHtml((db.latency_ms || 0) + ' ms'));
     $('#health-db-size').text(tpEscapeHtml((db.size_mb || 0) + ' MB'));
 
@@ -520,6 +559,11 @@ function tpRenderCrypto(report) {
     $('#health-crypto-orphans').text(Number(share.orphans_total || 0));
     $('#health-crypto-integrity-issues').text(Number(integ.missing || 0) + Number(integ.mismatch || 0));
     $('#health-crypto-inconsistent-users').text(Number(inconsist.length || 0));
+    // Corrupted items (on-demand scan stored in session)
+    var corrupted = crypto.corrupted_items || {};
+    $('#health-corrupted-items-count').text(Number(corrupted.count || 0));
+    $('#health-corrupted-items-last-scan').text(tpEscapeHtml(corrupted.last_scan_at_human || ''));
+    $('#health-corrupted-items-show-btn').prop('disabled', (corrupted.has_result !== true));
 
     // Note: excluded users (system / deleted / disabled) for coherence with main dashboard
     var note = '';
@@ -878,27 +922,332 @@ function tpRenderLogs(report) {
     }
 }
 
+function tpCorruptedReasonToLabel(reason, exceptionMsg) {
+    var r = String(reason || '');
+    if (r === 'empty_key') return TP_HEALTH_L10N.corrupted_reason_empty_key;
+    if (r === 'decrypt_failed') return TP_HEALTH_L10N.corrupted_reason_decrypt_failed;
+    if (r === 'binary_bytes') return TP_HEALTH_L10N.corrupted_reason_binary_bytes;
+    if (r === 'len_mismatch') return TP_HEALTH_L10N.corrupted_reason_len_mismatch;
+    if (r === 'exception') {
+        return TP_HEALTH_L10N.corrupted_reason_exception_fmt.replace('%s', String(exceptionMsg || ''));
+    }
+    return r;
+}
+
+function tpScanCorruptedItems() {
+    var $btn = $('#health-corrupted-items-scan-btn');
+    var $icon = $btn.find('i');
+    $btn.prop('disabled', true);
+    $icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
+
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_scan_corrupted_items',
+            data: prepareExchangedData(JSON.stringify({}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            data = prepareExchangedData(data, 'decode', tpHealthKey);
+
+            $btn.prop('disabled', false);
+            $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
+
+            if (data && data.error) {
+                toastr.error(data.message || TP_HEALTH_L10N.corrupted_scan_failed);
+                return;
+            }
+
+            if (!data || !data.result) {
+                toastr.error(TP_HEALTH_L10N.corrupted_scan_failed);
+                return;
+            }
+
+            var r = data.result;
+            $('#health-corrupted-items-count').text(Number(r.count || 0));
+            $('#health-corrupted-items-last-scan').text(tpEscapeHtml(r.last_scan_at_human || ''));
+            $('#health-corrupted-items-show-btn').prop('disabled', false);
+
+        }
+    ).fail(function() {
+        $btn.prop('disabled', false);
+        $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
+        toastr.error(TP_HEALTH_L10N.corrupted_scan_failed);
+    });
+}
+
+function tpShowCorruptedItemsList() {
+    var $btn = $('#health-corrupted-items-show-btn');
+
+    if ($btn.prop('disabled') === true) {
+        toastr.warning(TP_HEALTH_L10N.corrupted_no_result);
+        return;
+    }
+
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_get_corrupted_items_list',
+            data: prepareExchangedData(JSON.stringify({}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            data = prepareExchangedData(data, 'decode', tpHealthKey);
+
+            if (data && data.error) {
+                toastr.error(data.message || TP_HEALTH_L10N.corrupted_scan_failed);
+                return;
+            }
+
+            var $tbody = $('#health-corrupted-items-list');
+            $tbody.empty();
+
+            var meta = data && data.meta ? data.meta : {};
+            var list = data && data.items ? data.items : [];
+
+            if (meta && meta.truncated === true && Number(meta.limit || 0) > 0) {
+                $('#health-corrupted-items-modal-note').text(
+                    TP_HEALTH_L10N.corrupted_truncated_note_fmt.replace('%d', Number(meta.limit || 0))
+                );
+            } else {
+                $('#health-corrupted-items-modal-note').text('');
+            }
+
+            if (!list.length) {
+                $tbody.append('<tr><td colspan="6" class="text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.no_data) + '</td></tr>');
+            } else {
+                list.forEach(function(it) {
+                    var reasonLabel = tpCorruptedReasonToLabel(it.reason, it.exception_message);
+                    $tbody.append(
+                        '<tr>' +
+                        '<td>' + tpEscapeHtml(it.id || 0) + '</td>' +
+                        '<td>' + tpEscapeHtml(it.label || '') + '</td>' +
+                        '<td>' + tpEscapeHtml(reasonLabel) + '</td>' +
+                        '<td>' + tpEscapeHtml(it.len_stored || 0) + '</td>' +
+                        '<td>' + tpEscapeHtml(it.len_actual || 0) + '</td>' +
+                        '<td>' + tpEscapeHtml(it.updated_at_human || '') + '</td>' +
+                        '</tr>'
+                    );
+                });
+            }
+
+            $('#health-corrupted-items-modal').modal('show');
+        }
+    ).fail(function() {
+        toastr.error(TP_HEALTH_L10N.corrupted_scan_failed);
+    });
+}
+
+function tpCheckApacheErrorLog() {
+    var $btn = $('#health-apache-log-check-btn');
+    var $icon = $btn.find('i');
+    var lines = Number($('#health-apache-log-lines').val() || 50);
+
+    $('#health-apache-log-error').hide().text('');
+    $('#health-apache-log-fix').hide();
+    $('#health-apache-log-content').hide().text('');
+
+    $('#health-apache-log-copy-btn').prop('disabled', true);
+
+    $btn.prop('disabled', true);
+    $icon.removeClass('fa-search').addClass('fa-spinner fa-spin');
+
+    $('#health-apache-log-content').show().text(TP_HEALTH_L10N.apache_log_checking);
+
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_check_apache_error_log',
+            data: prepareExchangedData(JSON.stringify({lines: lines}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            data = prepareExchangedData(data, 'decode', tpHealthKey);
+
+            $btn.prop('disabled', false);
+            $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
+
+            if (data && data.error) {
+                $('#health-apache-log-content').hide();
+                toastr.error(data.message || TP_HEALTH_L10N.apache_log_failed);
+                return;
+            }
+
+            if (!data || !data.result) {
+                $('#health-apache-log-content').hide();
+                toastr.error(TP_HEALTH_L10N.apache_log_failed);
+                return;
+            }
+
+            var r = data.result;
+            if (r.access === 'ok') {
+                var content = (r.content || '');
+                $('#health-apache-log-content').show().text(content);
+
+                if (content.length > 0) {
+                    $('#health-apache-log-copy-btn').prop('disabled', false);
+                }
+                return;
+            }
+
+            $('#health-apache-log-content').hide();
+
+            var msg = '';
+            if (r.access === 'not_found') {
+                msg = TP_HEALTH_L10N.apache_log_not_found_fmt.replace('%s', tpEscapeHtml(r.log_path || ''));
+                if (TP_HEALTH_L10N.apache_log_fix_hint_missing) {
+                    msg += ' ' + TP_HEALTH_L10N.apache_log_fix_hint_missing;
+                }
+            } else if (r.access === 'not_readable') {
+                msg = TP_HEALTH_L10N.apache_log_not_readable_fmt.replace('%s', tpEscapeHtml(r.log_path || ''));
+                if (TP_HEALTH_L10N.apache_log_fix_hint) {
+                    msg += ' ' + TP_HEALTH_L10N.apache_log_fix_hint;
+                }
+            } else {
+                msg = TP_HEALTH_L10N.apache_log_failed;
+            }
+
+            $('#health-apache-log-fix-text').text(msg);
+
+            var cmds = r.fix_commands || [];
+            $('#health-apache-log-fix-cmd').text(cmds.join('\n'));
+            $('#health-apache-log-fix').show();
+        }
+    ).fail(function() {
+        $btn.prop('disabled', false);
+        $icon.removeClass('fa-spinner fa-spin').addClass('fa-search');
+        $('#health-apache-log-content').hide();
+        toastr.error(TP_HEALTH_L10N.apache_log_failed);
+    });
+}
+
+
+
+function tpCopyApacheErrorLogToClipboard() {
+    var text = $('#health-apache-log-content').text() || '';
+    if (!text) {
+        return;
+    }
+
+    tpCopyToClipboard(
+        text,
+        function() { toastr.success(TP_HEALTH_L10N.copied); },
+        function() { toastr.error(TP_HEALTH_L10N.clipboard_error || TP_HEALTH_L10N.generic_error); }
+    );
+}
+
+function tpCopyToClipboard(text, onSuccess, onError) {
+    if (!text) {
+        if (typeof onError === 'function') onError();
+        return;
+    }
+
+    if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        navigator.clipboard.writeText(text).then(
+            function() { if (typeof onSuccess === 'function') onSuccess(); },
+            function() { tpFallbackCopyToClipboard(text, onSuccess, onError); }
+        );
+        return;
+    }
+
+    tpFallbackCopyToClipboard(text, onSuccess, onError);
+}
+
+function tpFallbackCopyToClipboard(text, onSuccess, onError) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'absolute';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+
+    var ok = false;
+    try {
+        ok = document.execCommand('copy');
+    } catch (e) {
+        ok = false;
+    }
+
+    document.body.removeChild(ta);
+
+    if (ok && typeof onSuccess === 'function') {
+        onSuccess();
+    } else if (!ok && typeof onError === 'function') {
+        onError();
+    }
+}
+
 function tpDownloadReportJson() {
     if (!tpHealthReportCache) {
         toastr.error(TP_HEALTH_L10N.no_data);
         return;
     }
 
-    var json = JSON.stringify(tpHealthReportCache, null, 2);
-    var filename = (tpHealthReportCache.export_filename || TP_HEALTH_L10N.export_filename_default);
+    var $btn = $('#health-export-btn');
+    $btn.prop('disabled', true);
 
-    var blob = new Blob([json], { type: 'application/json' });
-    var url = URL.createObjectURL(blob);
+    var reportToExport = JSON.parse(JSON.stringify(tpHealthReportCache));
+    var filename = (reportToExport.export_filename || TP_HEALTH_L10N.export_filename_default);
 
-    var a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
+    function tpTriggerDownload(reportObj) {
+        var json = JSON.stringify(reportObj, null, 2);
+        var blob = new Blob([json], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
 
-    setTimeout(function() {
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }, 0);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+
+        setTimeout(function() {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 0);
+    }
+
+    var lines = Number($('#health-apache-log-lines').val() || 50);
+
+    $.post(
+        'sources/utilities.queries.php',
+        {
+            type: 'health_check_apache_error_log',
+            data: prepareExchangedData(JSON.stringify({lines: lines}), 'encode', tpHealthKey),
+            key: tpHealthKey
+        },
+        function(data) {
+            data = prepareExchangedData(data, 'decode', tpHealthKey);
+
+            if (!reportToExport.logs) {
+                reportToExport.logs = {};
+            }
+
+            if (data && data.result) {
+                reportToExport.logs.apache_error_log = data.result;
+            } else if (data && data.error) {
+                reportToExport.logs.apache_error_log = {
+                    access: 'error',
+                    log_path: '/var/log/apache2/teampass_error.log',
+                    lines: lines,
+                    message: (data.message || '')
+                };
+            } else {
+                reportToExport.logs.apache_error_log = {
+                    access: 'error',
+                    log_path: '/var/log/apache2/teampass_error.log',
+                    lines: lines
+                };
+            }
+
+            tpTriggerDownload(reportToExport);
+        }
+    ).fail(function() {
+        tpTriggerDownload(reportToExport);
+    }).always(function() {
+        $btn.prop('disabled', false);
+    });
 }
 </script>
