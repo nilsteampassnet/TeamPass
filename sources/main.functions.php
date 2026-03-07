@@ -6079,26 +6079,49 @@ function getUserCompleteData($login = null, $userId = null)
     
     // Get user with all related data
     // Note: pk.private_key overrides u.private_key (from users table) to read from user_private_keys
+    // Use subqueries for aggregations to avoid GROUP BY on the main query
+    // This ensures compatibility with MySQL ONLY_FULL_GROUP_BY mode
     $data = DB::queryFirstRow(
         'SELECT u.*,
          pk.private_key AS private_key,
          a.value AS api_key, a.enabled AS api_enabled, a.allowed_folders as api_allowed_folders, a.allowed_to_create as api_allowed_to_create, a.allowed_to_read as api_allowed_to_read, a.allowed_to_update as api_allowed_to_update , a.allowed_to_delete as api_allowed_to_delete,
-         GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-         GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
-         GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups,
-         GROUP_CONCAT(DISTINCT uf.item_id ORDER BY uf.created_at SEPARATOR ";") AS favourites,
-         GROUP_CONCAT(DISTINCT ul.item_id ORDER BY ul.accessed_at DESC SEPARATOR ";") AS latest_items
+         agg_groups.groupes_visibles,
+         agg_gforbid.groupes_interdits,
+         agg_roles.fonction_id,
+         agg_roles.roles_from_ad_groups,
+         agg_fav.favourites,
+         agg_latest.latest_items
         FROM ' . prefixTable('users') . ' AS u
         LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
         LEFT JOIN ' . prefixTable('api') . ' AS a ON (u.id = a.user_id)
-        LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
-        LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
-        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-        LEFT JOIN ' . prefixTable('users_favorites') . ' AS uf ON (u.id = uf.user_id)
-        LEFT JOIN ' . prefixTable('users_latest_items') . ' AS ul ON (u.id = ul.user_id)
-        WHERE ' . $whereClause . '
-        GROUP BY u.id',
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_visibles
+            FROM ' . prefixTable('users_groups') . '
+            GROUP BY user_id
+        ) agg_groups ON agg_groups.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(group_id ORDER BY group_id SEPARATOR ";") AS groupes_interdits
+            FROM ' . prefixTable('users_groups_forbidden') . '
+            GROUP BY user_id
+        ) agg_gforbid ON agg_gforbid.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN source = "manual" THEN role_id END ORDER BY role_id SEPARATOR ";") AS fonction_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN source = "ad" THEN role_id END ORDER BY role_id SEPARATOR ";") AS roles_from_ad_groups
+            FROM ' . prefixTable('users_roles') . '
+            GROUP BY user_id
+        ) agg_roles ON agg_roles.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(item_id ORDER BY created_at SEPARATOR ";") AS favourites
+            FROM ' . prefixTable('users_favorites') . '
+            GROUP BY user_id
+        ) agg_fav ON agg_fav.user_id = u.id
+        LEFT JOIN (
+            SELECT user_id, GROUP_CONCAT(item_id ORDER BY accessed_at DESC SEPARATOR ";") AS latest_items
+            FROM ' . prefixTable('users_latest_items') . '
+            GROUP BY user_id
+        ) agg_latest ON agg_latest.user_id = u.id
+        WHERE ' . $whereClause,
         $whereParam
     );
     

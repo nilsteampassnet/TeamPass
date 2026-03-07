@@ -2451,7 +2451,7 @@ case 'get_operational_statistics':
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
-            GROUP BY u.id
+            GROUP BY u.id, u.login, u.name, u.lastname
             ORDER BY score DESC, last_activity DESC
             LIMIT %i",
             $tpApiLike,
@@ -2522,7 +2522,7 @@ case 'get_operational_statistics':
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
-            GROUP BY ur.role_id
+            GROUP BY ur.role_id, rt.title
             ORDER BY score DESC, last_activity DESC
             LIMIT %i",
             $fromTs,
@@ -2693,7 +2693,7 @@ case 'get_operational_statistics':
               AND {$itemsNotDeletedSql}
               AND (%i = 1 OR i.perso = 0)
               AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
-            GROUP BY i.id
+            GROUP BY i.id, i.label, i.perso, folder_title
             ORDER BY copies DESC, views DESC, last_activity DESC
             LIMIT %i",
             $fromTs,

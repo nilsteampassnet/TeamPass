@@ -175,7 +175,12 @@ if (
 // Load Languages stuff
 if (isset($languagesList) === false) {
     $languagesList = [];
-    $rows = DB::query('SELECT * FROM ' . prefixTable('languages') . ' GROUP BY name, label, code, flag, id ORDER BY name ASC');
+    $rows = DB::query(
+        'SELECT * 
+        FROM ' . prefixTable('languages') . ' 
+        GROUP BY name, label, code, flag, id, code_poeditor 
+        ORDER BY name ASC'
+    );
     foreach ($rows as $record) {
         array_push($languagesList, $record['name']);
         if ($session->get('user-language') === $record['name'] ) {
@@ -410,7 +415,7 @@ if ($session->has('user-timezone') && empty($session->get('user-id')) === false)
         LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
         LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
         WHERE u.id = %s
-        GROUP BY u.id',
+        GROUP BY u.id, u.login, u.admin, u.gestionnaire, u.can_manage_all_users, u.last_connexion, u.auth_type, u.last_pw_change, u.deleted_at',
         $session->get('user-id')
     );
     

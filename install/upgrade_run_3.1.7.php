@@ -209,6 +209,13 @@ if ($result !== false && mysqli_num_rows($result) === 0) {
 // --->
 
 // <---
+// PERFORM STRUCTURAL DB CHANGES
+
+modifyColumn($pre . 'users', 'agses-usercardid', "agses_usercardid", "VARCHAR(50) NOT NULL DEFAULT '0'");
+
+// --->
+
+// <---
 // ==========================================
 
 // Indexes for performance
@@ -237,5 +244,3 @@ echo '[{"finish":"1" , "next":"", "error":"'.(count($error) > 0 ? json_encode($e
 
 
 //---< FUNCTIONS
-
-
