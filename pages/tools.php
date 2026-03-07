@@ -302,7 +302,7 @@ if ($result > 0) {
     $backups = DB::query('SELECT sb.operation_code, sb.created_at, sb.user_id, u.login
         FROM '.prefixTable('sharekeys_backup').' AS sb
         INNER JOIN '.prefixTable('users').' AS u ON sb.user_id = u.id
-        GROUP BY sb.operation_code
+        GROUP BY sb.operation_code, sb.created_at, sb.user_id, u.login
         ORDER BY sb.created_at DESC;'
     );
 }

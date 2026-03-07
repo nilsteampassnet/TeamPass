@@ -218,6 +218,8 @@
       // Track locked items globally
       if (!window.tpLockedItems) window.tpLockedItems = {}
       window.tpLockedItems[data.item_id] = data.user_login
+      // If this item is currently open in the detail panel, show lock there too
+      showEditionLockInDetailView(data.item_id, data.user_login)
     })
 
     tpWs.on('item_edition_stopped', function(data) {
@@ -228,6 +230,8 @@
       if (window.tpLockedItems) {
         delete window.tpLockedItems[data.item_id]
       }
+      // Remove from detail panel if visible
+      removeEditionLockFromDetailView(data.item_id)
       // Notify user if they previously tried to edit this item
       if (window.tpBlockedEditItemId && window.tpBlockedEditItemId === data.item_id) {
         showNotification('success',
@@ -236,6 +240,45 @@
           ' (' + data.user_login + ')'
         )
         window.tpBlockedEditItemId = null
+      }
+    })
+
+    // Item moved event
+    tpWs.on('item_moved', function(data) {
+      var fromFolder = parseInt(data.from_folder_id)
+      var toFolder = parseInt(data.to_folder_id)
+      var current = parseInt(currentFolderId)
+
+      if (fromFolder === current) {
+        // Remove item row from the source folder view
+        if (typeof $ !== 'undefined') {
+          $('#list-item-row_' + data.item_id).remove()
+
+          // If the moved item is currently open in the detail panel, warn and close it
+          var $container = $('#items-details-container')
+          if (!$container.hasClass('hidden') &&
+              parseInt($container.data('id')) === parseInt(data.item_id)) {
+            $container.find('.edition-lock-detail-badge').remove()
+            toastr.remove()
+            toastr.warning(
+              '"' + data.label + '" ' + (L.item_moved_away || 'has been moved to another folder by') + ' ' + data.moved_by,
+              L.item_moved || 'Item moved',
+              { timeOut: 6000, progressBar: true }
+            )
+            // Navigate back to the list view
+            $('.but-back-to-list').first().click()
+          } else {
+            showNotification('info',
+              L.item_moved || 'Item moved',
+              '"' + data.label + '" ' + (L.item_moved_by || 'moved by') + ' ' + data.moved_by
+            )
+          }
+        }
+      }
+
+      if (toFolder === current) {
+        // An item arrived in the folder we are viewing: refresh the list
+        refreshItemsList()
       }
     })
 
@@ -495,6 +538,34 @@
   }
 
   /**
+   * Show a lock indicator in the item detail panel (read-only view).
+   * Displayed below the item title when another user is editing it.
+   */
+  function showEditionLockInDetailView(itemId, userLogin) {
+    if (typeof $ === 'undefined') return
+    var $container = $('#items-details-container')
+    if ($container.hasClass('hidden')) return
+    if (parseInt($container.data('id')) !== parseInt(itemId)) return
+    // Don't add duplicate
+    if ($container.find('.edition-lock-detail-badge').length > 0) return
+    var badge = $('<div class="edition-lock-detail-badge alert alert-warning py-1 px-2 mt-1 mb-0 ml-2 d-inline-block">' +
+      '<i class="fas fa-lock mr-1"></i>' +
+      (L.being_edited_by || 'Being edited by') + ' <strong>' + userLogin + '</strong>' +
+      '</div>')
+    $('#card-item-label').after(badge)
+  }
+
+  /**
+   * Remove the lock indicator from the item detail panel.
+   */
+  function removeEditionLockFromDetailView(itemId) {
+    if (typeof $ === 'undefined') return
+    var $container = $('#items-details-container')
+    if (parseInt($container.data('id')) !== parseInt(itemId)) return
+    $container.find('.edition-lock-detail-badge').remove()
+  }
+
+  /**
    * Refresh user folders after a permission change
    *
    * Triggers a custom jQuery event that items.js.php listens to.
@@ -512,6 +583,8 @@
   window.tpWsShowNotification = showNotification
   window.tpWsShowEditionLock = showEditionLockIndicator
   window.tpWsRemoveEditionLock = removeEditionLockIndicator
+  window.tpWsShowEditionLockDetail = showEditionLockInDetailView
+  window.tpWsRemoveEditionLockDetail = removeEditionLockFromDetailView
   window.refreshUserFolders = refreshUserFolders
 
   // Initialize when DOM is ready

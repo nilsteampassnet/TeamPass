@@ -5431,6 +5431,19 @@ switch ($inputData['type']) {
         // Update cache table
         updateCacheTable('update_value', (int) $inputData['itemId']);
 
+        // Notify via WebSocket: item moved from source folder and arrived in destination folder.
+        // Both folders' subscribers receive the event (excluding the user who performed the move).
+        $movePayload = [
+            'item_id'        => (int) $inputData['itemId'],
+            'from_folder_id' => (int) $dataSource['id_tree'],
+            'to_folder_id'   => (int) $inputData['folderId'],
+            'label'          => $dataSource['label'],
+            'moved_by'       => $session->get('user-login') ?? '',
+        ];
+        $moveExclude = (int) $session->get('user-id');
+        emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $movePayload, $moveExclude);
+        emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $movePayload, $moveExclude);
+
         $returnValues = array(
             'error' => '',
             'message' => '',
@@ -5750,6 +5763,18 @@ switch ($inputData['type']) {
                     $session->get('user-login'),
                     'at_moved : ' . strval($dataSource['title']) . ' -> ' . strval($dataDestination['title'])
                 );
+
+                // Notify via WebSocket: item moved (source and destination folders)
+                $massMovePayload = [
+                    'item_id'        => (int) $item_id,
+                    'from_folder_id' => (int) $dataSource['id_tree'],
+                    'to_folder_id'   => (int) $inputData['folderId'],
+                    'label'          => $dataSource['label'],
+                    'moved_by'       => $session->get('user-login') ?? '',
+                ];
+                $massMoveExclude = (int) $session->get('user-id');
+                emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $massMovePayload, $massMoveExclude);
+                emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $massMovePayload, $massMoveExclude);
             }
         }
 
@@ -7526,6 +7551,12 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
         // If no locks exist and the action is 'edit', create a new lock
         if ($actionType === 'edit') {
             createEditionLock($itemId, $userId, $now);
+
+            // Notify other users via WebSocket that this item is now being edited
+            $folderId = getItemFolderIdFromDb($itemId);
+            if ($folderId !== null) {
+                emitEditionLockEvent('started', $itemId, $folderId, $session->get('user-login') ?? '', $userId);
+            }
         }
         return ['status' => false];
     }
