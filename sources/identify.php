@@ -3438,32 +3438,121 @@ function handleFailedAttempts($source, $value, $limit) {
     if ($unlock_at !== null && $source === 'login') {
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
-        $lang = new Language($SETTINGS['default_language']);
+        $lang = new Language($SETTINGS['default_language'] ?? 'english');
 
-        // Get user email
+        // Get user details
         $userInfos = DB::queryFirstRow(
             'SELECT email, name
-             FROM '.prefixTable('users').'
+             FROM ' . prefixTable('users') . '
              WHERE login = %s',
-             $value
+            $value
         );
 
-        // No valid email address for user
-        if (!$userInfos || !filter_var($userInfos['email'], FILTER_VALIDATE_EMAIL))
-            return;
+        notifyAdminsAboutLockedAccount(
+            $SETTINGS,
+            $lang,
+            $value,
+            is_array($userInfos) === true ? $userInfos : [],
+            getClientIpServer(),
+            $unlock_at
+        );
 
-        $unlock_url = $SETTINGS['cpassman_url'].'/self-unlock.php?login='.$value.'&otp='.$unlock_code;
+        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
 
         sendMailToUser(
             $userInfos['email'],
             $lang->get('bruteforce_reset_mail_body'),
             $lang->get('bruteforce_reset_mail_subject'),
             [
-                '#name#' => $userInfos['name'],
+                '#name#' => (string) ($userInfos['name'] ?? ''),
                 '#reset_url#' => $unlock_url,
                 '#unlock_at#' => $unlock_at,
             ],
             true
+        );
+    }
+}
+
+/**
+ * Notify all administrators when a user account is locked by anti brute force.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfos
+ */
+function notifyAdminsAboutLockedAccount(
+    array $SETTINGS,
+    Language $lang,
+    string $login,
+    array $userInfos,
+    string $sourceIp,
+    string $unlockAt
+): void {
+    $adminUsers = DB::query(
+        'SELECT email, name
+         FROM ' . prefixTable('users') . '
+         WHERE admin = %i
+            AND disabled = %i
+            AND deleted_at IS NULL
+            AND email IS NOT NULL
+            AND email != %s',
+        1,
+        0,
+        ''
+    );
+
+    if (empty($adminUsers) === true) {
+        return;
+    }
+
+    $userName = trim((string) ($userInfos['name'] ?? ''));
+    $userEmail = trim((string) ($userInfos['email'] ?? ''));
+    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
+    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
+
+    $unlockAtTimestamp = strtotime($unlockAt);
+    $formattedUnlockAt = $unlockAtTimestamp === false
+        ? $unlockAt
+        : date(
+            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
+            $unlockAtTimestamp
+        );
+
+    $mailBody = str_replace(
+        [
+            '#tp_user#',
+            '#tp_name#',
+            '#tp_email#',
+            '#tp_ip#',
+            '#tp_date#',
+            '#tp_time#',
+            '#tp_unlock_at#',
+        ],
+        [
+            $login,
+            $userDisplayName,
+            $userDisplayEmail,
+            $sourceIp,
+            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
+            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
+            $formattedUnlockAt,
+        ],
+        $lang->get('email_body_on_user_lock')
+    );
+
+    foreach ($adminUsers as $adminUser) {
+        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_on_user_lock'),
+            $mailBody,
+            (string) $adminUser['email'],
+            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
         );
     }
 }
