@@ -44,6 +44,36 @@ header("X-Frame-Options: DENY");
 header("Referrer-Policy: no-referrer");
 require __DIR__ . "/inc/bootstrap.php";
 
+if (!isset($SETTINGS) || is_array($SETTINGS) === false) {
+    $configManager = new \TeampassClasses\ConfigManager\ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
+}
+
+$apiLanguage = 'english';
+$acceptLanguage = strtolower((string) ($_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? ''));
+if (preg_match('/(^|,)\s*fr([-_][a-z]{2})?(\s*;|,|$)/i', $acceptLanguage) === 1) {
+    $apiLanguage = 'french';
+}
+$lang = new \TeampassClasses\Language\Language($apiLanguage);
+
+$networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
+$networkAccessRules = teampassLoadNetworkAclRules(true);
+$networkAccess = teampassEvaluateNetworkAclAccess(
+    $SETTINGS,
+    isset($networkAccessContext['detected_ip']) === true ? (string) $networkAccessContext['detected_ip'] : null,
+    $networkAccessRules
+);
+if (($networkAccess['checked'] ?? false) === true && ($networkAccess['allowed'] ?? true) === false) {
+    errorHdl(
+        'HTTP/1.1 403 Forbidden',
+        json_encode(
+            ['error' => $lang->get('network_security_access_denied_message')],
+            JSON_UNESCAPED_UNICODE
+        )
+    );
+    exit;
+}
+
 // sanitize url segments
 $base = new BaseController();
 $uri = $base->getUriSegments();
