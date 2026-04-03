@@ -185,7 +185,6 @@
         "phpmailer/phpmailer": "^6.8",
         "moxiecode/plupload": "^3.1",
         "tecnickcom/tcpdf": "^6.6",
-        "paragonie/random_compat": "^9.99",
         "elegantweb/sanitizer": "^2.1",
         "defuse/php-encryption": "^2.4",
         "dittertp/gibberish-aes-php": "^4.0",
