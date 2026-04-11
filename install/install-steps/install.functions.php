@@ -19,7 +19,7 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      run.step1.php
+ * @file      install.functions.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -108,9 +108,61 @@ function GenerateCryptKeyForInstall(
  *
  * @return array
  */
+if (!function_exists('resolveInstallAsciiKey')) {
+    /**
+     * Resolve the Defuse ASCII key used during installation.
+     *
+     * @param string     $ascii_key Explicit ASCII key if already known.
+     * @param array|null $SETTINGS  Optional install settings fallback.
+     *
+     * @return string
+     */
+    function resolveInstallAsciiKey(string $ascii_key = '', ?array $SETTINGS = []): string
+    {
+        if ($ascii_key !== '') {
+            return $ascii_key;
+        }
+
+        $securePath = '';
+        $secureFile = '';
+
+        if (defined('SECUREPATH') === true && SECUREPATH !== '') {
+            $securePath = SECUREPATH;
+        } elseif (is_array($SETTINGS) === true) {
+            $securePath = $SETTINGS['SECUREPATH']
+                ?? $SETTINGS['teampassSecurePath']
+                ?? '';
+        }
+
+        if (defined('SECUREFILE') === true && SECUREFILE !== '') {
+            $secureFile = SECUREFILE;
+        } elseif (is_array($SETTINGS) === true) {
+            $secureFile = $SETTINGS['SECUREFILE']
+                ?? $SETTINGS['teampassSecureFile']
+                ?? '';
+        }
+
+        if ($securePath === '' || $secureFile === '') {
+            throw new RuntimeException('Missing SECUREPATH/SECUREFILE for installation cryptography context.');
+        }
+
+        $keyPath = rtrim($securePath, '/') . '/' . $secureFile;
+        if (is_readable($keyPath) === false) {
+            throw new RuntimeException('Encryption key file is missing or unreadable: ' . $keyPath);
+        }
+
+        $resolvedKey = file_get_contents($keyPath);
+        if ($resolvedKey === false || $resolvedKey === '') {
+            throw new RuntimeException('Unable to read encryption key file: ' . $keyPath);
+        }
+
+        return $resolvedKey;
+    }
+}
+
 function cryptionForInstall(string $message, string $ascii_key, string $type, ?array $SETTINGS = []): array
 {
-    $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
+    $ascii_key = resolveInstallAsciiKey($ascii_key, $SETTINGS);
     $err = false;
     
     try {
@@ -120,6 +172,8 @@ function cryptionForInstall(string $message, string $ascii_key, string $type, ?a
             $text = Crypto::encrypt($message, $key);
         } elseif ($type === 'decrypt') {
             $text = Crypto::decrypt($message, $key);
+        } else {
+            throw new InvalidArgumentException('Unsupported cryptionForInstall type: ' . $type);
         }
     } catch (CryptoException\WrongKeyOrModifiedCiphertextException $ex) {
         error_log('TEAMPASS-Error-Wrong key or modified ciphertext: ' . $ex->getMessage());
