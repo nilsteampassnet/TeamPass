@@ -144,21 +144,98 @@ class DatabaseInstaller
     public function handleAction(): array
     {
         try {
-            if (method_exists($this, $this->inputData['action'])) {
-                // Dynamically call the method corresponding to the action
-                call_user_func([$this, $this->inputData['action']]);
-            } else {
-                throw new Exception('Action not recognized: ' . $this->inputData);
+            if (method_exists($this, $this->inputData['action']) === false) {
+                throw new Exception('Action not recognized: ' . $this->inputData['action']);
             }
+
+            // Step 5 may need cryptography before settings.php exists.
+            // Prepare a stable SECUREPATH/SECUREFILE context on demand.
+            if ($this->inputData['action'] === 'misc') {
+                $this->ensureInstallCryptoContext();
+            }
+
+            // Dynamically call the method corresponding to the action
+            call_user_func([$this, $this->inputData['action']]);
 
             return [
                 'success' => true,
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
-                'message' => 'Query error occurred: ' . $e->getMessage(),
+                'message' => 'Query error occurred: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine(),
             ];
+        }
+    }
+
+    /**
+     * Persist an installation setting and keep the in-memory state aligned.
+     *
+     * @param string $key
+     * @param string $value
+     *
+     * @return void
+     */
+    private function setInstallConfigValue(string $key, string $value): void
+    {
+        DB::insertUpdate('_install', [
+            'key' => $key,
+            'value' => $value,
+        ]);
+
+        $this->installConfig[$key] = $value;
+    }
+
+    /**
+     * Ensure the installation cryptography context exists before step 6.
+     *
+     * Fresh installs need SECUREPATH/SECUREFILE during step 5 (misc seed),
+     * while settings.php is only written in step 6. This method bridges that gap.
+     *
+     * @return void
+     */
+    private function ensureInstallCryptoContext(): void
+    {
+        $securePath = rtrim((string) ($this->installConfig['teampassSecurePath'] ?? ''), '/');
+        if ($securePath === '') {
+            throw new RuntimeException('Missing teampassSecurePath in installation settings.');
+        }
+
+        if (is_dir($securePath) === false) {
+            throw new RuntimeException('Secure path does not exist: ' . $securePath);
+        }
+
+        if (is_readable($securePath) === false || is_writable($securePath) === false) {
+            throw new RuntimeException('Secure path must be readable and writable: ' . $securePath);
+        }
+
+        if (defined('SECUREPATH') === false) {
+            define('SECUREPATH', $securePath);
+        }
+
+        $secureFile = trim((string) ($this->installConfig['teampassSecureFile'] ?? ''));
+        if ($secureFile === '') {
+            include_once(__DIR__ . '/../tp.functions.php');
+
+            $secureFile = generateRandomKey();
+            $asciiKey = \Defuse\Crypto\Key::createNewRandomKey()->saveToAsciiSafeString();
+            $keyPath = $securePath . '/' . $secureFile;
+
+            if (file_put_contents($keyPath, $asciiKey, LOCK_EX) === false) {
+                throw new RuntimeException('Unable to write encryption key file: ' . $keyPath);
+            }
+
+            @chmod($keyPath, 0640);
+            $this->setInstallConfigValue('teampassSecureFile', $secureFile);
+        }
+
+        $keyPath = $securePath . '/' . $secureFile;
+        if (is_readable($keyPath) === false) {
+            throw new RuntimeException('Encryption key file is missing or unreadable: ' . $keyPath);
+        }
+
+        if (defined('SECUREFILE') === false) {
+            define('SECUREFILE', $secureFile);
         }
     }
 
@@ -489,7 +566,7 @@ class DatabaseInstaller
         $backupScriptPasskeyClear = GenerateCryptKeyForInstall(40, false, true, true, false, true);
         $backupScriptPasskeyStorage = $backupScriptPasskeyClear;
         $backupScriptPasskeyIsEncrypted = 0;
-        $backupScriptPasskeyCipher = cryptionForInstall($backupScriptPasskeyClear, '', 'encrypt');
+        $backupScriptPasskeyCipher = cryptionForInstall($backupScriptPasskeyClear, '', 'encrypt', $this->installConfig);
         if (isset($backupScriptPasskeyCipher['string']) && is_string($backupScriptPasskeyCipher['string']) && $backupScriptPasskeyCipher['string'] !== '') {
             $backupScriptPasskeyStorage = $backupScriptPasskeyCipher['string'];
             $backupScriptPasskeyIsEncrypted = 1;
