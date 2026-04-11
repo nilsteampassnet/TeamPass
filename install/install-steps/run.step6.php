@@ -159,7 +159,7 @@ class teampassInstaller
             return [
                 'success' => true,
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => 'An error occurred: ' . $e->getMessage(),
@@ -175,37 +175,71 @@ class teampassInstaller
     private function secureFile(): array
     {
         try {
-            // Generale a random file name
             include_once(__DIR__ . '/../tp.functions.php');
+
+            $securePath = rtrim((string) ($this->installConfig['teampassSecurePath'] ?? ''), '/');
+            if ($securePath === '') {
+                return [
+                    'success' => false,
+                    'message' => 'Missing teampassSecurePath in installation settings.',
+                ];
+            }
+
+            if (is_dir($securePath) === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Secure path does not exist: ' . $securePath,
+                ];
+            }
+
+            if (is_writable($securePath) === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Secure path is not writable: ' . $securePath,
+                ];
+            }
+
+            $existingSecureFile = trim((string) ($this->installConfig['teampassSecureFile'] ?? ''));
+            if ($existingSecureFile !== '') {
+                $existingSecureFilePath = $securePath . '/' . $existingSecureFile;
+                if (is_readable($existingSecureFilePath) === true) {
+                    return [
+                        'success' => true,
+                        'message' => 'Secure key file already exists.',
+                    ];
+                }
+            }
+
+            // Generate a random file name and a stable Defuse key only when missing.
             $secureFile = generateRandomKey();
-    
-            // Generate saltkey
-            $key = Key::createNewRandomKey();
-            $newSalt = $key->saveToAsciiSafeString();
-    
-            // Store key in file
-            file_put_contents(
-                rtrim($this->installConfig['teampassSecurePath'].'/').'/'.$secureFile,
-                $newSalt
-            );
-            
-            // Store the secure file name in the database
+            $newSalt = Key::createNewRandomKey()->saveToAsciiSafeString();
+            $secureFilePath = $securePath . '/' . $secureFile;
+
+            if (file_put_contents($secureFilePath, $newSalt, LOCK_EX) === false) {
+                return [
+                    'success' => false,
+                    'message' => 'Unable to create secure key file: ' . $secureFilePath,
+                ];
+            }
+            @chmod($secureFilePath, 0640);
+
+            // Store the secure file name in the database and in runtime state
             DB::insertUpdate('_install', [
                 'key' => 'teampassSecureFile',
                 'value' => $secureFile,
             ]);
-            
+            $this->installConfig['teampassSecureFile'] = $secureFile;
+
             return [
                 'success' => true,
             ];
-    
-        } catch (Exception $e) {
-            // Si la connexion échoue, afficher un message d'erreur
+
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
             ];
-        }        
+        }
     }
 
     /**
@@ -215,55 +249,10 @@ class teampassInstaller
      */
     function chmod(): array
     {
-        try {
-            // Check if the server is Linux (not Windows)
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                return [
-                    'success' => true,
-                    'message' => "CHMOD changes are not supported on Windows servers.",
-                ];
-            }
-
-            // Get absolute path to teampass
-            $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            if (!is_dir($absolutePath)) {
-                return [
-                    'success' => false,
-                    'message' => "Invalid Teampass absolute path: $absolutePath",
-                ];
-            }
-
-            // Folders and permissions to apply.
-            // 0750: owner=rwx, group=rx, world=none — web server user can traverse and read.
-            // 0640: owner=rw, group=r, world=none — web server user can read, never execute.
-            $directories = [
-                $absolutePath              => ['dir' => 0750, 'file' => 0640],
-                $absolutePath . '/files'   => ['dir' => 0750, 'file' => 0640],
-                $absolutePath . '/upload'  => ['dir' => 0750, 'file' => 0640],
-            ];
-
-            // Apply permissions
-            foreach ($directories as $path => $permissions) {
-                $result = recursiveChmodForInstall($path, $permissions['dir'], $permissions['file']);
-                if (!$result) {
-                    return [
-                        'success' => false,
-                        'message' => "Failed to change permissions for: $path",
-                    ];
-                }
-            }
-
-            return [
-                'success' => true,
-                'message' => "Permissions successfully applied to all directories.",
-            ];
-
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage(),
-            ];
-        }
+        return [
+            'success' => true,
+            'message' => 'Permissions step skipped during installation.',
+        ];
     }
 
 
@@ -353,7 +342,7 @@ class teampassInstaller
             return [
                 'success' => true,
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -515,7 +504,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 'message' => "Settings file successfully created and user added.",
             ];
     
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => "An error occurred: " . $e->getMessage(),
@@ -581,7 +570,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 'success' => true,
             ];
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -614,7 +603,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 'success' => true,
             ];
     
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
                 'message' => $e->getMessage(),
