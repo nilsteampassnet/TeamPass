@@ -145,7 +145,7 @@ if (
         'install',
         'clear_install_folder'
     );
-    if (DB::count() > 0 && $row['valeur'] === 'true') {
+    if (DB::count() > 0 && isset($row['valeur']) === true && $row['valeur'] === 'true') {
         /**
          * Permits to delete files and folders recursively.
          *
@@ -153,46 +153,51 @@ if (
          *
          * @return bool
          */
-        function delTree($dir)
-        {
-            $directories = scandir($dir);
-            if ($directories !== false) {
-                $files = array_diff($directories, ['.', '..']);
-                foreach ($files as $file) {
-                    if (is_dir($dir . '/' . $file)) {
-                        delTree($dir . '/' . $file);
-                    } else {
-                        try {
-                            unlink($dir . '/' . $file);
-                        } catch (Exception $e) {
-                            // do nothing... php will ignore and continue
+        if (function_exists('delTree') === false) {
+            function delTree(string $dir): bool
+            {
+                $directories = scandir($dir);
+                if ($directories !== false) {
+                    $files = array_diff($directories, ['.', '..']);
+                    foreach ($files as $file) {
+                        $path = $dir . '/' . $file;
+                        if (is_dir($path) === true) {
+                            delTree($path);
+                        } else {
+                            try {
+                                unlink($path);
+                            } catch (Exception $e) {
+                                // do nothing... php will ignore and continue
+                            }
                         }
                     }
+
+                    return @rmdir($dir);
                 }
 
-                return @rmdir($dir);
+                return false;
             }
-
-            // else return false
-            return false;
         }
 
         // Set the permissions on the install directory and delete
         // is server Windows or Linux?
         if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-            recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0755, 0440);
+            recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0440, 0755);
         }
-        delTree($SETTINGS['cpassman_dir'] . '/install');
 
-        // Delete temporary install table
-        DB::query('DROP TABLE IF EXISTS `_install`');
-        // Delete tag
-        DB::delete(
-            prefixTable('misc'),
-            'type=%s AND intitule=%s',
-            'install',
-            'clear_install_folder'
-        );
+        $installFolderDeleted = delTree($SETTINGS['cpassman_dir'] . '/install');
+
+        if ($installFolderDeleted === true) {
+            // Delete temporary install table
+            DB::query('DROP TABLE IF EXISTS `_install`');
+            // Delete tag
+            DB::delete(
+                prefixTable('misc'),
+                'type=%s AND intitule=%s',
+                'install',
+                'clear_install_folder'
+            );
+        }
     }
 }
 

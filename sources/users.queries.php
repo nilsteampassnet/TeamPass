@@ -252,7 +252,7 @@ if (null !== $post_type) {
             $mfa_enabled = filter_var($dataReceived['mfa_enabled'], FILTER_SANITIZE_NUMBER_INT);
 
             // Only administrators can create managers or administrators accounts.
-            if ((int) $session->get('user-admin') !== 1 
+            if ((int) $session->get('user-admin') !== 1
                 && ((int) $is_admin === 1 || (int) $is_manager === 1 || (int) $is_hr === 1)) {
 
                 echo prepareExchangedData(
@@ -263,6 +263,11 @@ if (null !== $post_type) {
                     'encode'
                 );
                 break;
+            }
+
+            // Non-admin cannot grant can_create_root_folder if they don't have it themselves.
+            if ((int) $session->get('user-admin') !== 1 && (int) $session->get('user-can_create_root_folder') !== 1) {
+                $post_root_level = 0;
             }
 
             // Empty user
@@ -1056,7 +1061,7 @@ if (null !== $post_type) {
 
             // Get info about user to modify
             $data_user = DB::queryFirstRow(
-                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole 
+                'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole, can_create_root_folder
                 FROM ' . prefixTable('users') . '
                 WHERE id = %i',
                 $post_id
@@ -1122,7 +1127,10 @@ if (null !== $post_type) {
                 'personal_folder' => empty($post_has_personal_folder) === true ? 0 : $post_has_personal_folder,
                 'user_language' => $SETTINGS['default_language'],
                 'isAdministratedByRole' => $post_is_administrated_by,
-                'can_create_root_folder' => empty($post_root_level) === true ? 0 : $post_root_level,
+                // Only admins can change can_create_root_folder; non-admins preserve the existing DB value.
+                'can_create_root_folder' => (int) $session->get('user-admin') === 1
+                    ? (empty($post_root_level) === true ? 0 : $post_root_level)
+                    : (int) ($data_user['can_create_root_folder'] ?? 0),
                 'mfa_enabled' => empty($post_mfa_enabled) === true ? 0 : $post_mfa_enabled,
             );
 
@@ -1898,7 +1906,7 @@ if (null !== $post_type) {
                     'email' => isset($dataReceived['email']) === true ? $dataReceived['email'] : '',
                     'timezone' => isset($dataReceived['timezone']) === true ? $dataReceived['timezone'] : '',
                     'language' => isset($dataReceived['language']) === true ? $dataReceived['language'] : '',
-                    'treeloadstrategy' => isset($dataReceived['treeloadstrategy']) === true ? $dataReceived['treeloadstrategy'] : '',
+                    'treeloadstrategy' => isset($dataReceived['treeloadstrategy']) === true ? $dataReceived['treeloadstrategy'] : null,
                     'agsescardid' => isset($dataReceived['agsescardid']) === true ? $dataReceived['agsescardid'] : '',
                     'name' => isset($dataReceived['name']) === true ? $dataReceived['name'] : '',
                     'lastname' => isset($dataReceived['lastname']) === true ? $dataReceived['lastname'] : '',
@@ -1929,6 +1937,21 @@ if (null !== $post_type) {
                 // Force english if non-existent language.
                 if (!file_exists(__DIR__."/../includes/language/".$inputData['language'].".php")) {
                     $inputData['language'] = 'english';
+                }
+
+                $currentTreeLoadStrategy = (string) ($session->get('user-tree_load_strategy') ?? 'full');
+                if ($currentTreeLoadStrategy === '') {
+                    $currentTreeLoadStrategy = 'full';
+                }
+
+                $requestedTreeLoadStrategy = isset($inputData['treeloadstrategy']) === true
+                    ? trim((string) $inputData['treeloadstrategy'])
+                    : '';
+                if ($requestedTreeLoadStrategy === '') {
+                    $requestedTreeLoadStrategy = $currentTreeLoadStrategy;
+                }
+                if (in_array($requestedTreeLoadStrategy, ['full', 'sequential'], true) === false) {
+                    $requestedTreeLoadStrategy = $currentTreeLoadStrategy;
                 }
 
                 // Data to update
@@ -1972,9 +1995,9 @@ if (null !== $post_type) {
                 // User can edit tree load strategy
                 if (($SETTINGS['disable_user_edit_tree_load_strategy'] ?? '0') === '0') {
                     // Update database
-                    $update_fields['treeloadstrategy'] = $inputData['treeloadstrategy'];
+                    $update_fields['treeloadstrategy'] = $requestedTreeLoadStrategy;
                     // Update session
-                    $session->set('user-tree_load_strategy', $inputData['treeloadstrategy']);
+                    $session->set('user-tree_load_strategy', $requestedTreeLoadStrategy);
                 }
 
                 // update user
@@ -1994,6 +2017,7 @@ if (null !== $post_type) {
                     ),
                     'encode'
                 );
+                break;
             }
 
             // Encrypt data to return
@@ -2004,6 +2028,9 @@ if (null !== $post_type) {
                     'name' => $session->get('user-name'),
                     'lastname' => $session->get('user-lastname'),
                     'email' => $session->get('user-email'),
+                    'language' => $session->get('user-language'),
+                    'timezone' => $session->get('user-timezone'),
+                    'treeloadstrategy' => $session->get('user-tree_load_strategy'),
                     'split_view_mode' => $session->get('user-split_view_mode'),
                     'show_subfolders' => $session->get('user-show_subfolders'),
                 ),

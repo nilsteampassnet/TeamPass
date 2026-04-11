@@ -509,6 +509,27 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                     'is_current'  => true,
                 ]);
             }
+
+            // Create the backup encryption key
+            // Only if the key could be encrypted, otherwise it will be created later in the application
+            // when the user will access the backup feature for the first time
+            $backupScriptPasskeyCipher = cryptionForInstall(
+                GenerateCryptKeyForInstall(40, false, true, true, false, true),
+                $encryptionKey,
+                'encrypt'
+            );
+            if (isset($backupScriptPasskeyCipher['string']) && is_string($backupScriptPasskeyCipher['string']) && $backupScriptPasskeyCipher['string'] !== '') {
+                DB::update(
+                    $this->inputData['tablePrefix'] . 'misc',
+                    [
+                        'valeur' => $backupScriptPasskeyCipher['string'],
+                        'is_encrypted' => 1,
+                    ],
+                    'type=%s AND intitule=%s',
+                    'admin',
+                    'bck_script_passkey'
+                );
+            }
     
             return [
                 'success' => true,

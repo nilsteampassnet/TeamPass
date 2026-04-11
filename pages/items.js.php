@@ -126,7 +126,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         websocketEnabledForItems = <?php echo isset($SETTINGS['websocket_enabled']) === true ? (int) $SETTINGS['websocket_enabled'] : 0; ?>,
         itemDetailsFallbackDelay = 2500,
         pendingItemDetailsFallback = null,
-        loadingToast = '';
+        loadingToast = '',
+        showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
 
     /**
      * Start edition lock heartbeat via AJAX.
@@ -416,23 +417,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // Load list of visible folders once jstree data is ready
     // Uses loaded.jstree event instead of arbitrary 500ms delay
     $('#jstree').one('loaded.jstree', function() {
-        internalRefreshVisibleFolders(true);
-
-        // show correct folder in Tree
-        // itemsListFolderId is only set via deep-link or .open-folder clicks;
-        // fall back to selectedFolder (updated on every jstree node selection).
+        // Refresh visible folders / session rights, then select the current folder.
+        // do_refresh=false: the tree just loaded, no second rebuild needed.
         let groupe_id = store.get('teampassApplication').itemsListFolderId ||
-                        store.get('teampassApplication').selectedFolder;
-        if (groupe_id !== false &&
-            ($('#jstree').jstree('get_selected', true)[0] === undefined ||
-            'li_' + groupe_id !== $('#jstree').jstree('get_selected', true)[0].id)
-        ) {
-            $('#jstree').jstree('deselect_all');
-            $('#jstree').jstree('select_node', '#li_' + groupe_id);
-        } else {
-            // No folder to auto-select, dismiss loading toastr
-            toastr.remove();
-        }
+                        store.get('teampassApplication').selectedFolder || '';
+
+        refreshTree(groupe_id, false, true);
     });
 
     // What do we do if a folder is selected?
@@ -496,6 +486,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Prepare some UI elements
     $('#limited-search').prop('checked', <?php echo (int) $SETTINGS['limited_search_default'] === 1 ? true : false; ?>);
+    $('#table_teampass_items_list').toggleClass('tp-show-corrupted-items', showCorruptedItemsInList === true);
 
     $(document).on('blur', '#form-item-icon', function() {
         $('#form-item-icon-show').html('<i class="fas '+$(this).val()+'"></i>');
@@ -638,24 +629,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         toastr.info('<?php echo $lang->get('in_progress'); ?><i class="fa-solid fa-circle-notch fa-spin fa-2x ml-3"></i>');
 
         if ($(this).data('folder-action') === 'refresh') {
-            // Force refresh
-            store.update(
-                'teampassApplication',
-                function(teampassApplication) {
-                    teampassApplication.jstreeForceRefresh = 1
-                }
-            );
             if (selectedFolderId !== '') {
-                refreshTree(selectedFolderId, true);
+                refreshTree(selectedFolderId, true, true);
             } else {
-                refreshTree();
+                refreshTree('', true, true);
             }
-            store.update(
-                'teampassApplication',
-                function(teampassApplication) {
-                    teampassApplication.jstreeForceRefresh = 0
-                }
-            );
             toastr.remove();
 
             //
@@ -1396,8 +1374,30 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             //
             // > END <
             //
-        } else if ($(this).data('folder-action') === 'subfolders-show-hide') {            
-            $('#table_teampass_subfolders_list').toggle();
+        } else if ($(this).data('folder-action') === 'subfolders-show-hide') {
+            store.update(
+                'teampassUser',
+                function(teampassUser) {
+                    teampassUser.show_subfolders = teampassUser.show_subfolders === 1 ? 0 : 1;
+                }
+            );
+
+            $('#table_teampass_subfolders_list').toggleClass(
+                'hidden',
+                store.get('teampassUser').show_subfolders !== 1
+            );
+
+            if (store.get('teampassUser').show_subfolders === 1) {
+                const currentFolder = parseInt(
+                    store.get('teampassApplication').itemsListFolderId ||
+                    store.get('teampassApplication').selectedFolder
+                );
+
+                if (!isNaN(currentFolder) && store.get('teampassApplication').foldersList !== undefined) {
+                    displaySubfolders(store.get('teampassApplication').foldersList, currentFolder);
+                }
+            }
+
             toastr.remove();
         }
 
@@ -2328,33 +2328,16 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         { timeOut: 5000 }
                     );
                 } else {
-                    // Refresh list of folders
-                    internalRefreshVisibleFolders(true);
                     if ($('#form-folder-add').data('action') === 'add') {
-                        // select new folder on jstree
-                        $('#jstree').jstree('deselect_all');
-                        $('#jstree').jstree('select_node', '#li_' + data.newId);
-                        // Refresh tree
-                        refreshTree(data.newId, true);
+                        // Refresh tree from updated rights/session data, then select the new folder
+                        refreshTree(data.newId, true, true);
                         // Refresh list of items inside the folder
                         ListerItems(data.newId, '', 0);
                     } else {
-                        // Refresh tree
-                        store.update(
-                            'teampassApplication',
-                            function(teampassApplication) {
-                                teampassApplication.jstreeForceRefresh = 1;
-                            }
-                        );
-                        refreshTree(selectedFolderId, true);
+                        // Refresh tree from updated rights/session data, then reselect current folder
+                        refreshTree(selectedFolderId, true, true);
                         // Refresh list of items inside the folder
                         ListerItems(selectedFolderId, '', 0);
-                        store.update(
-                            'teampassApplication',
-                            function(teampassApplication) {
-                                teampassApplication.jstreeForceRefresh = 0;
-                            }
-                        );
                     }
                     // Back to list
                     closeItemDetailsCard();
@@ -2461,10 +2444,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         { timeOut: 5000 }
                     );
                 } else {
-                    // Refresh list of folders
-                    internalRefreshVisibleFolders(true);
-                    // Refresh tree
-                    refreshTree(data.parent_id, true);
+                    // Refresh visible folders/session rights, then rebuild and reselect the parent folder
+                    refreshTree(data.parent_id, true, true);
                     // Refresh list of items inside the folder
                     ListerItems(data.parent_id, '', 0);
                     // Back to list
@@ -2539,10 +2520,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         { timeOut: 5000 }
                     );
                 } else {
-                    // Refresh list of folders
-                    internalRefreshVisibleFolders(true);
-                    // Refresh tree
-                    refreshTree($('#form-folder-copy-destination option:selected').val(), true);
+                    // Refresh visible folders/session rights, then rebuild and reselect the destination folder
+                    refreshTree($('#form-folder-copy-destination option:selected').val(), true, true);
                     // Refresh list of items inside the folder
                     ListerItems($('#form-folder-copy-destination option:selected').val(), '', 0);
                     // Back to list
@@ -4212,7 +4191,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      *
      * @return void
      */
-    function internalRefreshVisibleFolders(forceRefreshCache = false) {
+    function internalRefreshVisibleFolders(forceRefreshCache = false, onDone = null) {
         var foldersVersion = ''
         try { foldersVersion = localStorage.getItem('tp_folders_version') || '' } catch(e) {}
         // Clear version on force refresh
@@ -4262,6 +4241,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         if (cachedFolders !== undefined && !isNaN(currentFolder)) {
                             displaySubfolders(cachedFolders, currentFolder)
                         }
+                    }
+                    if (typeof onDone === 'function') {
+                        onDone(data)
                     }
                     return;
                 }
@@ -4331,6 +4313,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         // remove ROOT option if exists
                         $('#form-item-copy-destination option[value="0"]').remove();
                     }
+
+                    if (typeof onDone === 'function') {
+                        onDone(data)
+                    }
                 } else {
                     toastr.remove();
                     toastr.error(
@@ -4340,6 +4326,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
+                    if (typeof onDone === 'function') {
+                        onDone(false)
+                    }
                     return false;
                 }
             }
@@ -4481,9 +4470,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Show success toastr only when this response is still for the currently selected folder.
                 // If the user has already navigated to another folder, this is a stale response:
                 // do NOT call toastr.remove() so we don't wipe out the loading toastr of the new folder.
-                // Show success toastr only when this response is still for the currently selected folder.
-                // If the user has already navigated to another folder, this is a stale response:
-                // do NOT call toastr.remove() so we don't wipe out the loading toastr of the new folder.
                 if (action === 'update') {
                     if (parseInt(folders) === store.get('teampassApplication').selectedFolder) {
                         toastr.remove();
@@ -4506,44 +4492,72 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     /*
      * builds the folders tree
      */
-    function refreshTree(node_to_select, do_refresh, refresh_visible_folders) {
-        do_refresh = do_refresh || ''
-        node_to_select = node_to_select || '';
-        refresh_visible_folders = refresh_visible_folders || true;
+    function refreshTree(node_to_select = '', do_refresh = false, refresh_visible_folders = true) {
+        let folderToSelect = node_to_select;
 
-        if (refresh_visible_folders !== true) {
-            $('#jstree').jstree('deselect_all');
-            $('#jstree').jstree('select_node', '#li_' + groupe_id);
+        if (folderToSelect === '' || folderToSelect === false || typeof folderToSelect === 'undefined' || folderToSelect === null) {
+            if (store.get('teampassApplication') !== undefined) {
+                folderToSelect = store.get('teampassApplication').itemsListFolderId ||
+                    store.get('teampassApplication').selectedFolder ||
+                    '';
+            }
+        }
+
+        if (refresh_visible_folders === true) {
+            internalRefreshVisibleFolders(true, function(result) {
+                if (result === false) {
+                    return;
+                }
+                refreshTree(folderToSelect, do_refresh, false);
+            });
             return false;
         }
 
-        if (do_refresh === true || store.get('teampassApplication').jstreeForceRefresh === 1) {
+        if (do_refresh === true || (store.get('teampassApplication') !== undefined && store.get('teampassApplication').jstreeForceRefresh === 1)) {
+            // Force tree.php to bypass the session/user cache on this rebuild.
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.jstreeForceRefresh = 1;
+                }
+            );
+
             // Clear client-side tree cache on force refresh
             try {
                 localStorage.removeItem('tp_tree_version');
                 localStorage.removeItem('tp_tree_data');
             } catch(e) {}
-            $('#jstree').jstree(true).refresh();
 
-            // Wait for jstree refresh to complete before refreshing visible folders
-            if (node_to_select !== '') {
-                $('#jstree').one('refresh.jstree', function(e, data) {
-                    data.instance.select_node('#li_' + node_to_select);
-                    internalRefreshVisibleFolders(true);
-                });
-            } else {
-                $('#jstree').one('refresh.jstree', function() {
-                    internalRefreshVisibleFolders(true);
-                });
-            }
-        } else {
-            if (node_to_select !== '') {
-                $('#jstree').jstree('deselect_all');
-                $('#jstree').jstree('select_node', '#li_' + node_to_select);
-            }
-            // No jstree refresh needed, call immediately
-            internalRefreshVisibleFolders(true);
+            $('#jstree').one('refresh.jstree', function(e, data) {
+                const parsedFolderToSelect = parseInt(folderToSelect, 10);
+                if (!isNaN(parsedFolderToSelect) && data.instance.get_node('#li_' + parsedFolderToSelect)) {
+                    data.instance.deselect_all();
+                    data.instance.select_node('#li_' + parsedFolderToSelect);
+                } else {
+                    toastr.remove();
+                }
+
+                store.update(
+                    'teampassApplication',
+                    function(teampassApplication) {
+                        teampassApplication.jstreeForceRefresh = 0;
+                    }
+                );
+            });
+
+            $('#jstree').jstree(true).refresh();
+            return true;
         }
+
+        const parsedFolderToSelect = parseInt(folderToSelect, 10);
+        if (!isNaN(parsedFolderToSelect) && $('#jstree').jstree(true).get_node('#li_' + parsedFolderToSelect)) {
+            $('#jstree').jstree('deselect_all');
+            $('#jstree').jstree('select_node', '#li_' + parsedFolderToSelect);
+        } else {
+            toastr.remove();
+        }
+
+        return true;
     }
 
     /**
@@ -4921,6 +4935,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 icon_favorite = '',
                 item_flag = '',
                 item_grippy = '',
+                corruption_marker = '',
+                corruption_row_class = '',
                 visible_by_user = '';
 
             counter += 1;
@@ -4932,6 +4948,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             value.is_favorite = parseInt(value.is_favorite);
             value.is_result_of_search = parseInt(value.is_result_of_search);
             value.item_id = parseInt(value.item_id);
+            value.is_corrupted = parseInt(value.is_corrupted || 0);
             value.open_edit = parseInt(value.open_edit);
             value.rights = parseInt(value.rights);
             value.tree_id = parseInt(value.tree_id);
@@ -5026,21 +5043,27 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     description = '<span class="text-secondary small d-inline-block text-truncate">' + description + '</span>';
                 }
 
+                if (showCorruptedItemsInList === true && value.is_corrupted === 1) {
+                    corruption_row_class = ' tp-item-corrupted-danger';
+                    corruption_marker = '<i class="fa-solid fa-triangle-exclamation mr-1 infotip tp-item-corrupted-marker text-danger" title="<?php echo $lang->get('items_corrupted_marker_unreadable'); ?>"></i>';
+                }
+
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
+                    '<tr class="list-item-row' + corruption_row_class + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
                     '<td class="list-item-description px-3 py-0 align-middle d-flex">' +
                     '<span class="icon-container">' +
                     // Show user a grippy bar to move item
-                    (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-2 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
+                    (value.canMove === 1  ? '<i class="fa-solid fa-ellipsis-v mr-1 dragndrop"></i>' : '') + //&& value.is_result_of_search === 0
                     // Show user a ban icon if expired
-                    (value.expired === 1 ? '<i class="fa-regular fa-calendar-times mr-2 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
+                    (value.expired === 1 ? '<i class="fa-regular fa-calendar-times mr-1 text-warning infotip" title="<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>"></i>' : '') +
                     // Show user that Item is not accessible
-                    (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-2 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
+                    (value.rights === 10 ? '<i class="fa-regular fa-eye-slash fa-xs mr-1 text-primary infotip" title="<?php echo $lang->get('item_with_restricted_access'); ?>"></i>' : '') +
                     // Show user that password is badly encrypted
                     (value.pw_status === 'encryption_error' ? '<i class="fa-solid fa-exclamation-triangle fa-xs text-danger infotip mr-1" title="<?php echo $lang->get('pw_encryption_error'); ?>"></i>' : '') +
                     // Prepare item info
                     '</span>' +
-                    '<span class="list-item-clicktoshow d-inline-flex' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
+                    '<span class="list-item-clicktoshow d-inline-flex align-items-center' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
+                    corruption_marker +
                     // Show item fa_icon if set
                     (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
                     '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
@@ -5048,7 +5071,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     '</span>' +
                     '<span class="list-item-actions hidden">' +
                     (value.rights === 10 ?
-                        '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-2" title="<?php echo $lang->get('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="fa-regular fa-handshake fa-stack-1x fa-inverse"></i></span>' :
+                        '<span class="fa-stack fa-clickable fa-clickable-access-request pointer infotip mr-1" title="<?php echo $lang->get('need_access'); ?>"><i class="fa-solid fa-circle fa-stack-2x text-danger"></i><i class="fa-regular fa-handshake fa-stack-1x fa-inverse"></i></span>' :
                         pwd_error + icon_open + icon_all_can_modify + icon_login + icon_pwd + icon_link + icon_favorite + trash_link) +
                     '</span>' +
                     (value.folder !== undefined ?
@@ -5667,6 +5690,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // we have an error in the password : pwd_encryption_error
                     if (data.pwd_encryption_error === 'inconsistent_password') {
                         $('#card-item-pwd').after('<i class="fa-solid fa-bell text-orange fa-shake ml-3 delete-after-usage infotip" title="'+data.pwd_encryption_error_message+'"></i>');
+                    }
+
+                    $('#card-item-corrupted-warning')
+                        .addClass('hidden')
+                        .removeClass('alert-warning alert-danger')
+                        .html('');
+
+                    if (data.corruption_notice !== undefined && data.corruption_notice.display === true) {
+                        $('#card-item-corrupted-warning')
+                            .removeClass('hidden')
+                            .addClass(data.corruption_notice.severity === 'danger' ? 'alert-danger' : 'alert-warning')
+                            .html('<i class="fa-solid fa-triangle-exclamation mr-2"></i>' + data.corruption_notice.message);
                     }
 
                     // Show decryption errors for custom fields
@@ -7939,9 +7974,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             window.refreshVisibleItems();
         });
 
-        // WebSocket: Expose tree refresh function
-        window.refreshTree = function() {
-            $('#jstree').jstree('refresh');
+        // WebSocket: Expose tree refresh function without bypassing the real helper logic.
+        const tpRefreshTreeHandler = refreshTree;
+        window.refreshTree = function(node_to_select = '', do_refresh = true, refresh_visible_folders = true) {
+            return tpRefreshTreeHandler(node_to_select, do_refresh, refresh_visible_folders);
         };
 
         // WebSocket: Expose visible folders refresh function
@@ -7950,7 +7986,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         };
 
         $(document).on('teampass:folders:refresh', function() {
-            window.refreshTree();
+            const currentFolder = store.get('teampassApplication')
+                ? (store.get('teampassApplication').itemsListFolderId || store.get('teampassApplication').selectedFolder || '')
+                : '';
+            window.refreshTree(currentFolder, true, true);
         });
 
         // WebSocket: Handle role permission changes

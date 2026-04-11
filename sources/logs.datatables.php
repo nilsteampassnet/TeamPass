@@ -650,7 +650,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 /* FAILED AUTHENTICATION */
 } elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
     //Columns name
-    $aColumns = ['l.date', 'l.label', 'l.qui', 'l.field_1'];
+    $aColumns = ['l.date', 'l.label', 'l.field_1', 'l.qui'];
 
     // Ordering
     $orderColumn = $aColumns[0];
@@ -660,14 +660,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Filtering
     $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
+    if ($searchValue !== '') {
         $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
             $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
-    $sWhere->add('l.type IN %ls', ['failed_auth', 'user_connection']);
-    $sWhere->add('l.label IN %ls', ['password_is_not_correct', 'user_not_exists']);
+    $sWhere->add('l.type = %s', 'failed_auth');
+    $sWhere->add('l.label IN %ls', ['password_is_not_correct', 'user_not_exists', 'wrong_mfa_code', 'bad_duo_mfa', 'bruteforce_account_locked']);
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(
@@ -687,7 +687,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
 
     // Get the records
     $rows = DB::query($sql, ...$params);
-    $iFilteredTotal = DB::count(); 
+    $iFilteredTotal = DB::count();
 
     // Output
     if ($iTotal === '') {
@@ -702,18 +702,30 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput .= '[';
     }
     foreach ($rows as $record) {
-        $sOutput .= '[';
-        //col1
-        $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']).'", ';
-        //col2 - 3
-        if ($record['label'] === 'password_is_not_correct' || $record['label'] === 'user_not_exists') {
-            $sOutput .= '"'.$lang->get($record['label']).'", "'.$record['field_1'].'", ';
-        } else {
-            $sOutput .= '"'.$lang->get($record['label']).'", "", ';
+        $failedLoginLabel = (string) ($record['label'] ?? '');
+        $failedLoginUser = htmlspecialchars(stripslashes((string) ($record['field_1'] ?? '')), ENT_QUOTES);
+        $failedLoginIp = htmlspecialchars(stripslashes((string) ($record['who'] ?? '')), ENT_QUOTES);
+        $blacklistAction = '';
+
+        if ((int) ($session->get('user-admin') ?? 0) === 1 && teampassNormalizeIpv4Rule((string) ($record['who'] ?? '')) !== null) {
+            $blacklistAction = '<button type="button" class="btn btn-sm btn-outline-danger failed-auth-add-blacklist" data-ip="'
+                . $failedLoginIp
+                . '" title="'
+                . htmlspecialchars((string) $lang->get('network_security_add_ip_to_blacklist'), ENT_QUOTES)
+                . '"><i class="fa-solid fa-ban"></i></button>';
         }
 
-        //col3
-        $sOutput .= '"'.htmlspecialchars(stripslashes((string) $record['who']), ENT_QUOTES).'"';
+        $sOutput .= '[';
+        // col1
+        $sOutput .= json_encode(date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['auth_date']), JSON_UNESCAPED_UNICODE) . ', ';
+        // col2
+        $sOutput .= json_encode(htmlspecialchars((string) $lang->get($failedLoginLabel), ENT_QUOTES), JSON_UNESCAPED_UNICODE) . ', ';
+        // col3
+        $sOutput .= json_encode($failedLoginUser, JSON_UNESCAPED_UNICODE) . ', ';
+        // col4
+        $sOutput .= json_encode($failedLoginIp, JSON_UNESCAPED_UNICODE) . ', ';
+        // col5
+        $sOutput .= json_encode($blacklistAction, JSON_UNESCAPED_UNICODE);
         //Finish the line
         $sOutput .= '],';
     }

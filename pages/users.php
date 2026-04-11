@@ -513,10 +513,12 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                         <div class="form-group not-for-admin">
                             <label for="form-forbid"><?php echo $lang->get('special'); ?></label>
                         </div>
+                        <?php if ((int) $session->get('user-admin') === 1) : ?>
                         <div class="form-group not-for-admin">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-root-folder">
                             <label class="form-check-label mr-2" for="form-create-root-folder"><?php echo $lang->get('can_create_root_folder'); ?></label>
                         </div>
+                        <?php endif; ?>
                         <div class="form-group not-for-admin">
                             <input type="checkbox" class="form-check-input form-control flat-blue track-change" id="form-create-personal-folder">
                             <label class="form-check-label mr-2" for="form-create-personal-folder"><?php echo $lang->get('enable_personal_folder_for_this_user'); ?></label>

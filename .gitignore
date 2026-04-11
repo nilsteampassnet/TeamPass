@@ -55,6 +55,7 @@ tests/_output/
 tests/_support/_generated/
 /webfonts
 *:Zone.Identifier
-/.venv/*
+.venv/
+mempalace.yaml
 entities.json
-mempalace*
+/readmeFiles/*

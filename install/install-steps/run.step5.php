@@ -485,16 +485,6 @@ class DatabaseInstaller
         // include constants
         require_once __DIR__.'/../../includes/config/include.php';
 
-        // add by default settings
-        $backupScriptPasskeyClear = GenerateCryptKeyForInstall(40, false, true, true, false, true);
-        $backupScriptPasskeyStorage = $backupScriptPasskeyClear;
-        $backupScriptPasskeyIsEncrypted = 0;
-        $backupScriptPasskeyCipher = cryptionForInstall($backupScriptPasskeyClear, '', 'encrypt');
-        if (isset($backupScriptPasskeyCipher['string']) && is_string($backupScriptPasskeyCipher['string']) && $backupScriptPasskeyCipher['string'] !== '') {
-            $backupScriptPasskeyStorage = $backupScriptPasskeyCipher['string'];
-            $backupScriptPasskeyIsEncrypted = 1;
-        }
-
         $aMiscVal = array(
             array('admin', 'max_latest_items', '10'),
             array('admin', 'enable_favourites', '1'),
@@ -614,7 +604,7 @@ class DatabaseInstaller
             array('admin', 'secure_display_image', '1'),
             array('admin', 'upload_zero_byte_file', '0'),
             array('admin', 'upload_all_extensions_file', '0'),
-            array('admin', 'bck_script_passkey', $backupScriptPasskeyStorage, $backupScriptPasskeyIsEncrypted),
+            array('admin', 'bck_script_passkey', '', '1'),
             array('admin', 'admin_2fa_required', '1'),
             array('admin', 'password_overview_delay', '4'),
             array('admin', 'copy_to_clipboard_small_icons', '1'),
@@ -661,6 +651,7 @@ class DatabaseInstaller
             array('admin', 'purge_temporary_files_task', ''),
             array('admin', 'rebuild_config_file', ''),
             array('admin', 'reload_cache_table_task', ''),
+            array('admin', 'show_corrupted_items_in_list', '0'),
             array('admin', 'maximum_session_expiration_time', '60'),
             array('admin', 'items_ops_job_frequency', '1'),
             array('admin', 'enable_refresh_task_last_execution', '1'),
@@ -844,6 +835,7 @@ class DatabaseInstaller
             `keys_recovery_time` VARCHAR(500) NULL DEFAULT NULL,
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
+            `show_subfolders` tinyint(1) NOT NULL DEFAULT '0',
             `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             `phpseclibv3_migration_completed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Forced phpseclib v3 migration status (0=not done, 1=completed)',
             `phpseclibv3_migration_task_id` INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task',
@@ -1515,6 +1507,39 @@ class DatabaseInstaller
             `treated_objects` varchar(20) DEFAULT NULL,
             PRIMARY KEY (`increment_id`),
             INDEX idx_created_at (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table items_corruption
+    private function items_corruption()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "items_corruption` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `reason_code` VARCHAR(50) NOT NULL,
+            `severity` VARCHAR(20) NOT NULL,
+            `status` VARCHAR(50) NOT NULL,
+            `action_recommendation` VARCHAR(50) NOT NULL,
+            `user_notice_mode` VARCHAR(20) NOT NULL DEFAULT 'none',
+            `is_personal` TINYINT(1) NOT NULL DEFAULT 0,
+            `len_stored` INT(12) NOT NULL DEFAULT 0,
+            `len_actual` INT(12) NOT NULL DEFAULT 0,
+            `exception_message` TEXT NULL,
+            `first_detected_at` INT(12) NOT NULL,
+            `last_detected_at` INT(12) NOT NULL,
+            `last_scan_at` INT(12) NOT NULL,
+            `confirmed_at` INT(12) NULL DEFAULT NULL,
+            `resolved_at` INT(12) NULL DEFAULT NULL,
+            `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+            `updated_at` INT(12) NOT NULL,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item_id` (`item_id`),
+            KEY `idx_reason_status` (`reason_code`, `status`),
+            KEY `idx_is_active` (`is_active`),
+            KEY `idx_last_detected_at` (`last_detected_at`),
+            KEY `idx_is_personal` (`is_personal`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

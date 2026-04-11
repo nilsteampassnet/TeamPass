@@ -94,7 +94,7 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
     }
 
     $tpSharekeys = DB::query(
-        'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.pw, i.pw_len, i.created_at, i.updated_at,
+        'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.perso, i.pw, i.pw_len, i.created_at, i.updated_at,
                 (SELECT MAX(l.date) FROM ' . prefixTable('log_items') . ' l
                  WHERE l.id_item = sk.object_id AND l.action = \'at_password_shown\') AS last_shown
          FROM ' . prefixTable('sharekeys_items') . ' sk
@@ -128,6 +128,8 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
                     'len_actual' => 0,
                     'created_at_human' => $createdAtHuman,
                     'updated_at_human' => $updatedAtHuman,
+                    'is_personal' => (int) ($row['perso'] ?? 0),
+                    'scope' => (int) ($row['perso'] ?? 0) === 1 ? 'personal' : 'shared',
                     'last_shown_human' => $lastShownHuman,
                 );
                 continue;
@@ -143,6 +145,8 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
                     'len_actual' => 0,
                     'created_at_human' => $createdAtHuman,
                     'updated_at_human' => $updatedAtHuman,
+                    'is_personal' => (int) ($row['perso'] ?? 0),
+                    'scope' => (int) ($row['perso'] ?? 0) === 1 ? 'personal' : 'shared',
                     'last_shown_human' => $lastShownHuman,
                 );
                 continue;
@@ -169,6 +173,8 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
                     'len_actual' => $actualLen,
                     'created_at_human' => $createdAtHuman,
                     'updated_at_human' => $updatedAtHuman,
+                    'is_personal' => (int) ($row['perso'] ?? 0),
+                    'scope' => (int) ($row['perso'] ?? 0) === 1 ? 'personal' : 'shared',
                     'last_shown_human' => $lastShownHuman,
                 );
             } else {

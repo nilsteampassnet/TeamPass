@@ -1441,24 +1441,18 @@ logItems(
                 );
             }
 
-                        // Corrupted items (last scan stored in session - scan is on-demand)
-            $corruptedItemsMeta = array(
-                'has_result' => false,
-                'count' => 0,
-                'last_scan_at' => 0,
-                'last_scan_at_human' => '',
-                'truncated' => false,
-                'limit' => 0,
-            );
+                        // Corrupted items (last persisted scan)
+            $corruptedItemsMeta = teampassCorruptedItemsGetSummary();
 
-            $sessionMeta = $session->get('health-corrupted-items-meta');
-            if (is_array($sessionMeta) === true) {
-                $corruptedItemsMeta['has_result'] = true;
-                $corruptedItemsMeta['count'] = (int) ($sessionMeta['count'] ?? 0);
-                $corruptedItemsMeta['last_scan_at'] = (int) ($sessionMeta['last_scan_at'] ?? 0);
-                $corruptedItemsMeta['last_scan_at_human'] = (string) ($sessionMeta['last_scan_at_human'] ?? '');
-                $corruptedItemsMeta['truncated'] = (bool) ($sessionMeta['truncated'] ?? false);
-                $corruptedItemsMeta['limit'] = (int) ($sessionMeta['limit'] ?? 0);
+            if ((bool) ($corruptedItemsMeta['has_result'] ?? false) === false) {
+                $sessionMeta = $session->get('health-corrupted-items-meta');
+                if (is_array($sessionMeta) === true) {
+                    $corruptedItemsMeta = array_replace_recursive(
+                        teampassCorruptedItemsSummaryDefault(),
+                        $sessionMeta
+                    );
+                    $corruptedItemsMeta['has_result'] = true;
+                }
             }
 
             $report = array(
@@ -1590,59 +1584,38 @@ logItems(
                 break;
             }
 
-            $scriptPath = __DIR__ . '/../scripts/scan_corrupted_items.php';
-            if (file_exists($scriptPath) === false) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => sprintf($lang->get('health_corrupted_script_missing_fmt'), $scriptPath),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            require_once $scriptPath;
-
-            if (function_exists('tpScanCorruptedItemsViaTpUser') === false) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('health_corrupted_script_invalid'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
+            // RSA decryption of every item sharekey can exceed the default execution limit.
+            // This pattern is consistent with items.queries.php, ldap.queries.php, etc.
+            set_time_limit(0);
 
             $limit = 2000;
             try {
-                /** @var array $scanResult */
-                $scanResult = tpScanCorruptedItemsViaTpUser($limit);
+                $scanPayload = teampassCorruptedItemsRunScan($limit);
+                $summary = is_array($scanPayload['summary'] ?? null) === true ? $scanPayload['summary'] : teampassCorruptedItemsSummaryDefault();
+                $scanResult = is_array($scanPayload['scan_result'] ?? null) === true ? $scanPayload['scan_result'] : [];
 
-                $meta = array(
-                    'count' => (int) ($scanResult['count'] ?? 0),
-                    'last_scan_at' => time(),
-                    'last_scan_at_human' => date('Y-m-d H:i:s'),
-                    'truncated' => (bool) ($scanResult['truncated'] ?? false),
-                    'limit' => (int) ($scanResult['limit'] ?? $limit),
-                );
-
-                $session->set('health-corrupted-items-meta', $meta);
+                $session->set('health-corrupted-items-meta', $summary);
                 $session->set('health-corrupted-items-list', (array) ($scanResult['items'] ?? array()));
 
                 echo prepareExchangedData(
                     array(
                         'error' => false,
-                        'result' => $meta,
+                        'result' => $summary,
                     ),
                     'encode'
                 );
             } catch (Exception $e) {
+                $message = $e->getMessage();
+                if ($message === 'Corrupted items scan script is missing.') {
+                    $message = sprintf($lang->get('health_corrupted_script_missing_fmt'), __DIR__ . '/../scripts/scan_corrupted_items.php');
+                } elseif ($message === 'Corrupted items scan script is invalid.') {
+                    $message = $lang->get('health_corrupted_script_invalid');
+                }
+
                 echo prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $e->getMessage(),
+                        'message' => $message,
                     ),
                     'encode'
                 );
@@ -1662,18 +1635,23 @@ logItems(
                 break;
             }
 
-            $meta = $session->get('health-corrupted-items-meta');
-            $items = $session->get('health-corrupted-items-list');
+            $meta = teampassCorruptedItemsGetSummary();
+            $items = teampassCorruptedItemsGetItems(true);
 
-            if (is_array($meta) === false) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('health_corrupted_no_result'),
-                    ),
-                    'encode'
-                );
-                break;
+            if ((bool) ($meta['has_result'] ?? false) === false) {
+                $meta = $session->get('health-corrupted-items-meta');
+                $items = $session->get('health-corrupted-items-list');
+
+                if (is_array($meta) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('health_corrupted_no_result'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
             }
 
             echo prepareExchangedData(

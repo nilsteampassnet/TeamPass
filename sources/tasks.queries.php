@@ -226,8 +226,8 @@ function loadLastTasksExec(string $datetimeFormat, int $showTaskExecution): stri
 function loadLastTasksExec_getBadge(string $processLabel): string
 {
     $existingTasks = [
-        'do_maintenance - clean-orphan-objects' => [
-            'db' => 'do_maintenance - clean-orphan-objects',
+        'do_maintenance - items-integrity-scan' => [
+            'db' => 'do_maintenance - items-integrity-scan',
             'task' => 'clean_orphan_objects_task',
         ],
         'do_maintenance - purge-old-files' => [

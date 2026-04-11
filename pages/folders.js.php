@@ -446,7 +446,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         const complexityVal = value.folderComplexity !== '' && value.folderComplexity.value !== undefined
             ? value.folderComplexity.value : ''
-        let row = '<tr data-id="' + value.id + '" data-level="' + value.level + '" data-complexity="' + complexityVal + '" class="' + parentsClass + '"><td>'
+        let row = '<tr data-id="' + value.id + '" data-parent-id="' + value.parentId + '" data-level="' + value.level + '" data-complexity="' + complexityVal + '" class="' + parentsClass + '"><td>'
 
         // Column 1 — checkbox + collapse icon
         if ((value.parentId === 0 && (userIsAdmin === 1 || userCanCreateRootFolder === 1)) || value.parentId !== 0) {
@@ -528,9 +528,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#table-folders tbody').append(rowHtml)
         }
 
-        // Add a collapse icon to the parent row if it had no children before
+        // Add a collapse icon to the parent row if it had no children before.
+        // iCheck wraps the checkbox in a div.icheckbox_flat-blue, so insert after
+        // the wrapper (not the hidden input) to avoid visual overlap.
         if ($parentRow.length > 0 && $parentRow.find('.icon-collapse').length === 0) {
-            $parentRow.find('input.checkbox-folder').after(
+            const $cb = $parentRow.find('input.checkbox-folder')
+            const $ichecWrapper = $cb.closest('.icheckbox_flat-blue')
+            const $insertAfter = $ichecWrapper.length > 0 ? $ichecWrapper : $cb
+            $insertAfter.after(
                 '<i class="fas fa-folder-minus infotip ml-2 pointer icon-collapse" data-id="' + rowData.parentId + '" title="<?php echo $lang->get('collapse'); ?>"></i>'
             )
         }
@@ -948,19 +953,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     })
 
 
-    // Manage collapse/expend
+    // Manage collapse/expand
     $(document).on('click', '.icon-collapse', function() {
+        const folderId = $(this).data('id')
         if ($(this).hasClass('fa-folder-minus') === true) {
+            // Collapse: hide all descendants (they all carry the pX ancestor class)
             $(this)
                 .removeClass('fa-folder-minus')
                 .addClass('fa-folder-plus text-primary');
-
-            $('.p' + $(this).data('id')).addClass('hidden');
+            $('.p' + folderId).addClass('hidden');
         } else {
+            // Expand: only reveal direct children; deeper rows stay hidden per their own collapsed state
             $(this)
-                .removeClass('fa-folder-plus  text-primary')
+                .removeClass('fa-folder-plus text-primary')
                 .addClass('fa-folder-minus');
-            $('.p' + $(this).data('id')).removeClass('hidden');
+            $('#table-folders tbody tr[data-parent-id="' + folderId + '"]').removeClass('hidden');
         }
     });
 

@@ -357,3 +357,44 @@
     margin-top: 15px;
     margin-bottom: 15px;
 }
+
+#table-failed th:last-child,
+#table-failed td:last-child {
+    white-space: nowrap;
+    width: 1%;
+    min-width: 96px;
+    text-align: center;
+}
+
+#table-failed .failed-auth-add-blacklist {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+}
+
+#table_teampass_items_list.tp-show-corrupted-items .tp-item-corrupted-marker {
+    display: inline-block;
+}
+
+#table_teampass_items_list .tp-item-corrupted-marker {
+    display: none;
+}
+
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-warning .list-item-row-description,
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-warning .list-item-row-description-extend {
+    color: #b26a00;
+}
+
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-warning .list-item-description {
+    background-color: rgba(255, 193, 7, 0.08);
+}
+
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-danger .list-item-row-description,
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-danger .list-item-row-description-extend {
+    color: #b91c1c;
+}
+
+#table_teampass_items_list.tp-show-corrupted-items tr.tp-item-corrupted-danger .list-item-description {
+    background-color: rgba(220, 53, 69, 0.08);
+}

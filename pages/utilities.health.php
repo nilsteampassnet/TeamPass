@@ -283,6 +283,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             </div>
                                             <div class="col-sm-6">
                                                 <div class="info-box">
+                                                    <span class="info-box-icon bg-danger"><i class="fas fa-bug"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text"><?php echo $lang->get('health_corrupted_items'); ?></span>
+                                                        <span class="info-box-number" id="health-overview-corrupted-items">0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                <div class="info-box">
                                                     <span class="info-box-icon bg-success"><i class="fas fa-archive"></i></span>
                                                     <div class="info-box-content">
                                                         <span class="info-box-text"><?php echo $lang->get('health_backup_status'); ?></span>

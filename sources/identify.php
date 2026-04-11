@@ -249,7 +249,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $session->set('user-duo_data','');
         if($duo_data_dec === false) {
             // Add failed authentication log
-            addFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer());
+            addFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer(), $SETTINGS);
 
             echo prepareExchangedData(
                 [
@@ -308,7 +308,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         if (empty($userInitialData['skip_anti_bruteforce'])) {
 
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
         }
 
         echo prepareExchangedData(
@@ -343,7 +343,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
 
         // Anti-bruteforce log
-        addFailedAuthentication($username, getClientIpServer());
+        addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
 
         echo prepareExchangedData(
             $userLdap['array'],
@@ -405,7 +405,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
 
         // Add failed authentication log
         if ($userOauth2['no_log_event'] !== true) {
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
         }
 
         // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
@@ -442,7 +442,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         // Log failure (wrong password on existing account) into teampass_log_system
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
-        addFailedAuthentication($username, getClientIpServer());
+        addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
         echo prepareExchangedData(
             [
                 'value' => '',
@@ -482,7 +482,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         if ($userMfa['error'] === true) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
 
             echo prepareExchangedData(
                 [
@@ -494,9 +494,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             );
             return false;
         } elseif ($userMfa['mfaQRCodeInfos'] === true) {
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
-
             // Case where user has initiated Google Auth
             // Return QR code
             echo prepareExchangedData(
@@ -513,9 +510,6 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             );
             return false;
         } elseif ($userMfa['duo_url_ready'] === true) {
-            // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer());
-
             // Case where user has initiated Duo Auth
             // Return the DUO redirect URL
             echo prepareExchangedData(
@@ -1319,6 +1313,16 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         ];
     }
 
+    // User must provide their old LDAP password via the re-encryption modal.
+    // Allow login to proceed with an empty private key so the modal is displayed.
+    if ($userInfo['special'] === 'recrypt-private-key') {
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => '',
+            'update_keys_in_db' => [],
+        ];
+    }
+
     // Don't perform this in case of special login action
     if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ad') {
         return [
@@ -1848,16 +1852,18 @@ function finalizeAuthentication(
 
     if ($passwordNeedsSync) {
         // Try transparent recovery to re-encrypt private key with new password
-        $recoverySuccess = handleExternalPasswordChange(
+        $recoveryResult = handleExternalPasswordChange(
             (int) $userInfo['id'],
             $passwordClear,
             $userInfo,
             $SETTINGS
         );
 
-        // Only update pw hash if private key was successfully re-encrypted
-        // This ensures the mismatch remains detectable on next login if recovery failed
-        if ($recoverySuccess) {
+        // Update pw hash only on full success.
+        // For 'no_recovery_data': pw was already updated inside handleExternalPasswordChange()
+        //   so the re-encryption modal can verify the new LDAP password against the stored hash.
+        // For 'recovery_failed': leave pw unchanged so the mismatch stays detectable.
+        if ($recoveryResult['success'] === true) {
             DB::update(
                 prefixTable('users'),
                 [
@@ -2669,7 +2675,7 @@ function identifyDoInitialChecks(
         $checks->isTooManyPasswordAttempts($username, getClientIpServer());
     } catch (Exception $e) {
         $session->set('userOauth2Info', '');
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        logEvents($SETTINGS, 'failed_auth', 'bruteforce_account_locked', '', stripslashes($username), stripslashes($username));
         return [
             'error' => true,
             'skip_anti_bruteforce' => true,
@@ -3393,15 +3399,43 @@ function identifyDoAzureChecks(
 }
 
 /**
+ * Return an integer admin setting while preserving backward-compatible defaults.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ * @param string               $key      Setting key to look up.
+ * @param int                  $default  Value returned when key is missing or empty.
+ * @param int                  $minimum  Minimum accepted value (clamped via max()).
+ *
+ * @return int
+ */
+function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
+{
+    if (array_key_exists($key, $settings) === false) {
+        return $default;
+    }
+
+    $rawValue = trim((string) $settings[$key]);
+    if ($rawValue == '') {
+        return $default;
+    }
+
+    return max($minimum, (int) $rawValue);
+}
+
+/**
  * Add a failed authentication attempt to the database.
  * If the number of failed attempts exceeds the limit, a lock is triggered.
- * 
- * @param string $source - The source of the failed attempt (login or remote_ip).
- * @param string $value  - The value for this source (username or IP address).
- * @param int    $limit  - The failure attempt limit after which the account/IP
- *                         will be locked.
+ *
+ * @param string $source              Source of the failed attempt (login or remote_ip).
+ * @param string $value               Value for this source (username or IP address).
+ * @param int    $limit               Failure attempt limit after which the source is locked.
+ * @param int    $lockDurationMinutes Fixed lock duration in minutes.
  */
-function handleFailedAttempts($source, $value, $limit) {
+function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
+{
+    if ($limit <= 0 || trim($value) === '') {
+        return;
+    }
     // Count failed attempts from this source
     $count = DB::queryFirstField(
         'SELECT COUNT(*)
@@ -3416,13 +3450,13 @@ function handleFailedAttempts($source, $value, $limit) {
 
     // Calculate unlock time if number of attempts exceeds limit
     $unlock_at = $count >= $limit
-        ? date('Y-m-d H:i:s', time() + (($count - $limit + 1) * 600))
-        : NULL;
+        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
+        : null;
 
     // Unlock account one time code
     $unlock_code = ($count >= $limit && $source === 'login')
         ? generateQuickPassword(30, false)
-        : NULL;
+        : null;
 
     // Insert the new failure into the database
     DB::insert(
@@ -3560,18 +3594,23 @@ function notifyAdminsAboutLockedAccount(
 
 /**
  * Add failed authentication attempts for both user login and IP address.
- * This function will check the number of attempts for both the username and IP,
- * and will trigger a lock if the number exceeds the defined limits.
- * It also deletes logs older than 24 hours.
- * 
- * @param string $username - The username that was attempted to login.
- * @param string $ip       - The IP address from which the login attempt was made.
+ * This function checks the number of attempts for both the username and IP,
+ * and triggers a lock if the number exceeds the configured limits.
+ * Old technical entries are purged after 24 hours once unlocked.
+ *
+ * @param array<string, mixed> $settings Settings array.
  */
-function addFailedAuthentication($username, $ip) {
-    $user_limit = 10;
-    $ip_limit = 30;
+function addFailedAuthentication(string $username, string $ip, array $settings): void
+{
+    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
+    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
+    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
 
-    // Remove old logs (more than 24 hours)
+    if ($userLimit <= 0 && $ipLimit <= 0) {
+        return;
+    }
+
+    // Remove old logs (more than 24 hours) once the related lock is over.
     DB::delete(
         prefixTable('auth_failures'),
         'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
@@ -3579,7 +3618,6 @@ function addFailedAuthentication($username, $ip) {
         date('Y-m-d H:i:s', time())
     );
 
-    // Add attempts in database
-    handleFailedAttempts('login', $username, $user_limit);
-    handleFailedAttempts('remote_ip', $ip, $ip_limit);
+    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
+    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
 }

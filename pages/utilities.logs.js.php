@@ -244,9 +244,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'info': true,
             'processing': false,
             'serverSide': true,
-            'responsive': true,
+            'responsive': false,
             'stateSave': true,
-            'autoWidth': true,
+            'autoWidth': false,
+            'scrollX': true,
             'ajax': {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/logs.datatables.php?action=failed_auth',
                 /*data: function(d) {
@@ -255,11 +256,22 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             },
             'columnDefs': [
                 {
-                    // Label + User
-                    'targets': [1, 2],
+                    // Label + User + IP
+                    'targets': [1, 2, 3],
                     'render': function (data, type) {
                         if (type !== 'display') { return data; }
                         return decodeHtmlEntities(data);
+                    }
+                },
+                {
+                    'targets': 4,
+                    'orderable': false,
+                    'searchable': false,
+                    'className': 'text-center',
+                    'width': '96px',
+                    'render': function (data, type) {
+                        if (type !== 'display') { return data; }
+                        return data;
                     }
                 }
             ],
@@ -692,6 +704,74 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
             );
         }
+    });
+
+    $(document).on('click', '.failed-auth-add-blacklist', function(e) {
+        e.preventDefault();
+
+        const $button = $(this);
+        const ip = ($button.data('ip') || '').toString().trim();
+        if (ip === '') {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('network_security_invalid_rule'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+
+        $button.prop('disabled', true);
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+        $.post(
+            'sources/admin.queries.php',
+            {
+                type: 'network_blacklist_ip',
+                data: prepareExchangedData(JSON.stringify({ ip: ip }), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                let data;
+                try {
+                    data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>');
+                } catch (error) {
+                    data = {
+                        error: true,
+                        message: '<?php echo $lang->get('server_answer_error'); ?>'
+                    };
+                }
+
+                $button.prop('disabled', false);
+                toastr.remove();
+
+                if (data.error !== false) {
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+
+                toastr.success(
+                    '<?php echo $lang->get('network_security_add_ip_to_blacklist_success'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+
+                if (typeof oTableFailed !== 'undefined' && oTableFailed !== null) {
+                    oTableFailed.api().ajax.reload(null, false);
+                }
+            }
+        );
     });
 
     $(document).ready(function() {

@@ -35,33 +35,23 @@ declare(strict_types=1);
  * (manual UI + scheduled/background tasks).
  */
 
-if (!function_exists('tpCreateDatabaseBackup')) {
-    /**
-     * Create a Teampass database backup file (optionally encrypted) in files folder.
-     *
-     * @param array  $SETTINGS      Teampass settings array (must include path_to_files_folder)
-     * @param string $encryptionKey Encryption key (Defuse). If empty => no encryption
-     * @param array  $options       Optional:
-     *                              - output_dir (string) default: $SETTINGS['path_to_files_folder']
-     *                              - filename_prefix (string) default: '' (ex: 'scheduled-')
-     *                              - chunk_rows (int) default: 1000
-     *                              - flush_every_inserts (int) default: 200
-     *                              - include_tables (array<string>) default: [] (empty => all)
-     *                              - exclude_tables (array<string>) default: [] (empty => none)
-     * @return array
-     * @psalm-return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string}
-     */
-    function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', array $options = []): array
-    {
-        // Ensure required dependencies are loaded
-        $mainFunctionsPath = __DIR__ . '/main.functions.php';
-        if ((!function_exists('GenerateCryptKey') || !function_exists('prefixTable')) && is_file($mainFunctionsPath)) {
-            require_once $mainFunctionsPath;
-        }
-        if (function_exists('loadClasses') && !class_exists('DB')) {
-            loadClasses('DB');
-        }
-
+/**
+ * Create a Teampass database backup file (optionally encrypted) in files folder.
+ *
+ * @param array  $SETTINGS      Teampass settings array (must include path_to_files_folder)
+ * @param string $encryptionKey Encryption key (Defuse). If empty => no encryption
+ * @param array  $options       Optional:
+ *                              - output_dir (string) default: $SETTINGS['path_to_files_folder']
+ *                              - filename_prefix (string) default: '' (ex: 'scheduled-')
+ *                              - chunk_rows (int) default: 1000
+ *                              - flush_every_inserts (int) default: 200
+ *                              - include_tables (array<string>) default: [] (empty => all)
+ *                              - exclude_tables (array<string>) default: [] (empty => none)
+ * @return array
+ * @psalm-return array{success: bool, filename: string, filepath: string, encrypted: bool, size_bytes: int, message: string}
+ */
+function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', array $options = []): array
+{
         // Enable maintenance mode for the whole backup operation, then restore previous value at the end.
         // This is best-effort: a failure to toggle maintenance must not break the backup itself.
         /** @scrutinizer ignore-unused */
@@ -143,20 +133,12 @@ if (!function_exists('tpCreateDatabaseBackup')) {
         }
 
         // Generate filename
-        $token = function_exists('GenerateCryptKey')
-            ? GenerateCryptKey(20, false, true, true, false, true)
-            : bin2hex(random_bytes(10));
+        $token = GenerateCryptKey(20, false, true, true, false, true);
 
         // Schema level token in filename (used for compatibility checks during migrations)
-$schemaLevel = '';
-if (defined('UPGRADE_MIN_DATE')) {
-    $schemaLevel = (string) UPGRADE_MIN_DATE;
-}
-if ($schemaLevel !== '' && preg_match('/^\d+$/', $schemaLevel) !== 1) {
-    $schemaLevel = '';
-}
-$schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
-$filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
+        $schemaLevel = tpGetSchemaLevel();
+        $schemaSuffix = ($schemaLevel !== '') ? ('-sl' . $schemaLevel) : '';
+        $filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
         $filepath = rtrim($outputDir, '/') . '/' . $filename;
 
         $handle = @fopen($filepath, 'w+');
@@ -368,60 +350,45 @@ $filename = $prefix . time() . '-' . $token . $schemaSuffix . '.sql';
             'size_bytes' => (int) $size,
             'message' => '',
         ];
-    }
 }
 
 
-if (function_exists('tpBackupScriptPasskeyIsClear') === false) {
-    /**
-     * Check whether the provided value matches the clear backup passkey format.
-     */
-    function tpBackupScriptPasskeyIsClear(string $value): bool
-    {
-        return $value !== '' && preg_match('/^[A-Za-z0-9]{40}$/', $value) === 1;
+/**
+ * Check whether the provided value matches the clear backup passkey format.
+ */
+function tpBackupScriptPasskeyIsClear(string $value, int $maxLength = 0): bool
+{
+    $lengths = [40];
+    if ($maxLength > 0 && $maxLength !== 40) {
+        $lengths[] = $maxLength;
     }
-}
-
-if (function_exists('tpGenerateBackupScriptPasskey') === false) {
-    /**
-     * Generate a clear backup script passkey.
-     */
-    function tpGenerateBackupScriptPasskey(): string
-    {
-        if (function_exists('GenerateCryptKey')) {
-            return GenerateCryptKey(40, false, true, true, false, true);
+    foreach ($lengths as $len) {
+        if (preg_match('/^[A-Za-z0-9]{' . $len . '}$/', $value) === 1) {
+            return true;
         }
-
-        $alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        $maxIndex = strlen($alphabet) - 1;
-        $key = '';
-
-        for ($i = 0; $i < 40; $i++) {
-            try {
-                $key .= $alphabet[random_int(0, $maxIndex)];
-            } catch (Throwable $e) {
-                $key .= $alphabet[mt_rand(0, $maxIndex)];
-            }
-        }
-
-        return $key;
     }
+    return false;
 }
 
-if (function_exists('tpGetBackupScriptPasskeyArchiveSettingName') === false) {
-    function tpGetBackupScriptPasskeyArchiveSettingName(): string
-    {
-        return 'bck_script_passkey_restore_candidates';
-    }
+/**
+ * Generate a clear backup script passkey.
+ */
+function tpGenerateBackupScriptPasskey(): string
+{
+    return GenerateCryptKey(40, false, true, true, false, true);
 }
 
-if (function_exists('tpNormalizeBackupScriptPasskeyCandidates') === false) {
-    /**
-     * @param array<int|string, mixed> $candidates
-     * @return array<int, string>
-     */
-    function tpNormalizeBackupScriptPasskeyCandidates(array $candidates): array
-    {
+function tpGetBackupScriptPasskeyArchiveSettingName(): string
+{
+    return 'bck_script_passkey_restore_candidates';
+}
+
+/**
+ * @param array<int|string, mixed> $candidates
+ * @return array<int, string>
+ */
+function tpNormalizeBackupScriptPasskeyCandidates(array $candidates): array
+{
         $normalized = [];
         foreach ($candidates as $candidate) {
             if (!is_scalar($candidate)) {
@@ -439,17 +406,15 @@ if (function_exists('tpNormalizeBackupScriptPasskeyCandidates') === false) {
         }
 
         return $normalized;
-    }
 }
 
-if (function_exists('tpLoadBackupScriptPasskeyRestoreCandidates') === false) {
-    /**
-     * Load archived restore candidates for backward compatibility with historical backups.
-     *
-     * @return array<int, string>
-     */
-    function tpLoadBackupScriptPasskeyRestoreCandidates(array &$SETTINGS): array
-    {
+/**
+ * Load archived restore candidates for backward compatibility with historical backups.
+ *
+ * @return array<int, string>
+ */
+function tpLoadBackupScriptPasskeyRestoreCandidates(array &$SETTINGS): array
+{
         $settingName = tpGetBackupScriptPasskeyArchiveSettingName();
         $storedPayload = isset($SETTINGS[$settingName]) ? (string) $SETTINGS[$settingName] : '';
 
@@ -487,15 +452,13 @@ if (function_exists('tpLoadBackupScriptPasskeyRestoreCandidates') === false) {
         }
 
         return tpNormalizeBackupScriptPasskeyCandidates([$decodedPayload]);
-    }
 }
 
-if (function_exists('tpStoreBackupScriptPasskeyRestoreCandidates') === false) {
-    /**
-     * Persist archived restore candidates as an encrypted JSON payload.
-     */
-    function tpStoreBackupScriptPasskeyRestoreCandidates(array $candidates, array &$SETTINGS): bool
-    {
+/**
+ * Persist archived restore candidates as an encrypted JSON payload.
+ */
+function tpStoreBackupScriptPasskeyRestoreCandidates(array $candidates, array &$SETTINGS): bool
+{
         $settingName = tpGetBackupScriptPasskeyArchiveSettingName();
         $normalized = tpNormalizeBackupScriptPasskeyCandidates($candidates);
 
@@ -575,15 +538,13 @@ if (function_exists('tpStoreBackupScriptPasskeyRestoreCandidates') === false) {
         }
 
         return true;
-    }
 }
 
-if (function_exists('tpArchiveBackupScriptPasskeyCandidate') === false) {
-    /**
-     * Store a restore candidate if it is not already archived.
-     */
-    function tpArchiveBackupScriptPasskeyCandidate(string $candidate, array &$SETTINGS): bool
-    {
+/**
+ * Store a restore candidate if it is not already archived.
+ */
+function tpArchiveBackupScriptPasskeyCandidate(string $candidate, array &$SETTINGS): bool
+{
         $candidate = trim($candidate);
         if ($candidate === '') {
             return false;
@@ -596,15 +557,13 @@ if (function_exists('tpArchiveBackupScriptPasskeyCandidate') === false) {
 
         $candidates[] = $candidate;
         return tpStoreBackupScriptPasskeyRestoreCandidates($candidates, $SETTINGS);
-    }
 }
 
-if (function_exists('tpArchiveCurrentBackupScriptPasskeyState') === false) {
-    /**
-     * Archive the current backup passkey state so historical scheduled backups remain restorable.
-     */
-    function tpArchiveCurrentBackupScriptPasskeyState(array &$SETTINGS): void
-    {
+/**
+ * Archive the current backup passkey state so historical scheduled backups remain restorable.
+ */
+function tpArchiveCurrentBackupScriptPasskeyState(array &$SETTINGS): void
+{
         $storedValue = isset($SETTINGS['bck_script_passkey']) ? (string) $SETTINGS['bck_script_passkey'] : '';
         if ($storedValue !== '') {
             tpArchiveBackupScriptPasskeyCandidate($storedValue, $SETTINGS);
@@ -614,17 +573,15 @@ if (function_exists('tpArchiveCurrentBackupScriptPasskeyState') === false) {
         if (!empty($resolved['success']) && !empty($resolved['clear_key'])) {
             tpArchiveBackupScriptPasskeyCandidate((string) $resolved['clear_key'], $SETTINGS);
         }
-    }
 }
 
-if (function_exists('tpStoreBackupScriptPasskey') === false) {
-    /**
-     * Store the backup script passkey in teampass_misc as an encrypted admin setting.
-     *
-     * @return array{success: bool, clear_key: string, encrypted_key: string, message_code: string}
-     */
-    function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $archiveCurrent = true): array
-    {
+/**
+ * Store the backup script passkey in teampass_misc as an encrypted admin setting.
+ *
+ * @return array{success: bool, clear_key: string, encrypted_key: string, message_code: string}
+ */
+function tpStoreBackupScriptPasskey(string $clearKey, array &$SETTINGS, bool $archiveCurrent = true): array
+{
         if (!tpBackupScriptPasskeyIsClear($clearKey)) {
             return [
                 'success' => false,
@@ -735,24 +692,22 @@ if (function_exists('tpStoreBackupScriptPasskey') === false) {
             'encrypted_key' => $encryptedKey,
             'message_code' => '',
         ];
-    }
 }
 
-if (function_exists('tpResolveBackupScriptPasskey') === false) {
-    /**
-     * Resolve the backup script passkey to a clear key.
-     *
-     * Supported cases:
-     * - encrypted value stored in misc/config (expected format)
-     * - legacy clear-text 40 chars value
-     * - empty value (optionally self-healed)
-     *
-     * Corrupted non-empty values are never overwritten automatically.
-     *
-     * @return array{success: bool, clear_key: string, stored_value: string, source: string, message_code: string}
-     */
-    function tpResolveBackupScriptPasskey(array &$SETTINGS, bool $autoHeal = false): array
-    {
+/**
+ * Resolve the backup script passkey to a clear key.
+ *
+ * Supported cases:
+ * - encrypted value stored in misc/config (expected format)
+ * - legacy clear-text 40 chars value
+ * - empty value (optionally self-healed)
+ *
+ * Corrupted non-empty values are never overwritten automatically.
+ *
+ * @return array{success: bool, clear_key: string, stored_value: string, source: string, message_code: string}
+ */
+function tpResolveBackupScriptPasskey(array &$SETTINGS, bool $autoHeal = false): array
+{
         $storedValue = isset($SETTINGS['bck_script_passkey']) ? (string) $SETTINGS['bck_script_passkey'] : '';
 
         if ($storedValue !== '') {
@@ -785,7 +740,7 @@ if (function_exists('tpResolveBackupScriptPasskey') === false) {
             try {
                 $tmp = cryption($storedValue, '', 'decrypt', $SETTINGS);
                 $decryptedValue = isset($tmp['string']) ? (string) $tmp['string'] : '';
-                if (tpBackupScriptPasskeyIsClear($decryptedValue)) {
+                if (tpBackupScriptPasskeyIsClear($decryptedValue, strlen($decryptedValue))) {
                     if ($autoHeal === true) {
                         tpArchiveBackupScriptPasskeyCandidate($storedValue, $SETTINGS);
                         tpArchiveBackupScriptPasskeyCandidate($decryptedValue, $SETTINGS);
@@ -833,17 +788,15 @@ if (function_exists('tpResolveBackupScriptPasskey') === false) {
             'source' => 'empty',
             'message_code' => 'not_set',
         ];
-    }
 }
 
-if (function_exists('tpGetBackupScriptPasskeyCandidates') === false) {
-    /**
-     * Return candidate backup script passkeys for backward-compatible restore operations.
-     *
-     * @return array<int, string>
-     */
-    function tpGetBackupScriptPasskeyCandidates(array &$SETTINGS, bool $autoHeal = false): array
-    {
+/**
+ * Return candidate backup script passkeys for backward-compatible restore operations.
+ *
+ * @return array<int, string>
+ */
+function tpGetBackupScriptPasskeyCandidates(array &$SETTINGS, bool $autoHeal = false): array
+{
         $keys = [];
 
         $resolved = tpResolveBackupScriptPasskey($SETTINGS, $autoHeal);
@@ -862,7 +815,6 @@ if (function_exists('tpGetBackupScriptPasskeyCandidates') === false) {
         $keys = array_merge($keys, tpLoadBackupScriptPasskeyRestoreCandidates($SETTINGS));
 
         return tpNormalizeBackupScriptPasskeyCandidates($keys);
-    }
 }
 
 
@@ -871,15 +823,14 @@ if (function_exists('tpGetBackupScriptPasskeyCandidates') === false) {
 // Helpers for restore logic (used by backups.queries.php)
 // -----------------------------------------------------------------------------
 
-if (function_exists('tpSafeUtf8String') === false) {
-    /**
-     * Ensure the returned string is valid UTF-8 and JSON-safe.
-     *
-     * Some crypto libraries can return messages containing non-UTF8 bytes.
-     * Those would break json_encode() / prepareExchangedData().
-     */
-    function tpSafeUtf8String($value): string
-    {
+/**
+ * Ensure the returned string is valid UTF-8 and JSON-safe.
+ *
+ * Some crypto libraries can return messages containing non-UTF8 bytes.
+ * Those would break json_encode() / prepareExchangedData().
+ */
+function tpSafeUtf8String(mixed $value): string
+{
         if ($value === null) {
             return '';
         }
@@ -892,14 +843,7 @@ if (function_exists('tpSafeUtf8String') === false) {
 
         $str = (string) $value;
 
-        $isUtf8 = false;
-        if (function_exists('mb_check_encoding')) {
-            $isUtf8 = mb_check_encoding($str, 'UTF-8');
-        } else {
-            $isUtf8 = (@preg_match('//u', $str) === 1);
-        }
-
-        if ($isUtf8 === false) {
+        if (mb_check_encoding($str, 'UTF-8') === false) {
             // ASCII safe fallback
             return '[hex]' . bin2hex($str);
         }
@@ -907,24 +851,19 @@ if (function_exists('tpSafeUtf8String') === false) {
         // Strip ASCII control chars
         $str = preg_replace("/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/", '', $str) ?? $str;
         return $str;
-    }
 }
-if (function_exists('tpPrepareFileWithDefuseNormalized') === false) {
-    /**
-     * Wrapper around prepareFileWithDefuse() that normalizes return values across TeamPass versions.
-     *
-     * @return array{success: bool, message: string}
-     */
-    function tpPrepareFileWithDefuseNormalized(
-        string $mode,
-        string $sourceFile,
-        string $destFile,
-        string $encryptionKey
-    ): array {
-        if (function_exists('prepareFileWithDefuse') === false) {
-            return ['success' => false, 'message' => 'prepareFileWithDefuse() is not available'];
-        }
 
+/**
+ * Wrapper around prepareFileWithDefuse() that normalizes return values across TeamPass versions.
+ *
+ * @return array{success: bool, message: string}
+ */
+function tpPrepareFileWithDefuseNormalized(
+    string $mode,
+    string $sourceFile,
+    string $destFile,
+    string $encryptionKey
+): array {
         try {
             $ret = prepareFileWithDefuse($mode, $sourceFile, $destFile, $encryptionKey);
 
@@ -940,22 +879,20 @@ if (function_exists('tpPrepareFileWithDefuseNormalized') === false) {
         } catch (\Throwable $e) {
             return ['success' => false, 'message' => tpSafeUtf8String($e->getMessage())];
         }
-    }
 }
 
-if (function_exists('tpDefuseDecryptWithCandidates') === false) {
-    /**
-     * Try to decrypt a file using Defuse with multiple candidate keys.
-     *
-     * @param array<int,string> $candidateKeys
-     * @return array{success: bool, message: string, key_used?: string}
-     */
-    function tpDefuseDecryptWithCandidates(
-        string $encryptedFile,
-        string $decryptedFile,
-        array $candidateKeys,
-        array $SETTINGS = []
-    ): array {
+/**
+ * Try to decrypt a file using Defuse with multiple candidate keys.
+ *
+ * @param array<int,string> $candidateKeys
+ * @return array{success: bool, message: string, key_used?: string}
+ */
+function tpDefuseDecryptWithCandidates(
+    string $encryptedFile,
+    string $decryptedFile,
+    array $candidateKeys,
+    array $SETTINGS = []
+): array {
         $lastMsg = '';
         foreach ($candidateKeys as $k) {
             $k = (string)$k;
@@ -976,7 +913,6 @@ if (function_exists('tpDefuseDecryptWithCandidates') === false) {
         }
 
         return ['success' => false, 'message' => ($lastMsg !== '' ? $lastMsg : 'Unable to decrypt')];
-    }
 }
 
 // -----------------------------------------------------------------------------
@@ -984,44 +920,34 @@ if (function_exists('tpDefuseDecryptWithCandidates') === false) {
 // -----------------------------------------------------------------------------
 // NOTE: schema_level is stored for internal checks only. UI must never display schema_level.
 
-if (function_exists('tpGetTpFilesVersion') === false) {
-    function tpGetTpFilesVersion(): string
-    {
-        if (defined('TP_VERSION') && defined('TP_VERSION_MINOR')) {
-            return (string) TP_VERSION . '.' . (string) TP_VERSION_MINOR;
+function tpGetTpFilesVersion(): string
+{
+    return (string) TP_VERSION . '.' . (string) TP_VERSION_MINOR;
+}
+
+function tpGetSchemaLevel(): string
+{
+    if (defined('UPGRADE_MIN_DATE')) {
+        $v = (string) UPGRADE_MIN_DATE;
+        if (preg_match('/^\d+$/', $v) === 1) {
+            return $v;
         }
-        return '';
     }
+    return '';
 }
 
-if (function_exists('tpGetSchemaLevel') === false) {
-    function tpGetSchemaLevel(): string
-    {
-        if (defined('UPGRADE_MIN_DATE')) {
-            $v = (string) UPGRADE_MIN_DATE;
-            if (preg_match('/^\d+$/', $v) === 1) {
-                return $v;
-            }
-        }
-        return '';
-    }
+function tpGetBackupMetadataPath(string $backupFilePath): string
+{
+    return $backupFilePath . '.meta.json';
 }
 
-if (function_exists('tpGetBackupMetadataPath') === false) {
-    function tpGetBackupMetadataPath(string $backupFilePath): string
-    {
-        return $backupFilePath . '.meta.json';
-    }
-}
-
-if (function_exists('tpWriteBackupMetadata') === false) {
-    /**
-     * Write backup metadata sidecar file (<backup>.meta.json).
-     *
-     * @return array{success: bool, message: string, meta_path: string}
-     */
-    function tpWriteBackupMetadata(string $backupFilePath, string $tpFilesVersion = '', string $schemaLevel = '', array $extra = []): array
-    {
+/**
+ * Write backup metadata sidecar file (<backup>.meta.json).
+ *
+ * @return array{success: bool, message: string, meta_path: string}
+ */
+function tpWriteBackupMetadata(string $backupFilePath, string $tpFilesVersion = '', string $schemaLevel = '', array $extra = []): array
+{
         $metaPath = tpGetBackupMetadataPath($backupFilePath);
 
         if ($tpFilesVersion === '') {
@@ -1051,19 +977,17 @@ if (function_exists('tpWriteBackupMetadata') === false) {
         }
 
         return ['success' => true, 'message' => '', 'meta_path' => $metaPath];
-    }
 }
 
 
-if (function_exists('tpUpsertBackupMetadata') === false) {
-    /**
-     * Upsert backup metadata sidecar file (<backup>.meta.json) without dropping existing fields.
-     *
-     * @param array<string, mixed> $updates
-     * @return array{success: bool, message: string, meta_path: string}
-     */
-    function tpUpsertBackupMetadata(string $backupFilePath, array $updates): array
-    {
+/**
+ * Upsert backup metadata sidecar file (<backup>.meta.json) without dropping existing fields.
+ *
+ * @param array<string, mixed> $updates
+ * @return array{success: bool, message: string, meta_path: string}
+ */
+function tpUpsertBackupMetadata(string $backupFilePath, array $updates): array
+{
         $metaPath = tpGetBackupMetadataPath($backupFilePath);
 
         $current = [];
@@ -1094,12 +1018,10 @@ if (function_exists('tpUpsertBackupMetadata') === false) {
         }
 
         return ['success' => true, 'message' => 'OK', 'meta_path' => $metaPath];
-    }
 }
 
-if (function_exists('tpReadBackupMetadata') === false) {
-    function tpReadBackupMetadata(string $backupFilePath): array
-    {
+function tpReadBackupMetadata(string $backupFilePath): array
+{
         $metaPath = tpGetBackupMetadataPath($backupFilePath);
         if (!is_file($metaPath)) {
             return [];
@@ -1110,59 +1032,49 @@ if (function_exists('tpReadBackupMetadata') === false) {
         }
         $data = json_decode($raw, true);
         return is_array($data) ? $data : [];
-    }
 }
 
-if (function_exists('tpParseSchemaLevelFromBackupFilename') === false) {
-    function tpParseSchemaLevelFromBackupFilename(string $filename): string
-    {
-        $bn = basename($filename);
-        if (preg_match('/-sl(\d+)(?:\D|$)/', $bn, $m) === 1) {
-            return (string) $m[1];
-        }
-        return '';
+function tpParseSchemaLevelFromBackupFilename(string $filename): string
+{
+    $bn = basename($filename);
+    if (preg_match('/-sl(\d+)(?:\D|$)/', $bn, $m) === 1) {
+        return (string) $m[1];
     }
+    return '';
 }
 
-if (function_exists('tpGetBackupSchemaLevelFromMetaOrFilename') === false) {
-    function tpGetBackupSchemaLevelFromMetaOrFilename(string $backupFilePath): string
-    {
-        $meta = tpReadBackupMetadata($backupFilePath);
-        if (!empty($meta['schema_level']) && is_scalar($meta['schema_level'])) {
-            $v = (string) $meta['schema_level'];
-            if (preg_match('/^\d+$/', $v) === 1) {
-                return $v;
-            }
+function tpGetBackupSchemaLevelFromMetaOrFilename(string $backupFilePath): string
+{
+    $meta = tpReadBackupMetadata($backupFilePath);
+    if (!empty($meta['schema_level']) && is_scalar($meta['schema_level'])) {
+        $v = (string) $meta['schema_level'];
+        if (preg_match('/^\d+$/', $v) === 1) {
+            return $v;
         }
-        $v = tpParseSchemaLevelFromBackupFilename($backupFilePath);
-        return ($v !== '' && preg_match('/^\d+$/', $v) === 1) ? $v : '';
     }
+    $v = tpParseSchemaLevelFromBackupFilename($backupFilePath);
+    return ($v !== '' && preg_match('/^\d+$/', $v) === 1) ? $v : '';
 }
 
-if (function_exists('tpGetBackupTpFilesVersionFromMeta') === false) {
-    function tpGetBackupTpFilesVersionFromMeta(string $backupFilePath): string
-    {
-        $meta = tpReadBackupMetadata($backupFilePath);
-        if (!empty($meta['tp_files_version']) && is_scalar($meta['tp_files_version'])) {
-            return (string) $meta['tp_files_version'];
-        }
-        return '';
+function tpGetBackupTpFilesVersionFromMeta(string $backupFilePath): string
+{
+    $meta = tpReadBackupMetadata($backupFilePath);
+    if (!empty($meta['tp_files_version']) && is_scalar($meta['tp_files_version'])) {
+        return (string) $meta['tp_files_version'];
     }
+    return '';
 }
 
-
-if (function_exists('tpGetBackupCommentFromMeta') === false) {
-    /**
-     * Read optional user comment from <backup>.meta.json.
-     */
-    function tpGetBackupCommentFromMeta(string $backupFilePath): string
-    {
-        $meta = tpReadBackupMetadata($backupFilePath);
-        if (!empty($meta['comment']) && is_scalar($meta['comment'])) {
-            return (string) $meta['comment'];
-        }
-        return '';
+/**
+ * Read optional user comment from <backup>.meta.json.
+ */
+function tpGetBackupCommentFromMeta(string $backupFilePath): string
+{
+    $meta = tpReadBackupMetadata($backupFilePath);
+    if (!empty($meta['comment']) && is_scalar($meta['comment'])) {
+        return (string) $meta['comment'];
     }
+    return '';
 }
 
 /**
@@ -1176,70 +1088,66 @@ if (function_exists('tpGetBackupCommentFromMeta') === false) {
  * admins to purge those orphan metadata files safely.
  */
 
-if (function_exists('tpListOrphanBackupMetaFiles') === false) {
-    function tpListOrphanBackupMetaFiles(string $dir): array
-    {
-        $dir = rtrim($dir, '/\\');
-        if ($dir === '' || is_dir($dir) === false) {
-            return [];
-        }
-
-        $dirReal = realpath($dir);
-        if ($dirReal === false || is_dir($dirReal) === false) {
-            return [];
-        }
-
-        $paths = glob($dirReal . '/*.meta.json');
-        if ($paths === false) {
-            $paths = [];
-        }
-
-        $orphans = [];
-        foreach ($paths as $metaPath) {
-            if ($metaPath === '') {
-                continue;
-            }
-            $basePath = substr($metaPath, 0, -strlen('.meta.json'));
-            if ($basePath === '' || is_file($basePath) === true) {
-                continue;
-            }
-            $orphans[] = $metaPath;
-        }
-
-        return $orphans;
+function tpListOrphanBackupMetaFiles(string $dir): array
+{
+    $dir = rtrim($dir, '/\\');
+    if ($dir === '' || is_dir($dir) === false) {
+        return [];
     }
+
+    $dirReal = realpath($dir);
+    if ($dirReal === false || is_dir($dirReal) === false) {
+        return [];
+    }
+
+    $paths = glob($dirReal . '/*.meta.json');
+    if ($paths === false) {
+        $paths = [];
+    }
+
+    $orphans = [];
+    foreach ($paths as $metaPath) {
+        if ($metaPath === '') {
+            continue;
+        }
+        $basePath = substr($metaPath, 0, -strlen('.meta.json'));
+        if ($basePath === '' || is_file($basePath) === true) {
+            continue;
+        }
+        $orphans[] = $metaPath;
+    }
+
+    return $orphans;
 }
 
-if (function_exists('tpPurgeOrphanBackupMetaFiles') === false) {
-    /**
-     * @param array $metaPaths list of full paths to *.meta.json files
-     * @return array{deleted:int, failed:array}
-     */
-    function tpPurgeOrphanBackupMetaFiles(array $metaPaths): array
-    {
-        $deleted = 0;
-        $failed = [];
+/**
+ * @param array $metaPaths list of full paths to *.meta.json files
+ * @return array{deleted:int, failed:array}
+ */
+function tpPurgeOrphanBackupMetaFiles(array $metaPaths): array
+{
+    $deleted = 0;
+    $failed = [];
 
-        foreach ($metaPaths as $p) {
-            if (!is_string($p) || $p === '') {
-                continue;
-            }
-            if (is_file($p) === false) {
-                continue;
-            }
-            $ok = @unlink($p);
-            if ($ok === true) {
-                $deleted++;
-            } else {
-                $failed[] = $p;
-            }
+    foreach ($metaPaths as $p) {
+        if (!is_string($p) || $p === '') {
+            continue;
         }
-
-        return [
-            'deleted' => $deleted,
-            'failed' => $failed,
-        ];
+        if (is_file($p) === false) {
+            continue;
+        }
+        $ok = @unlink($p);
+        if ($ok === true) {
+            $deleted++;
+        } else {
+            $failed[] = $p;
+        }
     }
+
+    return [
+        'deleted' => $deleted,
+        'failed' => $failed,
+    ];
 }
 
 
@@ -1254,8 +1162,7 @@ if (function_exists('tpPurgeOrphanBackupMetaFiles') === false) {
  * TTL fixed at 3600s (1 hour) for now.
  */
 
-if (function_exists('tpRestoreAuthorizationCreate') === false) {
-    function tpRestoreAuthorizationCreate(
+function tpRestoreAuthorizationCreate(
         int $userId,
         string $userLogin,
         string $filePath,
@@ -1362,12 +1269,10 @@ if (function_exists('tpRestoreAuthorizationCreate') === false) {
             'expires_at' => (int) $payload['expires_at'],
             'ttl' => $ttl,
         ];
-    }
 }
 
-if (function_exists('tpRestoreAuthorizationFetchByHash') === false) {
-    function tpRestoreAuthorizationFetchByHash(string $tokenHash): array
-    {
+function tpRestoreAuthorizationFetchByHash(string $tokenHash): array
+{
         $row = DB::queryFirstRow(
             'SELECT increment_id, valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s LIMIT 1',
             'restore_authorization_cli',
@@ -1388,12 +1293,10 @@ if (function_exists('tpRestoreAuthorizationFetchByHash') === false) {
             'id' => (int) ($row['increment_id'] ?? 0),
             'payload' => $payload,
         ];
-    }
 }
 
-if (function_exists('tpRestoreAuthorizationUpdatePayload') === false) {
-    function tpRestoreAuthorizationUpdatePayload(int $id, array $payload): bool
-    {
+function tpRestoreAuthorizationUpdatePayload(int $id, array $payload): bool
+{
         $payload['updated_at'] = time();
         $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
         if ($json === false) {
@@ -1429,5 +1332,4 @@ if (function_exists('tpRestoreAuthorizationUpdatePayload') === false) {
                 return false;
             }
         }
-    }
 }

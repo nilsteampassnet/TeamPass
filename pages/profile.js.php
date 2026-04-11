@@ -231,9 +231,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             'email': formEmail,
             'timezone': $('#profile-user-timezone').val() ?? '',
             'language': ($('#profile-user-language').val() ?? '').toLowerCase(),
-            'treeloadstrategy': ($('#profile-user-treeloadstrategy').val() ?? '').toLowerCase(),
             'split_view_mode': $('#profile-user-split_view_mode').val(),
             'show_subfolders': $('#profile-user-show_subfolders').val(),
+        };
+
+        const treeLoadStrategyField = $('#profile-user-treeloadstrategy');
+        if (treeLoadStrategyField.length > 0) {
+            data.treeloadstrategy = (treeLoadStrategyField.val() ?? '').toLowerCase();
         }
         if (debugJavascript === true) console.log(data);
         // Inform user
@@ -273,38 +277,46 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         }
                     );
                 } else {
+                    const selectedLanguage = ($('#profile-user-language').val() ?? '').toLowerCase();
+                    const selectedSplitViewMode = String($('#profile-user-split_view_mode').val() ?? '');
+                    const selectedShowSubfolders = String($('#profile-user-show_subfolders').val() ?? '');
+
+                    const languageChanged = selectedLanguage !== '<?php echo strtolower((string) ($session->get('user-language') ?? 'english')); ?>';
+                    const splitViewModeChanged = selectedSplitViewMode !== '<?php echo (int) ($session->get('user-split_view_mode') ?? 0); ?>';
+                    const showSubfoldersChanged = selectedShowSubfolders !== '<?php echo (int) ($session->get('user-show_subfolders') ?? 0); ?>';
+
                     $('#profile-username').html(data.name + ' ' + data.lastname);
-                    $('#profile-user-name').val(data.name)
-                    $('#profile-user-lastname').val(data.lastname)
-                    $('#profile-user-email').val(data.email)
+                    $('#profile-user-name').val(data.name);
+                    $('#profile-user-lastname').val(data.lastname);
+                    $('#profile-user-email').val(data.email);
 
                     // Force session update
                     store.update(
                         'teampassUser',
                         function(teampassUser) {
+                            teampassUser.name = data.name;
+                            teampassUser.lastname = data.lastname;
+                            teampassUser.email = data.email;
                             teampassUser.user_name = data.name;
                             teampassUser.user_lastname = data.lastname;
                             teampassUser.user_email = data.email;
                             teampassUser.user_language = data.language;
                             teampassUser.user_timezone = data.timezone;
                             teampassUser.user_treeloadstrategy = data.treeloadstrategy;
-                            teampassUser.user_agsescardid = data.agsescardid;
-                            teampassUser.split_view_mode = data.split_view_mode;
-                            teampassUser.show_subfolders = data.show_subfolders;
+                            teampassUser.split_view_mode = parseInt(data.split_view_mode, 10);
+                            teampassUser.show_subfolders = parseInt(data.show_subfolders, 10);
                         }
                     );
 
-                    // reload page in case of language change
-                    if ($('#profile-user-language').val()
-                        && $('#profile-user-language').val().toLowerCase() !== '<?php echo $session->get('user-language');?>') {
-                        // prepare reload
-                        $(this).delay(3000).queue(function() {
-                            document.location.href = "index.php?page=profile";
+                    if (languageChanged === true || splitViewModeChanged === true || showSubfoldersChanged === true) {
+                        const reloadTarget = (splitViewModeChanged === true || showSubfoldersChanged === true)
+                            ? 'index.php?page=items'
+                            : 'index.php?page=profile';
 
-                            $(this).dequeue();
-                        });
+                        setTimeout(function() {
+                            document.location.href = reloadTarget;
+                        }, 3000);
 
-                        // Inform user
                         toastr.remove();
                         toastr.info(
                             '<?php echo $lang->get('alert_page_will_reload') . ' ... ' . $lang->get('please_wait'); ?>',
@@ -313,9 +325,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                                 progressBar: true
                             }
                         );
-
                     } else {
-                        // just inform user
                         toastr.remove();
                         toastr.info(
                             '<?php echo $lang->get('done'); ?>',
@@ -325,11 +335,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             }
                         );
 
-                        // Force tree refresh
                         store.update(
                             'teampassApplication',
                             function(teampassApplication) {
-                                teampassApplication.jstreeForceRefresh = 1
+                                teampassApplication.jstreeForceRefresh = 1;
                             }
                         );
                     }

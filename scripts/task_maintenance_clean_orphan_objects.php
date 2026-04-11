@@ -26,7 +26,6 @@
  * @see       https://www.teampass.net
  */
 
-use TeampassClasses\Language\Language;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
@@ -34,8 +33,6 @@ require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses('DB');
-$lang = new Language('english');
-
 // Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
@@ -55,20 +52,26 @@ set_time_limit($SETTINGS['task_maximum_run_time']);
 require_once __DIR__.'/background_tasks___functions.php';
 
 // log start
-$logID = doLog('ongoing', 'do_maintenance - clean-orphan-objects', 1);
+$logLabel = 'do_maintenance - items-integrity-scan';
+$logID = doLog('ongoing', $logLabel, 1);
 
 // Perform maintenance tasks
-cleanOrphanObjects();
+$integritySummary = cleanOrphanObjectsAndScanIntegrity();
 
 // log end
 doLog('completed', '', 1, $logID);
 
+echo sprintf(
+    'Items integrity scan completed: %d active corrupted item(s).',
+    (int) ($integritySummary['count'] ?? 0)
+);
+
 /**
- * Delete all orphan objects from DB
+ * Delete orphan objects from DB and refresh corrupted items integrity state.
  *
- * @return void
+ * @return array<string, mixed>
  */
-function cleanOrphanObjects(): void
+function cleanOrphanObjectsAndScanIntegrity(): array
 {
     // Delete all item keys for which no user exist
     DB::query(
@@ -91,7 +94,8 @@ function cleanOrphanObjects(): void
         LEFT JOIN ' . prefixTable('items') . ' i ON f.id_item = i.id
         WHERE f.id IS NULL OR i.id IS NULL'
     );
-// Delete all fields keys for which no item exist
+
+    // Delete all fields keys for which no item exist
     DB::query(
         'DELETE k.* FROM ' . prefixTable('sharekeys_fields') . ' k
         LEFT JOIN ' . prefixTable('categories_items') . ' c ON k.object_id = c.id
@@ -113,7 +117,12 @@ function cleanOrphanObjects(): void
         WHERE u.id IS NULL'
     );
 
-
     // Update CACHE table
     updateCacheTable('reload', null);
+
+    $scanPayload = teampassCorruptedItemsRunScan(2000);
+
+    return is_array($scanPayload['summary'] ?? null) === true
+        ? $scanPayload['summary']
+        : teampassCorruptedItemsSummaryDefault();
 }

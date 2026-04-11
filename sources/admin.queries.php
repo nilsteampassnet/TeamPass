@@ -2633,6 +2633,57 @@ switch ($post_type) {
         );
         break;
 
+    case 'network_blacklist_ip':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $ruleValue = teampassNormalizeIpv4Rule((string) ($dataReceived['ip'] ?? ''));
+        $userId = (int) ($session->get('user-id') ?? 0);
+
+        if ($ruleValue === null || teampassEnsureNetworkAclRule('blacklist', $ruleValue, (string) $lang->get('network_security_auto_comment_failed_login_ip'), $userId) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('network_security_invalid_rule'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                    'ip' => $ruleValue,
+                ],
+            ],
+            'encode'
+        );
+        break;
+
     case 'save_option_change':
         // Check KEY and rights
         if ($post_key !== $session->get('key')) {
@@ -2656,6 +2707,14 @@ switch ($post_type) {
         $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+
+        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip'], true) === true) {
+            $post_value = (string) max(0, (int) $post_value);
+        }
+        if ($post_field === 'bruteforce_lock_duration') {
+            $intValue = (int) $post_value;
+            $post_value = (string) max(1, $intValue === 0 ? 10 : $intValue);
+        }
         
         require_once 'main.functions.php';
 
@@ -4095,11 +4154,27 @@ case 'save_sending_statistics':
         0
     );
 
-    $usersBlocked = DB::queryFirstField(
+    $usersDisabled = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
         WHERE disabled = %i AND $usersBaseWhere",
         1
     );
+
+    $usersBruteforceLocked = DB::queryFirstField(
+        "SELECT COUNT(DISTINCT u.id)
+        FROM " . prefixTable('users') . " AS u
+        INNER JOIN " . prefixTable('auth_failures') . " AS af ON (af.value = u.login)
+        WHERE af.source = %s
+        AND af.unlock_at > %s
+        AND u.disabled = %i
+        AND u.deleted_at IS NULL
+        AND LOWER(u.login) NOT IN ('tp','otv','api')",
+        'login',
+        date('Y-m-d H:i:s', time()),
+        0
+    );
+
+    $usersBlocked = (int) $usersDisabled + (int) $usersBruteforceLocked;
 
     // Inactive users warned (as per Inactive Users Management)
     $usersWarned = DB::queryFirstField(

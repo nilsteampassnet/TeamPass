@@ -3278,12 +3278,32 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
 
         // Decrypt private key using derived key (using CryptoManager - phpseclib v3)
         // Use version detection since backup may be encrypted with SHA-1 (v1) or SHA-256 (v3)
+        $backupCiphertext = base64_decode($userInfo['private_key_backup']);
         $decryptResult = \TeampassClasses\CryptoManager\CryptoManager::aesDecryptWithVersionDetection(
-            base64_decode($userInfo['private_key_backup']),
+            $backupCiphertext,
             $derivedKey,
             'cbc'
         );
-        $privateKeyClear = base64_encode($decryptResult['data']);
+        $recoveredPem = $decryptResult['data'];
+
+        // Guard against SHA-256 false-positive: AES-CBC with wrong key can silently produce
+        // valid-UTF-8 garbage (~0.4% probability). RSA private keys always start with '-----BEGIN'.
+        // If version detection returned a SHA-256 result that does not look like a PEM key,
+        // explicitly retry with SHA-1 (which is how the backup was originally encrypted for
+        // non-migrated legacy users).
+        if (strpos($recoveredPem, '-----BEGIN') === false) {
+            $recoveredPem = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                $backupCiphertext,
+                $derivedKey,
+                'cbc',
+                'sha1'
+            );
+            if (strpos($recoveredPem, '-----BEGIN') === false) {
+                throw new Exception('Recovered data is not a valid RSA private key (both SHA-256 and SHA-1 produced non-PEM output)');
+            }
+        }
+
+        $privateKeyClear = base64_encode($recoveredPem);
 
         // Re-encrypt with new password
         $newPrivateKeyEncrypted = encryptPrivateKey($newPassword, $privateKeyClear);
@@ -3353,24 +3373,31 @@ function attemptTransparentRecovery(array $userInfo, string $newPassword, array 
 /**
  * Handles external password change (LDAP/OAuth2) with automatic re-encryption.
  *
- * @param int $userId User ID
- * @param string $newPassword New password (clear)
- * @param array $userInfo User information from database
- * @param array $SETTINGS Teampass settings
+ * Returns an array with:
+ * - 'success' (bool): true if the private key was transparently re-encrypted
+ * - 'reason' (string): '' on success, 'no_recovery_data' for legacy users without a backup
+ *   seed or backup ciphertext, 'integrity_check_failed' when the stored integrity hash
+ *   does not match (non-disabling: modal shown), 'recovery_failed' when decryption
+ *   genuinely fails with valid recovery data (account disabled as security measure)
  *
- * @return bool True if  handled successfully
+ * @param int    $userId      User ID
+ * @param string $newPassword New password (clear)
+ * @param array  $userInfo    User information from database
+ * @param array  $SETTINGS    Teampass settings
+ *
+ * @return array{success: bool, reason: string}
  */
-function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): bool
+function handleExternalPasswordChange(int $userId, string $newPassword, array $userInfo, array $SETTINGS): array
 {
     // Check if password was changed recently (< 20s) to avoid duplicate processing
     if (!empty($userInfo['last_pw_change'])) {
         $timeSinceChange = time() - (int) $userInfo['last_pw_change'];
-        if ($timeSinceChange < 20) { // 20 seconds
-            return true; // Already processed
+        if ($timeSinceChange < 20) {
+            return ['success' => true, 'reason' => ''];
         }
     }
 
-    // Try to decrypt with new password first (maybe already updated)
+    // Try to decrypt with new password first (maybe already synced)
     try {
         $testDecrypt = decryptPrivateKey($newPassword, $userInfo['private_key']);
         if (!empty($testDecrypt)) {
@@ -3385,31 +3412,88 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
                 'id = %i',
                 $userId
             );
-            return true;
+            return ['success' => true, 'reason' => ''];
         }
     } catch (Exception $e) {
-        // Expected - old password doesn't work, continue with recovery
+        // Expected - old password doesn't match, continue with recovery
     }
 
-    // Attempt transparent recovery
+    // Attempt transparent recovery using the backup seed
     $result = attemptTransparentRecovery($userInfo, $newPassword, $SETTINGS);
 
     if ($result['success']) {
-        return true;
+        return ['success' => true, 'reason' => ''];
     }
 
-    // Recovery failed - disable user and alert admins
+    // Legacy user: no backup seed/recovery data available.
+    // Do NOT disable the account — the LDAP password change is legitimate and
+    // was already verified by the LDAP bind. Update the pw hash to the new LDAP
+    // password and flag the account so the UI shows the re-encryption modal, where
+    // the user can provide their old password to decrypt the stored private key.
+    if ($result['error'] === 'no_recovery_data') {
+        $passwordManager = new PasswordManager();
+        DB::update(
+            prefixTable('users'),
+            [
+                'pw'             => $passwordManager->hashPassword($newPassword),
+                'special'        => 'recrypt-private-key',
+                'last_pw_change' => time(),
+            ],
+            'id = %i',
+            $userId
+        );
+
+        logEvents(
+            $SETTINGS,
+            'user_connection',
+            'ldap_password_changed_no_recovery_data',
+            (string) $userId,
+            'User: ' . $userInfo['login'] . ' - manual re-encryption required via modal'
+        );
+
+        return ['success' => false, 'reason' => 'no_recovery_data'];
+    }
+
+    // integrity_check_failed: the stored integrity hash does not match.
+    // This can happen legitimately when the server key file was restored from backup or
+    // the public key was updated separately. Treat like no_recovery_data: update the
+    // password hash (LDAP bind already verified it) and display the re-encryption modal.
+    if ($result['error'] === 'integrity_check_failed') {
+        $passwordManager = new PasswordManager();
+        DB::update(
+            prefixTable('users'),
+            [
+                'pw'             => $passwordManager->hashPassword($newPassword),
+                'special'        => 'recrypt-private-key',
+                'last_pw_change' => time(),
+            ],
+            'id = %i',
+            $userId
+        );
+
+        logEvents(
+            $SETTINGS,
+            'security_alert',
+            'ldap_password_changed_integrity_check_failed',
+            (string) $userId,
+            'User: ' . $userInfo['login'] . ' - integrity check failed, manual re-encryption required via modal'
+        );
+
+        return ['success' => false, 'reason' => 'integrity_check_failed'];
+    }
+
+    // Recovery data exists but decryption failed — genuine crypto failure.
+    // Disable the account as a security measure.
     DB::update(
         prefixTable('users'),
         [
             'disabled' => 1,
-            'special' => 'recrypt-private-key',
+            'special'  => 'recrypt-private-key',
         ],
         'id = %i',
         $userId
     );
 
-    // Log critical event
     logEvents(
         $SETTINGS,
         'security_alert',
@@ -3418,7 +3502,7 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
         'User: ' . $userInfo['login'] . ' - disabled due to key recovery failure'
     );
 
-    return false;
+    return ['success' => false, 'reason' => 'recovery_failed'];
 }
 
 /**
@@ -7563,4 +7647,670 @@ function validateWebSocketToken(string $token): ?array
         error_log("validateWebSocketToken: Failed - " . $e->getMessage());
         return null;
     }
+}
+/**
+ * Checks whether a table exists in the current TeamPass database.
+ *
+ * @param string $tableName Fully prefixed table name
+ *
+ * @return bool
+ */
+function teampassTableExists(string $tableName): bool
+{
+    static $cache = [];
+
+    if (array_key_exists($tableName, $cache) === true) {
+        return $cache[$tableName];
+    }
+
+    $exists = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM information_schema.tables
+        WHERE table_schema = %s AND table_name = %s',
+        DB_NAME,
+        $tableName
+    ) > 0;
+
+    $cache[$tableName] = $exists;
+
+    return $exists;
+}
+
+/**
+ * Checks whether a table column exists.
+ *
+ * @param string $tableName  Table name
+ * @param string $columnName Column name
+ *
+ * @return bool
+ */
+function teampassTableColumnExists(string $tableName, string $columnName): bool
+{
+    static $cache = [];
+
+    $cacheKey = $tableName . '::' . $columnName;
+    if (isset($cache[$cacheKey]) === true) {
+        return $cache[$cacheKey];
+    }
+
+    $exists = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM information_schema.columns
+        WHERE table_schema = %s AND table_name = %s AND column_name = %s',
+        DB_NAME,
+        $tableName,
+        $columnName
+    ) > 0;
+
+    $cache[$cacheKey] = $exists;
+
+    return $exists;
+}
+
+/**
+ * Checks whether the corrupted items persistence table exists.
+ *
+ * @return bool
+ */
+function teampassCorruptedItemsTableExists(): bool
+{
+    return teampassTableExists(prefixTable('items_corruption'));
+}
+
+/**
+ * Checks whether the is_personal scope column exists in the items_corruption table.
+ *
+ * @return bool
+ */
+function teampassCorruptedItemsScopeColumnExists(): bool
+{
+    return teampassCorruptedItemsTableExists() === true
+        && teampassTableColumnExists(prefixTable('items_corruption'), 'is_personal') === true;
+}
+
+/**
+ * Default summary payload for corrupted items scan.
+ *
+ * @return array<string, mixed>
+ */
+function teampassCorruptedItemsSummaryDefault(): array
+{
+    return [
+        'has_result' => false,
+        'count' => 0,
+        'last_scan_at' => 0,
+        'last_scan_at_human' => '',
+        'truncated' => false,
+        'limit' => 0,
+        'by_reason' => [
+            'empty_key' => 0,
+            'decrypt_failed' => 0,
+            'binary_bytes' => 0,
+            'len_mismatch' => 0,
+            'exception' => 0,
+        ],
+        'by_scope' => [
+            'shared' => 0,
+            'personal' => 0,
+        ],
+        'by_reason_scope' => [
+            'empty_key' => ['shared' => 0, 'personal' => 0],
+            'decrypt_failed' => ['shared' => 0, 'personal' => 0],
+            'binary_bytes' => ['shared' => 0, 'personal' => 0],
+            'len_mismatch' => ['shared' => 0, 'personal' => 0],
+            'exception' => ['shared' => 0, 'personal' => 0],
+        ],
+    ];
+}
+
+/**
+ * Returns metadata attached to a corrupted item reason.
+ *
+ * @param string $reason Reason code
+ *
+ * @return array<string, string>
+ */
+function teampassCorruptedItemsGetReasonMetadata(string $reason): array
+{
+    $map = [
+        'empty_key' => [
+            'severity' => 'warning',
+            'status' => 'suspected',
+            'action' => 'safe_repair_candidate',
+            'notice_mode' => 'subtle',
+        ],
+        'len_mismatch' => [
+            'severity' => 'warning',
+            'status' => 'manual_update_required',
+            'action' => 'manual_update',
+            'notice_mode' => 'subtle',
+        ],
+        'decrypt_failed' => [
+            'severity' => 'danger',
+            'status' => 'restore_required',
+            'action' => 'restore_or_reentry',
+            'notice_mode' => 'subtle',
+        ],
+        'binary_bytes' => [
+            'severity' => 'danger',
+            'status' => 'restore_required',
+            'action' => 'restore_or_reentry',
+            'notice_mode' => 'subtle',
+        ],
+        'exception' => [
+            'severity' => 'danger',
+            'status' => 'admin_review_required',
+            'action' => 'admin_review',
+            'notice_mode' => 'none',
+        ],
+    ];
+
+    return $map[$reason] ?? [
+        'severity' => 'warning',
+        'status' => 'suspected',
+        'action' => 'admin_review',
+        'notice_mode' => 'none',
+    ];
+}
+
+/**
+ * Translates a corrupted item reason into a human label.
+ *
+ * @param \TeampassClasses\Language\Language $lang             Language instance
+ * @param string                               $reason           Reason code
+ * @param string                               $exceptionMessage Optional exception message
+ *
+ * @return string
+ */
+function teampassCorruptedItemsReasonToLabel(
+    \TeampassClasses\Language\Language $lang,
+    string $reason,
+    string $exceptionMessage = ''
+): string {
+    if ($reason === 'empty_key') {
+        return $lang->get('health_corrupted_reason_empty_key');
+    }
+    if ($reason === 'decrypt_failed') {
+        return $lang->get('health_corrupted_reason_decrypt_failed');
+    }
+    if ($reason === 'binary_bytes') {
+        return $lang->get('health_corrupted_reason_binary_bytes');
+    }
+    if ($reason === 'len_mismatch') {
+        return $lang->get('health_corrupted_reason_len_mismatch');
+    }
+    if ($reason === 'exception') {
+        return sprintf(
+            $lang->get('health_corrupted_reason_exception_fmt'),
+            $exceptionMessage
+        );
+    }
+
+    return $reason;
+}
+
+/**
+ * Persists the corrupted items summary in misc table.
+ *
+ * @param array<string, mixed> $summary Summary payload
+ *
+ * @return void
+ */
+function teampassCorruptedItemsPersistSummary(array $summary): void
+{
+    $existing = DB::queryFirstRow(
+        'SELECT increment_id
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s',
+        'health_corrupted_items',
+        'scan_summary'
+    );
+
+    $payload = json_encode($summary, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+    if ($existing !== null && DB::count() > 0) {
+        DB::update(
+            prefixTable('misc'),
+            [
+                'valeur' => $payload,
+                'updated_at' => time(),
+            ],
+            'type = %s AND intitule = %s',
+            'health_corrupted_items',
+            'scan_summary'
+        );
+    } else {
+        DB::insert(
+            prefixTable('misc'),
+            [
+                'type' => 'health_corrupted_items',
+                'intitule' => 'scan_summary',
+                'valeur' => $payload,
+                'created_at' => time(),
+                'updated_at' => time(),
+            ]
+        );
+    }
+}
+
+/**
+ * Builds live active metrics for corrupted items.
+ *
+ * @return array<string, mixed>
+ */
+function teampassCorruptedItemsBuildActiveMetrics(): array
+{
+    $metrics = teampassCorruptedItemsSummaryDefault();
+    $metrics['has_result'] = true;
+
+    if (teampassCorruptedItemsTableExists() === false) {
+        return $metrics;
+    }
+
+    // %l is MeekroDB's literal placeholder — safe for hardcoded column expressions
+    $scopeField = teampassCorruptedItemsScopeColumnExists() === true
+        ? 'c.is_personal'
+        : 'i.perso';
+
+    $rows = DB::query(
+        'SELECT c.reason_code, %l AS is_personal
+        FROM ' . prefixTable('items_corruption') . ' AS c
+        LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.item_id)
+        WHERE c.is_active = %i',
+        $scopeField,
+        1
+    );
+
+    foreach ($rows as $row) {
+        $reason = (string) ($row['reason_code'] ?? '');
+        $isPersonal = (int) ($row['is_personal'] ?? 0) === 1;
+        $scope = $isPersonal === true ? 'personal' : 'shared';
+
+        if (isset($metrics['by_reason'][$reason]) === false) {
+            $metrics['by_reason'][$reason] = 0;
+        }
+        if (isset($metrics['by_reason_scope'][$reason]) === false) {
+            $metrics['by_reason_scope'][$reason] = ['shared' => 0, 'personal' => 0];
+        }
+
+        $metrics['count']++;
+        $metrics['by_reason'][$reason]++;
+        $metrics['by_scope'][$scope]++;
+        $metrics['by_reason_scope'][$reason][$scope]++;
+    }
+
+    return $metrics;
+}
+
+/**
+ * Returns the last corrupted items summary.
+ *
+ * @return array<string, mixed>
+ */
+function teampassCorruptedItemsGetSummary(): array
+{
+    $summary = teampassCorruptedItemsSummaryDefault();
+
+    $row = DB::queryFirstRow(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s',
+        'health_corrupted_items',
+        'scan_summary'
+    );
+
+    if ($row !== null && DB::count() > 0 && is_string($row['valeur']) === true && $row['valeur'] !== '') {
+        $decoded = json_decode($row['valeur'], true);
+        if (is_array($decoded) === true) {
+            $summary = array_replace_recursive($summary, $decoded);
+            $summary['has_result'] = true;
+        }
+    }
+
+    if (teampassCorruptedItemsTableExists() === true) {
+        $liveMetrics = teampassCorruptedItemsBuildActiveMetrics();
+        $summary['count'] = (int) ($liveMetrics['count'] ?? 0);
+        $summary['by_reason'] = array_replace(
+            $summary['by_reason'],
+            is_array($liveMetrics['by_reason'] ?? null) === true ? $liveMetrics['by_reason'] : []
+        );
+        $summary['by_scope'] = array_replace(
+            $summary['by_scope'],
+            is_array($liveMetrics['by_scope'] ?? null) === true ? $liveMetrics['by_scope'] : []
+        );
+        $summary['by_reason_scope'] = array_replace_recursive(
+            $summary['by_reason_scope'],
+            is_array($liveMetrics['by_reason_scope'] ?? null) === true ? $liveMetrics['by_reason_scope'] : []
+        );
+        if ((bool) ($summary['has_result'] ?? false) !== true && (int) $summary['count'] > 0) {
+            $summary['has_result'] = true;
+        }
+    }
+
+    return $summary;
+}
+
+/**
+ * Persists one corrupted items scan result.
+ *
+ * @param array<string, mixed> $scanResult Raw scan result
+ * @param int                  $scanAt     Scan timestamp
+ *
+ * @return array<string, mixed> Persisted summary
+ */
+function teampassCorruptedItemsPersistScan(array $scanResult, int $scanAt): array
+{
+    $summary = teampassCorruptedItemsSummaryDefault();
+    $summary['has_result'] = true;
+    $summary['count'] = (int) ($scanResult['count'] ?? 0);
+    $summary['last_scan_at'] = $scanAt;
+    $summary['last_scan_at_human'] = date('Y-m-d H:i:s', $scanAt);
+    $scanSummary = is_array($scanResult['summary'] ?? null) === true ? $scanResult['summary'] : [];
+    $summary['truncated'] = (bool) ($scanSummary['truncated'] ?? false);
+    $summary['limit'] = (int) ($scanSummary['limit'] ?? 0);
+    $summary['by_reason'] = array_replace(
+        $summary['by_reason'],
+        is_array($scanSummary['by_reason'] ?? null) === true ? $scanSummary['by_reason'] : []
+    );
+
+    $items = is_array($scanResult['items'] ?? null) === true ? $scanResult['items'] : [];
+    foreach ($items as $item) {
+        $reason = (string) ($item['reason'] ?? '');
+        $scope = (int) ($item['is_personal'] ?? 0) === 1 ? 'personal' : 'shared';
+        if (isset($summary['by_reason_scope'][$reason]) === false) {
+            $summary['by_reason_scope'][$reason] = ['shared' => 0, 'personal' => 0];
+        }
+        $summary['by_scope'][$scope]++;
+        $summary['by_reason_scope'][$reason][$scope]++;
+    }
+
+    teampassCorruptedItemsPersistSummary($summary);
+
+    if (teampassCorruptedItemsTableExists() === false) {
+        return $summary;
+    }
+
+    $activeIds = [];
+    $hasScopeColumn = teampassCorruptedItemsScopeColumnExists();
+
+    foreach ($items as $item) {
+        $itemId = (int) ($item['id'] ?? 0);
+        if ($itemId <= 0) {
+            continue;
+        }
+
+        $reason = (string) ($item['reason'] ?? '');
+        $metadata = teampassCorruptedItemsGetReasonMetadata($reason);
+        $activeIds[] = $itemId;
+        $isPersonal = (int) ($item['is_personal'] ?? 0) === 1 ? 1 : 0;
+
+        $existing = DB::queryFirstRow(
+            'SELECT increment_id
+            FROM ' . prefixTable('items_corruption') . '
+            WHERE item_id = %i',
+            $itemId
+        );
+
+        $data = [
+            'item_id' => $itemId,
+            'reason_code' => $reason,
+            'severity' => $metadata['severity'],
+            'status' => $metadata['status'],
+            'action_recommendation' => $metadata['action'],
+            'user_notice_mode' => $metadata['notice_mode'],
+            'len_stored' => (int) ($item['len_stored'] ?? 0),
+            'len_actual' => (int) ($item['len_actual'] ?? 0),
+            'exception_message' => (string) ($item['exception_message'] ?? ''),
+            'last_detected_at' => $scanAt,
+            'last_scan_at' => $scanAt,
+            'is_active' => 1,
+            'updated_at' => $scanAt,
+        ];
+        if ($hasScopeColumn === true) {
+            $data['is_personal'] = $isPersonal;
+        }
+
+        if ($existing !== null && DB::count() > 0) {
+            DB::update(
+                prefixTable('items_corruption'),
+                $data,
+                'item_id = %i',
+                $itemId
+            );
+        } else {
+            $data['first_detected_at'] = $scanAt;
+            DB::insert(prefixTable('items_corruption'), $data);
+        }
+    }
+
+    if (empty($activeIds) === true) {
+        DB::update(
+            prefixTable('items_corruption'),
+            [
+                'is_active' => 0,
+                'status' => 'cleared',
+                'resolved_at' => $scanAt,
+                'updated_at' => $scanAt,
+            ],
+            'is_active = %i',
+            1
+        );
+    } else {
+        DB::update(
+            prefixTable('items_corruption'),
+            [
+                'is_active' => 0,
+                'status' => 'cleared',
+                'resolved_at' => $scanAt,
+                'updated_at' => $scanAt,
+            ],
+            'is_active = %i AND item_id NOT IN %ls',
+            1,
+            $activeIds
+        );
+    }
+
+    return teampassCorruptedItemsGetSummary();
+}
+
+/**
+ * Executes the corrupted items scan and persists its result.
+ *
+ * @param int $limit Maximum number of corrupted items to keep in result list
+ *
+ * @return array<string, mixed>
+ *
+ * @throws \RuntimeException If the scan script is missing or invalid
+ */
+function teampassCorruptedItemsRunScan(int $limit = 2000): array
+{
+    $scriptPath = __DIR__ . '/../scripts/scan_corrupted_items.php';
+    if (file_exists($scriptPath) === false) {
+        throw new RuntimeException('Corrupted items scan script is missing.');
+    }
+
+    require_once $scriptPath;
+
+    if (function_exists('tpScanCorruptedItemsViaTpUser') === false) {
+        throw new RuntimeException('Corrupted items scan script is invalid.');
+    }
+
+    /** @var array<string, mixed> $scanResult */
+    $scanResult = tpScanCorruptedItemsViaTpUser($limit);
+    $summary = teampassCorruptedItemsPersistScan($scanResult, time());
+
+    return [
+        'scan_result' => $scanResult,
+        'summary' => $summary,
+    ];
+}
+
+/**
+ * Returns corrupted items list from persistence table.
+ *
+ * @param bool $onlyActive Restrict to active rows
+ * @param int  $limit      Limit number of rows (0 = no limit)
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function teampassCorruptedItemsGetItems(bool $onlyActive = true, int $limit = 0): array
+{
+    if (teampassCorruptedItemsTableExists() === false) {
+        return [];
+    }
+
+    // %l is MeekroDB's literal placeholder — safe for hardcoded column expressions.
+    // $limit is typed int (strict_types) so the cast concatenation is safe.
+    $scopeField = teampassCorruptedItemsScopeColumnExists() === true
+        ? 'c.is_personal'
+        : 'i.perso';
+    $limitSql = $limit > 0 ? ' LIMIT ' . $limit : '';
+
+    if ($onlyActive === true) {
+        $rows = DB::query(
+            'SELECT c.*, i.label, i.updated_at AS item_updated_at, %l AS scope_is_personal
+            FROM ' . prefixTable('items_corruption') . ' AS c
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.item_id)
+            WHERE c.is_active = %i
+            ORDER BY i.label ASC' . $limitSql,
+            $scopeField,
+            1
+        );
+    } else {
+        $rows = DB::query(
+            'SELECT c.*, i.label, i.updated_at AS item_updated_at, %l AS scope_is_personal
+            FROM ' . prefixTable('items_corruption') . ' AS c
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.item_id)
+            ORDER BY i.label ASC' . $limitSql,
+            $scopeField
+        );
+    }
+
+    $items = [];
+    foreach ($rows as $row) {
+        $updatedAt = (int) ($row['item_updated_at'] ?? 0);
+        $isPersonal = (int) ($row['scope_is_personal'] ?? 0) === 1 ? 1 : 0;
+        $items[] = [
+            'id' => (int) ($row['item_id'] ?? 0),
+            'label' => (string) ($row['label'] ?? ''),
+            'reason' => (string) ($row['reason_code'] ?? ''),
+            'severity' => (string) ($row['severity'] ?? 'warning'),
+            'status' => (string) ($row['status'] ?? 'suspected'),
+            'action_recommendation' => (string) ($row['action_recommendation'] ?? ''),
+            'exception_message' => (string) ($row['exception_message'] ?? ''),
+            'len_stored' => (int) ($row['len_stored'] ?? 0),
+            'len_actual' => (int) ($row['len_actual'] ?? 0),
+            'is_personal' => $isPersonal,
+            'scope' => $isPersonal === 1 ? 'personal' : 'shared',
+            'updated_at' => $updatedAt,
+            'updated_at_human' => $updatedAt > 0 ? date('Y-m-d H:i:s', $updatedAt) : '',
+        ];
+    }
+
+    return $items;
+}
+
+/**
+ * Returns the active corruption state of one item.
+ *
+ * @param int $itemId Item identifier
+ *
+ * @return array<string, mixed>|null
+ */
+function teampassCorruptedItemsGetItemState(int $itemId): ?array
+{
+    if ($itemId <= 0 || teampassCorruptedItemsTableExists() === false) {
+        return null;
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT *
+        FROM ' . prefixTable('items_corruption') . '
+        WHERE item_id = %i AND is_active = %i',
+        $itemId,
+        1
+    );
+
+    if ($row === null || DB::count() === 0) {
+        return null;
+    }
+
+    return $row;
+}
+
+/**
+ * Clears the active corruption state of one item.
+ *
+ * @param int    $itemId Item identifier
+ * @param string $status Resolution status
+ *
+ * @return void
+ */
+function teampassCorruptedItemsClearItemState(int $itemId, string $status = 'cleared_after_update'): void
+{
+    if ($itemId <= 0 || teampassCorruptedItemsTableExists() === false) {
+        return;
+    }
+
+    DB::update(
+        prefixTable('items_corruption'),
+        [
+            'is_active' => 0,
+            'status' => $status,
+            'resolved_at' => time(),
+            'updated_at' => time(),
+        ],
+        'item_id = %i AND is_active = %i',
+        $itemId,
+        1
+    );
+}
+
+/**
+ * Builds a discreet user notice for a corrupted item.
+ *
+ * @param \TeampassClasses\Language\Language $lang      Language instance
+ * @param array<string, mixed>|null            $state     Persisted item state
+ * @param bool                                 $canModify Whether current user can update the item
+ * @param bool                                 $isAdmin   Whether current user is admin
+ *
+ * @return array<string, mixed>
+ */
+function teampassCorruptedItemsBuildNotice(
+    \TeampassClasses\Language\Language $lang,
+    ?array $state,
+    bool $canModify,
+    bool $isAdmin
+): array {
+    if ($state === null || $canModify === false || $isAdmin === true) {
+        return [
+            'display' => false,
+            'severity' => 'warning',
+            'message' => '',
+        ];
+    }
+
+    $reason = (string) ($state['reason_code'] ?? '');
+
+    // warning-severity: password may be outdated or length mismatch — user should update it
+    if (in_array($reason, ['empty_key', 'len_mismatch'], true) === true) {
+        return [
+            'display' => true,
+            'severity' => 'warning',
+            'message' => $lang->get('items_corrupted_notice_update'),
+        ];
+    }
+
+    // danger-severity: password could not be decrypted — immediate re-entry required
+    if (in_array($reason, ['decrypt_failed', 'binary_bytes', 'exception'], true) === true) {
+        return [
+            'display' => true,
+            'severity' => 'danger',
+            'message' => $lang->get('items_corrupted_notice_unreadable'),
+        ];
+    }
+
+    return [
+        'display' => false,
+        'severity' => 'warning',
+        'message' => '',
+    ];
 }

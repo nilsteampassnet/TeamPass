@@ -581,12 +581,36 @@ $zones = timezone_list();
                             </div>
                         </div>
 
-                        <div class='row mb-2 option' data-keywords="log user login password security">
+                        <div class='row mb-2 option' data-keywords="log user login password security anti bruteforce account lockout">
                             <div class='col-10'>
                                 <?php echo $lang->get('nb_false_login_attempts'); ?>
                             </div>
                             <div class='col-2'>
-                                <input type='number' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '0'); ?>'>
+                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication'] ?? '0'); ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="log user login password security anti bruteforce ip address blacklist acl">
+                            <div class='col-10'>
+                                <?php echo $lang->get('nb_bad_authentication_by_ip'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('nb_bad_authentication_by_ip_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='0' step='1' class='form-control form-control-sm' id='nb_bad_authentication_by_ip' value='<?php echo htmlspecialchars($SETTINGS['nb_bad_authentication_by_ip'] ?? '30'); ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="log user login password security anti bruteforce lock duration minutes">
+                            <div class='col-10'>
+                                <?php echo $lang->get('bruteforce_lock_duration'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('bruteforce_lock_duration_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' step='1' class='form-control form-control-sm' id='bruteforce_lock_duration' value='<?php echo htmlspecialchars($SETTINGS['bruteforce_lock_duration'] ?? '10'); ?>'>
                             </div>
                         </div>
 
@@ -1680,6 +1704,18 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                             <div class='col-2'>
                                 <div class='toggle toggle-modern' id='enable_suggestion' data-toggle-on='<?php echo isset($SETTINGS['enable_suggestion']) === true && (int) $SETTINGS['enable_suggestion'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_suggestion_input' value='<?php echo isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="items corrupted highlight warning list display">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_show_corrupted_items_in_list'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_show_corrupted_items_in_list_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='show_corrupted_items_in_list' data-toggle-on='<?php echo isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='show_corrupted_items_in_list_input' value='<?php echo isset($SETTINGS['show_corrupted_items_in_list']) && (int) $SETTINGS['show_corrupted_items_in_list'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
                         

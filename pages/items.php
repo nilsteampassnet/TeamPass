@@ -1229,6 +1229,7 @@ if ((int) $session_user_admin === 1) {
                                     <span id="card-item-url-text" class="float-right ml-1"></span>
                                 </li>
                             </ul>
+                            <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
                         </div>
                     </div>
                 </div>

@@ -331,6 +331,9 @@ function tpRenderOverview(report) {
 
     $('#health-inconsistent-users').text(Number(find.inconsistent_users || 0));
 
+    var corrupted = report.crypto && report.crypto.corrupted_items ? report.crypto.corrupted_items : {};
+    $('#health-overview-corrupted-items').text(Number(corrupted.count || 0));
+
     $('#health-backup-status').html(tpStatusToBadge(find.backup_status || 'info'));
 
     $('#health-findings-details').text('');
@@ -983,6 +986,7 @@ function tpScanCorruptedItems() {
 
             var r = data.result;
             $('#health-corrupted-items-count').text(Number(r.count || 0));
+            $('#health-overview-corrupted-items').text(Number(r.count || 0));
             $('#health-corrupted-items-last-scan').text(tpEscapeHtml(r.last_scan_at_human || ''));
             $('#health-corrupted-items-show-btn').prop('disabled', false);
 

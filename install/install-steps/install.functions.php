@@ -110,7 +110,15 @@ function GenerateCryptKeyForInstall(
  */
 function cryptionForInstall(string $message, string $ascii_key, string $type, ?array $SETTINGS = []): array
 {
-    $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
+    // If no key provided, try to load it from secure file
+    // Check if secure file is defined
+    // If not, return error and empty string
+    if (empty($ascii_key) === true) {
+        if (!defined('SECUREPATH') || !defined('SECUREFILE')) {
+            return ['string' => '', 'error' => 'securepath_not_defined'];
+        }
+        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+    }
     $err = false;
     
     try {

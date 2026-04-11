@@ -197,6 +197,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <th><?php echo $lang->get('label'); ?></th>
                                             <th><?php echo $lang->get('user'); ?></th>
                                             <th><?php echo $lang->get('ip'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
                                         </tr>
                                     </thead>
                                 </table>

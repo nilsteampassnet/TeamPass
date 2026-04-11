@@ -320,6 +320,15 @@ addColumnIfNotExist(
     'invalidated_at',
     "INT UNSIGNED DEFAULT 0"
 );
+
+// Add show_subfolders column to users table if missing.
+// Was introduced in upgrade_run_3.1.php but absent from the fresh-install schema,
+// so instances installed at 3.1.x without going through that upgrade path are affected.
+addColumnIfNotExist(
+    $pre . 'users',
+    'show_subfolders',
+    "TINYINT(1) NOT NULL DEFAULT 0"
+);
 // --->
 
 
@@ -389,6 +398,75 @@ if (function_exists('tpArchiveCurrentBackupScriptPasskeyState')) {
 }
 if (function_exists('tpResolveBackupScriptPasskey')) {
     tpResolveBackupScriptPasskey($SETTINGS, true);
+}
+// --->
+
+// <---
+// ==========================================
+// Anti-bruteforce configurable settings defaults
+// ==========================================
+$bruteforceDefaults = [
+    'nb_bad_authentication_by_ip' => '30',
+    'bruteforce_lock_duration'    => '10',
+];
+foreach ($bruteforceDefaults as $key => $value) {
+    mysqli_query(
+        $db_link,
+        "INSERT IGNORE INTO `{$pre}misc` (type, intitule, valeur, created_at)
+        VALUES ('admin', '" . mysqli_real_escape_string($db_link, $key) . "',
+                '" . mysqli_real_escape_string($db_link, $value) . "',
+                UNIX_TIMESTAMP())"
+    );
+}
+// --->
+
+
+
+// <---
+// ==========================================
+// Corrupted items persistence: table and related settings
+// ==========================================
+mysqli_query(
+    $db_link,
+    "CREATE TABLE IF NOT EXISTS `{$pre}items_corruption` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `reason_code` VARCHAR(50) NOT NULL,
+            `severity` VARCHAR(20) NOT NULL,
+            `status` VARCHAR(50) NOT NULL,
+            `action_recommendation` VARCHAR(50) NOT NULL,
+            `user_notice_mode` VARCHAR(20) NOT NULL DEFAULT 'none',
+            `is_personal` TINYINT(1) NOT NULL DEFAULT 0,
+            `len_stored` INT(12) NOT NULL DEFAULT 0,
+            `len_actual` INT(12) NOT NULL DEFAULT 0,
+            `exception_message` TEXT NULL,
+            `first_detected_at` INT(12) NOT NULL,
+            `last_detected_at` INT(12) NOT NULL,
+            `last_scan_at` INT(12) NOT NULL,
+            `confirmed_at` INT(12) NULL DEFAULT NULL,
+            `resolved_at` INT(12) NULL DEFAULT NULL,
+            `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+            `updated_at` INT(12) NOT NULL,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item_id` (`item_id`),
+            KEY `idx_reason_status` (`reason_code`, `status`),
+            KEY `idx_is_active` (`is_active`),
+            KEY `idx_last_detected_at` (`last_detected_at`),
+            KEY `idx_is_personal` (`is_personal`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+);
+
+$corruptedItemsDefaults = [
+    'show_corrupted_items_in_list' => '0',
+];
+foreach ($corruptedItemsDefaults as $key => $value) {
+    mysqli_query(
+        $db_link,
+        "INSERT IGNORE INTO `{$pre}misc` (type, intitule, valeur, created_at)
+        VALUES ('admin', '" . mysqli_real_escape_string($db_link, $key) . "',
+                '" . mysqli_real_escape_string($db_link, $value) . "',
+                UNIX_TIMESTAMP())"
+    );
 }
 // --->
 

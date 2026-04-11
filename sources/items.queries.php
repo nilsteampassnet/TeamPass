@@ -1026,6 +1026,7 @@ switch ($inputData['type']) {
         // Init
         $arrayOfChanges = array();
         $encryptionTaskIsRequested = false;
+        $passwordWasUpdated = false;
         $itemFilesForTasks = [];
         $itemFieldsForTasks = [];
         $tasksToBePerformed = [];
@@ -1229,6 +1230,7 @@ switch ($inputData['type']) {
                 if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
                 $tasksToBePerformed = ['item_password'];
                 $encryptionTaskIsRequested = true;
+                $passwordWasUpdated = true;
             } else {
                 $encrypted_password = $data['pw'];
             }
@@ -2159,6 +2161,10 @@ switch ($inputData['type']) {
                 (int) $session->get('user-id')
             );
 
+            if ($passwordWasUpdated === true) {
+                teampassCorruptedItemsClearItemState((int) $inputData['itemId']);
+            }
+
             // Prepare some stuff to return
             $arrData = array(
                 'error' => false,
@@ -2656,6 +2662,11 @@ switch ($inputData['type']) {
 
         $pwIsEmptyNormal = false;
         $arrData = array();
+        $arrData['corruption_notice'] = [
+            'display' => false,
+            'severity' => 'warning',
+            'message' => '',
+        ];
         // return ID
         $arrData['id'] = (int) $inputData['id'];
         $arrData['id_user'] = API_USER_ID;
@@ -2890,6 +2901,13 @@ switch ($inputData['type']) {
                 $arrData['user_can_modify'] = 0;
                 $user_is_allowed_to_modify = false;
             }
+
+            $arrData['corruption_notice'] = teampassCorruptedItemsBuildNotice(
+                $lang,
+                teampassCorruptedItemsGetItemState((int) $inputData['id']),
+                $user_is_allowed_to_modify,
+                (int) $session->get('user-admin') === 1
+            );
 
             // Get restriction list for roles
             $listRestrictionRoles = array();
@@ -4248,8 +4266,25 @@ switch ($inputData['type']) {
             $batchRestrictedToRoles = [];
             $batchUserIncludedInRole = [];
             $batchExpirationDates = [];
+            $batchCorruptedItems = [];
 
             if (!empty($allItemIds)) {
+                if ((int) $session->get('user-admin') !== 1 && teampassCorruptedItemsTableExists() === true) {
+                    $corruptedRows = DB::query(
+                        'SELECT item_id, reason_code, severity
+                        FROM ' . prefixTable('items_corruption') . '
+                        WHERE is_active = %i AND item_id IN %ls',
+                        1,
+                        $allItemIds
+                    );
+                    foreach ($corruptedRows as $corruptedRow) {
+                        $batchCorruptedItems[(int) $corruptedRow['item_id']] = [
+                            'reason' => (string) ($corruptedRow['reason_code'] ?? ''),
+                            'severity' => (string) ($corruptedRow['severity'] ?? 'warning'),
+                        ];
+                    }
+                }
+
                 // Batch: get all role restrictions for these items
                 $roleRestrictions = DB::query(
                     'SELECT item_id, role_id
@@ -4378,6 +4413,17 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['email'] = $record['email'] ?? '';
                     $html_json[$record['id']]['fa_icon'] = $record['fa_icon'];
                     $html_json[$record['id']]['user_restriction_allowed_for_user'] = ((!empty($record['restricted_to']) && $user_is_in_restricted_list === true) || empty($record['restricted_to'])) ? true : false;
+
+                    $corruptedState = $batchCorruptedItems[(int) $record['id']] ?? null;
+                    $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
+                    $html_json[$record['id']]['corruption_reason'] = $corruptedState['reason'] ?? '';
+                    $html_json[$record['id']]['corruption_severity'] = $corruptedState['severity'] ?? '';
+                    $html_json[$record['id']]['corruption_reason_label'] = $corruptedState !== null
+                        ? teampassCorruptedItemsReasonToLabel(
+                            $lang,
+                            $corruptedState['reason']
+                        )
+                        : '';
 
                     // Possible values:
                     // 0 -> no access to item
