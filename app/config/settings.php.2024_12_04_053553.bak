@@ -1,0 +1,27 @@
+<?php
+// DATABASE connexion parameters
+define("DB_HOST", "localhost");
+define("DB_USER", "root");
+define("DB_PASSWD", "def5020052412252cc1507834e7797730378054ff80e45db5b4eeeb3e5a6bf4aff476ab7ff35519bb13cada0e42ad6f39bcd2b3c54a136e29c2cc1a71bde36f6b3947170d35adaafc16417c342d765ad3b8431a6420d9d2567c4f5874111e62a");
+define("DB_NAME", "tp_new_install");
+define("DB_PREFIX", "teampass_");
+define("DB_PORT", "3306");
+define("DB_ENCODING", "utf8");
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+//define("DB_SSL", array(
+//    "key" => "",
+//    "cert" => "",
+//    "ca_cert" => "",
+//    "ca_path" => "",
+//    "cipher" => ""
+//));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
+define("SECUREPATH", "/var/www/TP_secrets/tests");
+define("SECUREFILE", "JbRHrvEkka1DfqAGolGffMdAOopiaIArjsxV7Z4X");
+
+if (isset($_SESSION['settings']['timezone']) === true) {
+    date_default_timezone_set($_SESSION['settings']['timezone']);
+}

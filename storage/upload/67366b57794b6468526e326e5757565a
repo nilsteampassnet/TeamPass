@@ -1,0 +1,103 @@
+-- phpMyAdmin SQL Dump
+-- version 4.8.5
+-- https://www.phpmyadmin.net/
+--
+-- Hôte : localhost
+-- Généré le :  mer. 14 sep. 2022 à 12:05
+-- Version du serveur :  5.7.25-log
+-- Version de PHP :  7.3.25
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+SET AUTOCOMMIT = 0;
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Base de données :  `tp3`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `teampass_roles_values`
+--
+
+CREATE TABLE `teampass_roles_values` (
+  `role_id` int(12) NOT NULL,
+  `folder_id` int(12) NOT NULL,
+  `type` varchar(5) NOT NULL DEFAULT 'R',
+  `increment_id` int(12) NOT NULL
+) ENGINE=MyISAM DEFAULT CHARSET=utf8;
+
+--
+-- Déchargement des données de la table `teampass_roles_values`
+--
+
+INSERT INTO `teampass_roles_values` (`increment_id`) VALUES
+(61),
+(62),
+(115),
+(133),
+(136),
+(274),
+(276),
+(277),
+(280),
+(281),
+(282),
+(384),
+(386),
+(436),
+(438),
+(439),
+(441),
+(460),
+(461),
+(463),
+(465),
+(467),
+(674),
+(675),
+(676),
+(677),
+(678),
+(679),
+(680),
+(681),
+(682),
+(683),
+(684),
+(1295),
+(1296);
+
+--
+-- Index pour les tables déchargées
+--
+
+--
+-- Index pour la table `teampass_roles_values`
+--
+ALTER TABLE `teampass_roles_values`
+  ADD PRIMARY KEY (`increment_id`),
+  ADD KEY `role_id_idx` (`role_id`);
+
+--
+-- AUTO_INCREMENT pour les tables déchargées
+--
+
+--
+-- AUTO_INCREMENT pour la table `teampass_roles_values`
+--
+ALTER TABLE `teampass_roles_values`
+  MODIFY `increment_id` int(12) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1491;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
