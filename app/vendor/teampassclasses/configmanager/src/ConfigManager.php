@@ -89,7 +89,7 @@ class ConfigManager
     public function loadSettingsFromDB(): array
     {
         // Do we have a settings file?
-        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        $settingsFile = __DIR__ . '/../../../../../app/config/settings.php';
         if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
             return [];
         }
@@ -145,7 +145,7 @@ class ConfigManager
     public function getLastModificationTimestamp(): string|null
     {
         // Do we have a settings file?
-        $settingsFile = __DIR__ . '/../../../../includes/config/settings.php';
+        $settingsFile = __DIR__ . '/../../../../../app/config/settings.php';
         if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
             return "";
         }

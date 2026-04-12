@@ -77,7 +77,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -927,7 +927,7 @@ logItems(
                         ->setDayOfMonth('*')
                         ->setMonths('*')
                         ->setDayOfWeek('*')
-                        ->setTaskCommandLine($phpBinaryPath . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
+                        ->setTaskCommandLine($phpBinaryPath . ' ' . TEAMPASS_APP . '/sources/scheduler.php')
                         ->setComments('Teampass scheduler');
                     
                     $crontabRepository->addJob($crontabJob);
@@ -1055,7 +1055,7 @@ logItems(
                 array_unique(
                     array_filter(
                         array(
-                            $SETTINGS['cpassman_dir'] ?? '',
+                            TEAMPASS_ROOT,
                             $SETTINGS['path_to_upload_folder'] ?? '',
                             '/',
                         )
@@ -3198,21 +3198,18 @@ function tpGetBackupsStatus(array $SETTINGS): array
         require_once $backupFunctionsPath;
     }
 
-    // Base files directory (same logic as backups.queries.php)
+    // Base files directory
     $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? '');
-    if ($baseFilesDir === '' && isset($SETTINGS['cpassman_dir']) === true) {
-        $baseFilesDir = rtrim((string) $SETTINGS['cpassman_dir'], '/') . '/files';
-    }
     if ($baseFilesDir === '') {
-        $baseFilesDir = (string) (__DIR__ . '/../files');
+        $baseFilesDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files';
     }
     $baseFilesDir = rtrim($baseFilesDir, '/');
 
-    // Scheduled output dir is configurable; default is <files>/backups
-    $scheduledDir = $baseFilesDir . '/backups';
+    // Scheduled output dir is configurable; default is storage/backups
+    $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
     $scheduledDir = (string) tpHealthGetSettingsValue('bck_scheduled_output_dir', $scheduledDir);
     if ($scheduledDir === '') {
-        $scheduledDir = $baseFilesDir . '/backups';
+        $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
     }
     $scheduledDir = rtrim((string) $scheduledDir, '/');
 
@@ -4183,8 +4180,8 @@ function tpHealthGetHostHints(array $SETTINGS): array
     }
 
     $dirSlug = '';
-    if (isset($SETTINGS['cpassman_dir']) === true && empty($SETTINGS['cpassman_dir']) === false) {
-        $dirBaseName = basename((string) $SETTINGS['cpassman_dir']);
+    {
+        $dirBaseName = basename(TEAMPASS_ROOT);
         $dirSlugTmp = preg_replace('/[^a-z0-9_-]+/i', '-', $dirBaseName);
         $dirSlug = is_string($dirSlugTmp) === true ? trim($dirSlugTmp, '-') : '';
     }
@@ -4405,7 +4402,7 @@ function tpHealthGetConfigMatchScore(string $content, array $SETTINGS): int
     $hostSlug = strtolower((string) ($hints['host_slug'] ?? ''));
     $hostUnderscore = strtolower((string) ($hints['host_underscore'] ?? ''));
     $dirSlug = strtolower((string) ($hints['dir_slug'] ?? ''));
-    $cpassmanDir = strtolower(trim((string) ($SETTINGS['cpassman_dir'] ?? '')));
+    $cpassmanDir = strtolower(trim(TEAMPASS_ROOT));
 
     foreach (array($host, $hostSlug, $hostUnderscore) as $needle) {
         if ($needle !== '' && str_contains($content, $needle) === true) {

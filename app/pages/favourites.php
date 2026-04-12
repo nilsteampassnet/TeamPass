@@ -72,7 +72,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     || (isset($session_user_admin) && (int) $session_user_admin === 1)) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 

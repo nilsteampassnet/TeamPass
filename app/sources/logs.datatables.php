@@ -175,7 +175,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -558,7 +558,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $sOutput .= '] }';
 /* ITEMS */
 } elseif (isset($params['action']) && $params['action'] === 'items') {
-    require_once $SETTINGS['cpassman_dir'].'/sources/main.functions.php';
+    require_once TEAMPASS_APP . '/sources/main.functions.php';
     //Columns name
     $aColumns = ['l.date', 'i.id', 'i.label', 't.title', 'u.login', 'l.action', 'l.raison', 't.personal_folder', 'u.name', 'u.lastname'];
 

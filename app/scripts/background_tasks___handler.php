@@ -70,10 +70,10 @@ class BackgroundTasksHandler {
 
         $this->maxTimeBeforeRemoval = $historyDelay > 0 ? $historyDelay : (15 * 86400);
 
-        // Initialize trigger file path (default: files/ directory, same as lock file)
+        // Initialize trigger file path (default: storage/logs/ in the new structure)
         $this->triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
             ? TASKS_TRIGGER_FILE
-            : __DIR__ . '/../files/teampass_background_tasks.trigger';
+            : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger' : __DIR__ . '/../../storage/logs/teampass_background_tasks.trigger');
     }
 
     /**
@@ -115,8 +115,7 @@ class BackgroundTasksHandler {
         // Output dir
         $outputDir = (string)$this->getSettingValue('bck_scheduled_output_dir', '');
         if ($outputDir === '') {
-            $baseFilesDir = (string)($this->settings['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $outputDir = rtrim($baseFilesDir, '/') . '/backups';
+            $outputDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
             $this->upsertSettingValue('bck_scheduled_output_dir', $outputDir);
         }
 
@@ -395,7 +394,7 @@ class BackgroundTasksHandler {
      * @return bool
      */
     private function acquireProcessLock(): bool {
-        $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
+        $lockFile = !empty(TASKS_LOCK_FILE) ? TASKS_LOCK_FILE : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.lock' : __DIR__ . '/../../storage/logs/teampass_background_tasks.lock');
 
         $fp = fopen($lockFile, 'w');
         if ($fp === false) {
@@ -422,7 +421,7 @@ class BackgroundTasksHandler {
             $this->lockFileHandle = null;
         }
 
-        $lockFile = empty(TASKS_LOCK_FILE) ? __DIR__.'/../files/teampass_background_tasks.lock' : TASKS_LOCK_FILE;
+        $lockFile = !empty(TASKS_LOCK_FILE) ? TASKS_LOCK_FILE : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.lock' : __DIR__ . '/../../storage/logs/teampass_background_tasks.lock');
         if (file_exists($lockFile)) {
             unlink($lockFile);
         }

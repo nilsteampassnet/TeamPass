@@ -136,8 +136,7 @@ if (defined('TP_PW_COMPLEXITY') === false) {
 
 // LOAD CPASSMAN SETTINGS
 if (
-    isset($SETTINGS['cpassman_dir']) === true
-    && is_dir($SETTINGS['cpassman_dir'] . '/install') === true
+    is_dir(TEAMPASS_ROOT . '/public/install') === true
 ) {
     // Should we delete folder INSTALL?
     $row = DB::queryFirstRow(
@@ -182,10 +181,10 @@ if (
         // Set the permissions on the install directory and delete
         // is server Windows or Linux?
         if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-            recursiveChmod($SETTINGS['cpassman_dir'] . '/install', 0440, 0755);
+            recursiveChmod(TEAMPASS_ROOT . '/public/install', 0440, 0755);
         }
 
-        $installFolderDeleted = delTree($SETTINGS['cpassman_dir'] . '/install');
+        $installFolderDeleted = delTree(TEAMPASS_ROOT . '/public/install');
 
         if ($installFolderDeleted === true) {
             // Delete temporary install table

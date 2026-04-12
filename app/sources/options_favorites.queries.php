@@ -63,7 +63,7 @@ $checkUserAccess = new PerformChecks(
 echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('options') === false) {
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 

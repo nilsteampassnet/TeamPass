@@ -7238,7 +7238,7 @@ function triggerBackgroundHandler(): void
     // Determine trigger file path
     $triggerFile = defined('TASKS_TRIGGER_FILE') && TASKS_TRIGGER_FILE !== ''
         ? TASKS_TRIGGER_FILE
-        : __DIR__ . '/../files/teampass_background_tasks.trigger';
+        : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger' : __DIR__ . '/../../storage/logs/teampass_background_tasks.trigger');
 
     // Create/touch the trigger file to notify running handler
     // The file content includes timestamp for debugging purposes

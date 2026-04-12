@@ -130,9 +130,8 @@ class TaskWorker {
     {
         require_once __DIR__ . '/../sources/backup.functions.php';
 
-        // Default target dir: <path_to_files_folder>/backups
-        $baseFilesDir = (string)($this->settings['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-        $targetDir = rtrim($baseFilesDir, '/') . '/backups';
+        // Default target dir: storage/backups/
+        $targetDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
         // Allow override via task arguments (optional)
         if (!empty($taskData['output_dir']) && is_string($taskData['output_dir'])) {

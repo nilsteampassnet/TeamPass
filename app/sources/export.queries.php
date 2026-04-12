@@ -78,7 +78,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -100,7 +100,7 @@ $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 $antiXss = new AntiXSS();
 
 // User's language loading
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
+require_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
 
 // Prepare POST variables
 $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
@@ -543,7 +543,7 @@ if (null !== $post_type) {
                 $prev_path = '';
 
                 //Prepare the PDF file
-                require_once $SETTINGS['cpassman_dir'] . '/vendor/tecnickcom/tcpdf/tcpdf.php';
+                require_once TEAMPASS_APP . '/vendor/tecnickcom/tcpdf/tcpdf.php';
 
                 $pdf = new TCPDF(PDF_PAGE_ORIENTATION, PDF_UNIT, PDF_PAGE_FORMAT, true, 'UTF-8', false);
                 $pdf->SetProtection(array('print'), $dataReceived['pdf_password'], null);
@@ -555,7 +555,7 @@ if (null !== $post_type) {
 
                 // set default header data
                 $pdf->SetHeaderData(
-                    $SETTINGS['cpassman_dir'] . '/includes/images/teampass-logo2-home.png',
+                    TEAMPASS_ROOT . '/public/assets/images/teampass-logo2-home.png',
                     PDF_HEADER_LOGO_WIDTH,
                     'Teampass export',
                     $session->get('user-lastname')." ".$session->get('user-name').' @ '.date($SETTINGS['date_format']." ".$SETTINGS['time_format'], (int) time())
@@ -704,7 +704,7 @@ if (null !== $post_type) {
             // step 1:
             // - prepare export file
             // - get full list of objects id to export
-            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            include TEAMPASS_APP . '/config/include.php';
             $idsList = array();
 
             // query
@@ -851,7 +851,7 @@ if (null !== $post_type) {
             $full_listing = array();
             $items_id_list = array();
             $outstream = '';
-            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            include TEAMPASS_APP . '/config/include.php';
 
             // query
             $rows = DB::query(
@@ -972,7 +972,7 @@ if (null !== $post_type) {
             $inputData['password'] = (string) $dataReceived['password'];
             
             // Load includes
-            include $SETTINGS['cpassman_dir'] . '/includes/config/include.php';
+            include TEAMPASS_APP . '/config/include.php';
 
             // read the content of the temporary file
             $handle = fopen($inputData['filename'].'.txt', 'r');

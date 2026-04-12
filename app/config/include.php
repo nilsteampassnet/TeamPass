@@ -26,9 +26,22 @@
  * @see       https://www.teampass.net
  */
 
-define('TP_VERSION', '3.1.7');
+// Ensure root path constants are available when this file is included directly
+// (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
+// __DIR__ here is app/config/, so two levels up is the repository root.
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../..'));
+}
+if (!defined('TEAMPASS_APP')) {
+    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
+}
+if (!defined('TEAMPASS_STORAGE')) {
+    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
+}
+
+define('TP_VERSION', '3.2.0');
 define("UPGRADE_MIN_DATE", "1775240619");
-define('TP_VERSION_MINOR', '5');
+define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -52,9 +65,9 @@ define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v
 
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
-define('LOG_TASKS_FILE', '../files/teampass_tasks.log'); // By default, its is stored folder 'files', otherwize it is inside server error log. 🫸 Ensure you have the right to write in the log file
-define('TASKS_LOCK_FILE', ''); // By default, it is stored in folder 'files'. 🫸 If you change this, ensure you have the right to write in the lock file
-define('TASKS_TRIGGER_FILE', ''); // Trigger file to notify running handler of new urgent tasks. By default, stored in folder 'files'
+define('LOG_TASKS_FILE', TEAMPASS_STORAGE . '/logs/teampass_tasks.log'); // Log file for background tasks. 🫸 Ensure you have the right to write in the log file
+define('TASKS_LOCK_FILE', TEAMPASS_STORAGE . '/logs/teampass_background_tasks.lock'); // Lock file to prevent concurrent executions. 🫸 Ensure you have the right to write this file
+define('TASKS_TRIGGER_FILE', TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger'); // Trigger file to notify running handler of new urgent tasks
 
 // Internal constants
 define('ERR_NOT_ALLOWED', '1000');
@@ -79,13 +92,18 @@ define('MIN_PHP_VERSION', '8.1');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 
+// Security file — master encryption key for Defuse PHP Encryption.
+// The key file lives in secrets/ at the repository root (outside public/).
+// Only SECUREFILE (the filename) remains in settings.php; the directory is a constant.
+define('SECUREPATH', TEAMPASS_ROOT . '/secrets');
+
 // URLs
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
 define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
 define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');
 define('TEAMPASS_URL', 'https://teampass.net');
-define("TEAMPASS_ROOT_PATH", __DIR__.'/../../');
+define("TEAMPASS_ROOT_PATH", TEAMPASS_ROOT . '/');
 define('GITHUB_COMMIT_URL', 'https://github.com/nilsteampassnet/TeamPass/commit/');
 
 // Fontawesome icons

@@ -54,8 +54,23 @@ header("Expires: 0");
 // Uses a secure connection (HTTPS) if possible
 //ini_set('session.cookie_secure', 0);
 //ini_set('session.cookie_samesite', 'Lax');
+
+// Application root paths — defined here so every PHP include can rely on them.
+// TEAMPASS_ROOT  : repository root (parent of public/)
+// TEAMPASS_APP   : private application code (not web-accessible)
+// TEAMPASS_STORAGE: writable runtime data (files, uploads, logs)
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', dirname(__DIR__));
+}
+if (!defined('TEAMPASS_APP')) {
+    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
+}
+if (!defined('TEAMPASS_STORAGE')) {
+    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
+}
+
 // Before we start processing, we should abort no install is present
-if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
+if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {
@@ -68,12 +83,12 @@ if (file_exists(__DIR__.'/includes/config/settings.php') === false) {
 }
 
 // initialise CSRFGuard library
-require_once __DIR__.'/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
+require_once TEAMPASS_APP . '/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
 
 // Load functions
-require_once __DIR__. '/includes/config/include.php';
-require_once __DIR__.'/sources/main.functions.php';
+require_once TEAMPASS_APP . '/config/include.php';
+require_once TEAMPASS_APP . '/sources/main.functions.php';
 
 // init
 loadClasses();
@@ -106,7 +121,7 @@ if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION,
 $SETTINGS = $antiXss->xss_clean($SETTINGS);
 
 // Load Core library
-require_once $SETTINGS['cpassman_dir'] . '/sources/core.php';
+require_once TEAMPASS_APP . '/sources/core.php';
 // Prepare POST variables
 $post_language = filter_input(INPUT_POST, 'language', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $session_user_language = $session->get('user-language');
@@ -203,10 +218,10 @@ if (null === $session->get('user-validite_pw') && $post_language === null && $se
         $session_user_language = $SETTINGS['default_language'];
     }
 }
-$lang = new Language($session_user_language, __DIR__. '/includes/language/'); 
+$lang = new Language($session_user_language, TEAMPASS_APP . '/includes/language/');
 
 if (isset($SETTINGS['cpassman_dir']) === false || $SETTINGS['cpassman_dir'] === '') {
-    $SETTINGS['cpassman_dir'] = __DIR__;
+    $SETTINGS['cpassman_dir'] = TEAMPASS_ROOT;
     $SETTINGS['cpassman_url'] = (string) $server['request_uri'];
 }
 
@@ -298,8 +313,8 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <link rel="manifest" href="manifest.json?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Custom style -->
     <?php
-    if (file_exists(__DIR__ . '/includes/css/custom.css') === true) {?>
-        <link rel="stylesheet" href="includes/css/custom.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    if (file_exists(__DIR__ . '/assets/css/custom.css') === true) {?>
+        <link rel="stylesheet" href="assets/css/custom.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <?php
     } ?>
 </head>
@@ -312,7 +327,7 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
 if ((null === $session->get('user-validite_pw') || empty($session->get('user-validite_pw')) === true || empty($session->get('user-id')) === true)
     && empty($get['otv']) === false)
 {
-    include './includes/core/otv.php';
+    include TEAMPASS_APP . '/core/otv.php';
     exit;
 } elseif ($session->has('user-validite_pw') && null !== $session->get('user-validite_pw') && ($session->get('user-validite_pw') === 0 || $session->get('user-validite_pw') === 1)
     && empty($get['page']) === false && empty($session->get('user-id')) === false
@@ -1090,38 +1105,38 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     if ($get['page'] === 'items') {
                         // SHow page with Items
                         if ((int) $session_user_admin !== 1) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/items.php';
+                            include TEAMPASS_APP . '/pages/items.php';
                         } elseif ((int) $session_user_admin === 1) {
-                            include $SETTINGS['cpassman_dir'] . '/pages/admin.php';
+                            include TEAMPASS_APP . '/pages/admin.php';
                         } else {
                             $session->set('system-error_code', ERR_NOT_ALLOWED);
                             //not allowed page
-                            include $SETTINGS['cpassman_dir'] . '/error.php';
+                            include __DIR__ . '/error.php';
                         }
                     } elseif (in_array($get['page'], array_keys($mngPages)) === true) {
                         // Define if user is allowed to see management pages
                         if ($session_user_admin === 1) {
                             // deepcode ignore FileInclusion: $get['page'] is secured through usage of array_keys test bellow
-                            include $SETTINGS['cpassman_dir'] . '/pages/' . basename($mngPages[$get['page']]);
+                            include TEAMPASS_APP . '/pages/' . basename($mngPages[$get['page']]);
                         } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
                             if ($get['page'] === 'manage_main' || $get['page'] === 'manage_settings'
                             ) {
                                 $session->set('system-error_code', ERR_NOT_ALLOWED);
                                 //not allowed page
-                                include $SETTINGS['cpassman_dir'] . '/error.php';
+                                include __DIR__ . '/error.php';
                             }
                         } else {
                             $session->set('system-error_code', ERR_NOT_ALLOWED);
                             //not allowed page
-                            include $SETTINGS['cpassman_dir'] . '/error.php';
+                            include __DIR__ . '/error.php';
                         }
-                    } elseif (empty($get['page']) === false && file_exists($SETTINGS['cpassman_dir'] . '/pages/' . $get['page'] . '.php') === true) {
+                    } elseif (empty($get['page']) === false && file_exists(TEAMPASS_APP . '/pages/' . $get['page'] . '.php') === true) {
                         // deepcode ignore FileInclusion: $get['page'] is tested against file_exists just below
-                        include $SETTINGS['cpassman_dir'] . '/pages/' . basename($get['page'] . '.php');
+                        include TEAMPASS_APP . '/pages/' . basename($get['page'] . '.php');
                     } else {
                         $session->set('system-array_roles', ERR_NOT_EXIST);
                         //page doesn't exist
-                        include $SETTINGS['cpassman_dir'].'/error.php';
+                        include __DIR__ . '/error.php';
                     }
 
 ?>
@@ -1166,7 +1181,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     // case where one-shot viewer
     if (empty($request->query->get('code')) === false && empty($request->query->get('stamp')) === false
     ) {
-        include './includes/core/otv.php';
+        include TEAMPASS_APP . '/core/otv.php';
     } else {
         $session->set('system-error_code', ERR_VALID_SESSION);
         $session->set(
@@ -1179,7 +1194,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 FILTER_SANITIZE_URL
             )
         );
-        include $SETTINGS['cpassman_dir'] . '/error.php';
+        include __DIR__ . '/error.php';
     }
 } elseif (//(empty($session->get('user-id')) === false && $session->get('user-id') !== null) ||
         empty($session->get('user-id')) === true
@@ -1203,8 +1218,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         exit;
     }
     
-    // LOGIN form  
-    include $SETTINGS['cpassman_dir'] . '/includes/core/login.php';
+    // LOGIN form
+    include TEAMPASS_APP . '/core/login.php';
     
 } else {
     // Clear session
@@ -1630,7 +1645,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     if (isset($session)
         && ($session->get('phpseclibv3_migration_started') === true || $session->get('phpseclibv3_migration_in_progress') === true)
     ) {
-        include_once 'includes/core/phpseclibv3_migration_modal.php';
+        include_once TEAMPASS_APP . '/core/phpseclibv3_migration_modal.php';
     }
     ?>
 
@@ -1732,67 +1747,67 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 
 // Load links, css and javascripts
 if (isset($SETTINGS['cpassman_dir']) === true) {
-    include_once $SETTINGS['cpassman_dir'] . '/includes/core/load.js.php';
+    include_once TEAMPASS_APP . '/core/load.js.php';
     if ($menuAdmin === true) {
-        include_once $SETTINGS['cpassman_dir'] . '/pages/admin.js.php';
+        include_once TEAMPASS_APP . '/pages/admin.js.php';
         if ($get['page'] === '2fa') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/2fa.js.php';
+            include_once TEAMPASS_APP . '/pages/2fa.js.php';
         } elseif ($get['page'] === 'api') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/api.js.php';
+            include_once TEAMPASS_APP . '/pages/api.js.php';
         } elseif ($get['page'] === 'backups') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/backups.js.php';
+            include_once TEAMPASS_APP . '/pages/backups.js.php';
         } elseif ($get['page'] === 'emails') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/emails.js.php';
+            include_once TEAMPASS_APP . '/pages/emails.js.php';
         } elseif ($get['page'] === 'ldap') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/ldap.js.php';
+            include_once TEAMPASS_APP . '/pages/ldap.js.php';
         } elseif ($get['page'] === 'uploads') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/uploads.js.php';
+            include_once TEAMPASS_APP . '/pages/uploads.js.php';
         } elseif ($get['page'] === 'fields') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/fields.js.php';
+            include_once TEAMPASS_APP . '/pages/fields.js.php';
         } elseif ($get['page'] === 'options') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/options.js.php';
+            include_once TEAMPASS_APP . '/pages/options.js.php';
         } elseif ($get['page'] === 'statistics') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/statistics.js.php';
+            include_once TEAMPASS_APP . '/pages/statistics.js.php';
         } elseif ($get['page'] === 'tasks') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/tasks.js.php';
+            include_once TEAMPASS_APP . '/pages/tasks.js.php';
         } elseif ($get['page'] === 'oauth') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/oauth.js.php';        
+            include_once TEAMPASS_APP . '/pages/oauth.js.php';        
         } elseif ($get['page'] === 'tools') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/tools.js.php';
+            include_once TEAMPASS_APP . '/pages/tools.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/items.js.php';
+            include_once TEAMPASS_APP . '/pages/items.js.php';
         } elseif ($get['page'] === 'import') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/import.js.php';
+            include_once TEAMPASS_APP . '/pages/import.js.php';
         } elseif ($get['page'] === 'export') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/export.js.php';
+            include_once TEAMPASS_APP . '/pages/export.js.php';
         } elseif ($get['page'] === 'offline') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/offline.js.php';
+            include_once TEAMPASS_APP . '/pages/offline.js.php';
         } elseif ($get['page'] === 'search') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/search.js.php';
+            include_once TEAMPASS_APP . '/pages/search.js.php';
         } elseif ($get['page'] === 'profile') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/profile.js.php';
+            include_once TEAMPASS_APP . '/pages/profile.js.php';
         } elseif ($get['page'] === 'favourites') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/favorites.js.php';
+            include_once TEAMPASS_APP . '/pages/favorites.js.php';
         } elseif ($get['page'] === 'folders') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/folders.js.php';
+            include_once TEAMPASS_APP . '/pages/folders.js.php';
         } elseif ($get['page'] === 'users') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/users.js.php';
+            include_once TEAMPASS_APP . '/pages/users.js.php';
         } elseif ($get['page'] === 'roles') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/roles.js.php';
+            include_once TEAMPASS_APP . '/pages/roles.js.php';
         } elseif ($get['page'] === 'utilities.deletion') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.deletion.js.php';
+            include_once TEAMPASS_APP . '/pages/utilities.deletion.js.php';
         } elseif ($get['page'] === 'utilities.logs') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.logs.js.php';
+            include_once TEAMPASS_APP . '/pages/utilities.logs.js.php';
         } elseif ($get['page'] === 'utilities.database') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.database.js.php';
+            include_once TEAMPASS_APP . '/pages/utilities.database.js.php';
         } elseif ($get['page'] === 'utilities.health') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.health.js.php';
+            include_once TEAMPASS_APP . '/pages/utilities.health.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
-            include_once $SETTINGS['cpassman_dir'] . '/pages/utilities.renewal.js.php';
+            include_once TEAMPASS_APP . '/pages/utilities.renewal.js.php';
         }
     } else {
-        include_once $SETTINGS['cpassman_dir'] . '/includes/core/login.js.php';
+        include_once TEAMPASS_APP . '/core/login.js.php';
     }
 }

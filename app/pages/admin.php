@@ -69,7 +69,7 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -606,7 +606,7 @@ try {
                                             <div class="col-12">
                                             <div class="callout callout-info alert-dismissible mt-3" role="alert">
                                                 <h5><i class="fa-solid fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
-                                                <?php echo str_replace("#teampass_path#", $SETTINGS['cpassman_dir'], $lang->get('tasks_information')); ?>
+                                                <?php echo str_replace("#teampass_path#", TEAMPASS_ROOT, $lang->get('tasks_information')); ?>
                                                 <div class="mt-2">
                                                     <a href="index.php?page=tasks#settings" class="btn btn-info" role="button"><i class="fa-solid fa-arrow-up-right-from-square mr-2"></i><?php echo $lang->get('open_tasks_settings'); ?></a>
                                                 </div>

@@ -80,7 +80,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -482,8 +482,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         */
         case 'user_is_ready'://action_user
             return userIsReady(
-                (int) $filtered_user_id,
-                (string) $SETTINGS['cpassman_dir']
+                (int) $filtered_user_id
             );
 
         /*
@@ -492,7 +491,6 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         case 'user_get_session_time'://action_user
             return userGetSessionTime(
                 (int) $session->get('user-id'),
-                (string) $SETTINGS['cpassman_dir'],
                 (int) $SETTINGS['maximum_session_expiration_time'],
             );
 
@@ -1121,7 +1119,7 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
  * @param string $dir
  * @return string
  */
-function userIsReady(int $userid, string $dir): string
+function userIsReady(int $userid): string
 {
     DB::update(
         prefixTable('users'),
@@ -1148,7 +1146,7 @@ function userIsReady(int $userid, string $dir): string
  * @param integer $userid
  * @return string
  */
-function userGetSessionTime(int $userid, string $dir, int $maximum_session_expiration_time): string
+function userGetSessionTime(int $userid, int $maximum_session_expiration_time): string
 {
     $session = SessionManager::getSession();
     // Send back

@@ -53,6 +53,6 @@ class EmailSettings
         $this->from = $SETTINGS['email_from'] ?? 'no-reply@example.com';
         $this->fromName = $SETTINGS['email_from_name'] ?? 'No Reply';
         $this->debugLevel = $SETTINGS['email_debug_level'] ?? 0;
-        $this->dir = $SETTINGS['cpassman_dir'] ?? __DIR__;
+        $this->dir = defined('TEAMPASS_APP') ? TEAMPASS_APP : __DIR__;
     }
 }

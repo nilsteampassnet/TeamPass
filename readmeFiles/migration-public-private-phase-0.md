@@ -415,10 +415,10 @@ Les points suivants doivent être résolus ou décidés avant de passer à la Ph
 
 | Question | Recommandation du doc de référence | Décision |
 |---|---|---|
-| Strategy AJAX wrappers | Option A : proxies dans `/public/sources/` | À confirmer |
+| Strategy AJAX wrappers | Option A : proxies dans `/public/sources/` | ✅ **Confirmé et implémenté** — 37 wrappers créés dans `public/sources/` |
 | `backups/` directory | Migration vers `/storage/backups/` ? | À décider |
 | Scripts d'upgrade historiques | Adapter ou documenter comme non supportés post-migration | À décider |
-| Valeur de `cpassman_dir` après migration | Pointer vers `TEAMPASS_ROOT`, pas `TEAMPASS_APP` | À confirmer |
+| Valeur de `cpassman_dir` après migration | Pointer vers `TEAMPASS_ROOT`, pas `TEAMPASS_APP` | ✅ **Confirmé** — fallback dans `public/index.php` mis à jour |
 
 ### 8.2 Outillage PHPStan
 
@@ -501,6 +501,78 @@ curl -I http://teampass-staging.local/includes/config/settings.php
 - [ ] Crontabs et service WebSocket inventoriés
 - [ ] Décisions architecturales validées (cf. §8.1)
 - [ ] Tag Git `migration-phase-0-ready` posé
+
+---
+
+## 11. Travaux de correction des chemins réalisés (2026-04-12)
+
+> Ces corrections dépassent le périmètre de la Phase 0 (audit seul). Elles ont été appliquées directement sur la branche `feature/public-private-structure` après le déplacement des répertoires (commit `19a26da34`).
+
+### 11.1 `public/index.php` — Point d'entrée web
+
+- ✅ Ajout des constantes `TEAMPASS_ROOT`, `TEAMPASS_APP`, `TEAMPASS_STORAGE` (avec guards `!defined()`) avant le premier `require_once`
+- ✅ Tous les `require_once __DIR__.'/includes/...'` → `TEAMPASS_APP . '/...'`
+- ✅ Tous les `require_once $SETTINGS['cpassman_dir'] . '/sources/...'` → `TEAMPASS_APP . '/sources/...'`
+- ✅ Tous les `include $SETTINGS['cpassman_dir'] . '/pages/...'` → `TEAMPASS_APP . '/pages/...'`
+- ✅ `include $SETTINGS['cpassman_dir'] . '/includes/core/login.php'` → `TEAMPASS_APP . '/core/login.php'`
+- ✅ `include $SETTINGS['cpassman_dir'] . '/error.php'` → `include __DIR__ . '/error.php'`
+- ✅ `include './includes/core/otv.php'` (×2) → `TEAMPASS_APP . '/core/otv.php'`
+- ✅ `include_once 'includes/core/phpseclibv3_migration_modal.php'` → `TEAMPASS_APP . '/core/...'`
+- ✅ Fallback `$SETTINGS['cpassman_dir'] = __DIR__` → `= TEAMPASS_ROOT`
+- ✅ `file_exists(__DIR__ . '/includes/css/custom.css')` + href → `assets/css/custom.css`
+
+**Reste à faire (phase HTML/templates) :** les URLs HTTP dans les `<link>` et `<script>` (`includes/css/`, `includes/js/`, `plugins/`, `includes/images/`) — chemins web, non PHP, à traiter lors de la mise à jour des templates.
+
+### 11.2 `app/config/include.php` — Constantes critiques
+
+- ✅ Ajout du bloc d'auto-définition des 3 constantes (permet l'utilisation depuis les scripts CLI sans passer par `public/index.php`)
+- ✅ `TEAMPASS_ROOT_PATH` : `__DIR__.'/../../'` → `TEAMPASS_ROOT . '/'`
+- ✅ `LOG_TASKS_FILE` : `'../files/teampass_tasks.log'` → `TEAMPASS_STORAGE . '/logs/teampass_tasks.log'`
+- ✅ `TASKS_LOCK_FILE` : `''` → `TEAMPASS_STORAGE . '/logs/teampass_background_tasks.lock'`
+- ✅ `TASKS_TRIGGER_FILE` : `''` → `TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger'`
+
+### 11.3 `public/sources/` — 37 wrappers proxy
+
+- ✅ Répertoire `public/sources/` créé
+- ✅ 37 fichiers proxy générés (un par fichier dans `app/sources/`) — chaque proxy définit `TEAMPASS_ROOT` et délègue via `require_once`
+- ✅ `public/includes/core/logout.php` créé (proxy pour `app/core/logout.php`) — nécessaire car l'URL `./includes/core/logout.php` est référencée côté navigateur
+
+### 11.4 `ConfigManager` — 2 copies
+
+| Copie | Chemin | Correction |
+|---|---|---|
+| `app/includes/libraries/teampassclasses/configmanager/src/` | `settings.php` | `../../../../includes/config/` → `../../../../../config/` (5 niveaux) |
+| idem | `meekrodb` | `/../../../sergeytsalkov/` → `/../../../../../vendor/sergeytsalkov/` |
+| `app/vendor/teampassclasses/configmanager/src/` | `settings.php` | `../../../../includes/config/` → `../../../../../app/config/` (5 niveaux) |
+
+### 11.5 Fallbacks `files/` dans les scripts
+
+- ✅ `app/scripts/background_tasks___handler.php` : fallback trigger file → `TEAMPASS_STORAGE . '/logs/'`
+- ✅ `app/scripts/background_tasks___handler.php` : fallback lock file (×2) → `TEAMPASS_STORAGE . '/logs/'`
+- ✅ `app/sources/main.functions.php` : fallback trigger file dans `triggerBackgroundHandler()` → `TEAMPASS_STORAGE . '/logs/'`
+
+### 11.6 `app/api/inc/bootstrap.php` — API
+
+- ✅ Ajout des 3 constantes (`dirname(__DIR__, 3)` pour remonter à la racine depuis `app/api/inc/`)
+- ✅ `require API_ROOT_PATH . '/../sources/main.functions.php'` → `require TEAMPASS_APP . '/sources/main.functions.php'`
+
+### 11.7 Infrastructure
+
+- ✅ Répertoire `storage/logs/` créé (requis pour les fichiers lock, trigger et log des tâches)
+
+---
+
+### Points non traités (phases ultérieures)
+
+| Sujet | Section doc | Statut |
+|---|---|---|
+| URLs HTTP templates (`includes/css/`, `includes/js/`) | §3.4 | Phase 3 — HTML templates |
+| `cpassman_dir` en base de données | §2.3, §4.1 | Phase 3 — script d'upgrade |
+| Avatars (FS + URL) | §2.5 | Phase 3 |
+| Scripts d'upgrade historiques (`upgrade_run_*.php`) | §2.4, §3.6 | Phase 3 |
+| Configuration nginx (document root → `public/`) | §4.2 | Phase 7 |
+| 3 URLs AJAX hardcodées en JS | §2.7 | Phase 3 (templates) |
+| `cpassman_dir` / `cpassman_url` en base documentés | §10 | Prérequis Phase 1 encore ouvert |
 
 ---
 

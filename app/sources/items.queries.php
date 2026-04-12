@@ -79,7 +79,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -104,7 +104,7 @@ if (isset($SETTINGS['timezone']) === true) {
     date_default_timezone_set('UTC');
 }
 
-require_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
+require_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
@@ -5911,7 +5911,7 @@ switch ($inputData['type']) {
         }
 
         // reload cache table
-        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
         updateCacheTable('reload', null);
 
         echo (string) prepareExchangedData(
@@ -6848,7 +6848,7 @@ switch ($inputData['type']) {
 
             // Prepare avatar
             if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
-                if (file_exists($SETTINGS['cpassman_dir'] . '/includes/avatars/' . strval($record['avatar_thumb']))) {
+                if (file_exists(TEAMPASS_ROOT . '/public/assets/avatars/' . strval($record['avatar_thumb']))) {
                     $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . strval($record['avatar_thumb']);
                 } else {
                     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';

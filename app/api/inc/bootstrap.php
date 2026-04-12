@@ -25,10 +25,21 @@
 
 use TeampassClasses\ConfigManager\ConfigManager;
 
-define("API_ROOT_PATH", __DIR__ . "/..");
+define('API_ROOT_PATH', __DIR__ . '/..');
+
+// Application root paths — API entry point is public/api/index.php; bootstrap is in app/api/inc/
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', dirname(__DIR__, 3)); // app/api/inc/ → app/api/ → app/ → TeamPass/
+}
+if (!defined('TEAMPASS_APP')) {
+    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
+}
+if (!defined('TEAMPASS_STORAGE')) {
+    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
+}
 
 // include main configuration file
-require API_ROOT_PATH . '/../sources/main.functions.php';
+require TEAMPASS_APP . '/sources/main.functions.php';
 
 // include the base controller file
 require API_ROOT_PATH . "/Controller/Api/BaseController.php";

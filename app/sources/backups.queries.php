@@ -105,7 +105,7 @@ if ($isRestoreContinuation === false) {
     ) {
         // Not allowed page
         $session->set('system-error_code', ERR_NOT_ALLOWED);
-        include $SETTINGS['cpassman_dir'] . '/error.php';
+        include TEAMPASS_ROOT . '/public/error.php';
         exit;
     }
 }
@@ -281,7 +281,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         }
 
         $bn = basename($val);
-        $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files')), '/');
+        $baseDir = rtrim((string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files')), '/');
         $targetPath = $baseDir . '/' . $bn;
 
         if (function_exists('tpParseSchemaLevelFromBackupFilename')) {
@@ -306,10 +306,10 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             ];
         }
 
-        $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files')), '/');
+        $baseDir = rtrim((string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files')), '/');
         if ($serverScope === 'scheduled') {
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
             $baseDir = rtrim($dir, '/');
         }
         $targetPath = $baseDir . '/' . $bn;
@@ -455,8 +455,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 exit;
             }
 
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
             $fp = rtrim($dir, '/') . '/' . $get_file;
 
             $dirReal = realpath($dir);
@@ -649,7 +649,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $dirReal = realpath($baseFilesDir);
 
             if ($dirReal === false) {
@@ -769,8 +769,8 @@ try {
             if ($retentionDays > 3650) $retentionDays = 3650;
 
             // Output dir: default to <files>/backups
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $defaultDir = rtrim($baseFilesDir, '/') . '/backups';
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $defaultDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
             $outputDir = trim((string)($dataReceived['output_dir'] ?? ''));
             if ($outputDir === '') $outputDir = $defaultDir;
@@ -808,8 +808,8 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
             @mkdir($dir, 0750, true);
             // Build a relative path from files/ root (output_dir can be a subfolder)
             $filesRoot = realpath($baseFilesDir);
@@ -864,8 +864,8 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
             $fp = rtrim($dir, '/') . '/' . $file;
 
             /**
@@ -930,8 +930,8 @@ try {
             }
 
             $now = time();
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', rtrim($baseFilesDir, '/') . '/backups');
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
             @mkdir($dir, 0750, true);
 
             // avoid duplicates
@@ -1005,7 +1005,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $dir = rtrim($baseFilesDir, '/');
             $fullPath = $dir . '/' . $bn;
 
@@ -1104,7 +1104,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $dir = rtrim($baseFilesDir, '/');
             $fullPath = $dir . '/' . $bn;
 
@@ -1187,7 +1187,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $dir = rtrim($baseFilesDir, '/');
             $fullPath = $dir . '/' . $filename;
 
@@ -1219,9 +1219,9 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $filesDir = rtrim($baseFilesDir, '/');
-            $scheduledDir = $filesDir . '/backups';
+            $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
             $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
             $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
@@ -1250,9 +1250,9 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $filesDir = rtrim($baseFilesDir, '/');
-            $scheduledDir = $filesDir . '/backups';
+            $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
             $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
             $orphSched = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($scheduledDir) : [];
@@ -1283,7 +1283,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)($SETTINGS['path_to_files_folder'] ?? (__DIR__ . '/../files'));
+            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
             $dir = rtrim($baseFilesDir, '/');
 
             $files = array();
@@ -1543,7 +1543,7 @@ try {
                     $token = (string) ($create['token'] ?? '');
                     $expiresAt = (int) ($create['expires_at'] ?? 0);
 
-                    $tpRoot = (string) ($SETTINGS['cpassman_dir'] ?? '');
+                    $tpRoot = TEAMPASS_ROOT;
 
 					// Build a command adapted to the OS and (when possible) running as the same OS user as the web server.
 					// This avoids common permission issues on files/ and keeps behavior consistent.

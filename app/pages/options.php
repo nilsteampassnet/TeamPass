@@ -69,7 +69,7 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('options') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -309,7 +309,7 @@ $zones = timezone_list();
                                     <?php echo $lang->get('admin_misc_cpassman_dir'); ?>
                                 </label>
                                 <div class='col-sm-12'>
-                                    <input type='text' class='form-control form-control-sm' id='cpassman_dir' value='<?php echo isset($SETTINGS['cpassman_dir']) === true ? htmlspecialchars($SETTINGS['cpassman_dir']) : ''; ?>'>
+                                    <input type='text' class='form-control form-control-sm' id='cpassman_dir' value='<?php echo htmlspecialchars(TEAMPASS_ROOT); ?>' readonly>
                                 </div>
                             </div>
 

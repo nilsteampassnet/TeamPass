@@ -73,7 +73,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -418,7 +418,7 @@ if (null === $request->query->get('type')) {
     echo ($sOutput);
 } elseif ($request->query->get('type') === 'search_for_items' || $request->query->get('type') === 'search_for_items_with_tags') {
     include_once 'main.functions.php';
-    include_once $SETTINGS['cpassman_dir'] . '/includes/language/' . $session->get('user-language') . '.php';
+    include_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
 
     $totalItems = $request->query->filter('totalItems', null, FILTER_SANITIZE_NUMBER_INT);
 

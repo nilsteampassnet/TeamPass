@@ -72,7 +72,7 @@ echo $checkUserAccess->caseHandler();
 if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -133,7 +133,7 @@ switch ($post_type) {
             break;
         }
 
-        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
         $return = '';
 
         //Get all tables
@@ -255,7 +255,7 @@ switch ($post_type) {
             );
             break;
         }
-        include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
 
         $dataPost = explode('&', $post_option);
         $file = htmlspecialchars($dataPost[0]);
@@ -443,7 +443,7 @@ switch ($post_type) {
             break;
         }
 
-        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
         updateCacheTable('reload', NULL);
 
         // Log
@@ -1174,7 +1174,7 @@ switch ($post_type) {
                 'encode'
             );
         } else {
-            require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+            require_once TEAMPASS_APP . '/sources/main.functions.php';
 
             //send email
             $emailSettings = new EmailSettings($SETTINGS);
@@ -1212,7 +1212,7 @@ switch ($post_type) {
             break;
         }
 
-        include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
         $emailSettings = new EmailSettings($SETTINGS);
         $emailService = new EmailService();
 
@@ -1304,7 +1304,7 @@ switch ($post_type) {
             break;
         }
 
-        include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
 
         // Instatiate email settings and service
         $emailSettings = new EmailSettings($SETTINGS);
@@ -1379,7 +1379,7 @@ switch ($post_type) {
             break;
         }
 
-        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
 
         // init
         $filesList = array();
@@ -1457,8 +1457,8 @@ switch ($post_type) {
         $post_list = filter_var_array($post_list, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_counter = filter_var($post_counter, FILTER_SANITIZE_NUMBER_INT);
 
-        include $SETTINGS['cpassman_dir'] . '/includes/config/settings.php';
-        include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        include TEAMPASS_APP . '/config/settings.php';
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
 
         $cpt = 0;
         $continu = true;
@@ -1850,7 +1850,7 @@ switch ($post_type) {
 
     case 'run_duo_config_check':
         //Libraries call
-        require_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
         // Check KEY
         if ($post_key !== $session->get('key')) {
             echo prepareExchangedData(
@@ -3835,8 +3835,7 @@ case 'save_sending_statistics':
         }
 
         // New hash-based integrity check
-        $SETTINGS['cpassman_dir'] = rtrim($SETTINGS['cpassman_dir'], '/');
-        $ret = verifyFileHashes($SETTINGS['cpassman_dir'], __DIR__.'/../files_reference.txt');
+        $ret = verifyFileHashes(TEAMPASS_ROOT, __DIR__.'/../files_reference.txt');
 
         $ignoredFiles = DB::queryFirstField(
             'SELECT valeur 
@@ -5250,11 +5249,11 @@ case 'test_encryption':
         }
         
         // Use Defuse encryption (TeamPass's current encryption method)
-        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/EnvironmentIsBrokenException.php';
-        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/BadFormatException.php';
-        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Exception/WrongKeyOrModifiedCiphertextException.php';
-        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Crypto.php';
-        require_once $SETTINGS['cpassman_dir'] . '/vendor/defuse/php-encryption/src/Key.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/EnvironmentIsBrokenException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/BadFormatException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/WrongKeyOrModifiedCiphertextException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Crypto.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Key.php';
         
         $encryptionKey = \Defuse\Crypto\Key::loadFromAsciiSafeString($key);
         

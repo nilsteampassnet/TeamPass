@@ -16,9 +16,14 @@ test.html
 /includes/avatars
 /includes/config/tp.config.php
 /includes/config/settings.php
+/app/config/settings.php
 includes/libraries/csrfp/libs/csrfp.config.php
 /includes/config/tp.config.php.*
 /includes/config/settings.php.*
+/app/config/settings.php.*
+# Master encryption key — never commit the secrets directory content
+/secrets/*
+!/secrets/.gitkeep
 /includes/libraries/csrfp/libs/csrfp.config.php.*
 gcommit.sh
 gdev.sh

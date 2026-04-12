@@ -1240,7 +1240,7 @@ function canUserGetLog(
     $ldapConnection
 ) : bool
 {
-    include_once $SETTINGS['cpassman_dir'] . '/sources/main.functions.php';
+    include_once TEAMPASS_APP . '/sources/main.functions.php';
 
     if ((int) $userInfoDisabled === 1) {
         return false;

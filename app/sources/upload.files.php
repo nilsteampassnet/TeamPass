@@ -76,7 +76,7 @@ if (
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
-    include $SETTINGS['cpassman_dir'] . '/error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 
@@ -166,7 +166,7 @@ if (null !== $post_type_upload && $post_type_upload === 'upload_profile_photo') 
     }
 
     // Set directory used to store file
-    $targetDir = realpath($SETTINGS['cpassman_dir'] . '/includes/avatars');
+    $targetDir = realpath(TEAMPASS_ROOT . '/public/assets/avatars');
 } else {
     $targetDir = realpath($SETTINGS['path_to_files_folder']);
 }
