@@ -123,6 +123,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#items" role="tab" aria-controls="items" aria-selected="false"><?php echo $lang->get('items'); ?></a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" data-toggle="tab" href="#kb" role="tab" aria-controls="kb" aria-selected="false"><?php echo $lang->get('kb_logs'); ?></a>
+                            </li>
                         </ul>
 
 
@@ -189,6 +192,19 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </thead>
                                 </table>
                             </div>
+                            <div class="tab-pane fade" id="kb" role="tabpanel" aria-labelledby="kb-tab">
+                                <table class="table table-striped nowrap table-responsive-sm" id="table-kb-logs" style="width:100%;">
+                                    <thead>
+                                        <tr>
+                                            <th><?php echo $lang->get('date'); ?></th>
+                                            <th><?php echo $lang->get('label'); ?></th>
+                                            <th><?php echo $lang->get('user'); ?></th>
+                                            <th><?php echo $lang->get('action'); ?></th>
+                                            <th><?php echo $lang->get('details'); ?></th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
                             <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
                                     <thead>
@@ -246,6 +262,8 @@ foreach ($rows as $record) {
                                     <label><i class="fas fa-cog mr-2"></i><?php echo $lang->get('action'); ?>:</label>
                                     <select class="form-control" id="purge-filter-action">
                                         <option value="all"><?php echo $lang->get('all'); ?></option>
+                                        <option value="at_creation"><?php echo $lang->get('at_creation'); ?></option>
+                                        <option value="at_modification"><?php echo $lang->get('at_modification'); ?></option>
                                         <option value="at_shown"><?php echo $lang->get('at_shown'); ?></option>
                                         <option value="at_export"><?php echo $lang->get('at_export'); ?></option>
                                         <option value="at_restored"><?php echo $lang->get('at_restored'); ?></option>
