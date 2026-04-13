@@ -89,6 +89,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableCopy;
     var oTableAdmin;
     var oTableErrors;
+    var oTableKb;
 
     // Decode HTML entities (e.g. &eacute; -> é, &amp; -> &)
     function decodeHtmlEntities(str) {
@@ -166,6 +167,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             $('#selector-purge-action').removeClass('hidden');
             showItems();
+        } else if (e.target.hash === '#kb') {
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.logData = 'kb';
+                }
+            );
+            $('#selector-purge-action').removeClass('hidden');
+            showKb();
         }
     });
 
@@ -597,6 +607,69 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     }
 
+    /**
+     * Knowledge base logs
+     *
+     * @return void
+     */
+    function showKb() {
+        oTableKb = $('#table-kb-logs').DataTable({
+            'retrieve': false,
+            'orderCellsTop': true,
+            'fixedHeader': true,
+            'paging': true,
+            'retrieve': true,
+            'sPaginationType': 'listbox',
+            'searching': true,
+            'order': [
+                [0, 'desc']
+            ],
+            'info': true,
+            'processing': false,
+            'serverSide': true,
+            'responsive': true,
+            'stateSave': true,
+            'autoWidth': true,
+            'ajax': {
+                url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/kb.queries.php',
+                type: 'POST',
+                data: function(filter) {
+                    filter.type = 'datatables_logs';
+                    filter.key = '<?php echo $session->get('key'); ?>';
+                    return filter;
+                }
+            },
+            'columnDefs': [
+                {
+                    'targets': [1, 2, 3, 4],
+                    'render': function(data, type) {
+                        if (type !== 'display') {
+                            return data;
+                        }
+                        return decodeHtmlEntities(data);
+                    }
+                }
+            ],
+            'language': {
+                'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+            },
+            'preDrawCallback': function() {
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            },
+            'drawCallback': function() {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('done'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
+            },
+        });
+    }
+
+
     // iCheck for checkbox and radio inputs
     $('.card-footer input[type="checkbox"]').iCheck({
         checkboxClass: 'icheckbox_flat-blue'
@@ -655,45 +728,71 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
             console.log(data);
             // Send query
-            $.post(
-                "sources/utilities.queries.php", {
-                    type: "purge_logs",
-                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                    key: "<?php echo $session->get('key'); ?>"
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    console.log(data);
+            if (store.get('teampassApplication').logData === 'kb') {
+                $.post(
+                    "sources/kb.queries.php", {
+                        type: "purge_logs",
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        console.log(data);
 
-                    if (data.error !== false) {
-                        // Show error
-                        toastr.error(
-                            data.message,
-                            '<?php echo $lang->get('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
+                        if (data.error !== false) {
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#checkbox-purge-confirm').iCheck('uncheck');
+                            if (typeof oTableKb !== 'undefined' && oTableKb !== null) {
+                                oTableKb.ajax.reload();
                             }
-                        );
-                    } else {
-                        //console.log(store.get('teampassApplication').logData);
-                        $('#checkbox-purge-confirm').iCheck('uncheck');
-                        // Reload table
-                        if (store.get('teampassApplication').logData === 'errors') {
-                            oTableErrors.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'admin') {
-                            oTableAdmin.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'connections') {
-                            oTableConnections.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'failed') {
-                            oTableFailed.api().ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'items') {
-                            oTableItems.ajax.reload();
-                        } else if (store.get('teampassApplication').logData === 'copy') {
-                            oTableCopy.api().ajax.reload();
                         }
                     }
-                }
-            );
+                );
+            } else {
+                $.post(
+                    "sources/utilities.queries.php", {
+                        type: "purge_logs",
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        console.log(data);
+
+                        if (data.error !== false) {
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#checkbox-purge-confirm').iCheck('uncheck');
+                            if (store.get('teampassApplication').logData === 'errors') {
+                                oTableErrors.api().ajax.reload();
+                            } else if (store.get('teampassApplication').logData === 'admin') {
+                                oTableAdmin.api().ajax.reload();
+                            } else if (store.get('teampassApplication').logData === 'connections') {
+                                oTableConnections.api().ajax.reload();
+                            } else if (store.get('teampassApplication').logData === 'failed') {
+                                oTableFailed.api().ajax.reload();
+                            } else if (store.get('teampassApplication').logData === 'items') {
+                                oTableItems.ajax.reload();
+                            } else if (store.get('teampassApplication').logData === 'copy') {
+                                oTableCopy.api().ajax.reload();
+                            }
+                        }
+                    }
+                );
+            }
         } else {
             toastr.remove();
             toastr.warning(
