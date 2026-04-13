@@ -85,6 +85,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
     var debugJavascript = false;
+    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
 
 
     // Prepare tooltips
@@ -104,26 +105,39 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.remove();
         toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         // Do clean
-        $('#recycled-folders, #recycled-items, #recycled-kbs').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
+        $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
+        if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+            $('#recycled-kbs').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
+        }
         $('#temp-message').remove();
 
         // Launch action
-        $.when(
+        var requests = [
             $.post(
                 'sources/utilities.queries.php', {
                     type: 'recycled_bin_elements',
                     key: '<?php echo $session->get('key'); ?>'
                 }
-            ),
-            $.post(
-                'sources/kb.queries.php', {
-                    type: 'load_deleted_kbs',
-                    key: '<?php echo $session->get('key'); ?>'
-                }
             )
-        ).done(function(itemsResponse, kbResponse) {
-            var data = decodeQueryReturn(itemsResponse[0], '<?php echo $session->get('key'); ?>');
-            var kbData = decodeQueryReturn(kbResponse[0], '<?php echo $session->get('key'); ?>');
+        ];
+
+        if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+            requests.push(
+                $.post(
+                    'sources/kb.queries.php', {
+                        type: 'load_deleted_kbs',
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                )
+            );
+        }
+
+        $.when.apply($, requests).done(function() {
+            var data = decodeQueryReturn(requests.length === 1 ? arguments[0] : arguments[0][0], '<?php echo $session->get('key'); ?>');
+            var kbData = {error: false, entries: []};
+            if (requests.length > 1) {
+                kbData = decodeQueryReturn(arguments[1][0], '<?php echo $session->get('key'); ?>');
+            }
             console.log(data);
             console.log(kbData);
             if (data.error === true || kbData.error === true) {
@@ -205,23 +219,25 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 }
 
                 // KB - Build table
-                if (!kbData.entries || kbData.entries.length === 0) {
-                    $('#recycled-kbs').html(
-                        '<div class="alert alert-info" id="temp-message">' +
-                        '<?php echo $lang->get('empty_list'); ?>' +
-                        '</div>'
-                    );
-                } else {
-                    $.each(kbData.entries, function(index, value) {
-                        kbsHtml += '<tr class="icheck-toggle">' +
-                            '<td width="35px"><input type="checkbox" data-id="' + value.trash_id + '" class="kb-select"></td>' +
-                            '<td class="font-weight-bold">' + htmlEncode(value.label) + '</td>' +
-                            '<td class="font-weight-light">' + htmlEncode(value.category || '') + '</td>' +
-                            '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(value.date || '') + '</td>' +
-                            '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(value.deleted_by || '') + '</td>' +
-                            '</tr>';
-                    });
-                    $('#recycled-kbs').html(kbsHtml);
+                if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+                    if (!kbData.entries || kbData.entries.length === 0) {
+                        $('#recycled-kbs').html(
+                            '<div class="alert alert-info" id="temp-message">' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
+                            '</div>'
+                        );
+                    } else {
+                        $.each(kbData.entries, function(index, value) {
+                            kbsHtml += '<tr class="icheck-toggle">' +
+                                '<td width="35px"><input type="checkbox" data-id="' + value.trash_id + '" class="kb-select"></td>' +
+                                '<td class="font-weight-bold">' + htmlEncode(value.label) + '</td>' +
+                                '<td class="font-weight-light">' + htmlEncode(value.category || '') + '</td>' +
+                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(value.date || '') + '</td>' +
+                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(value.deleted_by || '') + '</td>' +
+                                '</tr>';
+                        });
+                        $('#recycled-kbs').html(kbsHtml);
+                    }
                 }
 
                 // Prepare iCheck
