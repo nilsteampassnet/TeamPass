@@ -165,14 +165,20 @@ if ($letter !== '' && $letter !== 'None') {
     $sWhere .= ')';
 }
 
-// enlarge the query in case of Manager
+// Build the clean roles array once — used both in the SQL filter and in the PHP loop check
+// so that both layers apply the exact same set of role IDs.
+$arrUserRoles = array_values(array_filter($session->get('user-roles_array') ?? []));
+
+// Restrict the query for Manager (non-admin, non-HR-manager) users:
+// only show users whose administration role matches one of the manager's own roles.
 if ((int) $session->get('user-admin') === 0
     && (int) $session->get('user-can_manage_all_users') === 0
 ) {
-    $sWhere .= ' AND ';
-    $arrUserRoles = array_filter($session->get('user-roles_array'));
     if (count($arrUserRoles) > 0) {
-        $sWhere .= 'u.isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
+        $sWhere .= ' AND u.isAdministratedByRole IN ('.implode(',', $arrUserRoles).')';
+    } else {
+        // Manager has no assignable roles — show nothing (avoids a trailing AND that breaks the SQL).
+        $sWhere .= ' AND FALSE';
     }
 }
 
@@ -184,6 +190,14 @@ $rows = DB::query(
     'SELECT u.id '.$baseQuery.$sWhere
 );
 $iTotal = count($rows);
+
+// If the saved pagination offset (stateSave) is beyond the total available rows,
+// reset to page 0 so the user sees results instead of an empty list.
+if (isset($start) && $iTotal > 0 && (int) $start >= $iTotal) {
+    $start = 0;
+    $pageLength = isset($length) ? (int) $length : (int) ($params['length'] ?? 25);
+    $sLimit = ' LIMIT 0, ' . $pageLength;
+}
 
 // Get paginated data with all fields
 $rows = DB::query(
@@ -222,8 +236,10 @@ if (DB::count() > 0) {
 
 foreach ($rows as $record) {
     //Show user only if can be administrated by the adapted Roles manager
+    // Uses $arrUserRoles (filtered, consistent with the SQL WHERE clause) instead of the
+    // raw session value, which may contain empty strings that cause in_array mismatches.
     if ((int) $session->get('user-admin') === 1
-        || in_array($record['isAdministratedByRole'], $session->get('user-roles_array'))
+        || in_array($record['isAdministratedByRole'], $arrUserRoles)
         || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $record['admin'] === 0 && (int) $record['id'] !== (int) $session->get('user-id'))
     ) {
         $showUserFolders = true;

@@ -819,12 +819,24 @@ if (null !== $post_type) {
                 $users_functions = array_filter(array_unique(explode(';', $rowUser['fonction_id'].';'.$rowUser['roles_from_ad_groups'])));
 
                 $session->set('user-roles_array', explode(';', $session->get('user-roles')));
-                $rows = DB::query('
-                    SELECT id,title,creator_id 
-                    FROM ' . prefixTable('roles_title') .'
-                    WHERE id IN %li',
-                    $session->get('user-roles_array')
-                );
+                // Admins and users who can manage all users see every role so they
+                // can assign any role to the user they are editing. Other users
+                // (e.g. a role-manager who can edit only users sharing their role)
+                // only see the roles they personally hold.
+                if (
+                    (int) $session->get('user-admin') === 1
+                    || (int) $session->get('user-manager') === 1
+                    || (int) $session->get('user-can_manage_all_users') === 1
+                ) {
+                    $rows = DB::query(
+                        'SELECT id,title,creator_id FROM ' . prefixTable('roles_title') . ' ORDER BY title ASC'
+                    );
+                } else {
+                    $rows = DB::query(
+                        'SELECT id,title,creator_id FROM ' . prefixTable('roles_title') . ' WHERE id IN %li',
+                        $session->get('user-roles_array')
+                    );
+                }
                 foreach ($rows as $record) {
                     if (
                         (int) $session->get('user-admin') === 1
@@ -872,7 +884,14 @@ if (null !== $post_type) {
                     )
                 );
                 foreach ($rolesList as $fonction) {
-                    if ($session->get('user-admin') === 1 || in_array($fonction['id'], $session->get('user-roles_array'))) {
+                    // Admins and global user managers can assign any administration
+                    // role; role-managers are limited to roles they personally hold.
+                    if (
+                        (int) $session->get('user-admin') === 1
+                        || (int) $session->get('user-manager') === 1
+                        || (int) $session->get('user-can_manage_all_users') === 1
+                        || in_array($fonction['id'], $session->get('user-roles_array'))
+                    ) {
                         if ($rowUser['isAdministratedByRole'] == $fonction['id']) {
                             $selected = 'selected';
 
