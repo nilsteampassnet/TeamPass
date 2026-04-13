@@ -155,6 +155,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
                         <h5><?php echo $lang->get('deleted_items'); ?></h5>
                         <div class="table table-responsive" id="recycled-items"></div>
+
+                        <h5><?php echo $lang->get('kb_deleted_entries'); ?></h5>
+                        <div class="table table-responsive" id="recycled-kbs"></div>
                     </div>
                 </div>
             </div>
