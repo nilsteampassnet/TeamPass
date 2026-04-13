@@ -516,21 +516,18 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
     }
-    /*
-        // KB menu
-        if (isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1'
-        ) {
-            echo '
-                        <li class="nav-item">
-                            <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '' ,'">
-                            <i class="nav-icon fa-solid fa-map-signs"></i>
-                            <p>
-    '.$lang->get('kb_menu').'
-                            </p>
-                            </a>
-                        </li>';
-        }
-    */
+    // KB menu
+    if ((int) $session_user_admin === 0 && isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-map-signs"></i>
+                        <p>
+                            ' . $lang->get('kb_menu') . '
+                        </p>
+                        </a>
+                    </li>';
+    }
     // SUGGESTION menu
     if (
                                     isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1
@@ -1518,7 +1515,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
+        } elseif (in_array($get['page'], ['search', 'kb', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
@@ -1771,6 +1768,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once $SETTINGS['cpassman_dir'] . '/pages/offline.js.php';
         } elseif ($get['page'] === 'search') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/search.js.php';
+        } elseif ($get['page'] === 'kb' && (int) $session_user_admin === 0) {
+            include_once $SETTINGS['cpassman_dir'] . '/pages/kb.js.php';
         } elseif ($get['page'] === 'profile') {
             include_once $SETTINGS['cpassman_dir'] . '/pages/profile.js.php';
         } elseif ($get['page'] === 'favourites') {
