@@ -1246,6 +1246,10 @@ if ((int) $session_user_admin === 1) {
                                     <a id="card-item-tags" class="float-right ml-1"></a>
                                 </li>
                                 <li class="list-group-item">
+                                    <b><?php echo $lang->get('kb_menu'); ?></b>
+                                    <a id="card-item-kbs" class="float-right ml-1"></a>
+                                </li>
+                                <li class="list-group-item">
                                     <b><?php echo $lang->get('otp_code'); ?></b>
                                     <a id="card-item-opt_code" class="float-right ml-1"></a>
                                     <span id="card-item-opt_code_error" class="float-right"></span>
