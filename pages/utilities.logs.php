@@ -81,7 +81,11 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
- 
+
+// KB feature toggle
+$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1;
+
+
 ?>
 
 <!-- Content Header (Page header) -->
@@ -123,9 +127,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#items" role="tab" aria-controls="items" aria-selected="false"><?php echo $lang->get('items'); ?></a>
                             </li>
+                            <?php if ($kbEnabled === true) { ?>
                             <li class="nav-item">
                                 <a class="nav-link" data-toggle="tab" href="#kb" role="tab" aria-controls="kb" aria-selected="false"><?php echo $lang->get('kb_logs'); ?></a>
                             </li>
+                            <?php } ?>
                         </ul>
 
 
@@ -192,6 +198,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </thead>
                                 </table>
                             </div>
+                            <?php if ($kbEnabled === true) { ?>
                             <div class="tab-pane fade" id="kb" role="tabpanel" aria-labelledby="kb-tab">
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-kb-logs" style="width:100%;">
                                     <thead>
@@ -205,6 +212,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                     </thead>
                                 </table>
                             </div>
+                            <?php } ?>
                             <div class="tab-pane fade" id="failed" role="tabpanel" aria-labelledby="failed-tab">
                                 <table class="table table-striped nowrap table-responsive-sm" id="table-failed">
                                     <thead>
