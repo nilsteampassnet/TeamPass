@@ -91,6 +91,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableErrors;
     var oTableKb;
 
+    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
+
     // Decode HTML entities (e.g. &eacute; -> é, &amp; -> &)
     function decodeHtmlEntities(str) {
         if (str === null || str === undefined) {
@@ -167,7 +169,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             );
             $('#selector-purge-action').removeClass('hidden');
             showItems();
-        } else if (e.target.hash === '#kb') {
+        } else if (e.target.hash === '#kb' && kbEnabled === true) {
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
@@ -613,6 +615,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * @return void
      */
     function showKb() {
+        if (kbEnabled !== true || $('#table-kb-logs').length === 0) {
+            return;
+        }
+
         oTableKb = $('#table-kb-logs').DataTable({
             'retrieve': false,
             'orderCellsTop': true,
