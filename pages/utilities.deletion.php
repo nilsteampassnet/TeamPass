@@ -86,6 +86,8 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
+
+$kbEnabled = isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1;
  
 ?>
 
@@ -156,8 +158,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <h5><?php echo $lang->get('deleted_items'); ?></h5>
                         <div class="table table-responsive" id="recycled-items"></div>
 
+                        <?php if ($kbEnabled === true) { ?>
                         <h5><?php echo $lang->get('kb_deleted_entries'); ?></h5>
                         <div class="table table-responsive" id="recycled-kbs"></div>
+                        <?php } ?>
                     </div>
                 </div>
             </div>
