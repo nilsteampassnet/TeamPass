@@ -1245,10 +1245,12 @@ if ((int) $session_user_admin === 1) {
                                     <b><?php echo $lang->get('tags'); ?></b>
                                     <a id="card-item-tags" class="float-right ml-1"></a>
                                 </li>
+                                <?php if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1) { ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('kb_menu'); ?></b>
                                     <a id="card-item-kbs" class="float-right ml-1"></a>
                                 </li>
+                                <?php } ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('otp_code'); ?></b>
                                     <a id="card-item-opt_code" class="float-right ml-1"></a>
