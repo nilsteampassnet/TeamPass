@@ -356,18 +356,6 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
 
                                 <div class='row mb-2 tr-ldap'>
-                                    <div class='col-10'>
-                                        <?php echo $lang->get('settings_disable_forgot_password_link'); ?>
-                                        <small id='passwordHelpBlock' class='form-text text-muted'>
-                                            <?php echo $lang->get('settings_disable_forgot_password_link_tip'); ?>
-                                        </small>
-                                    </div>
-                                    <div class='col-2'>
-                                        <div class='toggle toggle-modern' id='disable_show_forgot_pwd_link' data-toggle-on='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) === true && (int) $SETTINGS['disable_show_forgot_pwd_link'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='disable_show_forgot_pwd_link_input' value='<?php echo isset($SETTINGS['disable_show_forgot_pwd_link']) && (int) $SETTINGS['disable_show_forgot_pwd_link'] === 1 ? 1 : 0; ?>'>
-                                    </div>
-                                </div>
-
-                                <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
                                         <?php echo $lang->get('newly_created_user_is_administrated_by'); ?>
                                     </div>
