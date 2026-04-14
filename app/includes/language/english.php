@@ -1389,7 +1389,7 @@ return array(
     'settings_ldap_object_class' => 'Class to search',
     'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX account',
     'rebuild_config_file' => 'Rebuild configuration file',
-    'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./includes/config/tp.config.php, but the file should be located outside the www directory for security.',
+    'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./app/config/tp.config.php, but the file should be located outside the www directory for security.',
     'error_folder_complexity_lower_than_top_folder' => 'Subfolders must have password strength set the same or higher than parent folder',
     'new_item_email_body' => 'Hello,<br><br>This is a generated email from Teampass passwords manager.<br><br>New item \'#label\' has been created in Teampass.<br />You may access it clicking on this <a href=\'#link#\'>LINK</a>.<br/><br />Greetings.',
     'failed_logins' => 'Failed Logins',

@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Classe da cercare',
     'settings_ldap_object_class_tip' => 'Classe LDAP da cercare, ad esempio account utente o account POSIX',
     'rebuild_config_file' => 'Ricostruisci il file di configurazione',
-    'rebuild_config_file_tip' => 'Il file di configurazione contiene variabili di sistema e viene utilizzato quando queste impostazioni sono necessarie prima che sia stata stabilita la connessione al database. La ricostruzione del file di configurazione salva i valori del database nel file e può essere eseguita in qualsiasi momento. Il percorso predefinito è ./includes/config/tp.config.php, ma il file dovrebbe trovarsi all’esterno della directory www per motivi di sicurezza.',
+    'rebuild_config_file_tip' => 'Il file di configurazione contiene variabili di sistema e viene utilizzato quando queste impostazioni sono necessarie prima che sia stata stabilita la connessione al database. La ricostruzione del file di configurazione salva i valori del database nel file e può essere eseguita in qualsiasi momento. Il percorso predefinito è ./app/config/tp.config.php, ma il file dovrebbe trovarsi all’esterno della directory www per motivi di sicurezza.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'ID della tua carta Agses',
     'suggest_password_change' => 'Suggerisci una modifica della password',

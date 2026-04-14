@@ -44,7 +44,7 @@ ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
 require_once '../sources/main.functions.php';
-require_once '../includes/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 
 // init
 loadClasses();
@@ -77,10 +77,10 @@ function getSettingValue($val)
 }
 
 //get infos from SETTINGS.PHP file
-$filename = '../includes/config/settings.php';
+$filename = '../app/config/settings.php';
 $events = '';
 
-// Declare SECUREPATH if not existing in settings.php file
+// Load settings (SECUREPATH is now defined in app/config/include.php, not in settings.php)
 if (file_exists($filename)) {
     include_once $filename;
 }
@@ -90,10 +90,6 @@ if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '>=')) {
     $phpVersionisOkay = true;
 } else {
     $phpVersionisOkay = false;
-}
-
-if (!defined('SECUREPATH')) {
-    define("SECUREPATH", dirname(SECUREFILE));
 }
 
 ?>
@@ -119,22 +115,17 @@ if (!defined('SECUREPATH')) {
     
     <body>
 <?php
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 
 if (empty($post_root_url) === false) {
     $_SESSION['fullurl'] = $post_root_url;
 }
 
-//define root path
-$abs_path = rtrim(
-    filter_var($_SERVER['DOCUMENT_ROOT'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-    '/'
-).substr(
-    filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-    0,
-    strlen(filter_var($_SERVER['PHP_SELF'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)) - 20
-);
+// In the new public/app/storage structure, DOCUMENT_ROOT points to public/ not the app root.
+// TEAMPASS_ROOT is defined in include.php as dirname(dirname(__DIR__)) and always resolves
+// to the application root regardless of where the webroot is located.
+$abs_path = TEAMPASS_ROOT;
 if (isset($_SERVER['HTTPS'])) {
     $protocol = 'https://';
 } else {
@@ -146,7 +137,7 @@ $conversion_utf8 = false;
 // HEADER
 echo '
     <div id="top" class="center-screen">
-        <div id="logo" class="lcol"><img src="../includes/images/teampass-logo2-home.png" /></div>
+        <div id="logo" class="lcol"><img src="../assets/images/teampass-logo2-home.png" /></div>
         <div class="lcol">
             <span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
             <!--<span class="header-title-small"> v'.TP_VERSION.'</span>-->
@@ -269,70 +260,124 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div class="">
-                                        <code>includes/config/settings.php</code> <span class="badge badge-secondary">required</span>
+                                        <code>app/config/settings.php</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-settings" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Settings file storing encrypted database credentials.</div>
-                                        <div id="upg-chk-settings-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0640 includes/config/settings.php</code></div>
+                                        <div id="upg-chk-settings-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0640 app/config/settings.php</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>includes/config/</code> <span class="badge badge-secondary">required</span>
+                                        <code>app/config/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-config" style="min-width:20px" class="ml-2"></span>
-                                        <div class="text-muted small">Configuration directory - written during upgrades only.</div>
-                                        <div id="upg-chk-config-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 includes/config</code></div>
+                                        <div class="text-muted small">Configuration directory — written during upgrades only.</div>
+                                        <div id="upg-chk-config-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/config</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required</span>
+                                        <code>app/includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-csrfp-libs" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Stores <code>csrfp.config.php</code> (CSRF token). May be rewritten during upgrade.</div>
-                                        <div id="upg-chk-csrfp-libs-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 includes/libraries/csrfp/libs</code></div>
+                                        <div id="upg-chk-csrfp-libs-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/includes/libraries/csrfp/libs</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required</span>
+                                        <code>app/includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-csrfp-log" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">CSRF protection audit log written during normal operation.</div>
-                                        <div id="upg-chk-csrfp-log-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 includes/libraries/csrfp/log</code></div>
+                                        <div id="upg-chk-csrfp-log-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/includes/libraries/csrfp/log</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>includes/avatars/</code> <span class="badge badge-light border">optional</span>
+                                        <code>public/assets/avatars/</code> <span class="badge badge-light border">optional</span>
                                         <span id="upg-chk-avatars" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">User avatar images — only needed if avatar upload is enabled.</div>
-                                        <div id="upg-chk-avatars-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 includes/avatars</code></div>
+                                        <div id="upg-chk-avatars-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 public/assets/avatars</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>files/</code> <span class="badge badge-secondary">required</span>
+                                        <code>storage/files/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-files" style="min-width:20px" class="ml-2"></span>
-                                        <div class="text-muted small">Background task trigger/lock files, backups, restore logs.</div>
-                                        <div id="upg-chk-files-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 files</code></div>
+                                        <div class="text-muted small">Background task trigger/lock files and restore logs.</div>
+                                        <div id="upg-chk-files-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/files</code></div>
                                     </div>
                                 </div>
                             </li>
                             <li class="mb-2">
                                 <div class="d-flex align-items-start ml-3">
                                     <div>
-                                        <code>upload/</code> <span class="badge badge-light border">optional</span>
+                                        <code>storage/upload/</code> <span class="badge badge-light border">optional</span>
                                         <span id="upg-chk-upload" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Encrypted file attachments — only needed if file upload is enabled.</div>
-                                        <div id="upg-chk-upload-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 upload</code></div>
+                                        <div id="upg-chk-upload-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/upload</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/backups/</code> <span class="badge badge-light border">optional</span>
+                                        <span id="upg-chk-backups" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">SQL backup files generated before schema migrations.</div>
+                                        <div id="upg-chk-backups-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/backups</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            </ul>
+
+                            <p class="font-weight-bold mb-1">Directory security posture</p>
+                            <ul class="list-unstyled mb-3">
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/</code> <span class="badge badge-secondary">required — writable</span>
+                                        <span id="upg-chk-storage-writable" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Parent runtime directory — must be writable so PHP can create sub-directories at runtime.</div>
+                                        <div id="upg-chk-storage-writable-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>secrets/</code> <span class="badge badge-secondary">required — readable</span>
+                                        <span id="upg-chk-secrets-readable" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Encryption key directory — must be readable by the web server. Must not be web-accessible (outside webroot).</div>
+                                        <div id="upg-chk-secrets-readable-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 secrets &amp;&amp; chown www-data:www-data secrets</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>app/</code> <span class="badge badge-warning">must not be writable</span>
+                                        <span id="upg-chk-app-safe" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Application source code — must not be writable by the web server to prevent code tampering.</div>
+                                        <div id="upg-chk-app-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 app</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>public/</code> <span class="badge badge-warning">must not be writable</span>
+                                        <span id="upg-chk-public-safe" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Webroot — must not be globally writable to prevent unauthorized file uploads into the web-accessible directory.</div>
+                                        <div id="upg-chk-public-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 public</code></div>
                                     </div>
                                 </div>
                             </li>
@@ -430,13 +475,13 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         echo '
                         <div>
                         Database settings has been retreived.<br>
-                        If you need to change them, please edit file `/includes/config/settings.php` and relaunch the upgrade process.
+                        If you need to change them, please edit file `/app/config/settings.php` and relaunch the upgrade process.
                         </div>';
     } else {
         echo '
                         <div>
                         The database information has not been retreived from the settings file.<br>
-                        You need to adapt the file `/includes/config/settings.php` and relaunch the upgrade process.
+                        You need to adapt the file `/app/config/settings.php` and relaunch the upgrade process.
                         </div>';
     }
 
@@ -599,15 +644,12 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     echo '
         <div class="card card-primary">
             <div class="card-header">
-                <h5>Absolute path to SaltKey</h5>
+                <h5>Encryption key</h5>
             </div>
             <div class="card-body">
                 <small class="form-text text-muted">
-                The SaltKey is stored in a file stored in a folder outside the www folder of your server.
+                The encryption key is stored in <code>', SECUREPATH, '</code> (fixed path, no configuration needed).
                 </small>
-                <div class="mt-4">
-                    <input type="text" class="form-control" id="sk_path" value="', defined('SECUREPATH') === true ? SECUREPATH : '', '" placeholder="Path to folder">
-                </div>
             </div>
         </div>';
 

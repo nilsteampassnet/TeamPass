@@ -38,6 +38,9 @@ if (!defined('TEAMPASS_APP')) {
 if (!defined('TEAMPASS_STORAGE')) {
     define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
 }
+if (!defined('TEAMPASS_PUBLIC')) {
+    define('TEAMPASS_PUBLIC', TEAMPASS_ROOT . '/public');
+}
 
 define('TP_VERSION', '3.2.0');
 define("UPGRADE_MIN_DATE", "1775240619");

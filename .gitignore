@@ -14,12 +14,12 @@ ad.js
 TODO
 test.html
 /includes/avatars
-/includes/config/tp.config.php
-/includes/config/settings.php
+/app/config/tp.config.php
+/app/config/settings.php
 /app/config/settings.php
 includes/libraries/csrfp/libs/csrfp.config.php
-/includes/config/tp.config.php.*
-/includes/config/settings.php.*
+/app/config/tp.config.php.*
+/app/config/settings.php.*
 /app/config/settings.php.*
 # Master encryption key — never commit the secrets directory content
 /secrets/*
@@ -42,7 +42,7 @@ EncryptedFile_*
 gitdo.sh
 version-commit.php
 tp_minor_release.txt
-/includes/config/tp.config*
+/app/config/tp.config*
 /includes/tables_integrity.json
 phpstan.neon
 /_things/*

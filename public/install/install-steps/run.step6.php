@@ -26,7 +26,11 @@
  * @see       https://www.teampass.net
  */
 
-require '../../vendor/autoload.php';
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../../..'));
+}
+
+require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use Defuse\Crypto\Key;
 use TiBeN\CrontabManager\CrontabJob;
@@ -34,7 +38,7 @@ use TiBeN\CrontabManager\CrontabAdapter;
 use TiBeN\CrontabManager\CrontabRepository;
 
 // Get some data
-require_once __DIR__.'/../../includes/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 // Load functions
 include_once(__DIR__ . '/../tp.functions.php');
 require_once __DIR__.'/install.functions.php';
@@ -373,8 +377,9 @@ class teampassInstaller
         try {
             // Get expected paths
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            $securePath = rtrim($this->installConfig['teampassSecurePath'], '/');
-            $settingsFile = $absolutePath . '/includes/config/settings.php';
+            // SECUREPATH is now fixed as TEAMPASS_ROOT/secrets (defined in app/config/include.php)
+            $securePath = SECUREPATH;
+            $settingsFile = $absolutePath . '/app/config/settings.php';
             $backupFile = $settingsFile . '.' . date('Y_m_d_His') . '.bak';
     
             // Check if the settings file directory is writable
@@ -431,7 +436,7 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . $securePath . '");
+// SECUREPATH is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . $this->installConfig['teampassSecureFile'] . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {

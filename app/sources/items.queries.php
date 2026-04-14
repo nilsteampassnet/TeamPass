@@ -6849,7 +6849,7 @@ switch ($inputData['type']) {
             // Prepare avatar
             if (isset($record['avatar_thumb']) && empty($record['avatar_thumb']) === false) {
                 if (file_exists(TEAMPASS_ROOT . '/public/assets/avatars/' . strval($record['avatar_thumb']))) {
-                    $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . strval($record['avatar_thumb']);
+                    $avatar = $SETTINGS['cpassman_url'] . '/assets/avatars/' . strval($record['avatar_thumb']);
                 } else {
                     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
                 }

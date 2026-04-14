@@ -7,7 +7,8 @@ define("DB_NAME", "");
 define("DB_PREFIX", "");
 define("DB_PORT", "");
 define("DB_ENCODING", "");
-define("SECUREPATH", "");
+// SECUREPATH is defined in app/config/include.php as TEAMPASS_ROOT/secrets
+define("SECUREFILE", "");
 define("SALT", "");
 
 if ($session->has('system-timezone') && null !== $session->get('system-timezone')) {

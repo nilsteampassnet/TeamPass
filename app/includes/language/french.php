@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Recherche de la Classe',
     'settings_ldap_object_class_tip' => 'Rechercher dans la CLasse LDAP, par exemple, une Personne ou un posixAccount',
     'rebuild_config_file' => 'Reconstruire le ficher de configuration',
-    'rebuild_config_file_tip' => 'Le fichier de Configuration est situé dans le répertoire  ./includes/config/tp.config.php. Il contient toutes les variables de configuration comme définies dans les pages de Configuration de Teampass. La reconstruction de ce fichier peut être réalisé à tout moment.',
+    'rebuild_config_file_tip' => 'Le fichier de Configuration est situé dans le répertoire  ./app/config/tp.config.php. Il contient toutes les variables de configuration comme définies dans les pages de Configuration de Teampass. La reconstruction de ce fichier peut être réalisé à tout moment.',
     'not_encrypted_data' => 'La donnée n’est pas cryptée en base',
     'user_profile_agses_card_id' => 'Identifiant de votre carte AGSES',
     'suggest_password_change' => 'Suggérer une évolution concernant l&apos;objet',

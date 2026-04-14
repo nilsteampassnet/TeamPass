@@ -56,7 +56,7 @@ function handleSecurefileConstant()
         }
 
         // Now create new file
-        $file_handled = fopen('../includes/config/settings.php', 'w');
+        $file_handled = fopen('../app/config/settings.php', 'w');
         
         $settingsTxt = '<?php
 // DATABASE connexion parameters
@@ -98,7 +98,7 @@ $settingsTxt .= '
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . str_replace('\\', '\\\\', SECUREPATH) . '");
+// SECUREPATH is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . SECUREFILE. '");';
 
         if (defined('IKEY') === true) $settingsTxt .= '
@@ -132,7 +132,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
         if ($fileCreation === false) {
             return [
                 'error' => true,
-                'message' => 'Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.',
+                'message' => 'Setting.php file could not be created in /app/config/ folder. Please check the path and the rights.',
             ];
         }
 
@@ -154,7 +154,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
  */
 function defuseCryption($message, $ascii_key, $type)
 {
-    include_once '../includes/config/settings.php';
+    include_once TEAMPASS_ROOT . '/app/config/settings.php';
 
     // init
     $err = '';

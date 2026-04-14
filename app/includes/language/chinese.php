@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => '要搜索的类',
     'settings_ldap_object_class_tip' => '用于搜索的LDAP类，例如用户账户或POSIX账户',
     'rebuild_config_file' => '重置配置文件',
-    'rebuild_config_file_tip' => '配置文件包含系统变量，用于建立数据库连接的相关设置。重建配置文件会将数据库中的值保存到文件中，您可以随时进行此操作。默认位置是 ./includes/config/tp.config.php，但出于安全考虑，该文件应放置在www目录之外。',
+    'rebuild_config_file_tip' => '配置文件包含系统变量，用于建立数据库连接的相关设置。重建配置文件会将数据库中的值保存到文件中，您可以随时进行此操作。默认位置是 ./app/config/tp.config.php，但出于安全考虑，该文件应放置在www目录之外。',
     'not_encrypted_data' => '数据在数据库中未加密',
     'user_profile_agses_card_id' => '您的AGSES卡ID',
     'suggest_password_change' => '建议更改密码',

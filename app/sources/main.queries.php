@@ -984,8 +984,8 @@ function systemHandler(string $post_type, array|null|string $dataReceived, array
                         'name' => isset($user['name']) === true ? (string) $user['name'] : '',
                         'lastname' => isset($user['lastname']) === true ? (string) $user['lastname'] : '',
                         'avatar_url' => (empty(isset($user['avatar']) === true ? trim((string) $user['avatar']) : '') === true
-                            ? (string) $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg'
-                            : (string) $SETTINGS['cpassman_url'] . '/includes/avatars/' . rawurlencode(trim((string) $user['avatar']))),
+                            ? (string) $SETTINGS['cpassman_url'] . '/assets/images/photo.jpg'
+                            : (string) $SETTINGS['cpassman_url'] . '/assets/avatars/' . rawurlencode(trim((string) $user['avatar']))),
                     );
                 }
 

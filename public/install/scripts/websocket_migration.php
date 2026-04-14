@@ -20,7 +20,7 @@ if ($isStandalone) {
     $rootPath = dirname(__DIR__, 2);
 
     // Check if settings file exists
-    $settingsFile = $rootPath . '/includes/config/settings.php';
+    $settingsFile = $rootPath . '/app/config/settings.php';
     if (!file_exists($settingsFile)) {
         die("Error: TeamPass must be installed first. Settings file not found.\n");
     }

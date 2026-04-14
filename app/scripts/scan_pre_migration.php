@@ -70,8 +70,8 @@ $rootPath = dirname(__DIR__);
 
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 
-require_once $rootPath . '/includes/config/settings.php';
-require_once $rootPath . '/includes/config/include.php';
+require_once $rootPath . '/app/config/settings.php';
+require_once $rootPath . '/app/config/include.php';
 require_once $rootPath . '/vendor/autoload.php';
 
 // Locate phpseclib v1: try 3.1.6.x path first, then 3.1.5.x typical location

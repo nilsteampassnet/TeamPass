@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'LDAP otsingu objektiklass',
     'settings_ldap_object_class_tip' => 'LDAP kasutaja päringu klass, näiteks Person või posixAccount',
     'rebuild_config_file' => 'Genereeri konfiguratsioonifail uuesti',
-    'rebuild_config_file_tip' => 'Konfiguratsioonifail asub kaustas ./includes/config/tp.config.php. See sisaldab muutujate väärtusi, mida oled määranud seadete lehel. Selle faili uuesti genereerimist saab teha igal hetkel.',
+    'rebuild_config_file_tip' => 'Konfiguratsioonifail asub kaustas ./app/config/tp.config.php. See sisaldab muutujate väärtusi, mida oled määranud seadete lehel. Selle faili uuesti genereerimist saab teha igal hetkel.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'Sinu AGSES kaarti ID',
     'suggest_password_change' => 'Suggest a password change',

@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Class to search',
     'settings_ldap_object_class_tip' => 'LDAP class to search, such as user account or POSIX account',
     'rebuild_config_file' => 'Rebuild the configuration file',
-    'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./includes/config/tp.config.php, but the file should be located outside the www directory for security.',
+    'rebuild_config_file_tip' => 'The configuration file contains system variables, and is used when these settings are needed before the database connection has been established. Rebuilding the configuration file saves the database values to the file, and can be done any time. The default location is ./app/config/tp.config.php, but the file should be located outside the www directory for security.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'Your Agses card id',
     'suggest_password_change' => 'Suggest a password change',

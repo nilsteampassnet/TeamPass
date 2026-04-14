@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Clasă de căutat',
     'settings_ldap_object_class_tip' => 'Clasă LDAP de căutat, cum ar fi cont utilizator sau cont POSIX',
     'rebuild_config_file' => 'Rebuild the configuration file',
-    'rebuild_config_file_tip' => 'Fișierul de configurare conține variabile sistem și este folosit când aceste setări sunt necesare înainte de stabilirea conexiunii la baza de date. Reconstruirea fișierului de configurare salvează valorile bazei de date în fișier și poate fi făcută oricând. Locația implicită este ./includes/config/tp.config.php, dar fișierul ar trebui să fie localizat în afara directorului www pentru securitate.',
+    'rebuild_config_file_tip' => 'Fișierul de configurare conține variabile sistem și este folosit când aceste setări sunt necesare înainte de stabilirea conexiunii la baza de date. Reconstruirea fișierului de configurare salvează valorile bazei de date în fișier și poate fi făcută oricând. Locația implicită este ./app/config/tp.config.php, dar fișierul ar trebui să fie localizat în afara directorului www pentru securitate.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'ID-ul cardului dvs. Agses',
     'suggest_password_change' => 'Sugerati o schimbare de parola',

@@ -49,26 +49,26 @@ git pull
 * Unzip and rename folder with the same name as for v2 (it will be called `folderv3`)
 * Copy next files from `folderv2` to `folderv3`
 ```
-./includes/config/settings.php
+./app/config/settings.php
 ./includes/libraries/csrfp/libs/csrfp.config.php
 ./includes/teampass-seckey.txt
-./includes/avatars/*
+./assets/avatars/*
 ./files/*
 ./upload/*
 ```
 * Ensure that folders and files have correct rights. Next elements need to be writable:
 ```
-./includes/config/
+./app/config/
 ./includes/libraries/csrfp/libs/
 ./includes/libraries/csrfp/js/
 ./includes/libraries/csrfp/log/
-./includes/avatars/
+./assets/avatars/
 ./files/
 ./upload/
 ./install/
 ```
-* In file `/includes/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8mb4"`
-* In file `/includes/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
+* In file `/app/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8mb4"`
+* In file `/app/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
 * Browse to `Teampass`
 
 #### How it works?
@@ -93,7 +93,7 @@ Fatal error: Uncaught Error: Undefined constant "SECUREFILE" in /var/www/localho
 ```
 
 Proceed as this:
-* Open file `./includes/config/settings.php`
+* Open file `./app/config/settings.php`
 * After line `define("SECUREPATH", "...");`
 * Add line `define("SECUREFILE", "{secure_filename}");` with `{secure_filename}` usually `teampass-seckey.txt`
 * Save

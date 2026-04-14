@@ -47,9 +47,9 @@ $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
 //include librairies
-require_once __DIR__.'/../includes/language/english.php';
-require_once __DIR__.'/../includes/config/include.php';
-require_once __DIR__.'/../includes/config/settings.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once __DIR__.'/tp.functions.php';
 require_once __DIR__.'/libs/aesctr.php';
 
@@ -572,7 +572,7 @@ function installHandleFoldersCategories(
 )
 {
     global $db_link;
-    $filename = '../includes/config/settings.php';
+    $filename = '../app/config/settings.php';
     include_once '../sources/main.functions.php';
     $pass = defuse_return_decrypted(DB_PASSWD);
     $server = DB_HOST;

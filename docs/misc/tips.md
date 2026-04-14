@@ -75,7 +75,7 @@ If a user loses their authenticator app or switches phones:
 
 ## Checking the table prefix
 
-If you are unsure of your database table prefix (needed for manual SQL queries), check the file `/includes/config/settings.php` — the constant `DB_PREFIX` holds the prefix value (default: `teampass_`).
+If you are unsure of your database table prefix (needed for manual SQL queries), check the file `/app/config/settings.php` — the constant `DB_PREFIX` holds the prefix value (default: `teampass_`).
 
 ---
 
@@ -93,7 +93,7 @@ If you changed a setting directly in the database (e.g. during troubleshooting) 
 1. Copy all files to the new server.
 2. Export the database and import it on the new server.
 3. Copy the secure key file from its path defined in `SECUREPATH` / `SECUREFILE` (see `includes/config/settings.php`).
-4. Update `/includes/config/settings.php` with the new database credentials and paths.
+4. Update `/app/config/settings.php` with the new database credentials and paths.
 5. Update **Settings → General Info** with the new installation path and URL.
 6. Test login before decommissioning the old server.
 

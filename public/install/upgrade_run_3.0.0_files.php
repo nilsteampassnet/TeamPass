@@ -49,9 +49,9 @@ $_SESSION['CPM'] = 1;
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
-require_once '../includes/config/settings.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once 'tp.functions.php';
 require_once './libs/aesctr.php';

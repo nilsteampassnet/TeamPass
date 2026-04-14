@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Classe para pesquisar',
     'settings_ldap_object_class_tip' => 'Classe LDAP para pesquisar, como conta de utilizador ou conta POSIX',
     'rebuild_config_file' => 'Rebuild the configuration file',
-    'rebuild_config_file_tip' => 'O ficheiro de configuração contém variáveis do sistema e é usado quando estas definições são necessárias antes da ligação à base de dados ter sido estabelecida. Reconstruir o ficheiro de configuração guarda os valores da base de dados no ficheiro e pode ser feito a qualquer momento. A localização padrão é ./includes/config/tp.config.php, mas o ficheiro deve estar localizado fora do diretório www por segurança.',
+    'rebuild_config_file_tip' => 'O ficheiro de configuração contém variáveis do sistema e é usado quando estas definições são necessárias antes da ligação à base de dados ter sido estabelecida. Reconstruir o ficheiro de configuração guarda os valores da base de dados no ficheiro e pode ser feito a qualquer momento. A localização padrão é ./app/config/tp.config.php, mas o ficheiro deve estar localizado fora do diretório www por segurança.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'O seu id de cartão Agses',
     'suggest_password_change' => 'Sugerir uma alteração de palavra-passe',

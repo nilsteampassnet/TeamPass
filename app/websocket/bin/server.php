@@ -25,8 +25,8 @@ $rootPath = dirname(__DIR__, 2);
 
 // Load Composer autoloader and expected files
 require_once $rootPath . '/sources/main.functions.php';
-require_once $rootPath . '/includes/config/include.php';
-require_once $rootPath . '/includes/config/settings.php';
+require_once $rootPath . '/app/config/include.php';
+require_once $rootPath . '/app/config/settings.php';
 require_once $rootPath . '/vendor/autoload.php';
 
 // Decrypt database password if not already done

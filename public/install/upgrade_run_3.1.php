@@ -46,9 +46,9 @@ $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
 //include librairies
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
-require_once '../includes/config/settings.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
 
@@ -515,7 +515,7 @@ mysqli_query(
 // For this, we need first to check if it exists
 // And copy each setting to the database if not already there or if different from the one in the database then update it
 // Then rename it and remove the file
-$configFilePath = __DIR__ . '/../includes/config/tp.config.php';
+$configFilePath = __DIR__ . '/../app/config/tp.config.php';
 if (file_exists($configFilePath)) {
     include $configFilePath;
     

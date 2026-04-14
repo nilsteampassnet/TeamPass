@@ -183,7 +183,7 @@ DB::delete('teampass_log_items', 'id_item=%i', $itemId);
 ```
 
 **Database Configuration:**
-- Created during installation: `/includes/config/settings.php`
+- Created during installation: `/app/config/settings.php`
 - Table prefix: `teampass_` (configurable via `DB_PREFIX`)
 - All queries use parameterized statements (no raw SQL concatenation)
 
@@ -749,7 +749,7 @@ PHP Code requires to fit PHPStan level 4.
 - **Strict types:** All new PHP files should use `declare(strict_types=1);`
 - **Namespaces:** Custom classes use `TeampassClasses\*` namespace
 - **Error handling:** Use try/catch blocks, return JSON errors in AJAX handlers
-- **Constants:** Defined in `/includes/config/include.php` (e.g., `TP_VERSION`)
+- **Constants:** Defined in `/app/config/include.php` (e.g., `TP_VERSION`)
 
 ### AJAX Request/Response Pattern
 
@@ -895,7 +895,7 @@ When making changes to core functionality:
 
 1. Create new upgrade script: `/install/upgrade_run_X.X.X.php`
 2. Add table/column changes with `DB::query()` or `DB::queryRaw()`
-3. Update version constants in `/includes/config/include.php`
+3. Update version constants in `/app/config/include.php`
 4. Test upgrade path from previous version
 
 ### Managing PR from github
@@ -919,7 +919,7 @@ For any new PR, always perform as this:
 
 ## Version Information
 
-Current version constants in `/includes/config/include.php`:
+Current version constants in `/app/config/include.php`:
 - `TP_VERSION` - Major.minor version (e.g., '3.1.5')
 - `TP_VERSION_MINOR` - Patch version (e.g., '2')
 - Full version: 3.1.5.2

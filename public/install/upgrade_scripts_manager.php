@@ -39,7 +39,7 @@ $session = SessionManager::getSession();
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = 'utf8';
 $_SESSION['CPM'] = 1;
-require_once '../includes/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 
 // Prepare POST variables
 $post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);

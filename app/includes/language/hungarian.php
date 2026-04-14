@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Osztály keresése',
     'settings_ldap_object_class_tip' => 'LDAP osztály keresése, úgymint felhasználói, vagy POSIX fiók',
     'rebuild_config_file' => 'Konfigurációs fájl újragenerálása',
-    'rebuild_config_file_tip' => 'A konfigurációs fájl tartalmazza a rendszer változókat és az adatbázis kapcsolat létrehozását megelőzően is innen kerülnek beolvasásra a kapcsolat beállításai. A konfigurációs fájl újraépítése elmenti az adatbázisban lévő paramétereket egy fájlba. Ez bármikor megtehető. A fájl alapértelmezett helye ./includes/config/tp.config.php, de biztonsági okokból célszerű a www könyvtáron kívül elhelyezni.',
+    'rebuild_config_file_tip' => 'A konfigurációs fájl tartalmazza a rendszer változókat és az adatbázis kapcsolat létrehozását megelőzően is innen kerülnek beolvasásra a kapcsolat beállításai. A konfigurációs fájl újraépítése elmenti az adatbázisban lévő paramétereket egy fájlba. Ez bármikor megtehető. A fájl alapértelmezett helye ./app/config/tp.config.php, de biztonsági okokból célszerű a www könyvtáron kívül elhelyezni.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'Az Ön Agses kártyaszáma',
     'suggest_password_change' => 'Suggest a password change',

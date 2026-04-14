@@ -53,7 +53,7 @@ These directories are written to during the web installer or upgrade process. Af
 > :bulb: **Hardening tip:** once the installation is complete, you can make `includes/config/` read-only for the web server:
 > ```bash
 > chmod 550 /path/to/teampass/includes/config
-> chmod 440 /path/to/teampass/includes/config/settings.php
+> chmod 440 /path/to/teampass/app/config/settings.php
 > ```
 > You must restore write access before running an upgrade, then lock it again afterwards.
 
@@ -225,10 +225,10 @@ echo "=== Config dir (expect 750 or 550 post-install) ==="
 stat -c "%a %n" ${TEAMPASS}/includes/config
 
 echo "=== settings.php (expect 640 or 440 post-install) ==="
-stat -c "%a %n" ${TEAMPASS}/includes/config/settings.php
+stat -c "%a %n" ${TEAMPASS}/app/config/settings.php
 
 echo "=== Encryption key dir (expect 700) ==="
-stat -c "%a %n" $(php -r "include '${TEAMPASS}/includes/config/settings.php'; echo SECUREPATH;")
+stat -c "%a %n" $(php -r "include '${TEAMPASS}/app/config/settings.php'; echo SECUREPATH;")
 
 echo "=== World-writable check (expect no output) ==="
 find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls

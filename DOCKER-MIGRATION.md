@@ -40,7 +40,7 @@ docker-compose exec db mysqldump \
 docker cp teampass-web:/var/www/html/sk ./backup-sk
 docker cp teampass-web:/var/www/html/files ./backup-files
 docker cp teampass-web:/var/www/html/upload ./backup-upload
-docker cp teampass-web:/var/www/html/includes/config/settings.php ./backup-settings.php
+docker cp teampass-web:/var/www/html/app/config/settings.php ./backup-settings.php
 
 # 3. Backup your docker-compose.yml
 cp docker-compose.yml docker-compose.yml.backup

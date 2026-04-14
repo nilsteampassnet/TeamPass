@@ -32,8 +32,8 @@ use GO\Scheduler;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load config
-require_once __DIR__.'/../includes/config/include.php';
-require_once __DIR__.'/../includes/config/settings.php';
+require_once __DIR__.'/../app/config/include.php';
+require_once __DIR__.'/../app/config/settings.php';
 
 // Load library
 require_once __DIR__.'/../vendor/autoload.php';

@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Classe de pesquisa',
     'settings_ldap_object_class_tip' => 'A classe de pesquisa do LDAP deve conter uma conta de usuário ou uma conta POSIX',
     'rebuild_config_file' => 'Recriar o arquivo de configuração',
-    'rebuild_config_file_tip' => 'O arquivo de configuração contem variáveis do sistema e são usados quando essas configuração são necessárias depois da conexão ao banco de dados foi estabelecida. Recriar o arquivo de configuração salva os valores do banco de dados no arquivo, e pode ser feito a qualquer momento. A localização padrão é ./includes/config/tp.config.php, mas o arquivo pode estar localizado fora diretório www por segurança.',
+    'rebuild_config_file_tip' => 'O arquivo de configuração contem variáveis do sistema e são usados quando essas configuração são necessárias depois da conexão ao banco de dados foi estabelecida. Recriar o arquivo de configuração salva os valores do banco de dados no arquivo, e pode ser feito a qualquer momento. A localização padrão é ./app/config/tp.config.php, mas o arquivo pode estar localizado fora diretório www por segurança.',
     'not_encrypted_data' => 'Dados não estão criptografados no banco de dados',
     'user_profile_agses_card_id' => 'Seu AGSES ID',
     'suggest_password_change' => 'Sugerir alteração de senha',

@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Prohledat třídu',
     'settings_ldap_object_class_tip' => 'Třída adresáře LDAP k prohledání (např. uživatelský účet nebo účet POSIX)',
     'rebuild_config_file' => 'Nově vygenerovat konfigurační soubor',
-    'rebuild_config_file_tip' => 'Konfigurační soubor obsahuje systémové proměnné, které jsou třeba ještě před připojením k databance. Vygenerováním konfiguračního souboru jsou do něj tyto  proměnné zapsány (lze povést kdykoliv). Soubor je sice standardně uložen pod /includes/config/tp.config.php, ale z bezpečnostních důvodů by měl být umístěn mimo složku www.',
+    'rebuild_config_file_tip' => 'Konfigurační soubor obsahuje systémové proměnné, které jsou třeba ještě před připojením k databance. Vygenerováním konfiguračního souboru jsou do něj tyto  proměnné zapsány (lze povést kdykoliv). Soubor je sice standardně uložen pod /app/config/tp.config.php, ale z bezpečnostních důvodů by měl být umístěn mimo složku www.',
     'not_encrypted_data' => 'Data nejsou v databázi šifrována',
     'user_profile_agses_card_id' => 'Vaše ID karty AGSES',
     'suggest_password_change' => 'Navrhnout změnu hesla',

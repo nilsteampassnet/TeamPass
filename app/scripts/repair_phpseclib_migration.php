@@ -28,8 +28,8 @@ if (php_sapi_name() !== 'cli') {
 
 // Load TeamPass configuration
 $rootPath = dirname(__DIR__);
-require_once $rootPath . '/includes/config/settings.php';
-require_once $rootPath . '/includes/config/include.php';
+require_once $rootPath . '/app/config/settings.php';
+require_once $rootPath . '/app/config/include.php';
 require_once $rootPath . '/sources/main.functions.php';
 
 // Initialize database

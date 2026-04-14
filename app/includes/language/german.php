@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Klasse für die Suche',
     'settings_ldap_object_class_tip' => 'LDAP Klasse für die Suche, wie zum Beispiel ein User Account oder POSIX Account',
     'rebuild_config_file' => 'Konfigurationsdatei neu aufbauen',
-    'rebuild_config_file_tip' => 'Das Konfigurationsfile liegt im Ordner ./includes/config/tp.config.php. Es enthält die Konfigurationsvariablen welche in den Einstellungen definiert sind. Das Konfigurationsfile kann immer neu generiert werden.',
+    'rebuild_config_file_tip' => 'Das Konfigurationsfile liegt im Ordner ./app/config/tp.config.php. Es enthält die Konfigurationsvariablen welche in den Einstellungen definiert sind. Das Konfigurationsfile kann immer neu generiert werden.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'Ihre Agses Card ID',
     'suggest_password_change' => 'Passwort-Änderung vorschlagen',

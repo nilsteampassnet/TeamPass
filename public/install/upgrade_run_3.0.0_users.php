@@ -47,9 +47,9 @@ $_SESSION['CPM'] = 1;
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
-require_once '../includes/config/settings.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once '../sources/main.functions.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
@@ -129,7 +129,7 @@ if (null !== $post_step) {
             // We need to create all its keys
             if ((int) $post_tp_user === 0) {
                 // Create TP USER
-                require_once '../includes/config/include.php';
+                require_once TEAMPASS_ROOT . '/app/config/include.php';
                 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = '" . TP_USER_ID . "'"));
                 if (intval($tmp) === 0) {
                     // generate key for password
@@ -785,7 +785,7 @@ if (null !== $post_step) {
             $userInfo = json_decode($post_user_info, true);
 
             // Get language
-            $_SESSION['teampass']['lang'] = include_once '../includes/language/english.php';
+            $_SESSION['teampass']['lang'] = include_once TEAMPASS_ROOT . '/app/includes/language/english.php';
 
             // Find user's email
             $userEmail = mysqli_fetch_array(

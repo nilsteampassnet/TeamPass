@@ -5028,7 +5028,7 @@ function getFullUserInfos(
 function upgradeRequired(): bool
 {
     // Get settings.php
-    include_once __DIR__. '/../includes/config/settings.php';
+    include_once __DIR__. '/../app/config/settings.php';
 
     // Get timestamp in DB
     $val = DB::queryFirstRow(
@@ -5802,8 +5802,8 @@ function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
  */
 function loadClasses(string $className = ''): void
 {
-    require_once __DIR__. '/../includes/config/include.php';
-    require_once __DIR__. '/../includes/config/settings.php';
+    require_once __DIR__. '/../config/include.php';
+    require_once __DIR__. '/../config/settings.php';
     require_once __DIR__.'/../vendor/autoload.php';
 
     // Load phpseclib v1 autoloader for backward compatibility

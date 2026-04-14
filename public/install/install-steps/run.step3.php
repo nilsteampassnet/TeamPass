@@ -26,11 +26,15 @@
  * @see       https://www.teampass.net
  */
 
-require '../../vendor/autoload.php';
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../../..'));
+}
+
+require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Get some data
-include __DIR__.'/../../includes/config/include.php';
+include TEAMPASS_ROOT . '/app/config/include.php';
 // Load functions
 include_once(__DIR__ . '/../tp.functions.php');
 require_once __DIR__.'/install.functions.php';

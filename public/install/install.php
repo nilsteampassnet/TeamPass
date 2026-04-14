@@ -27,12 +27,16 @@
  */
 
 
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../..'));
+}
+
 // Prepare autoloader
-require '../vendor/autoload.php';
+require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
 
 // Get some data
-include __DIR__.'/../includes/config/include.php';
+include TEAMPASS_ROOT . '/app/config/include.php';
 // Load functions
 require_once __DIR__.'/tp.functions.php';
 require_once __DIR__.'/install-steps/install.functions.php';
@@ -120,7 +124,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 				if (empty($post_step)) {
 					?>
 				<div class="row">
-					<?php if (file_exists(__DIR__ . '/../includes/config/settings.php')): ?>
+					<?php if (file_exists(__DIR__ . '/../app/config/settings.php')): ?>
 					<div class="col-12 mb-3">
 						<div class="alert alert-danger" role="alert">
 							<h5 class="alert-heading"><i class="fa-solid fa-triangle-exclamation"></i>&nbsp;Existing installation detected</h5>
@@ -232,7 +236,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check2" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/includes/config/</code> <span class="badge badge-secondary">required — install/upgrade</span>
+												<code>/app/config/</code> <span class="badge badge-secondary">required — install/upgrade</span>
 												<div class="text-muted small">Stores <code>settings.php</code> (encrypted database credentials). Must be writable during installation and upgrades only.</div>
 												<div id="check2-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/config</code></div>
 											</div>
@@ -242,7 +246,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check3" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/includes/avatars/</code> <span class="badge badge-light border">optional</span>
+												<code>/assets/avatars/</code> <span class="badge badge-light border">optional</span>
 												<div class="text-muted small">Stores user avatar images. Only required if users upload a profile picture.</div>
 												<div id="check3-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/avatars</code></div>
 											</div>

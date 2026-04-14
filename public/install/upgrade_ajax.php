@@ -38,7 +38,7 @@ $_SESSION = [];
 
 function settingsConsistencyCheck(): array
 {
-    $settingsFile = __DIR__.'/../includes/config/settings.php';
+    $settingsFile = __DIR__.'/../../app/config/settings.php';
     require_once $settingsFile;
     require_once __DIR__.'/tp.functions.php';
 
@@ -134,7 +134,7 @@ define("DB_SSL", array(
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-define("SECUREPATH", "' . SECUREPATH . '");
+// SECUREPATH is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . SECUREFILE. '");';
 
 		if (defined('IKEY') === true) $settingsTxt .= '
@@ -167,7 +167,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
         if ($fileCreation === false) {
             return [
                 'error' => '[{
-                    "error" : "Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.",
+                    "error" : "Setting.php file could not be created in /app/config/ folder. Please check the path and the rights.",
                     "index" : ""
                 }]',
                 'value' => false
@@ -192,7 +192,7 @@ $check = settingsConsistencyCheck();
 $settingsFileNewlyCreated = $check['value'];
 
 // Load functions
-require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../../app/sources/main.functions.php';
 
 // init
 loadClasses('DB');
@@ -206,9 +206,9 @@ $_SESSION['CPM'] = 1;
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-require_once '../includes/language/english.php';
-require_once '../includes/config/include.php';
-require_once '../includes/config/settings.php';
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once 'tp.functions.php';
 
 // Prepare POST variables
@@ -279,22 +279,21 @@ if (isset($post_type)) {
 
             require_once './libs/aesctr.php';
             
-            // check if path in settings.php are consistent
-            if (defined(SECUREPATH) === true) {
-                if (!is_dir(SECUREPATH)) {
-                    echo '[{'.
-                        '"error" : "Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.",'.
-                        '"index" : ""'.
-                    '}]';
-                    break;
-                }
-                if (!file_exists(SECUREPATH . '/sk.php')) {
-                    echo '[{'.
-                        '"error" : "Error in settings.php file!<br>Check correctness of path indicated in file `includes/config/settings.php`.<br>Reload this page and retry.",'.
-                        '"index" : ""'.
-                    '}]';
-                    break;
-                }
+            // Check that the secrets directory and Defuse key file exist
+            // SECUREPATH is now always defined in app/config/include.php as TEAMPASS_ROOT/secrets
+            if (!is_dir(SECUREPATH)) {
+                echo '[{'.
+                    '"error" : "Secrets directory does not exist: ' . SECUREPATH . '. Please check your installation.",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+            if (defined('SECUREFILE') === true && !file_exists(SECUREPATH . '/' . SECUREFILE)) {
+                echo '[{'.
+                    '"error" : "Encryption key file not found in ' . SECUREPATH . '. Please check your installation.",'.
+                    '"index" : ""'.
+                '}]';
+                break;
             }
             
             $_SESSION['settings']['cpassman_dir'] = '..';
@@ -363,23 +362,25 @@ if (isset($post_type)) {
 
             // ── Directories ──────────────────────────────────────────────
             $dirChecks = [
-                '/includes/config/settings.php'   => ['id' => 'upg-chk-settings',    'optional' => false, 'fix' => 'chmod 0640 includes/config/settings.php'],
-                '/includes/config/'               => ['id' => 'upg-chk-config',       'optional' => false, 'fix' => 'chmod 0750 includes/config'],
-                '/includes/libraries/csrfp/libs/' => ['id' => 'upg-chk-csrfp-libs',  'optional' => false, 'fix' => 'chmod 0750 includes/libraries/csrfp/libs'],
-                '/includes/libraries/csrfp/log/'  => ['id' => 'upg-chk-csrfp-log',   'optional' => false, 'fix' => 'chmod 0750 includes/libraries/csrfp/log'],
-                '/includes/avatars/'              => ['id' => 'upg-chk-avatars',      'optional' => true,  'fix' => 'chmod 0750 includes/avatars'],
-                '/files/'                         => ['id' => 'upg-chk-files',        'optional' => false, 'fix' => 'chmod 0750 files'],
-                '/upload/'                        => ['id' => 'upg-chk-upload',       'optional' => true,  'fix' => 'chmod 0750 upload'],
+                '/app/config/settings.php'            => ['id' => 'upg-chk-settings',   'optional' => false, 'fix' => 'chmod 0640 app/config/settings.php'],
+                '/app/config/'                         => ['id' => 'upg-chk-config',     'optional' => false, 'fix' => 'chmod 0750 app/config'],
+                '/app/includes/libraries/csrfp/libs/' => ['id' => 'upg-chk-csrfp-libs', 'optional' => false, 'fix' => 'chmod 0750 app/includes/libraries/csrfp/libs'],
+                '/app/includes/libraries/csrfp/log/'  => ['id' => 'upg-chk-csrfp-log',  'optional' => false, 'fix' => 'chmod 0750 app/includes/libraries/csrfp/log'],
+                '/public/assets/avatars/'              => ['id' => 'upg-chk-avatars',    'optional' => true,  'fix' => 'chmod 0750 public/assets/avatars'],
+                '/storage/files/'                      => ['id' => 'upg-chk-files',      'optional' => false, 'fix' => 'chmod 0750 storage/files'],
+                '/storage/upload/'                     => ['id' => 'upg-chk-upload',     'optional' => true,  'fix' => 'chmod 0750 storage/upload'],
+                '/storage/backups/'                    => ['id' => 'upg-chk-backups',    'optional' => true,  'fix' => 'chmod 0750 storage/backups'],
             ];
 
             $tab = array(
-                $abspath . '/includes/config/settings.php',
-                $abspath . '/includes/config/',
-                $abspath . '/includes/libraries/csrfp/libs/',
-                $abspath . '/includes/libraries/csrfp/log/',
-                $abspath . '/includes/avatars/',
-                $abspath . '/files/',
-                $abspath . '/upload/',
+                $abspath . '/app/config/settings.php',
+                $abspath . '/app/config/',
+                $abspath . '/app/includes/libraries/csrfp/libs/',
+                $abspath . '/app/includes/libraries/csrfp/log/',
+                $abspath . '/public/assets/avatars/',
+                $abspath . '/storage/files/',
+                $abspath . '/storage/upload/',
+                $abspath . '/storage/backups/',
             );
             foreach ($tab as $elem) {
                 if (substr($elem, -1) === '/' && !is_dir($elem)) {
@@ -397,6 +398,45 @@ if (isset($post_type)) {
                     'fix'      => $ok ? '' : $meta['fix'],
                 ];
             }
+
+            // ── Top-level directory security posture ─────────────────────
+            // /storage/ must be writable (PHP may create sub-directories at runtime)
+            $storageWritable = is_writable($abspath . '/storage');
+            if (!$storageWritable) {
+                $okWritable = false;
+            }
+            $checks[] = [
+                'id'     => 'upg-chk-storage-writable',
+                'status' => $storageWritable ? 'ok' : 'error',
+                'fix'    => $storageWritable ? '' : 'chmod 0750 storage',
+            ];
+
+            // /secrets/ must be readable by the web server (encryption key access)
+            $secretsReadable = is_readable($abspath . '/secrets');
+            if (!$secretsReadable) {
+                $okWritable = false;
+            }
+            $checks[] = [
+                'id'     => 'upg-chk-secrets-readable',
+                'status' => $secretsReadable ? 'ok' : 'error',
+                'fix'    => $secretsReadable ? '' : 'chmod 0750 secrets && chown www-data:www-data secrets',
+            ];
+
+            // /app/ must NOT be writable by the web server (security: protect source code)
+            $appWritable = is_writable($abspath . '/app');
+            $checks[] = [
+                'id'     => 'upg-chk-app-safe',
+                'status' => $appWritable ? 'warning' : 'ok',
+                'fix'    => $appWritable ? 'chmod 0755 app' : '',
+            ];
+
+            // /public/ must NOT be writable by the web server (security: protect webroot)
+            $publicWritable = is_writable($abspath . '/public');
+            $checks[] = [
+                'id'     => 'upg-chk-public-safe',
+                'status' => $publicWritable ? 'warning' : 'ok',
+                'fix'    => $publicWritable ? 'chmod 0755 public' : '',
+            ];
 
             // ── PHP extensions ────────────────────────────────────────────
             foreach (['openssl', 'mbstring', 'bcmath', 'xml', 'curl'] as $ext) {
@@ -430,19 +470,8 @@ if (isset($post_type)) {
             }
             $checks[] = ['id' => 'upg-chk-mysql-version', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
 
-            // Encryption key
-            if (defined('SECUREPATH') === true) {
-                if (@mysqli_fetch_row(
-                    mysqli_query($db_link,
-                        'SELECT valeur FROM ' . $pre . "misc WHERE type='admin' AND intitule = 'enable_tasks_manager'")
-                )) {
-                    $okEncryptKey = true;
-                } else {
-                    $defuse_file = SECUREPATH . '/teampass-seckey.txt';
-                    $okEncryptKey = file_exists($defuse_file);
-                    $superGlobal->put('tp_defuse_installed', $okEncryptKey, 'SESSION');
-                }
-            }
+            // Encryption key — check that the key file actually exists and is readable
+            $okEncryptKey = file_exists(SECUREPATH.'/'.SECUREFILE) && is_readable(SECUREPATH.'/'.SECUREFILE);
             $checks[] = ['id' => 'upg-chk-encrypt-key', 'status' => $okEncryptKey ? 'ok' : 'error', 'fix' => ''];
 
             // Tasks manager
@@ -633,7 +662,7 @@ if (isset($post_type)) {
 
             $returnStatus = array();
             // If settings.php file doesn't contain DB_HOST then regenerate it
-            $settingsFile = '../includes/config/settings.php';
+            $settingsFile = '../../app/config/settings.php';
             include_once $settingsFile;
 
             if (defined('DB_SSL') === false) {
@@ -763,7 +792,7 @@ if (isset($post_type)) {
     define("DB_CONNECT_OPTIONS", array(
         MYSQLI_OPT_CONNECT_TIMEOUT => 10
     ));
-    define("SECUREPATH", "' . SECUREPATH. '");
+    // SECUREPATH is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 
     if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -778,7 +807,7 @@ if (isset($post_type)) {
                         $returnStatus, 
                         array(
                             'id' => 'step5_settingFile', 
-                            'html' => '<i class="far fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">Setting.php file could not be created in /includes/config/ folder. Please check the path and the rights.</span>',
+                            'html' => '<i class="far fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">Setting.php file could not be created in /app/config/ folder. Please check the path and the rights.</span>',
                         )
                     );
                 } else {
@@ -791,7 +820,7 @@ if (isset($post_type)) {
                     );
                 }
                 // reload the file
-                include '../includes/config/settings.php';
+                include TEAMPASS_ROOT . '/app/config/settings.php';
 
                 // ensure the new constant is set
                 define("DB_SSL", false);
@@ -820,10 +849,10 @@ if (isset($post_type)) {
             }
 
             // Do csrfp.config.php file
-            $csrfp_file_sample = '../includes/libraries/csrfp/libs/csrfp.config.sample.php';
+            $csrfp_file_sample = '../../app/includes/libraries/csrfp/libs/csrfp.config.sample.php';
             if (file_exists($csrfp_file_sample) === true) {
                 // update CSRFP TOKEN
-                $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
+                $csrfp_file = '../../app/includes/libraries/csrfp/libs/csrfp.config.php';
                 if (file_exists($csrfp_file) === true) {
                     if (
                         copy(
@@ -846,13 +875,13 @@ if (isset($post_type)) {
                 }
                 unlink($csrfp_file); // delete existing csrfp.config file
                 copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
-                $data = file_get_contents('../includes/libraries/csrfp/libs/csrfp.config.php');
+                $data = file_get_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php');
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $data);
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
                 $jsUrl = $post_url_path . '/includes/libraries/csrfp/js/csrfprotector.js';
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "' . $jsUrl . '"', $newdata);
                 $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
-                file_put_contents('../includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
+                file_put_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
 
                 // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
                 mysqli_query(
@@ -963,9 +992,9 @@ if (isset($post_type)) {
             break;
 
         case 'perform_database_dump':
-            $filename = '../includes/config/settings.php';
+            $filename = '../../app/config/settings.php';
 
-            include_once '../sources/main.functions.php';
+            include_once '../../app/sources/main.functions.php';
             $pass = defuse_return_decrypted($pass);
 
             $mtables = array();
@@ -983,7 +1012,7 @@ if (isset($post_type)) {
 
             // Prepare file
             $backup_file_name = 'sql-backup-' . date('d-m-Y--h-i-s') . '.sql';
-            $fp = fopen('../files/' . $backup_file_name, 'a');
+            $fp = fopen('../../storage/files/' . $backup_file_name, 'a');
 
             foreach ($mtables as $table) {
                 $contents = '-- Table `' . $table . "` --\n";

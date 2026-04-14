@@ -513,7 +513,7 @@ $systemUsersLogins = ['API', 'TP', 'OTV'];
                                         }
 
                                         // Check if tp.config.php file is still present
-                                        if (file_exists(__DIR__.'/../includes/config/tp.config.php') === true) {
+                                        if (file_exists(__DIR__.'/../app/config/tp.config.php') === true) {
                                             echo '<div class="mt-3 alert alert-warning" role="alert"><i class="fa-solid fa-circle-exclamation mr-2"></i>File tp.config.php requires to be deleted. Please do it and refresh this page. This warning shall not be visible anymore.</div>';
                                         }
                                         ?>

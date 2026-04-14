@@ -26,12 +26,16 @@
  * @see       https://www.teampass.net
  */
 
-require '../../vendor/autoload.php';
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../../..'));
+}
+
+require TEAMPASS_ROOT . '/app/vendor/autoload.php';
 use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\PasswordManager\PasswordManager;
 
 // Get some data
-require_once __DIR__.'/../../includes/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 // Load functions
 include_once(__DIR__ . '/../tp.functions.php');
 require_once __DIR__.'/install.functions.php';
@@ -483,7 +487,7 @@ class DatabaseInstaller
         );
 
         // include constants
-        require_once __DIR__.'/../../includes/config/include.php';
+        require_once TEAMPASS_ROOT . '/app/config/include.php';
 
         $aMiscVal = array(
             array('admin', 'max_latest_items', '10'),
@@ -849,7 +853,7 @@ class DatabaseInstaller
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
-        require_once __DIR__.'/../../includes/config/include.php';
+        require_once TEAMPASS_ROOT . '/app/config/include.php';
 
         // Hash password
         $passwordManager = new PasswordManager();

@@ -143,7 +143,7 @@ $userInfo = DB::queryFirstRow(
 if (empty($userInfo['avatar']) === true) {
     $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
 } else {
-    $avatar = $SETTINGS['cpassman_url'] . '/includes/avatars/' . strval($userInfo['avatar']);
+    $avatar = $SETTINGS['cpassman_url'] . '/assets/avatars/' . strval($userInfo['avatar']);
 }
 
 // Get Groups name

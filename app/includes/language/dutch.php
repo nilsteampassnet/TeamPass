@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Class om te dorzoeken',
     'settings_ldap_object_class_tip' => 'LDAP class om te doorzoeken, zoals gebruikers account of POSIX account',
     'rebuild_config_file' => 'Reconstrueer het configuratiebestand',
-    'rebuild_config_file_tip' => 'Het configuratiebestand bevat systeem variabelen, deze instellingen worden gebruikt voordat de database verbinding is gemaakt. Het reconstrueren van het configuratiebestand bewaart de database instellingen in het bestand. Dit kan op elk moment uitgevoerd worden. De standaard locatie is ./includes/config/tp.config.php, maar moet buiten de www locatie gehouden worden in verband met beveiliging.',
+    'rebuild_config_file_tip' => 'Het configuratiebestand bevat systeem variabelen, deze instellingen worden gebruikt voordat de database verbinding is gemaakt. Het reconstrueren van het configuratiebestand bewaart de database instellingen in het bestand. Dit kan op elk moment uitgevoerd worden. De standaard locatie is ./app/config/tp.config.php, maar moet buiten de www locatie gehouden worden in verband met beveiliging.',
     'not_encrypted_data' => 'Data is not encrypted in database',
     'user_profile_agses_card_id' => 'Uw AGSES kaart id',
     'suggest_password_change' => 'Stel een wachtwoordwijziging voor',

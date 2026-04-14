@@ -8,9 +8,9 @@
  * Usage: php install/diagnose_transparent_recovery.php
  */
 
-// Load TeamPass configuration
-require_once __DIR__ . '/../includes/config/include.php';
+// Load TeamPass configuration — main.functions.php defines TEAMPASS_ROOT
 require_once __DIR__ . '/../sources/main.functions.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
 
 // Load classes
 loadClasses('DB');

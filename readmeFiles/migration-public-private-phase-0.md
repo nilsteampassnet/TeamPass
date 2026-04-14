@@ -164,7 +164,7 @@ Les 24 autres références AJAX utilisent `$SETTINGS['cpassman_url'] . '/sources
 | Fichier | Travail requis |
 |---|---|
 | `includes/config/include.php` → `app/config/include.php` | Redéfinir `TEAMPASS_ROOT_PATH`, `LOG_TASKS_FILE`, `TASKS_LOCK_FILE`, `TASKS_TRIGGER_FILE` |
-| `includes/config/settings.php` → `app/config/settings.php` | Mettre à jour `TEAMPASS_ROOT_PATH` si défini ici aussi ; vérifier `SECUREPATH` (déjà absolu, pas d'action requise) |
+| `includes/config/settings.php` → `app/config/settings.php` | Mettre à jour `TEAMPASS_ROOT_PATH` si défini ici aussi ; `SECUREPATH` supprimé — il est désormais une constante dans `app/config/include.php` (`TEAMPASS_ROOT/secrets`). Seul `SECUREFILE` (nom du fichier clé) reste dans `settings.php`. |
 
 ### 3.3 Sources (37 fichiers PHP)
 
@@ -276,7 +276,24 @@ ls /var/www/html/TeamPass/backups/ 2>/dev/null
 
 ### 4.6 `SECUREPATH` / `SECUREFILE`
 
-Déjà en chemin absolu externe au webroot (ex : `/var/www/TP_secrets/20220213/`). **Aucune modification requise.** À confirmer en staging.
+**`SECUREPATH` est désormais une constante fixe**, définie dans `app/config/include.php` :
+```php
+define('SECUREPATH', TEAMPASS_ROOT . '/secrets');
+```
+
+Il **n'est plus stocké dans `settings.php`** et n'est plus configurable par l'administrateur. Le répertoire `secrets/` se trouve à la racine du projet (hors `public/`), donc hors webroot.
+
+**`SECUREFILE`** (nom du fichier contenant la clé Defuse, ex. `P2YLLfga5BDujvBtet5TTA6L48sWFcu8DXQs3fvG`) reste l'unique information stockée dans `settings.php`.
+
+**Le chemin complet de la clé est toujours :** `SECUREPATH . '/' . SECUREFILE`
+
+**Fichiers corrigés lors de cette migration :**
+- `public/install/upgrade_ajax.php` — suppression de `SECUREPATH` des templates `settings.php` générés, correction du séparateur `/` manquant, suppression des guards `defined(SECUREPATH)` devenus inutiles
+- `public/install/tp.functions.php` — suppression de `SECUREPATH` du template settings.php
+- `public/install/install-steps/run.step6.php` — utilise désormais `SECUREPATH` (constante) au lieu du chemin saisi par l'utilisateur
+- `app/scripts/install-cli.php` — `$securePath` corrigé vers `SECUREPATH` (`TEAMPASS_ROOT/secrets`), suppression de `SECUREPATH` du template settings.php
+- `public/install/upgrade.php` — suppression du fallback `define("SECUREPATH", dirname(SECUREFILE))` et de l'input SK path devenu obsolète
+- `app/includes/.externals/settings.php` — `SECUREPATH` remplacé par `SECUREFILE`
 
 ### 4.7 Permissions PHP sur `/app/`
 

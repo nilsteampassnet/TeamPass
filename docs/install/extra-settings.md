@@ -5,7 +5,7 @@
 
 By default, ssl is not enabled but if you require it, you will need to perform next steps:
 
-- Open in edition mode the file `./includes/config/settings.php`
+- Open in edition mode the file `./app/config/settings.php`
 - Find
 ```
 define("DB_ENCODING", "utf8mb4");

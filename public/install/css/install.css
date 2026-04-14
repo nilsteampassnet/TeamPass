@@ -4,7 +4,7 @@ html, body {
 }
 
 body{
-    background-image: url(../../includes/images/install_background.jpg); /* Path to the image */
+    background-image: url(../../assets/images/install_background.jpg); /* Path to the image */
     background-size: cover;      /* The image covers the entire screen */
     background-position: center; /* The image is centered */
     background-repeat: no-repeat; /* No image repetition */

@@ -1442,7 +1442,7 @@ return array(
     'settings_ldap_object_class' => 'Klasa do wyszukiwania',
     'settings_ldap_object_class_tip' => 'Klasa LDAP do wyszukiwania np. Osoba lub konto posix',
     'rebuild_config_file' => 'Przebuduj plik konfiguracyjny',
-    'rebuild_config_file_tip' => 'Plik konfiguracyjny znajduje się w katalogu ./includes/config/tp.config.php. Zawiera zmienne konfiguracyjne zdefiniowane w ustawieniach oraz niestandardowe zakładki. Przebudowa pliku konfiguracyjnego może być wykonana w każdym momencie.',
+    'rebuild_config_file_tip' => 'Plik konfiguracyjny znajduje się w katalogu ./app/config/tp.config.php. Zawiera zmienne konfiguracyjne zdefiniowane w ustawieniach oraz niestandardowe zakładki. Przebudowa pliku konfiguracyjnego może być wykonana w każdym momencie.',
     'not_encrypted_data' => 'Dane nie są zaszyfrowane w bazie danych',
     'user_profile_agses_card_id' => 'Twoje ID karty Agses',
     'suggest_password_change' => 'Zasugeruj zmianę hasła',
