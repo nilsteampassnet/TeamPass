@@ -2160,5 +2160,4 @@ return array(
     'network_security_auto_comment_failed_login_ip' => 'IP ajoutée automatiquement depuis l’écran des connexions échouées',
     'network_security_add_ip_to_blacklist' => 'Ajouter cette IP à la blacklist',
     'network_security_add_ip_to_blacklist_success' => 'IP ajoutée à la blacklist',
-
 );
