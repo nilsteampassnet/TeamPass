@@ -5062,6 +5062,7 @@ function upgradeRequired(): bool
  * @param string $recovery_public_key
  * @param string $recovery_private_key
  * @param bool $userHasToEncryptPersonalItemsAfter
+ * @param string $finalSpecialAfterGeneration
  * @return string
  */
 function handleUserKeys(
@@ -5077,7 +5078,8 @@ function handleUserKeys(
     bool $user_self_change = false,
     string $recovery_public_key = '',
     string $recovery_private_key = '',
-    bool $userHasToEncryptPersonalItemsAfter = false
+    bool $userHasToEncryptPersonalItemsAfter = false,
+    string $finalSpecialAfterGeneration = ''
 ): string
 {
     $session = SessionManager::getSession();
@@ -5248,6 +5250,7 @@ function handleUserKeys(
                 'email_body' => $emailBody,
                 'user_self_change' => $user_self_change === true ? 1 : 0,
                 'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
+                'final_special_after_generation' => $finalSpecialAfterGeneration,
             ]),
         )
     );
