@@ -2151,4 +2151,4 @@ return array(
     'items_corrupted_marker_unreadable' => 'Unreadable password',
     'settings_show_corrupted_items_in_list' => 'Highlight corrupted items in items list',
     'settings_show_corrupted_items_in_list_tip' => 'When enabled, users will see corrupted items highlighted in the items list.',
-    );
+);
