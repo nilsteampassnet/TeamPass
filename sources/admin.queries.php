@@ -2824,8 +2824,46 @@ switch ($post_type) {
             }
         }
 
+        if ($post_field === 'enable_local_password_recovery') {
+            $legacyField = 'disable_show_forgot_pwd_link';
+            $legacyValue = (string) ((int) $post_value === 1 ? 0 : 1);
+            $legacyExists = DB::queryFirstField(
+                'SELECT COUNT(*)
+                FROM ' . prefixTable('misc') . '
+                WHERE type = %s AND intitule = %s',
+                'admin',
+                $legacyField
+            );
+
+            if ((int) $legacyExists === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $legacyValue,
+                        'type' => 'admin',
+                        'intitule' => $legacyField,
+                        'created_at' => $timestamp,
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $legacyValue,
+                        'updated_at' => $timestamp,
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    $legacyField
+                );
+            }
+        }
+
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
+        if ($post_field === 'enable_local_password_recovery') {
+            $SETTINGS['disable_show_forgot_pwd_link'] = (string) ((int) $post_value === 1 ? 0 : 1);
+        }
 
         // Silent default save of browser extension FQDN on first API activation
         if ($post_field === 'api' && (int) $post_value === 1) {
