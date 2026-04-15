@@ -329,6 +329,59 @@ addColumnIfNotExist(
     'show_subfolders',
     "TINYINT(1) NOT NULL DEFAULT 0"
 );
+
+// ==========================================
+// Knowledge base: comments support and utf8mb4 compatibility
+// ==========================================
+addColumnIfNotExist(
+    $pre . 'kb',
+    'allow_comments',
+    "TINYINT(1) NOT NULL DEFAULT 0"
+);
+
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "kb_comments` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `content` text NOT NULL,
+            `author_id` int(12) NOT NULL,
+            `created_at` int(12) NOT NULL DEFAULT 0,
+            `updated_at` int(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            KEY `idx_kb_id` (`kb_id`),
+            KEY `idx_author_id` (`author_id`),
+            KEY `idx_created_at` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_kb_id',
+    "ADD KEY `idx_kb_id` (`kb_id`)"
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_author_id',
+    "ADD KEY `idx_author_id` (`author_id`)"
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_created_at',
+    "ADD KEY `idx_created_at` (`created_at`)"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_comments` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
 // --->
 
 
