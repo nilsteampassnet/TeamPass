@@ -597,7 +597,7 @@ class DatabaseInstaller
             array('admin', 'enable_attachment_encryption', '1'),
             array('admin', 'personal_saltkey_security_level', '50'),
             array('admin', 'ldap_new_user_is_administrated_by', '0'),
-            array('admin', 'disable_show_forgot_pwd_link', '0'),
+            array('admin', 'enable_local_password_recovery', '1'),
             array('admin', 'offline_key_level', '0'),
             array('admin', 'enable_http_request_login', '0'),
             array('admin', 'ldap_and_local_authentication', '0'),
@@ -1077,6 +1077,7 @@ class DatabaseInstaller
             `description` text NOT NULL,
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
+            `allow_comments` tinyint(1) NOT null DEFAULT '0',
             PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -1104,6 +1105,25 @@ class DatabaseInstaller
             `item_id` int(12) NOT NULL,
             PRIMARY KEY (`increment_id`)
             ) CHARSET=utf8;'
+        );
+    }
+
+    // Create table kb_comments
+    private function kb_comments()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'kb_comments` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `content` text NOT NULL,
+            `author_id` int(12) NOT NULL,
+            `created_at` int(12) NOT NULL DEFAULT 0,
+            `updated_at` int(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            KEY `idx_kb_id` (`kb_id`),
+            KEY `idx_author_id` (`author_id`),
+            KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
