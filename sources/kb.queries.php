@@ -40,6 +40,8 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once 'main.functions.php';
 
 loadClasses('DB');
+DB::$encoding = 'utf8mb4';
+DB::query('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
 $lang = new Language($session->get('user-language') ?? 'english');
@@ -397,9 +399,308 @@ function kbFilterAllowedItemIds(array $itemIds, SessionInterface $session): arra
     return array_values(array_map(static fn (array $row): int => (int) $row['id'], $rows));
 }
 
+function kbLoadAssociatedItemIds(int $kbId): array
+{
+    if ($kbId <= 0) {
+        return [];
+    }
+
+    $rows = DB::query(
+        'SELECT item_id
+        FROM ' . prefixTable('kb_items') . '
+        WHERE kb_id = %i',
+        $kbId
+    );
+
+    return array_values(array_unique(array_filter(
+        array_map(static fn (array $row): int => (int) ($row['item_id'] ?? 0), $rows),
+        static fn (int $itemId): bool => $itemId > 0
+    )));
+}
+
+function kbBuildPersistedAssociatedItemIds(int $kbId, array $requestedItemIds, SessionInterface $session): array
+{
+    $visibleRequestedItemIds = kbFilterAllowedItemIds($requestedItemIds, $session);
+    if ($kbId <= 0) {
+        return $visibleRequestedItemIds;
+    }
+
+    $existingItemIds = kbLoadAssociatedItemIds($kbId);
+    if (empty($existingItemIds)) {
+        return $visibleRequestedItemIds;
+    }
+
+    // Preserve associations the editor cannot currently see to avoid dropping links
+    // after a role change or reduced folder access.
+    $visibleExistingItemIds = kbFilterAllowedItemIds($existingItemIds, $session);
+    $hiddenExistingItemIds = array_values(array_diff($existingItemIds, $visibleExistingItemIds));
+
+    return array_values(array_unique(array_merge($visibleRequestedItemIds, $hiddenExistingItemIds)));
+}
+
+function kbNormalizeTextLineEndings(string $text): string
+{
+    return str_replace(["\r\n", "\r"], "\n", $text);
+}
+
+function kbSanitizeTextInput(string $text): string
+{
+    $text = kbNormalizeTextLineEndings($text);
+    $text = str_replace("\0", '', $text);
+    $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text) ?? $text;
+
+    return trim($text);
+}
+
+function kbFormatTimestamp(int $timestamp): string
+{
+    global $SETTINGS;
+
+    $dateFormat = (string) ($SETTINGS['date_format'] ?? 'Y-m-d');
+    $timeFormat = (string) ($SETTINGS['time_format'] ?? 'H:i');
+
+    return date(trim($dateFormat . ' ' . $timeFormat), $timestamp);
+}
+
+function kbBuildDescriptionExcerpt(string $description, int $maxLength = 180): string
+{
+    $excerpt = trim((string) preg_replace('/\s+/u', ' ', kbNormalizeTextLineEndings($description)));
+    if ($excerpt === '') {
+        return '';
+    }
+
+    if (mb_strlen($excerpt) <= $maxLength) {
+        return $excerpt;
+    }
+
+    return rtrim(mb_substr($excerpt, 0, max(1, $maxLength - 1))) . '…';
+}
+
+function kbRenderInlineText(string $text): string
+{
+    $pattern = '/((?:https?:\/\/|www\.)[^\s<]+|[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})/iu';
+    $result = '';
+    $offset = 0;
+
+    if (preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE) !== false) {
+        foreach ($matches[0] as $matchData) {
+            $match = (string) ($matchData[0] ?? '');
+            $position = (int) ($matchData[1] ?? 0);
+            $candidate = rtrim($match, ".,;:!?");
+            $trailing = substr($match, strlen($candidate));
+
+            if ($position > $offset) {
+                $result .= htmlspecialchars(substr($text, $offset, $position - $offset), ENT_QUOTES, 'UTF-8');
+            }
+
+            $href = '';
+            if (filter_var($candidate, FILTER_VALIDATE_EMAIL) !== false) {
+                $href = 'mailto:' . $candidate;
+            } else {
+                $url = preg_match('/^www\./iu', $candidate) === 1 ? 'https://' . $candidate : $candidate;
+                if (filter_var($url, FILTER_VALIDATE_URL) !== false) {
+                    $href = $url;
+                }
+            }
+
+            if ($href !== '') {
+                $result .= '<a class="tp-kb-link" href="' . htmlspecialchars($href, ENT_QUOTES, 'UTF-8') . '" target="_blank" rel="noopener noreferrer">' .
+                    htmlspecialchars($candidate, ENT_QUOTES, 'UTF-8') .
+                    '</a>';
+            } else {
+                $result .= htmlspecialchars($candidate, ENT_QUOTES, 'UTF-8');
+            }
+
+            if ($trailing !== '') {
+                $result .= htmlspecialchars($trailing, ENT_QUOTES, 'UTF-8');
+            }
+
+            $offset = $position + strlen($match);
+        }
+    }
+
+    if ($offset < strlen($text)) {
+        $result .= htmlspecialchars(substr($text, $offset), ENT_QUOTES, 'UTF-8');
+    }
+
+    return $result === '' ? htmlspecialchars($text, ENT_QUOTES, 'UTF-8') : $result;
+}
+
+function kbBuildRichTextHtml(string $text): string
+{
+    $text = trim(kbNormalizeTextLineEndings($text));
+    if ($text === '') {
+        return '';
+    }
+
+    $blocks = preg_split("/\n{2,}/", $text) ?: [];
+    $htmlBlocks = [];
+    foreach ($blocks as $block) {
+        $block = trim($block, "\n");
+        if ($block === '') {
+            continue;
+        }
+
+        $lines = array_values(array_filter(
+            array_map(static fn (string $line): string => rtrim($line), explode("\n", $block)),
+            static fn (string $line): bool => trim($line) !== ''
+        ));
+        if (empty($lines)) {
+            continue;
+        }
+
+        $unorderedItems = [];
+        $orderedItems = [];
+        $quoteLines = [];
+        $isUnordered = true;
+        $isOrdered = true;
+        $isQuote = true;
+
+        foreach ($lines as $line) {
+            if (preg_match('/^\s*[-*•]\s+(.+)$/u', $line, $matches) === 1) {
+                $unorderedItems[] = $matches[1];
+            } else {
+                $isUnordered = false;
+            }
+
+            if (preg_match('/^\s*\d+[.)]\s+(.+)$/u', $line, $matches) === 1) {
+                $orderedItems[] = $matches[1];
+            } else {
+                $isOrdered = false;
+            }
+
+            if (preg_match('/^\s*>\s?(.*)$/u', $line, $matches) === 1) {
+                $quoteLines[] = $matches[1];
+            } else {
+                $isQuote = false;
+            }
+        }
+
+        if ($isUnordered === true && !empty($unorderedItems)) {
+            $itemsHtml = array_map(static fn (string $item): string => '<li>' . kbRenderInlineText(trim($item)) . '</li>', $unorderedItems);
+            $htmlBlocks[] = '<ul>' . implode('', $itemsHtml) . '</ul>';
+            continue;
+        }
+
+        if ($isOrdered === true && !empty($orderedItems)) {
+            $itemsHtml = array_map(static fn (string $item): string => '<li>' . kbRenderInlineText(trim($item)) . '</li>', $orderedItems);
+            $htmlBlocks[] = '<ol>' . implode('', $itemsHtml) . '</ol>';
+            continue;
+        }
+
+        if ($isQuote === true && !empty($quoteLines)) {
+            $htmlBlocks[] = '<blockquote>' . implode('<br>', array_map(static fn (string $line): string => kbRenderInlineText(trim($line)), $quoteLines)) . '</blockquote>';
+            continue;
+        }
+
+        $htmlBlocks[] = '<p>' . implode('<br>', array_map(static fn (string $line): string => kbRenderInlineText($line), $lines)) . '</p>';
+    }
+
+    return implode("\n", $htmlBlocks);
+}
+
 function kbGetDescriptionHtml(string $description): string
 {
-    return nl2br(htmlspecialchars($description, ENT_QUOTES, 'UTF-8'));
+    return kbBuildRichTextHtml($description);
+}
+
+function kbCanComment(array $kb, SessionInterface $session): bool
+{
+    return kbIsAdmin($session) === false
+        && (int) ($session->get('user-id') ?? 0) > 0
+        && (int) ($kb['allow_comments'] ?? 0) === 1;
+}
+
+function kbCanDeleteComment(array $comment, array $kb, SessionInterface $session): bool
+{
+    $userId = (int) ($session->get('user-id') ?? 0);
+    if ($userId <= 0) {
+        return false;
+    }
+
+    return (int) ($comment['author_id'] ?? 0) === $userId
+        || (int) ($kb['author_id'] ?? 0) === $userId;
+}
+
+function kbBuildCommentAuthorLabel(array $comment): string
+{
+    $name = trim((string) ($comment['author_name'] ?? ''));
+    $lastname = trim((string) ($comment['author_lastname'] ?? ''));
+    $login = trim((string) ($comment['author_login'] ?? ''));
+
+    $fullName = trim($name . ' ' . $lastname);
+
+    return $fullName !== '' ? $fullName : ($name !== '' ? $name : $login);
+}
+
+function kbCountComments(int $kbId): int
+{
+    return (int) DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('kb_comments') . '
+        WHERE kb_id = %i',
+        $kbId
+    );
+}
+
+function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
+{
+    $rows = DB::query(
+        'SELECT c.id,
+            c.kb_id,
+            c.content,
+            c.author_id,
+            c.created_at,
+            c.updated_at,
+            u.login AS author_login,
+            u.name AS author_name,
+            u.lastname AS author_lastname
+        FROM ' . prefixTable('kb_comments') . ' AS c
+        LEFT JOIN ' . prefixTable('users') . ' AS u ON (u.id = c.author_id)
+        WHERE c.kb_id = %i
+        ORDER BY c.created_at ASC, c.id ASC',
+        $kbId
+    );
+
+    $comments = [];
+    foreach ($rows as $row) {
+        $comments[] = [
+            'id' => (int) ($row['id'] ?? 0),
+            'kb_id' => (int) ($row['kb_id'] ?? 0),
+            'content' => (string) ($row['content'] ?? ''),
+            'content_html' => kbGetDescriptionHtml((string) ($row['content'] ?? '')),
+            'author' => kbBuildCommentAuthorLabel($row),
+            'author_id' => (int) ($row['author_id'] ?? 0),
+            'created_at' => (int) ($row['created_at'] ?? 0),
+            'created_at_label' => !empty($row['created_at']) ? kbFormatTimestamp((int) $row['created_at']) : '',
+            'can_delete' => kbCanDeleteComment($row, $kb, $session),
+        ];
+    }
+
+    return $comments;
+}
+
+function kbPurgeCommentsForKbIds(array $kbIds): void
+{
+    if (empty($kbIds)) {
+        return;
+    }
+
+    DB::delete(prefixTable('kb_comments'), 'kb_id IN %li', $kbIds);
+}
+
+function kbReassignCommentsToKbId(int $oldKbId, int $newKbId): void
+{
+    if ($oldKbId === $newKbId) {
+        return;
+    }
+
+    DB::update(
+        prefixTable('kb_comments'),
+        ['kb_id' => $newKbId],
+        'kb_id = %i',
+        $oldKbId
+    );
 }
 
 function kbLoadRow(int $kbId): ?array
@@ -411,6 +712,7 @@ function kbLoadRow(int $kbId): ?array
             k.description,
             k.author_id,
             k.anyone_can_modify,
+            k.allow_comments,
             c.category AS category,
             u.login AS author_login
         FROM ' . prefixTable('kb') . ' AS k
@@ -456,22 +758,29 @@ function kbLoadAssociatedItems(int $kbId, SessionInterface $session, string $bas
     return $items;
 }
 
-function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseUrl): array
+function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseUrl, bool $includeComments = true): array
 {
     $associatedItems = kbLoadAssociatedItems((int) $kb['id'], $session, $baseUrl);
+    $comments = $includeComments === true ? kbLoadComments((int) $kb['id'], $kb, $session) : [];
+    $commentsCount = $includeComments === true ? count($comments) : kbCountComments((int) $kb['id']);
 
     return [
         'id' => (int) $kb['id'],
         'label' => (string) ($kb['label'] ?? ''),
         'description' => (string) ($kb['description'] ?? ''),
         'description_html' => kbGetDescriptionHtml((string) ($kb['description'] ?? '')),
+        'description_excerpt' => kbBuildDescriptionExcerpt((string) ($kb['description'] ?? '')),
         'category' => (string) ($kb['category'] ?? ''),
         'author' => kbBuildAuthorLabel(isset($kb['author_login']) ? (string) $kb['author_login'] : ''),
         'author_id' => (int) ($kb['author_id'] ?? 0),
         'anyone_can_modify' => (int) ($kb['anyone_can_modify'] ?? 0),
+        'allow_comments' => (int) ($kb['allow_comments'] ?? 0),
         'items_count' => count($associatedItems),
         'associated_items' => $associatedItems,
         'attachments' => kbSerializeAttachments((int) $kb['id']),
+        'comments' => $comments,
+        'comments_count' => $commentsCount,
+        'can_comment' => kbCanComment($kb, $session),
         'can_edit' => kbCanEdit($kb, $session),
         'can_delete' => kbCanDelete($kb, $session),
     ];
@@ -510,6 +819,7 @@ function kbTrashEntry(array $kb, array $associatedItems, SessionInterface $sessi
             'category' => (string) ($kb['category'] ?? ''),
             'author_id' => (int) ($kb['author_id'] ?? 0),
             'anyone_can_modify' => (int) ($kb['anyone_can_modify'] ?? 0),
+            'allow_comments' => (int) ($kb['allow_comments'] ?? 0),
             'associated_item_ids' => $associatedItems,
             'deleted_by' => (int) $session->get('user-id'),
             'deleted_at' => $createdAt,
@@ -617,6 +927,7 @@ switch ($type) {
                 k.description,
                 k.author_id,
                 k.anyone_can_modify,
+                k.allow_comments,
                 c.category AS category,
                 u.login AS author_login
             FROM ' . prefixTable('kb') . ' AS k
@@ -627,7 +938,7 @@ switch ($type) {
 
         $entries = [];
         foreach ($rows as $row) {
-            $entries[] = kbBuildEntryPayload($row, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+            $entries[] = kbBuildEntryPayload($row, $session, (string) ($SETTINGS['cpassman_url'] ?? ''), false);
         }
 
         echo (string) prepareExchangedData(['error' => false, 'entries' => $entries], 'encode');
@@ -684,20 +995,20 @@ switch ($type) {
         $kbId = (int) ($payload['id'] ?? 0);
         $label = mb_substr(trim((string) ($payload['label'] ?? '')), 0, 200);
         $category = mb_substr(trim((string) ($payload['category'] ?? '')), 0, 50);
-        $description = trim((string) ($payload['description'] ?? ''));
+        $description = (string) ($payload['description'] ?? '');
         $anyoneCanModify = (int) ($payload['anyone_can_modify'] ?? 0) === 1 ? 1 : 0;
-        $associatedItems = is_array($payload['associated_items'] ?? null) ? $payload['associated_items'] : [];
+        $allowComments = (int) ($payload['allow_comments'] ?? 0) === 1 ? 1 : 0;
+        $requestedAssociatedItems = is_array($payload['associated_items'] ?? null) ? $payload['associated_items'] : [];
 
         $label = trim((string) $antiXss->xss_clean($label));
         $category = trim((string) $antiXss->xss_clean($category));
-        $description = trim((string) $antiXss->xss_clean($description));
+        $description = kbSanitizeTextInput($description);
 
         if ($label === '' || $category === '' || $description === '') {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('all_fields_are_required')], 'encode');
             break;
         }
 
-        $allowedAssociatedItems = kbFilterAllowedItemIds($associatedItems, $session);
         $categoryRow = DB::queryFirstRow(
             'SELECT id
             FROM ' . prefixTable('kb_categories') . '
@@ -729,13 +1040,7 @@ switch ($type) {
                 break;
             }
 
-            $oldAssociatedRows = DB::query(
-                'SELECT item_id
-                FROM ' . prefixTable('kb_items') . '
-                WHERE kb_id = %i',
-                $kbId
-            );
-            $oldAssociatedItems = array_values(array_map(static fn (array $row): int => (int) $row['item_id'], $oldAssociatedRows));
+            $oldAssociatedItems = kbLoadAssociatedItemIds($kbId);
 
             DB::update(
                 prefixTable('kb'),
@@ -744,6 +1049,7 @@ switch ($type) {
                     'label' => $label,
                     'description' => $description,
                     'anyone_can_modify' => $anyoneCanModify,
+                    'allow_comments' => $allowComments,
                 ],
                 'id = %i',
                 $kbId
@@ -757,13 +1063,15 @@ switch ($type) {
                     'description' => $description,
                     'author_id' => (int) $session->get('user-id'),
                     'anyone_can_modify' => $anyoneCanModify,
+                    'allow_comments' => $allowComments,
                 ]
             );
             $kbId = (int) DB::insertId();
         }
 
+        $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds($kbId, $requestedAssociatedItems, $session);
         DB::delete(prefixTable('kb_items'), 'kb_id = %i', $kbId);
-        foreach ($allowedAssociatedItems as $itemId) {
+        foreach ($associatedItemsToPersist as $itemId) {
             DB::insert(
                 prefixTable('kb_items'),
                 [
@@ -789,8 +1097,11 @@ switch ($type) {
             if ((int) ($oldKb['anyone_can_modify'] ?? 0) !== $anyoneCanModify) {
                 $changes[] = 'anyone_can_modify';
             }
+            if ((int) ($oldKb['allow_comments'] ?? 0) !== $allowComments) {
+                $changes[] = 'allow_comments';
+            }
             sort($oldAssociatedItems);
-            $newAssociatedItems = $allowedAssociatedItems;
+            $newAssociatedItems = $associatedItemsToPersist;
             sort($newAssociatedItems);
             if ($oldAssociatedItems !== $newAssociatedItems) {
                 $changes[] = 'associated_items';
@@ -1040,6 +1351,105 @@ switch ($type) {
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
 
+    case 'add_comment':
+        if (kbIsAdmin($session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+        if ($key !== (string) $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+
+        $payload = prepareExchangedData($data, 'decode');
+        if (!is_array($payload)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('json_error_format')], 'encode');
+            break;
+        }
+
+        $kbId = (int) ($payload['kb_id'] ?? 0);
+        $kb = kbLoadRow($kbId);
+        if ($kb === null) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
+            break;
+        }
+        if (!kbCanComment($kb, $session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_comments_disabled')], 'encode');
+            break;
+        }
+
+        $comment = kbSanitizeTextInput((string) ($payload['comment'] ?? ''));
+        if ($comment === '') {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_comment_required')], 'encode');
+            break;
+        }
+        if (mb_strlen($comment) > 3000) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_comment_too_long')], 'encode');
+            break;
+        }
+
+        $createdAt = time();
+        DB::insert(
+            prefixTable('kb_comments'),
+            [
+                'kb_id' => $kbId,
+                'content' => $comment,
+                'author_id' => (int) $session->get('user-id'),
+                'created_at' => $createdAt,
+                'updated_at' => $createdAt,
+            ]
+        );
+
+        kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'comment_add');
+        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_comment_added'), 'entry' => $entry], 'encode');
+        break;
+
+    case 'delete_comment':
+        if (kbIsAdmin($session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+        if ($key !== (string) $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+
+        $payload = prepareExchangedData($data, 'decode');
+        if (!is_array($payload)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('json_error_format')], 'encode');
+            break;
+        }
+
+        $commentId = (int) ($payload['comment_id'] ?? 0);
+        $kbId = (int) ($payload['kb_id'] ?? 0);
+        $kb = kbLoadRow($kbId);
+        if ($kb === null) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
+            break;
+        }
+
+        $comment = DB::queryFirstRow(
+            'SELECT id, kb_id, author_id
+            FROM ' . prefixTable('kb_comments') . '
+            WHERE id = %i',
+            $commentId
+        );
+        if ($comment === null || (int) ($comment['kb_id'] ?? 0) !== $kbId) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_comment_not_found')], 'encode');
+            break;
+        }
+        if (!kbCanDeleteComment($comment, $kb, $session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+
+        DB::delete(prefixTable('kb_comments'), 'id = %i', $commentId);
+        kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'comment_delete');
+        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_comment_deleted'), 'entry' => $entry], 'encode');
+        break;
+
     case 'delete_attachment':
         if (kbIsAdmin($session)) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
@@ -1079,7 +1489,8 @@ switch ($type) {
 
         kbDeleteAttachmentFileAndRow($attachmentRow, $SETTINGS);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_delete');
-        echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_deleted')], 'encode');
+        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_deleted'), 'entry' => $entry], 'encode');
         break;
 
     case 'download_attachment':
@@ -1202,6 +1613,7 @@ switch ($type) {
                         'description' => $description,
                         'author_id' => (int) ($entry['author_id'] ?? 0),
                         'anyone_can_modify' => (int) ($entry['anyone_can_modify'] ?? 0),
+                        'allow_comments' => (int) ($entry['allow_comments'] ?? 0),
                     ]
                 );
                 $newKbId = $requestedId;
@@ -1214,6 +1626,7 @@ switch ($type) {
                         'description' => $description,
                         'author_id' => (int) ($entry['author_id'] ?? 0),
                         'anyone_can_modify' => (int) ($entry['anyone_can_modify'] ?? 0),
+                        'allow_comments' => (int) ($entry['allow_comments'] ?? 0),
                     ]
                 );
                 $newKbId = (int) DB::insertId();
@@ -1242,6 +1655,7 @@ switch ($type) {
             }
 
             kbReassignAttachmentsToKbId((int) ($entry['original_id'] ?? 0), $newKbId);
+            kbReassignCommentsToKbId((int) ($entry['original_id'] ?? 0), $newKbId);
             kbInsertLog($SETTINGS, $session, $newKbId, $label, 'at_restored');
             DB::delete(prefixTable('misc'), 'increment_id = %i', $trashId);
         }
@@ -1275,6 +1689,7 @@ switch ($type) {
                 $kbIdsToPurge[] = (int) ($entry['original_id'] ?? 0);
             }
             kbPurgeAttachmentsForKbIds(array_values(array_unique(array_filter($kbIdsToPurge))), $SETTINGS);
+            kbPurgeCommentsForKbIds(array_values(array_unique(array_filter($kbIdsToPurge))));
             DB::delete(prefixTable('misc'), 'type = %s AND increment_id IN %li', 'kb_deleted', $ids);
         }
 
