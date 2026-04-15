@@ -6851,10 +6851,10 @@ switch ($inputData['type']) {
                 if (file_exists(TEAMPASS_ROOT . '/public/assets/avatars/' . strval($record['avatar_thumb']))) {
                     $avatar = $SETTINGS['cpassman_url'] . '/assets/avatars/' . strval($record['avatar_thumb']);
                 } else {
-                    $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
+                    $avatar = $SETTINGS['cpassman_url'] . '/assets/images/photo.jpg';
                 }
             } else {
-                $avatar = $SETTINGS['cpassman_url'] . '/includes/images/photo.jpg';
+                $avatar = $SETTINGS['cpassman_url'] . '/assets/images/photo.jpg';
             }
 
             // Prepare action

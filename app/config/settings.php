@@ -24,7 +24,7 @@ define("IKEY", "");
 define("SKEY", "");
 define("HOST", "");
 
-// SECUREPATH is now defined in include.php as TEAMPASS_ROOT/secrets
+// TEAMPASS_SECRETS is now defined in include.php as TEAMPASS_ROOT/secrets
 define("SECUREFILE", "P2YLLfga5BDujvBtet5TTA6L48sWFcu8DXQs3fvG");
 
 if (isset($session) === true && $session->has('system-timezone') && null !== $session->get('system-timezone')) {

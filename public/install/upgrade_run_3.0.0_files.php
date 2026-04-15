@@ -43,7 +43,6 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
-$_SESSION['CPM'] = 1;
 
 // Load config
 $configManager = new ConfigManager();
@@ -155,7 +154,7 @@ while ($file_info = mysqli_fetch_array($rows)) {
         // Force all files to be encrypted
         if ($file_info['status'] === 'encrypted') {
             // get KEY
-            $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+            $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
 
             // Now decrypt the file
             $err = '';

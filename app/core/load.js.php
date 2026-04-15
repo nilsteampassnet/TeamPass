@@ -2483,7 +2483,7 @@ if (
             genericError: <?php echo json_encode($lang->get('an_error_occurred')); ?>
         };
 
-        const defaultAvatarUrl = <?php echo json_encode((isset($SETTINGS['cpassman_url']) ? (string) $SETTINGS['cpassman_url'] : '') . '/includes/images/photo.jpg'); ?>;
+        const defaultAvatarUrl = <?php echo json_encode((isset($SETTINGS['cpassman_url']) ? (string) $SETTINGS['cpassman_url'] : '') . '/assets/images/photo.jpg'); ?>;
 
         function renderAvatar(user) {
             const avatarUrl = user && typeof user.avatar_url === 'string' && user.avatar_url !== ''

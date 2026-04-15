@@ -42,7 +42,7 @@ class SessionManager
     {
         if (null === self::$session) {
             // Load the encryption key
-            $key = Key::loadFromAsciiSafeString(file_get_contents(SECUREPATH . "/" . SECUREFILE));
+            $key = Key::loadFromAsciiSafeString(file_get_contents(TEAMPASS_SECRETS . "/" . SECUREFILE));
 
             // Build the session handler — Redis when configured, filesystem otherwise
             $handler = self::buildSessionHandler($key);

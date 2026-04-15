@@ -41,6 +41,9 @@ if (!defined('TEAMPASS_STORAGE')) {
 if (!defined('TEAMPASS_PUBLIC')) {
     define('TEAMPASS_PUBLIC', TEAMPASS_ROOT . '/public');
 }
+if (!defined('TEAMPASS_SECRETS')) {
+    define('TEAMPASS_SECRETS', TEAMPASS_ROOT . '/secrets');
+}
 
 define('TP_VERSION', '3.2.0');
 define("UPGRADE_MIN_DATE", "1775240619");
@@ -94,11 +97,6 @@ define('TP_PW_STRENGTH_5', 60);
 define('MIN_PHP_VERSION', '8.1');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
-
-// Security file — master encryption key for Defuse PHP Encryption.
-// The key file lives in secrets/ at the repository root (outside public/).
-// Only SECUREFILE (the filename) remains in settings.php; the directory is a constant.
-define('SECUREPATH', TEAMPASS_ROOT . '/secrets');
 
 // URLs
 define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');

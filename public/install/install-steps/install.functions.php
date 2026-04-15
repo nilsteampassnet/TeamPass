@@ -114,10 +114,10 @@ function cryptionForInstall(string $message, string $ascii_key, string $type, ?a
     // Check if secure file is defined
     // If not, return error and empty string
     if (empty($ascii_key) === true) {
-        if (!defined('SECUREPATH') || !defined('SECUREFILE')) {
+        if (!defined('TEAMPASS_SECRETS') || !defined('SECUREFILE')) {
             return ['string' => '', 'error' => 'securepath_not_defined'];
         }
-        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
     }
     $err = false;
     

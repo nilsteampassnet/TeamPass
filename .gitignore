@@ -15,12 +15,10 @@ TODO
 test.html
 /includes/avatars
 /app/config/tp.config.php
-/app/config/settings.php
-/app/config/settings.php
-includes/libraries/csrfp/libs/csrfp.config.php
 /app/config/tp.config.php.*
+/app/config/settings.php
 /app/config/settings.php.*
-/app/config/settings.php.*
+includes/libraries/csrfp/libs/csrfp.config.php
 # Master encryption key — never commit the secrets directory content
 /secrets/*
 !/secrets/.gitkeep
@@ -32,12 +30,28 @@ gpush.sh
 /_tools/*
 phpinsights.php
 EncryptedFile_*
+# Legacy paths (pre-3.2.0) — kept for git history compatibility
 /files/*
 !/files/.htaccess
 !/files/empty_file.txt
 /upload/*
 !/upload/.htaccess
 !/upload/empty_file.txt
+# Storage directories (3.2.0+) — user data must never be committed
+/storage/files/*
+!/storage/files/.htaccess
+!/storage/files/empty_file.txt
+/storage/upload/*
+!/storage/upload/.htaccess
+!/storage/upload/empty_file.txt
+/storage/backups/*
+!/storage/backups/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+# Avatars are user data — never commit
+/public/assets/avatars/*
+!/public/assets/avatars/.htaccess
+!/public/assets/avatars/empty_file.txt
 /~/*
 gitdo.sh
 version-commit.php

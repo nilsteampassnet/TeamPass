@@ -88,7 +88,7 @@ function isHex(string $str): bool
  */
 function cryption(string $message, string $ascii_key, string $type, ?array $SETTINGS = []): array
 {
-    $ascii_key = empty($ascii_key) === true ? file_get_contents(SECUREPATH.'/'.SECUREFILE) : $ascii_key;
+    $ascii_key = empty($ascii_key) === true ? file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE) : $ascii_key;
     $err = false;
     
     // convert KEY
@@ -2435,7 +2435,7 @@ function prepareFileWithDefuse(
     $target_file = $antiXss->xss_clean($target_file);
     if (empty($password) === true) {
         // get KEY to define password
-        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
         $password = Key::loadFromAsciiSafeString($ascii_key);
     }
 
@@ -3224,7 +3224,7 @@ function verifyKeyIntegrity(array $userInfo, string $serverSecret): bool
  */
 function getServerSecret(): string
 {
-    $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+    $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
     $key = Key::loadFromAsciiSafeString($ascii_key);
     return $key->saveToAsciiSafeString();
 }
@@ -5028,7 +5028,7 @@ function getFullUserInfos(
 function upgradeRequired(): bool
 {
     // Get settings.php
-    include_once __DIR__. '/../app/config/settings.php';
+    include_once TEAMPASS_APP. '/config/settings.php';
 
     // Get timestamp in DB
     $val = DB::queryFirstRow(

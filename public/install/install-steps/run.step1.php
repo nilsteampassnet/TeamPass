@@ -45,7 +45,7 @@ $superGlobal = new SuperGlobal();
 $keys = [
     'absolutePath',
     'urlPath',
-    'securePath',
+    'TEAMPASS_SECRETS',
 ];
 
 // Initialize arrays
@@ -103,18 +103,18 @@ function checks($inputData)
     }
 
     // Is secure path a folder?
-    if (!is_dir($inputData['securePath'])) {
+    if (!is_dir($inputData['TEAMPASS_SECRETS'])) {
         return [
             'success' => false,
-            'message' => 'Path ' . $inputData['securePath'] . ' is not a folder!',
+            'message' => 'Path ' . $inputData['TEAMPASS_SECRETS'] . ' is not a folder!',
         ];
     }
 
     // Is secure path writable?
-    if (is_writable($inputData['securePath']) === false) {
+    if (is_writable($inputData['TEAMPASS_SECRETS']) === false) {
         return [
             'success' => false,
-            'message' => 'Path ' . $inputData['securePath'] . ' is not writable!',
+            'message' => 'Path ' . $inputData['TEAMPASS_SECRETS'] . ' is not writable!',
         ];
     }    
 

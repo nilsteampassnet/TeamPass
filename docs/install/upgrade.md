@@ -94,7 +94,7 @@ Fatal error: Uncaught Error: Undefined constant "SECUREFILE" in /var/www/localho
 
 Proceed as this:
 * Open file `./app/config/settings.php`
-* After line `define("SECUREPATH", "...");`
+* After line `define("TEAMPASS_SECRETS", "...");`
 * Add line `define("SECUREFILE", "{secure_filename}");` with `{secure_filename}` usually `teampass-seckey.txt`
 * Save
 

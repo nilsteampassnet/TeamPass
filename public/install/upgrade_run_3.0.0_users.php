@@ -41,7 +41,6 @@ $superGlobal = new SuperGlobal();
 $lang = new Language();
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
-$_SESSION['CPM'] = 1;
 
 // Load config
 $configManager = new ConfigManager();
@@ -134,7 +133,7 @@ if (null !== $post_step) {
                 if (intval($tmp) === 0) {
                     // generate key for password
                     $pwd = GenerateCryptKey(25, true, true, true, true);
-                    $salt = file_get_contents(rtrim(SECUREPATH, '/') . '/' . SECUREFILE);
+                    $salt = file_get_contents(rtrim(TEAMPASS_SECRETS, '/') . '/' . SECUREFILE);
                     $encrypted_pwd = cryption(
                         $pwd,
                         $salt,

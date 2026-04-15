@@ -47,7 +47,7 @@ These directories are written to during the web installer or upgrade process. Af
 | Directory / File | Recommended perms | What is written |
 |-----------------|------------------|-----------------|
 | `includes/config/` | `0750` (dir) | `settings.php` (DB credentials, encrypted) |
-| `includes/config/settings.php` | `0640` | Encrypted DB password, SECUREPATH/SECUREFILE paths |
+| `includes/config/settings.php` | `0640` | Encrypted DB password, TEAMPASS_SECRETS/SECUREFILE paths |
 | `includes/libraries/csrfp/libs/` | `0750` (dir) | `csrfp.config.php` (CSRF token configuration) |
 
 > :bulb: **Hardening tip:** once the installation is complete, you can make `includes/config/` read-only for the web server:
@@ -74,16 +74,16 @@ These directories must remain writable by the web server process during normal o
 
 ---
 
-### Encryption key directory (SECUREPATH)
+### Encryption key directory (TEAMPASS_SECRETS)
 
 The Defuse encryption key must be stored **outside the web root** whenever possible.
 
 | Path | Recommended perms | Notes |
 |------|------------------|-------|
-| `SECUREPATH/` | `0700` | Accessible only by the web server user |
-| `SECUREPATH/<keyfile>` | `0600` | The key file itself — owner read-only |
+| `TEAMPASS_SECRETS/` | `0700` | Accessible only by the web server user |
+| `TEAMPASS_SECRETS/<keyfile>` | `0600` | The key file itself — owner read-only |
 
-> :warning: **Never place SECUREPATH inside the web root.** If that is unavoidable (e.g. shared hosting), use the `sk/` directory which is protected by its `.htaccess`. In Docker deployments, `/var/www/html/sk/` is used with `chmod 700`.
+> :warning: **Never place TEAMPASS_SECRETS inside the web root.** If that is unavoidable (e.g. shared hosting), use the `sk/` directory which is protected by its `.htaccess`. In Docker deployments, `/var/www/html/sk/` is used with `chmod 700`.
 
 ---
 
@@ -228,7 +228,7 @@ echo "=== settings.php (expect 640 or 440 post-install) ==="
 stat -c "%a %n" ${TEAMPASS}/app/config/settings.php
 
 echo "=== Encryption key dir (expect 700) ==="
-stat -c "%a %n" $(php -r "include '${TEAMPASS}/app/config/settings.php'; echo SECUREPATH;")
+stat -c "%a %n" $(php -r "include '${TEAMPASS}/app/config/settings.php'; echo TEAMPASS_SECRETS;")
 
 echo "=== World-writable check (expect no output) ==="
 find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
@@ -249,7 +249,7 @@ find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
 | `includes/libraries/csrfp/libs/` | Write | Read | `0750` → `0550` after install |
 | `includes/libraries/csrfp/log/` | — | Write | `0750` |
 | `install/` | Read | **None** | Remove or deny via web server |
-| `SECUREPATH/` | Write | Read | `0700` |
-| `SECUREPATH/<keyfile>` | Write | Read | `0600` |
+| `TEAMPASS_SECRETS/` | Write | Read | `0700` |
+| `TEAMPASS_SECRETS/<keyfile>` | Write | Read | `0600` |
 | `websocket/logs/` | — | Write (daemon) | `0750` |
 | `vendor/` | — | Read | `0750` / `0640` |

@@ -609,7 +609,7 @@ function performStep1() {
         data: {
             absolutePath: $('#absolute_path').val(),
             urlPath: $('#url_path').val(),
-            securePath: $('#secure_path').val(),
+            TEAMPASS_SECRETS: $('#secure_path').val(),
         },
         success: function(response) {
             if (typeof response === 'string') {

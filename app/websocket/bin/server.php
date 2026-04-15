@@ -20,14 +20,14 @@ if (php_sapi_name() !== 'cli') {
     die("This script must be run from the command line.\n");
 }
 
-// Define root path
-$rootPath = dirname(__DIR__, 2);
+// Define root path — 3 levels up from app/websocket/bin/ = repo root
+$rootPath = dirname(__DIR__, 3);
 
 // Load Composer autoloader and expected files
-require_once $rootPath . '/sources/main.functions.php';
+require_once $rootPath . '/app/sources/main.functions.php';
 require_once $rootPath . '/app/config/include.php';
 require_once $rootPath . '/app/config/settings.php';
-require_once $rootPath . '/vendor/autoload.php';
+require_once $rootPath . '/app/vendor/autoload.php';
 
 // Decrypt database password if not already done
 if (defined('DB_PASSWD_CLEAR') === false) {

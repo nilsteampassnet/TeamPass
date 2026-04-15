@@ -7,7 +7,7 @@ define("DB_NAME", "");
 define("DB_PREFIX", "");
 define("DB_PORT", "");
 define("DB_ENCODING", "");
-// SECUREPATH is defined in app/config/include.php as TEAMPASS_ROOT/secrets
+// TEAMPASS_SECRETS is defined in app/config/include.php as TEAMPASS_ROOT/secrets
 define("SECUREFILE", "");
 define("SALT", "");
 

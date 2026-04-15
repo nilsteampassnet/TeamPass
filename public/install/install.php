@@ -115,7 +115,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 		<div class="custom-block w-100 p-4 mt-4">
 			<header class="mb-5">
 				<h2 class="text-center">
-					<span><img src="../includes/images/teampass-logo2-home.png" /></span>
+					<span><img src="../assets/images/teampass-logo2-home.png" /></span>
 					<span class="header-title mx-2"><?php echo strtoupper(TP_TOOL_NAME);?></span>
 				</h2>
 			</header>

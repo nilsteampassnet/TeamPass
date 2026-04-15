@@ -92,7 +92,7 @@ If you changed a setting directly in the database (e.g. during troubleshooting) 
 
 1. Copy all files to the new server.
 2. Export the database and import it on the new server.
-3. Copy the secure key file from its path defined in `SECUREPATH` / `SECUREFILE` (see `includes/config/settings.php`).
+3. Copy the secure key file from its path defined in `TEAMPASS_SECRETS` / `SECUREFILE` (see `includes/config/settings.php`).
 4. Update `/app/config/settings.php` with the new database credentials and paths.
 5. Update **Settings → General Info** with the new installation path and URL.
 6. Test login before decommissioning the old server.

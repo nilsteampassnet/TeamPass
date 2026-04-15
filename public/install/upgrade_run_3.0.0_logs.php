@@ -40,7 +40,6 @@ $superGlobal = new SuperGlobal();
 $lang = new Language();
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
-$_SESSION['CPM'] = 1;
 
 // Load config
 $configManager = new ConfigManager();

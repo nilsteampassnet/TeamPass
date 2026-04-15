@@ -29,8 +29,8 @@
 use TeampassClasses\NestedTree\NestedTree;
 
 // Load config
-require_once __DIR__.'/../app/config/include.php';
-require_once __DIR__.'/../app/config/settings.php';
+require_once __DIR__.'/../config/include.php';
+require_once __DIR__.'/../config/settings.php';
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 

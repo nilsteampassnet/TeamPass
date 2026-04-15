@@ -39,7 +39,6 @@ $session = SessionManager::getSession();
 
 error_reporting(E_ERROR | E_PARSE);
 $_SESSION['db_encoding'] = 'utf8';
-$_SESSION['CPM'] = 1;
 
 // Prepare POST variables
 $post_file_number = filter_input(INPUT_POST, 'file_number', FILTER_SANITIZE_NUMBER_INT);

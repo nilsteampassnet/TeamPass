@@ -39,7 +39,6 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 error_reporting(E_ERROR | E_PARSE);
 set_time_limit(600);
-$_SESSION['CPM'] = 1;
 
 // Load config
 $configManager = new ConfigManager();
@@ -634,7 +633,7 @@ if (tableHasColumn($pre . 'notification', 'id')) {
 $tmp = mysqli_num_rows(mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE id = " . TP_USER_ID));
 if (intval($tmp) === 0) {
     // Get encryption key
-    $secureFilePath = rtrim(SECUREPATH, '/') . '/' . SECUREFILE;
+    $secureFilePath = rtrim(TEAMPASS_SECRETS, '/') . '/' . SECUREFILE;
     if (!file_exists($secureFilePath) || !is_readable($secureFilePath)) {
         return [
             'success' => false,

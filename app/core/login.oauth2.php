@@ -34,7 +34,7 @@ use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__. '/../../app/config/include.php';
-require_once __DIR__.'/../../sources/main.functions.php';
+require_once __DIR__.'/../sources/main.functions.php';
 
 // init
 loadClasses();

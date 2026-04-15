@@ -133,7 +133,7 @@ function preMigDefuseDecrypt(string $value): string
         return $value;
     }
     try {
-        $ascii = file_get_contents(SECUREPATH . '/' . SECUREFILE);
+        $ascii = file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE);
         if ($ascii === false) {
             return '';
         }
@@ -332,7 +332,7 @@ function tpPreMigrationScan(int $limit = 2000): array
     $tpPassword = preMigDefuseDecrypt((string) $tpUser['pw']);
     if ($tpPassword === '') {
         throw new RuntimeException(
-            'Failed to decrypt TP_USER password. Verify master key at: ' . SECUREPATH . '/' . SECUREFILE
+            'Failed to decrypt TP_USER password. Verify master key at: ' . TEAMPASS_SECRETS . '/' . SECUREFILE
         );
     }
 

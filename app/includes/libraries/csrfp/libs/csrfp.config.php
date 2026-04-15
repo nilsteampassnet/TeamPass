@@ -4,7 +4,7 @@
  */
 
 return array(
-    "CSRFP_TOKEN" => "d51b7a2289ea3fc21b68722d25dd69e2567ecc7c26c1b6f1a3",
+    "CSRFP_TOKEN" => "51668a7756d8a316683bcaa07f686c3b5dbcc6391a27201342",
     "logDirectory" => "../log",
     "failedAuthAction" => array(
         "GET" => 0,
@@ -12,7 +12,7 @@ return array(
     "errorRedirectionPage" => "",
     "customErrorMessage" => "",
     "jsPath" => "../js/csrfprotector.js",
-    "jsUrl" => "http://localhost/TeamPass/includes/libraries/csrfp/js/csrfprotector.js",
+    "jsUrl" => "http://localhost:8081/assets/lib/csrfp/csrfprotector.js",
     "tokenLength" => 50,
     "cookieConfig" => array(
         "expire" => '',

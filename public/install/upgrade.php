@@ -43,15 +43,12 @@ ini_set('session.use_only_cookies', 1);
 ini_set('session.cookie_secure', 0);
 
 require_once './libs/SecureHandler.php';
+require_once __DIR__.'/../../app/config/include.php';
 require_once '../sources/main.functions.php';
-require_once TEAMPASS_ROOT . '/app/config/include.php';
 
 // init
 loadClasses();
 $session = SessionManager::getSession();
-
-//Session teampass tag
-$_SESSION['CPM'] = 1;
 
 // Prepare POST variables
 $post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
@@ -80,7 +77,7 @@ function getSettingValue($val)
 $filename = '../app/config/settings.php';
 $events = '';
 
-// Load settings (SECUREPATH is now defined in app/config/include.php, not in settings.php)
+// Load settings (TEAMPASS_SECRETS is now defined in app/config/include.php, not in settings.php)
 if (file_exists($filename)) {
     include_once $filename;
 }
@@ -393,7 +390,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                 <li class="mb-1 ml-3"></span><span class="text-muted">PHP max_execution_time &ge; 30&thinsp;s</span> <span class="badge badge-secondary">required</span><span id="upg-chk-exec-time" style="min-width:20px" class="ml-2"></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">PHP version &ge; '.MIN_PHP_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-php-version" style="min-width:20px" class="ml-2"></span></li>
                                 <li class="mb-1 ml-3"></span><span class="text-muted">MySQL &ge; '.MIN_MYSQL_VERSION.' / MariaDB &ge; '.MIN_MARIADB_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-mysql-version" style="min-width:20px" class="ml-2"></li>
-                                <li class="mb-1 ml-3"></span><span class="text-muted">Encryption key (SECUREPATH)</span> <span class="badge badge-secondary">required</span><span id="upg-chk-encrypt-key" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">Encryption key (TEAMPASS_SECRETS)</span> <span class="badge badge-secondary">required</span><span id="upg-chk-encrypt-key" style="min-width:20px" class="ml-2"></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">Background tasks queue is empty</span> <span class="badge badge-secondary">required</span><span id="upg-chk-tasks" style="min-width:20px" class="ml-2"></span></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">User password hashes compatibility</span> <span class="badge badge-light border">verified</span><span id="upg-chk-passwords" style="min-width:20px" class="ml-2"></span><div id="upg-chk-passwords-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i><code>Some users still have their password hashed with the old algorithm. They need to log in to have their password automatically updated.</code></div></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>posix</code></span> <span class="badge badge-light border">optional &mdash; WebSocket</span><span id="upg-chk-posix" style="min-width:20px" class="ml-2"></span></li>
@@ -648,7 +645,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
             </div>
             <div class="card-body">
                 <small class="form-text text-muted">
-                The encryption key is stored in <code>', SECUREPATH, '</code> (fixed path, no configuration needed).
+                The encryption key is stored in <code>', TEAMPASS_SECRETS, '</code> (fixed path, no configuration needed).
                 </small>
             </div>
         </div>';

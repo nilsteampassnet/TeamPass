@@ -66,11 +66,11 @@ function settingsConsistencyCheck(): array
 
 
         // Handle teampass-seckey.txt file
-        if (file_exists(SECUREPATH.'/teampass-seckey.txt')) {
+        if (file_exists(TEAMPASS_SECRETS.'/teampass-seckey.txt')) {
             // do a copy
             if (!copy(
-                SECUREPATH.'/teampass-seckey.txt',
-                SECUREPATH.'/teampass-seckey.txt' . '.' . date(
+                TEAMPASS_SECRETS.'/teampass-seckey.txt',
+                TEAMPASS_SECRETS.'/teampass-seckey.txt' . '.' . date(
                     'Y_m_d_H_i_s',
                     mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
                 )
@@ -92,7 +92,7 @@ function settingsConsistencyCheck(): array
         } else {
             return [
                 'error' => '[{
-                    "error" : "'.SECUREPATH.'/teampass-seckey.txt file does not exist. Please recover it and click on button Launch.",
+                    "error" : "'.TEAMPASS_SECRETS.'/teampass-seckey.txt file does not exist. Please recover it and click on button Launch.",
                     "index" : ""
                 }]',
                 'value' => false
@@ -134,7 +134,7 @@ define("DB_SSL", array(
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-// SECUREPATH is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+// TEAMPASS_SECRETS is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . SECUREFILE. '");';
 
 		if (defined('IKEY') === true) $settingsTxt .= '
@@ -200,7 +200,6 @@ $superGlobal = new SuperGlobal();
 $lang = new Language(); 
 
 error_reporting(E_ERROR | E_PARSE);
-$_SESSION['CPM'] = 1;
 
 // Load config
 $configManager = new ConfigManager();
@@ -280,17 +279,17 @@ if (isset($post_type)) {
             require_once './libs/aesctr.php';
             
             // Check that the secrets directory and Defuse key file exist
-            // SECUREPATH is now always defined in app/config/include.php as TEAMPASS_ROOT/secrets
-            if (!is_dir(SECUREPATH)) {
+            // TEAMPASS_SECRETS is now always defined in app/config/include.php as TEAMPASS_ROOT/secrets
+            if (!is_dir(TEAMPASS_SECRETS)) {
                 echo '[{'.
-                    '"error" : "Secrets directory does not exist: ' . SECUREPATH . '. Please check your installation.",'.
+                    '"error" : "Secrets directory does not exist: ' . TEAMPASS_SECRETS . '. Please check your installation.",'.
                     '"index" : ""'.
                 '}]';
                 break;
             }
-            if (defined('SECUREFILE') === true && !file_exists(SECUREPATH . '/' . SECUREFILE)) {
+            if (defined('SECUREFILE') === true && !file_exists(TEAMPASS_SECRETS . '/' . SECUREFILE)) {
                 echo '[{'.
-                    '"error" : "Encryption key file not found in ' . SECUREPATH . '. Please check your installation.",'.
+                    '"error" : "Encryption key file not found in ' . TEAMPASS_SECRETS . '. Please check your installation.",'.
                     '"index" : ""'.
                 '}]';
                 break;
@@ -412,7 +411,7 @@ if (isset($post_type)) {
             ];
 
             // /secrets/ must be readable by the web server (encryption key access)
-            $secretsReadable = is_readable($abspath . '/secrets');
+            $secretsReadable = is_readable(TEAMPASS_SECRETS);
             if (!$secretsReadable) {
                 $okWritable = false;
             }
@@ -471,7 +470,7 @@ if (isset($post_type)) {
             $checks[] = ['id' => 'upg-chk-mysql-version', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
 
             // Encryption key — check that the key file actually exists and is readable
-            $okEncryptKey = file_exists(SECUREPATH.'/'.SECUREFILE) && is_readable(SECUREPATH.'/'.SECUREFILE);
+            $okEncryptKey = file_exists(TEAMPASS_SECRETS.'/'.SECUREFILE) && is_readable(TEAMPASS_SECRETS.'/'.SECUREFILE);
             $checks[] = ['id' => 'upg-chk-encrypt-key', 'status' => $okEncryptKey ? 'ok' : 'error', 'fix' => ''];
 
             // Tasks manager
@@ -489,7 +488,7 @@ if (isset($post_type)) {
             @mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE pw LIKE '\$2y\$10\$%'");
             $oldHashCount = @mysqli_affected_rows($db_link);
             if ($oldHashCount > 0 && TP_VERSION === '3.2.0') {
-                $okTUsersPasswordsSymfony = false;
+                //$okTUsersPasswordsSymfony = false;    // TODO
             }
             $checks[] = [
                 'id'     => 'upg-chk-passwords',
@@ -685,8 +684,8 @@ if (isset($post_type)) {
 
                 // CHeck if old sk.php exists.
                 // If yes then get keys to database and delete it
-                if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
-                    $filename = (empty($post_sk_path) === false ? $post_sk_path : SECUREPATH) . '/sk.php';
+                if (empty($post_sk_path) === false || defined('TEAMPASS_SECRETS') === true) {
+                    $filename = (empty($post_sk_path) === false ? $post_sk_path : TEAMPASS_SECRETS) . '/sk.php';
                     if (file_exists($filename)) {
                         include_once $filename;
                         unlink($filename);
@@ -792,7 +791,7 @@ if (isset($post_type)) {
     define("DB_CONNECT_OPTIONS", array(
         MYSQLI_OPT_CONNECT_TIMEOUT => 10
     ));
-    // SECUREPATH is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+    // TEAMPASS_SECRETS is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 
     if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
@@ -830,7 +829,7 @@ if (isset($post_type)) {
             }
 
             // Manage saltkey.txt file
-            if (empty($post_sk_path) === false || defined('SECUREPATH') === true) {
+            if (empty($post_sk_path) === false || defined('TEAMPASS_SECRETS') === true) {
                 array_push(
                     $returnStatus, 
                     array(
@@ -878,7 +877,7 @@ if (isset($post_type)) {
                 $data = file_get_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php');
                 $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $data);
                 $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
-                $jsUrl = $post_url_path . '/includes/libraries/csrfp/js/csrfprotector.js';
+                $jsUrl = $post_url_path . '/assets/lib/csrfp/csrfprotector.js';
                 $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "' . $jsUrl . '"', $newdata);
                 $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
                 file_put_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
@@ -925,6 +924,9 @@ if (isset($post_type)) {
                     WHERE intitule = 'teampass_version' AND type = 'admin';"
                 );
             }
+            // Flush APCu cache so that index.php reads the new version from DB
+            // instead of a stale cached value that would re-trigger the upgrade redirect.
+            ConfigManager::invalidateCache();
 
             //<-- Add cronjob if not exist
             // get php location

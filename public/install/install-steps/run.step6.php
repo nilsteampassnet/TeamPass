@@ -328,7 +328,7 @@ class teampassInstaller
             );
 
             // Add the JS URL
-            $jsUrl = './includes/libraries/csrfp/js/csrfprotector.js';
+            $jsUrl = './assets/lib/csrfp/csrfprotector.js';
             $data = str_replace(
                 '"jsUrl" => ""',
                 '"jsUrl" => "' . $jsUrl . '"',
@@ -377,8 +377,8 @@ class teampassInstaller
         try {
             // Get expected paths
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            // SECUREPATH is now fixed as TEAMPASS_ROOT/secrets (defined in app/config/include.php)
-            $securePath = SECUREPATH;
+            // TEAMPASS_SECRETS is now fixed as TEAMPASS_ROOT/secrets (defined in app/config/include.php)
+            $TEAMPASS_SECRETS = TEAMPASS_SECRETS;
             $settingsFile = $absolutePath . '/app/config/settings.php';
             $backupFile = $settingsFile . '.' . date('Y_m_d_His') . '.bak';
     
@@ -399,7 +399,7 @@ class teampassInstaller
             }
     
             // Get encryption key
-            $secureFilePath = $securePath . '/' . $this->installConfig['teampassSecureFile'];
+            $secureFilePath = $TEAMPASS_SECRETS . '/' . $this->installConfig['teampassSecureFile'];
             if (!file_exists($secureFilePath) || !is_readable($secureFilePath)) {
                 return [
                     'success' => false,
@@ -436,7 +436,7 @@ define("DB_SSL", false); // if DB over SSL then comment this line
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-// SECUREPATH is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+// TEAMPASS_SECRETS is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . $this->installConfig['teampassSecureFile'] . '");
 
 if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {

@@ -499,22 +499,22 @@ switch ($post_type) {
         require_once 'main.functions.php';
 
         // store old sk
-        $session->set('user-reencrypt_old_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
+        $session->set('user-reencrypt_old_salt', file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE));
 
         // generate new saltkey
-        $old_sk_filename = SECUREPATH.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
+        $old_sk_filename = TEAMPASS_SECRETS.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
         copy(
-            SECUREPATH.'/'.SECUREFILE,
+            TEAMPASS_SECRETS.'/'.SECUREFILE,
             $old_sk_filename
         );
         $new_key = defuse_generate_key();
         file_put_contents(
-            SECUREPATH.'/'.SECUREFILE,
+            TEAMPASS_SECRETS.'/'.SECUREFILE,
             $new_key
         );
 
         // store new sk
-        $session->set('user-reencrypt_new_salt', file_get_contents(SECUREPATH.'/'.SECUREFILE));
+        $session->set('user-reencrypt_new_salt', file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE));
 
         //put tool in maintenance.
         DB::update(
@@ -1082,10 +1082,10 @@ switch ($post_type) {
 
         // restore saltkey file
         if (file_exists($previous_saltkey_filename)) {
-            unlink(SECUREPATH.'/'.SECUREFILE);
+            unlink(TEAMPASS_SECRETS.'/'.SECUREFILE);
             rename(
                 $previous_saltkey_filename,
-                SECUREPATH.'/'.SECUREFILE
+                TEAMPASS_SECRETS.'/'.SECUREFILE
             );
         }
 
@@ -2915,7 +2915,7 @@ switch ($post_type) {
         // special Cases
         if ($post_field === 'cpassman_url') {
             // update also jsUrl for CSFP protection
-            $jsUrl = $post_value . '/includes/libraries/csrfp/js/csrfprotector.js';
+            $jsUrl = $post_value . '/assets/lib/csrfp/csrfprotector.js';
             $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
             $data = file_get_contents($csrfp_file);
             $posJsUrl = strpos($data, '"jsUrl" => "');
@@ -4439,7 +4439,7 @@ case 'get_system_health':
     $encryptionText = $lang->get('health_status_ok');
     
     // Check if secure file exists
-    if (isset($SETTINGS['securepath']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
+    if (isset($SETTINGS['TEAMPASS_SECRETS']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
         $encryptionStatus = 'danger';
         $encryptionText = $lang->get('health_secure_file_missing');
     }
@@ -5242,7 +5242,7 @@ case 'test_encryption':
         $testString = 'TeamPass Encryption Test ' . time();
         
         // Get encryption key
-        $key = file_get_contents($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']);
+        $key = file_get_contents($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']);
         
         if ($key === false) {
             throw new Exception($lang->get('admin_encryption_key_not_found'));
@@ -5731,11 +5731,12 @@ function findUnknownFiles($baseDir, $referenceFile): array
 function tablesIntegrityCheck(): array
 {
     // Get integrity tables file
-    $integrityTablesFile = TEAMPASS_ROOT_PATH . '/includes/tables_integrity.json';
+    $integrityTablesFile = TEAMPASS_APP . '/includes/tables_integrity.json';
     if (file_exists($integrityTablesFile) === false) {
         return [
             'error' => true,
-            'message' => "Integrity file has not been found."
+            'message' => "Integrity file has not been found.",
+            'array' => [],
         ];
     }
     // Convert json to array
@@ -5743,7 +5744,8 @@ function tablesIntegrityCheck(): array
     if (json_last_error() !== JSON_ERROR_NONE) {
         return [
             'error' => true,
-            'message' => "Integrity file is corrupted"
+            'message' => "Integrity file is corrupted",
+            'array' => [],
         ];
     }
     // Get all tables

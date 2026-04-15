@@ -35,16 +35,16 @@ use voku\helper\AntiXSS;
 // new SECUREFILE - 3.0.0.23
 function handleSecurefileConstant()
 {
-    if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(SECUREPATH.'/teampass-seckey.txt') === true) {
+    if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(TEAMPASS_SECRETS.'/teampass-seckey.txt') === true) {
         // Anonymize the file if needed
         if (defined('SECUREFILE') === false) {
             define('SECUREFILE', generateRandomKey());
         }
     
         // manage the file itself by renaming it
-        if (rename(SECUREPATH.'/teampass-seckey.txt', SECUREPATH.'/'.SECUREFILE) === false) {
+        if (rename(TEAMPASS_SECRETS.'/teampass-seckey.txt', TEAMPASS_SECRETS.'/'.SECUREFILE) === false) {
             echo '[{
-                "error" : "File `'.SECUREPATH.'/teampass-seckey.txt` could not be renamed. Please do it by yourself and click on button Launch.",
+                "error" : "File `'.TEAMPASS_SECRETS.'/teampass-seckey.txt` could not be renamed. Please do it by yourself and click on button Launch.",
                 "index" : ""
             }]';
             exit;
@@ -98,7 +98,7 @@ $settingsTxt .= '
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-// SECUREPATH is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+// TEAMPASS_SECRETS is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
 define("SECUREFILE", "' . SECUREFILE. '");';
 
         if (defined('IKEY') === true) $settingsTxt .= '
@@ -160,7 +160,7 @@ function defuseCryption($message, $ascii_key, $type)
     $err = '';
     if (empty($ascii_key) === true) {
         // new check - 3.0.0.23
-        $ascii_key = file_get_contents(SECUREPATH.'/'.SECUREFILE);
+        $ascii_key = file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE);
     }
     
     try {

@@ -189,7 +189,7 @@ This section covers moving an existing TeamPass installation to a new server or 
 
 Before starting, gather the following from the **source** server:
 - `includes/config/settings.php` (contains DB credentials, paths, and the SECUREFILE name)
-- The SECUREFILE itself (path and filename come from `settings.php` — the file is stored outside the web root at `SECUREPATH/SECUREFILE`)
+- The SECUREFILE itself (path and filename come from `settings.php` — the file is stored outside the web root at `TEAMPASS_SECRETS/SECUREFILE`)
 - A full database dump: `mysqldump -u <user> -p <dbname> > teampass_backup.sql`
 - The full TeamPass application folder
 
@@ -204,7 +204,7 @@ Transfer the entire TeamPass folder to the destination server. Preserve file per
 The encryption master key is stored outside the web root. Find its location in `includes/config/settings.php`:
 
 ```php
-define('SECUREPATH', '/var/teampass/');   // example
+define('TEAMPASS_SECRETS', '/var/teampass/');   // example
 define('SECUREFILE', 'sk_xxxxxxxx');      // example
 ```
 
@@ -222,7 +222,7 @@ mysql -u <dest_user> -p <dest_dbname> < teampass_backup.sql
 
 Edit the file on the destination server and update:
 - `DB_HOST`, `DB_USER`, `DB_PASSWD`, `DB_BDDNAME` — destination DB credentials
-- `SECUREPATH` / `SECUREFILE` — only if the path changed in step 2
+- `TEAMPASS_SECRETS` / `SECUREFILE` — only if the path changed in step 2
 
 **5. Update paths in the database**
 

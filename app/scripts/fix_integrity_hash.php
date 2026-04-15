@@ -44,7 +44,7 @@ DB::$encoding = DB_ENCODING;
 
 // Get server secret
 try {
-    $ascii_key = file_get_contents(SECUREPATH . '/' . SECUREFILE);
+    $ascii_key = file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE);
     $key = Key::loadFromAsciiSafeString($ascii_key);
     $serverSecret = $key->saveToAsciiSafeString();
     echo "Server secret loaded successfully.\n";

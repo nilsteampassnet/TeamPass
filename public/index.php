@@ -292,21 +292,21 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     </script>
 
     <!-- IonIcons -->
-    <link rel="stylesheet" href="includes/css/ionicons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <link rel="stylesheet" href="./assets/css/ionicons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Theme style -->
-    <link rel="stylesheet" href="plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
-    <link rel="stylesheet" href="plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
-    <link rel="stylesheet" href="plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
-    <link rel="stylesheet" href="plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
+    <link rel="stylesheet" href="./plugins/adminlte/css/adminlte.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <link rel="stylesheet" href="./plugins/pace-progress/themes/corner-indicator.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
+    <link rel="stylesheet" href="./plugins/select2/css/select2.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
+    <link rel="stylesheet" href="./plugins/select2/theme/select2-bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
     <!-- Theme style -->
-    <link rel="stylesheet" href="includes/css/teampass.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <link rel="stylesheet" href="./assets/css/teampass.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Google Font: Source Sans Pro -->
-    <link rel="stylesheet" type="text/css" href="includes/fonts/fonts.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <link rel="stylesheet" type="text/css" href="./assets/fonts/fonts.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Altertify -->
-    <link rel="stylesheet" href="plugins/alertifyjs/css/alertify.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
-    <link rel="stylesheet" href="plugins/alertifyjs/css/themes/bootstrap.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
+    <link rel="stylesheet" href="./plugins/alertifyjs/css/alertify.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
+    <link rel="stylesheet" href="./plugins/alertifyjs/css/themes/bootstrap.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
     <!-- Toastr -->
-    <link rel="stylesheet" href="plugins/toastr/toastr.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
+    <link rel="stylesheet" href="./plugins/toastr/toastr.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
     <!-- favicon -->
     <link rel="shortcut icon" type="image/png" href="<?php echo $favicon;?>"/>
     <!-- manifest (PWA) -->
@@ -314,7 +314,7 @@ $theme_navbar = $theme === 'dark' ? 'navbar-dark' : 'navbar-white navbar-light';
     <!-- Custom style -->
     <?php
     if (file_exists(__DIR__ . '/assets/css/custom.css') === true) {?>
-        <link rel="stylesheet" href="assets/css/custom.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+        <link rel="stylesheet" href="./assets/css/custom.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <?php
     } ?>
 </head>
@@ -420,7 +420,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- Brand Logo -->
                 <div class="brand-link tp-brand-link">
                     <a href="<?php echo $cpassman_url . '/index.php?page=' . ((int) $session_user_admin === 1 ? 'admin' : 'items'); ?>" class="tp-brand-home-link">
-                        <img src="includes/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
+                        <img src="./assets/images/teampass-logo2-home.png" alt="Teampass Logo" class="brand-image">
                         <span class="brand-text font-weight-light"><?php echo TP_TOOL_NAME; ?></span>
                     </a>
                     <?php if ((int) $session_user_admin === 1) { ?>
@@ -1252,231 +1252,51 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <!-- REQUIRED SCRIPTS -->
 
     <!-- Font Awesome Icons -->
-    <link href="plugins/fontawesome-free/css/fontawesome.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
-    <link href="plugins/fontawesome-free/css/solid.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
-    <link href="plugins/fontawesome-free/css/regular.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
-    <link href="plugins/fontawesome-free/css/brands.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
+    <link href="./plugins/fontawesome-free/css/fontawesome.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
+    <link href="./plugins/fontawesome-free/css/solid.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
+    <link href="./plugins/fontawesome-free/css/regular.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
+    <link href="./plugins/fontawesome-free/css/brands.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" rel="stylesheet">
     <!-- jQuery -->
-    <script src="plugins/jquery/jquery.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <script src="plugins/jquery/jquery.cookie.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
+    <script src="./plugins/jquery/jquery.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script src="./plugins/jquery/jquery.cookie.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
     <!-- jQuery UI -->
-    <script src="plugins/jqueryUI/jquery-ui.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <link rel="stylesheet" href="plugins/jqueryUI/jquery-ui.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+    <script src="./plugins/jqueryUI/jquery-ui.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <link rel="stylesheet" href="./plugins/jqueryUI/jquery-ui.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <!-- Popper -->
-    <script src="plugins/popper/umd/popper.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script src="./plugins/popper/umd/popper.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- Bootstrap -->
-    <script src="plugins/bootstrap/js/bootstrap.bundle.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script src="./plugins/bootstrap/js/bootstrap.bundle.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- AdminLTE -->
-    <script src="plugins/adminlte/js/adminlte.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script src="./plugins/adminlte/js/adminlte.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- Altertify -->
-    <!--<script type="text/javascript" src="plugins/alertifyjs/alertify.min.js"></script>-->
+    <!--<script type="text/javascript" src="./plugins/alertifyjs/alertify.min.js"></script>-->
     <!-- Toastr -->
-    <script type="text/javascript" src="plugins/toastr/toastr.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./plugins/toastr/toastr.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- STORE.JS -->
-    <script type="text/javascript" src="plugins/store.js/dist/store.everything.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./plugins/store.js/dist/store.everything.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- cryptojs-aesphp -->
-    <script type="text/javascript" src="includes/libraries/cryptojs/crypto-js.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <script type="text/javascript" src="includes/libraries/cryptojs/encryption.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/lib/cryptojs/crypto-js.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/lib/cryptojs/encryption.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- pace -->
-    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" data-pace-options='{ "ajax": true, "eventLag": false }' src="./plugins/pace-progress/pace.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- select2 -->
-    <script type="text/javascript" src="plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./plugins/select2/js/select2.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- simplePassMeter -->
-    <link rel="stylesheet" href="plugins/simplePassMeter/simplePassMeter.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
-    <script type="text/javascript" src="plugins/simplePassMeter/simplePassMeter.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <link rel="stylesheet" href="./plugins/simplePassMeter/simplePassMeter.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
+    <script type="text/javascript" src="./plugins/simplePassMeter/simplePassMeter.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- platform -->
-    <script type="text/javascript" src="plugins/platform/platform.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./plugins/platform/platform.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- radiobuttons -->
-    <link rel="stylesheet" href="plugins/radioforbuttons/bootstrap-buttons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
-    <script type="text/javascript" src="plugins/radioforbuttons/jquery.radiosforbuttons.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <link rel="stylesheet" href="./plugins/radioforbuttons/bootstrap-buttons.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/css" />
+    <script type="text/javascript" src="./plugins/radioforbuttons/jquery.radiosforbuttons.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- ICHECK -->
     <!--<link rel="stylesheet" href="./plugins/icheck-material/icheck-material.min.css">-->
     <link rel="stylesheet" href="./plugins/icheck/skins/all.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <script type="text/javascript" src="./plugins/icheck/icheck.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- bootstrap-add-clear -->
-    <script type="text/javascript" src="plugins/bootstrap-add-clear/bootstrap-add-clear.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./plugins/bootstrap-add-clear/bootstrap-add-clear.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- DOMPurify -->
-    <script type="text/javascript" src="plugins/DOMPurify/purify.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-
-    <style>
-        .tp-brand-link {
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            overflow: hidden;
-        }
-
-        .tp-brand-home-link {
-            display: flex;
-            align-items: center;
-            min-width: 0;
-            flex: 1 1 auto;
-            overflow: hidden;
-            color: inherit;
-            text-decoration: none !important;
-        }
-
-        .tp-brand-home-link:hover,
-        .tp-brand-home-link:focus {
-            color: inherit;
-            text-decoration: none !important;
-        }
-
-        .tp-brand-home-link .brand-image {
-            float: none;
-            position: static;
-            margin: 0 0.5rem 0 0;
-            flex: 0 0 auto;
-        }
-
-        .tp-brand-home-link .brand-text {
-            display: block;
-            min-width: 0;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .tp-sidebar-version-badge {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 18px;
-            padding: 2px 7px;
-            margin-right: 8px;
-            border-radius: 999px;
-            flex: 0 0 auto;
-            font-size: 11.5px;
-            font-weight: 600;
-            line-height: 1;
-            white-space: nowrap;
-            color: #ffffff !important;
-            background: #17a2b8;
-            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-            text-decoration: none !important;
-        }
-
-        .tp-sidebar-version-badge:hover,
-        .tp-sidebar-version-badge:focus {
-            color: #ffffff !important;
-            background: #138496;
-            text-decoration: none !important;
-        }
-
-        .sidebar-collapse .tp-sidebar-version-badge,
-        .sidebar-closed .tp-sidebar-version-badge {
-            display: none !important;
-        }
-
-
-        #sidebar-footer {
-            display: flex;
-            align-items: center;
-            gap: 0.35rem;
-            flex-wrap: nowrap;
-            overflow: visible;
-        }
-
-        .tp-sidebar-footer-action {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            border: 0;
-            background: transparent;
-            box-shadow: none;
-            text-decoration: none !important;
-            line-height: 1;
-            vertical-align: middle;
-        }
-
-        .tp-sidebar-footer-action:hover,
-        .tp-sidebar-footer-action:focus {
-            color: #7fd8ff !important;
-            text-decoration: none !important;
-        }
-
-        .tp-sidebar-footer-action:focus {
-            outline: none;
-        }
-
-        .tp-online-users-drawer {
-            position: fixed;
-            left: 1rem;
-            bottom: 4rem;
-            width: min(340px, calc(100vw - 1rem));
-            z-index: 1065;
-            overflow: visible;
-        }
-
-        .tp-online-users-drawer .card {
-            border-radius: 0.85rem;
-            overflow: hidden;
-        }
-
-        .tp-online-users-drawer-content {
-            max-height: 500px;
-            overflow-y: auto;
-            overflow-x: hidden;
-        }
-
-        .tp-online-users-item {
-            padding: 0.5rem 0.75rem;
-            border-left: 0;
-            border-right: 0;
-        }
-
-        .tp-online-users-item .font-weight-bold {
-            font-size: 0.95rem;
-            line-height: 1.15;
-        }
-
-        .tp-online-users-item .small {
-            line-height: 1.1;
-        }
-
-        .tp-online-users-avatar {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 28px;
-            height: 28px;
-            margin-right: 0.6rem;
-            border-radius: 999px;
-            background: rgba(23, 162, 184, 0.12);
-            color: #17a2b8;
-            flex: 0 0 28px;
-            font-size: 0.9rem;
-            overflow: hidden;
-        }
-
-        .tp-online-users-avatar-img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 999px;
-        }
-
-        .dark-mode .tp-online-users-avatar {
-            background: rgba(255, 255, 255, 0.08);
-            color: #8bd3dd;
-        }
-
-        .tp-online-users-meta {
-            min-width: 0;
-        }
-
-        @media (max-width: 767.98px) {
-            .tp-sidebar-version-badge {
-                display: none !important;
-            }
-
-            .tp-online-users-drawer {
-                width: min(340px, calc(100vw - 1rem));
-            }
-        }
-    </style>
+    <script type="text/javascript" src="./plugins/DOMPurify/purify.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 
     <?php
     $get['page'] = $request->query->filter('page', null, FILTER_SANITIZE_SPECIAL_CHARS);
@@ -1490,7 +1310,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <!-- Sortable -->
         <!--<script src="./plugins/sortable/jquery.sortable.js"></script>-->
         <!-- PLUPLOAD -->
-        <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+        <script type="text/javascript" src="./plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <!-- DataTables -->
         <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
         <link rel="stylesheet" src="./plugins/datatables/css/dataTables.bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
@@ -1502,7 +1322,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         <script type="text/javascript" src="./plugins/datatables/plugins/select.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <link rel="stylesheet" src="./plugins/datatables/extensions/Scroller-1.5.0/css/scroller.bootstrap4.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
         <script type="text/javascript" src="./plugins/datatables/extensions/Scroller-1.5.0/js/dataTables.scroller.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-        <link rel="stylesheet" href="includes/css/admin-dashboard.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+        <link rel="stylesheet" href="./assets/css/admin-dashboard.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
     <?php
     } elseif (isset($get['page']) === true) {
         if (in_array($get['page'], ['items', 'import']) === true) {
@@ -1522,12 +1342,12 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/timepicker/bootstrap-timepicker.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
             <script src="./plugins/timepicker/bootstrap-timepicker.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- VALIDATE -->
-            <script type="text/javascript" src="plugins/jquery-validation/jquery.validate.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/jquery-validation/jquery.validate.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- PWSTRENGHT -->
-            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- TOGGLE -->
             <link rel="stylesheet" href="./plugins/toggles/css/toggles.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
@@ -1561,24 +1381,24 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         } elseif ($get['page'] === 'profile') {
             ?>
             <!-- FILESAVER -->
-            <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- PLUPLOAD -->
-            <script type="text/javascript" src="plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/plupload/js/plupload.full.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <?php
         } elseif ($get['page'] === 'export') {
             ?>
             <!-- FILESAVER -->
-            <script type="text/javascript" src="plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/downloadjs/download.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- PWSTRENGHT -->
-            <script type="text/javascript" src="plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-            <script type="text/javascript" src="plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/zxcvbn/zxcvbn.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <script type="text/javascript" src="./plugins/jquery.pwstrength/pwstrength-bootstrap.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
         <?php
         }
     }
     ?>
     <!-- functions -->
-    <script type="text/javascript" src="includes/js/functions.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <script type="text/javascript" src="includes/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/js/functions.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/js/CreateRandomString.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <input type="hidden" id="encryptClientServerStatus" value="<?php echo $SETTINGS['encryptClientServer'] ?? 1; ?>" />
 
     <!-- WebSocket real-time notifications -->
@@ -1634,8 +1454,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             item_moved: <?php echo json_encode($lang->get('ws_item_moved')); ?>
         };
     </script>
-    <script type="text/javascript" src="includes/js/teampass-websocket.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
-    <script type="text/javascript" src="includes/js/teampass-websocket-init.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/js/teampass-websocket.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <script type="text/javascript" src="./assets/js/teampass-websocket-init.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <?php
     }
     ?>
@@ -1688,7 +1508,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     };
 </script>
 
-<script type="text/javascript" src="includes/js/secure-clipboard-cleaner.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+<script type="text/javascript" src="./assets/js/secure-clipboard-cleaner.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 
 <script>
     $(document).ready(function() {

@@ -39,7 +39,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 
 // Load functions
-require_once __DIR__.'/../../sources/main.functions.php';
+require_once __DIR__.'/../sources/main.functions.php';
 loadClasses('DB');
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();

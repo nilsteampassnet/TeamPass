@@ -981,10 +981,10 @@ logItems(
             $encryptionText = $lang->get('health_status_ok');
 
             if (
-                isset($SETTINGS['securepath'], $SETTINGS['securefile']) === true
-                && empty($SETTINGS['securepath']) === false
+                isset($SETTINGS['TEAMPASS_SECRETS'], $SETTINGS['securefile']) === true
+                && empty($SETTINGS['TEAMPASS_SECRETS']) === false
                 && empty($SETTINGS['securefile']) === false
-                && file_exists($SETTINGS['securepath'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']) === false
+                && file_exists($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']) === false
             ) {
                 $encryptionStatus = 'danger';
                 $encryptionText = $lang->get('health_secure_file_missing');
@@ -2897,13 +2897,13 @@ function tpGetIntegrityHashStatus(array $SETTINGS, array $excludedUserIds = arra
     );
 
     // Resolve secure file path
-    $securePath = '';
+    $TEAMPASS_SECRETS = '';
     $secureFile = '';
 
-    if (defined('SECUREPATH') === true) {
-        $securePath = (string) constant('SECUREPATH');
+    if (defined('TEAMPASS_SECRETS') === true) {
+        $TEAMPASS_SECRETS = (string) constant('TEAMPASS_SECRETS');
     } else {
-        $securePath = (string) ($SETTINGS['securepath'] ?? '');
+        $TEAMPASS_SECRETS = (string) ($SETTINGS['TEAMPASS_SECRETS'] ?? '');
     }
 
     if (defined('SECUREFILE') === true) {
@@ -2912,9 +2912,9 @@ function tpGetIntegrityHashStatus(array $SETTINGS, array $excludedUserIds = arra
         $secureFile = (string) ($SETTINGS['securefile'] ?? '');
     }
 
-    $fullPath = rtrim($securePath, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $secureFile;
+    $fullPath = rtrim($TEAMPASS_SECRETS, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $secureFile;
 
-    if ($securePath === '' || $secureFile === '' || is_readable($fullPath) === false) {
+    if ($TEAMPASS_SECRETS === '' || $secureFile === '' || is_readable($fullPath) === false) {
         $out['error'] = 'secure_file_not_readable';
         return $out;
     }

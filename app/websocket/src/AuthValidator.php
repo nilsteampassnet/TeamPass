@@ -200,12 +200,12 @@ class AuthValidator
         }
 
         try {
-            // Find a valid, unused token in database with user info
+            // Find a valid token in database with user info (reusable within validity window)
             $tokenData = \DB::queryFirstRow(
                 'SELECT wt.*, u.login, u.admin
                  FROM %l wt
                  JOIN %l u ON wt.user_id = u.id
-                 WHERE wt.token = %s AND wt.used = 0 AND wt.expires_at > NOW() AND u.disabled = 0',
+                 WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
                 $this->tablePrefix . 'websocket_tokens',
                 $this->tablePrefix . 'users',
                 $token
@@ -215,13 +215,8 @@ class AuthValidator
                 return null;
             }
 
-            // Mark token as used immediately (single-use enforcement)
-            \DB::update(
-                $this->tablePrefix . 'websocket_tokens',
-                ['used' => 1],
-                'id = %i',
-                (int) $tokenData['id']
-            );
+            // Token remains valid until expires_at to allow reconnections within the validity window.
+            // Cleanup of expired tokens happens in generateWebSocketToken() on next page load.
 
             $userId = (int) $tokenData['user_id'];
 

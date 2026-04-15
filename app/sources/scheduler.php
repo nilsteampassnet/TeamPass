@@ -32,12 +32,12 @@ use GO\Scheduler;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load config
-require_once __DIR__.'/../app/config/include.php';
-require_once __DIR__.'/../app/config/settings.php';
+require_once __DIR__.'/../config/include.php';
+require_once __DIR__.'/../config/settings.php';
 
 // Load library
 require_once __DIR__.'/../vendor/autoload.php';
-require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/main.functions.php';
 
 // Create a new scheduler
 $scheduler = new Scheduler();

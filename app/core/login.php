@@ -112,7 +112,7 @@ echo '
     <div class="login-logo"><div style="margin:30px;">',
     isset($SETTINGS['custom_logo']) === true && empty($SETTINGS['custom_logo']) === false ?
         '<img src="' . (string) $SETTINGS['custom_logo'] . '" alt="" style="text-align:center; max-width:100px;" />' :
-        '<img src="includes/images/teampass-logo2-login.png" alt="Teampass Logo">',
+        '<img src="./assets/images/teampass-logo2-login.png" alt="Teampass Logo">',
         '
         </div>
         <div style="font-weight:bold;">
@@ -270,7 +270,7 @@ if (isset($SETTINGS['yubico_authentication']) === true && (int) $SETTINGS['yubic
     echo '
         <div id="div-2fa-yubico" class="row mb-3 div-2fa-method hidden">
             <div class="col-3">
-                <img src="includes/images/yubico.png">
+                <img src="./assets/images/yubico.png">
             </div>
 
             <div class="col-8">
