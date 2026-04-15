@@ -88,8 +88,22 @@ if (
         kb_direct_link_not_found: <?php echo json_encode($lang->get('kb_direct_link_not_found')); ?>,
         kb_add_entry: <?php echo json_encode($lang->get('kb_add_entry')); ?>,
         kb_edit_entry: <?php echo json_encode($lang->get('kb_edit_entry')); ?>,
+        kb_page_subtitle: <?php echo json_encode($lang->get('kb_page_subtitle')); ?>,
         kb_created_by: <?php echo json_encode($lang->get('kb_created_by')); ?>,
         kb_empty_description: <?php echo json_encode($lang->get('kb_empty_description')); ?>,
+        kb_allow_comments: <?php echo json_encode($lang->get('kb_allow_comments')); ?>,
+        kb_comments: <?php echo json_encode($lang->get('kb_comments')); ?>,
+        kb_no_comments: <?php echo json_encode($lang->get('kb_no_comments')); ?>,
+        kb_comments_closed: <?php echo json_encode($lang->get('kb_comments_closed')); ?>,
+        kb_comments_disabled: <?php echo json_encode($lang->get('kb_comments_disabled')); ?>,
+        kb_add_comment: <?php echo json_encode($lang->get('kb_add_comment')); ?>,
+        kb_comment_placeholder: <?php echo json_encode($lang->get('kb_comment_placeholder')); ?>,
+        kb_comment_help: <?php echo json_encode($lang->get('kb_comment_help')); ?>,
+        kb_comment_added: <?php echo json_encode($lang->get('kb_comment_added')); ?>,
+        kb_comment_deleted: <?php echo json_encode($lang->get('kb_comment_deleted')); ?>,
+        kb_comment_required: <?php echo json_encode($lang->get('kb_comment_required')); ?>,
+        kb_comment_too_long: <?php echo json_encode($lang->get('kb_comment_too_long')); ?>,
+        kb_comment_delete_confirm: <?php echo json_encode($lang->get('kb_comment_delete_confirm')); ?>,
         kb_attachment_deleted: <?php echo json_encode($lang->get('kb_attachment_deleted')); ?>,
         kb_attachment_uploaded: <?php echo json_encode($lang->get('kb_attachment_uploaded')); ?>,
         kb_delete_attachment_confirm: <?php echo json_encode($lang->get('kb_delete_attachment_confirm')); ?>,
@@ -113,11 +127,11 @@ if (
     let kbLoadedDirectId = false;
 
     function kbEncodePayload(payload) {
-        return prepareExchangedData(JSON.stringify(payload), 'encode', kbSessionKey);
+        return prepareExchangedData(JSON.stringify(payload), 'encode', kbSessionKey, 'kb.queries.php', 'encode', false);
     }
 
     function kbDecodeResponse(response, actionName) {
-        return decodeQueryReturn(response, kbSessionKey, 'kb.queries.php', actionName);
+        return prepareExchangedData(response, 'decode', kbSessionKey, 'kb.queries.php', actionName, false);
     }
 
     function kbToastError(message) {
@@ -133,6 +147,12 @@ if (
         toastr.success(message, '', {
             timeOut: 1800,
             progressBar: true
+        });
+    }
+
+    function kbSanitizeHtml(html) {
+        return DOMPurify.sanitize(html || '', {
+            ADD_ATTR: ['target', 'rel']
         });
     }
 
@@ -181,6 +201,7 @@ if (
         $('#kb-category').val('');
         $('#kb-description').val('');
         $('#kb-anyone-can-modify').prop('checked', false);
+        $('#kb-allow-comments').prop('checked', false);
         $('#kb-associated-items').empty().trigger('change');
         $('#kb-editor-title').text(kbTranslations.kb_add_entry);
         $('#kb-editor-attachments-list').html('<div class="text-muted">' + DOMPurify.sanitize(kbTranslations.kb_no_attachments) + '</div>');
@@ -196,8 +217,20 @@ if (
 
     function kbHideViewer() {
         $('#kb-viewer-card').addClass('hidden');
+        $('#kb-viewer-card').data('id', 0);
         $('#button-kb-edit-from-view').addClass('hidden').data('id', 0);
         $('#button-kb-delete-from-view').addClass('hidden').data('id', 0);
+        $('#kb-viewer-title').text('');
+        $('#kb-viewer-category').text('');
+        $('#kb-viewer-author').text('');
+        $('#kb-viewer-comments-badge').addClass('hidden').text('');
+        $('#kb-viewer-description').html('');
+        $('#kb-viewer-comments-count').text('0');
+        $('#kb-viewer-comments-list').html('');
+        $('#kb-viewer-comments-zone').addClass('hidden');
+        $('#kb-viewer-comments-disabled').addClass('hidden');
+        $('#kb-viewer-comment-form').addClass('hidden');
+        $('#kb-comment-text').val('');
     }
 
     function kbAttachmentDownloadUrl(attachmentId) {
@@ -278,13 +311,90 @@ if (
         kbRefreshAttachmentsHelp();
     }
 
+    function kbRenderComments(entry) {
+        const comments = Array.isArray(entry.comments) ? entry.comments : [];
+        const allowComments = parseInt(entry.allow_comments || 0, 10) === 1;
+        const canComment = entry.can_comment === true;
+        const commentsCount = parseInt(entry.comments_count || comments.length || 0, 10) || 0;
+        const $zone = $('#kb-viewer-comments-zone');
+        const $list = $('#kb-viewer-comments-list');
+        const $disabled = $('#kb-viewer-comments-disabled');
+        const $form = $('#kb-viewer-comment-form');
+        const $badge = $('#kb-viewer-comments-badge');
+
+        $('#kb-viewer-comments-count').text(String(commentsCount));
+
+        if (commentsCount > 0 || allowComments === true) {
+            $badge.text(String(commentsCount) + ' ' + kbTranslations.kb_comments.toLowerCase()).removeClass('hidden');
+        } else {
+            $badge.addClass('hidden').text('');
+        }
+
+        if (comments.length === 0 && allowComments === false) {
+            $zone.addClass('hidden');
+            $list.html('');
+            $disabled.addClass('hidden');
+            $form.addClass('hidden');
+            return;
+        }
+
+        $zone.removeClass('hidden');
+        $list.html('');
+
+        if (comments.length === 0) {
+            $list.html('<div class="text-muted small">' + DOMPurify.sanitize(kbTranslations.kb_no_comments) + '</div>');
+        } else {
+            comments.forEach(function(comment) {
+                const safeAuthor = DOMPurify.sanitize(comment.author || '', {USE_PROFILES: {html: false}});
+                const safeDate = DOMPurify.sanitize(comment.created_at_label || '', {USE_PROFILES: {html: false}});
+                const safeBody = kbSanitizeHtml(comment.content_html || '');
+                const deleteButton = comment.can_delete === true
+                    ? '<button type="button" class="btn btn-sm btn-outline-danger kb-action-delete-comment" data-id="' + comment.id + '" data-kb-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>'
+                    : '';
+
+                $list.append(
+                    '<div class="tp-kb-comment">' +
+                        '<div class="tp-kb-comment-header">' +
+                            '<div class="tp-kb-comment-meta">' +
+                                '<span class="tp-kb-comment-author">' + safeAuthor + '</span>' +
+                                (safeDate !== '' ? '<small class="text-muted tp-kb-comment-date">- ' + safeDate + '</small>' : '') +
+                            '</div>' +
+                            deleteButton +
+                        '</div>' +
+                        '<div class="tp-kb-comment-body tp-kb-content">' + safeBody + '</div>' +
+                    '</div>'
+                );
+            });
+        }
+
+        if (allowComments === true && canComment === true) {
+            $form.removeClass('hidden');
+            $disabled.addClass('hidden');
+        } else {
+            $form.addClass('hidden');
+            if (comments.length > 0) {
+                $disabled.removeClass('hidden');
+            } else {
+                $disabled.addClass('hidden');
+            }
+        }
+    }
+
     function kbRenderViewer(entry) {
+        const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
         $('#kb-viewer-title').text(entry.label || '');
         $('#kb-viewer-category').text(entry.category || '');
         $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
-        $('#kb-viewer-description').html(entry.description_html || DOMPurify.sanitize(kbTranslations.kb_empty_description));
+        $('#kb-viewer-description').html(entry.description_html ? kbSanitizeHtml(entry.description_html) : DOMPurify.sanitize(kbTranslations.kb_empty_description));
         kbRenderAssociatedItems(entry.associated_items || []);
         kbRenderViewerAttachments(entry.attachments || []);
+        kbRenderComments(entry);
+        $('#kb-viewer-card').data('id', entry.id || 0);
+        if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+            $('#kb-viewer-comments-badge').text(String(commentsCount) + ' ' + kbTranslations.kb_comments.toLowerCase()).removeClass('hidden');
+        } else {
+            $('#kb-viewer-comments-badge').addClass('hidden').text('');
+        }
 
         if (entry.can_edit === true) {
             $('#button-kb-edit-from-view').removeClass('hidden').data('id', entry.id);
@@ -336,6 +446,7 @@ if (
         $('#kb-category').val(entry.category || '');
         $('#kb-description').val(entry.description || '');
         $('#kb-anyone-can-modify').prop('checked', parseInt(entry.anyone_can_modify || 0, 10) === 1);
+        $('#kb-allow-comments').prop('checked', parseInt(entry.allow_comments || 0, 10) === 1);
         $('#kb-editor-title').text((entry.id || 0) > 0 ? kbTranslations.kb_edit_entry : kbTranslations.kb_add_entry);
 
         if (Array.isArray(entry.associated_items)) {
@@ -488,8 +599,9 @@ if (
             id: parseInt($('#kb-id').val(), 10) || 0,
             label: DOMPurify.sanitize(label, {USE_PROFILES: {html: false}}),
             category: DOMPurify.sanitize(category, {USE_PROFILES: {html: false}}),
-            description: DOMPurify.sanitize(description, {USE_PROFILES: {html: false}}),
+            description: description,
             anyone_can_modify: $('#kb-anyone-can-modify').is(':checked') ? 1 : 0,
+            allow_comments: $('#kb-allow-comments').is(':checked') ? 1 : 0,
             associated_items: associatedItems
         };
 
@@ -568,14 +680,30 @@ if (
 
                 entries.forEach(function(entry) {
                     const safeLabel = DOMPurify.sanitize(entry.label || '', {USE_PROFILES: {html: false}});
+                    const safeExcerpt = DOMPurify.sanitize(entry.description_excerpt || '', {USE_PROFILES: {html: false}});
                     const safeCategory = DOMPurify.sanitize(entry.category || '', {USE_PROFILES: {html: false}});
                     const safeAuthor = DOMPurify.sanitize(entry.author || '', {USE_PROFILES: {html: false}});
+                    const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
+                    const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+                    const metaBadges = [];
+
+                    if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
+                    }
+
+                    if (itemsCount > 0) {
+                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
+                    }
 
                     kbTable.row.add([
-                        '<a href="#" class="kb-action-view" data-id="' + entry.id + '">' + safeLabel + '</a>',
-                        safeCategory,
+                        '<div class="tp-kb-list-entry">' +
+                            '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
+                            (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
+                            (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
+                        '</div>',
+                        safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
                         safeAuthor,
-                        parseInt(entry.items_count || 0, 10),
+                        itemsCount,
                         kbBuildActions(entry)
                     ]);
                 });
@@ -718,6 +846,10 @@ if (
             kbSaveEntry();
         });
 
+        $('#button-kb-comment-save').on('click', function() {
+            kbAddComment();
+        });
+
         $(document).on('click', '.kb-action-view', function(event) {
             event.preventDefault();
             kbOpenViewer(parseInt($(this).data('id'), 10) || 0);
@@ -735,7 +867,12 @@ if (
 
         $(document).on('click', '.kb-action-delete-attachment', function(event) {
             event.preventDefault();
-            kbDeleteAttachment(parseInt($(this).data('id'), 10) || 0, parseInt($(this).data('kb-id'), 10) || 0);
+            kbDeleteAttachment(($(this).data('id') || '').toString(), parseInt($(this).data('kb-id'), 10) || 0);
+        });
+
+        $(document).on('click', '.kb-action-delete-comment', function(event) {
+            event.preventDefault();
+            kbDeleteComment(parseInt($(this).data('id'), 10) || 0, parseInt($(this).data('kb-id'), 10) || 0);
         });
     });
 
@@ -764,6 +901,79 @@ if (
 
                 kbRenderEditorAttachments((data.entry && data.entry.attachments) ? data.entry.attachments : []);
                 kbToastSuccess(kbTranslations.kb_attachment_deleted);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbAddComment() {
+        const kbId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+        const comment = ($('#kb-comment-text').val() || '').toString().trim();
+
+        if (!kbId) {
+            return;
+        }
+        if (comment === '') {
+            kbToastError(kbTranslations.kb_comment_required);
+            return;
+        }
+        if (comment.length > 3000) {
+            kbToastError(kbTranslations.kb_comment_too_long);
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'add_comment',
+                data: kbEncodePayload({
+                    kb_id: kbId,
+                    comment: comment
+                }),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'add_comment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                $('#kb-comment-text').val('');
+                kbRenderViewer(data.entry || {});
+                kbToastSuccess(kbTranslations.kb_comment_added);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbDeleteComment(commentId, kbId) {
+        if (!commentId || !kbId) {
+            return;
+        }
+
+        if (window.confirm(kbTranslations.kb_comment_delete_confirm) !== true) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'delete_comment',
+                data: kbEncodePayload({comment_id: commentId, kb_id: kbId}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'delete_comment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                kbRenderViewer(data.entry || {});
+                kbToastSuccess(kbTranslations.kb_comment_deleted);
             }
         ).fail(function() {
             kbToastError(kbTranslations.server_answer_error);
