@@ -124,6 +124,7 @@ $directKbId = (int) $request->query->get('id', 0);
         <div class="row mb-2">
             <div class="col-sm-8">
                 <h1 class="m-0 text-dark"><i class="fa-solid fa-map-signs mr-2"></i><?php echo $lang->get('kb_page_title'); ?></h1>
+                <p class="text-muted mb-0 mt-2"><?php echo $lang->get('kb_page_subtitle'); ?></p>
             </div>
             <div class="col-sm-4 text-right">
                 <button type="button" class="btn btn-primary" id="button-kb-new">
@@ -153,11 +154,14 @@ $directKbId = (int) $request->query->get('id', 0);
                     </div>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
+                    <div class="tp-kb-viewer-meta mb-4">
                         <span class="badge badge-info mr-2" id="kb-viewer-category"></span>
+                        <span class="badge badge-light border hidden" id="kb-viewer-comments-badge"></span>
                         <span class="text-muted small" id="kb-viewer-author"></span>
                     </div>
-                    <div id="kb-viewer-description" class="tp-kb-content"></div>
+                    <div class="tp-kb-article-surface">
+                        <div id="kb-viewer-description" class="tp-kb-content"></div>
+                    </div>
                     <div class="mt-4 hidden" id="kb-viewer-items-zone">
                         <h5 class="mb-2"><?php echo $lang->get('kb_associated_items'); ?></h5>
                         <div id="kb-viewer-items"></div>
@@ -165,6 +169,25 @@ $directKbId = (int) $request->query->get('id', 0);
                     <div class="mt-4 hidden" id="kb-viewer-attachments-zone">
                         <h5 class="mb-2"><?php echo $lang->get('attached_files'); ?></h5>
                         <div id="kb-viewer-attachments"></div>
+                    </div>
+                    <div class="mt-4 hidden" id="kb-viewer-comments-zone">
+                        <div class="d-flex flex-wrap justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0"><?php echo $lang->get('kb_comments'); ?></h5>
+                            <span class="badge badge-light border" id="kb-viewer-comments-count">0</span>
+                        </div>
+                        <div class="alert alert-light border hidden" id="kb-viewer-comments-disabled">
+                            <?php echo $lang->get('kb_comments_closed'); ?>
+                        </div>
+                        <div id="kb-viewer-comments-list" class="tp-kb-comments-list"></div>
+                        <div class="tp-kb-comment-form hidden mt-3" id="kb-viewer-comment-form">
+                            <label for="kb-comment-text"><?php echo $lang->get('kb_add_comment'); ?></label>
+                            <textarea class="form-control" id="kb-comment-text" rows="4" maxlength="3000" placeholder="<?php echo htmlspecialchars($lang->get('kb_comment_placeholder'), ENT_QUOTES, 'UTF-8'); ?>"></textarea>
+                            <div class="d-flex flex-wrap justify-content-end align-items-center mt-2">
+                                <button type="button" class="btn btn-primary mt-2 mt-sm-0" id="button-kb-comment-save">
+                                    <i class="fa-solid fa-paper-plane mr-1"></i><?php echo $lang->get('kb_add_comment'); ?>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -193,6 +216,13 @@ $directKbId = (int) $request->query->get('id', 0);
                             <label class="custom-control-label" for="kb-anyone-can-modify"><?php echo $lang->get('anyone_can_modify'); ?></label>
                         </div>
                         <small class="form-text text-muted"><?php echo $lang->get('kb_anyone_can_modify_help'); ?></small>
+                    </div>
+                    <div class="form-group">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="kb-allow-comments">
+                            <label class="custom-control-label" for="kb-allow-comments"><?php echo $lang->get('kb_allow_comments'); ?></label>
+                        </div>
+                        <small class="form-text text-muted"><?php echo $lang->get('kb_allow_comments_help'); ?></small>
                     </div>
                     <div class="form-group">
                         <label for="kb-associated-items"><?php echo $lang->get('kb_associated_items'); ?></label>
@@ -245,9 +275,161 @@ $directKbId = (int) $request->query->get('id', 0);
 </section>
 
 <style>
+    #kb-viewer-card .card-header,
+    #kb-editor-card .card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+    }
+
+    #kb-viewer-card .card-title,
+    #kb-editor-card .card-title {
+        flex: 1 1 auto;
+        margin: 0;
+    }
+
+    .tp-kb-card-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-left: auto;
+        float: none;
+    }
+
     .tp-kb-content {
-        white-space: normal;
+        font-size: 1rem;
+        line-height: 1.85;
+        color: #2f3b52;
+    }
+
+    .tp-kb-content > :last-child {
+        margin-bottom: 0;
+    }
+
+    .tp-kb-content p,
+    .tp-kb-content ul,
+    .tp-kb-content ol,
+    .tp-kb-content blockquote {
+        margin-bottom: 1rem;
+    }
+
+    .tp-kb-content ul,
+    .tp-kb-content ol {
+        padding-left: 1.35rem;
+    }
+
+    .tp-kb-content blockquote {
+        margin-left: 0;
+        padding: 0.85rem 1rem;
+        border-left: 4px solid #17a2b8;
+        background: #f6fbfd;
+        border-radius: 0.45rem;
+        color: #41526b;
+    }
+
+    .tp-kb-content a.tp-kb-link {
+        color: #117a8b;
+        font-weight: 600;
+        text-decoration: underline;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 2px;
+    }
+
+    .tp-kb-viewer-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .tp-kb-article-surface {
+        background: linear-gradient(180deg, rgba(248, 250, 252, 0.95) 0%, rgba(255, 255, 255, 1) 100%);
+        border: 1px solid rgba(23, 162, 184, 0.15);
+        border-radius: 0.9rem;
+        padding: 1.5rem 1.65rem;
+        box-shadow: 0 0.6rem 1.4rem rgba(15, 23, 42, 0.04);
+        width: 100%;
+    }
+
+    #kb-viewer-items-zone,
+    #kb-viewer-attachments-zone,
+    #kb-viewer-comments-zone {
+        width: 100%;
+    }
+
+    .tp-kb-comments-list:empty {
+        display: none;
+    }
+
+    .tp-kb-comment {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.75rem;
+        padding: 1rem 1rem 0.85rem;
+        box-shadow: 0 0.35rem 0.85rem rgba(15, 23, 42, 0.04);
+        margin-bottom: 0.8rem;
+    }
+
+    .tp-kb-comment-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 0.75rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .tp-kb-comment-meta {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .tp-kb-comment-author {
+        font-weight: 600;
+        color: #23324d;
+    }
+
+    .tp-kb-comment-date {
+        display: inline-block;
+        margin-top: 0;
+        white-space: nowrap;
+    }
+
+    .tp-kb-comment-body {
+        color: #32415c;
+    }
+
+    .tp-kb-comment-form {
+        background: #f9fbfc;
+        border: 1px solid rgba(0, 0, 0, 0.08);
+        border-radius: 0.8rem;
+        padding: 1rem;
+    }
+
+    .tp-kb-list-entry-title {
+        display: inline-block;
+        font-weight: 600;
+        font-size: 1rem;
+        color: #1f2d3d;
+        margin-bottom: 0.35rem;
+    }
+
+    .tp-kb-list-entry-excerpt {
+        color: #6c757d;
         line-height: 1.5;
+        margin-bottom: 0.55rem;
+    }
+
+    .tp-kb-list-entry-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+
+    .tp-kb-list-entry-meta .badge {
+        font-weight: 500;
     }
 
     .tp-kb-associated-item,
@@ -288,6 +470,16 @@ $directKbId = (int) $request->query->get('id', 0);
 
     #table-kb-list td.kb-col-label a {
         font-weight: 600;
+    }
+
+    @media (max-width: 767.98px) {
+        .tp-kb-article-surface {
+            padding: 1rem;
+        }
+
+        .tp-kb-comment-header {
+            flex-direction: column;
+        }
     }
 </style>
 
