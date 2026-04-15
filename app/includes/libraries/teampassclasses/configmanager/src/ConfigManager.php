@@ -69,8 +69,9 @@ class ConfigManager
     }
 
     /**
-     * Cache key used for APCu settings storage.
-     * Bump this constant to invalidate all cached settings across workers.
+     * Base cache key used for APCu settings storage.
+     * The actual key is derived per-instance to avoid collisions when multiple
+     * TeamPass installations share the same PHP APCu memory (e.g. on the same server).
      */
     private const APCU_CACHE_KEY = 'teampass_settings_v1';
 
@@ -94,11 +95,15 @@ class ConfigManager
             return [];
         }
 
+        // Build a per-instance APCu key to avoid collisions when multiple
+        // TeamPass installations share the same PHP APCu memory space.
+        $apcuKey = self::APCU_CACHE_KEY . '_' . substr(md5($settingsFile), 0, 8);
+
         // Serve from APCu cache when available
         if (function_exists('apcu_fetch') === true) {
             $success = false;
             /** @var array<string,string>|false $cached */
-            $cached = apcu_fetch(self::APCU_CACHE_KEY, $success);
+            $cached = apcu_fetch($apcuKey, $success);
             if ($success === true && is_array($cached) === true) {
                 return $cached;
             }
@@ -120,7 +125,7 @@ class ConfigManager
 
         // Store in APCu for subsequent requests within this worker
         if (function_exists('apcu_store') === true) {
-            apcu_store(self::APCU_CACHE_KEY, $ret, self::APCU_TTL);
+            apcu_store($apcuKey, $ret, self::APCU_TTL);
         }
 
         return $ret;
@@ -133,7 +138,9 @@ class ConfigManager
     public static function invalidateCache(): void
     {
         if (function_exists('apcu_delete') === true) {
-            apcu_delete(self::APCU_CACHE_KEY);
+            $settingsFile = __DIR__ . '/../../../../../config/settings.php';
+            $apcuKey = self::APCU_CACHE_KEY . '_' . substr(md5($settingsFile), 0, 8);
+            apcu_delete($apcuKey);
         }
     }
 

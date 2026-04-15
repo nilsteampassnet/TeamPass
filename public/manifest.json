@@ -14,7 +14,7 @@
   "theme_color": " #FFFFFF",
   "icons": [
     {
-      "src": "./includes/images/teampass-pwa.png",
+      "src": "./assets/images/teampass-pwa.png",
       "type": "image/png",
       "sizes": "512x512"
     }
