@@ -1116,7 +1116,6 @@ function utilsHandler(string $post_type, array|null|string $dataReceived, array 
  * Permits to set the user ready
  *
  * @param integer $userid
- * @param string $dir
  * @return string
  */
 function userIsReady(int $userid): string

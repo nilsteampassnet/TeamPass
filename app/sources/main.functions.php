@@ -4203,9 +4203,9 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
  * @param int $userId User's id
  * @param array   $SETTINGS Teampass settings
  *
- * @return bool
+ * @return false
  */
-function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): bool
+function deleteUserObjetsKeys(int $userId, array $SETTINGS = []): false
 {
     // Return if technical accounts
     if ($userId === (int) OTV_USER_ID

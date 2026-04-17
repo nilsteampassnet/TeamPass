@@ -210,12 +210,12 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
     $neverShown = 0;
     $createdTimestamps = [];
     foreach ($corrupted as $c) {
-        $r = (string) ($c['reason'] ?? 'unknown');
+        $r = (string) $c['reason'];
         $byReason[$r] = ($byReason[$r] ?? 0) + 1;
-        if (($c['last_shown_human'] ?? 'never') === 'never') {
+        if ($c['last_shown_human'] === 'never') {
             $neverShown++;
         }
-        if (!empty($c['created_at_human']) && $c['created_at_human'] !== '1970-01-01 00:00:00') {
+        if ($c['created_at_human'] !== '1970-01-01 00:00:00') {
             $createdTimestamps[] = $c['created_at_human'];
         }
     }

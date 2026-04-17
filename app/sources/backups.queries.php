@@ -1571,16 +1571,12 @@ try {
 						. ' --auth-token ' . escapeshellarg($token);
 					$cmdNoCdForce = $cmdNoCd . ' --force-disconnect';
 
-					$cmd = $cmdNoCd;
-					$cmdForce = $cmdNoCdForce;
-					if ($tpRoot !== '') {
-						if ($isWindows) {
-							$cmd = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
-							$cmdForce = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
-						} else {
-							$cmd = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
-							$cmdForce = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
-						}
+					if ($isWindows) {
+						$cmd = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
+						$cmdForce = 'cd /d ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
+					} else {
+						$cmd = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCd;
+						$cmdForce = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoCdForce;
 					}
 
 					// Provide multiple variants to cover the most common OS families and privilege models.
@@ -1597,9 +1593,7 @@ try {
 						$cmdNoSudo = 'php scripts/restore.php'
 							. ' --file ' . escapeshellarg($resolvedPath)
 							. ' --auth-token ' . escapeshellarg($token);
-						$cmdNoSudoCd = ($tpRoot !== '')
-							? ('cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoSudo)
-							: $cmdNoSudo;
+						$cmdNoSudoCd = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoSudo;
 						$variants[] = [
 							'label' => 'Alternative (no sudo) - run as ' . $webUser,
 							'command' => $cmdNoSudoCd,
