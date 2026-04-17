@@ -1,0 +1,21 @@
+Options -Indexes
+
+# Rewrite engine for clean URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Route /api/* requests through the proxy entry point
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/(.*)$ /api/index.php [QSA,L]
+
+    # Route everything else through the main front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /index.php [QSA,L]
+</IfModule>
+
+# Deny direct access to PHP files in sources/ (they must be called via AJAX, not browsed)
+<FilesMatch "^(core|identify)\.php$">
+    Require all denied
+</FilesMatch>

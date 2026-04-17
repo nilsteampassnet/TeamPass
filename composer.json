@@ -11,7 +11,7 @@
             "php": "8.1"
         }
     },
-    "version": "3.1.1",
+    "version": "3.2.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": [
