@@ -1898,7 +1898,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
         true,
         true,
         false,
-        $lang->get('email_body_user_config_2')
+        'email_body_user_config_2'
     );
 
     $userInfo['has_been_created'] = 1;
@@ -3384,7 +3384,7 @@ function createOauth2User(
             true,
             true,
             false,
-            $lang->get('email_body_user_config_2'),
+            'email_body_user_config_2',
         );
 
         // Complete $userInfo
