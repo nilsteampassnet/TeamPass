@@ -58,7 +58,6 @@ version-commit.php
 tp_minor_release.txt
 /app/config/tp.config*
 /includes/tables_integrity.json
-phpstan.neon
 /_things/*
 /files/teampass_tasks.log
 /_stubs/*
