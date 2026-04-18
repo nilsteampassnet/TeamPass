@@ -240,7 +240,12 @@ function migrateSettings(string $src, string $dst): int
         return 1;
     }
 
+    // 0644: www-data (other) must be able to read settings.php before chown is applied.
+    // Harden to 0640 only after: chown www-data:www-data app/config/settings.php
+    chmod($dst, 0644);
+
     ok('settings.php copied to app/config/settings.php');
+    ok('chmod 0644 app/config/settings.php (readable by web server)');
     info('The original includes/config/settings.php is left in place as a backup.');
     return 0;
 }
@@ -382,7 +387,39 @@ function setPermissions(string $root): void
         }
     }
 
-    info("If permissions are wrong, run as root:");
+    // Directories that need 0755 now so www-data (other) can traverse them.
+    // Must be hardened to 0750 only AFTER: chown {$WEB_USER}:{$WEB_USER}
+    $traversableDirs = [
+        $root . '/app/config',
+        $root . '/app/includes/libraries/csrfp/libs',
+        $root . '/app/includes/libraries/csrfp/log',
+    ];
+
+    foreach ($traversableDirs as $dir) {
+        if (!is_dir($dir)) {
+            continue;
+        }
+        $relPath = str_replace($root . '/', '', $dir);
+        if ($DRY_RUN) {
+            dry("Would chmod 0755 $relPath/");
+            continue;
+        }
+        if (!chmod($dir, 0755)) {
+            warn("Could not chmod 0755: $relPath/ — set manually if needed");
+        } else {
+            ok("chmod 0755: $relPath/");
+        }
+    }
+
+    info("Run the following as root before launching the web upgrade:");
+    info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config");
+    info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config/settings.php");
+    info("  chown {$WEB_USER}:{$WEB_USER} $root/app/includes/libraries/csrfp/libs");
+    info("  chown {$WEB_USER}:{$WEB_USER} $root/app/includes/libraries/csrfp/log");
+    info("  chmod 0750 $root/app/config");
+    info("  chmod 0640 $root/app/config/settings.php");
+    info("  chmod 0750 $root/app/includes/libraries/csrfp/libs");
+    info("  chmod 0750 $root/app/includes/libraries/csrfp/log");
     info("  chown -R {$WEB_USER}:{$WEB_USER} $root/storage");
     info("  chown -R {$WEB_USER}:{$WEB_USER} $root/public/assets/avatars");
     info("  chmod -R 0750 $root/storage");

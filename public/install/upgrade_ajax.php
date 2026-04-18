@@ -361,10 +361,10 @@ if (isset($post_type)) {
 
             // ── Directories ──────────────────────────────────────────────
             $dirChecks = [
-                '/app/config/settings.php'            => ['id' => 'upg-chk-settings',   'optional' => false, 'fix' => 'chmod 0640 app/config/settings.php'],
-                '/app/config/'                         => ['id' => 'upg-chk-config',     'optional' => false, 'fix' => 'chmod 0750 app/config'],
-                '/app/includes/libraries/csrfp/libs/' => ['id' => 'upg-chk-csrfp-libs', 'optional' => false, 'fix' => 'chmod 0750 app/includes/libraries/csrfp/libs'],
-                '/app/includes/libraries/csrfp/log/'  => ['id' => 'upg-chk-csrfp-log',  'optional' => false, 'fix' => 'chmod 0750 app/includes/libraries/csrfp/log'],
+                '/app/config/settings.php'            => ['id' => 'upg-chk-settings',   'optional' => false, 'fix' => 'chown www-data:www-data app/config/settings.php && chmod 0640 app/config/settings.php'],
+                '/app/config/'                         => ['id' => 'upg-chk-config',     'optional' => false, 'fix' => 'chown www-data:www-data app/config && chmod 0750 app/config'],
+                '/app/includes/libraries/csrfp/libs/' => ['id' => 'upg-chk-csrfp-libs', 'optional' => false, 'fix' => 'chown www-data:www-data app/includes/libraries/csrfp/libs && chmod 0750 app/includes/libraries/csrfp/libs'],
+                '/app/includes/libraries/csrfp/log/'  => ['id' => 'upg-chk-csrfp-log',  'optional' => false, 'fix' => 'chown www-data:www-data app/includes/libraries/csrfp/log && chmod 0750 app/includes/libraries/csrfp/log'],
                 '/public/assets/avatars/'              => ['id' => 'upg-chk-avatars',    'optional' => true,  'fix' => 'chmod 0750 public/assets/avatars'],
                 '/storage/files/'                      => ['id' => 'upg-chk-files',      'optional' => false, 'fix' => 'chmod 0750 storage/files'],
                 '/storage/upload/'                     => ['id' => 'upg-chk-upload',     'optional' => true,  'fix' => 'chmod 0750 storage/upload'],
@@ -947,7 +947,7 @@ if (isset($post_type)) {
                             ->setDayOfMonth('*')
                             ->setMonths('*')
                             ->setDayOfWeek('*')
-                            ->setTaskCommandLine($phpLocation['path'] . ' ' . $SETTINGS['cpassman_dir'] . '/sources/scheduler.php')
+                            ->setTaskCommandLine($phpLocation['path'] . ' ' . $SETTINGS['cpassman_dir'] . '/app/sources/scheduler.php')
                             ->setComments('Teampass scheduler');
                         
                         $crontabRepository->addJob($crontabJob);

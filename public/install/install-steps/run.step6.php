@@ -596,7 +596,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ->setDayOfMonth('*')
                 ->setMonths('*')
                 ->setDayOfWeek('*')
-                ->setTaskCommandLine($phpLocation['path'] . ' ' . $absolutePath . '/sources/scheduler.php')
+                ->setTaskCommandLine($phpLocation['path'] . ' ' . $absolutePath . '/app/sources/scheduler.php')
                 ->setComments('Teampass scheduler');
 
             // Ajouter et enregistrer la tâche dans le crontab

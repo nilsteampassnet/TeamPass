@@ -260,7 +260,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                         <code>app/config/settings.php</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-settings" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Settings file storing encrypted database credentials.</div>
-                                        <div id="upg-chk-settings-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0640 app/config/settings.php</code></div>
+                                        <div id="upg-chk-settings-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/config/settings.php &amp;&amp; chmod 0640 app/config/settings.php</code></div>
                                     </div>
                                 </div>
                             </li>
@@ -270,7 +270,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                         <code>app/config/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-config" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Configuration directory — written during upgrades only.</div>
-                                        <div id="upg-chk-config-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/config</code></div>
+                                        <div id="upg-chk-config-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/config &amp;&amp; chmod 0750 app/config</code></div>
                                     </div>
                                 </div>
                             </li>
@@ -280,7 +280,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                         <code>app/includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-csrfp-libs" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">Stores <code>csrfp.config.php</code> (CSRF token). May be rewritten during upgrade.</div>
-                                        <div id="upg-chk-csrfp-libs-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/includes/libraries/csrfp/libs</code></div>
+                                        <div id="upg-chk-csrfp-libs-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/includes/libraries/csrfp/libs &amp;&amp; chmod 0750 app/includes/libraries/csrfp/libs</code></div>
                                     </div>
                                 </div>
                             </li>
@@ -290,7 +290,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                         <code>app/includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required</span>
                                         <span id="upg-chk-csrfp-log" style="min-width:20px" class="ml-2"></span>
                                         <div class="text-muted small">CSRF protection audit log written during normal operation.</div>
-                                        <div id="upg-chk-csrfp-log-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 app/includes/libraries/csrfp/log</code></div>
+                                        <div id="upg-chk-csrfp-log-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/includes/libraries/csrfp/log &amp;&amp; chmod 0750 app/includes/libraries/csrfp/log</code></div>
                                     </div>
                                 </div>
                             </li>

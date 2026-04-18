@@ -26,27 +26,8 @@
  * @see       https://www.teampass.net
  */
 
-// Ensure root path constants are available when this file is included directly
-// (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
-// __DIR__ here is app/config/, so two levels up is the repository root.
-if (!defined('TEAMPASS_ROOT')) {
-    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../..'));
-}
-if (!defined('TEAMPASS_APP')) {
-    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
-}
-if (!defined('TEAMPASS_STORAGE')) {
-    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
-}
-if (!defined('TEAMPASS_PUBLIC')) {
-    define('TEAMPASS_PUBLIC', TEAMPASS_ROOT . '/public');
-}
-if (!defined('TEAMPASS_SECRETS')) {
-    define('TEAMPASS_SECRETS', TEAMPASS_ROOT . '/secrets');
-}
-
 define('TP_VERSION', '3.2.0');
-define("UPGRADE_MIN_DATE", "1775240619");
+define("UPGRADE_MIN_DATE", "1776494991");
 define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
@@ -68,6 +49,25 @@ define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 600);  // Lock expires after 5 minutes 
 define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
+
+// Ensure root path constants are available when this file is included directly
+// (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
+// __DIR__ here is app/config/, so two levels up is the repository root.
+if (!defined('TEAMPASS_ROOT')) {
+    define('TEAMPASS_ROOT', realpath(__DIR__ . '/../..'));
+}
+if (!defined('TEAMPASS_APP')) {
+    define('TEAMPASS_APP', TEAMPASS_ROOT . '/app');
+}
+if (!defined('TEAMPASS_STORAGE')) {
+    define('TEAMPASS_STORAGE', TEAMPASS_ROOT . '/storage');
+}
+if (!defined('TEAMPASS_PUBLIC')) {
+    define('TEAMPASS_PUBLIC', TEAMPASS_ROOT . '/public');
+}
+if (!defined('TEAMPASS_SECRETS')) {
+    define('TEAMPASS_SECRETS', TEAMPASS_ROOT . '/secrets');
+}
 
 // Tasks Handler
 define('LOG_TASKS', false); // Can be used in order to log background tasks
