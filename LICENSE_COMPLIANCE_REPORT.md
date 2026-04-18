@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-03-29 19:20:37
+**Generated:** 2026-04-18 05:47:27
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -162,13 +162,13 @@
 ## Maintenance
 
 **Update JavaScript dependencies:**
-Edit `licences/javascript-dependencies.json`
+Edit `_tools/licences/javascript-dependencies.json`
 
 **Run compliance check:**
 ```bash
-php licences/compliance-checker.php
+php _tools/licences/compliance-checker.php
 ```
 
 ---
 
-*Auto-generated report - Last updated: 2026-03-29 19:20:37*
+*Auto-generated report - Last updated: 2026-04-18 05:47:27*

@@ -76,7 +76,7 @@ tests/_support/_generated/
 .venv/
 mempalace.yaml
 entities.json
-/readmeFiles/*
+/workReadmeFiles/*
 # Master encryption key — never commit the secrets directory content
 /secrets/*
 !/secrets/.gitkeep

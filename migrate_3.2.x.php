@@ -7,7 +7,7 @@
  * layout to the new 3.2.x layout (app/ / public/ / storage/).
  *
  * Usage:
- *   php migrate_3200.php [--dry-run] [--web-user=www-data] [--no-color]
+ *   php migrate_3.2.x.php [--dry-run] [--web-user=www-data] [--no-color]
  *
  * Options:
  *   --dry-run          Show what would be done without making any change
@@ -417,8 +417,25 @@ function summary(int $errors, string $root): void
     echo "\n";
 
     echo col("  1. Update your web server document root:\n", '1;37');
-    echo "     nginx:  root " . $root . "/public;\n";
-    echo "     Apache: DocumentRoot \"" . $root . "/public\"\n";
+    echo "\n";
+    echo col("     Apache — update your VirtualHost:\n", '0;36');
+    echo "       DocumentRoot \"" . $root . "/public\"\n";
+    echo "       <Directory \"" . $root . "/public\">\n";
+    echo "           AllowOverride All\n";
+    echo "           Require all granted\n";
+    echo "       </Directory>\n";
+    echo "     Then enable mod_rewrite if not already active:\n";
+    echo "       sudo a2enmod rewrite && sudo systemctl reload apache2\n";
+    echo "\n";
+    echo col("     Nginx — update your server block:\n", '0;36');
+    echo "       root " . $root . "/public;\n";
+    echo "       index index.php;\n";
+    echo "       location / { try_files \$uri \$uri/ /index.php?\$args; }\n";
+    echo "       location ~ \\.php\$ { fastcgi_pass unix:/run/php/php8.2-fpm.sock;\n";
+    echo "                             fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n";
+    echo "                             include fastcgi_params; }\n";
+    echo "\n";
+    echo col("     ⚠  Step 4 (web upgrade) will not work until this is done.\n", '0;33');
     echo "\n";
 
     echo col("  2. If you use a cron job, update the path:\n", '1;37');

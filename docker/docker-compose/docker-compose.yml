@@ -34,9 +34,9 @@ services:
 
     volumes:
       # Persistent data
-      - teampass-sk:/var/www/html/sk
-      - teampass-files:/var/www/html/files
-      - teampass-upload:/var/www/html/upload
+      - teampass-sk:/var/www/html/storage/sk
+      - teampass-files:/var/www/html/storage/files
+      - teampass-upload:/var/www/html/storage/upload
 
     ports:
       - "${TEAMPASS_PORT:-8080}:80"

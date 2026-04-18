@@ -27,9 +27,9 @@ INSTALL_MODE="${INSTALL_MODE:-manual}"
 TEAMPASS_URL="${TEAMPASS_URL:-http://localhost}"
 
 # Extract version from PHP constants (TP_VERSION and TP_VERSION_MINOR)
-if [ -f "/var/www/html/includes/config/include.php" ]; then
-    TP_VERSION=$(grep "define('TP_VERSION'" /var/www/html/includes/config/include.php | sed -n "s/.*'\([0-9.]*\)'.*/\1/p")
-    TP_VERSION_MINOR=$(grep "define('TP_VERSION_MINOR'" /var/www/html/includes/config/include.php | sed -n "s/.*'\([0-9]*\)'.*/\1/p")
+if [ -f "/var/www/html/app/config/include.php" ]; then
+    TP_VERSION=$(grep "define('TP_VERSION'" /var/www/html/app/config/include.php | sed -n "s/.*'\([0-9.]*\)'.*/\1/p")
+    TP_VERSION_MINOR=$(grep "define('TP_VERSION_MINOR'" /var/www/html/app/config/include.php | sed -n "s/.*'\([0-9]*\)'.*/\1/p")
     TEAMPASS_VERSION="${TP_VERSION}.${TP_VERSION_MINOR}"
 else
     # Fallback if include.php is not available yet
@@ -67,17 +67,17 @@ wait_for_database() {
 
 # Function to check if TeamPass is already installed
 is_installed() {
-    [ -f "/var/www/html/includes/config/settings.php" ]
+    [ -f "/var/www/html/app/config/settings.php" ]
 }
 
 # Function to create required directories
 create_directories() {
     echo -e "${BLUE}📁 Creating required directories...${NC}"
 
-    mkdir -p /var/www/html/sk
-    mkdir -p /var/www/html/files
-    mkdir -p /var/www/html/upload
-    mkdir -p /var/www/html/includes/libraries/csrfp/log
+    mkdir -p /var/www/html/storage/sk
+    mkdir -p /var/www/html/storage/files
+    mkdir -p /var/www/html/storage/upload
+    mkdir -p /var/www/html/app/includes/libraries/csrfp/log
 
     echo -e "${GREEN}✅ Directories created${NC}"
 }
@@ -86,15 +86,15 @@ create_directories() {
 set_permissions() {
     echo -e "${BLUE}🔒 Setting file permissions...${NC}"
 
-    chown -R nginx:nginx /var/www/html/sk
-    chown -R nginx:nginx /var/www/html/files
-    chown -R nginx:nginx /var/www/html/upload
-    chown -R nginx:nginx /var/www/html/includes/libraries/csrfp/log
+    chown -R nginx:nginx /var/www/html/storage/sk
+    chown -R nginx:nginx /var/www/html/storage/files
+    chown -R nginx:nginx /var/www/html/storage/upload
+    chown -R nginx:nginx /var/www/html/app/includes/libraries/csrfp/log
 
-    chmod 700 /var/www/html/sk
-    chmod 750 /var/www/html/files
-    chmod 750 /var/www/html/upload
-    chmod 750 /var/www/html/includes/libraries/csrfp/log
+    chmod 700 /var/www/html/storage/sk
+    chmod 750 /var/www/html/storage/files
+    chmod 750 /var/www/html/storage/upload
+    chmod 750 /var/www/html/app/includes/libraries/csrfp/log
 
     echo -e "${GREEN}✅ Permissions set${NC}"
 }
@@ -128,8 +128,8 @@ auto_install() {
     fi
 
     # Check if install-cli.php exists
-    if [ -f "/var/www/html/scripts/install-cli.php" ]; then
-        php /var/www/html/scripts/install-cli.php \
+    if [ -f "/var/www/html/app/scripts/install-cli.php" ]; then
+        php /var/www/html/app/scripts/install-cli.php \
             --db-host="$DB_HOST" \
             --db-port="$DB_PORT" \
             --db-name="$DB_NAME" \
@@ -142,7 +142,7 @@ auto_install() {
 
         if [ $? -eq 0 ]; then
             echo -e "${GREEN}✅ Automatic installation completed successfully!${NC}"
-            rm -rf /var/www/html/install
+            rm -rf /var/www/html/public/install
         else
             echo -e "${RED}❌ Automatic installation failed${NC}"
             exit 1
@@ -183,7 +183,7 @@ auto_upgrade() {
 
     echo -e "${BLUE}🔄 Upgrading database from ${DB_VERSION} to ${IMAGE_VERSION}...${NC}"
 
-    UPGRADE_SCRIPT="/var/www/html/install/upgrade_run_${IMAGE_VERSION}.php"
+    UPGRADE_SCRIPT="/var/www/html/public/install/upgrade_run_${IMAGE_VERSION}.php"
     if [ ! -f "$UPGRADE_SCRIPT" ]; then
         echo -e "${YELLOW}⚠️  No upgrade script found for ${IMAGE_VERSION}, skipping${NC}"
         return 0
@@ -220,7 +220,7 @@ manual_install_instructions() {
     echo "   - Password: [Use the password from your .env file]"
     echo ""
     echo "   Saltkey absolute path:"
-    echo -e "   ${BLUE}/var/www/html/sk${NC}"
+    echo -e "   ${BLUE}/var/www/html/storage/sk${NC}"
     echo ""
     echo "   After installation, restart the container to remove the install directory:"
     echo -e "   ${BLUE}docker-compose restart teampass${NC}"
@@ -249,7 +249,7 @@ main() {
     fi
 
     # Configure cron job for scheduler
-    echo "* * * * * php /var/www/html/sources/scheduler.php > /dev/null 2>&1" | crontab -u nginx -
+    echo "* * * * * php /var/www/html/app/sources/scheduler.php > /dev/null 2>&1" | crontab -u nginx -
 
     # Check installation status
     if is_installed; then
@@ -257,9 +257,9 @@ main() {
 
         # Remove install directory if it exists (keep it during upgrades so
         # upgrade.php is accessible, then remove once complete)
-        if [ -d "/var/www/html/install" ]; then
+        if [ -d "/var/www/html/public/install" ]; then
             echo -e "${BLUE}🗑️  Removing install directory...${NC}"
-            rm -rf /var/www/html/install
+            rm -rf /var/www/html/public/install
         fi
 
         # Auto-upgrade: apply pending database migrations when the image

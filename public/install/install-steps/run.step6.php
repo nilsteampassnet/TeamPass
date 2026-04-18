@@ -281,7 +281,7 @@ class teampassInstaller
         try {
             // Get absolute path to teampass
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            $configPath = $absolutePath . '/includes/libraries/csrfp/libs/';
+            $configPath = $absolutePath . '/app/includes/libraries/csrfp/libs/';
             $csrfpFileSample = $configPath . 'csrfp.config.sample.php';
             $csrfpFile = $configPath . 'csrfp.config.php';
 
@@ -383,10 +383,10 @@ class teampassInstaller
             $backupFile = $settingsFile . '.' . date('Y_m_d_His') . '.bak';
     
             // Check if the settings file directory is writable
-            if (!is_writable($absolutePath . '/includes/config')) {
+            if (!is_writable($absolutePath . '/app/config')) {
                 return [
                     'success' => false,
-                    'message' => "The settings file directory is not writable. Check permissions for: " . $absolutePath . '/includes/config',
+                    'message' => "The settings file directory is not writable. Check permissions for: " . $absolutePath . '/app/config',
                 ];
             }
     
