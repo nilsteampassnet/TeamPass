@@ -24,7 +24,7 @@ parameters:
         - app/includes/libraries/*
         - public/install/libs/*
         - public/install/js/crypt/*
-        - app/api/*
+        #- app/api/*
 
     # Chargement des classes qui ne sont pas autoloadées
     scanFiles:

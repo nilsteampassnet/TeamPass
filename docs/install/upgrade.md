@@ -1,128 +1,200 @@
 <!-- docs/install/upgrade.md -->
 
+## Upgrading to version 3.2.x
 
+> You want to upgrade your current Teampass installation to the latest 3.2.x release.
 
-## Upgrading
+### Overview of 3.2.0 directory layout change
 
-> You want to upgrade your current Teampass v3 to latest version
+TeamPass 3.2.0 reorganises the codebase into separate trees. Your web server's `DocumentRoot` must now point to `public/`, not to the project root.
 
-### Prerequisites
+| Directory   | Purpose                                                        | Web-accessible |
+|-------------|----------------------------------------------------------------|----------------|
+| `app/`      | Application source code, configuration, Composer dependencies  | No             |
+| `public/`   | Webroot — Apache/Nginx `DocumentRoot` must point here          | Yes            |
+| `storage/`  | Runtime data: uploads, task files, SQL backups                 | No             |
+| `secrets/`  | Encryption key file (`teampass-seckey.txt`)                    | No             |
 
-* Perform a database backup
-* Save the main folder
+---
 
-### Steps
+### Step 1 — Back up your instance
 
-#### Get new version, using Git
+Before anything else:
 
-```
-cd path/to/teampass/folder
+1. Put your Teampass instance in **Maintenance mode** (Admin → Utilities → Maintenance)
+2. Create a **database dump**
+3. Create a **zip archive** of the entire Teampass folder
+4. Clear your browser cache (`Ctrl + F5`)
+
+---
+
+### Step 2 — Get the new code
+
+#### Using Git (recommended)
+
+```bash
+cd /path/to/teampass
 git pull
 ```
 
-#### Or manually using zip package
+#### Manual — zip package
 
-* Download latest release from [Teampass](https://github.com/nilsteampassnet/TeamPass/releases/latest)
-* Unzip and overwrite existing files in Teampass folder
+* Download the latest release from [Teampass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
+* Unzip and overwrite the existing files in the Teampass folder
 
-#### Then perform upgrade 
+#### Install Composer dependencies
 
-* Browse to `Teampass` upgrade page by selecting url `https://<your_teampass_instance>/install/upgrade.php`
-* Run all steps
+```bash
+cd /path/to/teampass
+composer install --no-dev --optimize-autoloader
+```
 
+---
 
-## Upgrading from 2.x or 3.0.x branch
+### Step 3 — Run the filesystem migration script (3.2.0 only)
 
-> You want to upgrade to Teampass v3 branch
+> **Required when upgrading from any version earlier than 3.2.0 (including all 3.1.x releases).**
+> Skip this step if you are already on 3.2.x.
+
+TeamPass 3.2.0 moves user data from the old flat layout to the new `app/` / `storage/` structure.
+This migration **must** be done from the command line before the web-based upgrade wizard is launched.
+
+```bash
+cd /path/to/teampass
+php migrate_3.2.x.php
+```
+
+**Available options:**
+
+| Option               | Description                                              |
+|----------------------|----------------------------------------------------------|
+| `--dry-run`          | Show what would be done without making any change        |
+| `--web-user=USER`    | Web server user for permission setup (default: `www-data`) |
+| `--no-color`         | Disable ANSI colour output                               |
+
+**What the script does:**
+
+1. Moves `includes/config/settings.php` → `app/config/settings.php`
+2. Moves `files/` → `storage/files/`
+3. Moves `upload/` → `storage/upload/`
+4. Moves `backups/` → `storage/backups/`
+5. Copies user avatars to `public/assets/avatars/`
+6. Adjusts file ownership and permissions for `www-data`
+
+> **Tip:** Run with `--dry-run` first to preview all operations, then run again without the flag to apply them.
+
+> **Important:** If the upgrade page detects that the database version is still below 3.2.0 while the code is already at 3.2.0, it will display a blocking warning and refuse to start until this script has been executed.
+
+Once the script completes successfully, refresh the upgrade page and proceed to Step 4.
+
+---
+
+### Step 4 — Run the web-based upgrade wizard
+
+* Browse to `https://<your_teampass_instance>/install/upgrade.php`
+* Authenticate with your **Administrator** account
+* Follow all wizard steps
+
+---
+
+### Step 5 — Update Apache / Nginx configuration (3.2.0 only)
+
+If upgrading from 3.1.x, update your virtual host so `DocumentRoot` points to the `public/` subdirectory:
+
+**Apache example:**
+```apache
+DocumentRoot /var/www/html/teampass/public
+<Directory /var/www/html/teampass/public>
+    AllowOverride All
+    Require all granted
+</Directory>
+```
+
+**Nginx example:**
+```nginx
+root /var/www/html/teampass/public;
+```
+
+Reload your web server after making the change.
+
+---
+
+## Upgrading from 2.x or 3.0.x
+
+> You want to migrate a legacy Teampass v2 or early v3 installation to the current version.
 
 ### Prerequisites
 
-* Set your Teampass instance in `Maintenance`
-* Your current Teampass instance is 2.1.27.36.
-* Perform a database backup
+* Set your Teampass instance in `Maintenance` mode
+* Your current Teampass instance is 2.1.27.36 or a 3.0.x release
+* Perform a **database backup**
 * Save the main folder
 
 ### Steps
 
-* Rename current Teampass folder (it will be called `folderv2`)
-* Download latest release from [Teampass](https://github.com/nilsteampassnet/TeamPass/releases/latest)
-* Unzip and rename folder with the same name as for v2 (it will be called `folderv3`)
-* Copy next files from `folderv2` to `folderv3`
+1. Rename the current Teampass folder (e.g. `teampass_old`)
+2. Download the latest release from [Teampass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
+3. Unzip and place the new folder at the same web path (e.g. `teampass`)
+4. Copy the following files from the old folder to the new one:
+
 ```
-./app/config/settings.php
+# Old path (2.x / 3.0.x)      →  New path (3.2.x)
+./includes/config/settings.php →  ./app/config/settings.php
 ./includes/libraries/csrfp/libs/csrfp.config.php
-./includes/teampass-seckey.txt
-./assets/avatars/*
-./files/*
-./upload/*
-```
-* Ensure that folders and files have correct rights. Next elements need to be writable:
-```
-./app/config/
-./includes/libraries/csrfp/libs/
-./includes/libraries/csrfp/js/
-./includes/libraries/csrfp/log/
-./assets/avatars/
-./files/
-./upload/
-./install/
-```
-* In file `/app/config/settings.php` change the value in `define("DB_ENCODING", "")` to `"utf8mb4"`
-* In file `/app/config/settings.php` add `define('SECUREFILE', 'teampass-seckey.txt');`
-* Browse to `Teampass`
-
-#### How it works?
-
-Password encryption library has changed since older releases.
-So when login for the 1st time, it is requested to migrate all items keys to the new encryption library. This is done on 1st login attempt.
-Also the background task system has changed and its maximum time execution needs to be adapted to the volume of items your instance has and also the performance of the server.
-
-It is *requested* to migrate first the `Admin` in order to adapt the maximum time execution value for background tasks and also some other parameters you may want to adapt.
-
-Once authenticated with `Admin` account, check the Tasks parameters page. If the maximum time execution value for background tasks is expected too low, you should see a warning with a suggested value. Notice, this suggested value is calculated on the fly and might vary each time you load the page. Any how, you should define a value slightly higher.
-
-The impact is that if the background task does not have enougth time to finish its purpose, your users could not authenticate.
-
-### Known issues
-
-#### Undefined constant "SECUREFILE"
-
-If you experiment this error
-```
-Fatal error: Uncaught Error: Undefined constant "SECUREFILE" in /var/www/localhost/htdocs/tp/sources/main.functions.php
+                                →  ./app/includes/libraries/csrfp/libs/csrfp.config.php
+./includes/teampass-seckey.txt  →  ./secrets/teampass-seckey.txt
+./assets/avatars/*              →  ./public/assets/avatars/
+./files/*                       →  ./storage/files/
+./upload/*                      →  ./storage/upload/
 ```
 
-Proceed as this:
-* Open file `./app/config/settings.php`
-* After line `define("TEAMPASS_SECRETS", "...");`
-* Add line `define("SECUREFILE", "{secure_filename}");` with `{secure_filename}` usually `teampass-seckey.txt`
-* Save
+5. Edit `./app/config/settings.php`:
+   * Set `define("DB_ENCODING", "utf8mb4");`
+   * Add `define('SECUREFILE', 'teampass-seckey.txt');` if missing
 
-#### Unknown column 'created_at' in 'SELECT'
+6. Ensure writable directories have correct permissions (see [installation guide](install/installation.md))
 
-If you experiment this error
+7. Browse to `https://<your_teampass_instance>/install/upgrade.php` and run all steps
+
+#### How it works
+
+The password encryption library changed in v3. On first login after the upgrade, all item keys are migrated to the new encryption library automatically.
+
+The background task system also changed. After authenticating with the **Admin** account, check the Tasks parameters page and adjust `task_maximum_run_time` if a warning is displayed with a suggested value.
+
+---
+
+## Known issues
+
+### Undefined constant "SECUREFILE"
+
 ```
-Fatal error: Uncaught MeekroDBException: Unknown column 'created_at' in 'SELECT' in /var/www/teampass/vendor/sergeytsalkov/meekrodb/db.class.php
+Fatal error: Uncaught Error: Undefined constant "SECUREFILE" in .../sources/main.functions.php
 ```
 
-Proceed as this:
-* Connect to MySQL database
-* Select Teampass database
-* Run next SQL queries
+* Open `./app/config/settings.php`
+* After the `define("TEAMPASS_SECRETS", "...");` line, add:
+  ```php
+  define("SECUREFILE", "teampass-seckey.txt");
+  ```
+
+### Unknown column 'created_at' in 'SELECT'
+
 ```
+Fatal error: Uncaught MeekroDBException: Unknown column 'created_at' in 'SELECT'
+```
+
+Connect to MySQL and run:
+
+```sql
 ALTER TABLE teampass_misc ADD COLUMN created_at VARCHAR(255) NULL DEFAULT NULL;
 ALTER TABLE teampass_misc ADD COLUMN updated_at VARCHAR(255) NULL DEFAULT NULL;
 ```
 
-#### Experimenting timeout in background tasks
+### Background task timeout
 
-By default, a background process has a timeout defined at 600 seconds.
-This value can be adapted depending on your needs and policies,and server performance.
+The default background task timeout is 600 seconds. Adjust it to match your data volume:
 
-Proceed as this:
-* Connect to MySQL database
-* Select Teampass database
-* Run next SQL queries
-```
+```sql
 UPDATE `teampass_misc` SET `valeur` = '<YOUR_VALUE>' WHERE `intitule` = 'task_maximum_run_time';
 ```

@@ -49,6 +49,11 @@
         false,
         false
     ],
+    "Advanced-Cryptics-Dictionary": [
+        "Advanced Cryptics Dictionary License",
+        false,
+        false
+    ],
     "AFL-1.1": [
         "Academic Free License v1.1",
         true,
@@ -112,6 +117,11 @@
     "Aladdin": [
         "Aladdin Free Public License",
         false,
+        false
+    ],
+    "ALGLIB-Documentation": [
+        "ALGLIB Documentation License",
+        true,
         false
     ],
     "AMD-newlib": [
@@ -239,6 +249,11 @@
         false,
         false
     ],
+    "Aspell-RU": [
+        "Aspell Russian License",
+        false,
+        false
+    ],
     "ASWF-Digital-Assets-1.0": [
         "ASWF Digital Assets License version 1.0",
         false,
@@ -311,6 +326,11 @@
     ],
     "Boehm-GC-without-fee": [
         "Boehm-Demers-Weiser GC License (without fee)",
+        false,
+        false
+    ],
+    "BOLA-1.1": [
+        "Buena Onda License Agreement v1.1",
         false,
         false
     ],
@@ -436,11 +456,16 @@
     ],
     "BSD-3-Clause-Open-MPI": [
         "BSD 3-Clause Open MPI variant",
-        false,
+        true,
         false
     ],
     "BSD-3-Clause-Sun": [
         "BSD 3-Clause Sun Microsystems",
+        false,
+        false
+    ],
+    "BSD-3-Clause-Tso": [
+        "BSD 3-Clause Tso variant",
         false,
         false
     ],
@@ -484,6 +509,11 @@
         false,
         false
     ],
+    "BSD-Mark-Modifications": [
+        "BSD Mark Modifications License",
+        false,
+        false
+    ],
     "BSD-Protection": [
         "BSD Protection License",
         false,
@@ -512,6 +542,11 @@
     "BSL-1.0": [
         "Boost Software License 1.0",
         true,
+        false
+    ],
+    "Buddy": [
+        "Buddy License",
+        false,
         false
     ],
     "BUSL-1.1": [
@@ -551,6 +586,11 @@
     ],
     "Caldera-no-preamble": [
         "Caldera License (without preamble)",
+        false,
+        false
+    ],
+    "CAPEC-tou": [
+        "Common Attack    Pattern Enumeration and Classification License",
         false,
         false
     ],
@@ -1199,6 +1239,21 @@
         false,
         false
     ],
+    "ESA-PL-permissive-2.4": [
+        "European Space Agency Public License \u2013 v2.4 \u2013 Permissive (Type 3)",
+        false,
+        false
+    ],
+    "ESA-PL-strong-copyleft-2.4": [
+        "European Space Agency Public License (ESA-PL) - V2.4 - Strong Copyleft (Type 1)",
+        false,
+        false
+    ],
+    "ESA-PL-weak-copyleft-2.4": [
+        "European Space Agency Public License \u2013 v2.4 \u2013 Weak Copyleft (Type 2)",
+        false,
+        false
+    ],
     "etalab-2.0": [
         "Etalab Open License 2.0",
         false,
@@ -1281,6 +1336,11 @@
     ],
     "FSFULLR": [
         "FSF Unlimited License (with License Retention)",
+        false,
+        false
+    ],
+    "FSFULLRSD": [
+        "FSF Unlimited License (with License Retention and Short Disclaimer)",
         false,
         false
     ],
@@ -1589,6 +1649,11 @@
         false,
         false
     ],
+    "HDF5": [
+        "HDF5 License",
+        false,
+        false
+    ],
     "hdparm": [
         "hdparm License",
         false,
@@ -1714,6 +1779,11 @@
         false,
         false
     ],
+    "HPND-sell-variant-critical-systems": [
+        "HPND - sell variant with safety critical systems clause",
+        false,
+        false
+    ],
     "HPND-sell-variant-MIT-disclaimer": [
         "HPND sell variant with MIT disclaimer",
         false,
@@ -1721,6 +1791,11 @@
     ],
     "HPND-sell-variant-MIT-disclaimer-rev": [
         "HPND sell variant with MIT disclaimer - reverse",
+        false,
+        false
+    ],
+    "HPND-SMC": [
+        "Historical Permission Notice and Disclaimer - SMC variant",
         false,
         false
     ],
@@ -1736,6 +1811,11 @@
     ],
     "HTMLTIDY": [
         "HTML Tidy License",
+        false,
+        false
+    ],
+    "hyphen-bulgarian": [
+        "hyphen-bulgarian License",
         false,
         false
     ],
@@ -1826,6 +1906,11 @@
     ],
     "ISC-Veillard": [
         "ISC Veillard variant",
+        false,
+        false
+    ],
+    "ISO-permission": [
+        "ISO permission notice",
         false,
         false
     ],
@@ -1966,6 +2051,11 @@
     ],
     "Libpng": [
         "libpng License",
+        false,
+        false
+    ],
+    "libpng-1.6.35": [
+        "PNG Reference Library License v1 (for libpng 0.5 through 1.6.35)",
         false,
         false
     ],
@@ -2209,6 +2299,11 @@
         false,
         false
     ],
+    "MIT-STK": [
+        "MIT-STK License",
+        false,
+        false
+    ],
     "MIT-testregex": [
         "MIT testregex Variant",
         false,
@@ -2226,6 +2321,11 @@
     ],
     "MMIXware": [
         "MMIXware License",
+        false,
+        false
+    ],
+    "MMPL-1.0.1": [
+        "Minecraft Mod Public License v1.0.1",
         false,
         false
     ],
@@ -2374,6 +2474,11 @@
         true,
         false
     ],
+    "ngrep": [
+        "ngrep License",
+        false,
+        false
+    ],
     "NICTA-1.0": [
         "NICTA Public Software License, Version 1.0",
         false,
@@ -2386,6 +2491,11 @@
     ],
     "NIST-PD-fallback": [
         "NIST Public Domain Notice with license fallback",
+        false,
+        false
+    ],
+    "NIST-PD-TNT": [
+        "NIST    Public Domain Notice TNT variant",
         false,
         false
     ],
@@ -2654,6 +2764,11 @@
         false,
         false
     ],
+    "OpenMDW-1.0": [
+        "OpenMDW License Agreement v1.0",
+        false,
+        false
+    ],
     "OpenPBS-2.3": [
         "OpenPBS v2.3 Software License",
         false,
@@ -2689,6 +2804,11 @@
         false,
         false
     ],
+    "OSC-1.0": [
+        "OSC License 1.0",
+        true,
+        false
+    ],
     "OSET-PL-2.1": [
         "OSET Public License version 2.1",
         true,
@@ -2719,8 +2839,18 @@
         true,
         false
     ],
+    "OSSP": [
+        "OSSP License",
+        false,
+        false
+    ],
     "PADL": [
         "PADL License",
+        false,
+        false
+    ],
+    "ParaType-Free-Font-1.3": [
+        "ParaType Free Font Licensing Agreement v1.3",
         false,
         false
     ],
@@ -2944,6 +3074,11 @@
         false,
         false
     ],
+    "SGMLUG-PM": [
+        "SGMLUG Parser Materials License",
+        false,
+        false
+    ],
     "SGP4": [
         "SGP4 Permission Notice",
         false,
@@ -3079,6 +3214,11 @@
         false,
         false
     ],
+    "SUL-1.0": [
+        "Sustainable Use License v1.0",
+        false,
+        false
+    ],
     "Sun-PPP": [
         "Sun PPP License",
         false,
@@ -3121,6 +3261,11 @@
     ],
     "TCP-wrappers": [
         "TCP Wrappers License",
+        false,
+        false
+    ],
+    "TekHVC": [
+        "TekHVC License",
         false,
         false
     ],
@@ -3259,6 +3404,11 @@
         false,
         false
     ],
+    "UnRAR": [
+        "UnRAR License",
+        false,
+        false
+    ],
     "UPL-1.0": [
         "Universal Permissive License v1.0",
         true,
@@ -3271,6 +3421,11 @@
     ],
     "Vim": [
         "Vim License",
+        false,
+        false
+    ],
+    "Vixie-Cron": [
+        "Vixie Cron License",
         false,
         false
     ],
@@ -3314,8 +3469,18 @@
         false,
         false
     ],
+    "WordNet": [
+        "WordNet License",
+        true,
+        false
+    ],
     "Wsuipa": [
         "Wsuipa License",
+        false,
+        false
+    ],
+    "WTFNMFPL": [
+        "Do What The F*ck You Want To But It's Not My Fault Public License",
         false,
         false
     ],
@@ -3341,6 +3506,11 @@
     ],
     "X11-distribute-modifications-variant": [
         "X11 License Distribution Modification Variant",
+        false,
+        false
+    ],
+    "X11-no-permit-persons": [
+        "X11 no permit persons clause",
         false,
         false
     ],

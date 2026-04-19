@@ -107,13 +107,14 @@ $session->set('encryptClientServer', (int) $SETTINGS['encryptClientServer'] ?? 1
 // Quick major version check -> upgrade needed?
 if (isset($SETTINGS['teampass_version']) === true && version_compare(TP_VERSION, $SETTINGS['teampass_version']) > 0) {
     $session->invalidate();
-    // Perform redirection
+    // Build an absolute URL so relative-path loops cannot occur regardless of
+    // server layout (DocumentRoot = public/, Alias, subdirectory, reverse proxy…).
+    $upgradeUrl = rtrim($request->getSchemeAndHttpHost() . $request->getBasePath(), '/') . '/install/upgrade.php';
     if (headers_sent()) {
-        echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+        echo '<script type="text/javascript">document.location.replace(' . json_encode($upgradeUrl) . ');</script>';
     } else {
-        header('Location: install/upgrade.php');
+        header('Location: ' . $upgradeUrl);
     }
-    // No other way, we should stop processing further
     exit;
 }
 

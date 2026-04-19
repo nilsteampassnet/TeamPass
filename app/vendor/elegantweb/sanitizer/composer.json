@@ -1,7 +1,15 @@
 {
     "name": "elegantweb/sanitizer",
     "description": "Sanitization library for PHP and the Laravel framework.",
-    "keywords": ["laravel", "sanitation", "input sanitation", "input sanitizer", "input", "transform input", "input filter"],
+    "keywords": [
+        "laravel",
+        "sanitation",
+        "input sanitation",
+        "input sanitizer",
+        "input",
+        "transform input",
+        "input filter"
+    ],
     "license": "MIT",
     "authors": [
         {
@@ -17,8 +25,8 @@
     "prefer-stable": true,
     "require": {
         "php": "^8.0",
-        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
-        "illuminate/validation": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
+        "illuminate/validation": "^6.0|^7.0|^8.0|^9.0|^10.0|^11.0|^12.0|^13.0",
         "nesbot/carbon": "^1.0|^2.0|^3.0"
     },
     "require-dev": {

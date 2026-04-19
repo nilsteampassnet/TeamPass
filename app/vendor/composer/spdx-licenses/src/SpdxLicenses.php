@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 /*
  * This file is part of composer/spdx-licenses.
@@ -14,10 +14,10 @@ namespace Composer\Spdx;
 class SpdxLicenses
 {
     /** @var string */
-    const LICENSES_FILE = 'spdx-licenses.json';
+    public const LICENSES_FILE = 'spdx-licenses.json';
 
     /** @var string */
-    const EXCEPTIONS_FILE = 'spdx-exceptions.json';
+    public const EXCEPTIONS_FILE = 'spdx-exceptions.json';
 
     /**
      * Contains all the licenses.
@@ -85,14 +85,14 @@ class SpdxLicenses
             return null;
         }
 
-        list($identifier, $name, $isOsiApproved, $isDeprecatedLicenseId) = $this->licenses[$key];
+        [$identifier, $name, $isOsiApproved, $isDeprecatedLicenseId] = $this->licenses[$key];
 
-        return array(
+        return [
             $name,
             $isOsiApproved,
             'https://spdx.org/licenses/' . $identifier . '.html#licenseText',
             $isDeprecatedLicenseId,
-        );
+        ];
     }
 
     /**
@@ -125,12 +125,12 @@ class SpdxLicenses
             return null;
         }
 
-        list($identifier, $name) = $this->exceptions[$key];
+        [$identifier, $name] = $this->exceptions[$key];
 
-        return array(
+        return [
             $name,
             'https://spdx.org/licenses/' . $identifier . '.html#licenseExceptionText',
-        );
+        ];
     }
 
     /**
@@ -195,7 +195,7 @@ class SpdxLicenses
             if ($count !== count(array_filter($license, 'is_string'))) {
                 throw new \InvalidArgumentException('Array of strings expected.');
             }
-            $license = $count > 1  ? '(' . implode(' OR ', $license) . ')' : (string) reset($license);
+            $license = $count > 1 ? '(' . implode(' OR ', $license) . ')' : (string) reset($license);
         }
 
         if (!is_string($license)) {
@@ -229,10 +229,10 @@ class SpdxLicenses
         if (false === $json) {
             throw new \RuntimeException('Missing license file in ' . self::getResourcesDir() . '/' . self::LICENSES_FILE);
         }
-        $this->licenses = array();
+        $this->licenses = [];
 
         foreach (json_decode($json, true) as $identifier => $license) {
-            $this->licenses[strtolower($identifier)] = array($identifier, $license[0], $license[1], $license[2]);
+            $this->licenses[strtolower($identifier)] = [$identifier, $license[0], $license[1], $license[2]];
         }
     }
 
@@ -249,10 +249,10 @@ class SpdxLicenses
         if (false === $json) {
             throw new \RuntimeException('Missing exceptions file in ' . self::getResourcesDir() . '/' . self::EXCEPTIONS_FILE);
         }
-        $this->exceptions = array();
+        $this->exceptions = [];
 
         foreach (json_decode($json, true) as $identifier => $exception) {
-            $this->exceptions[strtolower($identifier)] = array($identifier, $exception[0]);
+            $this->exceptions[strtolower($identifier)] = [$identifier, $exception[0]];
         }
     }
 

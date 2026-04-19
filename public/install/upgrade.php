@@ -82,6 +82,37 @@ if (file_exists($filename)) {
     include_once $filename;
 }
 
+// Pre-flight: read the DB version to detect whether migrate_3.2.x.php needs to run.
+// Only attempted when DB credentials are available (settings.php was loaded).
+$dbVersion = null;
+$needsMigration320 = false;
+if (defined('DB_HOST') && defined('DB_USER') && defined('DB_PASSWD') && defined('DB_NAME') && defined('DB_PORT')) {
+    try {
+        $dbPassClear = defuseReturnDecrypted(DB_PASSWD);
+        $dbLinkCheck = @mysqli_connect(DB_HOST, DB_USER, $dbPassClear, DB_NAME, (int) DB_PORT);
+        if ($dbLinkCheck !== false) {
+            $versionRow = mysqli_fetch_row(
+                mysqli_query(
+                    $dbLinkCheck,
+                    "SELECT valeur FROM `" . DB_PREFIX . "misc` WHERE type='admin' AND intitule='teampass_version'"
+                )
+            );
+            if (is_array($versionRow) && isset($versionRow[0])) {
+                $dbVersion = $versionRow[0];
+            }
+            mysqli_close($dbLinkCheck);
+        }
+    } catch (Throwable $e) {
+        // DB not yet configured or unreachable — silently skip
+    }
+}
+if ($dbVersion !== null
+    && version_compare(TP_VERSION, '3.2.0', '>=')
+    && version_compare($dbVersion, '3.2.0', '<')
+) {
+    $needsMigration320 = true;
+}
+
 // Check that at least PHP version is correct
 if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '>=')) {
     $phpVersionisOkay = true;
@@ -163,28 +194,63 @@ echo '
 if (!isset($_GET['step']) && !isset($post_step)) {
     //ETAPE O
     echo '
-                <div class="row">
+                <div class="row">';
+
+    // Show a blocking warning when the filesystem migration has not been performed yet
+    if ($needsMigration320 === true) {
+        echo '
+                    <div class="callout callout-danger col-12">
+                        <h5><i class="fas fa-exclamation-circle mr-2"></i>Migration script required — do not proceed yet</h5>
+                        <p>
+                            Your database is at version <code>' . htmlspecialchars((string) $dbVersion) . '</code>
+                            but the TeamPass code is at version <code>' . TP_VERSION . '</code>.
+                        </p>
+                        <p>
+                            TeamPass 3.2.0 introduced a new directory layout (<code>app/</code>, <code>public/</code>, <code>storage/</code>).
+                            Before running this upgrade wizard you must execute the migration script from the command line:
+                        </p>
+                        <pre class="bg-dark text-white p-2 rounded">php migrate_3.2.x.php</pre>
+                        <p>
+                            Once the script completes successfully, refresh this page and then proceed with the upgrade.<br>
+                            See the <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a> for full instructions.
+                        </p>
+                        <p class="mb-0"><strong>Do not click START until this step has been completed.</strong></p>
+                    </div>';
+    }
+
+    echo '
                     <div class="callout callout-warning col-12">
-                        <h5>Information</h5>
-    
-                        <p>Upgrade process is about to start. This will upgrade Teampass database to version <code>'.TP_VERSION.'.'.TP_VERSION_MINOR.'</code>.</p>
-                        <p>Version 3 comes with a new secured encryption strategy getting rid of any Saltkey. It relies on public and private keys generated for each user. As an impact, this upgrade will automatically generate a One-Time-Code for each user and send by email. It will be requested on first login. Please ensure your users have filled in their email with a valid value.</p>
+                        <h5><i class="fas fa-info-circle mr-2"></i>Before you start</h5>
+                        <p>
+                            This wizard will upgrade your Teampass installation to version
+                            <code>' . TP_VERSION . '.' . TP_VERSION_MINOR . '</code>.
+                            The process may take several minutes depending on your data volume and server performance.
+                        </p>
+                        <p>
+                            If you are upgrading from version 3.0.x or earlier, a One-Time Code will be generated
+                            for every user and sent by email. Make sure all user accounts have a valid email address
+                            before proceeding.
+                        </p>
                     </div>
 
                     <div class="callout callout-info col-12">
-                        <h5>Before starting, take a couple of minutes to backup this current Teampass instance:</h5>
-    
+                        <h5>Backup checklist — please complete all items before clicking START:</h5>
                         <p>
                         <ul>
-                            <li><i class="fas fa-exclamation-circle mr-2 text-danger"></i>Ensure to clear your browser cache (keyboard: <i>CTRL + F5</i>)</li>
+                            <li><i class="fas fa-exclamation-circle mr-2 text-danger"></i>Clear your browser cache (<kbd>Ctrl + F5</kbd>)</li>
                             <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a dump of your database</li>
-                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Perform a zip of the current Teampass folder</li>
-                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Refer to <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a>.</li>
+                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a zip archive of the current Teampass folder</li>
+                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Read the <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a></li>
                         </ul>
                         </p>';
     if ($phpVersionisOkay === false) {
         echo '
-                        <h5><i class="fas fa-exclamation-triangle mr-2 text-warning">Minimum PHP version expected is '.MIN_PHP_VERSION.'. Current version is '.PHP_VERSION.'.';
+                        <div class="alert alert-danger mt-2 mb-0">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Minimum PHP version required is <code>' . MIN_PHP_VERSION . '</code>.
+                            Your server is running <code>' . PHP_VERSION . '</code>.
+                            Please upgrade PHP before proceeding.
+                        </div>';
     }
     echo '
                     </div>

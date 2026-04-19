@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [6.8.0] - 2026-04-02
+
+### Added
+- Bump actions/checkout from v4 to v5 ([#902](https://github.com/jsonrainbow/json-schema/pull/902))
+- Update readme for draft 7 ([#899](https://github.com/jsonrainbow/json-schema/pull/899))
+- ci: Add Copilot setup steps ([#892](https://github.com/jsonrainbow/json-schema/pull/892))
+
+### Fixed
+- Fix shell injection in update-changelog workflow for PR titles with backticks ([#897](https://github.com/jsonrainbow/json-schema/pull/897))
+- Remove `v` prefix from release tags and GitHub releases ([#895](https://github.com/jsonrainbow/json-schema/pull/895))
+
+### Deprecated
+- Deprecate `Constraint::CHECK_MODE_NONE` ([#896](https://github.com/jsonrainbow/json-schema/pull/896))
+
+
 ## [6.7.2] - 2026-02-15
 
 ### Fixed

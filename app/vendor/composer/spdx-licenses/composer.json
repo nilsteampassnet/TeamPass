@@ -30,10 +30,10 @@
         "issues": "https://github.com/composer/spdx-licenses/issues"
     },
     "require": {
-        "php": "^5.3.2 || ^7.0 || ^8.0"
+        "php": "^7.2 || ^8.0"
     },
     "require-dev": {
-        "symfony/phpunit-bridge": "^3 || ^7",
+        "symfony/phpunit-bridge": "^6.4.25 || ^7.3.3 || ^8.0",
         "phpstan/phpstan": "^1.11"
     },
     "autoload": {

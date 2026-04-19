@@ -231,6 +231,11 @@ class ClassMapGenerator
         foreach ($classes as $class) {
             // transform class name to file path and validate
             if ('psr-0' === $namespaceType) {
+                if ('' !== $baseNamespace && !str_starts_with($class, $baseNamespace)) {
+                    $rejectedClasses[] = $class;
+                    continue;
+                }
+
                 $namespaceLength = strrpos($class, '\\');
                 if (false !== $namespaceLength) {
                     $namespace = substr($class, 0, $namespaceLength + 1);

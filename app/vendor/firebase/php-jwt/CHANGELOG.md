@@ -1,5 +1,20 @@
 # Changelog
 
+## [7.0.5](https://github.com/firebase/php-jwt/compare/v7.0.4...v7.0.5) (2026-03-31)
+
+
+### Bug Fixes
+
+* RSA from JWK sometimes returns empty Instance ([#628](https://github.com/firebase/php-jwt/issues/628)) ([b4c78aa](https://github.com/firebase/php-jwt/commit/b4c78aa731664122198ad36c0033aa29e807397a))
+
+## [7.0.4](https://github.com/firebase/php-jwt/compare/v7.0.3...v7.0.4) (2026-03-27)
+
+
+### Bug Fixes
+
+* readme examples, add tests for all examples ([#626](https://github.com/firebase/php-jwt/issues/626)) ([510a00c](https://github.com/firebase/php-jwt/commit/510a00c0e6353bc7d68412fab67e57a13954cb46))
+* use urlsafeB64Decode everywhere ([#627](https://github.com/firebase/php-jwt/issues/627)) ([b889495](https://github.com/firebase/php-jwt/commit/b889495c83ddc3f3885ca3f0b65b41b1cb37a3b1))
+
 ## [7.0.3](https://github.com/firebase/php-jwt/compare/v7.0.2...v7.0.3) (2026-02-18)
 
 

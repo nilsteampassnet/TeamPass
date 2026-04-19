@@ -90,7 +90,7 @@ class ConfigManager
     public function loadSettingsFromDB(): array
     {
         // Do we have a settings file?
-        $settingsFile = __DIR__ . '/../../../../../app/config/settings.php';
+        $settingsFile = __DIR__ . '/../../../../../config/settings.php';
         if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
             return [];
         }
@@ -110,7 +110,7 @@ class ConfigManager
         }
 
         // Load the DB library
-        require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
+        require_once __DIR__.'/../../../../../vendor/sergeytsalkov/meekrodb/db.class.php';
         $ret = [];
 
         $result = DB::query(
@@ -138,7 +138,7 @@ class ConfigManager
     public static function invalidateCache(): void
     {
         if (function_exists('apcu_delete') === true) {
-            $settingsFile = __DIR__ . '/../../../../../app/config/settings.php';
+            $settingsFile = __DIR__ . '/../../../../../config/settings.php';
             $apcuKey = self::APCU_CACHE_KEY . '_' . substr(md5($settingsFile), 0, 8);
             apcu_delete($apcuKey);
         }
@@ -152,13 +152,13 @@ class ConfigManager
     public function getLastModificationTimestamp(): string|null
     {
         // Do we have a settings file?
-        $settingsFile = __DIR__ . '/../../../../../app/config/settings.php';
+        $settingsFile = __DIR__ . '/../../../../../config/settings.php';
         if (!file_exists($settingsFile) || empty(DB_HOST) === true) {
             return "";
         }
 
         // Load the DB library
-        require_once __DIR__.'/../../../sergeytsalkov/meekrodb/db.class.php';
+        require_once __DIR__.'/../../../../../vendor/sergeytsalkov/meekrodb/db.class.php';
 
         $maxTimestamp = DB::queryFirstField(
             'SELECT GREATEST(MAX(created_at), MAX(updated_at)) AS timestamp
