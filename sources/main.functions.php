@@ -3871,7 +3871,6 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     $cipher->setPassword(base64_decode($key));
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
-    $cipher->disablePadding();
     // Get file content
     $safeFilePath = realpath($filePath . '/' . TP_FILE_PREFIX . $safeFileName);
     if ($safeFilePath !== false && file_exists($safeFilePath)) {
