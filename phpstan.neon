@@ -33,8 +33,9 @@ parameters:
         - app/includes/libraries/bip39/loader.php
         - app/vendor/tecnickcom/tcpdf/tcpdf_autoconfig.php
 
-    ignoreErrors: 
+    ignoreErrors:
         - '#Call to an undefined static method DB::count#'
+        - '#Call to an undefined static method DB::escape#'
         # Methods called via call_user_func() dynamic dispatch in installer
         - message: '#Method .+ is unused\.#'
           path: public/install/install-steps/run.step5.php

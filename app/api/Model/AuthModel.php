@@ -54,9 +54,9 @@ class AuthModel
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
         $inputData = dataSanitizer(
             [
-                'login' => isset($login) === true ? $login : '',
-                'password' => isset($password) === true ? $password : '',
-                'apikey' => isset($apikey) === true ? $apikey : '',
+                'login' => $login,
+                'password' => $password,
+                'apikey' => $apikey,
             ],
             [
                 'login' => 'trim|escape|strip_tags',
@@ -189,9 +189,9 @@ class AuthModel
                     (int) $userInfo['api_allowed_to_read'],
                     (int) $userInfo['api_allowed_to_update'],
                     (int) $userInfo['api_allowed_to_delete'],
-                    (int) $SETTINGS['api_token_duration'] ?? 60,
-                    (int) $SETTINGS['pwd_maximum_length'] ?? 60,
-                    (int) $SETTINGS['maintenance_mode'] ?? 0,
+                    (int) ($SETTINGS['api_token_duration'] ?? 60),
+                    (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
+                    (int) ($SETTINGS['maintenance_mode'] ?? 0),
                 );
             } else {
                 return ["error" => "Login failed.", "info" => "Credentials not valid"];
@@ -313,11 +313,12 @@ class AuthModel
         $personalFolders = [];
 
         $userFunctionId = explode(";", $userInfo['fonction_id']);
+        $hasRoles = $userInfo['fonction_id'] !== '';
 
         // Get folders from the roles
-        if (count($userFunctionId) > 0) {
+        if ($hasRoles) {
             $rows = DB::query(
-                'SELECT * 
+                'SELECT *
                 FROM ' . prefixTable('roles_values') . '
                 WHERE role_id IN %li  AND type IN ("W", "ND", "NE", "NDNE", "R")',
                 $userFunctionId
@@ -339,16 +340,24 @@ class AuthModel
                 }
             }
         }
-        
+
         // Add all personal folders
-        $rows = DB::queryFirstRow(
-            'SELECT id 
-            FROM ' . prefixTable('nested_tree') . '
-            WHERE title = %i AND personal_folder = 1'.
-            (count($userFunctionId) > 0 ? ' AND id NOT IN %li' : ''),
-            $userInfo['id'],
-            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
-        );
+        if ($hasRoles) {
+            $rows = DB::queryFirstRow(
+                'SELECT id
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE title = %i AND personal_folder = 1 AND id NOT IN %li',
+                $userInfo['id'],
+                $userFunctionId
+            );
+        } else {
+            $rows = DB::queryFirstRow(
+                'SELECT id
+                FROM ' . prefixTable('nested_tree') . '
+                WHERE title = %i AND personal_folder = 1',
+                $userInfo['id']
+            );
+        }
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
             // get all descendants

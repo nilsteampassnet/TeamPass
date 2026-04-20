@@ -67,7 +67,7 @@ class ItemModel
         
         $ret = [];
         foreach ($rows as $row) {
-            $userKey = DB::queryfirstrow(
+            $userKey = DB::queryFirstRow(
                 'SELECT share_key
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
@@ -81,6 +81,7 @@ class ItemModel
             }
 
             // Get password
+            $pwd = '';
             try {
                 $pwd = base64_decode(
                     (string) doDataDecryption(
@@ -177,7 +178,7 @@ class ItemModel
             $folderId = (int) $arrItemParams['folder_id'];
             $label = (string) $arrItemParams['label'];
             $password = (string) $arrItemParams['password'];
-            $tags = (string) $arrItemParams['tags'] ?? '';
+            $tags = (string) ($arrItemParams['tags'] ?? '');
             $userId = (int) $arrItemParams['id'];
             $username = (string) $arrItemParams['username'];
 
@@ -290,14 +291,14 @@ class ItemModel
             'folderId' => (int) $arrItemParams['folder_id'],
             'label' => (string) $arrItemParams['label'],
             'password' => (string) $arrItemParams['password'],
-            'description' => (string) $arrItemParams['description'] ?? '',
-            'login' => (string) $arrItemParams['login'] ?? '',
-            'email' => (string) $arrItemParams['email'] ?? '',
-            'tags' => (string) $arrItemParams['tags'] ?? '',
-            'anyoneCanModify' => (int) $arrItemParams['anyone_can_modify'] ?? '0',
-            'url' => (string) $arrItemParams['url'] ?? '',
-            'icon' => (string) $arrItemParams['icon'] ?? '',
-            'totp' => (string) $arrItemParams['totp'] ?? '',
+            'description' => (string) ($arrItemParams['description'] ?? ''),
+            'login' => (string) ($arrItemParams['login'] ?? ''),
+            'email' => (string) ($arrItemParams['email'] ?? ''),
+            'tags' => (string) ($arrItemParams['tags'] ?? ''),
+            'anyoneCanModify' => (int) ($arrItemParams['anyone_can_modify'] ?? 0),
+            'url' => (string) ($arrItemParams['url'] ?? ''),
+            'icon' => (string) ($arrItemParams['icon'] ?? ''),
+            'totp' => (string) ($arrItemParams['totp'] ?? ''),
             'favicon_url' => '',
         ];
     }
@@ -751,7 +752,7 @@ class ItemModel
                         ]
                     );
                 }
-            } else if (empty($updateData)) {
+            } else {
                 // Check if an entry exists for TOTP in items_otp table
                 // IF yes delete it
                 if (isset($params['totp']) === true && empty($params['totp']) === true) {

@@ -184,7 +184,7 @@ class FolderModel
             ];}
 
         // Create folder
-        require_once TEAMPASS_ROOT_PATH.'/sources/folders.class.php';
+        require_once API_ROOT_PATH . '/../sources/folders.class.php';
         $lang = new Language();
         $folderManager = new FolderManager($lang);
         $params = [

@@ -248,8 +248,8 @@ class ItemController extends BaseController
                             'email' => (string) ($arrQueryStringParams['email'] ?? ''),
                             'url' => (string) ($arrQueryStringParams['url'] ?? ''),
                             'tags' => (string) ($arrQueryStringParams['tags'] ?? ''),
-                            'anyone_can_modify' => (int) $arrQueryStringParams['anyone_can_modify'] ?? 0,
-                            'icon' => (string) $arrQueryStringParams['icon'] ?? '',
+                            'anyone_can_modify' => (int) ($arrQueryStringParams['anyone_can_modify'] ?? 0),
+                            'icon' => (string) ($arrQueryStringParams['icon'] ?? ''),
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
                             'totp' => (string) ($userData['totp'] ?? ''),
@@ -863,12 +863,12 @@ class ItemController extends BaseController
                                 $strErrorHeader = 'HTTP/1.1 404 Not Found';
                             } else {
                                 // Check if user has access to the folder
-                                $userFolders = explode(',', $userData['folders_list']) ?? [];
+                                $userFolders = explode(',', $userData['folders_list']);
                                 $hasAccess = in_array((string) $itemInfo['id_tree'], $userFolders, true);
 
                                 // Also check restricted items if applicable
                                 if (!$hasAccess && !empty($userData['restricted_items_list'])) {
-                                    $restrictedItems = explode(',', $userData['restricted_items_list']) ?? [];
+                                    $restrictedItems = explode(',', $userData['restricted_items_list']);
                                     $hasAccess = in_array((string) $itemId, $restrictedItems, true);
                                 }
 

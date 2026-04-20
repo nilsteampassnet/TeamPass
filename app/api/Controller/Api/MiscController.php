@@ -39,7 +39,7 @@ class MiscController extends BaseController
             require API_ROOT_PATH . "/Model/MiscModel.php";
             $miscModel = new MiscModel();
             $extensionSettings = $miscModel->getBrowserExtensionSettings();
-            if ($extensionSettings !== null) {
+            if (!empty($extensionSettings)) {
                 $responseData = json_encode($extensionSettings);
             } else {
                 $strErrorDesc = 'Failed to retrieve browser extension settings';

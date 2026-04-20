@@ -151,7 +151,7 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     require_once API_ROOT_PATH . '/inc/encryption_utils.php';
 
     // Retrieve user's public key and encrypted private key from database
-    $userInfo = DB::queryfirstrow(
+    $userInfo = DB::queryFirstRow(
         "SELECT u.public_key, a.encrypted_private_key, a.session_key AS key_tempo
         FROM " . prefixTable('users') . " AS u
         INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id = u.id)

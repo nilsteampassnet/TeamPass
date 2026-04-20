@@ -105,13 +105,13 @@ class BaseController
      * Send API output.
      *
      * @param mixed  $data
-     * @param string $httpHeader
+     * @param array  $httpHeaders
      */
-    protected function sendOutput($data, $httpHeaders=array()): void
+    protected function sendOutput($data, array $httpHeaders=[]): void
     {
         header_remove('Set-Cookie');
 
-        if (is_array($httpHeaders) && count($httpHeaders)) {
+        if (count($httpHeaders) > 0) {
             foreach ($httpHeaders as $httpHeader) {
                 header($httpHeader);
             }
