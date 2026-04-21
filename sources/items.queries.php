@@ -257,7 +257,7 @@ switch ($inputData['type']) {
             $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_password = htmlspecialchars_decode($dataReceived['pw']);
+            $post_password = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '';
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -876,7 +876,7 @@ switch ($inputData['type']) {
         $itemInfos = array();
         $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
-        $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
+        $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '';
         $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars($dataReceived['tags']) : '';
         $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
@@ -1167,13 +1167,14 @@ switch ($inputData['type']) {
                 // No share key found
                 $pw = '';
             } else {
-                $pw = base64_decode(doDataDecryption(
+                $pw = teampassDecryptPasswordValue(
                     $data['pw'],
                     decryptUserObjectKey(
                         $userKey['share_key'],
                         $session->get('user-private_key')
-                    )
-                ));
+                    ),
+                    (int) ($dataItem['pw_len'] ?? 0)
+                );
             }
 
             if ($post_password !== $pw) {
@@ -2306,17 +2307,16 @@ switch ($inputData['type']) {
 
             // Decrypt / Encrypt the password with automatic v1→v3 migration
             $cryptedStuff = doDataEncryption(
-                base64_decode(
-                    doDataDecryption(
-                        $originalRecord['pw'],
-                        decryptUserObjectKeyWithMigration(
-                            $userKey['share_key'],
-                            $session->get('user-private_key'),
-                            $session->get('user-public_key'),
-                            intval($userKey['increment_id']),
-                            'sharekeys_items'
-                        )
-                    )
+                teampassDecryptPasswordValue(
+                    $originalRecord['pw'],
+                    decryptUserObjectKeyWithMigration(
+                        $userKey['share_key'],
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_items'
+                    ),
+                    (int) ($originalRecord['pw_len'] ?? 0)
                 )
             );
             // reaffect pw
@@ -2801,10 +2801,11 @@ switch ($inputData['type']) {
             $session->get('user-id'),
             $inputData['id']
         );
+        $pwIsEmptyNormal = false;
+        $passwordForMetrics = '';
 
         if (empty($userKeys) || empty($dataItem['pw'])) {
             // No share key found
-            $pwIsEmptyNormally = false;
             // Is this a personal and defuse password?
             if (intval($dataItem['perso']) === 1 && substr($dataItem['pw'], 0, 3) === 'def') {
                 // Yes, then ask for decryption with old personal salt key
@@ -2838,10 +2839,12 @@ switch ($inputData['type']) {
             }
 
             if ($validKeyFound) {
-                $pw = doDataDecryption(
+                $passwordForMetrics = teampassDecryptPasswordValue(
                     $dataItem['pw'],
-                    $decryptedObject
+                    $decryptedObject,
+                    (int) ($dataItem['pw_len'] ?? 0)
                 );
+                $pw = $passwordForMetrics === '' ? '' : base64_encode($passwordForMetrics);
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
             } elseif (isset($userKey) && $userKey['share_key'] !== '') {
@@ -2959,14 +2962,14 @@ switch ($inputData['type']) {
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
-            $arrData['pw_length'] = strlen($pw);
+            $arrData['pw_length'] = strlen($passwordForMetrics ?? '');
             // Password security badge: OWASP ASVS aligned policy (min length 12, min complexity score 70)
-            if (strlen($pw) === 0) {
+            if (strlen($passwordForMetrics ?? '') === 0) {
                 $arrData['pw_is_secure'] = null; // empty password → no badge
             } else {
-                $arrData['pw_is_secure'] = strlen($pw) >= 12 && intval($dataItem['complexity_level']) >= 70;
+                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= 70;
             }
-            $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
+            $arrData['pw_decrypt_info'] = ($passwordForMetrics ?? '') === '' && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
             $arrData['folder'] = $dataItem['id_tree'];
@@ -4641,7 +4644,7 @@ switch ($inputData['type']) {
 
         // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, s.share_key AS share_key, s.increment_id AS sharekey_id,
+            'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
                     i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -4709,7 +4712,7 @@ switch ($inputData['type']) {
         // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
-            $pw = doDataDecryption(
+            $passwordPlain = teampassDecryptPasswordValue(
                 $dataItem['pw'],
                 decryptUserObjectKeyWithMigration(
                     $dataItem['share_key'],
@@ -4717,8 +4720,10 @@ switch ($inputData['type']) {
                     $session->get('user-public_key'),
                     intval($dataItem['sharekey_id']),
                     'sharekeys_items'
-                )
+                ),
+                (int) ($dataItem['pw_len'] ?? 0)
             );
+            $pw = $passwordPlain === '' ? '' : base64_encode($passwordPlain);
         }
 
         $returnValues = array(
@@ -6307,7 +6312,7 @@ switch ($inputData['type']) {
         // Decrypt the pwd
         // Should we log a password change?
         $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, i.pw
+            'SELECT s.share_key, i.pw, i.pw_len
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6318,13 +6323,14 @@ switch ($inputData['type']) {
             // No share key found
             $pw = '';
         } else {
-            $pw = base64_decode(doDataDecryption(
+            $pw = teampassDecryptPasswordValue(
                 $itemQ['pw'],
                 decryptUserObjectKey(
                     $itemQ['share_key'],
                     $session->get('user-private_key')
-                )
-            ));
+                ),
+                (int) ($itemQ['pw_len'] ?? 0)
+            );
         }
 
         // Encrypt it with DEFUSE using the generated code as key
@@ -6873,7 +6879,10 @@ switch ($inputData['type']) {
                     array_push(
                         $previous_passwords, 
                         [
-                            'password' => htmlentities($previous_pwd['string']),
+                            // Use a password-specific key so the client-side
+                            // purifyData() skip list preserves literal entity
+                            // sequences such as "&lt;".
+                            'previous_password' => htmlentities($previous_pwd['string']),
                             'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])),
                         ]
                     );
