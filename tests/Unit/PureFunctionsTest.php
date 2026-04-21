@@ -15,6 +15,8 @@ require_once __DIR__ . '/../Stubs/auth_pure_functions.php';
  * Functions covered:
  *   - isKeyExistingAndEqual()
  *   - isOneVarOfArrayEqualToValue()
+ *   - teampassNormalizeLegacyPassword()
+ *   - teampassDecodeJsonPayload()
  */
 class PureFunctionsTest extends TestCase
 {
@@ -134,5 +136,57 @@ class PureFunctionsTest extends TestCase
     {
         // Ensure it returns true even when match is the first element
         $this->assertTrue(isOneVarOfArrayEqualToValue([1, 0, 0], 1));
+    }
+
+    // =========================================================================
+    // teampassNormalizeLegacyPassword
+    // =========================================================================
+
+    public function testDecodesLegacyEncodedPasswordWhenStoredLengthMatchesDecodedValue(): void
+    {
+        $this->assertSame('ab<c', teampassNormalizeLegacyPassword('ab&lt;c', 4));
+    }
+
+    public function testKeepsNewLiteralEntityPasswordWhenStoredLengthMatchesRawValue(): void
+    {
+        $this->assertSame('&lt;', teampassNormalizeLegacyPassword('&lt;', 4));
+    }
+
+    public function testKeepsPasswordUntouchedWhenDecodedLengthDoesNotMatchStoredLength(): void
+    {
+        $this->assertSame('ab&lt;c', teampassNormalizeLegacyPassword('ab&lt;c', 7));
+    }
+
+    public function testKeepsPasswordUntouchedWhenNoStoredLengthIsProvided(): void
+    {
+        $this->assertSame('ab&lt;c', teampassNormalizeLegacyPassword('ab&lt;c', null));
+    }
+
+    // =========================================================================
+    // teampassDecodeJsonPayload
+    // =========================================================================
+
+    public function testKeepsRawJsonPayloadUntouchedWhenAlreadyValid(): void
+    {
+        $payload = '{"pw":"&lt;"}';
+
+        $this->assertSame($payload, teampassDecodeJsonPayload($payload));
+        $this->assertSame('&lt;', json_decode(teampassDecodeJsonPayload($payload), true)['pw']);
+    }
+
+    public function testDecodesOnceEscapedJsonPayloadWhilePreservingLiteralEntities(): void
+    {
+        $payload = '{&quot;pw&quot;:&quot;&amp;lt;&quot;}';
+
+        $this->assertSame('{"pw":"&lt;"}', teampassDecodeJsonPayload($payload));
+        $this->assertSame('&lt;', json_decode(teampassDecodeJsonPayload($payload), true)['pw']);
+    }
+
+    public function testDecodesTwiceEscapedJsonPayloadWhilePreservingLiteralEntities(): void
+    {
+        $payload = '{&amp;quot;pw&amp;quot;:&amp;quot;&amp;amp;lt;&amp;quot;}';
+
+        $this->assertSame('{"pw":"&lt;"}', teampassDecodeJsonPayload($payload));
+        $this->assertSame('&lt;', json_decode(teampassDecodeJsonPayload($payload), true)['pw']);
     }
 }
