@@ -397,7 +397,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
             const parsed = safeParseJSONMaybe(data);
             
             if (parsed.ok) {
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } else {
                 // Handle non-JSON server response gracefully with detailed error info
                 const rawStr = String(parsed.value)
@@ -431,7 +433,9 @@ function prepareExchangedData(data, type, key, fileName = '', functionName = '',
                     );
                 }
                 
-                return purifyData(parsed.value, false, false, false, bStringify);
+                return purify === true
+                    ? purifyData(parsed.value, false, false, false, bStringify)
+                    : parsed.value;
             } catch (e) {
                 // Handle case where decryption itself failed (e.g., bad key, corrupted data)
                 const encRawStr = String(data)
