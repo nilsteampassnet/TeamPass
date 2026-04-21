@@ -545,7 +545,7 @@ $systemUsersLogins = ['API', 'TP', 'OTV'];
                                         </ul>
                                     </div>
                                     <div class="card-footer clearfix">
-                                        <a href="index.php?page=utilities.logs#items" class="btn btn-sm btn-warning float-right">
+                                        <a href="index.php?page=utilities.logs" class="btn btn-sm btn-warning float-right">
                                             <?php echo $lang->get('view_all_logs'); ?>
                                         </a>
                                     </div>
