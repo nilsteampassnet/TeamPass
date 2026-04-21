@@ -2439,7 +2439,10 @@ if (
                 return '';
             }
 
-            const password = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
+            // Passwords are secrets, not HTML. Preserve their literal value
+            // (including strings such as "&lt;") and let the UI sinks handle
+            // safe rendering via .text() / .val() / clipboard APIs.
+            const password = atob(data.password).utf8Decode();
             if (password === '') {
                 toastr.info(
                     '<?php echo $lang->get('password_is_empty'); ?>',
