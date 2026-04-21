@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * These functions have no DB, session, or filesystem dependencies and can
  * therefore be tested in full isolation. They are copied from:
- *   - sources/main.functions.php  (isKeyExistingAndEqual, isOneVarOfArrayEqualToValue)
+ *   - sources/main.functions.php  (isKeyExistingAndEqual, isOneVarOfArrayEqualToValue, teampassNormalizeLegacyPassword, teampassDecodeJsonPayload)
  *   - sources/identify.php        (all others)
  *
  * MAINTENANCE: keep in sync with their originals. If the production function
@@ -51,6 +51,61 @@ function isOneVarOfArrayEqualToValue(array $arrayOfVars, int|string $value): boo
         }
     }
     return false;
+}
+
+/**
+ * Normalize legacy passwords that were historically entity-encoded before
+ * encryption. We only decode when the decoded length matches the stored
+ * pw_len, which avoids altering legitimate new passwords such as "&lt;".
+ */
+function teampassNormalizeLegacyPassword(string $password, ?int $storedLength = null): string
+{
+    if ($password === '' || $storedLength === null || $storedLength < 0 || strpos($password, '&') === false) {
+        return $password;
+    }
+
+    $decodedPassword = html_entity_decode($password, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedPassword === $password || strlen($password) === $storedLength) {
+        return $password;
+    }
+
+    return strlen($decodedPassword) === $storedLength ? $decodedPassword : $password;
+}
+
+/**
+ * Decode an HTML-encoded JSON payload conservatively.
+ *
+ * We first try the raw payload, then one HTML entity decode, then a second
+ * decode only if JSON is still invalid. This preserves literal values such as
+ * "&lt;" inside JSON strings while still supporting request payloads that were
+ * HTML-escaped before reaching PHP.
+ */
+function teampassDecodeJsonPayload(string $data): string
+{
+    if ($data === '') {
+        return '';
+    }
+
+    $candidates = [$data];
+
+    $decodedOnce = html_entity_decode($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedOnce !== $data) {
+        $candidates[] = $decodedOnce;
+
+        $decodedTwice = html_entity_decode($decodedOnce, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($decodedTwice !== $decodedOnce) {
+            $candidates[] = $decodedTwice;
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        json_decode($candidate, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $candidate;
+        }
+    }
+
+    return end($candidates) ?: $data;
 }
 
 // ---------------------------------------------------------------------------
