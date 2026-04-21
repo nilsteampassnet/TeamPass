@@ -176,7 +176,7 @@ if (null !== $post_type) {
                             ) {
                                 // Run query
                                 $dataItem = DB::queryFirstRow(
-                                    'SELECT i.pw AS pw, s.share_key AS share_key
+                                    'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
@@ -189,13 +189,14 @@ if (null !== $post_type) {
                                     // No share key found OR item has no password
                                     $pw = '';
                                 } else {
-                                    $pw = base64_decode(doDataDecryption(
+                                    $pw = teampassDecryptPasswordValue(
                                         $dataItem['pw'],
                                         decryptUserObjectKey(
                                             $dataItem['share_key'],
                                             $session->get('user-private_key')
-                                        )
-                                    ));
+                                        ),
+                                        (int) ($dataItem['pw_len'] ?? 0)
+                                    );
                                 }
 
                                 // get KBs
@@ -255,7 +256,7 @@ if (null !== $post_type) {
                                     'id' => $record['id'],
                                     'label' => empty($record['label']) === true ? '' : html_entity_decode($record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
                                     'description' => empty($record['description']) === true ? '' : html_entity_decode($record['description'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
-                                    'pw' => empty($pw) === true ? '' : html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                                    'pw' => $pw,
                                     'login' => empty($record['login']) === true ? '' : html_entity_decode($record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
                                     'restricted_to' => isset($record['restricted_to']) === true ? $record['restricted_to'] : '',
                                     'perso' => $record['perso'] === '0' ? 'False' : 'True',
@@ -402,7 +403,7 @@ if (null !== $post_type) {
                         } else {
                             // Run query
                             $dataItem = DB::queryFirstRow(
-                                'SELECT i.pw AS pw, s.share_key AS share_key
+                                'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
@@ -415,13 +416,14 @@ if (null !== $post_type) {
                                 // No share key found OR password is empty
                                 $pw = '';
                             } else {
-                                $pw = base64_decode(doDataDecryption(
+                                $pw = teampassDecryptPasswordValue(
                                     $dataItem['pw'],
                                     decryptUserObjectKey(
                                         $dataItem['share_key'],
                                         $session->get('user-private_key')
-                                    )
-                                ));
+                                    ),
+                                    (int) ($dataItem['pw_len'] ?? 0)
+                                );
                             }
 
                             // get KBs
@@ -465,7 +467,7 @@ if (null !== $post_type) {
                                     'item_id' => $record['id'],
                                     'description' => cleanStringForExport((string) $record['description']),
                                     'label' => cleanStringForExport((string) $record['label']),
-                                    'pw' => cleanStringForExport(html_entity_decode($pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'), true),
+                                    'pw' => $pw,
                                     'login' => cleanStringForExport((string) $record['login']),
                                     'path' => $path,
                                     'url' => cleanStringForExport((string) $record['url']),
