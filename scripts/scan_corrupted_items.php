@@ -158,7 +158,8 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
             }
 
             $storedLen = (int) $row['pw_len'];
-            $actualLen = strlen($plaintext);
+            $normalizedPlaintext = teampassNormalizeLegacyPassword($plaintext, $storedLen);
+            $actualLen = strlen($normalizedPlaintext);
 
             // Detect corruption: binary bytes OR significant length mismatch
             $hasBinaryBytes = $plaintext !== '' && mb_check_encoding($plaintext, 'UTF-8') === false;
