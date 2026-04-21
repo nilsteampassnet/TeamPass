@@ -533,8 +533,6 @@ trait UserHandlerTrait {
      * @param array $arguments Arguments for the task
      */
     private function generateNewUserStep99(array $arguments): void {
-        $lang = new Language('english');
-        
         // IF USER IS NOT THE SAME
         // When the creator and the target user are identical (admin regenerating their own keys),
         // skip the notification email but still mark the user as ready so the UI polling resolves.
@@ -583,11 +581,16 @@ trait UserHandlerTrait {
         // if done then send email to new user
         // get user info
         $userInfo = DB::queryFirstRow(
-            'SELECT u.email, u.login, u.auth_type, u.special, u.lastname, u.name
+            'SELECT u.email, u.login, u.auth_type, u.special, u.lastname, u.name, u.user_language
             FROM ' . prefixTable('users') . ' AS u
             WHERE u.id = %i',
             $arguments['new_user_id']
         );
+        $userLanguage = trim((string) ($userInfo['user_language'] ?? ''));
+        if ($userLanguage === '' || $userLanguage === '0') {
+            $userLanguage = (string) ($this->settings['default_language'] ?? 'english');
+        }
+        $lang = new Language($userLanguage);
 
         // SEND EMAIL TO USER depending on context
         // Config 1: new user is a local user
@@ -659,11 +662,19 @@ trait UserHandlerTrait {
         );
         */
 
-        // if special status is generate-keys, then set it to none
+        // If special status is generate-keys, switch to the expected post-generation state.
         if (isset($userInfo['special']) === true && $userInfo['special'] === 'generate-keys') {
             // Determine if user has personal items that need re-encryption
-            $specialStatus = 'none';
-            if (isset($arguments['userHasToEncryptPersonalItemsAfter']) === true && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1) {
+            $specialStatus = isset($arguments['final_special_after_generation']) === true
+                && empty($arguments['final_special_after_generation']) === false
+                ? (string) $arguments['final_special_after_generation']
+                : 'none';
+
+            if (
+                $specialStatus === 'none'
+                && isset($arguments['userHasToEncryptPersonalItemsAfter']) === true
+                && (int) $arguments['userHasToEncryptPersonalItemsAfter'] === 1
+            ) {
                 $personalItemsCount = DB::queryFirstField(
                     'SELECT COUNT(*)
                     FROM ' . prefixTable('items') . '
