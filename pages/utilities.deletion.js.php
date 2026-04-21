@@ -85,6 +85,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 <script type='text/javascript'>
     //<![CDATA[
     var debugJavascript = false;
+    var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
 
 
     // Prepare tooltips
@@ -105,125 +106,172 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         // Do clean
         $('#recycled-folders, #recycled-items').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
+        if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+            $('#recycled-kbs').html('<div class="text-warning"><i class="fas fa-info mr-2"></i><?php echo $lang->get('refreshing'); ?></div>');
+        }
         $('#temp-message').remove();
 
         // Launch action
-        $.post(
-            'sources/utilities.queries.php', {
-                type: 'recycled_bin_elements',
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                console.log(data);
-                if (data.error === true) {
-                    // ERROR
-                    toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '<?php echo $lang->get('error'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
+        var requests = [
+            $.post(
+                'sources/utilities.queries.php', {
+                    type: 'recycled_bin_elements',
+                    key: '<?php echo $session->get('key'); ?>'
+                }
+            )
+        ];
+
+        if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+            requests.push(
+                $.post(
+                    'sources/kb.queries.php', {
+                        type: 'load_deleted_kbs',
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                )
+            );
+        }
+
+        $.when.apply($, requests).done(function() {
+            var data = decodeQueryReturn(requests.length === 1 ? arguments[0] : arguments[0][0], '<?php echo $session->get('key'); ?>');
+            var kbData = {error: false, entries: []};
+            if (requests.length > 1) {
+                kbData = decodeQueryReturn(arguments[1][0], '<?php echo $session->get('key'); ?>');
+            }
+            console.log(data);
+            console.log(kbData);
+            if (data.error === true || kbData.error === true) {
+                toastr.remove();
+                toastr.error(
+                    data.error === true ? data.message : kbData.message,
+                    '<?php echo $lang->get('error'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                // FOLDERS - Build table
+                if (data.folders.length === 0) {
+                    $('#recycled-folders').html(
+                        '<div class="alert alert-info" id="temp-message">' +
+                        '<?php echo $lang->get('empty_list'); ?>' +
+                        '</div>'
                     );
                 } else {
-                    // FOLDERS - Build table
-                    if (data.folders.length === 0) {
-                        $('#recycled-folders, #recycled-items').html(
-                            '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo $lang->get('empty_list'); ?>' +
-                            '</div>'
-                        )
+                    var foldersHtml = '',
+                        itemsHtml = '',
+                        kbsHtml = '',
+                        folderContainsItemsTpl = '<?php echo addslashes($lang->get('recycled_bin_folder_contains_items')); ?>';
 
-                    } else {
-                        var foldersHtml = '',
-                            itemsHtml = '',
-                            folderContainsItemsTpl = '<?php echo addslashes($lang->get('recycled_bin_folder_contains_items')); ?>';
-                        // Folders list
-                        $.each(data.folders, function(index, value) {
-                            var folderLabel = (value.path ? value.path : value.label);
-                            var folderExtra = '';
-                            if (typeof value.items_count !== 'undefined' && parseInt(value.items_count) > 0) {
-                                folderExtra = '<br><small class="text-muted">' +
-                                    '<i class="fa-regular fa-file-lines mr-1"></i>' +
-                                    folderContainsItemsTpl.replace('%s', value.items_count) +
-                                    '</small>';
-                            }
-
-                            var deletedDate = (typeof value.date !== 'undefined' && value.date ? value.date : '');
-                            var deletedBy = '';
-                            if (typeof value.name !== 'undefined' && value.name) {
-                                deletedBy += value.name;
-                            }
-                            if (typeof value.login !== 'undefined' && value.login) {
-                                deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
-                            }
-
-                            foldersHtml += '<tr class="icheck-toggle">' +
-                                '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
-                                '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
-                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(deletedDate) + '</td>' +
-                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(deletedBy) + '</td>' +
-                                '</tr>';
-                        });
-                        $('#recycled-folders').html(foldersHtml);
-                    }
-                    
-
-                    // Items - Build table
-                    if (data.items.length === 0) {
-                        $('#recycled-items').html(
-                            '<div class="alert alert-info" id="temp-message">' +
-                            '<?php echo $lang->get('empty_list'); ?>' +
-                            '</div>'
-                        )
-
-                    } else {
-                        // Items list
-                        $.each(data.items, function(index, value) {
-                            itemsHtml += '<tr class="icheck-toggle">' +
-                                '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
-                                '<td class="font-weight-bold">' + (value.path ? value.path : value.label) + '</td>' +
-                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
-                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
-                                '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + (value.folder_path ? value.folder_path : value.folder_label) + '</td>' +
-                                (value.folder_deleted === true ?
-                                    '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
-                                    '') +
-                                ((value.del_enabled === true && parseInt(value.del_type) === 1 && parseInt(value.del_value) === 0) ?
-                                    '<td><i class="fa-solid fa-trash-can mr-1 mt-1 pointer text-info" title="Automatic deletation after X views"></i></td>' :
-                                    '') +
-                                '</tr>';
-                        });
-                        $('#recycled-items').html(itemsHtml);
-
-                        // Prepare iCheck
-                        $('#recycled-bin input[type="checkbox"]').iCheck({
-                            checkboxClass: 'icheckbox_flat-blue'
-                        });
-
-                        // Global checkboxes toggle
-                        $('#toggle-all').on('ifChanged', function(event) {
-                            if ($(this).is(':checked') === true) {
-                                $('.item-select, .folder-select').iCheck('check');
-                            } else {
-                                $('.item-select, .folder-select').iCheck('uncheck');
-                            }
-                        });
-                    }
-
-                    // OK
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 1000
+                    $.each(data.folders, function(index, value) {
+                        var folderLabel = (value.path ? value.path : value.label);
+                        var folderExtra = '';
+                        if (typeof value.items_count !== 'undefined' && parseInt(value.items_count) > 0) {
+                            folderExtra = '<br><small class="text-muted">' +
+                                '<i class="fa-regular fa-file-lines mr-1"></i>' +
+                                folderContainsItemsTpl.replace('%s', value.items_count) +
+                                '</small>';
                         }
-                    );
+
+                        var deletedDate = (typeof value.date !== 'undefined' && value.date ? value.date : '');
+                        var deletedBy = '';
+                        if (typeof value.name !== 'undefined' && value.name) {
+                            deletedBy += value.name;
+                        }
+                        if (typeof value.login !== 'undefined' && value.login) {
+                            deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
+                        }
+
+                        foldersHtml += '<tr class="icheck-toggle">' +
+                            '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
+                            '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
+                            '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(deletedDate) + '</td>' +
+                            '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(deletedBy) + '</td>' +
+                            '</tr>';
+                    });
+                    $('#recycled-folders').html(foldersHtml);
                 }
+
+                // Items - Build table
+                if (data.items.length === 0) {
+                    $('#recycled-items').html(
+                        '<div class="alert alert-info" id="temp-message">' +
+                        '<?php echo $lang->get('empty_list'); ?>' +
+                        '</div>'
+                    );
+                } else {
+                    $.each(data.items, function(index, value) {
+                        itemsHtml += '<tr class="icheck-toggle">' +
+                            '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
+                            '<td class="font-weight-bold">' + (value.path ? value.path : value.label) + '</td>' +
+                            '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
+                            '<td class=""><i class="fa-regular fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
+                            '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + (value.folder_path ? value.folder_path : value.folder_label) + '</td>' +
+                            (value.folder_deleted === true ?
+                                '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
+                                '') +
+                            ((value.del_enabled === true && parseInt(value.del_type) === 1 && parseInt(value.del_value) === 0) ?
+                                '<td><i class="fa-solid fa-trash-can mr-1 mt-1 pointer text-info" title="Automatic deletation after X views"></i></td>' :
+                                '') +
+                            '</tr>';
+                    });
+                    $('#recycled-items').html(itemsHtml);
+                }
+
+                // KB - Build table
+                if (kbEnabled === true && $('#recycled-kbs').length > 0) {
+                    if (!kbData.entries || kbData.entries.length === 0) {
+                        $('#recycled-kbs').html(
+                            '<div class="alert alert-info" id="temp-message">' +
+                            '<?php echo $lang->get('empty_list'); ?>' +
+                            '</div>'
+                        );
+                    } else {
+                        $.each(kbData.entries, function(index, value) {
+                            kbsHtml += '<tr class="icheck-toggle">' +
+                                '<td width="35px"><input type="checkbox" data-id="' + value.trash_id + '" class="kb-select"></td>' +
+                                '<td class="font-weight-bold">' + htmlEncode(value.label) + '</td>' +
+                                '<td class="font-weight-light">' + htmlEncode(value.category || '') + '</td>' +
+                                '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(value.date || '') + '</td>' +
+                                '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(value.deleted_by || '') + '</td>' +
+                                '</tr>';
+                        });
+                        $('#recycled-kbs').html(kbsHtml);
+                    }
+                }
+
+                // Prepare iCheck
+                $('#recycled-bin input[type="checkbox"]').iCheck({
+                    checkboxClass: 'icheckbox_flat-blue'
+                });
+
+                // Global checkboxes toggle
+                $('#toggle-all').off('ifChanged').on('ifChanged', function(event) {
+                    if ($(this).is(':checked') === true) {
+                        $('.item-select, .folder-select, .kb-select').iCheck('check');
+                    } else {
+                        $('.item-select, .folder-select, .kb-select').iCheck('uncheck');
+                    }
+                });
+
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('done'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
             }
-        );
+        }).fail(function() {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('server_answer_error'); ?>',
+                '<?php echo $lang->get('error'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        });
     });
 
 
@@ -337,7 +385,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // Prepare selected data
         var folders = [],
-            items = [];
+            items = [],
+            kbs = [];
         $('.icheck-toggle').each(function(index, obj) {
             var my = $(":checkbox:eq(0)", obj);
             if (my[0].checked === true) {
@@ -345,6 +394,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     folders.push(my.data('id'));
                 } else if (my.hasClass('item-select') === true) {
                     items.push(my.data('id'));
+                } else if (my.hasClass('kb-select') === true) {
+                    kbs.push(my.data('id'));
                 }
             }
         });
@@ -355,53 +406,97 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (debugJavascript === true) {
             console.log("Selection action: " + action);
             console.log(data);
+            console.log(kbs);
         }
-        // Launch action
-        $.post(
-            'sources/utilities.queries.php', {
-                type: action,
-                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
-                key: '<?php echo $session->get('key'); ?>'
-            },
-            function(data) {
-                //decrypt data
-                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                if (debugJavascript === true) console.log(data);
-                if (data.error === true) {
-                    // ERROR
-                    toastr.remove();
-                    toastr.error(
-                        data.message,
-                        '<?php echo $lang->get('error'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                } else {
-                    // Remove deleted elements
-                    // And Remove filter
-                    $('.icheck-toggle').each(function(index, obj) {
-                        var my = $(":checkbox:eq(0)", obj);
-                        if (my[0].checked === true) {
-                            $(obj).remove();
-                        } else {
-                            $(obj).removeClass('hidden');
-                        }
-                    });
 
-                    $('#' + id).addClass('hidden');
+        var requests = [];
+        if (folders.length > 0 || items.length > 0) {
+            requests.push(
+                $.post(
+                    'sources/utilities.queries.php', {
+                        type: action,
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                )
+            );
+        }
+        if (kbs.length > 0) {
+            requests.push(
+                $.post(
+                    'sources/kb.queries.php', {
+                        type: action === 'restore_selected_objects' ? 'restore_deleted_kbs' : 'purge_deleted_kbs',
+                        data: prepareExchangedData(JSON.stringify({'ids': kbs}), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                )
+            );
+        }
 
-                    // Inform user
-                    toastr.remove();
-                    toastr.success(
-                        '<?php echo $lang->get('done'); ?>',
-                        '', {
-                            timeOut: 5000
-                        }
-                    );
+        if (requests.length === 0) {
+            toastr.remove();
+            toastr.warning(
+                '<?php echo $lang->get('no_selection_done'); ?>',
+                '', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return;
+        }
+
+        $.when.apply($, requests).done(function() {
+            var hasError = false;
+            var errorMessage = '';
+            for (var i = 0; i < arguments.length; i++) {
+                var response = requests.length === 1 ? arguments[0] : arguments[i][0];
+                var decoded = decodeQueryReturn(response, '<?php echo $session->get('key'); ?>');
+                if (decoded.error === true) {
+                    hasError = true;
+                    errorMessage = decoded.message;
+                    break;
                 }
             }
-        );
+
+            if (hasError === true) {
+                toastr.remove();
+                toastr.error(
+                    errorMessage,
+                    '<?php echo $lang->get('error'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                $('.icheck-toggle').each(function(index, obj) {
+                    var my = $(":checkbox:eq(0)", obj);
+                    if (my[0].checked === true) {
+                        $(obj).remove();
+                    } else {
+                        $(obj).removeClass('hidden');
+                    }
+                });
+
+                $('#' + id).addClass('hidden');
+
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('done'); ?>',
+                    '', {
+                        timeOut: 5000
+                    }
+                );
+            }
+        }).fail(function() {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('server_answer_error'); ?>',
+                '<?php echo $lang->get('error'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+        });
     }
     //]]>
 </script>
