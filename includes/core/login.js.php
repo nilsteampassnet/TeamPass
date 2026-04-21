@@ -43,6 +43,20 @@ declare(strict_types=1);
     var mfaStepPending = false;
     var cachedMfaData = null;
 
+    function hideForgotLocalPasswordLink() {
+        $('#forgot-local-password-container').addClass('hidden');
+        $('#forgot-local-password-link').prop('disabled', false);
+    }
+
+    function showForgotLocalPasswordLink(login) {
+        if (typeof login === 'undefined' || String(login).trim() === '') {
+            hideForgotLocalPasswordLink();
+            return;
+        }
+
+        $('#forgot-local-password-container').removeClass('hidden');
+    }
+
     // On page load
     $(function() {
         // Do we have to upgrade first
@@ -66,6 +80,9 @@ declare(strict_types=1);
 
         // Set focus on login input
         $('#login').focus();
+        $('#login, #pw').on('input', function() {
+            hideForgotLocalPasswordLink();
+        });
 
         // Page has beed reloaded due to session key inconsistency
         if (store.get('teampassUser') !== null && typeof store.get('teampassUser') !== 'undefined' && store.get('teampassUser').page_reload === 1) {
@@ -165,6 +182,7 @@ declare(strict_types=1);
             }
             // Clear userOauth2Info
             store.set('userOauth2Info', '');
+            hideForgotLocalPasswordLink();
             launchIdentify(false, '<?php echo isset($nextUrl) === true ? $nextUrl : ''; ?>');
         });
 
@@ -230,6 +248,100 @@ declare(strict_types=1);
 
     $(document).on('click', '#register-yubiko-key', function() {
         $('#yubiko-new-key').removeClass('hidden');
+    });
+
+    $(document).on('click', '#forgot-local-password-link', function(event) {
+        event.preventDefault();
+
+        const login = $('#login').val().trim();
+        if (login === '') {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('error_bad_credentials'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            return false;
+        }
+
+        $('#forgot-local-password-link').prop('disabled', true);
+        toastr.remove();
+        toastr.info(
+            '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+            '', {
+                positionClass: "toast-top-center"
+            }
+        );
+
+        $.post(
+            'sources/identify.php', {
+                type: 'request_forgot_local_password',
+                data: prepareExchangedData(
+                    JSON.stringify({
+                        login: login
+                    }),
+                    'encode',
+                    '<?php echo strval($session->get('key')); ?>'
+                )
+            },
+            function(receivedData) {
+                let data = {};
+
+                try {
+                    data = prepareExchangedData(
+                        receivedData,
+                        'decode',
+                        '<?php echo strval($session->get('key')); ?>'
+                    );
+                } catch (e) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('server_answer_error'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    $('#forgot-local-password-link').prop('disabled', false);
+                    return false;
+                }
+
+                toastr.remove();
+                if (data.error === true) {
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 7000,
+                            progressBar: true
+                        }
+                    );
+                    $('#forgot-local-password-link').prop('disabled', false);
+                    return false;
+                }
+
+                $('#pw').val('');
+                hideForgotLocalPasswordLink();
+                toastr.success(
+                    data.message,
+                    '', {
+                        timeOut: 8000,
+                        progressBar: true
+                    }
+                );
+            }
+        ).fail(function() {
+            toastr.remove();
+            toastr.error(
+                '<?php echo $lang->get('server_answer_error'); ?>',
+                '<?php echo $lang->get('caution'); ?>', {
+                    timeOut: 5000,
+                    progressBar: true
+                }
+            );
+            $('#forgot-local-password-link').prop('disabled', false);
+        });
     });
 
 
@@ -892,6 +1004,8 @@ declare(strict_types=1);
                 }
 
                 if (data.error === true) {
+                    hideForgotLocalPasswordLink();
+
                     if (typeof data.extra !== 'undefined') {
                         if (data.extra === 'ad_user_created') {
                             toastr.remove();
@@ -940,6 +1054,10 @@ declare(strict_types=1);
                         if(data.ga_bad_code === true)
                         {
                             $("#ga_code").addClass("ui-state-error");
+                        }
+
+                        if (data.forgot_password_available === true) {
+                            showForgotLocalPasswordLink(old_data.login);
                         }
                     } else {
                         toastr.remove();
