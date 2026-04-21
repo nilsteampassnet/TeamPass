@@ -5942,11 +5942,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $('#card-item-tags').html(html_tags);
                     }
 
-                    $(data.links_to_kbs).each(function(index, value) {
+                    $(data.links_to_kbs || []).each(function(index, value) {
                         html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
 
                     });
-                    if (html_kbs === '') {
+                    if ($('#card-item-kbs').length === 0) {
+                        // Knowledge Base is disabled, so the row is not rendered.
+                    } else if (html_kbs === '') {
                         $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
                     } else {
                         $('#card-item-kbs').html(html_kbs);
@@ -7058,7 +7060,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Display password history
                 if (data.previous_passwords.length > 0) {
                     $.each(data.previous_passwords, function(i, value) {
-                        previousPasswords += '<div class="row"><div class="col-8"><i class="fa-solid fa-key fa-2xs mr-2"></i><code>' + value.password + '</code></div><div class="col-4"><span class="badge bg-info text-dark">' + value.date + '</span></div></div>';
+                        previousPasswords += '<div class="row"><div class="col-8"><i class="fa-solid fa-key fa-2xs mr-2"></i><code>' + value.previous_password + '</code></div><div class="col-4"><span class="badge bg-info text-dark">' + value.date + '</span></div></div>';
                     });
                     
                     // SHow dialog
