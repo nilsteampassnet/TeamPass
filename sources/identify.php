@@ -87,6 +87,12 @@ if ($post_type === 'identify_user') {
     // ---
     // ---
     // ---
+} elseif ($post_type === 'request_forgot_local_password') {
+    echo prepareExchangedData(
+        requestForgotLocalPassword($post_data, $SETTINGS),
+        'encode'
+    );
+    return false;
 } elseif ($post_type === 'get2FAMethods') {
     //--------
     // Get MFA methods
@@ -204,6 +210,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
+    clearForgotLocalPasswordRequestContext($session);
     
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
@@ -443,11 +450,16 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        $forgotLocalPasswordContext = getForgotLocalPasswordContext($userInfo, $SETTINGS);
+        if ($forgotLocalPasswordContext['available'] === true) {
+            storeForgotLocalPasswordRequestContext($session, (string) $username);
+        }
         echo prepareExchangedData(
             [
                 'value' => '',
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials'),
+                'forgot_password_available' => $forgotLocalPasswordContext['available'],
             ],
             'encode'
         );
@@ -712,6 +724,169 @@ function buildAuthResponse(
     }
 
     return $response;
+}
+
+function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
+{
+    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $featureEnabled = isset($SETTINGS['enable_local_password_recovery']) === true
+        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
+    $hasOngoingProcess = is_array($userInfo) === true
+        && empty($userInfo['ongoing_process_id']) === false;
+
+    return [
+        'available' => is_array($userInfo) === true
+            && ($userInfo['auth_type'] ?? '') === 'local'
+            && $featureEnabled === true
+            && $emailConfigured === true
+            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && $hasOngoingProcess === false,
+    ];
+}
+
+function clearForgotLocalPasswordRequestContext($session = null): void
+{
+    $session = $session ?? SessionManager::getSession();
+    $session->remove('forgot_local_password_login');
+    $session->remove('forgot_local_password_requested_at');
+}
+
+function storeForgotLocalPasswordRequestContext($session, string $login): void
+{
+    clearForgotLocalPasswordRequestContext($session);
+    $session->set('forgot_local_password_login', $login);
+    $session->set('forgot_local_password_requested_at', time());
+}
+
+function forgotLocalPasswordRequestIsAuthorized($session, string $login): bool
+{
+    $authorizedLogin = (string) ($session->get('forgot_local_password_login') ?? '');
+    $requestedAt = (int) ($session->get('forgot_local_password_requested_at') ?? 0);
+
+    return $authorizedLogin !== ''
+        && hash_equals($authorizedLogin, $login)
+        && $requestedAt > 0
+        && (time() - $requestedAt) <= 600;
+}
+
+function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    $dataReceived = $session->get('key') === null
+        ? $sentData
+        : prepareExchangedData($sentData, 'decode', $session->get('key'));
+    if (is_array($dataReceived) !== true) {
+        $dataReceived = [];
+    }
+    $dataReceived = sanitizeData(
+        $dataReceived,
+        [
+            'login' => 'trim|escape',
+        ]
+    );
+
+    $login = trim((string) ($dataReceived['login'] ?? ''));
+    if ($login === '') {
+        clearForgotLocalPasswordRequestContext($session);
+        return [
+            'error' => true,
+            'message' => $lang->get('forgot_local_password_unavailable'),
+        ];
+    }
+    if (forgotLocalPasswordRequestIsAuthorized($session, $login) !== true) {
+        clearForgotLocalPasswordRequestContext($session);
+        return [
+            'error' => true,
+            'message' => $lang->get('forgot_local_password_unavailable'),
+        ];
+    }
+
+    $userInfo = getUserCompleteData($login);
+    $forgotContext = getForgotLocalPasswordContext($userInfo, $SETTINGS);
+    if ($forgotContext['available'] !== true) {
+        clearForgotLocalPasswordRequestContext($session);
+        return [
+            'error' => true,
+            'message' => $lang->get('forgot_local_password_unavailable'),
+        ];
+    }
+
+    $temporaryPassword = GenerateCryptKey(20, false, true, true, false, true);
+    $resetResult = prepareExchangedData(
+        handleUserKeys(
+            (int) $userInfo['id'],
+            $temporaryPassword,
+            isset($SETTINGS['maximum_number_of_items_to_treat']) === true
+                ? (int) $SETTINGS['maximum_number_of_items_to_treat']
+                : NUMBER_ITEMS_IN_BATCH,
+            '',
+            true,
+            false,
+            true,
+            false,
+            '',
+            false,
+            '',
+            '',
+            false,
+            'auth-pwd-change'
+        ),
+        'decode'
+    );
+
+    if (is_array($resetResult) !== true || (isset($resetResult['error']) === true && $resetResult['error'] === true)) {
+        clearForgotLocalPasswordRequestContext($session);
+        return [
+            'error' => true,
+            'message' => $lang->get('forgot_local_password_unavailable'),
+        ];
+    }
+
+    DB::delete(
+        prefixTable('auth_failures'),
+        'source = %s AND value = %s',
+        'login',
+        $userInfo['login']
+    );
+    $session->set('pwd_attempts', 0);
+
+    $emailServerUrl = empty(trim((string) ($SETTINGS['email_server_url'] ?? ''))) === false
+        ? (string) $SETTINGS['email_server_url']
+        : (string) ($SETTINGS['cpassman_url'] ?? '');
+    $userLanguage = new Language($userInfo['user_language'] ?? ($SETTINGS['default_language'] ?? 'english'));
+    sendMailToUser(
+        (string) $userInfo['email'],
+        $userLanguage->get('forgot_local_password_email_body'),
+        $userLanguage->get('forgot_local_password_email_subject'),
+        [
+            '#login#' => (string) $userInfo['login'],
+            '#name#' => (string) ($userInfo['name'] ?? ''),
+            '#lastname#' => (string) ($userInfo['lastname'] ?? ''),
+            '#tp_link#' => $emailServerUrl,
+        ],
+        false,
+        cryption($temporaryPassword, '', 'encrypt')['string'],
+        trim(((string) ($userInfo['name'] ?? '')) . ' ' . ((string) ($userInfo['lastname'] ?? '')))
+    );
+    clearForgotLocalPasswordRequestContext($session);
+
+    logEvents(
+        $SETTINGS,
+        'user_mngt',
+        'at_user_pwd_changed',
+        (string) $userInfo['id'],
+        (string) $userInfo['login'],
+        (string) $userInfo['id']
+    );
+
+    return [
+        'error' => false,
+        'message' => $lang->get('forgot_local_password_email_sent'),
+    ];
 }
 
 /**
@@ -1723,7 +1898,7 @@ function handleNewUser(string $username, string $passwordClear, array $userADInf
         true,
         true,
         false,
-        $lang->get('email_body_user_config_2')
+        'email_body_user_config_2'
     );
 
     $userInfo['has_been_created'] = 1;
@@ -3209,7 +3384,7 @@ function createOauth2User(
             true,
             true,
             false,
-            $lang->get('email_body_user_config_2'),
+            'email_body_user_config_2',
         );
 
         // Complete $userInfo
