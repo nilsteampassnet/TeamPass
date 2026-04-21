@@ -2824,8 +2824,46 @@ switch ($post_type) {
             }
         }
 
+        if ($post_field === 'enable_local_password_recovery') {
+            $legacyField = 'disable_show_forgot_pwd_link';
+            $legacyValue = (string) ((int) $post_value === 1 ? 0 : 1);
+            $legacyExists = DB::queryFirstField(
+                'SELECT COUNT(*)
+                FROM ' . prefixTable('misc') . '
+                WHERE type = %s AND intitule = %s',
+                'admin',
+                $legacyField
+            );
+
+            if ((int) $legacyExists === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $legacyValue,
+                        'type' => 'admin',
+                        'intitule' => $legacyField,
+                        'created_at' => $timestamp,
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $legacyValue,
+                        'updated_at' => $timestamp,
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    $legacyField
+                );
+            }
+        }
+
         // Keep local settings array aligned with the saved value
         $SETTINGS[$post_field] = $post_value;
+        if ($post_field === 'enable_local_password_recovery') {
+            $SETTINGS['disable_show_forgot_pwd_link'] = (string) ((int) $post_value === 1 ? 0 : 1);
+        }
 
         // Silent default save of browser extension FQDN on first API activation
         if ($post_field === 'api' && (int) $post_value === 1) {
@@ -4296,13 +4334,38 @@ case 'get_live_activity':
      *   user_login: string,
      *   action: string,
      *   action_text: string,
+     *   source_type: string,
+     *   source_label: string,
      *   item_id: int|null,
      *   item_label: string|null
      * }]
      */
-    
+
+    $getActivityActionText = static function (string $action) use ($lang): string {
+        switch ($action) {
+            case 'at_shown':
+                return $lang->get('action_accessed');
+            case 'at_creation':
+                return $lang->get('action_created');
+            case 'at_modification':
+                return $lang->get('action_modified');
+            case 'at_delete':
+                return $lang->get('action_deleted');
+            case 'at_manual':
+                return $lang->get('action_manual');
+            case 'at_password_shown_edit_form':
+                return $lang->get('opened_edit_form_of');
+            case 'at_copy':
+                return $lang->get('copied');
+            case 'at_restored':
+                return $lang->get('at_restored');
+            default:
+                return $action;
+        }
+    };
+
     $timestamp5min = time() - 300; // 5 minutes ago
-    
+
     $activities = DB::query(
         'SELECT l.date, l.id_user, u.login, l.action, l.raison, l.id_item, i.label 
         FROM ' . prefixTable('log_items') . ' AS l
@@ -4318,44 +4381,69 @@ case 'get_live_activity':
 
     foreach ($activities as $activity) {
         $activity = secureOutput($activity, ['login', 'label']);
-        // Translate action to readable text
-        $actionText = '';
-        switch ($activity['action']) {
-            case 'at_shown':
-                $actionText = $lang->get('action_accessed');
-                break;
-            case 'at_creation':
-                $actionText = $lang->get('action_created');
-                break;
-            case 'at_modification':
-                $actionText = $lang->get('action_modified');
-                break;
-            case 'at_delete':
-                $actionText = $lang->get('action_deleted');
-                break;
-            case 'at_manual':
-                $actionText = $lang->get('action_manual');
-                break;
-            case 'at_password_shown_edit_form':
-                $actionText = $lang->get('opened_edit_form_of');
-                break;
-            case 'at_copy':
-                $actionText = $lang->get('copied');
-                break;
-            default:
-                $actionText = $activity['action'];
-        }
-        
+
         $activityList[] = array(
             'timestamp' => intval($activity['date']),
             'user_id' => intval($activity['id_user']),
             'user_login' => $activity['login'] ?? $lang->get('unknown'),
             'action' => $activity['action'],
-            'action_text' => strtolower($actionText),
+            'action_text' => strtolower($getActivityActionText((string) $activity['action'])),
+            'source_type' => 'item',
+            'source_label' => $lang->get('items'),
             'item_id' => $activity['id_item'] ? intval($activity['id_item']) : null,
             'item_label' => $activity['label'] ?? null,
         );
     }
+
+    if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) {
+        $kbActivities = DB::query(
+            'SELECT created_at, valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE type = %s
+                AND created_at > %i
+            ORDER BY created_at DESC
+            LIMIT 10',
+            'kb_log',
+            $timestamp5min
+        );
+
+        foreach ($kbActivities as $kbActivity) {
+            $payload = json_decode((string) ($kbActivity['valeur'] ?? ''), true);
+            if (is_array($payload) === false) {
+                continue;
+            }
+
+            $sanitizedPayload = secureOutput(
+                [
+                    'user_login' => (string) ($payload['user_login'] ?? ''),
+                    'label' => (string) ($payload['label'] ?? ''),
+                ],
+                ['user_login', 'label']
+            );
+
+            $action = (string) ($payload['action'] ?? '');
+            $activityList[] = array(
+                'timestamp' => (int) ($payload['date'] ?? $kbActivity['created_at'] ?? 0),
+                'user_id' => (int) ($payload['user_id'] ?? 0),
+                'user_login' => $sanitizedPayload['user_login'] !== '' ? $sanitizedPayload['user_login'] : $lang->get('unknown'),
+                'action' => $action,
+                'action_text' => strtolower($getActivityActionText($action)),
+                'source_type' => 'kb',
+                'source_label' => $lang->get('kb_logs'),
+                'item_id' => null,
+                'item_label' => $sanitizedPayload['label'] !== '' ? $sanitizedPayload['label'] : null,
+            );
+        }
+    }
+
+    usort(
+        $activityList,
+        static function (array $left, array $right): int {
+            return ($right['timestamp'] ?? 0) <=> ($left['timestamp'] ?? 0);
+        }
+    );
+
+    $activityList = array_slice($activityList, 0, 10);
     
     echo prepareExchangedData(
         array(
