@@ -167,7 +167,19 @@ sudo a2enmod rewrite
 sudo systemctl reload apache2
 ```
 
+> :warning: **`AllowOverride All` is required.** TeamPass ships `.htaccess` files that handle URL rewriting, PHP execution control, and access restrictions. Without `AllowOverride All` these rules are silently ignored.
+
+**Subdirectory install (Apache Alias)**
+
+If TeamPass is served from a path such as `https://example.com/teampass/`, adjust `RewriteBase` in `public/.htaccess`:
+
+```apache
+RewriteBase /teampass/
+```
+
 #### Nginx
+
+The Nginx configuration must route requests for the web UI through `index.php` and API requests through `api/index.php`. It must also block direct access to `core.php` (a bootstrap include, not an endpoint).
 
 ```nginx
 server {
@@ -176,6 +188,18 @@ server {
     root /var/www/html/teampass/public;
     index index.php;
 
+    # Block direct access to the bootstrap include
+    location ~* /core\.php$ {
+        deny all;
+        return 403;
+    }
+
+    # API — route through the API front controller
+    location /api/ {
+        try_files $uri $uri/ /api/index.php?$query_string;
+    }
+
+    # Web UI — route through the main front controller
     location / {
         try_files $uri $uri/ /index.php?$query_string;
     }
@@ -187,6 +211,8 @@ server {
     }
 }
 ```
+
+> :bulb: **Note:** `RewriteBase` is an Apache-only directive. For Nginx, the base path is implicit in the `location` blocks; no equivalent setting is needed.
 
 ---
 
@@ -235,7 +261,34 @@ chmod 0750 secrets/
 
 Browse to `https://<your_teampass_domain>/install/install.php` and follow the on-screen wizard.
 
-Once the wizard completes, the `install/` directory is no longer needed for normal operation. You may optionally restrict access to it via your web server configuration.
+#### Lock down the install directory after setup
+
+Once the wizard completes, **block HTTP access to `public/install/`**. The installer files must not remain publicly accessible in production.
+
+**Apache** — uncomment the deny directive in `public/install/.htaccess`:
+
+```apache
+Require all denied
+```
+
+Or disable the directory in your virtual host:
+
+```apache
+<Directory /var/www/html/teampass/public/install>
+    Require all denied
+</Directory>
+```
+
+**Nginx** — add a location block before the catch-all:
+
+```nginx
+location /install/ {
+    deny all;
+    return 403;
+}
+```
+
+> :warning: Skipping this step leaves the upgrade scripts accessible, which is a security risk on a running instance.
 
 ---
 

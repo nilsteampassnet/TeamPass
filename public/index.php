@@ -1406,8 +1406,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <?php
     $websocketEnabled = isset($SETTINGS['websocket_enabled']) && $SETTINGS['websocket_enabled'] === '1';
     if ($websocketEnabled && isset($session) && $session->has('user-id')) {
-        // Generate a WebSocket authentication token for this user
-        $wsToken = generateWebSocketToken((int) $session->get('user-id'));
+        // Generate a WebSocket authentication token valid for 1 hour (matches reconnect token lifetime)
+        $wsToken = generateWebSocketToken((int) $session->get('user-id'), 3600);
         $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
         $wsPort = $SETTINGS['websocket_port'] ?? '8080';
     ?>

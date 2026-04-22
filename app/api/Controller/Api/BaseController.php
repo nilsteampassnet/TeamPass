@@ -38,7 +38,11 @@ class BaseController
 
     /**
      * Get URI elements.
-     * 
+     *
+     * Supports both PATH_INFO style (/api/index.php/controller/action)
+     * and clean URLs via mod_rewrite (/api/controller/action).
+     * Uses SCRIPT_NAME to strip the base path so subdirectory installs work correctly.
+     *
      * @return array|string
      */
     public function getUriSegments()
@@ -46,9 +50,25 @@ class BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestUri = $request->getRequestUri();
 
-        $uri = parse_url($requestUri, PHP_URL_PATH);
-        $uri = explode( '/', $uri );
-        return $this->sanitizeUrl(array_slice($uri, ((int) array_search('index.php', $uri) + 1)));
+        $parsed = parse_url($requestUri, PHP_URL_PATH);
+        $uriPath = is_string($parsed) ? $parsed : '';
+
+        $scriptName = (string) ($_SERVER['SCRIPT_NAME'] ?? '');
+
+        if ($scriptName !== '' && str_starts_with($uriPath, $scriptName)) {
+            // PATH_INFO style: /api/index.php/controller/action
+            $uriPath = substr($uriPath, strlen($scriptName));
+        } else {
+            // Clean URL via mod_rewrite: /api/controller/action
+            // Strip the script directory (e.g. /api) to get route segments only.
+            $scriptDir = rtrim(dirname($scriptName), '/\\');
+            if ($scriptDir !== '' && $scriptDir !== '.' && str_starts_with($uriPath, $scriptDir . '/')) {
+                $uriPath = substr($uriPath, strlen($scriptDir));
+            }
+        }
+
+        $parts = array_values(array_filter(explode('/', $uriPath)));
+        return $this->sanitizeUrl($parts);
     }
 
     /**

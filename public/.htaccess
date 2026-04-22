@@ -3,7 +3,10 @@ Options -Indexes
 # Rewrite engine for clean URLs
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    RewriteBase /TeamPass/
+    # Set RewriteBase to match where TeamPass is served from:
+    #   - Domain root (https://teampass.example.com/)  → RewriteBase /
+    #   - Subdirectory alias (https://example.com/teampass/) → RewriteBase /teampass/
+    RewriteBase /
 
     # Route /api/* requests through the proxy entry point
     RewriteCond %{REQUEST_FILENAME} !-f

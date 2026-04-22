@@ -99,9 +99,10 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 
 ### Step 5 — Update Apache / Nginx configuration (3.2.0 only)
 
-If upgrading from 3.1.x, update your virtual host so `DocumentRoot` points to the `public/` subdirectory:
+If upgrading from 3.1.x, update your virtual host so `DocumentRoot` points to the `public/` subdirectory.
 
 **Apache example:**
+
 ```apache
 DocumentRoot /var/www/html/teampass/public
 <Directory /var/www/html/teampass/public>
@@ -110,12 +111,82 @@ DocumentRoot /var/www/html/teampass/public
 </Directory>
 ```
 
+Enable `mod_rewrite` if not already active:
+
+```bash
+sudo a2enmod rewrite
+sudo systemctl reload apache2
+```
+
+> :warning: **`AllowOverride All` is required.** TeamPass ships `.htaccess` files that handle URL rewriting, PHP execution control, and access restrictions. Without it, these rules are silently ignored.
+
 **Nginx example:**
+
+The Nginx configuration must route requests for the web UI through `index.php` and API requests through `api/index.php`. It must also block direct access to `core.php`.
+
 ```nginx
-root /var/www/html/teampass/public;
+server {
+    listen 443 ssl;
+    server_name teampass.yourdomain.com;
+    root /var/www/html/teampass/public;
+    index index.php;
+
+    # Block direct access to the bootstrap include
+    location ~* /core\.php$ {
+        deny all;
+        return 403;
+    }
+
+    # API — route through the API front controller
+    location /api/ {
+        try_files $uri $uri/ /api/index.php?$query_string;
+    }
+
+    # Web UI — route through the main front controller
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+**Subdirectory install (Apache Alias)**
+
+If TeamPass is served from a sub-path such as `https://example.com/teampass/`, adjust `RewriteBase` in `public/.htaccess`:
+
+```apache
+RewriteBase /teampass/
 ```
 
 Reload your web server after making the change.
+
+---
+
+### Step 5b — Lock down the install directory
+
+After the upgrade wizard completes, block HTTP access to `public/install/`.
+
+**Apache** — uncomment the deny directive in `public/install/.htaccess`:
+
+```apache
+Require all denied
+```
+
+**Nginx** — add a location block before the catch-all:
+
+```nginx
+location /install/ {
+    deny all;
+    return 403;
+}
+```
+
+> :warning: Leaving the install directory accessible on a running instance exposes upgrade scripts to unauthenticated users.
 
 ---
 
@@ -155,6 +226,8 @@ Reload your web server after making the change.
 6. Ensure writable directories have correct permissions (see [installation guide](install/installation.md))
 
 7. Browse to `https://<your_teampass_instance>/install/upgrade.php` and run all steps
+
+8. After the wizard completes, lock down the install directory (see [Step 5b](#step-5b--lock-down-the-install-directory) above).
 
 #### How it works
 
