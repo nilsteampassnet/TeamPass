@@ -1,4 +1,3 @@
-!/includes/libraries/csrfp/log
 *.DS_Store
 *.log
 *.zip
@@ -13,30 +12,21 @@ bower_components
 ad.js
 TODO
 test.html
-/includes/avatars
-/app/config/tp.config.php
-/app/config/tp.config.php.*
+
+# App config — local files, never commit
 /app/config/settings.php
 /app/config/settings.php.*
-includes/libraries/csrfp/libs/csrfp.config.php
+/app/config/tp.config*
+
+# CSRF protector — local config and backups
+!/app/includes/libraries/csrfp/log
+app/includes/libraries/csrfp/libs/csrfp.config.php
+app/includes/libraries/csrfp/libs/csrfp.config.php.*
+
 # Master encryption key — never commit the secrets directory content
 /secrets/*
 !/secrets/.gitkeep
-/includes/libraries/csrfp/libs/csrfp.config.php.*
-gcommit.sh
-gdev.sh
-gpush.sh
-/.vscode/*
-/_tools/*
-phpinsights.php
-EncryptedFile_*
-# Legacy paths (pre-3.2.0) — kept for git history compatibility
-/files/*
-!/files/.htaccess
-!/files/empty_file.txt
-/upload/*
-!/upload/.htaccess
-!/upload/empty_file.txt
+
 # Storage directories (3.2.0+) — user data must never be committed
 /storage/files/*
 !/storage/files/.htaccess
@@ -48,35 +38,45 @@ EncryptedFile_*
 !/storage/backups/.gitkeep
 /storage/logs/*
 !/storage/logs/.gitkeep
+
 # Avatars are user data — never commit
 /public/assets/avatars/*
 !/public/assets/avatars/.htaccess
 !/public/assets/avatars/empty_file.txt
-/~/*
+
+# Generated/runtime files
+/app/includes/tables_integrity.json
+EncryptedFile_*
+
+# Local development scripts
+/app/scripts/_local/*
+/.auto-claude/*
+/_tools/*
+/_things/*
+/_stubs/*
+/coverage/*
+/workReadmeFiles/*
+
+gcommit.sh
+gdev.sh
+gpush.sh
 gitdo.sh
 version-commit.php
 tp_minor_release.txt
-/app/config/tp.config*
-/includes/tables_integrity.json
-/_things/*
-/files/teampass_tasks.log
-/_stubs/*
-# Snyk Security Extension - AI Rules (auto-generated)
-.github/instructions/snyk_rules.instructions.md
-*debug*.php
-/scripts/_local/*
-/.auto-claude/*
-/coverage/*
+phpinsights.php
+/.vscode/*
+
+# PHP test artifacts
 .phpunit.result.cache
 .phpunit.cache/
 tests/_output/
 tests/_support/_generated/
-/webfonts
-*:Zone.Identifier
+
+# Snyk Security Extension - AI Rules (auto-generated)
+.github/instructions/snyk_rules.instructions.md
+
+*debug*.php
 .venv/
 mempalace.yaml
 entities.json
-/workReadmeFiles/*
-# Master encryption key — never commit the secrets directory content
-/secrets/*
-!/secrets/.gitkeep
+*:Zone.Identifier
