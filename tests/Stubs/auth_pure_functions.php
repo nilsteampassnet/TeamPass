@@ -7,7 +7,7 @@ declare(strict_types=1);
  *
  * These functions have no DB, session, or filesystem dependencies and can
  * therefore be tested in full isolation. They are copied from:
- *   - sources/main.functions.php  (isKeyExistingAndEqual, isOneVarOfArrayEqualToValue, teampassNormalizeLegacyPassword, teampassDecodeJsonPayload)
+ *   - sources/main.functions.php  (isKeyExistingAndEqual, isOneVarOfArrayEqualToValue, teampassNormalizeLegacyPassword, teampassDecodeJsonPayload, teampassDecodeTransportSecret)
  *   - sources/identify.php        (all others)
  *
  * MAINTENANCE: keep in sync with their originals. If the production function
@@ -106,6 +106,25 @@ function teampassDecodeJsonPayload(string $data): string
     }
 
     return end($candidates) ?: $data;
+}
+
+/**
+ * Decode a secret transported as base64 when the caller explicitly marks it
+ * as such.
+ *
+ * This keeps passwords stable even when client/server exchange encryption is
+ * disabled and the surrounding request payload passes through legacy request
+ * sanitization layers.
+ */
+function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = false): string
+{
+    if ($value === '' || $isBase64Encoded !== true) {
+        return $value;
+    }
+
+    $decodedValue = base64_decode($value, true);
+
+    return $decodedValue === false ? $value : $decodedValue;
 }
 
 // ---------------------------------------------------------------------------
