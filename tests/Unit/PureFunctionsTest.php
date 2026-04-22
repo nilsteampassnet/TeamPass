@@ -17,6 +17,7 @@ require_once __DIR__ . '/../Stubs/auth_pure_functions.php';
  *   - isOneVarOfArrayEqualToValue()
  *   - teampassNormalizeLegacyPassword()
  *   - teampassDecodeJsonPayload()
+ *   - teampassDecodeTransportSecret()
  */
 class PureFunctionsTest extends TestCase
 {
@@ -188,5 +189,29 @@ class PureFunctionsTest extends TestCase
 
         $this->assertSame('{"pw":"&lt;"}', teampassDecodeJsonPayload($payload));
         $this->assertSame('&lt;', json_decode(teampassDecodeJsonPayload($payload), true)['pw']);
+    }
+
+    // =========================================================================
+    // teampassDecodeTransportSecret
+    // =========================================================================
+
+    public function testDecodesBase64TransportedPasswordWhenExplicitlyMarked(): void
+    {
+        $this->assertSame('<', teampassDecodeTransportSecret('PA==', true));
+    }
+
+    public function testKeepsLiteralEntityPasswordAfterTransportDecode(): void
+    {
+        $this->assertSame('&lt;', teampassDecodeTransportSecret('Jmx0Ow==', true));
+    }
+
+    public function testKeepsRawSecretUntouchedWhenNoTransportFlagIsSet(): void
+    {
+        $this->assertSame('<', teampassDecodeTransportSecret('<', false));
+    }
+
+    public function testKeepsOriginalValueWhenTransportPayloadIsInvalidBase64(): void
+    {
+        $this->assertSame('not-base64***', teampassDecodeTransportSecret('not-base64***', true));
     }
 }
