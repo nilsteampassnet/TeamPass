@@ -257,7 +257,10 @@ switch ($inputData['type']) {
             $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_password = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '';
+            $post_password = teampassDecodeTransportSecret(
+                isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '',
+                isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
+            );
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -876,7 +879,10 @@ switch ($inputData['type']) {
         $itemInfos = array();
         $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
-        $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '';
+        $post_password = $original_pw = teampassDecodeTransportSecret(
+            isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '',
+            isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
+        );
         $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars($dataReceived['tags']) : '';
         $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
