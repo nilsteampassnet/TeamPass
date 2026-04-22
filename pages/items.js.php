@@ -3122,6 +3122,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         return generatedPassword === null || typeof generatedPassword === 'undefined' ? '' : String(generatedPassword);
     }
 
+    function encodeTransportSecret(secretValue) {
+        const normalizedSecret = secretValue === null || typeof secretValue === 'undefined'
+            ? ''
+            : String(secretValue);
+
+        return btoa(unescape(encodeURIComponent(normalizedSecret)));
+    }
+
     function syncItemPasswordComplexity(passwordValue = null) {
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
@@ -3634,7 +3642,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     'id': store.get('teampassItem').id,
                     'label': purifyRes.arrFields['label'],
                     'login': purifyRes.arrFields['login'],
-                    'pw': $('#form-item-password').val(),
+                    'pw': encodeTransportSecret($('#form-item-password').val()),
+                    'pw_is_b64': 1,
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
                     'tags': purifyRes.arrFields['tags'],
