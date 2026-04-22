@@ -293,20 +293,38 @@ else {
     if (!$filePath || !is_readable($filePath) || strpos($filePath, $uploadFolderPath) !== 0) {
         sendError('ERROR_No_file_found');
     }
+
+    if ($isEncrypted && is_array($fileContent) && (isset($fileContent['error']) && $fileContent['error'] === true)) {
+        sendError('ERROR_No_file_found');
+    }
+
+    // Ciphertext on disk is block-padded; decrypted plaintext is shorter. Content-Length must
+    // match the response body, not filesize of the stored ciphertext (fixes e.g. HTTP/2 on zip).
+    $decryptedBinary = null;
+    if ($isEncrypted && is_string($fileContent) && $fileContent !== '') {
+        $decryptedBinary = base64_decode($fileContent, true);
+        if ($decryptedBinary === false) {
+            sendError('ERROR_No_file_found');
+        }
+    }
+
+    $contentLength = $decryptedBinary !== null ? strlen($decryptedBinary) : filesize($filePath);
+    if ($contentLength === false) {
+        sendError('ERROR_No_file_found');
+    }
     
     // Set headers and serve file
-    setDownloadHeaders($filename, filesize($filePath));
+    setDownloadHeaders($filename, $contentLength);
     
     if (ob_get_level()) {
         ob_end_clean();
     }
     
-    if (empty($fileContent)) {
+    if ($decryptedBinary !== null) {
+        echo $decryptedBinary;
+    } elseif (empty($fileContent)) {
         // Serve file directly from disk
         readfile($filePath);
-    } elseif (is_string($fileContent)) {
-        // Serve decrypted content
-        echo base64_decode($fileContent);
     } else {
         sendError('ERROR_No_file_found');
     }
