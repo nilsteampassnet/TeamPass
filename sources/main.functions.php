@@ -3616,6 +3616,25 @@ function teampassDecodeJsonPayload(string $data): string
 }
 
 /**
+ * Decode a secret transported as base64 when the caller explicitly marks it
+ * as such.
+ *
+ * This keeps passwords stable even when client/server exchange encryption is
+ * disabled and the surrounding request payload passes through legacy request
+ * sanitization layers.
+ */
+function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = false): string
+{
+    if ($value === '' || $isBase64Encoded !== true) {
+        return $value;
+    }
+
+    $decodedValue = base64_decode($value, true);
+
+    return $decodedValue === false ? $value : $decodedValue;
+}
+
+/**
  * Decrypt an item password and normalize legacy entity-encoded values when
  * pw_len proves that the decoded form is the original one.
  */
