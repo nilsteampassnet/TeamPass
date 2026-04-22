@@ -14,11 +14,14 @@ ad.js
 TODO
 test.html
 /includes/avatars
-/includes/config/tp.config.php
-/includes/config/settings.php
+/app/config/tp.config.php
+/app/config/tp.config.php.*
+/app/config/settings.php
+/app/config/settings.php.*
 includes/libraries/csrfp/libs/csrfp.config.php
-/includes/config/tp.config.php.*
-/includes/config/settings.php.*
+# Master encryption key — never commit the secrets directory content
+/secrets/*
+!/secrets/.gitkeep
 /includes/libraries/csrfp/libs/csrfp.config.php.*
 gcommit.sh
 gdev.sh
@@ -27,19 +30,34 @@ gpush.sh
 /_tools/*
 phpinsights.php
 EncryptedFile_*
+# Legacy paths (pre-3.2.0) — kept for git history compatibility
 /files/*
 !/files/.htaccess
 !/files/empty_file.txt
 /upload/*
 !/upload/.htaccess
 !/upload/empty_file.txt
+# Storage directories (3.2.0+) — user data must never be committed
+/storage/files/*
+!/storage/files/.htaccess
+!/storage/files/empty_file.txt
+/storage/upload/*
+!/storage/upload/.htaccess
+!/storage/upload/empty_file.txt
+/storage/backups/*
+!/storage/backups/.gitkeep
+/storage/logs/*
+!/storage/logs/.gitkeep
+# Avatars are user data — never commit
+/public/assets/avatars/*
+!/public/assets/avatars/.htaccess
+!/public/assets/avatars/empty_file.txt
 /~/*
 gitdo.sh
 version-commit.php
 tp_minor_release.txt
-/includes/config/tp.config*
+/app/config/tp.config*
 /includes/tables_integrity.json
-phpstan.neon
 /_things/*
 /files/teampass_tasks.log
 /_stubs/*
@@ -58,7 +76,7 @@ tests/_support/_generated/
 .venv/
 mempalace.yaml
 entities.json
-/readmeFiles/*
+/workReadmeFiles/*
 # Master encryption key — never commit the secrets directory content
 /secrets/*
 !/secrets/.gitkeep

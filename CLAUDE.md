@@ -122,7 +122,7 @@ Located in `/includes/libraries/teampassclasses/`, these are local packages mana
 **SessionManager** (`TeampassClasses\SessionManager\SessionManager`)
 - Singleton pattern: `SessionManager::getSession()`
 - Wraps Symfony Session with `EncryptedSessionProxy` — session data is always encrypted at rest
-- Encryption key loaded from `SECUREPATH/SECUREFILE`
+- Encryption key loaded from `TEAMPASS_SECRETS/SECUREFILE`
 - **Session storage backend** (selected automatically):
   - **Redis** (opt-in): when `ext-redis` is loaded AND `redis_session_enabled=1` in settings, sessions are stored in Redis via `RedisSessionHandler` wrapped by `EncryptedSessionProxy`; 2-second connect timeout; falls back to filesystem on any failure
   - **Filesystem** (default): `\SessionHandler` wrapped by `EncryptedSessionProxy`
@@ -183,7 +183,7 @@ DB::delete('teampass_log_items', 'id_item=%i', $itemId);
 ```
 
 **Database Configuration:**
-- Created during installation: `/includes/config/settings.php`
+- Created during installation: `/app/config/settings.php`
 - Table prefix: `teampass_` (configurable via `DB_PREFIX`)
 - All queries use parameterized statements (no raw SQL concatenation)
 
@@ -232,7 +232,7 @@ Supports Google Authenticator (TOTP), Duo Security, YubiKey, and AGSES.
 **Two-Layer Encryption Model:**
 
 1. **Application-Level** (Defuse PHP Encryption)
-   - Master key stored in `SECUREPATH/SECUREFILE`
+   - Master key stored in `TEAMPASS_SECRETS/SECUREFILE`
    - Used for: session data, settings.php DB password, misc settings
 
 2. **User-Level** (RSA via phpseclib + AES)
@@ -729,7 +729,7 @@ curl -X GET "https://your-teampass.com/api/item/getOtp?id=123" \
    - Never trust user input, especially in AJAX handlers
 
 6. **Encryption key management:**
-   - Never commit `includes/config/settings.php` or `SECUREPATH/SECUREFILE`
+   - Never commit `includes/config/settings.php` or `TEAMPASS_SECRETS/SECUREFILE`
    - Encryption keys must be generated during installation
 
 ### Common Vulnerabilities to Avoid
@@ -749,7 +749,7 @@ PHP Code requires to fit PHPStan level 4.
 - **Strict types:** All new PHP files should use `declare(strict_types=1);`
 - **Namespaces:** Custom classes use `TeampassClasses\*` namespace
 - **Error handling:** Use try/catch blocks, return JSON errors in AJAX handlers
-- **Constants:** Defined in `/includes/config/include.php` (e.g., `TP_VERSION`)
+- **Constants:** Defined in `/app/config/include.php` (e.g., `TP_VERSION`)
 
 ### AJAX Request/Response Pattern
 
@@ -895,7 +895,7 @@ When making changes to core functionality:
 
 1. Create new upgrade script: `/install/upgrade_run_X.X.X.php`
 2. Add table/column changes with `DB::query()` or `DB::queryRaw()`
-3. Update version constants in `/includes/config/include.php`
+3. Update version constants in `/app/config/include.php`
 4. Test upgrade path from previous version
 
 ### Managing PR from github
@@ -919,7 +919,7 @@ For any new PR, always perform as this:
 
 ## Version Information
 
-Current version constants in `/includes/config/include.php`:
+Current version constants in `/app/config/include.php`:
 - `TP_VERSION` - Major.minor version (e.g., '3.1.5')
 - `TP_VERSION_MINOR` - Patch version (e.g., '2')
 - Full version: 3.1.5.2

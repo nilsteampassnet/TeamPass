@@ -11,8 +11,8 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 
 # Copy local packages required by composer
-COPY includes/libraries/teampassclasses ./includes/libraries/teampassclasses
-COPY includes/libraries/ezimuel ./includes/libraries/ezimuel
+COPY app/includes/libraries/teampassclasses ./app/includes/libraries/teampassclasses
+COPY app/includes/libraries/ezimuel ./app/includes/libraries/ezimuel
 
 # Install production dependencies only
 RUN composer install \
@@ -113,27 +113,27 @@ WORKDIR /var/www/html
 COPY --chown=nginx:nginx . .
 
 # Copy vendor from composer builder
-COPY --from=composer-builder --chown=nginx:nginx /app/vendor ./vendor
+COPY --from=composer-builder --chown=nginx:nginx /app/app/vendor ./app/vendor
 
 # Create required directories with proper permissions
 RUN mkdir -p \
-    sk \
-    files \
-    upload \
-    includes/libraries/csrfp/log \
+    storage/sk \
+    storage/files \
+    storage/upload \
+    app/includes/libraries/csrfp/log \
     /var/lib/nginx/tmp \
     /var/log/supervisor \
     /run/nginx \
     && chown -R nginx:nginx \
-        sk \
-        files \
-        upload \
-        includes/libraries/csrfp/log \
+        storage/sk \
+        storage/files \
+        storage/upload \
+        app/includes/libraries/csrfp/log \
         /var/lib/nginx \
         /var/log \
         /run/nginx \
-    && chmod 700 sk \
-    && chmod 750 files upload includes/libraries/csrfp/log
+    && chmod 700 storage/sk \
+    && chmod 750 storage/files storage/upload app/includes/libraries/csrfp/log
 
 # Remove unnecessary files for production
 RUN rm -rf \
@@ -149,7 +149,7 @@ RUN rm -rf \
     Dockerfile
 
 # Setup cron for TeamPass scheduler
-RUN echo "* * * * * php /var/www/html/sources/scheduler.php > /dev/null 2>&1" > /var/spool/cron/crontabs/nginx \
+RUN echo "* * * * * php /var/www/html/app/sources/scheduler.php > /dev/null 2>&1" > /var/spool/cron/crontabs/nginx \
     && chmod 600 /var/spool/cron/crontabs/nginx
 
 # Copy and set entrypoint script
@@ -164,7 +164,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 EXPOSE 80
 
 # Define volumes for persistent data
-VOLUME ["/var/www/html/sk", "/var/www/html/files", "/var/www/html/upload"]
+VOLUME ["/var/www/html/storage/sk", "/var/www/html/storage/files", "/var/www/html/storage/upload"]
 
 # Set entrypoint and default command
 ENTRYPOINT ["/docker-entrypoint.sh"]

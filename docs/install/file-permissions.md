@@ -2,88 +2,119 @@
 
 ## File system permissions
 
-Correct file system permissions are critical for a password manager. This page defines the minimal permission set required by Teampass, explains the rationale for each directory, and provides ready-to-use commands for the most common server configurations.
+Correct file system permissions are critical for a password manager. This page defines the minimal permission set required by Teampass 3.2.x, explains the rationale for each directory, and provides ready-to-use commands for the most common server configurations.
+
+The upgrade wizard (**Step 1 — Requirements check**) verifies every item listed here and will block the upgrade if a required permission is missing.
+
+---
+
+## Directory layout (3.2.x)
+
+```
+/path/to/teampass/            ← project root
+├── app/                      ← application code  (must NOT be writable by web server)
+│   ├── config/               ← writable during install/upgrade only
+│   │   └── settings.php      ← writable during install/upgrade only
+│   ├── includes/
+│   │   └── libraries/
+│   │       └── csrfp/
+│   │           ├── libs/     ← writable during install/upgrade only
+│   │           └── log/      ← writable at runtime (always)
+│   ├── vendor/               ← read-only (Composer dependencies)
+│   └── websocket/
+│       └── logs/             ← writable at runtime (WebSocket daemon only)
+├── public/                   ← webroot — DocumentRoot must point here
+│   │                            (must NOT be writable by web server)
+│   ├── install/              ← restrict or remove after installation
+│   └── assets/
+│       └── avatars/          ← writable at runtime (optional — avatar uploads)
+├── storage/                  ← runtime data  (writable at runtime)
+│   ├── files/                ← required writable
+│   ├── upload/               ← optional writable (file attachments)
+│   └── backups/              ← optional writable (SQL dumps)
+└── secrets/                  ← encryption key  (readable by web server, NOT in webroot)
+    └── teampass-seckey.txt
+```
 
 ---
 
 ## Principles
 
-Teampass follows the **principle of least privilege**: each directory is granted only the access it genuinely needs at runtime.
+Teampass follows the **principle of least privilege**: each path is granted only the minimum access it genuinely needs.
 
-| Notation | Directories | Files | Meaning |
-|----------|------------|-------|---------|
-| **`0750 / 0640`** | `rwxr-x---` | `rw-r-----` | Owner full access, group read-only, world none |
-| **`0700 / 0600`** | `rwx------` | `rw-------` | Owner only — for the encryption key |
+| Notation | Meaning |
+|----------|---------|
+| `0755` (dir) / `0644` (files) | Owner full, group and world read-only — application code |
+| `0750` (dir) / `0640` (files) | Owner full, group read-only, world none — config and runtime data |
+| `0700` (dir) / `0600` (files) | Owner only — encryption key |
 
-> :warning: **Never use `0777` or `0775`** on any Teampass directory. World-writable directories allow any system user or compromised process to plant files or overwrite sensitive data.
+> :warning: **Never use `0777` or `0775`** on any Teampass directory. World-writable paths allow any system user or compromised process to plant or overwrite files.
 
 ---
 
 ## Directory reference
 
-### Read-only at runtime
+### Must NOT be writable by the web server
 
-These directories contain application code and static assets. They must **never** be writable by the web server process after installation.
+The upgrade wizard raises a warning (non-blocking) when these directories are writable — it indicates a configuration weakness that should be corrected.
 
-| Directory | Recommended perms | Notes |
-|-----------|------------------|-------|
-| `/` (Teampass root) | `0750` (dir) / `0640` (files) | Application code — writable only during install/upgrade |
-| `api/` | `0750` / `0640` | REST API controllers |
-| `sources/` | `0750` / `0640` | AJAX handlers |
-| `pages/` | `0750` / `0640` | HTML/JS templates |
-| `includes/core/` | `0750` / `0640` | Login/logout logic |
-| `includes/libraries/` (except csrfp sub-dirs) | `0750` / `0640` | Third-party libraries |
-| `vendor/` | `0750` / `0640` | Composer dependencies |
-| `install/` | `0750` / `0640` | **Remove or restrict access after installation** (see below) |
-
-> :bulb: The `install/` directory should be removed or made inaccessible via web server configuration once the installation is complete. Leaving it writable serves no purpose at runtime.
+| Directory | Recommended perms | Rationale |
+|-----------|------------------|-----------|
+| `app/` | `0755` dir / `0644` files | Application source code — writable only by the deployment user, not the web server |
+| `public/` | `0755` dir / `0644` files | Webroot — must not allow the web server to upload or overwrite files |
+| `app/vendor/` | `0755` / `0644` | Composer dependencies — installed at deploy time only |
 
 ---
 
-### Writable at install/upgrade only
+### Writable during install/upgrade only
 
-These directories are written to during the web installer or upgrade process. After that, they should revert to read-only.
+These paths are written by the web installer or upgrade wizard. Between runs, they should revert to read-only for hardened deployments.
 
-| Directory / File | Recommended perms | What is written |
-|-----------------|------------------|-----------------|
-| `includes/config/` | `0750` (dir) | `settings.php` (DB credentials, encrypted) |
-| `includes/config/settings.php` | `0640` | Encrypted DB password, SECUREPATH/SECUREFILE paths |
-| `includes/libraries/csrfp/libs/` | `0750` (dir) | `csrfp.config.php` (CSRF token configuration) |
+| Path | Recommended perms | What is written |
+|------|------------------|-----------------|
+| `app/config/` | `0750` (dir), owned by web server user | Contains `settings.php` |
+| `app/config/settings.php` | `0640`, owned by web server user | Encrypted DB credentials, `TEAMPASS_SECRETS` path |
+| `app/includes/libraries/csrfp/libs/` | `0750`, owned by web server user | `csrfp.config.php` (CSRF token configuration) |
 
-> :bulb: **Hardening tip:** once the installation is complete, you can make `includes/config/` read-only for the web server:
+> :bulb: **Hardening tip:** after installation you can lock these paths:
 > ```bash
-> chmod 550 /path/to/teampass/includes/config
-> chmod 440 /path/to/teampass/includes/config/settings.php
+> sudo chmod 0550 /path/to/teampass/app/config
+> sudo chmod 0440 /path/to/teampass/app/config/settings.php
+> sudo chmod 0550 /path/to/teampass/app/includes/libraries/csrfp/libs
 > ```
-> You must restore write access before running an upgrade, then lock it again afterwards.
+> Restore write access before running an upgrade, then lock again afterwards.
 
 ---
 
 ### Writable at runtime (permanent)
 
-These directories must remain writable by the web server process during normal operation.
+These paths must remain writable by the web server process during normal operation.
 
-| Directory | Recommended perms | What is written |
-|-----------|------------------|-----------------|
-| `files/` | `0750` | Background task trigger/lock files, exported backups, restore logs |
-| `files/backups/` | `0750` | Database backup files (`.sql`) |
-| `upload/` | `0750` | Encrypted file attachments uploaded by users |
-| `includes/avatars/` | `0750` | User avatar images |
-| `includes/libraries/csrfp/log/` | `0750` | CSRF protection audit log |
-| `websocket/logs/` *(if WebSocket enabled)* | `0750` | WebSocket server log files |
+| Path | Required | Recommended perms | What is written |
+|------|:--------:|------------------|-----------------|
+| `storage/` | **yes** | `0750` | Parent directory — PHP creates sub-directories at runtime |
+| `storage/files/` | **yes** | `0750` | Background task trigger/lock files, restore logs |
+| `storage/upload/` | optional | `0750` | Encrypted file attachments uploaded by users |
+| `storage/backups/` | optional | `0750` | SQL backup files generated before schema migrations |
+| `public/assets/avatars/` | optional | `0750` | User avatar images |
+| `app/includes/libraries/csrfp/log/` | **yes** | `0750` | CSRF protection audit log |
+| `app/websocket/logs/` *(WebSocket only)* | optional | `0750` | WebSocket daemon log file |
+
+**Required** means the upgrade wizard blocks until the path is writable.
+**Optional** means a warning is shown but the wizard still proceeds.
 
 ---
 
-### Encryption key directory (SECUREPATH)
+### Encryption key (TEAMPASS_SECRETS)
 
-The Defuse encryption key must be stored **outside the web root** whenever possible.
+The Defuse encryption master key must be stored **outside the webroot** (`public/`) whenever possible.
 
 | Path | Recommended perms | Notes |
 |------|------------------|-------|
-| `SECUREPATH/` | `0700` | Accessible only by the web server user |
-| `SECUREPATH/<keyfile>` | `0600` | The key file itself — owner read-only |
+| `secrets/` | `0750`, owned by web server user | Readable by the web server — must not be web-accessible |
+| `secrets/teampass-seckey.txt` | `0600` | The key file itself — owner read-only |
 
-> :warning: **Never place SECUREPATH inside the web root.** If that is unavoidable (e.g. shared hosting), use the `sk/` directory which is protected by its `.htaccess`. In Docker deployments, `/var/www/html/sk/` is used with `chmod 700`.
+> :warning: **`secrets/` must not be inside `public/`.** It lives at the project root, one level above the webroot, and is therefore unreachable via HTTP. In Docker deployments the key is stored at `/var/www/html/secrets/`.
 
 ---
 
@@ -95,12 +126,13 @@ All files and directories must be owned by the user that runs the web server (PH
 |-------------|-------------|---------------|
 | Apache + mod_php | `www-data` | `www-data` |
 | Apache + PHP-FPM | `www-data` | `www-data` |
-| Nginx + PHP-FPM | `www-data` (Debian/Ubuntu) / `nginx` (RHEL/Alpine) | same |
+| Nginx + PHP-FPM (Debian/Ubuntu) | `www-data` | `www-data` |
+| Nginx + PHP-FPM (RHEL/Alpine) | `nginx` | `nginx` |
 | Docker (official image) | `nginx` | `nginx` |
 
-### Advanced: separate owner from web server
+### Advanced: separate owner from web server user
 
-For higher security, you can own files with a dedicated non-login account (`teampass`) and give the web server group read access:
+For higher security, own the files with a dedicated non-login account (`teampass`) and give the web server only group read access:
 
 ```
 owner : teampass   (non-login system account)
@@ -109,7 +141,7 @@ group : www-data   (web server process)
 
 With this model:
 - PHP code cannot overwrite itself (web server has no write permission on code files)
-- Writable runtime directories (`files/`, `upload/`, etc.) are owned by `teampass:www-data` with `0770`
+- Writable runtime directories are owned `teampass:www-data` with `0770`
 
 This prevents a compromised PHP process from modifying application files.
 
@@ -119,31 +151,37 @@ This prevents a compromised PHP process from modifying application files.
 
 Replace `/var/www/html/teampass` with your actual installation path and `www-data` with your web server user.
 
-### Standard install (Apache/Nginx on Debian/Ubuntu)
+### Standard install (Apache / Nginx on Debian / Ubuntu)
 
 ```bash
 TEAMPASS=/var/www/html/teampass
 WEB_USER=www-data
 
-# Ownership
+# ── Ownership ────────────────────────────────────────────────────────────────
 sudo chown -R ${WEB_USER}:${WEB_USER} ${TEAMPASS}
 
-# Application code: read-only for web server
-sudo find ${TEAMPASS} -type d -not -path "*/files*" -not -path "*/upload*" \
-    -not -path "*/includes/avatars*" -not -path "*/includes/libraries/csrfp/log*" \
-    -exec chmod 0750 {} \;
-sudo find ${TEAMPASS} -type f -not -path "*/files/*" -not -path "*/upload/*" \
-    -exec chmod 0640 {} \;
+# ── Application code: not writable by web server ─────────────────────────────
+sudo find ${TEAMPASS}/app     -type d -exec chmod 0755 {} \;
+sudo find ${TEAMPASS}/app     -type f -exec chmod 0644 {} \;
+sudo find ${TEAMPASS}/public  -type d -exec chmod 0755 {} \;
+sudo find ${TEAMPASS}/public  -type f -exec chmod 0644 {} \;
 
-# Runtime-writable directories
-sudo chmod 0750 ${TEAMPASS}/files
-sudo chmod 0750 ${TEAMPASS}/upload
-sudo chmod 0750 ${TEAMPASS}/includes/avatars
-sudo chmod 0750 ${TEAMPASS}/includes/libraries/csrfp/log
+# ── Writable during install/upgrade only ─────────────────────────────────────
+sudo chmod 0750 ${TEAMPASS}/app/config
+sudo chmod 0640 ${TEAMPASS}/app/config/settings.php
+sudo chmod 0750 ${TEAMPASS}/app/includes/libraries/csrfp/libs
 
-# Encryption key directory (outside web root is strongly preferred)
-sudo chmod 0700 /var/opt/teampass/sk
-sudo chmod 0600 /var/opt/teampass/sk/*
+# ── Always-writable runtime directories ──────────────────────────────────────
+sudo chmod 0750 ${TEAMPASS}/storage
+sudo chmod 0750 ${TEAMPASS}/storage/files
+sudo chmod 0750 ${TEAMPASS}/storage/upload
+sudo chmod 0750 ${TEAMPASS}/storage/backups
+sudo chmod 0750 ${TEAMPASS}/public/assets/avatars
+sudo chmod 0750 ${TEAMPASS}/app/includes/libraries/csrfp/log
+
+# ── Encryption key directory ──────────────────────────────────────────────────
+sudo chmod 0750 ${TEAMPASS}/secrets
+sudo chmod 0600 ${TEAMPASS}/secrets/teampass-seckey.txt
 ```
 
 ### RHEL / AlmaLinux / Rocky Linux (SELinux environments)
@@ -154,12 +192,12 @@ WEB_USER=apache   # or nginx, depending on your setup
 
 sudo chown -R ${WEB_USER}:${WEB_USER} ${TEAMPASS}
 
-# Same chmod rules as above, then fix SELinux context:
-sudo semanage fcontext -a -t httpd_sys_rw_content_t "${TEAMPASS}/files(/.*)?"
-sudo semanage fcontext -a -t httpd_sys_rw_content_t "${TEAMPASS}/upload(/.*)?"
-sudo semanage fcontext -a -t httpd_sys_rw_content_t "${TEAMPASS}/includes/avatars(/.*)?"
+# Same chmod rules as above, then apply SELinux contexts:
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "${TEAMPASS}/storage(/.*)?"
+sudo semanage fcontext -a -t httpd_sys_rw_content_t "${TEAMPASS}/public/assets/avatars(/.*)?"
 sudo semanage fcontext -a -t httpd_sys_rw_content_t \
-    "${TEAMPASS}/includes/libraries/csrfp/log(/.*)?"
+    "${TEAMPASS}/app/includes/libraries/csrfp/log(/.*)?"
+sudo semanage fcontext -a -t httpd_sys_content_t    "${TEAMPASS}/secrets(/.*)?"
 sudo restorecon -Rv ${TEAMPASS}
 ```
 
@@ -171,21 +209,22 @@ The image enforces:
 
 | Path | Permissions | Owner |
 |------|------------|-------|
-| `sk/` | `700` | `nginx:nginx` |
-| `files/` | `750` | `nginx:nginx` |
-| `upload/` | `750` | `nginx:nginx` |
-| `includes/libraries/csrfp/log/` | `750` | `nginx:nginx` |
+| `secrets/` | `750` | `nginx:nginx` |
+| `storage/files/` | `750` | `nginx:nginx` |
+| `storage/upload/` | `750` | `nginx:nginx` |
+| `storage/backups/` | `750` | `nginx:nginx` |
+| `app/includes/libraries/csrfp/log/` | `750` | `nginx:nginx` |
 
 ---
 
 ## After installation: locking down the installer
 
-Once Teampass is running, prevent access to the install directory at the web server level.
+Once Teampass is running, prevent HTTP access to the install directory.
 
 ### Apache
 
 ```apache
-<Directory /var/www/html/teampass/install>
+<Directory /var/www/html/teampass/public/install>
     Require all denied
 </Directory>
 ```
@@ -199,13 +238,13 @@ location ^~ /install/ {
 }
 ```
 
-Alternatively, remove the `install/` directory entirely:
+Alternatively, remove the directory entirely:
 
 ```bash
-sudo rm -rf /var/www/html/teampass/install
+sudo rm -rf /var/www/html/teampass/public/install
 ```
 
-> :warning: You will need to restore this directory from the release archive before running a future upgrade.
+> :warning: You will need to restore `public/install/` from the release archive before running a future upgrade.
 
 ---
 
@@ -216,19 +255,31 @@ Run this after installation or after an upgrade to confirm the permission state:
 ```bash
 TEAMPASS=/var/www/html/teampass
 
-echo "=== Writable runtime dirs (expect 750) ==="
-stat -c "%a %n" ${TEAMPASS}/files ${TEAMPASS}/upload \
-    ${TEAMPASS}/includes/avatars \
-    ${TEAMPASS}/includes/libraries/csrfp/log
+echo "=== Must NOT be writable (expect 755) ==="
+stat -c "%a %n" ${TEAMPASS}/app ${TEAMPASS}/public
 
-echo "=== Config dir (expect 750 or 550 post-install) ==="
-stat -c "%a %n" ${TEAMPASS}/includes/config
+echo "=== Writable at install/upgrade (expect 750 or 550 post-hardening) ==="
+stat -c "%a %n" \
+    ${TEAMPASS}/app/config \
+    ${TEAMPASS}/app/includes/libraries/csrfp/libs
 
-echo "=== settings.php (expect 640 or 440 post-install) ==="
-stat -c "%a %n" ${TEAMPASS}/includes/config/settings.php
+echo "=== settings.php (expect 640 or 440 post-hardening) ==="
+stat -c "%a %n" ${TEAMPASS}/app/config/settings.php
 
-echo "=== Encryption key dir (expect 700) ==="
-stat -c "%a %n" $(php -r "include '${TEAMPASS}/includes/config/settings.php'; echo SECUREPATH;")
+echo "=== Runtime-writable (expect 750) ==="
+stat -c "%a %n" \
+    ${TEAMPASS}/storage \
+    ${TEAMPASS}/storage/files \
+    ${TEAMPASS}/storage/upload \
+    ${TEAMPASS}/storage/backups \
+    ${TEAMPASS}/public/assets/avatars \
+    ${TEAMPASS}/app/includes/libraries/csrfp/log
+
+echo "=== Encryption key directory (expect 750) ==="
+stat -c "%a %n" ${TEAMPASS}/secrets
+
+echo "=== Encryption key file (expect 600) ==="
+stat -c "%a %n" ${TEAMPASS}/secrets/teampass-seckey.txt
 
 echo "=== World-writable check (expect no output) ==="
 find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
@@ -238,18 +289,21 @@ find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
 
 ## Summary table
 
-| Directory | Install/Upgrade | Runtime | Recommended perms |
-|-----------|:--------------:|:-------:|:-----------------:|
-| `/` (app root) | Write | Read | `0750` / `0640` |
-| `files/` | Write | Write | `0750` |
-| `upload/` | — | Write | `0750` |
-| `includes/config/` | Write | Read | `0750` → `0550` after install |
-| `includes/config/settings.php` | Write | Read | `0640` → `0440` after install |
-| `includes/avatars/` | — | Write | `0750` |
-| `includes/libraries/csrfp/libs/` | Write | Read | `0750` → `0550` after install |
-| `includes/libraries/csrfp/log/` | — | Write | `0750` |
-| `install/` | Read | **None** | Remove or deny via web server |
-| `SECUREPATH/` | Write | Read | `0700` |
-| `SECUREPATH/<keyfile>` | Write | Read | `0600` |
-| `websocket/logs/` | — | Write (daemon) | `0750` |
-| `vendor/` | — | Read | `0750` / `0640` |
+| Path | Upgrade wizard check | Install/Upgrade | Runtime | Recommended perms |
+|------|:--------------------:|:---------------:|:-------:|:-----------------:|
+| `app/` | warning if writable | read | read | `0755` / `0644` |
+| `public/` | warning if writable | read | read | `0755` / `0644` |
+| `app/config/` | **required writable** | write | read | `0750` → `0550` post-install |
+| `app/config/settings.php` | **required writable** | write | read | `0640` → `0440` post-install |
+| `app/includes/libraries/csrfp/libs/` | **required writable** | write | read | `0750` → `0550` post-install |
+| `app/includes/libraries/csrfp/log/` | **required writable** | write | write | `0750` |
+| `app/vendor/` | — | read | read | `0755` / `0644` |
+| `public/assets/avatars/` | optional writable | — | write | `0750` |
+| `public/install/` | — | read | **none** | Remove or deny via web server |
+| `storage/` | **required writable** | write | write | `0750` |
+| `storage/files/` | **required writable** | write | write | `0750` |
+| `storage/upload/` | optional writable | — | write | `0750` |
+| `storage/backups/` | optional writable | write | write | `0750` |
+| `secrets/` | **required readable** | write | read | `0750` |
+| `secrets/teampass-seckey.txt` | **required readable** | write | read | `0600` |
+| `app/websocket/logs/` *(WebSocket)* | — | — | write (daemon) | `0750` |

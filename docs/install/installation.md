@@ -1,24 +1,44 @@
 <!-- docs/install/install.md -->
 
+## On GNU/Linux server
 
+The easiest way to install Teampass is to install a LAMP stack dedicated to the GNU/Linux distribution you use.
 
+This document highlights a basic setup. You can refer to many other existing tutorials to install Apache, MariaDB (or MySQL) and PHP.
 
-##  On GNU/Linux server
+> :bulb: **Note:** Teampass requires **PHP 8.1** or later. The `master` branch targets the most recent stable PHP version.
 
-The easiest way to install Teampass is to install LAMP dedicated to the GNU/Linux distribution you have. 
+---
 
-This document highlights a basic setup, but you can refer to many other existing tutorials to install Apache, MariaDB (or mySQL) and PHP.
+### Directory layout (3.2.x)
 
-> :bulb: **Note:**  Teampass should be installed using the most recent PHP version.
->The branch `master` is the living one that is improved and comes with new features.
->It requires __at least__ `PHP 8.1` installed on the server.
->Nevertheless, Teampass can be used with PHP 7.4 version.
->The Github Teampass project has a dedicated branch called `PHP_7.4` for this version.
->Notice that only bug fixing will be performed on this branch.
+Since version 3.2.0, Teampass uses a split directory structure. Your web server's `DocumentRoot` must point to `public/`, not to the project root.
 
-### Install the Apache web server and the required PHP extensions
+```
+/path/to/teampass/
+├── app/          ← application code & config  (not web-accessible)
+│   ├── config/
+│   │   └── settings.php    ← DB credentials
+│   ├── includes/
+│   └── vendor/             ← Composer dependencies
+├── public/       ← webroot (DocumentRoot points here)
+│   ├── index.php
+│   ├── install/
+│   └── assets/
+│       └── avatars/
+├── storage/      ← runtime data  (not web-accessible)
+│   ├── files/    ← background task trigger files
+│   ├── upload/   ← encrypted file attachments
+│   └── backups/  ← SQL backup files
+└── secrets/      ← encryption key  (not web-accessible)
+    └── teampass-seckey.txt
+```
 
-In addition to the Apache web server, the following PHP extensions are required by Teampass:
+---
+
+### Install the Apache web server and required PHP extensions
+
+In addition to the Apache web server, the following PHP extensions are required:
 
 * `mbstring`
 * `openssl`
@@ -29,13 +49,14 @@ In addition to the Apache web server, the following PHP extensions are required 
 * `pcntl` *(CLI only — required for the background task daemon)*
 * `posix` *(CLI only — required for the background task daemon)*
 
-Install them by running next commands:
+Install them with:
 
-```
+```bash
 sudo apt-get update
 sudo apt-get install php8.2-mbstring php8.2-fpm php8.2-common php8.2-xml openssl php8.2-mysql php8.2-bcmath php8.2-curl
 ```
-> :bulb: **Note:**  Adapt version to your expectation
+
+> :bulb: **Note:** Adapt the version number to your target PHP release.
 
 > :bulb: **Note:** `pcntl` and `posix` are CLI-only extensions. They are not loaded by Apache/FPM but must be available for the PHP CLI. On most distributions they are included in `php8.2-common`. Verify with `php -m | grep -E "(pcntl|posix)"`.
 
@@ -43,154 +64,265 @@ sudo apt-get install php8.2-mbstring php8.2-fpm php8.2-common php8.2-xml openssl
 
 The following extensions are not required but are strongly recommended for production deployments:
 
-| Extension | Purpose |
-|-----------|---------|
-| `apcu` | In-memory settings cache — reduces DB reads on every request |
-| `redis` + ext-redis | Redis-based session storage — improves session performance under high concurrency |
-| `Zend OPcache` | Bytecode cache — significantly speeds up PHP execution |
+| Extension          | Purpose                                                              |
+|--------------------|----------------------------------------------------------------------|
+| `apcu`             | In-memory settings cache — reduces DB reads on every request        |
+| `redis` + ext-redis | Redis-based session storage — improves performance under high load  |
+| `Zend OPcache`     | Bytecode cache — significantly speeds up PHP execution               |
 
 See the [Performance](install/performance.md) page for installation and configuration details.
 
-### Max execution time increase
+### Increase max execution time
 
-On some low ressource server, it may be required to increase `max_execution_time` to permit all installation queries to be performed.
+On low-resource servers, increase `max_execution_time` to allow all installation queries to complete:
 
+```bash
+nano /etc/php/8.2/apache2/php.ini
 ```
-nano /etc/php8.2/apache2/php.ini
-```
 
-Find and adapt `max_execution_time` to 60
+Set `max_execution_time = 60`.
 
+---
 
 ### Prepare the database
 
-#### Using phpMyAdmin web interface:
+#### Using phpMyAdmin
 
-* Install phpMyAdmin, open its web interface
-* Select tab called `Databases`
-* In the `Create new database` section, enter your database name (for example `teampass`) and select `utf8mb3_general_ci` as collation.
-* Click on `Create` button
+* Open the phpMyAdmin web interface
+* Select the **Databases** tab
+* In the **Create new database** section, enter your database name (e.g. `teampass`) and select `utf8mb4_general_ci` as collation
+* Click **Create**
 
-#### Using command line, on a Debian GNU/Linux system:
+#### Using the command line (Debian / Ubuntu)
 
-* Install the `mariadb-server` package, specify a password when prompted to (consider using pwqgen from the passwdqc package to generate the password)
-* Run `mysql_secure_installation` to finish the initial installation
-* Access your newly configured server (you'll be prompted for the database root password): 
-  ```# mysql -uroot -p```
-* Create the TeamPass database: 
-  ```create database teampass character set utf8mb3 collate utf8mb3_general_ci;```
+```bash
+# Install MariaDB if not already present
+sudo apt-get install mariadb-server
+mysql_secure_installation
 
-### Set the database Administrator
+# Connect as root
+mysql -uroot -p
 
-We will now create a specific Administrator for this database.
+# Inside MySQL:
+CREATE DATABASE teampass CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+GRANT ALL PRIVILEGES ON teampass.* TO 'teampass_admin'@'localhost' IDENTIFIED BY 'STRONG_PASSWORD';
+FLUSH PRIVILEGES;
+EXIT;
+```
 
-#### Using phpMyAdmin web interface
+---
 
-* Click on `localhost` in order to get back to home page
-* Select `Privileges` tab
-* Click on `Add a new user` link
-* Enter the login information (I suggest to create a user `teampass_admin` for better understanding of what is this user)
-* Do not give any rights/privileges at this level of the user creation
-* Click on `Go` button
+### Set up SSL
 
-Now it's time to set some privileges to this user.
+* **LAN only:** see https://wiki.debian.org/Self-Signed_Certificate
+* **Public internet:** use a certificate from https://letsencrypt.org/ or a commercial provider
 
-* From Home page, click on `Privileges` tab
-* Click on `Edit privileges` button corresponding to the `teampass_admin` user
-* Click on `Check All` link
-* Validate by clicking on button `Go`
-
-#### Using command line, on a Debian GNU/Linux system:
-
-* Access your newly configured server:
-  ```# mysql -uroot -p```
-* Create the teampass_admin user, assigning it full rights to the TeamPass table: 
-  ```grant all privileges on teampass.* to teampass_admin@localhost identified by 'PASSWORD';```
-
-### Setup SSL
-
-* If your use of TeamPass will be limited to your LAN, on Debian systems, see https://wiki.debian.org/Self-Signed_Certificate
-* If your TeamPass install will be on a public Internet system, consider using an SSL certificate from https://letsencrypt.org/ or from a commercial provider
+---
 
 ### Get TeamPass
 
-> :bulb: **Note:**  Always prefer to use git clone feature to get Teampass on the server. This will highly simplify version upgrade.
+> :bulb: **Note:** Always prefer `git clone` — it makes future upgrades much easier.
 
-#### Using git
+#### Using Git (recommended)
 
-```
-cd path/to/teampass/folder
-git clone https://github.com/nilsteampassnet/TeamPass.git
-```
-
-#### Manual operation
-
-* Once your Apache server is running, download TeamPass from https://github.com/nilsteampassnet/TeamPass/releases (under Downloads, .zip file).
-* Unzip the file into your localhost folder (by default it is `/opt/lampp/htdocs`) using command `unzip teampass.zip -d /opt/lampp/htdocs`.
-
-Note:
-
-* On CentOS systems, the default folder is `/var/html/www`
-* On Debian systems, the default folder is `/var/www/html`
-
-### Set folders permissions
-
-* Open your terminal
-* Point to htdocs folder `cd /opt/lampp/htdocs` - see the note above about distribution-specific folders
-* Enter the following commands
-```
-chmod 0777 teampass/includes
-chmod -R 0777 teampass/includes/config
-chmod -R 0777 teampass/includes/avatars
-chmod -R 0777 teampass/includes/libraries/csrfp/libs
-chmod -R 0777 teampass/includes/libraries/csrfp/log
-chmod -R 0777 teampass/includes/libraries/csrfp/js
-chmod -R 0777 teampass/backups
-chmod -R 0777 teampass/files
-chmod -R 0777 teampass/install
-chmod -R 0777 teampass/upload
-```
-You may also use directly
-```
-sudo chmod 0777 install/ includes/ includes/config/ includes/avatars/ includes/libraries/csrfp/libs/ includes/libraries/csrfp/js/ includes/libraries/csrfp/log/ files/ upload/
+```bash
+cd /var/www/html
+git clone https://github.com/nilsteampassnet/TeamPass.git teampass
+cd teampass
+composer install --no-dev --optimize-autoloader
 ```
 
-### Finish the TeamPass installation
+#### Manual download
 
-Once installation is done, enter the next commands to put back the limited rights on the folders
+* Download from [Teampass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
+* Unzip into the web root (e.g. `/var/www/html/teampass`)
+* Run `composer install --no-dev --optimize-autoloader` inside the folder
 
+---
+
+### Configure the web server
+
+#### Apache virtual host
+
+Set `DocumentRoot` to the `public/` subdirectory:
+
+```apache
+<VirtualHost *:443>
+    ServerName teampass.yourdomain.com
+    DocumentRoot /var/www/html/teampass/public
+
+    <Directory /var/www/html/teampass/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    # ... SSL directives ...
+</VirtualHost>
 ```
-chmod -R 0750 teampass
-chown -R apache:apache teampass
+
+Enable `mod_rewrite` and reload Apache:
+
+```bash
+sudo a2enmod rewrite
+sudo systemctl reload apache2
 ```
+
+> :warning: **`AllowOverride All` is required.** TeamPass ships `.htaccess` files that handle URL rewriting, PHP execution control, and access restrictions. Without `AllowOverride All` these rules are silently ignored.
+
+**Subdirectory install (Apache Alias)**
+
+If TeamPass is served from a path such as `https://example.com/teampass/`, adjust `RewriteBase` in `public/.htaccess`:
+
+```apache
+RewriteBase /teampass/
+```
+
+#### Nginx
+
+The Nginx configuration must route requests for the web UI through `index.php` and API requests through `api/index.php`. It must also block direct access to `core.php` (a bootstrap include, not an endpoint).
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name teampass.yourdomain.com;
+    root /var/www/html/teampass/public;
+    index index.php;
+
+    # Block direct access to the bootstrap include
+    location ~* /core\.php$ {
+        deny all;
+        return 403;
+    }
+
+    # API — route through the API front controller
+    location /api/ {
+        try_files $uri $uri/ /api/index.php?$query_string;
+    }
+
+    # Web UI — route through the main front controller
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+```
+
+> :bulb: **Note:** `RewriteBase` is an Apache-only directive. For Nginx, the base path is implicit in the `location` blocks; no equivalent setting is needed.
+
+---
+
+### Set folder permissions
+
+Run these commands from inside the TeamPass root (e.g. `/var/www/html/teampass`):
+
+```bash
+# Web server user — adjust if yours is different (e.g. nginx, apache, http)
+WEB_USER=www-data
+
+# Application source: not writable by the web server
+chmod 0755 app/ public/
+chown -R root:root app/ public/
+
+# Configuration file: writable by the web server (written during install/upgrade)
+chown ${WEB_USER}:${WEB_USER} app/config/settings.php
+chmod 0640 app/config/settings.php
+chown ${WEB_USER}:${WEB_USER} app/config/
+chmod 0750 app/config/
+
+# CSRF protection files
+chown ${WEB_USER}:${WEB_USER} app/includes/libraries/csrfp/libs/
+chmod 0750 app/includes/libraries/csrfp/libs/
+chown ${WEB_USER}:${WEB_USER} app/includes/libraries/csrfp/log/
+chmod 0750 app/includes/libraries/csrfp/log/
+
+# Runtime storage: writable by the web server
+chown -R ${WEB_USER}:${WEB_USER} storage/
+chmod 0750 storage/ storage/files/ storage/upload/ storage/backups/
+
+# Avatars (optional — only if avatar upload is enabled)
+chmod 0750 public/assets/avatars/
+chown ${WEB_USER}:${WEB_USER} public/assets/avatars/
+
+# Encryption key: readable by the web server, outside webroot
+chown ${WEB_USER}:${WEB_USER} secrets/
+chmod 0750 secrets/
+```
+
+> :warning: **Security note:** `app/` and `public/` must **not** be writable by the web server. Only the specific sub-paths listed above need write access.
+
+---
+
+### Finish the installation
+
+Browse to `https://<your_teampass_domain>/install/install.php` and follow the on-screen wizard.
+
+#### Lock down the install directory after setup
+
+Once the wizard completes, **block HTTP access to `public/install/`**. The installer files must not remain publicly accessible in production.
+
+**Apache** — uncomment the deny directive in `public/install/.htaccess`:
+
+```apache
+Require all denied
+```
+
+Or disable the directory in your virtual host:
+
+```apache
+<Directory /var/www/html/teampass/public/install>
+    Require all denied
+</Directory>
+```
+
+**Nginx** — add a location block before the catch-all:
+
+```nginx
+location /install/ {
+    deny all;
+    return 403;
+}
+```
+
+> :warning: Skipping this step leaves the upgrade scripts accessible, which is a security risk on a running instance.
+
+---
 
 ## Docker
 
-### Install docker
-```
+### Install Docker
+
+```bash
 apt update
 apt install docker.io docker-compose
 ```
 
-### Download docker compose 
-```
+### Download the Docker Compose file
+
+```bash
 wget https://raw.githubusercontent.com/nilsteampassnet/TeamPass/master/docker-compose.yml
 ```
 
-### Modify docker-compose.yml file to suit your env (look at this values) 
-```
+### Edit `docker-compose.yml` for your environment
+
+```yaml
 VIRTUAL_HOST: teampass.yourdomain.local
 CERT_NAME: teampass.yourdomain.local
 MYSQL_PASSWORD: YOUR_SECRET_PASSWORD
 ```
-About the certificate read the instructions on the main page: https://github.com/nilsteampassnet/TeamPass#with-docker-compose
 
-### Configure docker and start containers 
-```
+See the main page for certificate instructions: https://github.com/nilsteampassnet/TeamPass#with-docker-compose
+
+### Start the containers
+
+```bash
 docker network create backend
 docker-compose up -d
-docker container ls 
+docker container ls
 ```
 
-Check your browser at https://teampass.yourdomain.local and follow Note1 and Note2 in the [instructions](https://github.com/nilsteampassnet/TeamPass#with-docker-compose).
-
+Browse to `https://teampass.yourdomain.local` and follow the instructions in Note1 and Note2 of the [Docker guide](https://github.com/nilsteampassnet/TeamPass#with-docker-compose).

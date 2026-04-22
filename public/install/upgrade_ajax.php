@@ -1,0 +1,1169 @@
+<?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      upgrade_ajax.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+use TiBeN\CrontabManager\CrontabJob;
+use TiBeN\CrontabManager\CrontabAdapter;
+use TiBeN\CrontabManager\CrontabRepository;
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\PasswordManager\PasswordManager;
+use TeampassClasses\ConfigManager\ConfigManager;
+
+
+$_SESSION = [];
+
+function settingsConsistencyCheck(): array
+{
+    $settingsFile = __DIR__.'/../../app/config/settings.php';
+    require_once $settingsFile;
+    require_once __DIR__.'/tp.functions.php';
+
+    if (defined('DB_PASSWD') === false && isset($pass) === true) {
+        // We need to convert settings.php file from V2 to V3 format
+        
+        //Do a copy of the existing file
+        if (!copy(
+            $settingsFile,
+            $settingsFile . '.' . date(
+                'Y_m_d_H_i_s',
+                mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+            )
+        )) {
+            $error = error_get_last();
+            $errorMessage = isset($error['message']) ? $error['message'] : 'Unknown error.';
+            return [
+                'error' => '[{
+                    "error" : "Error: '.$errorMessage.'. Please do it by yourself and click on button Launch.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+
+
+        // Handle teampass-seckey.txt file
+        if (file_exists(TEAMPASS_SECRETS.'/teampass-seckey.txt')) {
+            // do a copy
+            if (!copy(
+                TEAMPASS_SECRETS.'/teampass-seckey.txt',
+                TEAMPASS_SECRETS.'/teampass-seckey.txt' . '.' . date(
+                    'Y_m_d_H_i_s',
+                    mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+                )
+            )) {
+                $error = error_get_last();
+                $errorMessage = isset($error['message']) ? $error['message'] : 'Unknown error.';
+                return [
+                    'error' => '[{
+                        "error" : "Error: '.$errorMessage.'. Please do it by yourself and click on button Launch.",
+                        "index" : ""
+                    }]',
+                    'value' => false
+                ];
+            }
+
+            // prepare new file
+            $filesecure = generateRandomKey();
+            define('SECUREFILE', $filesecure);
+        } else {
+            return [
+                'error' => '[{
+                    "error" : "'.TEAMPASS_SECRETS.'/teampass-seckey.txt file does not exist. Please recover it and click on button Launch.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+
+
+        // Ensure DB is read as UTF8
+        if (defined('DB_ENCODING') === false) {
+            define('DB_ENCODING', "utf8");
+        }
+
+        // Delete olf file
+        unlink($settingsFile);
+        // Now create new file
+        $file_handled = fopen($settingsFile, 'w');
+
+        // @phpstan-ignore function.impossibleType (DB_SSL may be false or array depending on SSL configuration)
+        $dbSslData = is_array(DB_SSL) ? DB_SSL : ['key' => '', 'cert' => '', 'ca_cert' => '', 'ca_path' => '', 'cipher' => ''];
+
+        $settingsTxt = '<?php
+// DATABASE connexion parameters
+define("DB_HOST", "' . DB_HOST . '");
+define("DB_USER", "' . DB_USER . '");
+define("DB_PASSWD", "' . DB_PASSWD . '");
+define("DB_NAME", "' . DB_NAME . '");
+define("DB_PREFIX", "' . DB_PREFIX . '");
+define("DB_PORT", "' . DB_PORT . '");
+define("DB_ENCODING", "' . DB_ENCODING . '");
+define("DB_SSL", false); // if DB over SSL then comment this line
+// if DB over SSL then uncomment the following lines
+define("DB_SSL", array(
+    "key" => "' . $dbSslData['key'] . '",
+    "cert" => "' . $dbSslData['cert'] . '",
+    "ca_cert" => "' . $dbSslData['ca_cert'] . '",
+    "ca_path" => "' . $dbSslData['ca_path'] . '",
+    "cipher" => "' . $dbSslData['cipher'] . '"
+));
+define("DB_CONNECT_OPTIONS", array(
+    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+));
+// TEAMPASS_SECRETS is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+define("SECUREFILE", "' . SECUREFILE. '");';
+
+		if (defined('IKEY') === true) $settingsTxt .= '
+define("IKEY", "' . IKEY . '");';
+		else $settingsTxt .= '
+define("IKEY", "");';
+		if (defined('SKEY') === true) $settingsTxt .= '
+define("SKEY", "' . SKEY . '");';
+		else $settingsTxt .= '
+define("SKEY", "");';
+		if (defined('HOST') === true) $settingsTxt .= '
+define("HOST", "' . HOST . '");';
+		else $settingsTxt .= '
+define("HOST", "");';
+
+
+        $settingsTxt .= '
+
+if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
+}
+';
+
+        $fileCreation = fwrite(
+            $file_handled,
+            utf8_encode($settingsTxt)
+        );
+
+        fclose($file_handled);
+        if ($fileCreation === false) {
+            return [
+                'error' => '[{
+                    "error" : "Setting.php file could not be created in /app/config/ folder. Please check the path and the rights.",
+                    "index" : ""
+                }]',
+                'value' => false
+            ];
+        }
+
+        return [
+            'error' => '',
+            'value' => true
+        ];
+    }
+
+    // No need to create new settings.php file
+    return [
+        'error' => '',
+        'value' => false
+    ];
+}
+
+// Check and build if necessary the new settings.php file
+$check = settingsConsistencyCheck();
+$settingsFileNewlyCreated = $check['value'];
+
+// Load functions
+require_once __DIR__.'/../../app/sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language(); 
+
+error_reporting(E_ERROR | E_PARSE);
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
+require_once 'tp.functions.php';
+
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_index = filter_input(INPUT_POST, 'index', FILTER_SANITIZE_NUMBER_INT);
+$post_multiple = filter_input(INPUT_POST, 'multiple', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_pwd = filter_input(INPUT_POST, 'pwd', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_fullurl = filter_input(INPUT_POST, 'fullurl', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_abspath = filter_input(INPUT_POST, 'abspath', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_no_previous_sk = filter_input(INPUT_POST, 'no_previous_sk', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_previous_sk = filter_input(INPUT_POST, 'previous_sk', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_no_maintenance_mode = filter_input(INPUT_POST, 'no_maintenance_mode', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_prefix_before_convert = filter_input(INPUT_POST, 'prefix_before_convert', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_sk_path = filter_input(INPUT_POST, 'sk_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+
+// Test DB connexion
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = DB_HOST;
+$pre = DB_PREFIX;
+$database = DB_NAME;
+$port = intval(DB_PORT);
+$user = DB_USER;
+
+try {
+    $db_link = mysqli_connect(
+        $server,
+        $user,
+        $pass,
+        $database,
+        $port
+    );
+    $res = 'Connection is successful';
+    $db_link->set_charset(DB_ENCODING);
+} catch (Exception $e) {
+    echo '[{
+        "error" : "Impossible to get connected to server. Ensure that file includes/config/settings.php exists and is correct.",
+        "index" : ""
+    }]';
+    exit;
+}
+
+// Set Session
+$superGlobal->put('CPM', 1, 'SESSION');
+$superGlobal->put('db_encoding', 'utf8', 'SESSION');
+$_SESSION['settings']['loaded'] = '';
+if (empty($post_fullurl) === false) {
+    $superGlobal->put('fullurl', $post_fullurl, 'SESSION');
+}
+if (empty($abspath) === false) {
+    $superGlobal->put('abspath', $abspath, 'SESSION');
+}
+
+// Get Sessions
+$session_url_path = $superGlobal->get('url_path', 'SESSION');
+
+if (isset($post_type)) {
+    switch ($post_type) {
+        case 'step0':
+            // erase session table
+            $_SESSION = array();
+            setcookie('pma_end_session');
+            session_destroy();
+
+            require_once './libs/aesctr.php';
+            
+            // Check that the secrets directory and Defuse key file exist
+            // TEAMPASS_SECRETS is now always defined in app/config/include.php as TEAMPASS_ROOT/secrets
+            if (!is_dir(TEAMPASS_SECRETS)) {
+                echo '[{'.
+                    '"error" : "Secrets directory does not exist: ' . TEAMPASS_SECRETS . '. Please check your installation.",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+            if (defined('SECUREFILE') === true && !file_exists(TEAMPASS_SECRETS . '/' . SECUREFILE)) {
+                echo '[{'.
+                    '"error" : "Encryption key file not found in ' . TEAMPASS_SECRETS . '. Please check your installation.",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+            
+            $_SESSION['settings']['cpassman_dir'] = '..';
+            $passwordManager = new PasswordManager();
+
+            // Connect to db and check user is granted
+            $user_info = mysqli_fetch_array(
+                mysqli_query(
+                    $db_link,
+                    'SELECT id, pw, admin FROM ' . $pre . "users
+                    WHERE login='" . mysqli_escape_string($db_link, stripslashes($post_login)) . "'"
+                )
+            );
+            
+            if (empty($user_info['pw'])) {
+                echo '[{'.
+                    '"error" : "User is not allowed",'.
+                    '"index" : ""'.
+                '}]';
+                $superGlobal->put('user_granted', false, 'SESSION');
+            } else {
+                if ($passwordManager->verifyPassword($user_info['pw'], Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128)) === true && $user_info['admin'] === '1') {
+                    $superGlobal->put('user_granted', true, 'SESSION');
+                    $superGlobal->put('user_login', mysqli_escape_string($db_link, stripslashes($post_login)), 'SESSION');
+                    $superGlobal->put('user_password', Encryption\Crypt\aesctr::decrypt(base64_decode($post_pwd), 'cpm', 128), 'SESSION');
+                    $superGlobal->put('user_id', $user_info['id'], 'SESSION');
+                    echo '[{'.
+                        '"error" : "",'.
+                        '"index" : 1,'.
+                        '"info" : "' . base64_encode(json_encode(
+                            array(mysqli_escape_string($db_link, stripslashes($post_login)), $post_pwd, $user_info['id'])
+                        )) . '"'.
+                    '}]';
+                } else {
+                    $superGlobal->put('user_granted', false, 'SESSION');
+                    echo '[{'.
+                        '"error" : "User is not allowed",'.
+                        '"index" : ""'.
+                    '}]';
+                }
+            }
+
+            break;
+
+        case 'step1':
+            $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
+
+            if (intval($session_user_granted) !== 1) {
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+
+            $abspath = str_replace('\\', '/', $post_abspath);
+            if (substr($abspath, strlen($abspath) - 1) == '/') {
+                $abspath = substr($abspath, 0, strlen($abspath) - 1);
+            }
+            $okWritable            = true;
+            $okExtensions          = true;
+            $okTasksManager        = true;
+            $okTUsersPasswordsSymfony = true;
+            $okEncryptKey          = true;
+            $checks                = [];
+
+            // ── Directories ──────────────────────────────────────────────
+            $dirChecks = [
+                '/app/config/settings.php'            => ['id' => 'upg-chk-settings',   'optional' => false, 'fix' => 'chown www-data:www-data app/config/settings.php && chmod 0640 app/config/settings.php'],
+                '/app/config/'                         => ['id' => 'upg-chk-config',     'optional' => false, 'fix' => 'chown www-data:www-data app/config && chmod 0750 app/config'],
+                '/app/includes/libraries/csrfp/libs/' => ['id' => 'upg-chk-csrfp-libs', 'optional' => false, 'fix' => 'chown www-data:www-data app/includes/libraries/csrfp/libs && chmod 0750 app/includes/libraries/csrfp/libs'],
+                '/app/includes/libraries/csrfp/log/'  => ['id' => 'upg-chk-csrfp-log',  'optional' => false, 'fix' => 'chown www-data:www-data app/includes/libraries/csrfp/log && chmod 0750 app/includes/libraries/csrfp/log'],
+                '/public/assets/avatars/'              => ['id' => 'upg-chk-avatars',    'optional' => true,  'fix' => 'chmod 0750 public/assets/avatars'],
+                '/storage/files/'                      => ['id' => 'upg-chk-files',      'optional' => false, 'fix' => 'chmod 0750 storage/files'],
+                '/storage/upload/'                     => ['id' => 'upg-chk-upload',     'optional' => true,  'fix' => 'chmod 0750 storage/upload'],
+                '/storage/backups/'                    => ['id' => 'upg-chk-backups',    'optional' => true,  'fix' => 'chmod 0750 storage/backups'],
+            ];
+
+            $tab = array(
+                $abspath . '/app/config/settings.php',
+                $abspath . '/app/config/',
+                $abspath . '/app/includes/libraries/csrfp/libs/',
+                $abspath . '/app/includes/libraries/csrfp/log/',
+                $abspath . '/public/assets/avatars/',
+                $abspath . '/storage/files/',
+                $abspath . '/storage/upload/',
+                $abspath . '/storage/backups/',
+            );
+            foreach ($tab as $elem) {
+                if (substr($elem, -1) === '/' && !is_dir($elem)) {
+                    mkdir($elem, 0750, true);
+                }
+                $suffix = str_replace($abspath, '', $elem);
+                $meta   = $dirChecks[$suffix] ?? ['id' => 'upg-chk-unknown', 'optional' => false, 'fix' => ''];
+                $ok     = is_writable($elem);
+                if (!$ok && !$meta['optional']) {
+                    $okWritable = false;
+                }
+                $checks[] = [
+                    'id'       => $meta['id'],
+                    'status'   => $ok ? 'ok' : ($meta['optional'] ? 'warning' : 'error'),
+                    'fix'      => $ok ? '' : $meta['fix'],
+                ];
+            }
+
+            // ── Top-level directory security posture ─────────────────────
+            // /storage/ must be writable (PHP may create sub-directories at runtime)
+            $storageWritable = is_writable($abspath . '/storage');
+            if (!$storageWritable) {
+                $okWritable = false;
+            }
+            $checks[] = [
+                'id'     => 'upg-chk-storage-writable',
+                'status' => $storageWritable ? 'ok' : 'error',
+                'fix'    => $storageWritable ? '' : 'chmod 0750 storage',
+            ];
+
+            // /secrets/ must be readable by the web server (encryption key access)
+            $secretsReadable = is_readable(TEAMPASS_SECRETS);
+            if (!$secretsReadable) {
+                $okWritable = false;
+            }
+            $checks[] = [
+                'id'     => 'upg-chk-secrets-readable',
+                'status' => $secretsReadable ? 'ok' : 'error',
+                'fix'    => $secretsReadable ? '' : 'chmod 0750 secrets && chown www-data:www-data secrets',
+            ];
+
+            // /app/ must NOT be writable by the web server (security: protect source code)
+            $appWritable = is_writable($abspath . '/app');
+            $checks[] = [
+                'id'     => 'upg-chk-app-safe',
+                'status' => $appWritable ? 'warning' : 'ok',
+                'fix'    => $appWritable ? 'chmod 0755 app' : '',
+            ];
+
+            // /public/ must NOT be writable by the web server (security: protect webroot)
+            $publicWritable = is_writable($abspath . '/public');
+            $checks[] = [
+                'id'     => 'upg-chk-public-safe',
+                'status' => $publicWritable ? 'warning' : 'ok',
+                'fix'    => $publicWritable ? 'chmod 0755 public' : '',
+            ];
+
+            // ── PHP extensions ────────────────────────────────────────────
+            foreach (['openssl', 'mbstring', 'bcmath', 'xml', 'curl'] as $ext) {
+                $ok = extension_loaded($ext);
+                if (!$ok) {
+                    $okExtensions = false;
+                }
+                $checks[] = ['id' => 'upg-chk-' . $ext, 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
+            }
+
+            // max_execution_time
+            $ok = (int) ini_get('max_execution_time') >= 30;
+            if (!$ok) {
+                $okExtensions = false;
+            }
+            $checks[] = ['id' => 'upg-chk-exec-time', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
+
+            // PHP version
+            $ok = version_compare(phpversion(), MIN_PHP_VERSION, '>=');
+            if (!$ok) {
+                $okExtensions = false;
+            }
+            $checks[] = ['id' => 'upg-chk-php-version', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
+
+            // MySQL / MariaDB version
+            $mysqlOk   = version_compare((string) $db_link->server_version, MIN_MYSQL_VERSION, '>=');
+            $mariadbOk = version_compare((string) $db_link->server_version, MIN_MARIADB_VERSION, '>=');
+            $ok = $mysqlOk || $mariadbOk;
+            if (!$ok) {
+                $okExtensions = false;
+            }
+            $checks[] = ['id' => 'upg-chk-mysql-version', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
+
+            // Encryption key — check that the key file actually exists and is readable
+            $okEncryptKey = file_exists(TEAMPASS_SECRETS.'/'.SECUREFILE) && is_readable(TEAMPASS_SECRETS.'/'.SECUREFILE);
+            $checks[] = ['id' => 'upg-chk-encrypt-key', 'status' => $okEncryptKey ? 'ok' : 'error', 'fix' => ''];
+
+            // Tasks manager
+            $tableProcessesExists = mysqli_query(
+                $db_link,
+                "SELECT * FROM information_schema.tables WHERE table_schema = '$database' AND table_name = '" . $pre . "processes'"
+            );
+            if ($tableProcessesExists === true) {
+                @mysqli_query($db_link, "SELECT * FROM `" . $pre . "processes` WHERE finished_at = ''");
+                $okTasksManager = @mysqli_affected_rows($db_link) === 0;
+            }
+            $checks[] = ['id' => 'upg-chk-tasks', 'status' => $okTasksManager ? 'ok' : 'error', 'fix' => ''];
+
+            // User password hashes
+            @mysqli_query($db_link, "SELECT * FROM `" . $pre . "users` WHERE pw LIKE '\$2y\$10\$%'");
+            $oldHashCount = @mysqli_affected_rows($db_link);
+            if ($oldHashCount > 0 && TP_VERSION === '3.2.0') {
+                //$okTUsersPasswordsSymfony = false;    // TODO
+            }
+            $checks[] = [
+                'id'     => 'upg-chk-passwords',
+                'status' => ($oldHashCount === 0) ? 'ok' : 'warning',
+                'fix'    => ($oldHashCount > 0 ? $oldHashCount : ''),
+            ];
+
+            // ── Optional extensions ───────────────────────────────────────
+            // posix / pcntl (CLI only)
+            $cliModules = [];
+            if (function_exists('exec')) {
+                exec('php -m 2>/dev/null', $cliModules);
+            }
+            foreach (['posix', 'pcntl'] as $cliExt) {
+                $ok = in_array($cliExt, $cliModules, true);
+                $checks[] = ['id' => 'upg-chk-' . $cliExt, 'status' => $ok ? 'ok' : 'warning', 'fix' => ''];
+            }
+
+            // OPcache
+            $opcacheEnabled = extension_loaded('Zend OPcache') && filter_var(ini_get('opcache.enable'), FILTER_VALIDATE_BOOLEAN);
+            if ($opcacheEnabled) {
+                $opcacheMemMb = (int) ini_get('opcache.memory_consumption');
+                $opcacheStatus = ($opcacheMemMb > 0 && $opcacheMemMb < 128) ? 'warning' : 'ok';
+            } else {
+                $opcacheStatus = 'warning';
+            }
+            $checks[] = ['id' => 'upg-chk-opcache', 'status' => $opcacheStatus, 'fix' => ''];
+
+            // PHP-FPM
+            $checks[] = ['id' => 'upg-chk-fpm', 'status' => PHP_SAPI === 'fpm-fcgi' ? 'ok' : 'info', 'fix' => ''];
+
+            // APCu
+            $apcuEnabled = extension_loaded('apcu') && filter_var(ini_get('apc.enabled'), FILTER_VALIDATE_BOOLEAN);
+            $checks[] = ['id' => 'upg-chk-apcu', 'status' => $apcuEnabled ? 'ok' : 'warning', 'fix' => ''];
+
+            // redis
+            $checks[] = ['id' => 'upg-chk-redis', 'status' => extension_loaded('redis') ? 'ok' : 'info', 'fix' => ''];
+
+            // ── Final error state ─────────────────────────────────────────
+            if ($okWritable && $okExtensions && $okEncryptKey && $okTasksManager && $okTUsersPasswordsSymfony) {
+                $error    = '';
+                $nextStep = 2;
+            } else {
+                $error    = 'Some requirements are not met. Please check the list above.';
+                $nextStep = 1;
+            }
+
+            echo '[{"error":"' . $error . '","index":"' . ($error === '' ? '' : $nextStep) . '","checks":' . json_encode($checks) . ',"infos":"' . $okWritable . ';' . $okExtensions . ';' . $okEncryptKey . ';' . $okTasksManager . '"}]';
+            break;
+
+            //==========================
+        case 'step2':
+            $res = '';
+            $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
+
+            if ($session_user_granted !== '1') {
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+            //decrypt the password
+            // AES Counter Mode implementation
+            require_once './libs/aesctr.php';
+
+            //Get some infos from DB
+            $cpmIsUTF8[0] = 0;
+            if (@mysqli_fetch_row(
+                mysqli_query(
+                    $db_link,
+                    'SELECT valeur FROM ' . $pre . "misc
+                    WHERE type='admin' AND intitule = 'utf8_enabled'"
+                )
+            )) {
+                $cpmIsUTF8 = mysqli_fetch_row(
+                    mysqli_query(
+                        $db_link,
+                        'SELECT valeur FROM ' . $pre . "misc
+                        WHERE type='admin' AND intitule = 'utf8_enabled'"
+                    )
+                );
+            }
+            $superGlobal->put('utf8_enabled', $cpmIsUTF8[0], 'SESSION');
+
+            // put TP in maintenance mode or not
+            @mysqli_query(
+                $db_link,
+                "UPDATE `" . $pre . "misc`
+                SET `valeur` = 'maintenance_mode'
+                WHERE type = 'admin' AND intitule = '" . $post_no_maintenance_mode . "'"
+            );
+
+            echo '[{'.
+                '"error" : "",'.
+                '"index" : "",'.
+                '"info" : "'.$res.'",'.
+                '"isUtf8" : "'.$cpmIsUTF8[0].'"'.
+            '}]';
+            break;
+
+            //==========================
+        case 'step3':
+            $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
+
+            if ($session_user_granted !== '1') {
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+
+            //rename tables
+            if (isset($post_prefix_before_convert) && $post_prefix_before_convert == 'true') {
+                $tables = mysqli_query($db_link, 'SHOW TABLES');
+                while ($table = mysqli_fetch_row($tables)) {
+                    if (tableExists('old_' . $table[0]) != 1 && substr($table[0], 0, 4) != 'old_') {
+                        mysqli_query($db_link, 'CREATE TABLE old_' . $table[0] . ' LIKE ' . $table[0]);
+                        mysqli_query($db_link, 'INSERT INTO old_' . $table[0] . ' SELECT * FROM ' . $table[0]);
+                    }
+                }
+            }
+
+            //convert database
+            mysqli_query(
+                $db_link,
+                'ALTER DATABASE `' . $database . '`
+                DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci'
+            );
+
+            //convert tables
+            $res = mysqli_query($db_link, 'SHOW TABLES FROM `' . $database . '`');
+            while ($table = mysqli_fetch_row($res)) {
+                if (substr($table[0], 0, 4) != 'old_') {
+                    mysqli_query(
+                        $db_link,
+                        'ALTER TABLE ' . $database . '.`{$table[0]}`
+                        CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci'
+                    );
+                    mysqli_query(
+                        $db_link,
+                        'ALTER TABLE' . $database . '.`{$table[0]}`
+                        DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci'
+                    );
+                }
+            }
+
+            echo '[{'.
+                '"error" : "",'.
+                '"index" : ""'.
+            '}]';
+
+            mysqli_close($db_link);
+            break;
+
+            //==========================
+
+            //=============================
+        case 'step5':
+            $session_user_granted = $superGlobal->get('user_granted', 'SESSION');
+
+            if (intVal($session_user_granted) !== 1) {
+                echo '[{'.
+                    '"error" : "User not connected anymore",'.
+                    '"index" : ""'.
+                '}]';
+                break;
+            }
+
+            $returnStatus = array();
+            // If settings.php file doesn't contain DB_HOST then regenerate it
+            $settingsFile = '../../app/config/settings.php';
+            include_once $settingsFile;
+
+            if (defined('DB_SSL') === false) {
+                //Do a copy of the existing file
+                if (!copy(
+                    $settingsFile,
+                    $settingsFile . '.' . date(
+                        'Y_m_d_H_i_s',
+                        mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+                    )
+                )) {
+                    echo '[{'.
+                        '"error" : "Setting.php file already exists and cannot be renamed. Please do it by yourself and click on button Launch",'.
+                        '"index" : ""'.
+                    '}]';
+                    break;
+                } else {
+                    unlink($settingsFile);
+                }
+
+                // CHeck if old sk.php exists.
+                // If yes then get keys to database and delete it
+                if (empty($post_sk_path) === false || defined('TEAMPASS_SECRETS') === true) {
+                    $filename = (empty($post_sk_path) === false ? $post_sk_path : TEAMPASS_SECRETS) . '/sk.php';
+                    if (file_exists($filename)) {
+                        include_once $filename;
+                        unlink($filename);
+
+                        $filesecure = generateRandomKey();
+                        define('SECUREFILE', $filesecure);
+
+                        // Using the new Duo Web SDK akey is deprecated, not keeping track of it.
+                        // SKEY
+                        $tmp = mysqli_query(
+                            $db_link,
+                            "SELECT INTO `" . $pre . "misc`
+                            WHERE type = 'admin' AND intitule = 'duo_skey'"
+                        );
+                        if ($tmp) {
+                            mysqli_query(
+                                $db_link,
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . SKEY . "', type = 'admin', intitule = 'duo_skey'"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `" . $pre . "misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('" . SKEY . "', 'admin', 'duo_skey')"
+                            );
+                        }
+
+                        // IKEY
+                        $tmp = mysqli_query(
+                            $db_link,
+                            "SELECT INTO `" . $pre . "misc`
+                            WHERE type = 'admin' AND intitule = 'duo_ikey'"
+                        );
+                        if ($tmp) {
+                            mysqli_query(
+                                $db_link,
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . IKEY . "', type = 'admin', intitule = 'duo_ikey'"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `" . $pre . "misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('" . IKEY . "', 'admin', 'duo_ikey')"
+                            );
+                        }
+
+                        // HOST
+                        $tmp = mysqli_query(
+                            $db_link,
+                            "SELECT INTO `" . $pre . "misc`
+                            WHERE type = 'admin' AND intitule = 'duo_host'"
+                        );
+                        if ($tmp) {
+                            mysqli_query(
+                                $db_link,
+                                "UPDATE `" . $pre . "misc`
+                                set valeur = '" . HOST . "', type = 'admin', intitule = 'duo_host'"
+                            );
+                        } else {
+                            mysqli_query(
+                                $db_link,
+                                "INSERT INTO `" . $pre . "misc`
+                                (`valeur`, `type`, `intitule`)
+                                VALUES ('" . HOST . "', 'admin', 'duo_host')"
+                            );
+                        }
+                    }
+                }
+
+                // Ensure DB is read as UTF8
+                if (DB_ENCODING === "") {
+                    define('DB_ENCODING', "utf8");
+                }
+
+                // Now create new file
+                $file_handled = fopen($settingsFile, 'w');
+
+                $fileCreation = fwrite(
+                    $file_handled,
+                    utf8_encode(
+                        '<?php
+    // DATABASE connexion parameters
+    define("DB_HOST", "' . DB_HOST . '");
+    define("DB_USER", "' . DB_USER . '");
+    define("DB_PASSWD", "' . defuse_return_decrypted(DB_PASSWD) . '");
+    define("DB_NAME", "' . DB_NAME . '");
+    define("DB_PREFIX", "' . DB_PREFIX . '");
+    define("DB_PORT", "' . DB_PORT . '");
+    define("DB_ENCODING", "' . DB_ENCODING . '");
+    define("DB_SSL", false); // if DB over SSL then comment this line
+    // if DB over SSL then uncomment the following lines
+    //define("DB_SSL", array(
+    //    "key" => "",
+    //    "cert" => "",
+    //    "ca_cert" => "",
+    //    "ca_path" => "",
+    //    "cipher" => ""
+    //));
+    define("DB_CONNECT_OPTIONS", array(
+        MYSQLI_OPT_CONNECT_TIMEOUT => 10
+    ));
+    // TEAMPASS_SECRETS is now a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
+
+    if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
+    date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
+    }
+    '
+                    )
+                );
+
+                fclose($file_handled);
+                if ($fileCreation === false) {
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_settingFile', 
+                            'html' => '<i class="far fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">Setting.php file could not be created in /app/config/ folder. Please check the path and the rights.</span>',
+                        )
+                    );
+                } else {
+                    array_push(
+                        $returnStatus, 
+                        array(
+                            'id' => 'step5_settingFile', 
+                            'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2"></i>',
+                        )
+                    );
+                }
+                // reload the file
+                include TEAMPASS_ROOT . '/app/config/settings.php';
+
+                // ensure the new constant is set
+                define("DB_SSL", false);
+                define("DB_CONNECT_OPTIONS", array(
+                    MYSQLI_OPT_CONNECT_TIMEOUT => 10
+                ));
+            }
+
+            // Manage saltkey.txt file
+            if (empty($post_sk_path) === false || defined('TEAMPASS_SECRETS') === true) {
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_saltkeyFile', 
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
+            } else {
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_saltkeyFile', 
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
+            }
+
+            // Do csrfp.config.php file
+            $csrfp_file_sample = '../../app/includes/libraries/csrfp/libs/csrfp.config.sample.php';
+            if (file_exists($csrfp_file_sample) === true) {
+                // update CSRFP TOKEN
+                $csrfp_file = '../../app/includes/libraries/csrfp/libs/csrfp.config.php';
+                if (file_exists($csrfp_file) === true) {
+                    if (
+                        copy(
+                            $csrfp_file,
+                            $csrfp_file . '.' . date(
+                                'Y_m_d_H_i_s',
+                                mktime((int) date('H'), (int) date('i'), (int) date('s'), (int) date('m'), (int) date('d'), (int) date('y'))
+                            )
+                        ) === false
+                    ) {
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_csrfpFile', 
+                                'html' => '<i class="fas fa-times-circle fa-lg text-danger ml-2 mr-2"></i><span class="text-info font-italic">The file could not be renamed. Please rename it by yourself and restart operation.</span>',
+                            )
+                        );
+                        break;
+                    }
+                }
+                unlink($csrfp_file); // delete existing csrfp.config file
+                copy($csrfp_file_sample, $csrfp_file); // make a copy of csrfp.config.sample file
+                $data = file_get_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php');
+                $newdata = str_replace('"CSRFP_TOKEN" => ""', '"CSRFP_TOKEN" => "' . bin2hex(openssl_random_pseudo_bytes(25)) . '"', $data);
+                $newdata = str_replace('"tokenLength" => "25"', '"tokenLength" => "50"', $newdata);
+                $jsUrl = $post_url_path . '/assets/lib/csrfp/csrfprotector.js';
+                $newdata = str_replace('"jsUrl" => ""', '"jsUrl" => "' . $jsUrl . '"', $newdata);
+                $newdata = str_replace('"verifyGetFor" => array()', '"verifyGetFor" => array("*page=items&type=duo_check*")', $newdata);
+                file_put_contents('../../app/includes/libraries/csrfp/libs/csrfp.config.php', $newdata);
+
+                // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
+                mysqli_query(
+                    $db_link,
+                    'INSERT INTO `' . $pre . 'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
+                );
+
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_csrfpFile', 
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                    )
+                );
+            } else {
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_csrfpFile', 
+                        'html' => '<i class=\"fa-solid fa-circle-check fa-lg text-success ml-2 mr-2\"></i><span class=\"text-info font-italic\">Nothing done</span>',
+                    )
+                );
+            }
+
+            // update with correct version
+            // 1st - check if teampass_version exists
+            $data = mysqli_fetch_row(mysqli_query($db_link, "SELECT COUNT(*) FROM ".$pre . "misc WHERE type = 'admin' AND intitule = 'teampass_version';"));
+            if ((int) $data[0] === 0) {
+                // change variable name and put version
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."', `intitule` = 'teampass_version'
+                    WHERE intitule = 'cpassman_version' AND type = 'admin';"
+                );
+            } else {
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "misc`
+                    SET `valeur` = '".TP_VERSION."'
+                    WHERE intitule = 'teampass_version' AND type = 'admin';"
+                );
+            }
+            // Flush APCu cache so that index.php reads the new version from DB
+            // instead of a stale cached value that would re-trigger the upgrade redirect.
+            ConfigManager::invalidateCache();
+
+            //<-- Add cronjob if not exist
+            // get php location
+            require_once 'tp.functions.php';
+            $phpLocation = findPhpBinary();
+            if ($phpLocation['error'] === false) {
+                // Instantiate the adapter and repository
+                try {
+                    $crontabAdapter = new CrontabAdapter();
+                    $crontabRepository = new CrontabRepository($crontabAdapter);
+                    $results = $crontabRepository->findJobByRegex('/Teampass\ scheduler/');
+                    if (count($results) === 0) {
+                        // Add the job
+                        $crontabJob = new CrontabJob();
+                        $crontabJob
+                            ->setMinutes('*')
+                            ->setHours('*')
+                            ->setDayOfMonth('*')
+                            ->setMonths('*')
+                            ->setDayOfWeek('*')
+                            ->setTaskCommandLine($phpLocation['path'] . ' ' . $SETTINGS['cpassman_dir'] . '/app/sources/scheduler.php')
+                            ->setComments('Teampass scheduler');
+                        
+                        $crontabRepository->addJob($crontabJob);
+                        $crontabRepository->persist();
+
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_cronJob', 
+                                'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i> <b>If you had manually defined a job in crontab then you should remove it now.</b>',
+                            )
+                        );
+                    } else {
+                        array_push(
+                            $returnStatus, 
+                            array(
+                                'id' => 'step5_cronJob', 
+                                'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Nothing done</span>',
+                            )
+                        );
+                    }
+                } catch (Exception $e) {
+                    // do nothing
+                }
+            } else {
+                array_push(
+                    $returnStatus, 
+                    array(
+                        'id' => 'step5_cronJob', 
+                        'html' => '<i class="fa-solid fa-times-circle fa-lg text-danger ml-2 mr-2"></i> <b>The PHP path could not be found, please create manually the cron job (see documentation).</b>',
+                    )
+                );
+            }
+
+            
+            //-->
+
+            echo '[{'.
+                '"error" : "",'.
+                '"info" : "'.base64_encode(json_encode($returnStatus)).'",'.
+                '"index" : ""'.
+            '}]';
+
+            break;
+
+        case 'perform_database_dump':
+            $filename = '../../app/config/settings.php';
+
+            include_once '../../app/sources/main.functions.php';
+            $pass = defuse_return_decrypted($pass);
+
+            $mtables = array();
+
+            $mysqli = new mysqli($server, $user, $pass, $database, $port);
+            if ($mysqli->connect_error) {
+                die('Error : (' . $mysqli->connect_errno . ') ' . $mysqli->connect_error);
+            }
+
+            $results = $mysqli->query('SHOW TABLES');
+
+            while ($row = $results->fetch_array()) {
+                $mtables[] = $row[0];
+            }
+
+            // Prepare file
+            $backup_file_name = 'sql-backup-' . date('d-m-Y--h-i-s') . '.sql';
+            $fp = fopen('../../storage/files/' . $backup_file_name, 'a');
+
+            foreach ($mtables as $table) {
+                $contents = '-- Table `' . $table . "` --\n";
+                if (fwrite($fp, $contents) === false) {
+                    echo '[{'.
+                        '"error" : "Backup fails - please do it manually",'.
+                        '"index" : ""'.
+                    '}]';
+                    fclose($fp);
+                    return false;
+                }
+
+                $results = $mysqli->query('SHOW CREATE TABLE ' . $table);
+                while ($row = $results->fetch_array()) {
+                    $contents = $row[1] . ";\n\n";
+                    if (fwrite($fp, $contents) === false) {
+                        echo '[{'.
+                            '"error" : "Backup fails - please do it manually",'.
+                            '"index" : ""'.
+                        '}]';
+                        fclose($fp);
+                        return false;
+                    }
+                }
+
+                $results = $mysqli->query('SELECT * FROM ' . $table);
+                $row_count = $results->num_rows;
+                $fields = $results->fetch_fields();
+                $fields_count = count($fields);
+
+                $insert_head = 'INSERT INTO `' . $table . '` (';
+                for ($i = 0; $i < $fields_count; ++$i) {
+                    $insert_head .= '`' . $fields[$i]->name . '`';
+                    if ($i < $fields_count - 1) {
+                        $insert_head .= ', ';
+                    }
+                }
+                $insert_head .= ')';
+                $insert_head .= " VALUES\n";
+
+                if ($row_count > 0) {
+                    $r = 0;
+                    while ($row = $results->fetch_array()) {
+                        if (($r % 400) == 0) {
+                            //$contents .= $insert_head;
+                            if (fwrite($fp, $insert_head) === false) {
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
+                                fclose($fp);
+                                return false;
+                            }
+                        }
+                        //$contents .= '(';
+                        if (fwrite($fp, '(') === false) {
+                            echo '[{'.
+                                '"error" : "Backup fails - please do it manually",'.
+                                '"index" : ""'.
+                            '}]';
+                            fclose($fp);
+                            return false;
+                        }
+                        for ($i = 0; $i < $fields_count; ++$i) {
+                            $row_content = str_replace("\n", '\\n', $mysqli->real_escape_string($row[$i]));
+
+                            switch ($fields[$i]->type) {
+                                case 8:
+                                case 3:
+                                    //$contents .= $row_content;
+                                    if (fwrite($fp, $row_content) === false) {
+                                        echo '[{'.
+                                            '"error" : "Backup fails - please do it manually",'.
+                                            '"index" : ""'.
+                                        '}]';
+                                        fclose($fp);
+                                        return false;
+                                    }
+                                    break;
+                                default:
+                                    //$contents .= "'".$row_content."'";
+                                    if (fwrite($fp, "'" . $row_content . "'") === false) {
+                                        echo '[{'.
+                                            '"error" : "Backup fails - please do it manually",'.
+                                            '"index" : ""'.
+                                        '}]';
+                                        fclose($fp);
+                                        return false;
+                                    }
+                            }
+                            if ($i < $fields_count - 1) {
+                                //$contents .= ', ';
+                                if (fwrite($fp, ', ') === false) {
+                                    echo '[{'.
+                                        '"error" : "Backup fails - please do it manually",'.
+                                        '"index" : ""'.
+                                    '}]';
+                                    fclose($fp);
+                                    return false;
+                                }
+                            }
+                        }
+                        if (($r + 1) == $row_count || ($r % 400) == 399) {
+                            //$contents .= ");\n\n";
+                            if (fwrite($fp, ");\n\n") === false) {
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
+                                fclose($fp);
+                                return false;
+                            }
+                        } else {
+                            //$contents .= "),\n";
+                            if (fwrite($fp, "),\n") === false) {
+                                echo '[{'.
+                                    '"error" : "Backup fails - please do it manually",'.
+                                    '"index" : ""'.
+                                '}]';
+                                fclose($fp);
+                                return false;
+                            }
+                        }
+                        ++$r;
+                    }
+                }
+            }
+
+            fclose($fp);
+			
+            echo '[{'.
+                '"error" : "",'.
+                '"filename" : "'.$backup_file_name.'",'.
+                '"index" : ""'.
+            '}]';
+
+            break;
+
+        case 'perform_nestedtree_categories_population_3.0.0.18':
+            include_once 'upgrade_operations.php';
+            installHandleFoldersCategories(
+                [],
+                $pre
+            );
+
+            echo '[{"error" : ""}]';
+
+            break;
+    
+    }
+}
+//

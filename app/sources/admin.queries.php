@@ -1,0 +1,6191 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      admin.queries.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use TeampassClasses\Language\Language;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\NestedTree\NestedTree;
+use Duo\DuoUniversal\Client;
+use Duo\DuoUniversal\DuoException;
+use TeampassClasses\EmailService\EmailSettings;
+use TeampassClasses\EmailService\EmailService;
+
+// Load functions
+require_once 'main.functions.php';
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+loadClasses('DB');
+$lang = new Language($session->get('user-language') ?? 'english');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Do checks
+// Instantiate the class with posted data
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
+// Define Timezone
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
+
+// Load tree
+$tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+$post_key = filter_input(INPUT_POST, 'key', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+$post_status = filter_input(INPUT_POST, 'status', FILTER_SANITIZE_NUMBER_INT);
+$post_label = filter_input(INPUT_POST, 'label', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_action = filter_input(INPUT_POST, 'action', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_cpt = filter_input(INPUT_POST, 'cpt', FILTER_SANITIZE_NUMBER_INT);
+$post_object = filter_input(INPUT_POST, 'object', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_start = filter_input(INPUT_POST, 'start', FILTER_SANITIZE_NUMBER_INT);
+$post_length = filter_input(INPUT_POST, 'length', FILTER_SANITIZE_NUMBER_INT);
+$post_option = filter_input(INPUT_POST, 'option', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_nbItems = filter_input(INPUT_POST, 'nbItems', FILTER_SANITIZE_NUMBER_INT);
+$post_counter = filter_input(INPUT_POST, 'counter', FILTER_SANITIZE_NUMBER_INT);
+$post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+switch ($post_type) {
+    //##########################################################
+    //CASE for creating a DB backup
+    case 'admin_action_db_backup':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
+        $return = '';
+
+        //Get all tables
+        $tables = array();
+        $result = DB::query('SHOW TABLES');
+        foreach ($result as $row) {
+            $tables[] = $row['Tables_in_' . DB_NAME];
+        }
+
+        //cycle through
+        foreach ($tables as $table) {
+            if (defined('DB_PREFIX') || substr_count($table, DB_PREFIX) > 0) {
+                $table = (is_string($table) ? $table : strval($table));
+                // Do query
+                $result = DB::query('SELECT * FROM ' . $table);
+                DB::query(
+                    'SELECT *
+                    FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE table_schema = %s
+                    AND table_name = %s',
+                    DB_NAME,
+                    $table
+                );
+                $numFields = DB::count();
+
+                // prepare a drop table
+                $return .= 'DROP TABLE ' . $table . ';';
+                $row2 = DB::queryFirstRow('SHOW CREATE TABLE ' . $table);
+                $return .= "\n\n" . strval($row2['Create Table']) . ";\n\n";
+
+                //prepare all fields and datas
+                for ($i = 0; $i < $numFields; ++$i) {
+                    if (is_object($result)) {
+                        while ($row = $result->fetch_row()) {
+                            $return .= 'INSERT INTO ' . $table . ' VALUES(';
+                            for ($j = 0; $j < $numFields; ++$j) {
+                                $row[$j] = addslashes($row[$j]);
+                                $row[$j] = preg_replace("/\n/", '\\n', $row[$j]);
+                                if (isset($row[$j])) {
+                                    $return .= '"' . $row[$j] . '"';
+                                } else {
+                                    $return .= 'NULL';
+                                }
+                                if ($j < ($numFields - 1)) {
+                                    $return .= ',';
+                                }
+                            }
+                            $return .= ");\n";
+                        }
+                    }
+                }
+                $return .= "\n\n\n";
+            }
+        }
+
+        if (!empty($return)) {
+            // get a token
+            $token = GenerateCryptKey(20, false, true, true, false, true);
+
+            //save file
+            $filename = time() . '-' . $token . '.sql';
+            $handle = fopen($SETTINGS['path_to_files_folder'] . '/' . $filename, 'w+');
+            if ($handle !== false) {
+                //write file
+                fwrite($handle, $return);
+                fclose($handle);
+            }
+
+            // Encrypt the file
+            if (empty($post_option) === false) {
+                // Encrypt the file
+                prepareFileWithDefuse(
+                    'encrypt',
+                    $SETTINGS['path_to_files_folder'] . '/' . $filename,
+                    $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
+                    $post_option
+                );
+
+                // Do clean
+                unlink($SETTINGS['path_to_files_folder'] . '/' . $filename);
+                rename(
+                    $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $filename,
+                    $SETTINGS['path_to_files_folder'] . '/' . $filename
+                );
+            }
+
+            //generate 2d key
+            $session->set('user-key_tmp', GenerateCryptKey(20, false, true, true, false, true));
+
+            //update LOG
+            logEvents($SETTINGS, 'admin_action', 'dataBase backup', (string) $session->get('user-id'), $session->get('user-login'));
+
+            echo '[{"result":"db_backup" , "href":"sources/downloadFile.php?name=' . urlencode($filename) . '&sub=files&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' . $session->get('user-key_tmp') . '&pathIsFiles=1"}]';
+        }
+        break;
+
+        //##########################################################
+        //CASE for restoring a DB backup
+    case 'admin_action_db_restore':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
+
+        $dataPost = explode('&', $post_option);
+        $file = htmlspecialchars($dataPost[0]);
+        $key = htmlspecialchars($dataPost[1]);
+
+        // Get filename from database
+        $data = DB::queryFirstRow(
+            'SELECT valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE increment_id = %i',
+            $file
+        );
+
+        $file = is_string($data['valeur']) ? $data['valeur'] : '';
+
+        // Delete operation id
+        DB::delete(
+            prefixTable('misc'),
+            'increment_id = %i',
+            $file
+        );
+
+        // Undecrypt the file
+        if (empty($key) === false) {
+            // Decrypt the file
+            $ret = prepareFileWithDefuse(
+                'decrypt',
+                $SETTINGS['path_to_files_folder'] . '/' . $file,
+                $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $file,
+                $key
+            );
+
+            if (empty($ret) === false) {
+                // deepcode ignore ServerLeak: $ret can only be an error string, so no important data here to be sent to client
+                echo '[{"result":"db_restore" , "message":"An error occurred ('.(string) $ret.')"}]';
+                break;
+            }
+
+            // Do clean
+            fileDelete($SETTINGS['path_to_files_folder'] . '/' . $file, $SETTINGS);
+            $file = $SETTINGS['path_to_files_folder'] . '/defuse_temp_' . $file;
+        } else {
+            $file = $SETTINGS['path_to_files_folder'] . '/' . $file;
+        }
+
+        //read sql file
+        $handle = fopen($file, 'r');
+        $query = '';
+        while (!feof($handle)) {
+            $query .= fgets($handle, 4096);
+            if (substr(rtrim($query), -1) === ';') {
+                //launch query
+                DB::query($query);
+                $query = '';
+            }
+        }
+        fclose($handle);
+
+        //delete file
+        unlink($SETTINGS['path_to_files_folder'] . '/' . $file);
+
+        //Show done
+        echo '[{"result":"db_restore" , "message":""}]';
+        break;
+
+        //##########################################################
+        //CASE for optimizing the DB
+    case 'admin_action_db_optimize':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        //Get all tables
+        $alltables = DB::query('SHOW TABLES');
+        foreach ($alltables as $table) {
+            foreach ($table as $i => $tablename) {
+                $tablename = (is_string($tablename) ? $tablename : strval($tablename));
+                if (substr_count($tablename, DB_PREFIX) > 0) {
+                    // launch optimization quieries
+                    DB::query('ANALYZE TABLE `' . $tablename . '`');
+                    DB::query('OPTIMIZE TABLE `' . $tablename . '`');
+                }
+            }
+        }
+
+        //Clean up LOG_ITEMS table
+        $rows = DB::query(
+            'SELECT id
+            FROM ' . prefixTable('items') . '
+            ORDER BY id ASC'
+        );
+        foreach ($rows as $item) {
+            DB::query(
+                'SELECT * FROM ' . prefixTable('log_items') . ' WHERE id_item = %i AND action = %s',
+                $item['id'],
+                'at_creation'
+            );
+            $counter = DB::count();
+            if ($counter === 0) {
+                //Create new at_creation entry
+                $rowTmp = DB::queryFirstRow(
+                    'SELECT date, id_user FROM ' . prefixTable('log_items') . ' WHERE id_item=%i ORDER BY date ASC',
+                    $item['id']
+                );
+                DB::insert(
+                    prefixTable('log_items'),
+                    array(
+                        'id_item' => $item['id'],
+                        'date' => intval($rowTmp['date']) - 1,
+                        'id_user' => empty($rowTmp['id_user']) === true ? 1 : $rowTmp['id_user'],
+                        'action' => 'at_creation',
+                        'raison' => '',
+                    )
+                );
+            }
+        }
+
+        // Log
+        logEvents(
+            $SETTINGS,
+            'system',
+            'admin_action_db_optimize',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            'success'
+        );
+
+        //Show done
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('last_execution') . ' ' .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
+                    '<i class="fas fa-check text-success ml-2"></i>',
+            ),
+            'encode'
+        );
+        break;
+
+        
+
+        /*
+    * Reload the Cache table
+    */
+    case 'admin_action_reload_cache_table':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
+        updateCacheTable('reload', NULL);
+
+        // Log
+        logEvents(
+            $SETTINGS,
+            'system',
+            'admin_action_reload_cache_table',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            'success'
+        );
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('last_execution') . ' ' .
+                    date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
+                    '<i class="fas fa-check text-success mr-2"></i>',
+            ],
+            'encode'
+        );
+        break;
+
+
+    /*
+    * Change SALT Key START
+    */
+    case 'admin_action_change_salt_key___start':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $error = '';
+        require_once 'main.functions.php';
+
+        // store old sk
+        $session->set('user-reencrypt_old_salt', file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE));
+
+        // generate new saltkey
+        $old_sk_filename = TEAMPASS_SECRETS.'/'.SECUREFILE . date('Y_m_d', mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y'))) . '.' . time();
+        copy(
+            TEAMPASS_SECRETS.'/'.SECUREFILE,
+            $old_sk_filename
+        );
+        $new_key = defuse_generate_key();
+        file_put_contents(
+            TEAMPASS_SECRETS.'/'.SECUREFILE,
+            $new_key
+        );
+
+        // store new sk
+        $session->set('user-reencrypt_new_salt', file_get_contents(TEAMPASS_SECRETS.'/'.SECUREFILE));
+
+        //put tool in maintenance.
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => '1',
+                'updated_at' => time(),
+            ),
+            'intitule = %s AND type= %s',
+            'maintenance_mode',
+            'admin'
+        );
+        //log
+        logEvents($SETTINGS, 'system', 'change_salt_key', (string) $session->get('user-id'), $session->get('user-login'));
+
+        // get number of items to change
+        DB::query('SELECT id FROM ' . prefixTable('items') . ' WHERE perso = %i', 0);
+        $nb_of_items = DB::count();
+
+        // create backup table
+        DB::query('DROP TABLE IF EXISTS ' . prefixTable('sk_reencrypt_backup'));
+        DB::query(
+            'CREATE TABLE `' . prefixTable('sk_reencrypt_backup') . '` (
+            `id` int(12) NOT null AUTO_INCREMENT,
+            `current_table` varchar(100) NOT NULL,
+            `current_field` varchar(500) NOT NULL,
+            `value_id` varchar(500) NOT NULL,
+            `value` text NOT NULL,
+            `value2` varchar(500) NOT NULL,
+            `current_sql` text NOT NULL,
+            `result` text NOT NULL,
+            PRIMARY KEY (`id`)
+            ) CHARSET=utf8;'
+        );
+
+        // store old SK in backup table
+        DB::insert(
+            prefixTable('sk_reencrypt_backup'),
+            array(
+                'current_table' => 'old_sk',
+                'current_field' => 'old_sk',
+                'value_id' => 'old_sk',
+                'value' => $session->get('user-reencrypt_old_salt'),
+                'current_sql' => 'old_sk',
+                'value2' => $old_sk_filename,
+                'result' => 'none',
+            )
+        );
+
+        // delete previous backup files
+        $files = glob($SETTINGS['path_to_upload_folder'] . '/*'); // get all file names
+        foreach ($files as $file) { // iterate files
+            if (is_file($file)) {
+                $file_parts = pathinfo($file);
+                if (strpos($file_parts['filename'], '.bck-change-sk') !== false) {
+                    unlink($file); // delete file
+                }
+            }
+        }
+
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => 'encrypt_items',
+                'nbOfItems' => $nb_of_items,
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+    * Change SALT Key - ENCRYPT
+    */
+    case 'admin_action_change_salt_key___encrypt':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                    'nextAction' => '',
+                    'nbOfItems' => '',
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $error = '';
+        require_once 'main.functions.php';
+
+        // prepare SK
+        if (empty($session->get('user-reencrypt_new_salt')) === true || empty($session->get('user-reencrypt_old_salt')) === true) {
+            // SK is not correct
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'saltkeys are empty???',
+                    'nbOfItems' => '',
+                    'nextAction' => '',
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Do init
+        $nb_of_items = 0;
+        $error = $nextStart = '';
+
+
+        // what objects to treat
+        if (empty($post_object) === true) {
+            // no more object to treat
+            $nextAction = 'finishing';
+        } else {
+            // manage list of objects
+            $objects = explode(',', $post_object);
+
+            // Allowed values for $_POST['object'] : "items,logs,files,categories"
+            if (in_array($objects[0], array('items', 'logs', 'files', 'categories')) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => 'Input `' . $objects[0] . '` is not allowed',
+                        'nbOfItems' => '',
+                        'nextAction' => '',
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if ($objects[0] === 'items') {
+                //change all encrypted data in Items (passwords)
+                $rows = DB::query(
+                    'SELECT id, pw, pw_iv
+                    FROM ' . prefixTable('items') . '
+                    WHERE perso = %s
+                    LIMIT ' . $post_start . ', ' . $post_length,
+                    '0'
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'current_table' => 'items',
+                            'current_field' => 'pw',
+                            'value_id' => $record['id'],
+                            'value' => $record['pw'],
+                            'current_sql' => 'UPDATE ' . prefixTable('items') . " SET pw = '" . strval($record['pw']) . "' WHERE id = '" . strval($record['id']) . "';",
+                            'value2' => 'none',
+                            'result' => 'none',
+                        )
+                    );
+                    $newID = DB::insertId();
+
+                    $pw = cryption(
+                        $record['pw'],
+                        $session->get('user-reencrypt_old_salt'),
+                        'decrypt',
+                        $SETTINGS
+                    );
+                    //encrypt with new SALT
+                    $encrypt = cryption(
+                        $pw['string'],
+                        $session->get('user-reencrypt_new_salt'),
+                        'encrypt',
+                        $SETTINGS
+                    );
+
+                    //save in DB
+                    DB::update(
+                        prefixTable('items'),
+                        array(
+                            'pw' => $encrypt['string'],
+                            'pw_iv' => '',
+                        ),
+                        'id = %i',
+                        $record['id']
+                    );
+
+                    // update backup table
+                    DB::update(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'result' => 'ok',
+                        ),
+                        'id=%i',
+                        $newID
+                    );
+                }
+                // ---
+                // CASE OF LOGS
+                // ---
+            } elseif ($objects[0] === 'logs') {
+                //change all encrypted data in Logs (passwords)
+                $rows = DB::query(
+                    'SELECT raison, increment_id
+                    FROM ' . prefixTable('log_items') . "
+                    WHERE action = %s AND raison LIKE 'at_pw :%'
+                    LIMIT " . $post_start . ', ' . $post_length,
+                    'at_modification'
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'current_table' => 'log_items',
+                            'current_field' => 'raison',
+                            'value_id' => $record['increment_id'],
+                            'value' => $record['raison'],
+                            'current_sql' => 'UPDATE ' . prefixTable('log_items') . " SET raison = '" . strval($record['raison']) . "' WHERE increment_id = '" . strval($record['increment_id']) . "';",
+                            'value2' => 'none',
+                            'result' => 'none',
+                        )
+                    );
+                    $newID = DB::insertId();
+
+                    // extract the pwd
+                    $tmp = explode('at_pw :', $record['raison']);
+                    if (!empty($tmp[1])) {
+                        $pw = cryption(
+                            $tmp[1],
+                            $session->get('user-reencrypt_old_salt'),
+                            'decrypt',
+                            $SETTINGS
+                        );
+                        //encrypt with new SALT
+                        $encrypt = cryption(
+                            $pw['string'],
+                            $session->get('user-reencrypt_new_salt'),
+                            'encrypt',
+                            $SETTINGS
+                        );
+
+                        // save in DB
+                        DB::update(
+                            prefixTable('log_items'),
+                            array(
+                                'raison' => 'at_pw :' . $encrypt['string'],
+                                'encryption_type' => 'defuse',
+                            ),
+                            'increment_id = %i',
+                            $record['increment_id']
+                        );
+
+                        // update backup table
+                        DB::update(
+                            prefixTable('sk_reencrypt_backup'),
+                            array(
+                                'result' => 'ok',
+                            ),
+                            'id=%i',
+                            $newID
+                        );
+                    }
+                }
+                // ---
+                // CASE OF CATEGORIES
+                // ---
+            } elseif ($objects[0] === 'categories') {
+                //change all encrypted data in CATEGORIES (passwords)
+                $rows = DB::query(
+                    'SELECT id, data
+                    FROM ' . prefixTable('categories_items') . '
+                    LIMIT ' . $post_start . ', ' . $post_length
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'current_table' => 'categories_items',
+                            'current_field' => 'data',
+                            'value_id' => $record['id'],
+                            'value' => $record['data'],
+                            'current_sql' => 'UPDATE ' . prefixTable('categories_items') . " SET data = '" . strval($record['data']) . "' WHERE id = '" . strval($record['id']) . "';",
+                            'value2' => 'none',
+                            'result' => 'none',
+                        )
+                    );
+                    $newID = DB::insertId();
+
+                    $pw = cryption(
+                        $record['data'],
+                        $session->get('user-reencrypt_old_salt'),
+                        'decrypt',
+                        $SETTINGS
+                    );
+                    //encrypt with new SALT
+                    $encrypt = cryption(
+                        $pw['string'],
+                        $session->get('user-reencrypt_new_salt'),
+                        'encrypt',
+                        $SETTINGS
+                    );
+                    // save in DB
+                    DB::update(
+                        prefixTable('categories_items'),
+                        array(
+                            'data' => $encrypt['string'],
+                            'encryption_type' => 'defuse',
+                        ),
+                        'id = %i',
+                        $record['id']
+                    );
+
+                    // update backup table
+                    DB::update(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'result' => 'ok',
+                        ),
+                        'id=%i',
+                        $newID
+                    );
+                }
+                // ---
+                // CASE OF FILES
+                // ---
+            } elseif ($objects[0] === 'files') {
+                // Change all encrypted data in FILES (passwords)
+                $rows = DB::query(
+                    'SELECT id, file, status
+                    FROM ' . prefixTable('files') . "
+                    WHERE status = 'encrypted'
+                    LIMIT " . $post_start . ', ' . $post_length
+                );
+                foreach ($rows as $record) {
+                    // backup data
+                    DB::insert(
+                        prefixTable('sk_reencrypt_backup'),
+                        array(
+                            'current_table' => 'files',
+                            'current_field' => 'file',
+                            'value_id' => $record['id'],
+                            'value' => $record['file'],
+                            'current_sql' => 'no_query',
+                            'value2' => 'none',
+                            'result' => 'none',
+                        )
+                    );
+                    $newID = DB::insertId();
+                    $recordFile = strval($record['file']);
+
+                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordFile)) {
+                        // make a copy of file
+                        if (!copy(
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '.copy'
+                        )) {
+                            $error = 'Copy not possible';
+                            exit;
+                        } else {
+                            // prepare a bck of file (that will not be deleted)
+                            $backup_filename = $recordFile . '.bck-change-sk.' . time();
+                            copy(
+                                $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
+                                $SETTINGS['path_to_upload_folder'] . '/' . $backup_filename
+                            );
+                        }
+
+                        // Treat the file
+                        // STEP1 - Do decryption
+                        prepareFileWithDefuse(
+                            'decrypt',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted'
+                        );
+
+                        // Do cleanup of files
+                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordFile);
+
+                        // STEP2 - Do encryption
+                        prepareFileWithDefuse(
+                            'encryp',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordFile
+                        );
+
+                        // Do cleanup of files
+                        unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordFile . '_encrypted');
+
+                        // Update backup table
+                        DB::update(
+                            prefixTable('sk_reencrypt_backup'),
+                            array(
+                                'value2' => $backup_filename,
+                                'result' => 'ok',
+                            ),
+                            'id=%i',
+                            $newID
+                        );
+                    }
+                }
+            }
+
+            $nextStart = intval($post_start) + intval($post_length);
+
+            // check if last item to change has been treated
+            if ($nextStart >= intval($post_nbItems)) {
+                array_shift($objects);
+                $nextAction = implode(',', $objects); // remove first object of the list
+
+                // do some things for new object
+                if (isset($objects[0])) {
+                    if ($objects[0] === 'logs') {
+                        DB::query('SELECT increment_id FROM ' . prefixTable('log_items') . " WHERE action = %s AND raison LIKE 'at_pw :%'", 'at_modification');
+                    } elseif ($objects[0] === 'files') {
+                        DB::query('SELECT id FROM ' . prefixTable('files'));
+                    } elseif ($objects[0] === 'categories') {
+                        DB::query('SELECT id FROM ' . prefixTable('categories_items'));
+                    } elseif ($objects[0] === 'custfields') {
+                        DB::query('SELECT raison FROM ' . prefixTable('log_items') . " WHERE action = %s AND raison LIKE 'at_pw :%'", 'at_modification');
+                    }
+                    $nb_of_items = DB::count();
+                } else {
+                    // now finishing
+                    $nextAction = 'finishing';
+                }
+            } else {
+                $nextAction = $post_object;
+                $nb_of_items = 0;
+            }
+        }
+
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => $nextAction,
+                'nextStart' => (int) $nextStart,
+                'nbOfItems' => $nb_of_items,
+                'oldsk' => $session->get('user-reencrypt_old_salt'),
+                'newsk' => $session->get('user-reencrypt_new_salt'),
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+    * Change SALT Key - END
+    */
+    case 'admin_action_change_salt_key___end':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        $error = '';
+
+        // quit maintenance mode.
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => '0',
+                'updated_at' => time(),
+            ),
+            'intitule = %s AND type= %s',
+            'maintenance_mode',
+            'admin'
+        );
+
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'nextAction' => 'done',
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+    * Change SALT Key - Restore BACKUP data
+    */
+    case 'admin_action_change_salt_key___restore_backup':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // delete files
+        $previous_saltkey_filename = '';
+        $rows = DB::query(
+            'SELECT current_table, value, value2, current_sql
+            FROM ' . prefixTable('sk_reencrypt_backup')
+        );
+        foreach ($rows as $record) {
+            if ($record['current_table'] === 'items' || $record['current_table'] === 'logs' || $record['current_table'] === 'categories') {
+                // excute query
+                DB::query(
+                    str_replace("\'", "'", $record['current_sql'])
+                );
+            } elseif ($record['current_table'] === 'files') {
+                // restore backup file
+                $recordValue = strval($record['value']);
+                $recordValue2 = strval($record['value2']);
+                if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordValue)) {
+                    unlink($SETTINGS['path_to_upload_folder'] . '/' . $recordValue);
+                    if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . $recordValue2)) {
+                        rename(
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordValue2,
+                            $SETTINGS['path_to_upload_folder'] . '/' . $recordValue
+                        );
+                    }
+                }
+            } elseif ($record['current_table'] === 'old_sk') {
+                $previous_saltkey_filename = $record['value2'];
+            }
+        }
+
+        // restore saltkey file
+        if (file_exists($previous_saltkey_filename)) {
+            unlink(TEAMPASS_SECRETS.'/'.SECUREFILE);
+            rename(
+                $previous_saltkey_filename,
+                TEAMPASS_SECRETS.'/'.SECUREFILE
+            );
+        }
+
+        // drop table
+        DB::query('DROP TABLE IF EXISTS ' . prefixTable('sk_reencrypt_backup'));
+
+        // Send back
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
+
+        /*
+    * Change SALT Key - Delete BACKUP data
+    */
+    case 'admin_action_change_salt_key___delete_backup':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // delete files
+        $rows = DB::query(
+            'SELECT value, value2
+            FROM ' . prefixTable('sk_reencrypt_backup') . "
+            WHERE current_table = 'files'"
+        );
+        foreach ($rows as $record) {
+            if (file_exists($SETTINGS['path_to_upload_folder'] . '/' . strval($record['value2']))) {
+                unlink($SETTINGS['path_to_upload_folder'] . '/' . strval($record['value2']));
+            }
+        }
+
+        // drop table
+        DB::query('DROP TABLE IF EXISTS ' . prefixTable('sk_reencrypt_backup'));
+
+        echo '[{"status":"done"}]';
+        break;
+
+        /*
+    * Test the email configuraiton
+    */
+    case 'admin_email_test_configuration':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // User has an email set?
+        if (empty($session->get('user-email')) === true) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('no_email_set'),
+                ),
+                'encode'
+            );
+        } else {
+            require_once TEAMPASS_APP . '/sources/main.functions.php';
+
+            //send email
+            $emailSettings = new EmailSettings($SETTINGS);
+            $emailService = new EmailService();
+            $emailService->sendMail(
+                $lang->get('admin_email_test_subject'),
+                $lang->get('admin_email_test_body'),
+                $session->get('user-email'),
+                $emailSettings
+            );
+            
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => '',
+                ),
+                'encode'
+            );
+        }
+        break;
+
+        /*
+    * Send emails in backlog
+    */
+    case 'admin_email_send_backlog':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
+
+        $rows = DB::query(
+            'SELECT *
+            FROM ' . prefixTable('emails') . '
+            WHERE status = %s OR status = %s',
+            'not_sent',
+            ''
+        );
+        $counter = DB::count();
+        $error = false;
+        $message = '';
+
+        if ($counter > 0) {
+            // Only treat first email
+            foreach ($rows as $record) {
+                //send email
+                $email = $emailService->sendMail(
+                    $record['subject'],
+                    $record['body'],
+                    $record['receivers'],
+                    $emailSettings
+                );
+                $ret = json_decode(
+                    $email,
+                    true
+                );
+
+                if (empty($ret['error']) === false) {
+                    //update item_id in files table
+                    DB::update(
+                        prefixTable('emails'),
+                        array(
+                            'status' => 'not_sent',
+                        ),
+                        'timestamp = %s',
+                        $record['timestamp']
+                    );
+
+                    $error = true;
+                    $message = $ret['message'];
+                } else {
+                    //delete from DB
+                    DB::delete(
+                        prefixTable('emails'),
+                        'timestamp = %s',
+                        $record['timestamp']
+                    );
+
+                    //update LOG
+                    logEvents(
+                        $SETTINGS,
+                        'admin_action',
+                        'Emails backlog',
+                        (string) $session->get('user-id'),
+                        $session->get('user-login')
+                    );
+                }
+
+                // Exit loop
+                break;
+            }
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => $error,
+                'message' => $message,
+                'counter' => $counter,
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+    * Send emails in backlog
+    */
+    case 'admin_email_send_backlog_old':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
+
+        // Instatiate email settings and service
+        $emailSettings = new EmailSettings($SETTINGS);
+        $emailService = new EmailService();
+
+        $rows = DB::query('SELECT * FROM ' . prefixTable('emails') . ' WHERE status = %s OR status = %s', 'not_sent', '');
+        foreach ($rows as $record) {
+            //send email
+            $email = $emailService->sendMail(
+                $record['subject'],
+                $record['body'],
+                $record['receivers'],
+                $emailSettings
+            );
+            $ret = json_decode(
+                $email,
+                true
+            );
+
+            if (empty($ret['error']) === false) {
+                //update item_id in files table
+                DB::update(
+                    prefixTable('emails'),
+                    array(
+                        'status' => 'not_sent',
+                    ),
+                    'timestamp = %s',
+                    $record['timestamp']
+                );
+            } else {
+                //delete from DB
+                DB::delete(prefixTable('emails'), 'timestamp = %s', $record['timestamp']);
+            }
+        }
+
+        //update LOG
+        logEvents($SETTINGS, 'admin_action', 'Emails backlog', (string) $session->get('user-id'), $session->get('user-login'));
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+    * Attachments encryption
+    */
+    case 'admin_action_attachments_cryption':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
+
+        // init
+        $filesList = array();
+
+        // get through files
+        if (null !== $post_option && empty($post_option) === false) {
+            // Loop on files
+            $rows = DB::query(
+                'SELECT id, file, status
+                FROM ' . prefixTable('files')
+            );
+            foreach ($rows as $record) {
+                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . strval($record['file']))) {
+                    $addFile = false;
+                    if (($post_option === 'attachments-decrypt' && $record['status'] === 'encrypted')
+                        || ($post_option === 'attachments-encrypt' && $record['status'] === 'clear')
+                    ) {
+                        $addFile = true;
+                    }
+
+                    if ($addFile === true) {
+                        array_push($filesList, $record['id']);
+                    }
+                }
+            }
+        } else {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'list' => $filesList,
+                'counter' => 0,
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+     * Attachments encryption - Treatment in several loops
+     */
+    case 'admin_action_attachments_cryption_continu':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Prepare variables
+        $post_list = filter_var_array($post_list, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_counter = filter_var($post_counter, FILTER_SANITIZE_NUMBER_INT);
+
+        include TEAMPASS_APP . '/config/settings.php';
+        include_once TEAMPASS_APP . '/sources/main.functions.php';
+
+        $cpt = 0;
+        $continu = true;
+        $newFilesList = array();
+        $message = '';
+
+        // treat 10 files
+        foreach ($post_list as $file) {
+            if ($cpt < 5) {
+                // Get file name
+                $file_info = DB::queryFirstRow(
+                    'SELECT file
+                    FROM ' . prefixTable('files') . '
+                    WHERE id = %i',
+                    $file
+                );
+
+                // skip file is Coherancey not respected
+                $fileInfoFile = strval($file_info['file']);
+                if (is_file($SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile)) {
+                    // Case where we want to decrypt
+                    if ($post_option === 'decrypt') {
+                        prepareFileWithDefuse(
+                            'decrypt',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile,
+                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
+                        );
+                        // Case where we want to encrypt
+                    } elseif ($post_option === 'encrypt') {
+                        prepareFileWithDefuse(
+                            'encrypt',
+                            $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile,
+                            $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
+                        );
+                    }
+                    // Do file cleanup
+                    fileDelete($SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile, $SETTINGS);
+                    rename(
+                        $SETTINGS['path_to_upload_folder'] . '/defuse_temp_' . $fileInfoFile,
+                        $SETTINGS['path_to_upload_folder'] . '/' . $fileInfoFile
+                    );
+
+                    // store in DB
+                    DB::update(
+                        prefixTable('files'),
+                        array(
+                            'status' => $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted',
+                        ),
+                        'id = %i',
+                        $file
+                    );
+
+                    ++$cpt;
+                }
+            } else {
+                // build list
+                array_push($newFilesList, $file);
+            }
+        }
+
+        // Should we stop
+        if (count($newFilesList) === 0) {
+            $continu = false;
+
+            //update LOG
+            logEvents(
+                $SETTINGS,
+                'admin_action',
+                'attachments_encryption_changed',
+                (string) $session->get('user-id'),
+                $session->get('user-login'),
+                $post_option === 'attachments-decrypt' ? 'clear' : 'encrypted'
+            );
+
+            $message = $lang->get('last_execution') . ' ' .
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) time()) .
+                '<i class="fas fa-check text-success ml-2 mr-3"></i>';
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $message,
+                'list' => $newFilesList,
+                'counter' => $post_cpt + $cpt,
+                'continu' => $continu,
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+     * API save key
+     */
+    case 'admin_action_api_save_key':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_label = isset($dataReceived['label']) === true ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $timestamp = time();
+
+        // add new key
+        if (null !== $post_action && $post_action === 'add') {
+            // Generate KEY
+            require_once 'main.functions.php';
+            $key = GenerateCryptKey(39, false, true, true, false, true);
+            
+            // Save in DB
+            DB::insert(
+                prefixTable('api'),
+                array(
+                    'increment_id' => null,
+                    'type' => 'key',
+                    'label' => $post_label,
+                    'value' => $key,
+                    'timestamp' => $timestamp,
+                )
+            );
+
+            $post_id = DB::insertId();
+            // Update existing key
+        } elseif (null !== $post_action && $post_action === 'update') {
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+
+            DB::update(
+                prefixTable('api'),
+                array(
+                    'label' => $post_label,
+                    'timestamp' => $timestamp,
+                ),
+                'increment_id=%i',
+                $post_id
+            );
+            // Delete existing key
+        } elseif (null !== $post_action && $post_action === 'delete') {
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
+
+            DB::query(
+                'DELETE FROM ' . prefixTable('api') . ' WHERE increment_id = %i',
+                $post_id
+            );
+        }
+
+        // send data
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'keyId' => $post_id,
+                'key' => isset($key) === true ? $key : '',
+            ),
+            'encode'
+        );
+        break;
+
+        /*
+       * API save key
+    */
+    case 'admin_action_api_save_ip':
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') === 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_action = filter_var($dataReceived['action'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // add new key
+        if (null !== $post_action && $post_action === 'add') {
+            $post_label = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_ip = filter_var($dataReceived['ip'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // Store in DB
+            DB::insert(
+                prefixTable('api'),
+                array(
+                    'increment_id' => null,
+                    'type' => 'ip',
+                    'label' => $post_label,
+                    'value' => $post_ip,
+                    'timestamp' => time(),
+                )
+            );
+
+            $post_id = DB::insertId();
+            // Update existing key
+        } elseif (null !== $post_action && $post_action === 'update') {
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if ($post_field === 'value') {
+                $arr = array(
+                    'value' => $post_value,
+                    'timestamp' => time(),
+                );
+            } else {
+                $arr = array(
+                    'label' => $post_value,
+                    'timestamp' => time(),
+                );
+            }
+            DB::update(
+                prefixTable('api'),
+                $arr,
+                'increment_id=%i',
+                $post_id
+            );
+            // Delete existing key
+        } elseif (null !== $post_action && $post_action === 'delete') {
+            $post_id = filter_var($dataReceived['id'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            DB::query('DELETE FROM ' . prefixTable('api') . ' WHERE increment_id=%i', $post_id);
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+                'ipId' => $post_id,
+            ),
+            'encode'
+        );
+        break;
+
+    case 'save_api_status':
+        $timestamp = time();
+
+        // Save API status
+        DB::query(
+            'SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+            'admin',
+            'api'
+        );
+        $counter = DB::count();
+
+        if ($counter === 0) {
+            DB::insert(
+                prefixTable('misc'),
+                array(
+                    'type' => 'admin',
+                    'intitule' => 'api',
+                    'valeur' => $post_status,
+                    'created_at' => $timestamp,
+                )
+            );
+        } else {
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => $post_status,
+                    'updated_at' => $timestamp,
+                ),
+                'type = %s AND intitule = %s',
+                'admin',
+                'api'
+            );
+        }
+
+        $SETTINGS['api'] = (string) $post_status;
+
+        // Silent default save of browser extension FQDN on first API activation
+        if ((int) $post_status === 1) {
+            $currentBrowserExtensionFqdn = isset($SETTINGS['browser_extension_fqdn']) === true
+                ? trim((string) $SETTINGS['browser_extension_fqdn'])
+                : '';
+
+            if ($currentBrowserExtensionFqdn === '') {
+                $cpassmanUrl = isset($SETTINGS['cpassman_url']) === true
+                    ? trim((string) $SETTINGS['cpassman_url'])
+                    : '';
+
+                if ($cpassmanUrl === '') {
+                    $detectedBrowserExtensionFqdn = 'localhost';
+                } else {
+                    if (strpos($cpassmanUrl, 'http') !== 0 && strpos($cpassmanUrl, '//') !== 0) {
+                        $cpassmanUrl = 'http://' . $cpassmanUrl;
+                    }
+
+                    $parsedUrl = parse_url($cpassmanUrl);
+                    $host = isset($parsedUrl['host']) === true
+                        ? strtolower(trim((string) $parsedUrl['host'], '.'))
+                        : 'localhost';
+
+                    // Same localhost behaviour as pages/api.php
+                    if (in_array($host, ['localhost', '127.0.0.1', '::1'], true) === true) {
+                        $path = isset($parsedUrl['path']) === true
+                            ? trim((string) $parsedUrl['path'], '/')
+                            : '';
+
+                        if ($path !== '') {
+                            $segments = explode('/', $path);
+                            if (
+                                $segments[0] !== ''
+                                && strpos((string) $segments[0], '.php') === false
+                            ) {
+                                $host = (string) $segments[0];
+                            }
+                        }
+                    }
+
+                    $detectedBrowserExtensionFqdn = $host;
+                }
+
+                DB::query(
+                    'SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+                    'admin',
+                    'browser_extension_fqdn'
+                );
+                $browserExtensionFqdnExists = DB::count();
+
+                if ($browserExtensionFqdnExists === 0) {
+                    DB::insert(
+                        prefixTable('misc'),
+                        array(
+                            'type' => 'admin',
+                            'intitule' => 'browser_extension_fqdn',
+                            'valeur' => $detectedBrowserExtensionFqdn,
+                            'created_at' => $timestamp,
+                        )
+                    );
+                } else {
+                    DB::update(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => $detectedBrowserExtensionFqdn,
+                            'updated_at' => $timestamp,
+                        ),
+                        'type = %s AND intitule = %s',
+                        'admin',
+                        'browser_extension_fqdn'
+                    );
+                }
+
+                $SETTINGS['browser_extension_fqdn'] = $detectedBrowserExtensionFqdn;
+            }
+        }
+
+        ConfigManager::invalidateCache();
+        break;
+
+    case 'run_duo_config_check':
+        //Libraries call
+        require_once TEAMPASS_APP . '/sources/main.functions.php';
+        // Check KEY
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // Check if we have what we need first
+        if (empty($dataReceived['duo_ikey']) || empty($dataReceived['duo_skey']) || empty($dataReceived['duo_host'])) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('data_are_missing'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Run Duo Config Check
+        try {
+            $duo_client = new Client(
+                $dataReceived['duo_ikey'],
+                $dataReceived['duo_skey'],
+                $dataReceived['duo_host'],
+                $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
+            );
+        } catch (DuoException $e) {
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            }
+            // deepcode ignore ServerLeak: Data is encrypted before being sent
+            echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('duo_config_error'),
+                    ),
+                    'encode'
+            );
+            break;
+        }
+
+        // Run healthcheck against Duo with the config
+        try {
+            $duo_client->healthCheck();
+        } catch (DuoException $e) {
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS Error - duo config - '.$e->getMessage());
+            }
+            // deepcode ignore ServerLeak: Data is encrypted before being sent
+            echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('duo_error_check_config'),
+                    ),
+                    'encode'
+            );
+            break;
+        }
+
+        // send data
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+        break;
+
+    case 'save_google_options':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // Google Authentication
+        if (htmlspecialchars_decode($dataReceived['google_authentication']) === 'false') {
+            $tmp = 0;
+        } else {
+            $tmp = 1;
+        }
+        DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'google_authentication');
+        $counter = DB::count();
+        if ($counter === 0) {
+            DB::insert(
+                prefixTable('misc'),
+                array(
+                    'type' => 'admin',
+                    'intitule' => 'google_authentication',
+                    'valeur' => $tmp,
+                    'created_at' => time(),
+                )
+            );
+        } else {
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => $tmp,
+                    'updated_at' => time(),
+                ),
+                'type = %s AND intitule = %s',
+                'admin',
+                'google_authentication'
+            );
+        }
+        $SETTINGS['google_authentication'] = htmlspecialchars_decode($dataReceived['google_authentication']);
+
+        // ga_website_name
+        if (is_null($dataReceived['ga_website_name']) === false) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'ga_website_name');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'ga_website_name',
+                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['ga_website_name']),
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'ga_website_name'
+                );
+            }
+            $SETTINGS['ga_website_name'] = htmlspecialchars_decode($dataReceived['ga_website_name']);
+        } else {
+            $SETTINGS['ga_website_name'] = '';
+        }
+
+        // send data
+        echo '[{"result" : "' . addslashes($lang->get('done')) . '" , "error" : ""}]';
+        break;
+
+    case 'save_agses_options':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // agses_hosted_url
+        if (!is_null($dataReceived['agses_hosted_url'])) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_url');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'agses_hosted_url',
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url']),
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_url']),
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'agses_hosted_url'
+                );
+            }
+            $SETTINGS['agses_hosted_url'] = htmlspecialchars_decode($dataReceived['agses_hosted_url']);
+        } else {
+            $SETTINGS['agses_hosted_url'] = '';
+        }
+
+        // agses_hosted_id
+        if (!is_null($dataReceived['agses_hosted_id'])) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_id');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'agses_hosted_id',
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id']),
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_id']),
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'agses_hosted_id'
+                );
+            }
+            $SETTINGS['agses_hosted_id'] = htmlspecialchars_decode($dataReceived['agses_hosted_id']);
+        } else {
+            $SETTINGS['agses_hosted_id'] = '';
+        }
+
+        // agses_hosted_apikey
+        if (!is_null($dataReceived['agses_hosted_apikey'])) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'agses_hosted_apikey');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'agses_hosted_apikey',
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey']),
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => htmlspecialchars_decode($dataReceived['agses_hosted_apikey']),
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'agses_hosted_apikey'
+                );
+            }
+            $SETTINGS['agses_hosted_apikey'] = htmlspecialchars_decode($dataReceived['agses_hosted_apikey']);
+        } else {
+            $SETTINGS['agses_hosted_apikey'] = '';
+        }
+
+        // send data
+        echo '[{"result" : "' . addslashes($lang->get('done')) . '" , "error" : ""}]';
+        break;
+
+
+
+    case 'health_logs_get_settings':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'result' => [
+                    'settings' => [
+                        'health_logs_mode' => tpHealthNormalizeLogsModeForAdmin((string) ($SETTINGS['health_logs_mode'] ?? 'auto')),
+                        'health_teampass_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_teampass_log_path'] ?? '')),
+                        'health_php_fpm_log_path' => tpHealthSanitizeManualLogPathForAdmin((string) ($SETTINGS['health_php_fpm_log_path'] ?? '')),
+                    ],
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'health_logs_save_settings':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $healthLogsMode = tpHealthNormalizeLogsModeForAdmin((string) ($dataReceived['health_logs_mode'] ?? 'auto'));
+        $healthTeampassLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_teampass_log_path'] ?? ''));
+        $healthPhpFpmLogPath = tpHealthSanitizeManualLogPathForAdmin((string) ($dataReceived['health_php_fpm_log_path'] ?? ''));
+
+        if ($healthLogsMode !== 'manual') {
+            $healthTeampassLogPath = '';
+            $healthPhpFpmLogPath = '';
+        }
+
+        if ($healthTeampassLogPath !== '' && tpHealthIsAbsolutePathForAdmin($healthTeampassLogPath) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => sprintf(
+                        $lang->get('health_log_path_must_be_absolute_fmt'),
+                        $lang->get('health_teampass_log_path')
+                    ),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        if ($healthPhpFpmLogPath !== '' && tpHealthIsAbsolutePathForAdmin($healthPhpFpmLogPath) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => sprintf(
+                        $lang->get('health_log_path_must_be_absolute_fmt'),
+                        $lang->get('health_php_fpm_log_path')
+                    ),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        teampassSaveAdminSetting('health_logs_mode', $healthLogsMode);
+        teampassSaveAdminSetting('health_webserver_log_path', '');
+        teampassSaveAdminSetting('health_teampass_log_path', $healthTeampassLogPath);
+        teampassSaveAdminSetting('health_php_fpm_log_path', $healthPhpFpmLogPath);
+
+        ConfigManager::invalidateCache();
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'settings' => [
+                        'health_logs_mode' => $healthLogsMode,
+                        'health_teampass_log_path' => $healthTeampassLogPath,
+                        'health_php_fpm_log_path' => $healthPhpFpmLogPath,
+                    ],
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_get_rules':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                    'settings' => [
+                        'network_blacklist_enabled' => (int) ($SETTINGS['network_blacklist_enabled'] ?? 0),
+                        'network_whitelist_enabled' => (int) ($SETTINGS['network_whitelist_enabled'] ?? 0),
+                        'network_security_mode' => (string) ($SETTINGS['network_security_mode'] ?? 'direct'),
+                        'network_security_header' => (string) ($SETTINGS['network_security_header'] ?? 'x-forwarded-for'),
+                        'network_trusted_proxies' => (string) ($SETTINGS['network_trusted_proxies'] ?? ''),
+                    ],
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_save_settings':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $blacklistEnabled = isset($dataReceived['network_blacklist_enabled']) === true && (int) $dataReceived['network_blacklist_enabled'] === 1 ? '1' : '0';
+        $whitelistEnabled = isset($dataReceived['network_whitelist_enabled']) === true && (int) $dataReceived['network_whitelist_enabled'] === 1 ? '1' : '0';
+        $securityMode = (string) ($dataReceived['network_security_mode'] ?? 'direct');
+        $securityHeader = strtolower(trim((string) ($dataReceived['network_security_header'] ?? 'x-forwarded-for')));
+        $trustedProxies = trim((string) ($dataReceived['network_trusted_proxies'] ?? ''));
+
+        if (in_array($securityMode, ['direct', 'reverse_proxy'], true) === false) {
+            $securityMode = 'direct';
+        }
+        if (in_array($securityHeader, ['x-forwarded-for', 'x-real-ip'], true) === false) {
+            $securityHeader = 'x-forwarded-for';
+        }
+
+        teampassSaveAdminSetting('network_blacklist_enabled', $blacklistEnabled);
+        teampassSaveAdminSetting('network_whitelist_enabled', $whitelistEnabled);
+        teampassSaveAdminSetting('network_security_mode', $securityMode);
+        teampassSaveAdminSetting('network_security_header', $securityHeader);
+        teampassSaveAdminSetting('network_trusted_proxies', $trustedProxies);
+
+        $SETTINGS['network_blacklist_enabled'] = $blacklistEnabled;
+        $SETTINGS['network_whitelist_enabled'] = $whitelistEnabled;
+        $SETTINGS['network_security_mode'] = $securityMode;
+        $SETTINGS['network_security_header'] = $securityHeader;
+        $SETTINGS['network_trusted_proxies'] = $trustedProxies;
+
+        if ($whitelistEnabled === '1') {
+            $networkContext = teampassGetClientIpForSecurity($SETTINGS);
+            $currentIp = isset($networkContext['detected_ip']) === true ? (string) $networkContext['detected_ip'] : '';
+            $serverIp = isset($networkContext['server_ip']) === true ? (string) $networkContext['server_ip'] : '';
+            $userId = (int) ($session->get('user-id') ?? 0);
+
+            if ($currentIp !== '') {
+                teampassEnsureNetworkAclRule('whitelist', $currentIp, (string) $lang->get('network_security_auto_comment_current_ip'), $userId);
+            }
+            if ($serverIp !== '') {
+                teampassEnsureNetworkAclRule('whitelist', $serverIp, (string) $lang->get('network_security_auto_comment_server_ip'), $userId);
+            }
+        }
+
+        ConfigManager::invalidateCache();
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                    'settings' => [
+                        'network_blacklist_enabled' => (int) $blacklistEnabled,
+                        'network_whitelist_enabled' => (int) $whitelistEnabled,
+                        'network_security_mode' => $securityMode,
+                        'network_security_header' => $securityHeader,
+                        'network_trusted_proxies' => $trustedProxies,
+                    ],
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_save_rule':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $ruleId = isset($dataReceived['id']) === true ? (int) $dataReceived['id'] : 0;
+        $listType = (string) ($dataReceived['list_type'] ?? '');
+        $ruleDefinition = teampassNormalizeIpv4Rule((string) ($dataReceived['rule_definition'] ?? ''));
+        $comment = trim((string) ($dataReceived['comment'] ?? ''));
+        $enabled = isset($dataReceived['enabled']) === true && (int) $dataReceived['enabled'] === 1 ? 1 : 0;
+        $userId = (int) ($session->get('user-id') ?? 0);
+
+        if (teampassNetworkAclTableExists() === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('network_security_table_missing'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if (in_array($listType, ['whitelist', 'blacklist'], true) === false || $ruleDefinition === null) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('network_security_invalid_rule'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        if ($ruleId > 0) {
+            DB::update(
+                prefixTable('network_acl'),
+                [
+                    'type' => $listType,
+                    'rule_definition' => $ruleDefinition,
+                    'comment' => $comment,
+                    'enabled' => $enabled,
+                    'updated_at' => time(),
+                    'updated_by' => $userId,
+                ],
+                'id = %i',
+                $ruleId
+            );
+        } else {
+            DB::insert(
+                prefixTable('network_acl'),
+                [
+                    'type' => $listType,
+                    'rule_definition' => $ruleDefinition,
+                    'comment' => $comment,
+                    'enabled' => $enabled,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                ]
+            );
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_delete_rule':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $ruleId = isset($dataReceived['id']) === true ? (int) $dataReceived['id'] : 0;
+        if ($ruleId > 0 && teampassNetworkAclTableExists() === true) {
+            DB::delete(prefixTable('network_acl'), 'id = %i', $ruleId);
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_toggle_rule':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $ruleId = isset($dataReceived['id']) === true ? (int) $dataReceived['id'] : 0;
+        $enabled = isset($dataReceived['enabled']) === true && (int) $dataReceived['enabled'] === 1 ? 1 : 0;
+        $userId = (int) ($session->get('user-id') ?? 0);
+        if ($ruleId > 0 && teampassNetworkAclTableExists() === true) {
+            DB::update(
+                prefixTable('network_acl'),
+                [
+                    'enabled' => $enabled,
+                    'updated_at' => time(),
+                    'updated_by' => $userId,
+                ],
+                'id = %i',
+                $ruleId
+            );
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_add_special_rule':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ($session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $source = (string) ($dataReceived['source'] ?? '');
+        $networkContext = teampassGetClientIpForSecurity($SETTINGS);
+        $userId = (int) ($session->get('user-id') ?? 0);
+        $ruleValue = '';
+        $comment = '';
+
+        if ($source === 'current_ip') {
+            $ruleValue = (string) ($networkContext['detected_ip'] ?? '');
+            $comment = (string) $lang->get('network_security_auto_comment_current_ip');
+        } elseif ($source === 'server_ip') {
+            $ruleValue = (string) ($networkContext['server_ip'] ?? '');
+            $comment = (string) $lang->get('network_security_auto_comment_server_ip');
+        }
+
+        if ($ruleValue === '' || teampassEnsureNetworkAclRule('whitelist', $ruleValue, $comment, $userId) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('network_security_invalid_rule'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'network_blacklist_ip':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        $ruleValue = teampassNormalizeIpv4Rule((string) ($dataReceived['ip'] ?? ''));
+        $userId = (int) ($session->get('user-id') ?? 0);
+
+        if ($ruleValue === null || teampassEnsureNetworkAclRule('blacklist', $ruleValue, (string) $lang->get('network_security_auto_comment_failed_login_ip'), $userId) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('network_security_invalid_rule'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $lang->get('done'),
+                'result' => [
+                    'context' => teampassGetNetworkContextForAdmin($SETTINGS),
+                    'rules' => teampassLoadNetworkAclRules(false),
+                    'ip' => $ruleValue,
+                ],
+            ],
+            'encode'
+        );
+        break;
+
+    case 'save_option_change':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        
+        // prepare data
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+
+        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip'], true) === true) {
+            $post_value = (string) max(0, (int) $post_value);
+        }
+        if ($post_field === 'bruteforce_lock_duration') {
+            $intValue = (int) $post_value;
+            $post_value = (string) max(1, $intValue === 0 ? 10 : $intValue);
+        }
+        
+        require_once 'main.functions.php';
+
+        // In case of backup script key, then normalize, archive the previous state and encrypt it.
+        if ($post_field === 'bck_script_passkey') {
+            require_once 'backup.functions.php';
+
+            $clearBackupScriptPasskey = trim((string) $post_value);
+            if ($clearBackupScriptPasskey === '') {
+                $clearBackupScriptPasskey = tpGenerateBackupScriptPasskey();
+            }
+
+            $storedBackupScriptPasskey = tpStoreBackupScriptPasskey($clearBackupScriptPasskey, $SETTINGS, true);
+            if (!empty($storedBackupScriptPasskey['success'])) {
+                $post_value = (string) $storedBackupScriptPasskey['encrypted_key'];
+            } else {
+                $fallbackEncryptedBackupScriptPasskey = cryption(
+                    $clearBackupScriptPasskey,
+                    '',
+                    'encrypt',
+                    $SETTINGS
+                )['string'];
+
+                $post_value = $fallbackEncryptedBackupScriptPasskey !== ''
+                    ? $fallbackEncryptedBackupScriptPasskey
+                    : $clearBackupScriptPasskey;
+            }
+        }
+
+        $timestamp = time();
+
+        // Check if setting is already in DB. If NO then insert, if YES then update.
+        $data = DB::query(
+            'SELECT * FROM ' . prefixTable('misc') . '
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            $post_field
+        );
+        $counter = DB::count();
+        if ($counter === 0) {
+            DB::insert(
+                prefixTable('misc'),
+                array(
+                    'valeur' => $post_value,
+                    'type' => 'admin',
+                    'intitule' => $post_field,
+                    'created_at' => $timestamp,
+                )
+            );
+            // in case of stats enabled, add the actual time
+            if ($post_field === 'send_stats') {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $timestamp,
+                        'type' => 'admin',
+                        'intitule' => $post_field . '_time',
+                        'updated_at' => $timestamp,
+                    )
+                );
+            }
+        } else {
+            // Update DB settings
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => $post_value,
+                    'updated_at' => $timestamp,
+                ),
+                'type = %s AND intitule = %s',
+                'admin',
+                $post_field
+            );
+
+            // in case of stats enabled, update the actual time
+            if ($post_field === 'send_stats') {
+                // Check if previous time exists, if not them insert this value in DB
+                DB::query(
+                    'SELECT * FROM ' . prefixTable('misc') . '
+                    WHERE type = %s AND intitule = %s',
+                    'admin',
+                    $post_field . '_time'
+                );
+                $counter = DB::count();
+                if ($counter === 0) {
+                    DB::insert(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => 0,
+                            'type' => 'admin',
+                            'intitule' => $post_field . '_time',
+                            'created_at' => $timestamp,
+                        )
+                    );
+                } else {
+                    DB::update(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => 0,
+                            'updated_at' => $timestamp,
+                        ),
+                        'type = %s AND intitule = %s',
+                        'admin',
+                        $post_field . '_time'
+                    );
+                }
+            }
+        }
+
+        // Keep local settings array aligned with the saved value
+        $SETTINGS[$post_field] = $post_value;
+
+        // Silent default save of browser extension FQDN on first API activation
+        if ($post_field === 'api' && (int) $post_value === 1) {
+            $currentBrowserExtensionFqdn = isset($SETTINGS['browser_extension_fqdn']) === true
+                ? trim((string) $SETTINGS['browser_extension_fqdn'])
+                : '';
+
+            if ($currentBrowserExtensionFqdn === '') {
+                $cpassmanUrl = isset($SETTINGS['cpassman_url']) === true
+                    ? trim((string) $SETTINGS['cpassman_url'])
+                    : '';
+
+                if ($cpassmanUrl === '') {
+                    $detectedBrowserExtensionFqdn = 'localhost';
+                } else {
+                    if (strpos($cpassmanUrl, 'http') !== 0 && strpos($cpassmanUrl, '//') !== 0) {
+                        $cpassmanUrl = 'http://' . $cpassmanUrl;
+                    }
+
+                    $parsedUrl = parse_url($cpassmanUrl);
+                    $host = isset($parsedUrl['host']) === true
+                        ? strtolower(trim((string) $parsedUrl['host'], '.'))
+                        : 'localhost';
+
+                    // Same localhost behaviour as pages/api.php
+                    if (in_array($host, ['localhost', '127.0.0.1', '::1'], true) === true) {
+                        $path = isset($parsedUrl['path']) === true
+                            ? trim((string) $parsedUrl['path'], '/')
+                            : '';
+
+                        if ($path !== '') {
+                            $segments = explode('/', $path);
+                            if (
+                                $segments[0] !== ''
+                                && strpos((string) $segments[0], '.php') === false
+                            ) {
+                                $host = (string) $segments[0];
+                            }
+                        }
+                    }
+
+                    $detectedBrowserExtensionFqdn = $host;
+                }
+
+                // Sanitize before storage
+                $detectedBrowserExtensionFqdn = htmlspecialchars(
+                    $detectedBrowserExtensionFqdn,
+                    ENT_QUOTES | ENT_HTML5,
+                    'UTF-8'
+                );
+
+                $fqdnRow = DB::queryFirstRow(
+                    'SELECT valeur
+                    FROM ' . prefixTable('misc') . '
+                    WHERE type = %s AND intitule = %s',
+                    'admin',
+                    'browser_extension_fqdn'
+                );
+
+                if ($fqdnRow === null) {
+                    DB::insert(
+                        prefixTable('misc'),
+                        array(
+                            'type' => 'admin',
+                            'intitule' => 'browser_extension_fqdn',
+                            'valeur' => $detectedBrowserExtensionFqdn,
+                            'created_at' => $timestamp,
+                        )
+                    );
+                    $SETTINGS['browser_extension_fqdn'] = $detectedBrowserExtensionFqdn;
+                } elseif (trim((string) $fqdnRow['valeur']) === '') {
+                    DB::update(
+                        prefixTable('misc'),
+                        array(
+                            'valeur' => $detectedBrowserExtensionFqdn,
+                            'updated_at' => $timestamp,
+                        ),
+                        'type = %s AND intitule = %s',
+                        'admin',
+                        'browser_extension_fqdn'
+                    );
+                    $SETTINGS['browser_extension_fqdn'] = $detectedBrowserExtensionFqdn;
+                }
+            }
+        }
+
+        // special Cases
+        if ($post_field === 'cpassman_url') {
+            // update also jsUrl for CSFP protection
+            $jsUrl = $post_value . '/assets/lib/csrfp/csrfprotector.js';
+            $csrfp_file = '../includes/libraries/csrfp/libs/csrfp.config.php';
+            $data = file_get_contents($csrfp_file);
+            $posJsUrl = strpos($data, '"jsUrl" => "');
+            $posEndLine = strpos($data, '",', $posJsUrl);
+            $line = substr($data, $posJsUrl, ($posEndLine - $posJsUrl + 2));
+            $newdata = str_replace($line, '"jsUrl" => "' . filter_var($jsUrl, FILTER_SANITIZE_FULL_SPECIAL_CHARS) . '",', $data);
+            file_put_contents($csrfp_file, $newdata);
+        } elseif ($post_field === 'restricted_to_input' && (int) $post_value === 0) {
+            DB::update(
+                prefixTable('misc'),
+                array(
+                    'valeur' => 0,
+                    'updated_at' => $timestamp,
+                ),
+                'type = %s AND intitule = %s',
+                'admin',
+                'restricted_to_roles'
+            );
+        }
+
+        // Invalidate APCu settings cache so the next request re-reads from DB
+        ConfigManager::invalidateCache();
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'misc' => $counter . ' ; ' . ($SETTINGS[$post_field] ?? $post_value),
+                'message' => empty($post_translate) === false ? $lang->get($post_translate) : '',
+            ),
+            'encode'
+        );
+        break;
+
+    case 'get_values_for_statistics':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            getStatisticsData($SETTINGS),
+            'encode'
+        );
+
+        break;
+
+
+
+case 'get_operational_statistics':
+    // Check KEY and rights
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // We want to avoid throwing a 500 on any unexpected DB/runtime error.
+    // Return a readable message to the admin UI and log details in a temp file.
+    try {
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // Some callers may send JSON string; normalize to array.
+        if (is_string($dataReceived) === true) {
+            $tmp = json_decode($dataReceived, true);
+            if (is_array($tmp) === true) {
+                $dataReceived = $tmp;
+            }
+        }
+
+        if (is_array($dataReceived) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('ops_stats_bad_request'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $period = isset($dataReceived['period']) ? (string) $dataReceived['period'] : '24h';
+        if (in_array($period, array('24h', '7d', '30d', '90d'), true) === false) {
+            $period = '24h';
+        }
+
+        $includePersonal = isset($dataReceived['include_personal']) ? (int) $dataReceived['include_personal'] : 1;
+        $includeApi = isset($dataReceived['include_api']) ? (int) $dataReceived['include_api'] : 1;
+
+        $topUsersLimit = isset($dataReceived['top_users_limit']) ? (int) $dataReceived['top_users_limit'] : 15;
+        $topRolesLimit = isset($dataReceived['top_roles_limit']) ? (int) $dataReceived['top_roles_limit'] : 15;
+        $topItemsLimit = isset($dataReceived['top_items_limit']) ? (int) $dataReceived['top_items_limit'] : 20;
+
+        // hard limits (safety)
+        $topUsersLimit = min(max($topUsersLimit, 5), 50);
+        $topRolesLimit = min(max($topRolesLimit, 5), 50);
+        $topItemsLimit = min(max($topItemsLimit, 5), 50);
+
+        $nowTs = time();
+
+        // Period range and chart granularity
+        if ($period === '7d') {
+            $fromTs = $nowTs - (7 * 24 * 3600);
+            $granularity = 'day';
+        } elseif ($period === '30d') {
+            $fromTs = $nowTs - (30 * 24 * 3600);
+            $granularity = 'day';
+        } elseif ($period === '90d') {
+            $fromTs = $nowTs - (90 * 24 * 3600);
+            $granularity = 'day';
+        } else {
+            $fromTs = $nowTs - (24 * 3600);
+            $granularity = 'hour';
+        }
+
+        // Common filters (do not assume deleted_at is always filled)
+        $usersNotDeletedSql = "(u.deleted_at IS NULL OR u.deleted_at = '' OR u.deleted_at = '0')";
+        $itemsNotDeletedSql = "(i.deleted_at IS NULL OR i.deleted_at = '' OR i.deleted_at = '0')";
+
+        // Marker for API logs
+        $tpApiLike = '%tp_src=api%';
+
+        // ---- USERS (inventory / status)
+        $totalUsers = intval(DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql}"
+        ));
+        $disabledUsers = intval(DB::queryFirstField(
+            "SELECT COUNT(*) FROM " . prefixTable('users') . " u WHERE {$usersNotDeletedSql} AND u.disabled = 1"
+        ));
+        $enabledUsers = max(0, $totalUsers - $disabledUsers);
+
+        // Users active in period (based on items logs + connections)
+        $activeUsers = intval(DB::queryFirstField(
+            "SELECT COUNT(DISTINCT t.user_id) AS c
+            FROM (
+                SELECT li.id_user AS user_id
+                FROM " . prefixTable('log_items') . " li
+                INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+                WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND {$itemsNotDeletedSql}
+                  AND (%i = 1 OR i.perso = 0)
+                  AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+                UNION
+                SELECT CAST(ls.qui AS UNSIGNED) AS user_id
+                FROM " . prefixTable('log_system') . " ls
+                WHERE ls.type = 'user_connection'
+                  AND CAST(ls.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND (%i = 1 OR ls.field_1 IS NULL OR (ls.field_1 <> 'api' AND ls.field_1 NOT LIKE %s))
+            ) t
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = t.user_id)
+            WHERE {$usersNotDeletedSql} AND u.disabled = 0",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includeApi,
+            $tpApiLike
+        ));
+        $inactiveUsers = max(0, $enabledUsers - $activeUsers);
+
+        // Connections web vs api (filtered depending on include_api)
+        $connections = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN is_api = 1 THEN 1 ELSE 0 END) AS api,
+                SUM(CASE WHEN is_api = 1 THEN 0 ELSE 1 END) AS web,
+                COUNT(*) AS total
+            FROM (
+                SELECT CASE WHEN (ls.field_1 = 'api' OR ls.field_1 LIKE %s) THEN 1 ELSE 0 END AS is_api
+                FROM " . prefixTable('log_system') . " ls
+                WHERE ls.type = 'user_connection'
+                  AND CAST(ls.date AS UNSIGNED) BETWEEN %i AND %i
+                  AND (%i = 1 OR ls.field_1 IS NULL OR (ls.field_1 <> 'api' AND ls.field_1 NOT LIKE %s))
+            ) x",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includeApi,
+            $tpApiLike
+        );
+
+        // Actions totals (items)
+        $actions = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END) AS created,
+                SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END) AS modified,
+                SUM(CASE WHEN li.action = 'at_shown' AND li.raison LIKE %s THEN 1 ELSE 0 END) AS api_views
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+        // Time series (activity)
+        if ($granularity === 'hour') {
+            $groupExpr = "CONCAT(DATE(FROM_UNIXTIME(CAST(li.date AS UNSIGNED))), ' ', LPAD(HOUR(FROM_UNIXTIME(CAST(li.date AS UNSIGNED))), 2, '0'), ':00')";
+        } else {
+            $groupExpr = "DATE(FROM_UNIXTIME(CAST(li.date AS UNSIGNED)))";
+        }
+
+        $seriesRows = DB::query(
+            "SELECT
+                {$groupExpr} AS g,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY g
+            ORDER BY g ASC",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+        $series = array('labels' => array(), 'views' => array(), 'copies' => array(), 'pw_shown' => array());
+        foreach ($seriesRows as $r) {
+            $series['labels'][] = strval($r['g']);
+            $series['views'][] = intval($r['views']);
+            $series['copies'][] = intval($r['copies']);
+            $series['pw_shown'][] = intval($r['pw_shown']);
+        }
+
+        // Top users
+        $topUsers = DB::query(
+            "SELECT
+                u.id,
+                u.login,
+                u.name,
+                u.lastname,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END) AS created,
+                SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END) AS modified,
+                COUNT(DISTINCT li.id_item) AS items_unique,
+                COUNT(DISTINCT i.id_tree) AS folders_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity,
+                SUM(CASE WHEN li.action = 'at_shown' AND li.raison LIKE %s THEN 1 ELSE 0 END) AS api_views,
+                (
+                    SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END)
+                    + (3 * SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END))
+                    + (2 * SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END))
+                    + SUM(CASE WHEN li.action = 'at_creation' THEN 1 ELSE 0 END)
+                    + SUM(CASE WHEN li.action = 'at_modification' THEN 1 ELSE 0 END)
+                ) AS score
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY u.id, u.login, u.name, u.lastname
+            ORDER BY score DESC, last_activity DESC
+            LIMIT %i",
+            $tpApiLike,
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topUsersLimit
+        );
+
+        // ---- ROLES
+        $rolesTotal = intval(DB::queryFirstField("SELECT COUNT(*) FROM " . prefixTable('roles_title')));
+
+        // Users total per role (excluding deleted users)
+        $roleUsersTotalRows = DB::query(
+            "SELECT ur.role_id, COUNT(DISTINCT ur.user_id) AS c
+             FROM " . prefixTable('users_roles') . " ur
+             INNER JOIN " . prefixTable('users') . " u ON (u.id = ur.user_id)
+             WHERE {$usersNotDeletedSql}
+             GROUP BY ur.role_id"
+        );
+        $roleUsersTotal = array();
+        foreach ($roleUsersTotalRows as $r) {
+            $roleUsersTotal[intval($r['role_id'])] = intval($r['c']);
+        }
+
+        // Items accessible per role (nested set inheritance) - roles only apply to shared items
+        $roleItemsAccessibleRows = DB::query(
+            "SELECT rv.role_id, COUNT(DISTINCT i.id) AS c
+             FROM " . prefixTable('roles_values') . " rv
+             INNER JOIN " . prefixTable('nested_tree') . " rf ON (rf.id = rv.folder_id)
+             INNER JOIN " . prefixTable('nested_tree') . " itf ON (itf.nleft BETWEEN rf.nleft AND rf.nright)
+             INNER JOIN " . prefixTable('items') . " i ON (CAST(i.id_tree AS UNSIGNED) = itf.id)
+             WHERE {$itemsNotDeletedSql}
+               AND i.perso = 0
+             GROUP BY rv.role_id"
+        );
+        $roleItemsAccessible = array();
+        foreach ($roleItemsAccessibleRows as $r) {
+            $roleItemsAccessible[intval($r['role_id'])] = intval($r['c']);
+        }
+
+        // Activity per role (based on user membership; folder access is evaluated separately)
+        $topRoles = DB::query(
+            "SELECT
+                ur.role_id,
+                rt.title,
+                COUNT(DISTINCT li.id_user) AS users_active,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown,
+                COUNT(DISTINCT li.id_item) AS items_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity,
+                (
+                    SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END)
+                    + (3 * SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END))
+                    + (2 * SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END))
+                ) AS score
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
+            INNER JOIN " . prefixTable('roles_title') . " rt ON (rt.id = ur.role_id)
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY ur.role_id, rt.title
+            ORDER BY score DESC, last_activity DESC
+            LIMIT %i",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topRolesLimit
+        );
+
+        $rolesActive = count($topRoles);
+
+        // Global KPIs for roles tab (distinct users/items across role membership)
+        $rolesKpis = DB::queryFirstRow(
+            "SELECT
+                COUNT(DISTINCT li.id_user) AS users_active,
+                COUNT(DISTINCT li.id_item) AS items_unique
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            INNER JOIN " . prefixTable('users_roles') . " ur ON (ur.user_id = li.id_user)
+            INNER JOIN " . prefixTable('users') . " u ON (u.id = li.id_user)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$usersNotDeletedSql}
+              AND u.disabled = 0
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+
+
+        // Enrich roles rows
+        foreach ($topRoles as $k => $r) {
+            $rid = intval($r['role_id']);
+            $topRoles[$k]['items_accessible'] = isset($roleItemsAccessible[$rid]) ? (int) $roleItemsAccessible[$rid] : 0;
+            $topRoles[$k]['users_total'] = isset($roleUsersTotal[$rid]) ? (int) $roleUsersTotal[$rid] : 0;
+        }
+
+        // ---- ITEMS (inventory)
+        $stale90Ts = $nowTs - (90 * 24 * 3600);
+        $itemsInventory = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) THEN 1 ELSE 0 END) AS total_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND i.perso = 1 AND %i = 1 THEN 1 ELSE 0 END) AS personal_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND i.perso = 0 THEN 1 ELSE 0 END) AS shared_active,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.inactif = 1 THEN 1 ELSE 0 END) AS inactive_active,
+                SUM(CASE WHEN ({$itemsNotDeletedSql}) THEN 0 ELSE 1 END) AS deleted,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.restricted_to IS NOT NULL AND i.restricted_to <> '' THEN 1 ELSE 0 END) AS restricted,
+                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level <> '-1' THEN CAST(i.complexity_level AS SIGNED) ELSE NULL END) AS avg_complexity,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.complexity_level = '-1' THEN 1 ELSE 0 END) AS unknown_complexity,
+                AVG(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND i.pw_len > 0 THEN i.pw_len ELSE NULL END) AS avg_pw_len,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0) AND CAST(i.updated_at AS UNSIGNED) > 0 AND CAST(i.updated_at AS UNSIGNED) < %i THEN 1 ELSE 0 END) AS stale_90
+            FROM " . prefixTable('items') . " i",
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $stale90Ts
+        );
+
+        
+
+        // ---- ITEMS (password security - OWASP ASVS aligned policy)
+        $pwMinLen = 12;
+        $pwMinComplexity = 70;
+
+        $passwordSecurityRow = DB::queryFirstRow(
+            "SELECT
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND (i.pw_len IS NULL OR i.pw_len <= 0 OR i.complexity_level IS NULL OR i.complexity_level = '-1')
+                    THEN 1 ELSE 0 END) AS unknown,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND i.pw_len > 0 AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
+                    THEN 1 ELSE 0 END) AS assessed_total,
+                SUM(CASE WHEN {$itemsNotDeletedSql} AND (%i = 1 OR i.perso = 0)
+                    AND i.pw_len >= %i AND i.complexity_level IS NOT NULL AND i.complexity_level <> '-1'
+                    AND CAST(i.complexity_level AS SIGNED) >= %i
+                    THEN 1 ELSE 0 END) AS compliant
+            FROM " . prefixTable('items') . " i",
+            $includePersonal,
+            $includePersonal,
+            $includePersonal,
+            $pwMinLen,
+            $pwMinComplexity
+        );
+
+        $pwAssessedTotal = intval($passwordSecurityRow['assessed_total'] ?? 0);
+        $pwCompliant = intval($passwordSecurityRow['compliant'] ?? 0);
+        $pwUnknown = intval($passwordSecurityRow['unknown'] ?? 0);
+        $pwNonCompliant = max(0, $pwAssessedTotal - $pwCompliant);
+        $pwSecureScore = $pwAssessedTotal > 0 ? (int) round(($pwCompliant / $pwAssessedTotal) * 100) : null;
+        if ($pwSecureScore !== null) {
+            $pwSecureScore = min(max($pwSecureScore, 0), 100);
+        }
+
+// Complexity distribution (for chart)
+        $complexityDist = DB::query(
+            "SELECT i.complexity_level, COUNT(*) AS c
+             FROM " . prefixTable('items') . " i
+             WHERE {$itemsNotDeletedSql}
+               AND (%i = 1 OR i.perso = 0)
+             GROUP BY i.complexity_level
+             ORDER BY CAST(i.complexity_level AS SIGNED) ASC",
+            $includePersonal
+        );
+        $complexity = array('labels' => array(), 'counts' => array());
+        foreach ($complexityDist as $r) {
+            $complexity['labels'][] = strval($r['complexity_level']);
+            $complexity['counts'][] = intval($r['c']);
+        }
+
+        // Usage by personal/shared (period)
+        $usageByPersoRows = DB::query(
+            "SELECT
+                i.perso,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action IN ('at_password_shown','at_password_shown_edit_form') THEN 1 ELSE 0 END) AS pw_shown
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY i.perso",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike
+        );
+        $usageByPerso = array(
+            'personal' => array('views' => 0, 'copies' => 0, 'pw_shown' => 0),
+            'shared' => array('views' => 0, 'copies' => 0, 'pw_shown' => 0),
+        );
+        foreach ($usageByPersoRows as $r) {
+            if (intval($r['perso']) === 1) {
+                $usageByPerso['personal'] = array('views' => intval($r['views']), 'copies' => intval($r['copies']), 'pw_shown' => intval($r['pw_shown']));
+            } else {
+                $usageByPerso['shared'] = array('views' => intval($r['views']), 'copies' => intval($r['copies']), 'pw_shown' => intval($r['pw_shown']));
+            }
+        }
+
+        // Top copied items
+        $topItemsCopied = DB::query(
+            "SELECT
+                i.id,
+                i.label,
+                i.perso,
+                nt.title AS folder_title,
+                SUM(CASE WHEN li.action IN ('at_password_copied','at_copy') THEN 1 ELSE 0 END) AS copies,
+                SUM(CASE WHEN li.action = 'at_shown' THEN 1 ELSE 0 END) AS views,
+                COUNT(DISTINCT li.id_user) AS users_unique,
+                MAX(CAST(li.date AS UNSIGNED)) AS last_activity
+            FROM " . prefixTable('log_items') . " li
+            INNER JOIN " . prefixTable('items') . " i ON (i.id = li.id_item)
+            LEFT JOIN " . prefixTable('nested_tree') . " nt ON (nt.id = CAST(i.id_tree AS UNSIGNED))
+            WHERE CAST(li.date AS UNSIGNED) BETWEEN %i AND %i
+              AND li.action IN ('at_password_copied','at_copy','at_shown')
+              AND {$itemsNotDeletedSql}
+              AND (%i = 1 OR i.perso = 0)
+              AND (%i = 1 OR li.raison IS NULL OR li.raison NOT LIKE %s)
+            GROUP BY i.id, i.label, i.perso, folder_title
+            ORDER BY copies DESC, views DESC, last_activity DESC
+            LIMIT %i",
+            $fromTs,
+            $nowTs,
+            $includePersonal,
+            $includeApi,
+            $tpApiLike,
+            $topItemsLimit
+        );
+
+        // Prepare response
+        $response = array(
+            'error' => false,
+            'meta' => array(
+                'period' => $period,
+                'from' => $fromTs,
+                'to' => $nowTs,
+                'granularity' => $granularity,
+                'include_personal' => (int) $includePersonal,
+                'include_api' => (int) $includeApi,
+            ),
+            'users' => array(
+                'total_users' => $totalUsers,
+                'enabled_users' => $enabledUsers,
+                'disabled_users' => $disabledUsers,
+                'active_users' => $activeUsers,
+                'inactive_users' => $inactiveUsers,
+                'connections' => array(
+                    'api' => intval($connections['api'] ?? 0),
+                    'web' => intval($connections['web'] ?? 0),
+                    'total' => intval($connections['total'] ?? 0),
+                ),
+                'actions' => array(
+                    'views' => intval($actions['views'] ?? 0),
+                    'copies' => intval($actions['copies'] ?? 0),
+                    'pw_shown' => intval($actions['pw_shown'] ?? 0),
+                    'created' => intval($actions['created'] ?? 0),
+                    'modified' => intval($actions['modified'] ?? 0),
+                    'api_views' => intval($actions['api_views'] ?? 0),
+                ),
+                'series' => $series,
+                'top' => $topUsers,
+            ),
+            'roles' => array(
+                'total' => $rolesTotal,
+                'active' => $rolesActive,
+                'kpis' => array(
+                    'users_active' => intval($rolesKpis['users_active'] ?? 0),
+                    'items_unique' => intval($rolesKpis['items_unique'] ?? 0),
+                ),
+                'top' => $topRoles,
+            ),
+            'items' => array(
+                'password_security' => array(
+                    'secure_score' => $pwSecureScore,
+                    'assessed_total' => $pwAssessedTotal,
+                    'compliant' => $pwCompliant,
+                    'non_compliant' => $pwNonCompliant,
+                    'unknown' => $pwUnknown,
+                    'policy' => array(
+                        'min_len' => $pwMinLen,
+                        'min_complexity' => $pwMinComplexity,
+                    ),
+                ),
+                'inventory' => array(
+                    'total_active' => intval($itemsInventory['total_active'] ?? 0),
+                    'personal_active' => intval($itemsInventory['personal_active'] ?? 0),
+                    'shared_active' => intval($itemsInventory['shared_active'] ?? 0),
+                    'inactive_active' => intval($itemsInventory['inactive_active'] ?? 0),
+                    'deleted' => intval($itemsInventory['deleted'] ?? 0),
+                    'restricted' => intval($itemsInventory['restricted'] ?? 0),
+                    'avg_complexity' => $itemsInventory['avg_complexity'] !== null ? round(floatval($itemsInventory['avg_complexity']), 1) : null,
+                    'unknown_complexity' => intval($itemsInventory['unknown_complexity'] ?? 0),
+                    'avg_pw_len' => $itemsInventory['avg_pw_len'] !== null ? round(floatval($itemsInventory['avg_pw_len']), 1) : null,
+                    'stale_90' => intval($itemsInventory['stale_90'] ?? 0),
+                ),
+                'complexity' => $complexity,
+                'usage_by_perso' => $usageByPerso,
+                'top_copied' => $topItemsCopied,
+            ),
+        );
+
+        echo prepareExchangedData($response, 'encode');
+    } catch (Throwable $e) {
+        $traceId = bin2hex(random_bytes(6));
+        $msg = '[TP OPS STATS][' . $traceId . '] ' . $e->getMessage();
+
+        // Log to system log if configured
+        error_log($msg);
+
+        // Also log to a temporary file (useful when php/apache logs are not wired)
+        @file_put_contents(sys_get_temp_dir() . '/teampass_ops_stats.log', date('c') . ' ' . $msg . "\n" . $e->getTraceAsString() . "\n\n", FILE_APPEND);
+
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('ops_stats_db_error') . ' [' . $traceId . ']',
+            ),
+            'encode'
+        );
+    }
+    break;
+
+
+
+case 'save_sending_statistics':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // send statistics
+        if (null !== $post_status) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'send_stats');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'send_stats',
+                        'valeur' => $post_status,
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $post_status,
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'send_stats'
+                );
+            }
+            $SETTINGS['send_stats'] = $post_status;
+        } else {
+            $SETTINGS['send_stats'] = '0';
+        }
+
+        // send statistics items
+        if (null !== $post_list) {
+            DB::query('SELECT * FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s', 'admin', 'send_statistics_items');
+            $counter = DB::count();
+            if ($counter === 0) {
+                DB::insert(
+                    prefixTable('misc'),
+                    array(
+                        'type' => 'admin',
+                        'intitule' => 'send_statistics_items',
+                        'valeur' => $post_list,
+                        'created_at' => time(),
+                    )
+                );
+            } else {
+                DB::update(
+                    prefixTable('misc'),
+                    array(
+                        'valeur' => $post_list,
+                        'updated_at' => time(),
+                    ),
+                    'type = %s AND intitule = %s',
+                    'admin',
+                    'send_statistics_items'
+                );
+            }
+            $SETTINGS['send_statistics_items'] = $post_list;
+        } else {
+            $SETTINGS['send_statistics_items'] = '';
+        }
+
+        // send data
+        echo '[{"error" : false}]';
+        break;
+
+    case 'is_backup_table_existing':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        if (DB::query("SHOW TABLES LIKE '" . prefixTable('sk_reencrypt_backup') . "'")) {
+            if (DB::count() === 1) {
+                echo 1;
+            } else {
+                echo 0;
+            }
+        } else {
+            echo 0;
+        }
+
+        break;
+
+    case 'get_list_of_roles':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        // prepare data
+        $sourcePage = filter_var($dataReceived['source_page'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        if ($sourcePage === 'ldap') {
+            $selected_administrated_by = isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === '0' ? 1 : 0;
+            $selected_new_user_role = isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === '0' ? 1 : 0;
+        } elseif ($sourcePage === 'oauth') {
+            $selected_administrated_by = isset($SETTINGS['oauth_new_user_is_administrated_by']) && $SETTINGS['oauth_new_user_is_administrated_by'] === '0' ? 1 : 0;
+            $selected_new_user_role = isset($SETTINGS['oauth_selfregistered_user_belongs_to_role']) && $SETTINGS['oauth_selfregistered_user_belongs_to_role'] === '0' ? 1 : '';
+        } else {
+            echo prepareExchangedData(
+                [], 
+                'encode'
+            );
+    
+            break;
+        }
+
+        $json = array();
+        array_push(
+            $json,
+            array(
+                'id' => '0',
+                'title' => $lang->get('god'),
+                'selected_administrated_by' => $selected_administrated_by,
+                'selected_role' => $selected_new_user_role,
+            )
+        );
+
+        $rows = DB::query(
+            'SELECT id, title
+                FROM ' . prefixTable('roles_title') . '
+                ORDER BY title ASC'
+        );
+        foreach ($rows as $record) {
+            if ($sourcePage === 'ldap') {
+                $selected_administrated_by = isset($SETTINGS['ldap_new_user_is_administrated_by']) && $SETTINGS['ldap_new_user_is_administrated_by'] === $record['id'] ? 1 : 0;
+                $selected_new_user_role = isset($SETTINGS['ldap_new_user_role']) && $SETTINGS['ldap_new_user_role'] === $record['id'] ? 1 : 0;
+            } elseif ($sourcePage === 'oauth') {
+                $selected_administrated_by = isset($SETTINGS['oauth_new_user_is_administrated_by']) && $SETTINGS['oauth_new_user_is_administrated_by'] === $record['id'] ? 1 : 0;
+                $selected_new_user_role = isset($SETTINGS['oauth_selfregistered_user_belongs_to_role']) && $SETTINGS['oauth_selfregistered_user_belongs_to_role'] === $record['id'] ? 1 : 0;
+            }
+            array_push(
+                $json,
+                array(
+                    'id' => $record['id'],
+                    'title' => addslashes($record['title']),
+                    'selected_administrated_by' => $selected_administrated_by,
+                    'selected_role' => $selected_new_user_role,
+                )
+            );
+        }
+
+        echo prepareExchangedData(
+            $json, 
+            'encode'
+        );
+
+        break;
+
+    case 'save_user_change':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_increment_id = isset($dataReceived['increment_id']) === true ? filter_var($dataReceived['increment_id'], FILTER_SANITIZE_NUMBER_INT) : '';
+        $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $post_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        if (is_numeric($post_increment_id) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('no_user'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        //update.
+        DB::debugMode(false);
+        DB::update(
+            prefixTable('api'),
+            array(
+                $post_field => $post_value,
+            ),
+            'increment_id = %i',
+            (int) $post_increment_id
+        );
+        DB::debugMode(false);
+        //log
+        logEvents($SETTINGS, 'system', 'api_user_readonly', (string) $session->get('user-id'), $session->get('user-login'));
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
+    
+    case "tablesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $ret = tablesIntegrityCheck();
+        
+        echo prepareExchangedData(
+            array(
+                'error' => $ret['error'],
+                'message' => $ret['message'],
+                'tables' => json_encode($ret['array'], JSON_FORCE_OBJECT),
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "filesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // New hash-based integrity check
+        $ret = verifyFileHashes(TEAMPASS_ROOT, __DIR__.'/../files_reference.txt');
+
+        $ignoredFiles = DB::queryFirstField(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'ignored_unknown_files'
+        );
+        $ignoredFilesKeys = !is_null($ignoredFiles) && !empty($ignoredFiles) ? json_decode($ignoredFiles) : [];
+        
+        echo prepareExchangedData(
+            array(
+                'error' => $ret['error'],
+                'message' => $ret['message'],
+                'files' => json_encode($ret['array'], JSON_FORCE_OBJECT),
+                'ignoredNumber' => count($ignoredFilesKeys),
+                'warnings' => $ret['warnings'],
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "ignoreFile":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+
+        $post_id = isset($dataReceived['id']) === true ? filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT) : '';
+
+        // Get ignored unknown files
+        $existingData = DB::queryFirstRow(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'ignored_unknown_files'
+        );
+
+        // Get the json list ignored unknown files
+        $unknownFilesArray = [];
+        if (!empty($existingData) && !empty($existingData['valeur'])) {
+            $unknownFilesArray = json_decode($existingData['valeur'], true) ?: [];
+        }
+
+        // Add the new file to the list
+        $unknownFilesArray[] = $post_id;
+
+        // Save the new list
+        DB::insertUpdate(
+            prefixTable('misc'),
+            [
+                'type' => 'admin',
+                'intitule' => 'ignored_unknown_files',
+                'valeur' => json_encode($unknownFilesArray),
+                'created_at' => time(),
+            ],
+            [
+                'valeur' => json_encode($unknownFilesArray),
+                'updated_at' => time(),
+            ]
+        );
+
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "deleteFilesIntegrityCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Get the list of files to delete
+        $filesToDelete = DB::queryFirstField(
+            'SELECT valeur 
+            FROM ' . prefixTable('misc') . ' 
+            WHERE type = %s AND intitule = %s',
+            'admin',
+            'unknown_files'
+        );
+
+        if (is_null($filesToDelete)) {
+            echo prepareExchangedData(
+                array(
+                    'deletionResults' => null,
+                ),
+                'encode'
+            );
+            break;
+        }
+        $referenceFiles = (array) json_decode($filesToDelete);
+        
+        //  Launch
+        $ret = deleteFiles($referenceFiles, true);
+        
+        echo prepareExchangedData(
+            array(
+                'deletionResults' => $ret,
+            ),
+            'encode'
+        );
+
+        break;
+        
+
+    case "performSimulateUserKeyChangeDuration":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        
+        // Get some TP USER info
+        $userInfo = DB::queryFirstRow(
+            'SELECT u.id, u.public_key, pk.private_key, u.pw
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('user_private_keys') . ' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
+            WHERE u.id = %i',
+            TP_USER_ID,
+        );
+
+        // decrypt owner password
+        $decryptedData = cryption($userInfo['pw'], '', 'decrypt', $SETTINGS);
+        $pwd = $decryptedData['string'] ?? '';
+        $userInfo['private_key'] = decryptPrivateKey($pwd, $userInfo['private_key']);
+
+        $duration = (simulateUserKeyChangeDuration($userInfo));
+        $durationWithMargin = $duration * 1.10; // add 10% margin
+
+        // Evaluate if current setting is sufficient or not
+        $isCurrentSettingSufficient = ($durationWithMargin <= (int) $SETTINGS['task_maximum_run_time']);
+        $proposedDuration = $isCurrentSettingSufficient ? 0 : ceil($durationWithMargin / 10) * 10;
+        $session->set('background_task_duration_proposed', $proposedDuration);
+
+        echo prepareExchangedData(
+            array(
+                'estimatedTime' => round($duration, 0), // Estimated time in seconds
+                'proposedDuration' => $proposedDuration, // New proposed value if current setting is not sufficient
+                'currentDuration' => (int) $SETTINGS['task_maximum_run_time'], // Current setting
+                'setupProposal' => $isCurrentSettingSufficient, // true if current setting is sufficient, false otherwise
+                'error' => false,
+            ),
+            'encode'
+        );
+
+        break;
+
+    case 'admin_action_refresh-users-api':
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $users = DB::query(
+            'SELECT u.id, u.public_key, a.increment_id
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('api') . ' AS a 
+                ON a.user_id = u.id AND a.type = %s
+            WHERE u.disabled = %i AND u.deleted_at IS NULL AND u.public_key IS NOT NULL AND u.admin = %i
+            ORDER BY u.login ASC',
+            'user',
+            0,
+            0
+        );
+        $countUpdatedUsers = 0;
+        foreach ($users as $user) {
+            // Check if user has an api key
+            // If not then create one
+            if (is_null($user['increment_id'])) {
+                // Create the API key
+                DB::insert(
+                    prefixTable('api'),
+                    array(
+                        'type' => 'user',
+                        'user_id' => $user['id'],
+                        'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $user['public_key']),
+                        'timestamp' => time(),
+                    )
+                );
+
+                $countUpdatedUsers++;
+            }
+        }
+
+        // Encrypt data to return
+        echo prepareExchangedData(
+            array(
+                'countUpdatedUsers' => $countUpdatedUsers,
+                'error' => false,
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "transparentRecoveryCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $stats = getTransparentRecoveryStats($SETTINGS);
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'stats' => $stats,
+            ),
+            'encode'
+        );
+
+        break;
+
+    case "personalItemsMigrationCheck":
+        // Check KEY and rights
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $stats = getPersonalItemsMigrationStats($SETTINGS);
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'stats' => $stats,
+            ),
+            'encode'
+        );
+
+        break;
+        
+    case 'get_dashboard_stats':
+    /**
+     * Get dashboard statistics
+     * Returns: users, items, folders, and logs statistics
+     * 
+     * @return array {
+     *   users: {active: int, online: int, blocked: int},
+     *   items: {total: int, shared: int, personal: int},
+     *   folders: {total: int, public: int, personal: int},
+     *   logs: {actions: int, accesses: int, errors: int}
+     * }
+     */
+    
+    // Users statistics
+    // Exclude TeamPass system accounts (TP / OTV / API)
+    $usersBaseWhere = "deleted_at IS NULL AND LOWER(login) NOT IN ('tp','otv','api')";
+
+    $usersActive = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE disabled = %i AND $usersBaseWhere",
+        0
+    );
+
+    $usersOnline = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE session_end > %i AND disabled = %i AND $usersBaseWhere",
+        time(),
+        0
+    );
+
+    $usersDisabled = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE disabled = %i AND $usersBaseWhere",
+        1
+    );
+
+    $usersBruteforceLocked = DB::queryFirstField(
+        "SELECT COUNT(DISTINCT u.id)
+        FROM " . prefixTable('users') . " AS u
+        INNER JOIN " . prefixTable('auth_failures') . " AS af ON (af.value = u.login)
+        WHERE af.source = %s
+        AND af.unlock_at > %s
+        AND u.disabled = %i
+        AND u.deleted_at IS NULL
+        AND LOWER(u.login) NOT IN ('tp','otv','api')",
+        'login',
+        date('Y-m-d H:i:s', time()),
+        0
+    );
+
+    $usersBlocked = (int) $usersDisabled + (int) $usersBruteforceLocked;
+
+    // Inactive users warned (as per Inactive Users Management)
+    $usersWarned = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
+        WHERE $usersBaseWhere
+        AND disabled = %i
+        AND admin = %i
+        AND special = %s
+        AND inactivity_warned_at IS NOT NULL
+        AND inactivity_warned_at <> ''
+        AND inactivity_warned_at <> '0'",
+        0,
+        0,
+        'none'
+    );
+
+
+// Items statistics
+    $itemsTotal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND deleted_at IS NULL',
+        0
+    );
+    
+    $itemsShared = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND perso = %i AND deleted_at IS NULL',
+        0,
+        0
+    );
+    
+    $itemsPersonal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . ' 
+        WHERE inactif = %i AND perso = %i AND deleted_at IS NULL',
+        0,
+        1
+    );
+    
+    // Folders statistics
+    $foldersTotal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree')
+    );
+    
+    $foldersPublic = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree') . ' 
+        WHERE personal_folder = %i',
+        0
+    );
+    
+    $foldersPersonal = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('nested_tree') . ' 
+        WHERE personal_folder = %i',
+        1
+    );
+    
+    // Logs statistics (last 24 hours)
+    $timestamp24h = time() - 86400;
+    
+    $logsActions = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' 
+        WHERE date > %i',
+        $timestamp24h
+    );
+    
+    $logsAccesses = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' 
+        WHERE date > %i AND action = %s',
+        $timestamp24h,
+        'at_shown'
+    );
+    
+    $logsErrors = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . ' 
+        WHERE date > %i AND type = %s',
+        $timestamp24h,
+        'error'
+    );
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'users' => array(
+                'active' => intval($usersActive),
+                'online' => intval($usersOnline),
+                'blocked' => intval($usersBlocked),
+                'warned' => intval($usersWarned),
+            ),
+            'items' => array(
+                'total' => intval($itemsTotal),
+                'shared' => intval($itemsShared),
+                'personal' => intval($itemsPersonal),
+            ),
+            'folders' => array(
+                'total' => intval($foldersTotal),
+                'public' => intval($foldersPublic),
+                'personal' => intval($foldersPersonal),
+            ),
+            'logs' => array(
+                'actions' => intval($logsActions),
+                'accesses' => intval($logsAccesses),
+                'errors' => intval($logsErrors),
+            ),
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// LIVE ACTIVITY ENDPOINT
+// ========================================
+
+case 'get_live_activity':
+    /**
+     * Get recent activity (last 5 minutes, max 10 entries)
+     * 
+     * @return array [{
+     *   timestamp: int,
+     *   user_id: int,
+     *   user_login: string,
+     *   action: string,
+     *   action_text: string,
+     *   item_id: int|null,
+     *   item_label: string|null
+     * }]
+     */
+    
+    $timestamp5min = time() - 300; // 5 minutes ago
+    
+    $activities = DB::query(
+        'SELECT l.date, l.id_user, u.login, l.action, l.raison, l.id_item, i.label 
+        FROM ' . prefixTable('log_items') . ' AS l
+        LEFT JOIN ' . prefixTable('users') . ' AS u ON l.id_user = u.id
+        LEFT JOIN ' . prefixTable('items') . ' AS i ON l.id_item = i.id
+        WHERE l.date > %i
+        ORDER BY l.date DESC
+        LIMIT 10',
+        $timestamp5min
+    );
+    
+    $activityList = array();
+
+    foreach ($activities as $activity) {
+        $activity = secureOutput($activity, ['login', 'label']);
+        // Translate action to readable text
+        $actionText = '';
+        switch ($activity['action']) {
+            case 'at_shown':
+                $actionText = $lang->get('action_accessed');
+                break;
+            case 'at_creation':
+                $actionText = $lang->get('action_created');
+                break;
+            case 'at_modification':
+                $actionText = $lang->get('action_modified');
+                break;
+            case 'at_delete':
+                $actionText = $lang->get('action_deleted');
+                break;
+            case 'at_manual':
+                $actionText = $lang->get('action_manual');
+                break;
+            case 'at_password_shown_edit_form':
+                $actionText = $lang->get('opened_edit_form_of');
+                break;
+            case 'at_copy':
+                $actionText = $lang->get('copied');
+                break;
+            default:
+                $actionText = $activity['action'];
+        }
+        
+        $activityList[] = array(
+            'timestamp' => intval($activity['date']),
+            'user_id' => intval($activity['id_user']),
+            'user_login' => $activity['login'] ?? $lang->get('unknown'),
+            'action' => $activity['action'],
+            'action_text' => strtolower($actionText),
+            'item_id' => $activity['id_item'] ? intval($activity['id_item']) : null,
+            'item_label' => $activity['label'] ?? null,
+        );
+    }
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'activities' => $activityList,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// SYSTEM STATUS ENDPOINT
+// ========================================
+
+case 'get_system_status':
+    /**
+     * Get system status (tasks queue)
+     * 
+     * @return array {
+     *   tasks_queue: int,
+     *   last_cron: string
+     * }
+     */
+        
+    // Tasks queue count
+    $tasksQueue = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . ' 
+        WHERE finished_at IS NULL OR finished_at = 0'
+    );
+    
+    // Last cron execution
+    $lastCronLog = DB::queryFirstRow(
+        'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
+        ORDER BY created_at DESC 
+        LIMIT 1'
+    );
+    
+    $lastCronText = $lang->get('never');
+    if ($lastCronLog && isset($lastCronLog['created_at'])) {
+        $timeDiff = time() - intval($lastCronLog['created_at']);
+        if ($timeDiff < 60) {
+            $lastCronText = $timeDiff . 's ' . $lang->get('ago');
+        } elseif ($timeDiff < 3600) {
+            $lastCronText = floor($timeDiff / 60) . 'm ' . $lang->get('ago');
+        } elseif ($timeDiff < 86400) {
+            $lastCronText = floor($timeDiff / 3600) . 'h ' . $lang->get('ago');
+        } else {
+            $lastCronText = floor($timeDiff / 86400) . 'd ' . $lang->get('ago');
+        }
+    }
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'tasks_queue' => intval($tasksQueue),
+            'last_cron' => $lastCronText,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// SYSTEM HEALTH ENDPOINT
+// ========================================
+
+case 'get_system_health':
+    /**
+     * Get system health checks
+     * 
+     * @return array {
+     *   encryption: {status: string, text: string},
+     *   database: {status: string, text: string},
+     *   sessions: {count: int},
+     *   cron: {status: string, text: string},
+     *   unknown_files: {count: int},
+     *   websocket: {status: string}
+     * }
+     */
+    
+    // Encryption check
+    $encryptionStatus = 'success';
+    $encryptionText = $lang->get('health_status_ok');
+    
+    // Check if secure file exists
+    if (isset($SETTINGS['TEAMPASS_SECRETS']) && isset($SETTINGS['securefile']) && !file_exists($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile'])) {
+        $encryptionStatus = 'danger';
+        $encryptionText = $lang->get('health_secure_file_missing');
+    }
+    
+    // Active sessions count
+    $sessionsCount = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' 
+        WHERE session_end > %i',
+        time()
+    );
+    
+    // Is cron installed
+    DB::query(
+        'SELECT valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE type = %s AND intitule = %s and valeur >= %d',
+        'admin',
+        'last_cron_exec',
+        time() - 600 // max 10 minutes
+    );
+
+    if (DB::count() === 0) {
+        $cronStatus = 'danger';
+        $cronText = $lang->get('error');
+    } else {
+        // Cron check (last execution should be < 2 minutes ago)
+        $lastCron = DB::queryFirstField(
+            'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
+            ORDER BY created_at DESC 
+            LIMIT 1'
+        );
+        
+        $cronStatus = 'success';
+        $cronText = $lang->get('health_status_ok');
+        
+        if (!$lastCron || (time() - intval($lastCron)) > 120) {
+            $cronStatus = 'warning';
+            $cronText = $lang->get('health_cron_delayed');
+        }
+    }
+    
+    // Unknown files count
+    $unknownFilesData = DB::queryFirstField(
+        'SELECT valeur FROM ' . prefixTable('misc') . ' 
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'unknown_files'
+    );
+    
+    $unknownFilesCount = 0;
+    if ($unknownFilesData) {
+        $unknownFiles = json_decode($unknownFilesData, true);
+        if (is_array($unknownFiles)) {
+            $unknownFilesCount = count($unknownFiles);
+        }
+    }
+
+    // WebSocket status check
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+    $wsStatus = 'disabled';
+    $wsText = 'Disabled';
+    $wsRunning = false;
+
+    if ($wsEnabled === '1') {
+        $wsRunning = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+        if ($wsRunning) {
+            fclose($wsRunning);
+            $wsRunning = true;
+            $wsStatus = 'success';
+            $wsText = 'Running';
+        } else {
+            $wsRunning = false;
+            $wsStatus = 'danger';
+            $wsText = 'Stopped';
+        }
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'encryption' => array(
+                'status' => $encryptionStatus,
+                'text' => $encryptionText,
+            ),
+            'sessions' => array(
+                'count' => intval($sessionsCount),
+            ),
+            'cron' => array(
+                'status' => $cronStatus,
+                'text' => $cronText,
+            ),
+            'unknown_files' => array(
+                'count' => $unknownFilesCount,
+            ),
+            'websocket' => array(
+                'status' => $wsStatus,
+                'text' => $wsText,
+                'enabled' => $wsEnabled === '1',
+                'running' => $wsRunning,
+                'host' => $wsHost,
+                'port' => $wsPort,
+            ),
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// BROWSER EXTENSION LICENCE STATUS
+// ========================================
+
+case 'get_extension_licence_info':
+    /**
+     * Check browser extension licence server status and consumption.
+     * Called asynchronously from the admin dashboard after page load.
+     *
+     * @return array {
+     *   error: bool,
+     *   server_online: bool,
+     *   server_version: string,
+     *   licence_status: string,     -- 'VALID'|'EXPIRED'|'INVALID'|''
+     *   consumed: int,
+     *   max_users: int
+     * }
+     */
+    $licenceKey  = $SETTINGS['browser_extension_key'] ?? '';
+    $licenceFqdn = $SETTINGS['browser_extension_fqdn'] ?? '';
+
+    if (empty($licenceKey)) {
+        echo prepareExchangedData(['error' => true, 'message' => 'no_licence_key'], 'encode');
+        break;
+    }
+
+    // Cache TTL: 60 min when server was online last time, 10 min when it was offline
+    $cacheRaw = $SETTINGS['extension_licence_cache'] ?? '';
+    $cacheAt  = (int) ($SETTINGS['extension_licence_cache_at'] ?? 0);
+    $cached   = $cacheRaw !== '' ? json_decode($cacheRaw, true) : null;
+    $ttl      = ($cached !== null && ($cached['server_online'] ?? false)) ? 3600 : 600;
+
+    if ($cached !== null && (time() - $cacheAt) < $ttl) {
+        // Serve from cache — no network call
+        echo prepareExchangedData($cached, 'encode');
+        break;
+    }
+
+    // Helper: perform a cURL request with strict connection + read timeouts
+    $curlGet = static function (string $url, int $connectTimeout = 2, int $totalTimeout = 4): string|false {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => $connectTimeout,
+            CURLOPT_TIMEOUT        => $totalTimeout,
+            CURLOPT_FAILONERROR    => true,
+        ]);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;
+    };
+
+    $curlPost = static function (string $url, string $jsonBody, int $connectTimeout = 2, int $totalTimeout = 5): string|false {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => $connectTimeout,
+            CURLOPT_TIMEOUT        => $totalTimeout,
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $jsonBody,
+            CURLOPT_HTTPHEADER     => ['Content-Type: application/json', 'Content-Length: ' . strlen($jsonBody)],
+            CURLOPT_FAILONERROR    => true,
+        ]);
+        $result = curl_exec($ch);
+        curl_close($ch);
+        return $result;
+    };
+
+    // 1. Check licence server availability
+    $serverOnline  = false;
+    $serverVersion = '';
+    $serverRaw = $curlGet('https://licence.teampass.net');
+    if ($serverRaw !== false) {
+        $serverData = json_decode($serverRaw, true);
+        $serverOnline  = ($serverData['status'] ?? '') === 'online';
+        $serverVersion = $serverData['version'] ?? '';
+    }
+
+    if (!$serverOnline) {
+        $result = [
+            'error'           => false,
+            'server_online'   => false,
+            'server_version'  => '',
+            'licence_status'  => '',
+            'expiration_date' => '',
+            'consumed'        => 0,
+            'max_users'       => 0,
+        ];
+        // Cache the offline result for 10 min to avoid repeated network attempts
+        DB::query(
+            'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+             ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+            'admin', 'extension_licence_cache', (string) json_encode($result)
+        );
+        DB::query(
+            'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+             ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+            'admin', 'extension_licence_cache_at', (string) time()
+        );
+        echo prepareExchangedData($result, 'encode');
+        break;
+    }
+
+    // 2. Retrieve licence consumption info
+    $postData = (string) json_encode([
+        'instance_fqdn' => $licenceFqdn,
+        'license_token' => $licenceKey,
+    ]);
+    $infoRaw     = $curlPost('https://licence.teampass.net/api/v1.1/info.php', $postData);
+    $licenceInfo = ($infoRaw !== false) ? json_decode($infoRaw, true) : null;
+
+    $result = [
+        'error'           => false,
+        'server_online'   => true,
+        'server_version'  => $serverVersion,
+        'licence_status'  => $licenceInfo['status'] ?? '',
+        'expiration_date' => $licenceInfo['expiration_date'] ?? '',
+        'consumed'        => (int) ($licenceInfo['consumed_this_month'] ?? 0),
+        'max_users'       => (int) ($licenceInfo['max_users'] ?? 0),
+    ];
+
+    // Cache the successful result for 60 min
+    DB::query(
+        'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+         ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+        'admin', 'extension_licence_cache', (string) json_encode($result)
+    );
+    DB::query(
+        'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+         ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+        'admin', 'extension_licence_cache_at', (string) time()
+    );
+
+    echo prepareExchangedData($result, 'encode');
+    break;
+
+// ========================================
+// TEAMPASS LATEST RELEASE BADGE
+// ========================================
+
+case 'get_teampass_latest_release':
+    if ($post_key !== $session->get('key')) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => $lang->get('key_is_not_correct'),
+            ],
+            'encode'
+        );
+        break;
+    }
+
+    if ((int) $session->get('user-admin') !== 1) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => $lang->get('error_not_allowed_to'),
+            ],
+            'encode'
+        );
+        break;
+    }
+
+    $currentVersion = TP_VERSION . '.' . TP_VERSION_MINOR;
+
+    // Read cache from $SETTINGS (already loaded in memory by ConfigManager — no extra DB query)
+    $cacheRaw = $SETTINGS['teampass_latest_release_cache'] ?? '';
+    $cacheAt  = (int) ($SETTINGS['teampass_latest_release_cache_at'] ?? 0);
+
+    $cachedResult = is_string($cacheRaw) && $cacheRaw !== '' ? json_decode($cacheRaw, true) : null;
+    $cacheIsValid = is_array($cachedResult);
+    $cacheTtl = $cacheIsValid === true && ($cachedResult['error'] ?? false) === false ? 43200 : 3600;
+
+    if ($cacheIsValid === true && (time() - $cacheAt) < $cacheTtl) {
+        echo prepareExchangedData($cachedResult, 'encode');
+        break;
+    }
+
+    $storeLatestReleaseCache = static function (array $result): void {
+        DB::query(
+            'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+             ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+            'admin',
+            'teampass_latest_release_cache',
+            (string) json_encode($result, JSON_UNESCAPED_SLASHES)
+        );
+
+        DB::query(
+            'INSERT INTO ' . prefixTable('misc') . ' (type, intitule, valeur) VALUES (%s, %s, %s)
+             ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)',
+            'admin',
+            'teampass_latest_release_cache_at',
+            (string) time()
+        );
+
+        // Invalidate APCu so the next ConfigManager read picks up the new cache values
+        ConfigManager::invalidateCache();
+    };
+
+    $fallbackResult = [
+        'error' => false,
+        'has_update' => false,
+        'current_version' => $currentVersion,
+        'latest_version' => '',
+        'release_url' => '',
+    ];
+
+    // Skip entirely if cURL is unavailable
+    if (function_exists('curl_init') === false) {
+        if ($cacheIsValid === true) {
+            echo prepareExchangedData($cachedResult, 'encode');
+            break;
+        }
+
+        $storeLatestReleaseCache($fallbackResult);
+        echo prepareExchangedData($fallbackResult, 'encode');
+        break;
+    }
+
+    // Skip entirely if the server has no outbound internet access (fast DNS pre-flight check)
+    if (checkdnsrr('api.github.com', 'A') === false) {
+        if ($cacheIsValid === true) {
+            echo prepareExchangedData($cachedResult, 'encode');
+            break;
+        }
+
+        $storeLatestReleaseCache($fallbackResult);
+        echo prepareExchangedData($fallbackResult, 'encode');
+        break;
+    }
+
+    $curlHandle = curl_init('https://api.github.com/repos/nilsteampassnet/TeamPass/releases/latest');
+    if ($curlHandle === false) {
+        if ($cacheIsValid === true) {
+            echo prepareExchangedData($cachedResult, 'encode');
+            break;
+        }
+
+        $storeLatestReleaseCache($fallbackResult);
+        echo prepareExchangedData($fallbackResult, 'encode');
+        break;
+    }
+
+    curl_setopt_array($curlHandle, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT => 6,
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/vnd.github+json',
+            'X-GitHub-Api-Version: 2022-11-28',
+            'User-Agent: TeamPass/' . $currentVersion,
+        ],
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_FAILONERROR => false,
+    ]);
+
+    $responseBody = curl_exec($curlHandle);
+    $httpCode = (int) curl_getinfo($curlHandle, CURLINFO_RESPONSE_CODE);
+    curl_close($curlHandle);
+
+    if ($responseBody === false || $httpCode !== 200) {
+        if ($cacheIsValid === true) {
+            echo prepareExchangedData($cachedResult, 'encode');
+            break;
+        }
+
+        $storeLatestReleaseCache($fallbackResult);
+        echo prepareExchangedData($fallbackResult, 'encode');
+        break;
+    }
+
+    $releaseData = json_decode($responseBody, true);
+    if (is_array($releaseData) === false) {
+        if ($cacheIsValid === true) {
+            echo prepareExchangedData($cachedResult, 'encode');
+            break;
+        }
+
+        $storeLatestReleaseCache($fallbackResult);
+        echo prepareExchangedData($fallbackResult, 'encode');
+        break;
+    }
+
+    $tagName = isset($releaseData['tag_name']) && is_string($releaseData['tag_name']) === true
+        ? trim($releaseData['tag_name'])
+        : '';
+    $latestVersion = $tagName !== '' ? preg_replace('/^v/i', '', $tagName) : '';
+    $latestVersion = is_string($latestVersion) === true ? trim($latestVersion) : '';
+
+    $releaseUrl = isset($releaseData['html_url']) && is_string($releaseData['html_url']) === true
+        ? trim($releaseData['html_url'])
+        : '';
+
+    if ($releaseUrl === '' && $tagName !== '') {
+        $releaseUrl = 'https://github.com/nilsteampassnet/TeamPass/releases/tag/' . rawurlencode($tagName);
+    }
+
+    $result = [
+        'error' => false,
+        'has_update' => $latestVersion !== '' && version_compare($currentVersion, $latestVersion, '<'),
+        'current_version' => $currentVersion,
+        'latest_version' => $latestVersion,
+        'release_url' => $releaseUrl,
+    ];
+
+    $storeLatestReleaseCache($result);
+    echo prepareExchangedData($result, 'encode');
+    break;
+
+// ========================================
+// WEBSOCKET STATUS & CONTROL
+// ========================================
+
+case 'websocket_status':
+    /**
+     * Get detailed WebSocket server status
+     */
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+
+    if ($wsEnabled !== '1') {
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'running' => false,
+                'enabled' => false,
+                'status' => 'disabled',
+                'text' => 'WebSocket is disabled',
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Check if port is open
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    $running = false;
+    if ($socket) {
+        fclose($socket);
+        $running = true;
+    }
+
+    // Get process info using port-based lookup (reliable, no self-matching issue)
+    $pid = null;
+    $uptime = null;
+    if ($running) {
+        // lsof finds the PID of the process listening on this port
+        $pidOutput = @exec(sprintf('lsof -ti tcp:%d -sTCP:LISTEN 2>/dev/null | head -1', $wsPort));
+        if (!empty($pidOutput)) {
+            $pid = (int) trim($pidOutput);
+            // Get process start time from /proc
+            $statOutput = @exec('stat -c %Y /proc/' . $pid . ' 2>/dev/null');
+            if (!empty($statOutput)) {
+                $startTime = (int) trim($statOutput);
+                $uptimeSec = time() - $startTime;
+                if ($uptimeSec < 60) {
+                    $uptime = $uptimeSec . 's';
+                } elseif ($uptimeSec < 3600) {
+                    $uptime = floor($uptimeSec / 60) . 'm ' . ($uptimeSec % 60) . 's';
+                } elseif ($uptimeSec < 86400) {
+                    $uptime = floor($uptimeSec / 3600) . 'h ' . floor(($uptimeSec % 3600) / 60) . 'm';
+                } else {
+                    $uptime = floor($uptimeSec / 86400) . 'j ' . floor(($uptimeSec % 86400) / 3600) . 'h';
+                }
+            }
+        }
+    }
+
+    // Get active connections count from websocket server (live query)
+    $connections = null;
+    if ($running) {
+        $wsStats = queryWebSocketStats($wsHost, $wsPort, (int) $session->get('user-id'));
+        if ($wsStats !== null) {
+            $connections = $wsStats['total_connections'] ?? null;
+        }
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'running' => $running,
+            'enabled' => true,
+            'status' => $running ? 'success' : 'danger',
+            'text' => $running ? $lang->get('ws_status_running') : $lang->get('ws_status_stopped'),
+            'pid' => $pid,
+            'uptime' => $uptime,
+            'connections' => $connections,
+            'host' => $wsHost,
+            'port' => $wsPort,
+        ),
+        'encode'
+    );
+    break;
+
+case 'websocket_start':
+    /**
+     * Start the WebSocket server process
+     */
+    if (PHP_OS_FAMILY === 'Windows') {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'WebSocket service management is not supported on Windows.',
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    $wsEnabled = $SETTINGS['websocket_enabled'] ?? '0';
+
+    if ($wsEnabled !== '1') {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('ws_not_enabled'),
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Check if already running
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    if ($socket) {
+        fclose($socket);
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('ws_already_running'),
+                'already_running' => true,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Detect if the service is managed by systemd
+    // 'not-found' means systemd doesn't know about this service at all
+    $sysOut = [];
+    @exec('systemctl is-active teampass-websocket 2>/dev/null', $sysOut, $sysRet);
+    $sysState = trim($sysOut[0] ?? '');
+    $systemdManaged = ($sysState !== '' && $sysState !== 'not-found');
+
+    if ($systemdManaged) {
+        // Use systemctl to start (requires sudoers: www-data ALL=(ALL) NOPASSWD: /bin/systemctl start teampass-websocket)
+        $startOut = [];
+        @exec('sudo systemctl start teampass-websocket 2>&1', $startOut, $startRet);
+        if ($startRet !== 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('ws_systemd_sudo_required'),
+                    'systemd_managed' => true,
+                ),
+                'encode'
+            );
+            break;
+        }
+        usleep(500000);
+        $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 3);
+        $started = false;
+        if ($socket) {
+            fclose($socket);
+            $started = true;
+        }
+        echo prepareExchangedData(
+            array(
+                'error' => !$started,
+                'message' => $started ? $lang->get('ws_server_started') : $lang->get('ws_server_start_failed'),
+                'started' => $started,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Not systemd-managed: start directly in background
+    $serverScript = dirname(__DIR__) . '/websocket/bin/server.php';
+    if (!file_exists($serverScript)) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('ws_server_script_not_found') . ': ' . $serverScript,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    $logFile = dirname(__DIR__) . '/websocket/logs/websocket.log';
+    $cmd = sprintf(
+        '%s %s >> %s 2>&1 &',
+        escapeshellarg(PHP_BINARY),
+        escapeshellarg($serverScript),
+        escapeshellarg($logFile)
+    );
+    exec($cmd);
+
+    // Wait briefly and check if it started
+    usleep(500000); // 500ms
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 3);
+    $started = false;
+    if ($socket) {
+        fclose($socket);
+        $started = true;
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => !$started,
+            'message' => $started ? $lang->get('ws_server_started') : $lang->get('ws_server_start_failed'),
+            'started' => $started,
+        ),
+        'encode'
+    );
+    break;
+
+case 'websocket_stop':
+    /**
+     * Stop the WebSocket server process.
+     * When managed by systemd (Restart=always), a raw SIGTERM is immediately overridden
+     * by the service manager. We must use systemctl in that case.
+     */
+    if (PHP_OS_FAMILY === 'Windows') {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => 'WebSocket service management is not supported on Windows.',
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    $wsHost = $SETTINGS['websocket_host'] ?? '127.0.0.1';
+    $wsPort = (int) ($SETTINGS['websocket_port'] ?? 8080);
+
+    // Detect if the service is managed by systemd
+    $sysOut = [];
+    @exec('systemctl is-active teampass-websocket 2>/dev/null', $sysOut, $sysRet);
+    $sysState = trim($sysOut[0] ?? '');
+    $systemdManaged = in_array($sysState, ['active', 'activating', 'deactivating'], true);
+
+    if ($systemdManaged) {
+        // Must stop via systemctl – a direct SIGTERM would be overridden by Restart=always
+        // Requires sudoers: www-data ALL=(ALL) NOPASSWD: /bin/systemctl stop teampass-websocket
+        $stopOut = [];
+        @exec('sudo systemctl stop teampass-websocket 2>&1', $stopOut, $stopRet);
+        if ($stopRet !== 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('ws_systemd_sudo_required'),
+                    'systemd_managed' => true,
+                ),
+                'encode'
+            );
+            break;
+        }
+        usleep(800000);
+        $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+        $stillRunning = false;
+        if ($socket) {
+            fclose($socket);
+            $stillRunning = true;
+        }
+        echo prepareExchangedData(
+            array(
+                'error' => $stillRunning,
+                'message' => !$stillRunning ? $lang->get('ws_server_stopped') : $lang->get('ws_server_stop_failed'),
+                'stopped' => !$stillRunning,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    // Not systemd-managed: find PID via port and send SIGTERM
+    $pidOutput = @exec(sprintf('lsof -ti tcp:%d -sTCP:LISTEN 2>/dev/null | head -1', $wsPort));
+    if (empty($pidOutput)) {
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('ws_server_not_running_msg'),
+                'already_stopped' => true,
+            ),
+            'encode'
+        );
+        break;
+    }
+
+    $pid = (int) trim($pidOutput);
+    posix_kill($pid, 15); // SIGTERM
+
+    usleep(800000); // 800ms
+    $socket = @fsockopen($wsHost, $wsPort, $errno, $errstr, 2);
+    $stillRunning = false;
+    if ($socket) {
+        fclose($socket);
+        $stillRunning = true;
+    }
+
+    echo prepareExchangedData(
+        array(
+            'error' => $stillRunning,
+            'message' => !$stillRunning ? $lang->get('ws_server_stopped') : $lang->get('ws_server_stop_failed') . ' (PID: ' . $pid . ')',
+            'stopped' => !$stillRunning,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// QUICK ACTIONS - CLEAN OLD LOGS
+// ========================================
+
+case 'clean_old_logs':
+    /**
+     * Clean logs older than 90 days
+     * 
+     * @return array {
+     *   error: bool,
+     *   message: string,
+     *   deleted_count: int
+     * }
+     */
+    
+    $threshold = time() - (90 * 86400); // 90 days ago
+    
+    // Delete old log_items entries
+    DB::delete(
+        prefixTable('log_items'),
+        'date < %i',
+        $threshold
+    );
+    
+    $deletedItems = DB::affectedRows();
+    
+    // Delete old log_system entries
+    DB::delete(
+        prefixTable('log_system'),
+        'date < %i',
+        $threshold
+    );
+    
+    $deletedSystem = DB::affectedRows();
+    
+    $totalDeleted = $deletedItems + $deletedSystem;
+    
+    // Log the action
+    logEvents(
+        $SETTINGS,
+        'admin_action',
+        'clean_old_logs',
+        (string) $session->get('user-id'),
+        $session->get('user-login'),
+        'Cleaned ' . $totalDeleted . ' old log entries'
+    );
+    
+    echo prepareExchangedData(
+        array(
+            'error' => false,
+            'message' => $lang->get('admin_logs_cleaned_success'),
+            'deleted_count' => $totalDeleted,
+        ),
+        'encode'
+    );
+    break;
+
+// ========================================
+// QUICK ACTIONS - TEST ENCRYPTION (KEPT FOR COMPATIBILITY)
+// ========================================
+
+case 'test_encryption':
+    /**
+     * Test encryption system integrity
+     * 
+     * @return array {
+     *   error: bool,
+     *   message: string
+     * }
+     */
+    
+    try {
+        // Test string
+        $testString = 'TeamPass Encryption Test ' . time();
+        
+        // Get encryption key
+        $key = file_get_contents($SETTINGS['TEAMPASS_SECRETS'] . DIRECTORY_SEPARATOR . $SETTINGS['securefile']);
+        
+        if ($key === false) {
+            throw new Exception($lang->get('admin_encryption_key_not_found'));
+        }
+        
+        // Use Defuse encryption (TeamPass's current encryption method)
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/EnvironmentIsBrokenException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/BadFormatException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Exception/WrongKeyOrModifiedCiphertextException.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Crypto.php';
+        require_once TEAMPASS_APP . '/vendor/defuse/php-encryption/src/Key.php';
+        
+        $encryptionKey = \Defuse\Crypto\Key::loadFromAsciiSafeString($key);
+        
+        // Encrypt test string
+        $encrypted = \Defuse\Crypto\Crypto::encrypt($testString, $encryptionKey);
+        
+        // Decrypt test string
+        $decrypted = \Defuse\Crypto\Crypto::decrypt($encrypted, $encryptionKey);
+        
+        // Verify
+        if ($decrypted !== $testString) {
+            throw new Exception($lang->get('admin_encryption_test_failed'));
+        }
+        
+        // Log the test
+        logEvents(
+            $SETTINGS,
+            'admin_action',
+            'test_encryption',
+            (string) $session->get('user-id'),
+            $session->get('user-login'),
+            'Encryption test successful'
+        );
+        
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('admin_encryption_test_success'),
+            ),
+            'encode'
+        );
+        
+    } catch (Exception $e) {
+        echo prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $e->getMessage(),
+            ),
+            'encode'
+        );
+    }
+    break;
+
+// ========================================
+// QUICK ACTIONS - EXPORT STATISTICS
+// ========================================
+
+case 'export_statistics':
+    /**
+     * Export statistics as CSV file
+     * 
+     * @return void (file download)
+     */
+    
+    // Set headers for CSV download
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="teampass_statistics_' . date('Y-m-d_H-i-s') . '.csv"');
+    
+    // Create output stream
+    $output = fopen('php://output', 'w');
+    
+    // Write CSV headers
+    fputcsv($output, array(
+        $lang->get('admin_export_metric'),
+        $lang->get('admin_export_value'),
+    ));
+    
+    // Gather statistics
+    $stats = array(
+        $lang->get('active_users') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0'),
+        $lang->get('total_items') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('items') . ' WHERE inactif = 0'),
+        $lang->get('total_folders') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('nested_tree')),
+        $lang->get('logs_24h') => DB::queryFirstField('SELECT COUNT(*) FROM ' . prefixTable('log_items') . ' WHERE date > ' . (time() - 86400)),
+    );
+    
+    // Write statistics
+    foreach ($stats as $metric => $value) {
+        fputcsv($output, array($metric, $value));
+    }
+    
+    fclose($output);
+    
+    // Log the export
+    logEvents(
+        $SETTINGS,
+        'admin_action',
+        'export_statistics',
+        (string) $session->get('user-id'),
+        $session->get('user-login'),
+        'Statistics exported'
+    );
+    
+    exit;
+
+}
+
+/**
+ * Gets personal items migration statistics for monitoring.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Statistics data
+ */
+function getPersonalItemsMigrationStats(array $SETTINGS): array
+{
+    // Get migration statistics
+    $stats = DB::query(
+        "SELECT 
+            COUNT(*) as total_users,
+            SUM(CASE WHEN personal_items_migrated = 1 THEN 1 ELSE 0 END) as migrated_users,
+            SUM(CASE WHEN personal_items_migrated = 0 THEN 1 ELSE 0 END) as pending_users
+        FROM " . prefixTable('users') . "
+        WHERE disabled = 0 AND deleted_at IS NULL AND id NOT IN %li",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    $progressPercent = intval($stats[0]['total_users']) > 0 ? (intval($stats[0]['migrated_users']) / intval($stats[0]['total_users'])) * 100 : 0;
+
+    // Get users pending migration
+    $pendingUsers = DB::query(
+        "SELECT id, login, email, last_connexion
+        FROM teampass_users
+        WHERE personal_items_migrated = 0
+        AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
+        ORDER BY last_connexion DESC",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    // Get users ready
+    $doneUsers = DB::query(
+        "SELECT id, login, email, last_connexion
+        FROM teampass_users
+        WHERE personal_items_migrated = 1
+        AND disabled = 0 AND deleted_at IS NULL AND id NOT IN %li
+        ORDER BY last_connexion DESC",
+        [TP_USER_ID, API_USER_ID, OTV_USER_ID,SSH_USER_ID]
+    );
+
+    return [
+        'progressPercent' => $progressPercent,
+        'pendingUsers' => $pendingUsers,
+        'doneUsers' => $doneUsers,
+        'totalUsers' => $stats[0]['total_users'],
+    ];
+}
+
+
+
+/**
+ * Gets transparent recovery statistics for monitoring.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array Statistics data
+ */
+function getTransparentRecoveryStats(array $SETTINGS): array
+{
+    // Count auto-recoveries in last 24h
+    $autoRecoveriesLast24h = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s
+         AND date > %i',
+        'auto_reencryption_success',
+        time() - 86400
+    );
+
+    // Count failed recoveries (all time)
+    $failedRecoveries = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s',
+        'auto_reencryption_failed'
+    );
+
+    // Count critical failures (all time)
+    $criticalFailures = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s',
+        'auto_reencryption_critical_failure'
+    );
+
+    // Count users with transparent recovery enabled (have seed and backup)
+    $usersMigrated = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . '
+         WHERE user_derivation_seed IS NOT NULL
+         AND private_key_backup IS NOT NULL
+         AND disabled = 0'
+    );
+
+    // Count total active users (with a current private key in user_private_keys)
+    $totalUsers = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . ' AS u
+         WHERE u.disabled = 0
+         AND EXISTS (SELECT 1 FROM ' . prefixTable('user_private_keys') . ' AS pk WHERE pk.user_id = u.id AND pk.is_current = 1)'
+    );
+
+    // Get recent recovery events (last 10)
+    $recentEvents = DB::query(
+        'SELECT l.date, l.label, l.qui, u.login
+         FROM ' . prefixTable('log_system') . ' AS l
+         INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = l.qui
+         WHERE l.label IN %ls
+         ORDER BY l.date DESC
+         LIMIT 10',
+        ['auto_reencryption_success', 'auto_reencryption_failed', 'auto_reencryption_critical_failure']
+    );
+
+    // Calculate migration percentage
+    $migrationPercentage = intval($totalUsers) > 0 ? round((intval($usersMigrated) / intval($totalUsers)) * 100, 2) : 0;
+
+    // Calculate failure rate (last 30 days)
+    $totalAttempts30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label IN %ls
+         AND date > %i',
+        ['auto_reencryption_success', 'auto_reencryption_failed'],
+        time() - (30 * 86400)
+    );
+
+    $failures30d = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('log_system') . '
+         WHERE label = %s
+         AND date > %i',
+        'auto_reencryption_failed',
+        time() - (30 * 86400)
+    );
+
+    $failureRate = intval($totalAttempts30d) > 0 ? round((intval($failures30d) / intval($totalAttempts30d)) * 100, 2) : 0;
+
+    return [
+        'auto_recoveries_last_24h' => intval($autoRecoveriesLast24h),
+        'failed_recoveries_total' => intval($failedRecoveries),
+        'critical_failures_total' => intval($criticalFailures),
+        'users_migrated' => intval($usersMigrated),
+        'total_users' => intval($totalUsers),
+        'migration_percentage' => $migrationPercentage,
+        'failure_rate_30d' => $failureRate,
+        'recent_events' => $recentEvents,
+    ];
+}
+
+/**
+ * Delete multiple files with cross-platform compatibility
+ * 
+ * This function deletes a list of files while ensuring compatibility
+ * across different operating systems (Windows, Linux, etc.)
+ * 
+ * @param array $files Array of file paths to delete
+ * @param bool $ignoreErrors If true, continues execution even if a file cannot be deleted
+ * @return array Results of deletion operations (success/failure for each file)
+ */
+function deleteFiles(array $files, bool $ignoreErrors = false): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    $results = [];
+    $fullPath = __DIR__ . '/../';
+    
+    foreach ($files as $file) {
+        // Normalize path separators for cross-platform compatibility
+        $normalizedPath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $fullPath.$file);
+        
+        // Check if file exists
+        if (!file_exists($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('file_not_exists')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Check if path is actually a file (not a directory)
+        if (!is_file($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('path_not_a_file')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Check if file is writable (can be deleted)
+        if (!is_writable($normalizedPath)) {
+            $results[$normalizedPath] = [
+                'success' => false,
+                'error' => $lang->get('file_not_writable')
+            ];
+            
+            if (!$ignoreErrors) {
+                return $results;
+            }
+            
+            continue;
+        }
+        
+        // Try to delete the file
+        $deleteResult = '';//@unlink($normalizedPath);
+        
+        // $deleteResult is always '' (unlink disabled), deletion always fails
+        $results[$normalizedPath] = [
+            'success' => false,
+            'error' => $lang->get('failed_to_delete')
+        ];
+
+        if (!$ignoreErrors) {
+            return $results;
+        }
+    }
+    
+    return $results;
+}
+
+/**
+ * Check the integrity of the files
+ * 
+ * @param string $baseDir
+ * @return array
+ */
+function filesIntegrityCheck($baseDir): array
+{
+    $referenceFile = __DIR__ . '/../files_reference.txt';
+
+    $unknownFiles = findUnknownFiles($baseDir, $referenceFile);
+
+    if (empty($unknownFiles)) {
+        return [
+            'error' => false,
+            'array' => [],
+            'message' => ''
+        ];
+    }
+
+    // Check if the files are in the integrity file
+    return [
+        'error' => true,
+        'array' => $unknownFiles,
+        'message' => ''
+    ];
+}
+
+/*
+ * Get all files in a directory
+ * 
+ * @param string $dir
+ * @return array
+ */
+function getAllFiles($dir, array &$warnings = []): array
+{
+    $files = [];
+    $excludeDirs = ['upload', 'files', 'install', '_tools', 'random_compat', 'avatars']; // Répertoires à exclure
+    $excludeFilePrefixes = ['csrfp.config.php', 'settings.php', 'version-commit.php', 'phpstan.neon']; // Fichiers à exclure par préfixe
+
+    try {
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveCallbackFilterIterator(
+                new RecursiveDirectoryIterator(
+                    $dir,
+                    FilesystemIterator::SKIP_DOTS
+                ),
+                function ($current, $key, $iterator) use (&$warnings) {
+                    // Ignore hidden files and folders
+                    if ($current->getFilename()[0] === '.') {
+                        return false;
+                    }
+                    // Skip unreadable directories and record a warning
+                    if ($current->isDir() && !$current->isReadable()) {
+                        $warnings[] = $current->getPathname();
+                        return false;
+                    }
+                    return true;
+                }
+            ),
+            RecursiveIteratorIterator::SELF_FIRST,
+            RecursiveIteratorIterator::CATCH_GET_CHILD
+        );
+
+        foreach ($iterator as $file) {
+            try {
+                if ($file->isFile()) {
+                    $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+                    $relativePath = str_replace('\\', '/', $relativePath); // Normalisation Windows/Linux
+
+                    // Split relatif path into parts
+                    $pathParts = explode('/', $relativePath);
+
+                    // Check if any part of the path is in the excludeDirs array
+                    foreach ($pathParts as $part) {
+                        if (in_array($part, $excludeDirs, true)) {
+                            continue 2; // Skip the file
+                        }
+                    }
+
+                    // Check if the file name starts with any of the prefixes in excludeFilePrefixes
+                    $filename = basename($relativePath);
+                    foreach ($excludeFilePrefixes as $prefix) {
+                        if (strpos($filename, $prefix) === 0) {
+                            continue 2; // Skip the file
+                        }
+                    }
+
+                    // If OK then add to the list
+                    $files[] = $relativePath;
+                }
+            } catch (UnexpectedValueException $e) {
+                $warnings[] = $e->getMessage();
+                continue;
+            }
+        }
+    } catch (UnexpectedValueException $e) {
+        $warnings[] = $e->getMessage();
+    }
+
+    return $files;
+}
+
+/**
+ * Find unknown files
+ * 
+ * @param string $baseDir
+ * @param string $referenceFile
+ * @return array
+ */
+function findUnknownFiles($baseDir, $referenceFile): array
+{
+    $currentFiles = getAllFiles($baseDir);
+    $referenceFiles = file($referenceFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+    // Remove empty lines and comments from the reference file
+    $unknownFiles = array_diff($currentFiles, $referenceFiles);
+
+    // Save list to DB
+    DB::insertUpdate(
+        prefixTable('misc'),
+        array(
+            'type' => 'admin',
+            'intitule' => 'unknown_files',
+            'valeur' => json_encode($unknownFiles),
+            'created_at' => time(),
+        ),
+        [
+            'valeur' => json_encode($unknownFiles),
+            'updated_at' => time(),
+        ]
+    );
+
+    // NOw remove ignored files from the list returned to user
+    // Get ignored files
+    $ignoredFiles = DB::queryFirstField(
+        'SELECT valeur 
+        FROM ' . prefixTable('misc') . ' 
+        WHERE type = %s AND intitule = %s',
+        'admin',
+        'ignored_unknown_files'
+    );
+    $ignoredFilesKeys = !is_null($ignoredFiles) && !empty($ignoredFiles) ? array_flip(json_decode($ignoredFiles)) : [];
+    $unknownFiles = array_diff_key($unknownFiles, $ignoredFilesKeys);
+
+    return $unknownFiles;
+}
+
+/**
+ * Check the integrity of the tables
+ * 
+ * @return array
+ */
+function tablesIntegrityCheck(): array
+{
+    // Get integrity tables file
+    $integrityTablesFile = TEAMPASS_APP . '/includes/tables_integrity.json';
+    if (file_exists($integrityTablesFile) === false) {
+        return [
+            'error' => true,
+            'message' => "Integrity file has not been found.",
+            'array' => [],
+        ];
+    }
+    // Convert json to array
+    $integrityTables = json_decode(file_get_contents($integrityTablesFile), true);
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        return [
+            'error' => true,
+            'message' => "Integrity file is corrupted",
+            'array' => [],
+        ];
+    }
+    // Get all tables
+    $tables = [];
+    foreach (DB::queryFirstColumn("SHOW TABLES") as $table) {
+        $tables[] = str_replace(DB_PREFIX, "", $table);;
+    }
+    // Prepare the integrity check
+    $tablesInError = [];
+    // Check if the tables are in the integrity file
+    foreach ($tables as $table) {
+        $tableFound = false;
+        $tableHash = "";
+        foreach ($integrityTables as $integrityTable) {
+            if ($integrityTable["table_name"] === $table) {
+                $tableFound = true;
+                $tableHash = $integrityTable["structure_hash"];
+                break; // Sortir de la boucle si la table est trouvée
+            }
+        }
+
+        if ($tableFound === true) {
+            $createTable = DB::queryFirstRow("SHOW CREATE TABLE ".DB_PREFIX."$table");
+            $currentHash = hash('sha256', $createTable['Create Table']);
+            if ($currentHash !== $tableHash) {
+                $tablesInError[] = DB_PREFIX.$table;
+            }            
+        }
+    }
+    return [
+        'error' => false,
+        'array' => $tablesInError,
+        'message' => ""
+    ];
+}
+
+/**
+ * Verify file integrity by checking presence & MD5 hashes.
+ *
+ * This function compares the current files in the project directory against a reference file
+ * containing expected file paths and their MD5 hashes. It reports any missing files or files
+ * whose hashes do not match the reference.
+ *
+ * Steps:
+ *  - Load reference file data (file => hash)
+ *  - Get all current files in the base directory
+ *  - For each file, check if it exists in the reference; if so, compare hashes
+ *  - Collect issues for missing or changed files
+ *
+ * @param string $baseDir        Base directory to scan for files
+ * @param string $referenceFile  Path to reference file with known hashes
+ * @return array                 Result with 'error', 'array' of issues, and 'message'
+ */
+function verifyFileHashes($baseDir, $referenceFile): array
+{
+    // Load reference data (file => hash)
+    $referenceData = parseReferenceFile($referenceFile);
+    // Get list of all current files in the project
+    $warnings = [];
+    $allFiles = getAllFiles($baseDir, $warnings);
+    $issues = [];
+
+    // Compare current files to reference
+    foreach ($allFiles as $file) {
+        // Check if file exists in reference list
+        if (!isset($referenceData[$file])) {
+            $issues[] = "<i>$file</i> is not listed in reference file";
+            continue;
+        }
+
+        // Compare hashes
+        $expectedHash = $referenceData[$file];
+        $actualHash = md5_file($baseDir . '/' . $file);
+
+        if ($expectedHash !== $actualHash) {
+            $issues[] = "$file (expected: <i>$expectedHash</i>, actual: <i>$actualHash</i>)";
+        }
+    }
+
+    // Return summary
+    return [
+        'error' => !empty($issues),
+        'array' => $issues,
+        'message' => empty($issues) ? 'Project files integrity check is successful.' : 'Integrity issues found.',
+        'warnings' => $warnings,
+    ];
+}
+
+/**
+ * Parse the reference file into an associative array.
+ *
+ * Each line in the reference file should be of the form: "path hash".
+ * The function returns an array mapping file paths to their expected MD5 hashes.
+ *
+ * @param string $referenceFile  Path to reference file
+ * @return array                 [ 'file/path' => 'md5hash' ]
+ */
+function parseReferenceFile($referenceFile) {
+    $data = [];
+    $lines = file($referenceFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        [$path, $hash] = explode(' ', $line, 2);
+        $data[$path] = trim($hash);
+    }
+    return $data;
+}
+
+/**
+ * Get all files in a directory with their md5 hashes.
+ *
+ * Recursively scans a directory, returning an associative array of file paths
+ * (relative to $dir) mapped to their MD5 hashes. Paths are normalized for cross-platform compatibility.
+ *
+ * @param string $dir    Directory to scan
+ * @return array         [ 'file/path' => 'md5hash' ]
+ */
+function getAllFilesWithHashes(string $dir): array
+{
+    $files = [];
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS)
+    );
+
+    foreach ($iterator as $file) {
+        if ($file instanceof \SplFileInfo && $file->isFile()) {
+            // Build relative path
+            $relativePath = str_replace($dir . DIRECTORY_SEPARATOR, '', $file->getPathname());
+            $relativePath = str_replace('\\', '/', $relativePath); // Normalize for Windows
+            // Calculate hash
+            $files[$relativePath] = md5_file($file->getPathname());
+        }
+    }
+    return $files;
+}
+
+/**
+ * Simulate user key change duration
+ * 
+ * This function simulates the process of changing a user's encryption key by re-encrypting
+ * a single item's share key. It estimates the total time required to re-encrypt all items
+ * for the user based on the time taken for this single operation.
+ * 
+ * @param array $userInfo Associative array containing user information:
+ *                        - 'id': User ID
+ *                        - 'public_key': User's public key
+ *                        - 'private_key': User's private key
+ * @return float Estimated time in seconds to re-encrypt all items, or 0 if no items found
+ */
+function simulateUserKeyChangeDuration($userInfo): float
+{
+    $startTime = microtime(true);
+    $timeExecutionEstimation = null;
+    
+    // Loop on items
+    $item = DB::queryFirstRow(
+        'SELECT i.id, i.pw, s.share_key, s.increment_id
+        FROM ' . prefixTable('items') . ' i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' s ON i.id = s.object_id
+        WHERE i.perso = %i
+            AND s.user_id = %i
+        ORDER BY RAND()
+        LIMIT 1',
+        0,
+        TP_USER_ID
+    );
+
+    if ($item !== null) {
+        // Decrypt itemkey with admin key
+        $itemKey = decryptUserObjectKey(
+            $item['share_key'],
+            $userInfo['private_key']
+        );
+        
+        // Prevent to change key if its key is empty
+        if (empty($itemKey) === true) {
+            $share_key_for_item = '';
+        } else {
+            // Encrypt Item key
+            $share_key_for_item = encryptUserObjectKey($itemKey, $userInfo['public_key']);
+        }
+
+        $duration = microtime(true) - $startTime;
+
+        // Get all items in database
+        $rows = DB::queryFirstRow(
+            'SELECT count(*) as counter
+            FROM ' . prefixTable('sharekeys_items') . ' s
+            WHERE s.user_id = %i',
+            TP_USER_ID
+        );
+        
+        $timeExecutionEstimation = round($duration * intval($rows['counter']), 0);
+        
+        // Update variable
+        DB::update(
+            prefixTable('misc'),
+            array(
+                'valeur' => $timeExecutionEstimation,
+                'updated_at' => time(),
+            ),
+            'type = %s AND intitule = %s',
+            'admin',
+            'task_duration_estimation'
+        );
+    }
+
+    return $timeExecutionEstimation ?? 0;
+}
+
+/**
+ * Query the WebSocket server for live stats via the WebSocket protocol.
+ *
+ * Opens a short-lived TCP connection, performs the WS handshake with a
+ * temporary admin token, sends {"action":"get_stats"}, and returns the
+ * stats array from the response.
+ *
+ * @param string $host WebSocket server host
+ * @param int    $port WebSocket server port
+ * @param int    $userId Current admin user ID (for token generation)
+ *
+ * @return array|null Stats array on success, null on any failure
+ */
+function queryWebSocketStats(string $host, int $port, int $userId): ?array
+{
+    try {
+        // Generate a short-lived token (30 seconds) for this stats query
+        $token = generateWebSocketToken($userId, 30);
+        if ($token === null) {
+            return null;
+        }
+
+        // Open TCP connection with 2-second timeout
+        $socket = @stream_socket_client(
+            sprintf('tcp://%s:%d', $host, $port),
+            $errno,
+            $errstr,
+            2,
+            STREAM_CLIENT_CONNECT
+        );
+        if ($socket === false) {
+            return null;
+        }
+
+        // Set read/write timeout
+        stream_set_timeout($socket, 2);
+
+        // Perform WebSocket upgrade handshake
+        $wsKey = base64_encode(random_bytes(16));
+        $path = '/?token=' . urlencode($token);
+        $handshake = "GET {$path} HTTP/1.1\r\n"
+            . "Host: {$host}:{$port}\r\n"
+            . "Upgrade: websocket\r\n"
+            . "Connection: Upgrade\r\n"
+            . "Sec-WebSocket-Key: {$wsKey}\r\n"
+            . "Sec-WebSocket-Version: 13\r\n"
+            . "\r\n";
+
+        fwrite($socket, $handshake);
+
+        // Read the upgrade response (read up to 2KB, should be plenty)
+        $response = '';
+        while (($line = fgets($socket, 2048)) !== false) {
+            $response .= $line;
+            // End of HTTP headers
+            if (trim($line) === '') {
+                break;
+            }
+        }
+
+        // Verify 101 Switching Protocols
+        if (strpos($response, '101') === false) {
+            fclose($socket);
+            return null;
+        }
+
+        // The server may send initial messages (e.g. auth_success)
+        // Read and discard them until we get our stats response
+        // First, send the get_stats request
+        $payload = json_encode(['action' => 'get_stats']);
+        fwrite($socket, wsEncodeFrame($payload));
+
+        // Read response frames (try up to 5 frames to find our stats response)
+        $stats = null;
+        for ($i = 0; $i < 5; $i++) {
+            $frame = wsReadFrame($socket);
+            if ($frame === null) {
+                break;
+            }
+
+            $data = json_decode($frame, true);
+            if ($data !== null && ($data['type'] ?? '') === 'stats') {
+                $stats = $data['stats'] ?? null;
+                break;
+            }
+        }
+
+        // Send close frame and clean up (server may have already closed the connection)
+        @fwrite($socket, wsEncodeFrame('', 0x88));
+        fclose($socket);
+
+        return $stats;
+    } catch (Exception $e) {
+        return null;
+    }
+}
+
+/**
+ * Encode a payload into a WebSocket frame (client-side, masked).
+ *
+ * @param string $payload Data to send
+ * @param int    $opcode  Frame opcode (0x01=text, 0x88=close)
+ *
+ * @return string Binary WebSocket frame
+ */
+function wsEncodeFrame(string $payload, int $opcode = 0x01): string
+{
+    $length = strlen($payload);
+    $frame = chr(0x80 | $opcode); // FIN + opcode
+
+    // Mask bit is always set for client frames
+    if ($length < 126) {
+        $frame .= chr(0x80 | $length);
+    } elseif ($length < 65536) {
+        $frame .= chr(0x80 | 126) . pack('n', $length);
+    } else {
+        $frame .= chr(0x80 | 127) . pack('J', $length);
+    }
+
+    // 4-byte masking key
+    $mask = random_bytes(4);
+    $frame .= $mask;
+
+    // Apply mask to payload
+    for ($i = 0; $i < $length; $i++) {
+        $frame .= $payload[$i] ^ $mask[$i % 4];
+    }
+
+    return $frame;
+}
+
+/**
+ * Read a single WebSocket frame from the socket.
+ *
+ * @param resource $socket TCP stream
+ *
+ * @return string|null Decoded payload or null on failure
+ */
+function wsReadFrame($socket): ?string
+{
+    // Read first 2 bytes (FIN/opcode + mask/length)
+    $header = fread($socket, 2);
+    if ($header === false || strlen($header) < 2) {
+        return null;
+    }
+
+    $byte1 = ord($header[0]);
+    $byte2 = ord($header[1]);
+    $opcode = $byte1 & 0x0F;
+    $masked = ($byte2 & 0x80) !== 0;
+    $length = $byte2 & 0x7F;
+
+    // Connection close frame
+    if ($opcode === 0x08) {
+        return null;
+    }
+
+    // Extended payload length
+    if ($length === 126) {
+        $ext = fread($socket, 2);
+        if ($ext === false || strlen($ext) < 2) {
+            return null;
+        }
+        $length = unpack('n', $ext)[1];
+    } elseif ($length === 127) {
+        $ext = fread($socket, 8);
+        if ($ext === false || strlen($ext) < 8) {
+            return null;
+        }
+        $length = unpack('J', $ext)[1];
+    }
+
+    // Read masking key if present (server frames are typically unmasked)
+    $mask = null;
+    if ($masked) {
+        $mask = fread($socket, 4);
+        if ($mask === false || strlen($mask) < 4) {
+            return null;
+        }
+    }
+
+    // Read payload
+    $payload = '';
+    $remaining = $length;
+    while ($remaining > 0) {
+        $chunk = fread($socket, $remaining);
+        if ($chunk === false || $chunk === '') {
+            return null;
+        }
+        $payload .= $chunk;
+        $remaining -= strlen($chunk);
+    }
+
+    // Unmask if needed
+    if ($masked) {
+        for ($i = 0; $i < $length; $i++) {
+            $payload[$i] = $payload[$i] ^ $mask[$i % 4];
+        }
+    }
+
+    return $payload;
+}
+
+
+function tpHealthNormalizeLogsModeForAdmin(string $mode): string
+{
+    $mode = trim(strtolower($mode));
+
+    return in_array($mode, ['auto', 'manual'], true) === true ? $mode : 'auto';
+}
+
+function tpHealthSanitizeManualLogPathForAdmin(string $path): string
+{
+    return trim(str_replace("\0", '', $path));
+}
+
+function tpHealthIsAbsolutePathForAdmin(string $path): bool
+{
+    if ($path === '' || !str_starts_with($path, '/')) {
+        return false;
+    }
+
+    // Resolve symlinks and ../ sequences via the parent directory
+    // (the file itself need not exist yet).
+    $dir = realpath(dirname($path));
+    if ($dir === false) {
+        return false;
+    }
+
+    // Rebuild resolved path and verify it still points inside the filesystem root.
+    $resolved = $dir . '/' . basename($path);
+
+    return str_starts_with($resolved, '/');
+}

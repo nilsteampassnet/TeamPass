@@ -1,0 +1,7 @@
+# Language directory — only DataTables JSON files (.txt) are web-accessible.
+# PHP language files must not be served via HTTP.
+Options -Indexes
+
+<FilesMatch "\.php$">
+    Require all denied
+</FilesMatch>

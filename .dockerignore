@@ -52,16 +52,16 @@ temp/
 cache/
 
 # CSRF logs (will be created at runtime)
-includes/libraries/csrfp/log/*
-!includes/libraries/csrfp/log/.gitkeep
+app/includes/libraries/csrfp/log/*
+!app/includes/libraries/csrfp/log/.gitkeep
 
 # User data (will be in volumes)
-files/*
-!files/.gitkeep
-upload/*
-!upload/.gitkeep
-sk/*
-!sk/.gitkeep
+storage/files/*
+!storage/files/.gitkeep
+storage/upload/*
+!storage/upload/.gitkeep
+storage/sk/*
+!storage/sk/.gitkeep
 
 # Backups
 backups/
