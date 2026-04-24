@@ -2439,7 +2439,7 @@ if (
                 return '';
             }
 
-            const password = simplePurifier(atob(data.password), false, false, false, false).utf8Decode();
+            const password = atob(data.password).utf8Decode();
             if (password === '') {
                 toastr.info(
                     '<?php echo $lang->get('password_is_empty'); ?>',

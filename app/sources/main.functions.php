@@ -3515,9 +3515,9 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
  */
 function doDataEncryption(string $data, ?string $key = null): array
 {
-    // Sanitize
+    // Passwords are secrets: do NOT sanitize before encryption or HTML-sensitive chars get corrupted.
+    // XSS protection applies at output (HTML rendering), never at the encryption boundary.
     $antiXss = new AntiXSS();
-    $data = $antiXss->xss_clean($data);
 
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
