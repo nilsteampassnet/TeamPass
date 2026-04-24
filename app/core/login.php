@@ -294,6 +294,10 @@ echo '
         <div class="row mt-5">
             <div class="col-12">
                 <button id="but_identify_user" class="btn btn-primary btn-block">' . $lang->get('log_in') . '</button>
+                ' . (isKeyExistingAndEqual('enable_local_password_recovery', 1, $SETTINGS) === true ? '
+                <div id="forgot-local-password-container" class="mt-2 text-center hidden">
+                    <button id="but_forgot_local_password" class="btn btn-link btn-sm text-muted">' . $lang->get('forgot_local_password') . '</button>
+                </div>' : '') . '
                 
                 <!-- In case of upgrade, the user has to provide his One Time Code -->
                 <div class="card-body user-one-time-code-card-body hidden">
