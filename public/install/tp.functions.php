@@ -33,16 +33,24 @@ use Elegant\Sanitizer\Sanitizer;
 use voku\helper\AntiXSS;
 
 // new SECUREFILE - 3.0.0.23
-function handleSecurefileConstant()
+function handleSecurefileConstant(): ?array
 {
     if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt' || file_exists(TEAMPASS_SECRETS.'/teampass-seckey.txt') === true) {
-        // Anonymize the file if needed
-        if (defined('SECUREFILE') === false) {
-            define('SECUREFILE', generateRandomKey());
+        // Determine the target filename.
+        // When SECUREFILE is undefined OR still holds the legacy default name, a new random
+        // name must be generated. PHP constants cannot be redefined, so $secureFile is used
+        // for file operations and the settings.php write in both cases.
+        if (defined('SECUREFILE') === false || SECUREFILE === 'teampass-seckey.txt') {
+            $secureFile = generateRandomKey();
+            if (!defined('SECUREFILE')) {
+                define('SECUREFILE', $secureFile);
+            }
+        } else {
+            $secureFile = SECUREFILE;
         }
-    
-        // manage the file itself by renaming it
-        if (rename(TEAMPASS_SECRETS.'/teampass-seckey.txt', TEAMPASS_SECRETS.'/'.SECUREFILE) === false) {
+
+        // Rename the legacy file to the (new) random name
+        if (rename(TEAMPASS_SECRETS.'/teampass-seckey.txt', TEAMPASS_SECRETS.'/'.$secureFile) === false) {
             echo '[{
                 "error" : "File `'.TEAMPASS_SECRETS.'/teampass-seckey.txt` could not be renamed. Please do it by yourself and click on button Launch.",
                 "index" : ""
@@ -55,8 +63,8 @@ function handleSecurefileConstant()
             define('DB_ENCODING', "utf8mb4");
         }
 
-        // Now create new file
-        $file_handled = fopen('../app/config/settings.php', 'w');
+        // Now create new file (absolute path via TEAMPASS_ROOT)
+        $file_handled = fopen(TEAMPASS_ROOT . '/app/config/settings.php', 'w');
         
         $settingsTxt = '<?php
 // DATABASE connexion parameters
@@ -98,8 +106,7 @@ $settingsTxt .= '
 define("DB_CONNECT_OPTIONS", array(
     MYSQLI_OPT_CONNECT_TIMEOUT => 10
 ));
-// TEAMPASS_SECRETS is a constant defined in app/config/include.php (TEAMPASS_ROOT/secrets)
-define("SECUREFILE", "' . SECUREFILE. '");';
+define("SECUREFILE", "' . $secureFile. '");';
 
         if (defined('IKEY') === true) $settingsTxt .= '
 define("IKEY", "' . IKEY . '");';
@@ -141,6 +148,12 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             'message' => ''
         ];
     }
+
+    // SECUREFILE is already a valid random name and no legacy file exists — nothing to do.
+    return [
+        'error' => false,
+        'message' => ''
+    ];
 }
 
 /**

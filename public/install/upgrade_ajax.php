@@ -661,7 +661,7 @@ if (isset($post_type)) {
 
             $returnStatus = array();
             // If settings.php file doesn't contain DB_HOST then regenerate it
-            $settingsFile = '../../app/config/settings.php';
+            $settingsFile = TEAMPASS_ROOT . '/app/config/settings.php';
             include_once $settingsFile;
 
             if (defined('DB_SSL') === false) {
