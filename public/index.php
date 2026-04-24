@@ -1608,6 +1608,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/profile.js.php';
         } elseif ($get['page'] === 'favourites') {
             include_once TEAMPASS_APP . '/pages/favorites.js.php';
+        } elseif ($get['page'] === 'kb') {
+            include_once TEAMPASS_APP . '/pages/kb.js.php';
         } elseif ($get['page'] === 'folders') {
             include_once TEAMPASS_APP . '/pages/folders.js.php';
         } elseif ($get['page'] === 'users') {
