@@ -583,11 +583,14 @@ trait UserHandlerTrait {
         // if done then send email to new user
         // get user info
         $userInfo = DB::queryFirstRow(
-            'SELECT u.email, u.login, u.auth_type, u.special, u.lastname, u.name
+            'SELECT u.email, u.login, u.auth_type, u.special, u.lastname, u.name, u.user_language
             FROM ' . prefixTable('users') . ' AS u
             WHERE u.id = %i',
             $arguments['new_user_id']
         );
+
+        // Resolve language from the target user's preferences for outgoing emails
+        $lang = new Language($userInfo['user_language'] ?? 'english');
 
         // SEND EMAIL TO USER depending on context
         // Config 1: new user is a local user

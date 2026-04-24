@@ -463,7 +463,7 @@ if (null !== $post_type) {
                     true,
                     true,
                     false,
-                    (string) $lang->get('email_body_user_config_6'),
+                    'email_body_user_config_6',
                 );
 
                 // update LOG
@@ -3153,7 +3153,7 @@ if (null !== $post_type) {
                         'new_user_code' => cryption($post_user_code, '','encrypt', $SETTINGS)['string'],
                         'owner_id' => (int) TP_USER_ID,
                         'creator_pwd' => $userTP['pw'],
-                        'email_body' => $lang->get('email_body_user_config_4'),
+                        'email_body' => 'email_body_user_config_4',
                         'send_email' => 1,
                         'otp_provided_new_value' => 0,
                         'user_self_change' => 0,
