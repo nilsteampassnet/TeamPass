@@ -532,21 +532,18 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         </a>
                     </li>';
     }
-    /*
-        // KB menu
-        if (isset($SETTINGS['enable_kb']) === true && $SETTINGS['enable_kb'] === '1'
-        ) {
-            echo '
-                        <li class="nav-item">
-                            <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '' ,'">
-                            <i class="nav-icon fa-solid fa-map-signs"></i>
-                            <p>
-    '.$lang->get('kb_menu').'
-                            </p>
-                            </a>
-                        </li>';
-        }
-    */
+    // KB menu
+    if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1) {
+        echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '', '">
+                        <i class="nav-icon fas fa-book"></i>
+                        <p>
+' . $lang->get('kb_menu') . '
+                        </p>
+                        </a>
+                    </li>';
+    }
     // SUGGESTION menu
     if (
                                     isset($SETTINGS['enable_suggestion']) && (int) $SETTINGS['enable_suggestion'] === 1

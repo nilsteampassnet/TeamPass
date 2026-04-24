@@ -83,6 +83,23 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Add soft-delete column to kb table
+$res = addColumnIfNotExist(
+    $pre . 'kb',
+    'deleted_at',
+    'DATETIME NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column deleted_at to kb table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add enable_kb setting if not present
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_kb', '0')"
+);
 
 //---------------------------------------------------------------------
 
