@@ -372,6 +372,140 @@ switch ($post_type) {
         break;
 
     // -------------------------------------------------------
+    case 'get_linked_items':
+        $kbId = isset($data['id']) ? (int) $data['id'] : 0;
+        if ($kbId === 0) {
+            echo prepareExchangedData(['error' => true, 'message' => 'id_not_set'], 'encode');
+            break;
+        }
+
+        $rows = DB::query(
+            'SELECT ki.increment_id, i.id AS item_id, i.label, t.title AS folder
+             FROM ' . prefixTable('kb_items') . ' AS ki
+             INNER JOIN ' . prefixTable('items') . ' AS i ON ki.item_id = i.id
+             LEFT JOIN ' . prefixTable('nested_tree') . ' AS t ON i.id_tree = t.id
+             WHERE ki.kb_id = %i
+             ORDER BY i.label ASC',
+            $kbId
+        );
+
+        $items = [];
+        foreach ($rows as $row) {
+            $items[] = [
+                'link_id' => (int) $row['increment_id'],
+                'item_id' => (int) $row['item_id'],
+                'label'   => htmlspecialchars($row['label'], ENT_QUOTES, 'UTF-8'),
+                'folder'  => htmlspecialchars($row['folder'] ?? '', ENT_QUOTES, 'UTF-8'),
+            ];
+        }
+
+        echo prepareExchangedData(['error' => false, 'items' => $items], 'encode');
+        break;
+
+    // -------------------------------------------------------
+    case 'search_items_for_kb':
+        $search = $antiXss->xss_clean($data['search'] ?? '');
+        if (mb_strlen($search) < 2) {
+            echo prepareExchangedData(['error' => false, 'items' => []], 'encode');
+            break;
+        }
+
+        $rows = DB::query(
+            'SELECT i.id, i.label, t.title AS folder
+             FROM ' . prefixTable('items') . ' AS i
+             LEFT JOIN ' . prefixTable('nested_tree') . ' AS t ON i.id_tree = t.id
+             WHERE i.label LIKE %ss AND i.inactif = 0
+             ORDER BY i.label ASC
+             LIMIT 20',
+            $search
+        );
+
+        $items = [];
+        foreach ($rows as $row) {
+            $items[] = [
+                'item_id' => (int) $row['id'],
+                'label'   => htmlspecialchars($row['label'], ENT_QUOTES, 'UTF-8'),
+                'folder'  => htmlspecialchars($row['folder'] ?? '', ENT_QUOTES, 'UTF-8'),
+            ];
+        }
+
+        echo prepareExchangedData(['error' => false, 'items' => $items], 'encode');
+        break;
+
+    // -------------------------------------------------------
+    case 'add_item_link':
+        $kbId   = isset($data['kb_id'])   ? (int) $data['kb_id']   : 0;
+        $itemId = isset($data['item_id']) ? (int) $data['item_id'] : 0;
+
+        if ($kbId === 0 || $itemId === 0) {
+            echo prepareExchangedData(['error' => true, 'message' => 'id_not_set'], 'encode');
+            break;
+        }
+
+        $kbRow = DB::queryFirstRow(
+            'SELECT author_id, anyone_can_modify FROM ' . prefixTable('kb') . ' WHERE id = %i AND deleted_at IS NULL',
+            $kbId
+        );
+        if (null === $kbRow) {
+            echo prepareExchangedData(['error' => true, 'message' => 'not_found'], 'encode');
+            break;
+        }
+        if (!$isAdmin && (int) $kbRow['author_id'] !== $userId && (int) $kbRow['anyone_can_modify'] !== 1) {
+            echo prepareExchangedData(['error' => true, 'message' => 'not_allowed'], 'encode');
+            break;
+        }
+
+        // Verify item exists
+        $itemRow = DB::queryFirstRow('SELECT id FROM ' . prefixTable('items') . ' WHERE id = %i AND inactif = 0', $itemId);
+        if (null === $itemRow) {
+            echo prepareExchangedData(['error' => true, 'message' => 'item_not_found'], 'encode');
+            break;
+        }
+
+        // Avoid duplicate
+        $existing = DB::queryFirstRow(
+            'SELECT increment_id FROM ' . prefixTable('kb_items') . ' WHERE kb_id = %i AND item_id = %i',
+            $kbId, $itemId
+        );
+        if (null !== $existing) {
+            echo prepareExchangedData(['error' => false, 'message' => 'already_linked'], 'encode');
+            break;
+        }
+
+        DB::insert(prefixTable('kb_items'), ['kb_id' => $kbId, 'item_id' => $itemId]);
+
+        echo prepareExchangedData(['error' => false], 'encode');
+        break;
+
+    // -------------------------------------------------------
+    case 'remove_item_link':
+        $kbId   = isset($data['kb_id'])   ? (int) $data['kb_id']   : 0;
+        $itemId = isset($data['item_id']) ? (int) $data['item_id'] : 0;
+
+        if ($kbId === 0 || $itemId === 0) {
+            echo prepareExchangedData(['error' => true, 'message' => 'id_not_set'], 'encode');
+            break;
+        }
+
+        $kbRow = DB::queryFirstRow(
+            'SELECT author_id, anyone_can_modify FROM ' . prefixTable('kb') . ' WHERE id = %i AND deleted_at IS NULL',
+            $kbId
+        );
+        if (null === $kbRow) {
+            echo prepareExchangedData(['error' => true, 'message' => 'not_found'], 'encode');
+            break;
+        }
+        if (!$isAdmin && (int) $kbRow['author_id'] !== $userId && (int) $kbRow['anyone_can_modify'] !== 1) {
+            echo prepareExchangedData(['error' => true, 'message' => 'not_allowed'], 'encode');
+            break;
+        }
+
+        DB::delete(prefixTable('kb_items'), 'kb_id = %i AND item_id = %i', $kbId, $itemId);
+
+        echo prepareExchangedData(['error' => false], 'encode');
+        break;
+
+    // -------------------------------------------------------
     default:
         echo prepareExchangedData(['error' => true, 'message' => 'unknown_type'], 'encode');
         break;

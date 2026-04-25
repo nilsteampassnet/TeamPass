@@ -105,6 +105,14 @@ $(function() {
     $('#kb-btn-save').on('click', function() {
         saveArticle()
     })
+
+    // Item search button
+    $('#kb-btn-item-search').on('click', function() {
+        searchItemsForKb()
+    })
+    $('#kb-item-search').on('keypress', function(e) {
+        if (e.which === 13) searchItemsForKb()
+    })
 })
 
 /**
@@ -223,6 +231,7 @@ function openEditModal(id) {
         $('#kb-edit-category').val(resp.category)
         $('#kb-edit-description').val(resp.description)
         $('#kb-edit-anyone-modify').prop('checked', resp.anyone_can_modify === 1)
+        loadLinkedItemsForEdit(resp.id, resp.can_edit)
         $('#kb-modal-edit').modal('show')
     })
 }
@@ -288,6 +297,9 @@ function viewArticle(id) {
         $('#kb-view-author').text(resp.author)
         // Render description — use text() to avoid XSS; replace newlines for readability
         $('#kb-view-description').text(resp.description)
+        $('#kb-view-items-section').addClass('d-none')
+        $('#kb-view-items-list').empty()
+        loadLinkedItemsForView(resp.id)
         $('#kb-modal-view').modal('show')
     })
 }
@@ -376,6 +388,168 @@ function restoreArticle(id) {
         loadKbList(0)
         loadKbCategories()
         $('#kb-category-filter').val('0')
+    })
+}
+
+/**
+ * Load linked items into the edit modal (called when opening an existing article).
+ *
+ * @param {number} kbId
+ * @param {boolean} canEdit
+ */
+function loadLinkedItemsForEdit(kbId, canEdit) {
+    $.post('sources/kb.queries.php', {
+        type: 'get_linked_items',
+        data: JSON.stringify({ id: kbId }),
+        key: '<?php echo $session->get('key'); ?>'
+    }, function(data) {
+        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+        const $list = $('#kb-edit-items-list')
+        $list.empty()
+
+        if (resp.error === true) return
+
+        if (resp.items.length === 0) {
+            $list.html('<span class="text-muted small"><?php echo $lang->get('kb_no_linked_items'); ?></span>')
+        } else {
+            $.each(resp.items, function(i, item) {
+                let badge = '<span class="badge badge-info mr-1 mb-1">' +
+                    '<i class="fas fa-key fa-sm mr-1"></i>' + item.label +
+                    (item.folder ? ' <small class="text-light">(' + item.folder + ')</small>' : '')
+                if (canEdit) {
+                    badge += ' <a href="#" class="text-white ml-1 kb-item-remove" data-kb="' + kbId +
+                        '" data-item="' + item.item_id + '" title="<?php echo $lang->get('delete'); ?>">' +
+                        '<i class="fas fa-times"></i></a>'
+                }
+                badge += '</span>'
+                $list.append(badge)
+            })
+
+            $list.find('.kb-item-remove').on('click', function(e) {
+                e.preventDefault()
+                removeItemLink($(this).data('kb'), $(this).data('item'))
+            })
+        }
+
+        if (canEdit) {
+            $('#kb-edit-items-section').removeClass('d-none')
+        } else {
+            $('#kb-edit-items-section').addClass('d-none')
+        }
+    })
+}
+
+/**
+ * Load linked items for the view modal.
+ *
+ * @param {number} kbId
+ */
+function loadLinkedItemsForView(kbId) {
+    $.post('sources/kb.queries.php', {
+        type: 'get_linked_items',
+        data: JSON.stringify({ id: kbId }),
+        key: '<?php echo $session->get('key'); ?>'
+    }, function(data) {
+        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+        if (resp.error === true || resp.items.length === 0) {
+            $('#kb-view-items-section').addClass('d-none')
+            return
+        }
+
+        const $list = $('#kb-view-items-list')
+        $list.empty()
+        $.each(resp.items, function(i, item) {
+            $list.append(
+                '<a class="badge badge-info mr-1 mb-1" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&id=' + item.item_id + '">' +
+                '<i class="fas fa-key fa-sm mr-1"></i>' + item.label +
+                (item.folder ? ' <small>(' + item.folder + ')</small>' : '') +
+                '</a>'
+            )
+        })
+        $('#kb-view-items-section').removeClass('d-none')
+    })
+}
+
+/**
+ * Search TeamPass items by label for the KB link picker.
+ */
+function searchItemsForKb() {
+    const search = $('#kb-item-search').val().trim()
+    if (search.length < 2) return
+
+    const kbId = parseInt($('#kb-edit-id').val()) || 0
+
+    $.post('sources/kb.queries.php', {
+        type: 'search_items_for_kb',
+        data: JSON.stringify({ search: search }),
+        key: '<?php echo $session->get('key'); ?>'
+    }, function(data) {
+        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+        const $results = $('#kb-item-search-results')
+        $results.empty()
+
+        if (resp.error === true || resp.items.length === 0) {
+            $results.html('<span class="text-muted small"><?php echo $lang->get('kb_no_items_found'); ?></span>')
+            return
+        }
+
+        $.each(resp.items, function(i, item) {
+            $results.append(
+                '<button type="button" class="btn btn-xs btn-outline-info mr-1 mb-1 kb-item-add-btn" ' +
+                'data-kb="' + kbId + '" data-item="' + item.item_id + '">' +
+                '<i class="fas fa-plus fa-sm mr-1"></i>' + item.label +
+                (item.folder ? ' <small>(' + item.folder + ')</small>' : '') +
+                '</button>'
+            )
+        })
+
+        $results.find('.kb-item-add-btn').on('click', function() {
+            addItemLink($(this).data('kb'), $(this).data('item'))
+        })
+    })
+}
+
+/**
+ * Link a TeamPass item to a KB article.
+ *
+ * @param {number} kbId
+ * @param {number} itemId
+ */
+function addItemLink(kbId, itemId) {
+    $.post('sources/kb.queries.php', {
+        type: 'add_item_link',
+        data: JSON.stringify({ kb_id: kbId, item_id: itemId }),
+        key: '<?php echo $session->get('key'); ?>'
+    }, function(data) {
+        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+        if (resp.error === true) {
+            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
+            return
+        }
+        $('#kb-item-search').val('')
+        $('#kb-item-search-results').empty()
+        loadLinkedItemsForEdit(kbId, true)
+    })
+}
+
+/**
+ * Remove a link between a KB article and an item.
+ *
+ * @param {number} kbId
+ * @param {number} itemId
+ */
+function removeItemLink(kbId, itemId) {
+    $.post('sources/kb.queries.php', {
+        type: 'remove_item_link',
+        data: JSON.stringify({ kb_id: kbId, item_id: itemId }),
+        key: '<?php echo $session->get('key'); ?>'
+    }, function(data) {
+        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+        if (resp.error === true) {
+            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
+            return
+        }
+        loadLinkedItemsForEdit(kbId, true)
     })
 }
 </script>

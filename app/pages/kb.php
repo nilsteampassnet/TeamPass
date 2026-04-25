@@ -185,6 +185,21 @@ $isAdmin = (int) $session->get('user-admin') === 1;
                         </label>
                     </div>
                 </div>
+                <!-- Linked items (shown when editing an existing article) -->
+                <div class="form-group d-none" id="kb-edit-items-section">
+                    <label><?php echo $lang->get('kb_linked_items'); ?></label>
+                    <div id="kb-edit-items-list" class="mb-2"></div>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" id="kb-item-search"
+                               placeholder="<?php echo $lang->get('kb_search_item_placeholder'); ?>">
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary" type="button" id="kb-btn-item-search">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="kb-item-search-results" class="mt-1"></div>
+                </div>
                 <div class="alert alert-danger d-none" id="kb-edit-error"></div>
             </div>
             <div class="modal-footer">
@@ -210,7 +225,11 @@ $isAdmin = (int) $session->get('user-admin') === 1;
                     <span id="kb-view-category"></span> &mdash;
                     <span id="kb-view-author"></span>
                 </div>
-                <div id="kb-view-description" class="kb-description-content border p-3 rounded bg-light"></div>
+                <div id="kb-view-description" class="kb-description-content border p-3 rounded bg-light mb-3"></div>
+                <div id="kb-view-items-section" class="d-none">
+                    <label class="font-weight-bold"><?php echo $lang->get('kb_linked_items'); ?></label>
+                    <div id="kb-view-items-list"></div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /var/www/html/TeamPass add public/index.php)",
+      "Bash(git -C /var/www/html/TeamPass commit -m ' *)",
+      "Bash(git -C /var/www/html/TeamPass add public/sources/kb.queries.php app/includes/libraries/csrfp/libs/csrfp.config.php)",
+      "Bash(git -C /var/www/html/TeamPass add public/sources/kb.queries.php public/index.php)",
+      "Bash(chmod +x /var/www/html/TeamPass/scripts/permissions.sh)"
+    ]
+  }
+}
