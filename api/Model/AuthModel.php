@@ -344,10 +344,8 @@ class AuthModel
         $rows = DB::queryFirstRow(
             'SELECT id 
             FROM ' . prefixTable('nested_tree') . '
-            WHERE title = %i AND personal_folder = 1'.
-            (count($userFunctionId) > 0 ? ' AND id NOT IN %li' : ''),
-            $userInfo['id'],
-            count($userFunctionId) > 0 ? $userFunctionId : DB::sqleval('0')
+            WHERE title = %i AND personal_folder = 1',
+            $userInfo['id']
         );
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
