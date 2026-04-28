@@ -710,7 +710,7 @@ function simplePurifier(
  * Can exclude some fields from purification
  */
 const htmlFields = ['description', 'desc', 'html'];
-const ignoredFields = ['pw', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp'];
+const ignoredFields = ['pw', 'password', 'previous_password', 'current_password', 'old_password', 'new_password', 'otp'];
 function purifyData(obj, bHtml = false, bSvg = false, bSvgFilters = false, bStringify = false) {
     if (Array.isArray(obj)) {
         const purifiedObject = obj.map(item => purifyData(item, bHtml, bSvg, bSvgFilters, false));
