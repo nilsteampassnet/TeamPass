@@ -83,6 +83,9 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Add enable_local_password_recovery setting (disabled by default)
+mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin','enable_local_password_recovery', 0)");
+
 
 //---------------------------------------------------------------------
 

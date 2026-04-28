@@ -500,6 +500,40 @@ declare(strict_types=1);
         }
     });
 
+    // Local password recovery
+    $(document).on('click', '#but_forgot_local_password', function() {
+        const login = $('#login').val().trim();
+        if (login === '') {
+            toastr.warning('<?php echo $lang->get('index_login'); ?>', '', {timeOut: 3000});
+            return false;
+        }
+        $('#but_forgot_local_password').attr('disabled', true);
+        $.post(
+            'sources/identify.php',
+            {
+                type: 'request_forgot_local_password',
+                data: prepareExchangedData({login: login}, 'encode', '<?php echo $session->get('key'); ?>')
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                toastr.remove();
+                if (data.error === false) {
+                    toastr.success(data.message, '', {timeOut: 8000, progressBar: true, positionClass: 'toast-bottom-right'});
+                    $('#forgot-local-password-container').addClass('hidden');
+                } else {
+                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', {timeOut: 5000, progressBar: true, positionClass: 'toast-bottom-right'});
+                    $('#but_forgot_local_password').removeAttr('disabled');
+                }
+            }
+        );
+        return false;
+    });
+
+    // Hide recovery link when user changes login or password fields
+    $(document).on('input', '#login, #pw', function() {
+        $('#forgot-local-password-container').addClass('hidden');
+    });
+
     $(document).on('click', '#but_confirm_forgot_defuse_psk', function() {
         // Is the user sure?
         showModalDialogBox(
@@ -940,6 +974,10 @@ declare(strict_types=1);
                         if(data.ga_bad_code === true)
                         {
                             $("#ga_code").addClass("ui-state-error");
+                        }
+                        // Show recovery link after a failed login attempt
+                        if ($('#forgot-local-password-container').length) {
+                            $('#forgot-local-password-container').removeClass('hidden');
                         }
                     } else {
                         toastr.remove();

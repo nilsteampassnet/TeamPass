@@ -368,6 +368,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
 
                                 <div class='row mb-2 tr-ldap'>
+                                    <div class='col-10'>
+                                        <?php echo $lang->get('settings_enable_local_password_recovery'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('settings_enable_local_password_recovery_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-2'>
+                                        <div class='toggle toggle-modern' id='enable_local_password_recovery' data-toggle-on='<?php echo isset($SETTINGS['enable_local_password_recovery']) === true && (int) $SETTINGS['enable_local_password_recovery'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_local_password_recovery_input' value='<?php echo isset($SETTINGS['enable_local_password_recovery']) && (int) $SETTINGS['enable_local_password_recovery'] === 1 ? 1 : 0; ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mb-2 tr-ldap'>
                                     <div class='col-5'>
                                         <?php echo $lang->get('newly_created_user_is_administrated_by'); ?>
                                     </div>
