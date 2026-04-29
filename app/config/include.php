@@ -99,7 +99,7 @@ define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 
 // URLs
-define('READTHEDOC_URL', 'https://teampass.readthedocs.io/en/latest/');
+define('READTHEDOC_URL', 'https://documentation.teampass.net/');
 define('DOCUMENTATION_URL', 'https://documentation.teampass.net/');
 define('HELP_URL', 'https://github.com/nilsteampassnet/TeamPass/discussions');
 define('REDDIT_URL', 'https://www.reddit.com/r/TeamPass/');

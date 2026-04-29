@@ -97,6 +97,9 @@ $newUpload    = $root . '/storage/upload';
 $newAvatars   = $root . '/public/assets/avatars';
 $newBackups   = $root . '/storage/backups';
 $newLogs      = $root . '/storage/logs';
+$newSecrets   = $root . '/secrets';
+$oldCsrfp     = $root . '/includes/libraries/csrfp/libs/csrfp.config.php';
+$newCsrfp     = $root . '/app/includes/libraries/csrfp/libs/csrfp.config.php';
 
 $errors = 0;
 
@@ -127,6 +130,18 @@ $errors += migrateDirectory($oldBackups, $newBackups, 'backups', $root);
 // ── Step 7: Create storage/logs/ ──────────────────────────────────────────────
 step('Step 7 — Create storage/logs/');
 $errors += ensureLogsDir($newLogs);
+
+// ── Step 9: Migrate encryption key file to secrets/ ───────────────────────────
+step('Step 9 — Encryption key file  (SECUREPATH/SECUREFILE → secrets/)');
+$errors += migrateSecureFile($root, $oldSettings, $newSettings, $newSecrets);
+
+// ── Step 10: Ensure csrfp.config.php is present ───────────────────────────────
+step('Step 10 — CSRF Protector config  (csrfp.config.php)');
+$errors += migrateCsrfpConfig($oldCsrfp, $newCsrfp);
+
+// ── Step 11: Retire old includes/ directory ────────────────────────────────────
+step('Step 11 — Retire old includes/ directory');
+$errors += retireOldIncludes($root, $errors);
 
 // ── Step 8: File permissions ───────────────────────────────────────────────────
 step('Step 8 — File permissions');
@@ -355,6 +370,374 @@ function ensureLogsDir(string $logsDir): int
     return 0;
 }
 
+/**
+ * Extract SECUREPATH and SECUREFILE values from a settings.php file using regex,
+ * without eval()-ing PHP code.
+ *
+ * @param  string[] $settingsFiles Ordered list of settings files to try
+ * @return array{string, string}   [SECUREPATH, SECUREFILE]
+ */
+function extractSecureSettings(array $settingsFiles): array
+{
+    $securePath = '';
+    $secureFile = '';
+
+    foreach ($settingsFiles as $file) {
+        if (!is_file($file)) {
+            continue;
+        }
+        $content = file_get_contents($file);
+        if ($content === false) {
+            continue;
+        }
+
+        if ($securePath === '' && preg_match(
+            '/define\s*\(\s*["\']SECUREPATH["\']\s*,\s*["\']([^"\']*)["\']/',
+            $content,
+            $m
+        )) {
+            $securePath = $m[1];
+        }
+
+        if ($secureFile === '' && preg_match(
+            '/define\s*\(\s*["\']SECUREFILE["\']\s*,\s*["\']([^"\']*)["\']/',
+            $content,
+            $m
+        )) {
+            $secureFile = $m[1];
+        }
+
+        if ($securePath !== '' && $secureFile !== '') {
+            break;
+        }
+    }
+
+    return [$securePath, $secureFile];
+}
+
+/** @return int Number of errors */
+function migrateSecureFile(string $root, string $oldSettings, string $newSettings, string $secretsDir): int
+{
+    global $DRY_RUN;
+
+    // Parse SECUREPATH and SECUREFILE from old then new settings.php
+    [$securePath, $secureFile] = extractSecureSettings([$oldSettings, $newSettings]);
+
+    if ($secureFile === '') {
+        warn('SECUREFILE not found in settings.php — skipping');
+        info("Manually copy your encryption key file into: secrets/");
+        return 0;
+    }
+
+    $targetFile = $secretsDir . '/' . $secureFile;
+
+    if (is_file($targetFile)) {
+        ok("Encryption key file already in secrets/ — skipped");
+        return 0;
+    }
+
+    if ($securePath === '') {
+        warn('SECUREPATH not found in settings.php — cannot locate source key file');
+        info("Manually copy '$secureFile' into: secrets/");
+        return 0;
+    }
+
+    $sourceFile = rtrim($securePath, '/') . '/' . $secureFile;
+
+    if (!is_file($sourceFile)) {
+        warn("Encryption key file not found at: $sourceFile");
+        info("Manually copy '$secureFile' into: secrets/");
+        return 0;
+    }
+
+    info("Source : $sourceFile");
+    info("Target : secrets/$secureFile");
+
+    if ($DRY_RUN) {
+        dry("Would copy encryption key file to secrets/$secureFile");
+        return 0;
+    }
+
+    if (!is_dir($secretsDir) && !mkdir($secretsDir, 0700, true)) {
+        fail("Cannot create directory: secrets/");
+        return 1;
+    }
+
+    if (!copy($sourceFile, $targetFile)) {
+        fail("Failed to copy encryption key file to secrets/");
+        return 1;
+    }
+
+    chmod($targetFile, 0600);
+    ok("Encryption key file copied to secrets/$secureFile");
+    ok("chmod 0600: secrets/$secureFile");
+    return 0;
+}
+
+/** @return int Number of errors */
+function migrateCsrfpConfig(string $oldCsrfp, string $newCsrfp): int
+{
+    global $DRY_RUN;
+
+    if (is_file($newCsrfp)) {
+        ok('csrfp.config.php already exists — skipped');
+        return 0;
+    }
+
+    $newLibsDir = dirname($newCsrfp);
+    $oldLibsDir = dirname($oldCsrfp);
+    $sampleFile = $newLibsDir . '/csrfp.config.sample.php';
+    $source     = '';
+    $label      = '';
+    $rewriteUrl = false;
+
+    if (is_file($oldCsrfp)) {
+        // Pre-configured file from old layout (jsUrl uses old paths — must rewrite)
+        $source     = $oldCsrfp;
+        $label      = 'includes/libraries/csrfp/libs/csrfp.config.php (old layout)';
+        $rewriteUrl = true;
+    } else {
+        // Look for the most recent dated backup (new location first, then old)
+        foreach ([$newLibsDir, $oldLibsDir] as $dir) {
+            $backup = findLatestCsrfpBackup($dir);
+            if ($backup !== '') {
+                $source     = $backup;
+                $label      = basename($dir) . '/' . basename($backup) . ' (backup)';
+                $rewriteUrl = true;
+                break;
+            }
+        }
+    }
+
+    if ($source === '' && is_file($sampleFile)) {
+        $source = $sampleFile;
+        $label  = 'csrfp.config.sample.php';
+    }
+
+    if ($source === '') {
+        fail('csrfp.config.php: no config, backup, or sample file found');
+        info('Manually create: app/includes/libraries/csrfp/libs/csrfp.config.php');
+        return 1;
+    }
+
+    info("Source : $label");
+    info("Target : app/includes/libraries/csrfp/libs/csrfp.config.php");
+
+    if ($DRY_RUN) {
+        dry("Would create csrfp.config.php from $label");
+        if ($rewriteUrl) {
+            dry("Would rewrite jsUrl to /assets/lib/csrfp/csrfprotector.js");
+        }
+        return 0;
+    }
+
+    $content = file_get_contents($source);
+    if ($content === false) {
+        fail("Cannot read source: $source");
+        return 1;
+    }
+
+    if ($rewriteUrl) {
+        $content = rewriteCsrfpJsUrl($content);
+    }
+
+    if (file_put_contents($newCsrfp, $content) === false) {
+        fail("Failed to write app/includes/libraries/csrfp/libs/csrfp.config.php");
+        return 1;
+    }
+
+    chmod($newCsrfp, 0644);
+    ok("csrfp.config.php created from $label");
+
+    if ($source === $sampleFile) {
+        warn('Created from sample — CSRFP_TOKEN and jsUrl will be set by the web upgrade.');
+    } else {
+        info('CSRFP_TOKEN preserved; jsUrl updated for the new asset path.');
+        info('The web-based upgrade will finalize both values.');
+    }
+
+    return 0;
+}
+
+/**
+ * Find the most recent dated backup of csrfp.config.php in a directory.
+ * Matches filenames like: csrfp.config.php.2024_01_13_06_22_28
+ *                     or: csrfp.config.php.2024_12_03.bak
+ */
+function findLatestCsrfpBackup(string $dir): string
+{
+    if (!is_dir($dir)) {
+        return '';
+    }
+
+    $files = glob($dir . '/csrfp.config.php.*');
+    if ($files === false || count($files) === 0) {
+        return '';
+    }
+
+    // Keep only files whose suffix starts with a YYYY_MM_DD date
+    $dated = array_filter($files, static function (string $f): bool {
+        return preg_match('/csrfp\.config\.php\.\d{4}_\d{2}_\d{2}/', $f) === 1;
+    });
+
+    if (count($dated) === 0) {
+        return '';
+    }
+
+    // Lexicographic sort works because the date prefix is YYYY_MM_DD[_HH_MM_SS]
+    rsort($dated);
+    return reset($dated) ?: '';
+}
+
+/**
+ * Rewrite the jsUrl value in csrfp.config.php content to the new asset path
+ * (/assets/lib/csrfp/csrfprotector.js), preserving the base URL.
+ *
+ * Known old suffixes are stripped to recover the base URL; if none match,
+ * the base URL is reconstructed from the scheme+host+port plus any leading
+ * subdirectory path segment that precedes known directory names.
+ */
+function rewriteCsrfpJsUrl(string $content): string
+{
+    if (!preg_match('/"jsUrl"\s*=>\s*"([^"]*)"/', $content, $m)) {
+        return $content;
+    }
+
+    $oldUrl = $m[1];
+    if ($oldUrl === '') {
+        return $content;
+    }
+
+    // Path suffixes identifying the end of the base URL, most-specific first
+    $knownSuffixes = [
+        '/assets/lib/csrfp/csrfprotector.js',
+        '/app/includes/libraries/csrfp/csrfprotector.js',
+        '/includes/libraries/csrfp/js/csrfprotector.js',
+        '/includes/libraries/csrfp/csrfprotector.js',
+    ];
+
+    $baseUrl = '';
+    foreach ($knownSuffixes as $suffix) {
+        if (str_ends_with($oldUrl, $suffix)) {
+            $baseUrl = substr($oldUrl, 0, strlen($oldUrl) - strlen($suffix));
+            break;
+        }
+    }
+
+    if ($baseUrl === '') {
+        // Unknown format: recover scheme+host+port, keep leading subdirectory segments
+        $parsed = parse_url($oldUrl);
+        if (is_array($parsed) && isset($parsed['scheme'], $parsed['host'])) {
+            $baseUrl = $parsed['scheme'] . '://' . $parsed['host'];
+            if (isset($parsed['port'])) {
+                $baseUrl .= ':' . $parsed['port'];
+            }
+            if (isset($parsed['path'])) {
+                $stop = ['includes', 'app', 'assets'];
+                $kept = [];
+                foreach (explode('/', trim($parsed['path'], '/')) as $seg) {
+                    if (in_array($seg, $stop, true)) break;
+                    if (str_contains($seg, '.')) break; // stop at any filename
+                    if ($seg !== '') $kept[] = $seg;
+                }
+                if (count($kept) > 0) {
+                    $baseUrl .= '/' . implode('/', $kept);
+                }
+            }
+        }
+        warn("jsUrl format not recognised: $oldUrl");
+        info("  Used best-effort base URL — verify jsUrl in csrfp.config.php after migration.");
+    }
+
+    $newUrl  = rtrim($baseUrl, '/') . '/assets/lib/csrfp/csrfprotector.js';
+    $updated = preg_replace(
+        '/"jsUrl"\s*=>\s*"[^"]*"/',
+        '"jsUrl" => "' . $newUrl . '"',
+        $content
+    );
+
+    info("  jsUrl: $oldUrl");
+    info("      → $newUrl");
+
+    return $updated ?? $content;
+}
+
+/**
+ * Rename the old includes/ directory to _includes.bak.YYYYMMDD_HHMMSS so that
+ * it is no longer reachable under the old document root while still being
+ * recoverable if something went wrong.
+ *
+ * Only proceeds when no migration errors have accumulated (i.e. the critical
+ * files — settings.php, avatars, key file, csrfp config — were already handled).
+ *
+ * @return int Number of errors
+ */
+function retireOldIncludes(string $root, int $priorErrors): int
+{
+    global $DRY_RUN;
+
+    $oldDir = $root . '/includes';
+
+    if (!is_dir($oldDir)) {
+        ok('includes/ not found at root — nothing to retire');
+        return 0;
+    }
+
+    if ($priorErrors > 0) {
+        warn('Skipping includes/ retirement because earlier steps reported errors.');
+        warn('Fix the errors above, re-run the script, then retire includes/ manually.');
+        info("  mv $oldDir  {$oldDir}.bak");
+        return 0;
+    }
+
+    $backupName = '_includes.bak.' . date('Ymd_His');
+    $backupDir  = $root . '/' . $backupName;
+
+    // List what remains so the user knows what is being preserved
+    $remaining = [];
+    $scanRoot  = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($oldDir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    foreach ($scanRoot as $item) {
+        if ($item->isFile()) {
+            $remaining[] = str_replace($root . '/', '', $item->getPathname());
+        }
+    }
+
+    if (count($remaining) === 0) {
+        // Empty tree — just remove the directory
+        if ($DRY_RUN) {
+            dry('Would remove empty includes/ directory');
+        } else {
+            deleteDir($oldDir);
+            ok('Removed empty includes/ directory');
+        }
+        return 0;
+    }
+
+    info(count($remaining) . ' file(s) still present inside includes/ — preserving as backup:');
+    foreach ($remaining as $f) {
+        info("  $f");
+    }
+
+    if ($DRY_RUN) {
+        dry("Would rename includes/ → $backupName/");
+        return 0;
+    }
+
+    if (!rename($oldDir, $backupDir)) {
+        fail("Could not rename includes/ → $backupName/");
+        info("  Rename manually: mv $oldDir $backupDir");
+        info("  Or delete it once you have verified nothing is missing.");
+        return 1;
+    }
+
+    ok("includes/ renamed → $backupName/");
+    info('You may delete this backup once the upgrade completes successfully.');
+    return 0;
+}
+
 function setPermissions(string $root): void
 {
     global $DRY_RUN, $WEB_USER;
@@ -387,6 +770,18 @@ function setPermissions(string $root): void
         }
     }
 
+    // secrets/ must be readable only by the web server user.
+    $secretsDir = $root . '/secrets';
+    if (is_dir($secretsDir)) {
+        if ($DRY_RUN) {
+            dry("Would chmod 0700 secrets/");
+        } elseif (!chmod($secretsDir, 0700)) {
+            warn("Could not chmod 0700: secrets/ — set manually if needed");
+        } else {
+            ok("chmod 0700: secrets/");
+        }
+    }
+
     // Directories that need 0755 now so www-data (other) can traverse them.
     // Must be hardened to 0750 only AFTER: chown {$WEB_USER}:{$WEB_USER}
     $traversableDirs = [
@@ -412,6 +807,9 @@ function setPermissions(string $root): void
     }
 
     info("Run the following as root before launching the web upgrade:");
+    info("  chown {$WEB_USER}:{$WEB_USER} $root/secrets");
+    info("  chmod 0700 $root/secrets");
+    info("  chmod 0600 $root/secrets/*");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config/settings.php");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/includes/libraries/csrfp/libs");

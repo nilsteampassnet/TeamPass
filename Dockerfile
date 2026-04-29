@@ -34,7 +34,7 @@ LABEL maintainer="TeamPass <nils@teampass.net>" \
       org.opencontainers.image.description="Collaborative Passwords Manager" \
       org.opencontainers.image.url="https://teampass.net" \
       org.opencontainers.image.source="https://github.com/nilsteampassnet/TeamPass" \
-      org.opencontainers.image.documentation="https://teampass.readthedocs.io" \
+      org.opencontainers.image.documentation="https://documentation.teampass.net" \
       org.opencontainers.image.licenses="GPL-3.0" \
       org.opencontainers.image.vendor="TeamPass"
 

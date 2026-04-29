@@ -452,7 +452,7 @@ docker stats teampass-app teampass-db
 
 ## Additional Resources
 
-- **Documentation:** https://teampass.readthedocs.io
+- **Documentation:** https://documentation.teampass.net
 - **Docker Hub:** https://hub.docker.com/r/teampass/teampass
 - **GitHub:** https://github.com/nilsteampassnet/TeamPass
 - **Issues:** https://github.com/nilsteampassnet/TeamPass/issues

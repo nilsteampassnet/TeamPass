@@ -54,7 +54,11 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code} %{content_type}\" \"http://localhost/TeamPass/public/plugins/jquery/jquery.min.js\")",
       "Bash(curl -v \"http://localhost/TeamPass/public/plugins/jquery/jquery.min.js\")",
       "Bash(apache2ctl -S)",
-      "Bash(a2ensite teampass *)"
+      "Bash(a2ensite teampass *)",
+      "Bash(sed -n '/^function findLatestCsrfpBackup/,/^}/p' /var/www/html/TeamPass/migrate_3.2.x.php)",
+      "Bash(sed -n '/^function rewriteCsrfpJsUrl/,/^}/p' /var/www/html/TeamPass/migrate_3.2.x.php)",
+      "Bash(sed -n '/^function deleteDir/,/^}/p' /var/www/html/TeamPass/migrate_3.2.x.php)",
+      "Bash(sed -n '/^function retireOldIncludes/,/^}/p' /var/www/html/TeamPass/migrate_3.2.x.php)"
     ]
   }
 }

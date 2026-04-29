@@ -212,7 +212,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                         <pre class="bg-dark text-white p-2 rounded">php migrate_3.2.x.php</pre>
                         <p>
                             Once the script completes successfully, refresh this page and then proceed with the upgrade.<br>
-                            See the <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a> for full instructions.
+                            See the <a href="https://documentation.teampass.net/#/install/upgrade" target="_blank" class="text-info">upgrade documentation</a> for full instructions.
                         </p>
                         <p class="mb-0"><strong>Do not click START until this step has been completed.</strong></p>
                     </div>';
@@ -240,7 +240,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                             <li><i class="fas fa-exclamation-circle mr-2 text-danger"></i>Clear your browser cache (<kbd>Ctrl + F5</kbd>)</li>
                             <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a dump of your database</li>
                             <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a zip archive of the current Teampass folder</li>
-                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Read the <a href="https://teampass.readthedocs.io/en/latest/install/upgrade/" target="_blank" class="text-info">upgrade documentation</a></li>
+                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Read the <a href="https://documentation.teampass.net" target="_blank" class="text-info">upgrade documentation</a></li>
                         </ul>
                         </p>';
     if ($phpVersionisOkay === false) {
