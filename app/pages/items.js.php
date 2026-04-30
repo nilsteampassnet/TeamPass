@@ -178,7 +178,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             lastItemSeen: false,
             itemsListFolderId: false,
             highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
+            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
+            hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
+            hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
         }
     );
 
@@ -5808,6 +5810,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
 
+                    // HIBP badge — show cached status and trigger async re-check if needed
+                    $('#item-hibp-badge').html('')
+                    const hibpApp = store.get('teampassApplication') || {}
+                    if (hibpApp.hibpEnabled === 1) {
+                        _showHibpBadge(data.hibp_status, data.hibp_count)
+                        const hibpAge = data.hibp_checked_at ? (Date.now() / 1000) - parseInt(data.hibp_checked_at) : Infinity
+                        const hibpInterval = (hibpApp.hibpIntervalDays || 7) * 86400
+                        if (data.hibp_status === 0 || hibpAge > hibpInterval) {
+                            _triggerHibpCheck(data.id)
+                        }
+                    }
+
                     // Remove any stale edition lock badge from a previously viewed item
                     $('#items-details-container').find('.edition-lock-detail-badge').remove();
                     // If this item is already being edited by another user, show the lock badge
@@ -8054,4 +8068,47 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             );
         });
     });
+
+    // -------------------------------------------------------
+    // HIBP (HaveIBeenPwned) helpers
+    // -------------------------------------------------------
+
+    /**
+     * Render the HIBP badge next to the item title.
+     * status: 0=unknown, 1=safe, 2=pwned
+     */
+    function _showHibpBadge(status, count) {
+        let html = ''
+        if (status === 1) {
+            html = '<span class="badge badge-success"><i class="fas fa-shield-alt mr-1"></i><?php echo addslashes($lang->get('hibp_safe')); ?></span>'
+        } else if (status === 2) {
+            html = '<span class="badge badge-danger"><i class="fas fa-exclamation-triangle mr-1"></i><?php echo addslashes($lang->get('hibp_pwned')); ?> (' + (count || 0) + '&times;)</span>'
+        }
+        $('#item-hibp-badge').html(html)
+    }
+
+    /**
+     * Trigger an async HIBP password check for the given item.
+     * Updates the badge on success; silent on network error.
+     */
+    function _triggerHibpCheck(itemId) {
+        $.post(
+            'sources/items.queries.php',
+            {
+                type: 'check_hibp_password',
+                id: itemId,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(resp) {
+                try {
+                    const data = prepareExchangedData(resp, 'decode', '<?php echo $session->get('key'); ?>')
+                    if (!data.error && data.status !== 'error' && data.status !== 'disabled') {
+                        _showHibpBadge(data.status === 'pwned' ? 2 : 1, data.count || 0)
+                    }
+                } catch (e) {
+                    // Silent failure — no badge update on error
+                }
+            }
+        )
+    }
 </script>

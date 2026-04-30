@@ -2174,4 +2174,10 @@ return array(
     'items_corrupted_marker_unreadable' => 'Unreadable password',
     'settings_show_corrupted_items_in_list' => 'Highlight corrupted items in items list',
     'settings_show_corrupted_items_in_list_tip' => 'When enabled, users will see corrupted items highlighted in the items list.',
+    'hibp_safe' => 'Not compromised',
+    'hibp_pwned' => 'Compromised',
+    'settings_hibp_enabled' => 'Enable HaveIBeenPwned password check',
+    'settings_hibp_enabled_tip' => 'When enabled, passwords are checked against the HaveIBeenPwned database using k-anonymity (only 5 chars of SHA-1 hash are transmitted). Requires outbound HTTPS access.',
+    'settings_hibp_interval_days' => 'Re-check interval (days)',
+    'settings_hibp_interval_days_tip' => 'Number of days before a password is re-checked against HaveIBeenPwned. Default: 7.',
     );

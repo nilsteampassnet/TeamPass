@@ -80,6 +80,8 @@ git pull
 
 #### Install Composer dependencies
 
+> Not required, as the libraries are included in the GitHub project.
+
 ```bash
 cd /path/to/teampass
 composer install --no-dev --optimize-autoloader

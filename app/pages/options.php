@@ -614,6 +614,30 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="hibp haveibeenpwned password breach security compromised">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_hibp_enabled'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_hibp_enabled_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='hibp_enabled' data-toggle-on='<?php echo isset($SETTINGS['hibp_enabled']) && (int) $SETTINGS['hibp_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='hibp_enabled_input' value='<?php echo isset($SETTINGS['hibp_enabled']) && (int) $SETTINGS['hibp_enabled'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="hibp haveibeenpwned password breach interval days">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_hibp_interval_days'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_hibp_interval_days_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' max='365' class='form-control form-control-sm' id='hibp_check_interval_days' value='<?php echo isset($SETTINGS['hibp_check_interval_days']) ? htmlspecialchars((string) $SETTINGS['hibp_check_interval_days']) : '7'; ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="image">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_secure_display_image'); ?>

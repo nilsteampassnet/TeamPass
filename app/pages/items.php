@@ -132,6 +132,7 @@ if ((int) $session_user_admin === 1) {
                     </div>
 
                     <h5 id="form-item-title" class="clear-me-html" style="min-height:23px;"></h5>
+                    <span id="item-hibp-badge" class="ml-2 align-middle"></span>
 
                     <div class="card-tools">
                         <button type="button" class="btn btn-secondary btn-sm but-back" id="but_back_top_right">

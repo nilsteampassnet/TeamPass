@@ -8314,3 +8314,52 @@ function teampassCorruptedItemsBuildNotice(
         'message' => '',
     ];
 }
+
+/**
+ * Check if a password appears in known data breaches via HIBP Pwned Passwords API.
+ * Uses k-anonymity: only the first 5 chars of the SHA-1 hash are sent to HIBP.
+ *
+ * @param string $password Plaintext password to check
+ * @return array{pwned: bool, count: int}|array{error: true}
+ */
+function checkPasswordWithHIBP(string $password): array
+{
+    if ($password === '') {
+        return ['error' => true];
+    }
+
+    $sha1   = strtoupper(sha1($password));
+    $prefix = substr($sha1, 0, 5);
+    $suffix = substr($sha1, 5);
+
+    $ch = curl_init('https://api.pwnedpasswords.com/range/' . $prefix);
+    if ($ch === false) {
+        return ['error' => true];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 3,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_USERAGENT      => 'TeamPass-HIBP/1.0',
+        CURLOPT_HTTPHEADER     => ['Add-Padding: true'],
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        return ['error' => true];
+    }
+
+    foreach (explode("\n", (string) $response) as $line) {
+        $parts = explode(':', trim($line));
+        if (count($parts) === 2 && strtoupper($parts[0]) === $suffix) {
+            return ['pwned' => true, 'count' => (int) $parts[1]];
+        }
+    }
+
+    return ['pwned' => false, 'count' => 0];
+}

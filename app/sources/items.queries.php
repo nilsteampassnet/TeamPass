@@ -2966,6 +2966,11 @@ switch ($inputData['type']) {
             } else {
                 $arrData['pw_is_secure'] = strlen($pw) >= 12 && intval($dataItem['complexity_level']) >= 70;
             }
+
+            // HIBP cached status (no API call here — async check is triggered by the JS)
+            $arrData['hibp_status']     = (int) ($dataItem['hibp_status'] ?? 0);
+            $arrData['hibp_count']      = (int) ($dataItem['hibp_count'] ?? 0);
+            $arrData['hibp_checked_at'] = (string) ($dataItem['hibp_checked_at'] ?? '');
             $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
@@ -7485,6 +7490,129 @@ switch ($inputData['type']) {
             // send data
             echo (string) prepareExchangedData(
                 $response,
+                'encode'
+            );
+
+            break;
+
+        /*
+        * CASE
+        * Check a password against HaveIBeenPwned Pwned Passwords API.
+        * Uses k-anonymity: only 5 chars of SHA-1 hash are transmitted.
+        * Updates hibp_status/count/checked_at in teampass_items.
+        */
+        case 'check_hibp_password':
+            // Validate session key
+            if ($inputData['key'] !== $session->get('key')) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => $lang->get('key_is_not_correct')],
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature must be enabled by admin
+            if (!isset($SETTINGS['hibp_enabled']) || (int) $SETTINGS['hibp_enabled'] !== 1) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'status' => 'disabled'],
+                    'encode'
+                );
+                break;
+            }
+
+            $hibpItemId = (int) filter_var($inputData['id'], FILTER_SANITIZE_NUMBER_INT);
+            if ($hibpItemId <= 0) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => 'invalid_item_id'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Load item and verify user has access via sharekey
+            $hibpItem = DB::queryFirstRow(
+                'SELECT pw, hibp_status, hibp_checked_at
+                FROM ' . prefixTable('items') . '
+                WHERE id = %i',
+                $hibpItemId
+            );
+            if ($hibpItem === null) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Get the user's share key for this item
+            $hibpUserKeys = DB::query(
+                'SELECT share_key
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE user_id = %i AND object_id = %i',
+                $session->get('user-id'),
+                $hibpItemId
+            );
+
+            if (empty($hibpUserKeys) || empty($hibpItem['pw'])) {
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt the object key then the password
+            $hibpPw = '';
+            foreach ($hibpUserKeys as $hibpKey) {
+                $hibpObjectKey = decryptUserObjectKey($hibpKey['share_key'], $session->get('user-private_key'));
+                if (!empty($hibpObjectKey)) {
+                    $hibpPw = doDataDecryption($hibpItem['pw'], $hibpObjectKey);
+                    break;
+                }
+            }
+
+            if ($hibpPw === '') {
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Call HIBP API (silent on network failure)
+            $hibpResult = checkPasswordWithHIBP($hibpPw);
+
+            if (isset($hibpResult['error'])) {
+                // Network unreachable or API error — do not update DB, return error silently
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            $hibpNewStatus = $hibpResult['pwned'] === true ? 2 : 1;
+            $hibpCount     = (int) $hibpResult['count'];
+            $hibpNow       = (string) time();
+
+            DB::update(
+                prefixTable('items'),
+                [
+                    'hibp_status'     => $hibpNewStatus,
+                    'hibp_count'      => $hibpCount,
+                    'hibp_checked_at' => $hibpNow,
+                ],
+                'id = %i',
+                $hibpItemId
+            );
+
+            echo (string) prepareExchangedData(
+                [
+                    'error'      => false,
+                    'status'     => $hibpResult['pwned'] === true ? 'pwned' : 'safe',
+                    'count'      => $hibpCount,
+                    'checked_at' => $hibpNow,
+                ],
                 'encode'
             );
 
