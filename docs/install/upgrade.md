@@ -30,17 +30,53 @@ Before anything else:
 
 ### Step 2 — Get the new code
 
-#### Using Git (recommended)
+> **Recommended for 3.1.x → 3.2.0 upgrades: use the release archive (Option A).**
+>
+> `git pull` removes files that were deleted from the repository between 3.1.x and 3.2.0
+> (language files, library stubs, template files, etc.).  Your **user data** is safe because
+> it lives in gitignored directories (`files/`, `upload/`, `backups/`, `includes/config/`),
+> but the deletion of other tracked files can leave the repository in an inconsistent state
+> that is harder to reason about.
+>
+> Extracting the release archive over the existing installation is simpler and unambiguous:
+> it **adds** new files and **overwrites** existing ones without deleting anything, so the
+> filesystem migration script (Step 3) always finds what it expects.
+
+#### Option A — Release archive (recommended)
+
+1. Download the latest release from [TeamPass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
+2. Extract the archive **over** your existing TeamPass folder:
+
+```bash
+cd /var/www/html   # parent of your TeamPass folder
+
+# Download (adjust version and folder name as needed)
+wget https://github.com/nilsteampassnet/TeamPass/archive/refs/tags/3.2.0.zip
+
+# Extract to a temp directory, then rsync into place
+unzip -q 3.2.0.zip -d /tmp/tp-new
+rsync -av --no-perms /tmp/tp-new/TeamPass-3.2.0/ teampass/
+
+# Clean up
+rm -rf /tmp/tp-new 3.2.0.zip
+```
+
+> `rsync` copies new and updated files without touching your data directories.
+> Any old 3.1.x code files that were removed from the repository will simply remain
+> on disk — they are harmless because after Step 3 the web server DocumentRoot will
+> point to `public/`, leaving the old root-level code outside the webroot.
+
+#### Option B — Git (existing git-based deployments)
 
 ```bash
 cd /path/to/teampass
 git pull
 ```
 
-#### Manual — zip package
-
-* Download the latest release from [Teampass releases](https://github.com/nilsteampassnet/TeamPass/releases/latest)
-* Unzip and overwrite the existing files in the Teampass folder
+> **Important:** `git pull` will delete files that were removed from the repository.
+> Your user data is safe only if all data directories (`files/`, `upload/`, `backups/`,
+> `includes/config/`, `includes/avatars/`) are listed in `.gitignore`.
+> If you have any doubt, use Option A instead.
 
 #### Install Composer dependencies
 
@@ -68,9 +104,13 @@ php migrate_3.2.x.php
 
 | Option               | Description                                              |
 |----------------------|----------------------------------------------------------|
-| `--dry-run`          | Show what would be done without making any change        |
+| `--check`            | Inspect prerequisites and show what will be migrated, without making any change |
+| `--dry-run`          | Simulate every step in detail without making any change  |
 | `--web-user=USER`    | Web server user for permission setup (default: `www-data`) |
 | `--no-color`         | Disable ANSI colour output                               |
+
+> **Tip:** Run `--check` first for a quick pre-flight summary, then `--dry-run` for a
+> full step-by-step simulation, and finally run without flags to apply the migration.
 
 **What the script does:**
 

@@ -7,9 +7,10 @@
  * layout to the new 3.2.x layout (app/ / public/ / storage/).
  *
  * Usage:
- *   php migrate_3.2.x.php [--dry-run] [--web-user=www-data] [--no-color]
+ *   php migrate_3.2.x.php [--check] [--dry-run] [--web-user=www-data] [--no-color]
  *
  * Options:
+ *   --check            Inspect what the script will find/migrate and exit (no changes)
  *   --dry-run          Show what would be done without making any change
  *   --web-user=USER    Web server user for permission setup (default: www-data)
  *   --no-color         Disable ANSI color output
@@ -35,6 +36,7 @@ if (PHP_SAPI !== 'cli') {
 // Parse arguments
 $opts = parseArgs($argv);
 $DRY_RUN   = $opts['dry-run']  ?? false;
+$CHECK     = $opts['check']    ?? false;
 $WEB_USER  = $opts['web-user'] ?? 'www-data';
 $NO_COLOR  = $opts['no-color'] ?? false;
 
@@ -82,6 +84,11 @@ banner();
 preflightChecks();
 
 $root = realpath(__DIR__);
+
+if ($CHECK) {
+    runCheck($root);
+    exit(0);
+}
 
 // Detect old installation paths
 $oldSettings  = $root . '/includes/config/settings.php';
@@ -154,6 +161,116 @@ summary($errors, $root);
 // Functions
 // ══════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Pre-migration check: inspect what the script will find and migrate, without
+ * making any change. Exits 0 if all prerequisites are met, 1 otherwise.
+ */
+function runCheck(string $root): void
+{
+    step('Pre-migration check (--check mode, no changes will be made)');
+
+    $problems = 0;
+
+    // ── 1. New 3.2.0 directory structure ──────────────────────────────────────
+    $required = ['app', 'public', 'storage', 'app/config', 'app/sources', 'public/install'];
+    $newOk = true;
+    foreach ($required as $dir) {
+        if (!is_dir($root . '/' . $dir)) {
+            fail("Missing 3.2.0 directory: $dir/  — run 'git pull' or extract the release archive first");
+            $newOk = false;
+            $problems++;
+        }
+    }
+    if ($newOk) {
+        ok('New 3.2.0 directory structure is in place');
+    }
+
+    // ── 2. settings.php ───────────────────────────────────────────────────────
+    $oldSettings = $root . '/includes/config/settings.php';
+    $newSettings = $root . '/app/config/settings.php';
+    if (is_file($newSettings) && filesize($newSettings) > 200) {
+        $c = file_get_contents($newSettings);
+        if ($c !== false && str_contains($c, 'DB_HOST')) {
+            ok('app/config/settings.php already populated — will be skipped');
+        } else {
+            warn('app/config/settings.php exists but looks empty — will be overwritten from includes/config/');
+        }
+    } elseif (is_file($oldSettings)) {
+        ok('includes/config/settings.php found — will be copied to app/config/');
+    } else {
+        warn('includes/config/settings.php not found and app/config/settings.php not populated');
+        info('  Ensure app/config/settings.php contains your DB credentials before running the upgrade.');
+        $problems++;
+    }
+
+    // ── 3–6. Data directories ─────────────────────────────────────────────────
+    $dataDirs = [
+        'files'            => [$root . '/files',           $root . '/storage/files'],
+        'upload'           => [$root . '/upload',          $root . '/storage/upload'],
+        'backups'          => [$root . '/backups',         $root . '/storage/backups'],
+        'includes/avatars' => [$root . '/includes/avatars',$root . '/public/assets/avatars'],
+    ];
+
+    foreach ($dataDirs as $label => [$src, $dst]) {
+        if (!is_dir($src)) {
+            info("$label/ — not found (empty or already migrated)");
+            continue;
+        }
+        $items = scandir($src);
+        $toMove = $items === false ? [] : array_filter(
+            $items,
+            static fn(string $f): bool => !in_array($f, ['.', '..', '.gitkeep', '.htaccess', 'empty_file.txt', 'index.html'], true)
+        );
+        $count = count($toMove);
+        if ($count === 0) {
+            ok("$label/ — empty, nothing to migrate");
+        } else {
+            ok("$label/ — $count item(s) will be migrated to " . str_replace($root . '/', '', $dst) . '/');
+        }
+    }
+
+    // ── 7. Encryption key ─────────────────────────────────────────────────────
+    [$securePath, $secureFile] = extractSecureSettings([$oldSettings, $newSettings]);
+    if ($secureFile === '') {
+        warn('SECUREFILE not defined in settings.php — encryption key will need manual migration');
+        $problems++;
+    } elseif (is_file($root . '/secrets/' . $secureFile)) {
+        ok("Encryption key secrets/$secureFile already in place");
+    } elseif ($securePath !== '' && is_file(rtrim($securePath, '/') . '/' . $secureFile)) {
+        ok("Encryption key found at $securePath/$secureFile — will be copied to secrets/");
+    } else {
+        warn("Encryption key '$secureFile' not found — copy it manually to secrets/ before the upgrade");
+        $problems++;
+    }
+
+    // ── 8. csrfp.config.php ───────────────────────────────────────────────────
+    $newCsrfp = $root . '/app/includes/libraries/csrfp/libs/csrfp.config.php';
+    $oldCsrfp = $root . '/includes/libraries/csrfp/libs/csrfp.config.php';
+    if (is_file($newCsrfp)) {
+        ok('csrfp.config.php already in place at app/includes/libraries/csrfp/libs/');
+    } elseif (is_file($oldCsrfp)) {
+        ok('csrfp.config.php found at old location — will be migrated and jsUrl updated');
+    } else {
+        $sampleFile = dirname($newCsrfp) . '/csrfp.config.sample.php';
+        if (is_file($sampleFile)) {
+            warn('csrfp.config.php not found — will be generated from sample (token set by web upgrade)');
+        } else {
+            warn('csrfp.config.php and sample file not found — will need manual creation');
+            $problems++;
+        }
+    }
+
+    // ── Summary ───────────────────────────────────────────────────────────────
+    echo "\n";
+    if ($problems === 0) {
+        echo col("  All prerequisites met. Run without --check to apply the migration.\n", '0;32');
+    } else {
+        echo col("  {$problems} issue(s) found. Address the warnings above before migrating.\n", '0;31');
+        echo col("  Use --dry-run for a full step-by-step simulation.\n", '0;33');
+    }
+    echo "\n";
+}
+
 function banner(): void
 {
     echo "\n";
@@ -165,7 +282,7 @@ function banner(): void
 
 function preflightChecks(): void
 {
-    global $DRY_RUN;
+    global $DRY_RUN, $CHECK;
 
     step('Pre-flight checks');
 
@@ -176,7 +293,9 @@ function preflightChecks(): void
     }
     ok('PHP version: ' . PHP_VERSION);
 
-    if ($DRY_RUN) {
+    if ($CHECK) {
+        warn('CHECK mode — inspecting prerequisites, no changes will be made');
+    } elseif ($DRY_RUN) {
         warn('DRY-RUN mode — no files will be moved or copied');
     }
 }
