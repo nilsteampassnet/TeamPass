@@ -926,9 +926,11 @@ function setPermissions(string $root): void
     }
 
     info("Run the following as root before launching the web upgrade:");
+    info("  # secrets/ — chmod files FIRST, then chown+chmod the directory");
+    info("  # (chmod 0700 on the directory before chown would block glob expansion)");
+    info("  find $root/secrets/ -type f -exec chmod 0600 {} \\;");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/secrets");
     info("  chmod 0700 $root/secrets");
-    info("  chmod 0600 $root/secrets/*");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/config/settings.php");
     info("  chown {$WEB_USER}:{$WEB_USER} $root/app/includes/libraries/csrfp/libs");
