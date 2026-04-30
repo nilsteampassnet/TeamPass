@@ -885,7 +885,7 @@ if (isset($post_type)) {
                 // Mark a tag to force Install stuff (folders, files and table) to be cleanup while first login
                 mysqli_query(
                     $db_link,
-                    'INSERT INTO `' . $pre . 'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
+                    'INSERT IGNORE INTO `' . $pre . 'misc` (`type`, `intitule`, `valeur`) VALUES ("install", "clear_install_folder", "true")'
                 );
 
                 array_push(
