@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => 'Менеджер завдань',
     'task_in_progress_user_not_active' => 'Завдання в процесі - Користувач не активний',
     'error_new_ldap_password_detected' => 'Схоже, ваш пароль змінився, і Teampass вимагає його для шифрування вашого головного приватного ключа.',
-    'tasks_information' => 'Завдання покладається на спеціальну роботу cron. Для цього потрібно додати новий запис у ваш crontab для запуску планувальника Teampass кожну хвилину.<br>Наступний запис для додавання:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Примітка: будь ласка, адаптуйте шлях до php bin (у більшості випадків його можна замінити на <code>php</code>).',
+    'tasks_information' => 'Завдання покладається на спеціальну роботу cron. Для цього потрібно додати новий запис у ваш crontab для запуску планувальника Teampass кожну хвилину.<br>Наступний запис для додавання:<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>Примітка: будь ласка, адаптуйте шлях до php bin (у більшості випадків його можна замінити на <code>php</code>).',
     'bad_duo_mfa' => 'Неправильний код DUO',
     'creation_date' => 'Дата створення',
     'never' => 'Ніколи',

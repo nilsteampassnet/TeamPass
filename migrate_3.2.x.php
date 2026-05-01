@@ -995,7 +995,7 @@ function summary(int $errors, string $root): void
     echo "\n";
 
     echo col("  2. If you use a cron job, update the path:\n", '1;37');
-    echo "     php " . $root . "/app/scripts/background_tasks___handler.php\n";
+    echo "     php " . $root . "/app/sources/scheduler.php\n";
     echo "\n";
 
     echo col("  3. If you use the WebSocket daemon, update the ExecStart path:\n", '1;37');

@@ -85,12 +85,12 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
 // initialise CSRFGuard library
 require_once TEAMPASS_APP . '/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
-// Override the jsUrl to use the current host and the correct js/ subdirectory.
-// The config file is gitignored (site-specific), so the jsUrl may be stale.
-csrfProtector::$config['jsUrl'] =
-    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-    . '/app/includes/libraries/csrfp/js/csrfprotector.js';
+// Override the jsUrl to use the public asset path.
+$scriptBasePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
+if ($scriptBasePath === '.' || $scriptBasePath === '/') {
+    $scriptBasePath = '';
+}
+csrfProtector::$config['jsUrl'] = $scriptBasePath . '/assets/lib/csrfp/csrfprotector.js';
 
 // Load functions
 require_once TEAMPASS_APP . '/config/include.php';

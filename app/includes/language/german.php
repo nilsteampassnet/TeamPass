@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => 'Aufgabenmanager',
     'task_in_progress_user_not_active' => 'Aufgaben werden bearbeitet - Benutzer nicht aktiv',
     'error_new_ldap_password_detected' => 'Es scheint, dass sich Ihr Passwort geändert hat und Teampass muss das Passwort, um Ihren privaten Hauptschlüssel neu zu verschlüsseln.',
-    'tasks_information' => 'Die Aufgabe beruht auf einem speziellen Cron-Job. Dazu müssen Sie einen neuen Eintrag in Ihre crontab einfügen, damit der Teampass-Scheduler jede Minute ausgeführt wird.<br>Nächster Eintrag, welcher hinzugefügt wird:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Hinweis: Bitte passen Sie den Pfad zu php bin an (in den meisten Fällen kann er durch <code>php</code> ersetzt werden).',
+    'tasks_information' => 'Die Aufgabe beruht auf einem speziellen Cron-Job. Dazu müssen Sie einen neuen Eintrag in Ihre crontab einfügen, damit der Teampass-Scheduler jede Minute ausgeführt wird.<br>Nächster Eintrag, welcher hinzugefügt wird:<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>Hinweis: Bitte passen Sie den Pfad zu php bin an (in den meisten Fällen kann er durch <code>php</code> ersetzt werden).',
     'bad_duo_mfa' => 'Schlechter DUO code',
     'creation_date' => 'Erstellungsdatum',
     'never' => 'Nie',

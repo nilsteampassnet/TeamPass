@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => 'Manager sarcini',
     'task_in_progress_user_not_active' => 'Sarcini în progres - Utilizator inactiv',
     'error_new_ldap_password_detected' => 'Se pare că parola dvs. s-a schimbat și Teampass o necesită pentru a vă cripta cheia privată master.',
-    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
     'bad_duo_mfa' => 'Bad DUO code',
     'creation_date' => 'Data creării',
     'never' => 'Niciodată',

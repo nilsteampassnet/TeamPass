@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => 'Gestionnaire de tâches',
     'task_in_progress_user_not_active' => 'Tache en cours - Utilisateur non activé',
     'error_new_ldap_password_detected' => 'Teampass détecte un changement de mot de passe. Il est nécessaire de réencrypter votre clé principale.',
-    'tasks_information' => 'Les taches dépendent du cron. Il est donc nécessaire de définir dans le crontab d’un job permettant d’exécuter le scheduler de Teampass chaque minute.<br>La commande à saisir est :<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note : Adapter le chemain vers le binaire php.',
+    'tasks_information' => 'Les taches dépendent du cron. Il est donc nécessaire de définir dans le crontab d’un job permettant d’exécuter le scheduler de Teampass chaque minute.<br>La commande à saisir est :<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>Note : Adapter le chemain vers le binaire php.',
     'bad_duo_mfa' => 'Code DUO eronné',
     'creation_date' => 'Date de création',
     'never' => 'Jamais',

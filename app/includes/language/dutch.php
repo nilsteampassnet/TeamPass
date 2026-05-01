@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => 'Takenbeheerder',
     'task_in_progress_user_not_active' => 'Taken bezig - Gebruiker niet actief',
     'error_new_ldap_password_detected' => 'Het lijkt erop dat uw wachtwoord is gewijzigd',
-    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
+    'tasks_information' => 'Task relies on a dedicated cron job. For this, it is requested to add a new entry to your crontab to run Teampass scheduler every minute.<br>Next entry to be added:<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>Note: please adapt the path to php bin (in most cases, it can be replaced by <code>php</code>).',
     'bad_duo_mfa' => 'Bad DUO code',
     'creation_date' => 'Aanmaakdatum',
     'never' => 'Nooit',
