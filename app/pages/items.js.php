@@ -183,6 +183,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
         }
     );
+    // browserSession('init') skips keys when the store already exists (initialized by load.js.php),
+    // so force-inject HIBP settings via store.update to guarantee they are always present.
+    store.update('teampassApplication', function(app) {
+        app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
+        app.hibpIntervalDays = parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
+    })
 
     if (debugJavascript === true) {
         console.log('User information')
@@ -394,7 +400,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 itemsListFolderId: parseInt(queryDict['group']),
                 selectedItem: parseInt(queryDict['id']),
                 highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
+                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
+                hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
+                hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
             }
         );
         store.update(
@@ -5813,6 +5821,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // HIBP badge — show cached status and trigger async re-check if needed
                     $('#item-hibp-badge').html('')
                     const hibpApp = store.get('teampassApplication') || {}
+                    console.info(hibpApp)
+                    console.info(hibpApp.hibpEnabled)
                     if (hibpApp.hibpEnabled === 1) {
                         _showHibpBadge(data.hibp_status, data.hibp_count)
                         const hibpAge = data.hibp_checked_at ? (Date.now() / 1000) - parseInt(data.hibp_checked_at) : Infinity
