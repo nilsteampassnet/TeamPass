@@ -1,0 +1,10 @@
+# Installation directory.
+#
+# DURING INSTALLATION: this directory must remain accessible.
+#   Leave the directive below commented out.
+#
+# AFTER INSTALLATION: uncomment the line below to block all HTTP access.
+#   The installer files must never be reachable in production.
+#   Alternatively, configure your web server to deny access to this path.
+#
+# Require all denied
