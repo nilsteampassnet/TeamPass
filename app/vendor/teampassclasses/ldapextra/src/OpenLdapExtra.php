@@ -268,4 +268,43 @@ class OpenLdapExtra extends BaseGroup
 
         return false;
     }
+
+    /**
+     * Check whether a user is a member of a specific LDAP group identified by its full DN.
+     * Uses a scope=base LDAP read so the group can reside outside the configured users base DN.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param string $userDn Distinguished name of the authenticating user
+     * @param string $userUid Login name of the user (for posixGroup memberUid checks)
+     * @param Connection $connection Active LdapRecord connection
+     * @return bool True if the user is a member or if $groupDn is empty (no restriction)
+     */
+    public function isUserInAllowedGroup(
+        string $groupDn,
+        string $userDn,
+        string $userUid,
+        Connection $connection
+    ): bool {
+        if (trim($groupDn) === '') {
+            return true;
+        }
+        try {
+            // scope=base search on the group DN — works even if outside the users base DN
+            $groupEntry = $connection->query()
+                ->select(['uniquemember', 'member', 'memberuid'])
+                ->setDn($groupDn)
+                ->read()
+                ->whereHas('objectclass')
+                ->first();
+
+            if ($groupEntry === null) {
+                error_log('TEAMPASS LDAP: Allowed login group not found: ' . $groupDn);
+                return false;
+            }
+            return $this->isUserMemberOfGroup((array) $groupEntry, $userDn, $userUid);
+        } catch (\Throwable $e) {
+            error_log('TEAMPASS LDAP: isUserInAllowedGroup error: ' . $e->getMessage());
+            return false;
+        }
+    }
 }

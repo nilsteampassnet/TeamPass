@@ -86,6 +86,9 @@ $lang = new Language();
 // Add enable_local_password_recovery setting (disabled by default)
 mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin','enable_local_password_recovery', 0)");
 
+// Add LDAP allowed login group restriction setting (empty = no restriction)
+mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_dn', '')");
+
 // Add soft-delete column to kb table
 $res = addColumnIfNotExist(
     $pre . 'kb',

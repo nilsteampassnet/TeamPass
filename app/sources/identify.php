@@ -1568,7 +1568,28 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 'message' => $lang->get('error_ad_user_expired'),
             ];
         }
-        
+
+        // Check if login is restricted to a specific LDAP group
+        $allowedGroupDn = trim($SETTINGS['ldap_allowed_login_group_dn'] ?? '');
+        if ($allowedGroupDn !== '') {
+            $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+            $userDnForCheck = $ldapHandler['type'] === 'ActiveDirectory'
+                ? (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '')
+                : (string) ($userADInfos['dn'] ?? '');
+
+            if (!$ldapHandler['handler']->isUserInAllowedGroup(
+                $allowedGroupDn,
+                $userDnForCheck,
+                $username,
+                $ldapHandler['connection']
+            )) {
+                return [
+                    'error'   => true,
+                    'message' => $lang->get('ldap_not_in_allowed_group'),
+                ];
+            }
+        }
+
         // Handle user creation if needed
         if ($userInfo['ldap_user_to_be_created']) {
             $userInfo = handleNewUser($username, $passwordClear, $userADInfos, $userInfo, $SETTINGS, $lang);

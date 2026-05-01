@@ -875,7 +875,7 @@ return array(
     'tasks_manager' => '任务管理器',
     'task_in_progress_user_not_active' => '进行中的任务 - 用户未激活',
     'error_new_ldap_password_detected' => '您的密码已更改，Teampass需要该密码来加密您的主私钥。',
-    'tasks_information' => '任务依赖于一个专用的Cron作业。为此，需要在您的Crontab中添加一个新条目，以每分钟运行一次Teampass调度程序。<br>需添加的条目如下：<br><code>* * * * * path/to/phpbin #teampass_path#/sources/scheduler.php</code><br><br>注意：请根据实际情况调整PHP二进制文件路径(多数情况下可直接替换为<code>php</code>)。',
+    'tasks_information' => '任务依赖于一个专用的Cron作业。为此，需要在您的Crontab中添加一个新条目，以每分钟运行一次Teampass调度程序。<br>需添加的条目如下：<br><code>* * * * * path/to/phpbin #teampass_path#/app/sources/scheduler.php</code><br><br>注意：请根据实际情况调整PHP二进制文件路径(多数情况下可直接替换为<code>php</code>)。',
     'bad_duo_mfa' => '错误的DUO密码',
     'creation_date' => '创建日期',
     'never' => '从不',
@@ -2206,5 +2206,14 @@ return array(
     'kb_pending_attachments_after_save' => 'Selected files will be uploaded automatically after the knowledge entry is saved.',
     'kb_save_before_attachments' => 'Save the knowledge entry before uploading files.',
     'kb_no_attachments' => 'No attached file',
+    'hibp_safe' => 'Not compromised',
+    'hibp_pwned' => 'Compromised',
+    'settings_hibp_enabled' => 'Enable HaveIBeenPwned password check',
+    'settings_hibp_enabled_tip' => 'When enabled, passwords are checked against the HaveIBeenPwned database using k-anonymity (only 5 chars of SHA-1 hash are transmitted). Requires outbound HTTPS access.',
+    'settings_hibp_interval_days' => 'Re-check interval (days)',
+    'settings_hibp_interval_days_tip' => 'Number of days before a password is re-checked against HaveIBeenPwned. Default: 7.',
+    'settings_ldap_allowed_login_group_dn' => 'Restrict login to LDAP group (DN)',
+    'settings_ldap_allowed_login_group_dn_tip' => 'Full DN of the LDAP group whose members are allowed to log in. Leave empty for no restriction. The group can be outside the users base DN. Example: cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
+    'ldap_not_in_allowed_group' => 'Access denied: your account is not in the required LDAP group.',
 
 );
