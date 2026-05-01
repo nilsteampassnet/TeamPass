@@ -95,9 +95,44 @@ composer install --no-dev --optimize-autoloader
 TeamPass 3.2.0 moves user data from the old flat layout to the new `app/` / `storage/` structure.
 This migration **must** be done from the command line before the web-based upgrade wizard is launched.
 
+#### Before running the script — set a safe permission baseline
+
+Do **not** recursively make the whole TeamPass tree owned by, or writable by, the web server user.
+In particular, avoid commands such as:
+
+```bash
+chown -R www-data:www-data /path/to/teampass
+chmod -R 775 /path/to/teampass
+```
+
+With the 3.2.0 layout, `app/` and `public/` must remain non-writable by the web server user.
+Only runtime/configuration locations such as `storage/`, `secrets/`, `app/config/`, the CSRF configuration directory and avatars should be writable/readable as required.
+
+Before running the migration script, apply a conservative baseline so the code directories are readable/traversable but not web-writable:
+
 ```bash
 cd /path/to/teampass
-php migrate_3.2.x.php
+
+# Replace www-data if your web server/PHP-FPM runs under another user.
+WEB_USER=www-data
+
+# Keep the code roots outside of the web server write scope.
+sudo chown root:root . app public
+sudo chmod 0755 . app public
+
+# If these legacy data directories exist, ensure the migration command can read/move them.
+sudo chmod -R u+rwX files upload backups includes/config includes/avatars 2>/dev/null || true
+```
+
+> **Important:** these are only pre-migration baseline permissions.
+> The migration script prints a more precise set of `chown` / `chmod` commands at the end.
+> Apply those commands before launching the web-based upgrade wizard.
+
+Then run the migration script. Running it as `root` or with `sudo` is recommended on packaged web-server deployments, because the script needs to move existing runtime data and prepare filesystem permissions.
+
+```bash
+cd /path/to/teampass
+sudo php migrate_3.2.x.php --web-user="$WEB_USER"
 ```
 
 **Available options:**
@@ -119,13 +154,16 @@ php migrate_3.2.x.php
 3. Moves `upload/` → `storage/upload/`
 4. Moves `backups/` → `storage/backups/`
 5. Copies user avatars to `public/assets/avatars/`
-6. Adjusts file ownership and permissions for `www-data`
+6. Prepares filesystem permissions and prints the final `chown` / `chmod` commands to run for the web server user
 
 > **Tip:** Run with `--dry-run` first to preview all operations, then run again without the flag to apply them.
 
+At the end of the migration, copy and run the permission commands displayed by the script.
+They are intentionally more precise than a global recursive `chown` / `chmod`: `storage/` and `secrets/` are prepared for runtime access, while `app/` and `public/` remain protected from web-server writes.
+
 > **Important:** If the upgrade page detects that the database version is still below 3.2.0 while the code is already at 3.2.0, it will display a blocking warning and refuse to start until this script has been executed.
 
-Once the script completes successfully, refresh the upgrade page and proceed to Step 4.
+Once the script completes successfully and the displayed permission commands have been applied, refresh the upgrade page and proceed to Step 4.
 
 ---
 
