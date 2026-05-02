@@ -756,3 +756,15 @@ function updateProgressBar(currentStep, totalSteps) {
     progressBar.setAttribute('aria-valuenow', percentage);  // Update accessibility
     progressBar.textContent = percentage + '%';  // Displayed text
 }
+function cleanupAndRedirect(url) {
+    const btn = document.getElementById('btn_go_home');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
+    fetch('cleanup_install.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=cleanup'
+    }).finally(function() {
+        window.location.href = url;
+    });
+}
