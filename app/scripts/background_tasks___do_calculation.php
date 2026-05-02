@@ -152,13 +152,14 @@ foreach ($items as $item) {
     }
 
     // decrypt password
-    $password = base64_decode(doDataDecryption(
+    $password = teampassDecryptPasswordValue(
         $item['pw'],
         decryptUserObjectKey(
             $itemKey['share_key'],
             $userPrivateKey,
-        )
-    ));
+        ),
+        (int) ($item['pw_len'] ?? 0)
+    );
 
 
     $passwordLength = strlen($password);
