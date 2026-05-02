@@ -2193,7 +2193,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             'label': DOMPurify.sanitize($('#form-item-suggestion-label').val()),
             'login': DOMPurify.sanitize($('#form-item-suggestion-login').val()),
             // IMPORTANT: Do NOT sanitize passwords - they must be stored exactly as entered (fix 3.1.5.10)
-            'password': $('#form-item-suggestion-password').val(),
+            'password': encodeTransportSecret($('#form-item-suggestion-password').val()),
+            'password_is_b64': 1,
             'email': DOMPurify.sanitize($('#form-item-suggestion-email').val()),
             'url': DOMPurify.sanitize($('#form-item-suggestion-url').val()),
             'description': DOMPurify.sanitize($('#form-item-suggestion-description').summernote('code'), {USE_PROFILES: {html: true}}),
@@ -3122,6 +3123,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         return generatedPassword === null || typeof generatedPassword === 'undefined' ? '' : String(generatedPassword);
     }
 
+    function encodeTransportSecret(secretValue) {
+        const normalizedSecret = secretValue === null || typeof secretValue === 'undefined'
+            ? ''
+            : String(secretValue);
+
+        return btoa(unescape(encodeURIComponent(normalizedSecret)));
+    }
+
     function syncItemPasswordComplexity(passwordValue = null) {
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
@@ -3634,7 +3643,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     'id': store.get('teampassItem').id,
                     'label': purifyRes.arrFields['label'],
                     'login': purifyRes.arrFields['login'],
-                    'pw': $('#form-item-password').val(),
+                    'pw': encodeTransportSecret($('#form-item-password').val()),
+                    'pw_is_b64': 1,
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
                     'tags': purifyRes.arrFields['tags'],
@@ -5942,11 +5952,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $('#card-item-tags').html(html_tags);
                     }
 
-                    $(data.links_to_kbs).each(function(index, value) {
+                    $(data.links_to_kbs || []).each(function(index, value) {
                         html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
 
                     });
-                    if (html_kbs === '') {
+                    if ($('#card-item-kbs').length === 0) {
+                        // Knowledge Base is disabled or not available for this user.
+                    } else if (html_kbs === '') {
                         $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
                     } else {
                         $('#card-item-kbs').html(html_kbs);
