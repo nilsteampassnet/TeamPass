@@ -2202,6 +2202,8 @@ return array(
     'kb_comment_not_found' => 'Commentaire introuvable',
     'kb_attachment_deleted' => 'Pièce jointe de la base de connaissance supprimée',
     'kb_attachment_uploaded' => 'Pièce jointe de la base de connaissance téléversée',
+    'kb_attachment_extension_not_allowed' => 'Ce type de fichier n’est pas autorisé. Extensions autorisées : %s.',
+    'kb_attachment_zero_byte_not_allowed' => 'Les fichiers vides ne peuvent pas être téléversés.',
     'kb_delete_attachment_confirm' => 'Supprimer ce fichier joint ?',
     'kb_pending_attachments_after_save' => 'Les fichiers sélectionnés seront téléversés automatiquement après l’enregistrement de l’entrée de base de connaissance.',
     'kb_save_before_attachments' => 'Enregistrez d’abord l’entrée de base de connaissance avant de téléverser des fichiers.',
