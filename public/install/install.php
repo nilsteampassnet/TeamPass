@@ -496,18 +496,20 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										</div>
 									</div>
 									
-									<div class="alert alert-light mt-2">
-										<i><i class="fa-solid fa-circle-exclamation"></i> Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
+									<div class="alert alert-warning mt-2">
+										<i><i class="fa-solid fa-circle-exclamation"></i> For security purposes, the <code>install</code> directory will be deleted when you click the button below.
 										<br>
-										In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
+										If the warning "Install folder has to be removed!" appears at login, the operation failed and must be done manually.</i>
 									</div>
-									
+
 									<div class="alert alert-info mt-3">
 										For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
 									</div>
-									
+
 									<div class="d-grid gap-2 col-6 mx-auto mt-5">
-										<a class="btn btn-primary" href="../index.php"><i class="fa-solid fa-up-right-from-square"></i> Move to Teampass home page</a>
+										<button class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect('../index.php')">
+											<i class="fa-solid fa-up-right-from-square"></i> Move to Teampass home page
+										</button>
 									</div>
 
 								</div>

@@ -692,7 +692,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     || (isset($_GET['step']) && $_GET['step'] == 5)
     && $_SESSION['user_granted'] === '1'
 ) {
-    //ETAPE 5
+    //STEP 5
     echo '
         <h4>Finalization</h4>
         <div>
@@ -722,7 +722,8 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     || (isset($_GET['step']) && $_GET['step'] == 6)
     && $_SESSION['user_granted'] === '1'
 ) {
-    //ETAPE 5
+    // STEP 6
+    $homeUrl = ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php';
     echo '
         <h4>Upgrade is now completed</h4>
         <div class="callout callout-info mt-4">
@@ -732,12 +733,29 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         </div>
         <div class="alert alert-primary mt-4">
             <i class="far fa-lightbulb text-warning mr-2 fa-lg"></i>It is recommended to clean the cache of your Web Browser before trying to log in.
+        </div>
+        <div class="alert alert-warning mt-4">
+            <i class="fas fa-trash-alt mr-2"></i>Clicking the button below will delete the <code>install</code> directory for security purposes.
         </div>';
 
     echo '
         <div class="mt-5">
-        <a href="#" class="btn btn-primary" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php\';"><b>Open TeamPass</b></a>
-        </div>';
+        <a href="#" class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect(\''.htmlspecialchars($homeUrl, ENT_QUOTES).'\'); return false;"><b>Move to Teampass home page</b></a>
+        </div>
+        <script>
+        function cleanupAndRedirect(url) {
+            const btn = document.getElementById(\'btn_go_home\');
+            btn.disabled = true;
+            btn.innerHTML = \'<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...\';
+            fetch(\'cleanup_install.php\', {
+                method: \'POST\',
+                headers: {\'Content-Type\': \'application/x-www-form-urlencoded\'},
+                body: \'action=cleanup\'
+            }).finally(function() {
+                window.location.href = url;
+            });
+        }
+        </script>';
 }
 
 echo '

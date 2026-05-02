@@ -746,12 +746,25 @@ window.addEventListener('resize', adjustScrollableHeight);
 
 function updateProgressBar(currentStep, totalSteps) {
     const progressBar = document.getElementById('progressbar');
-    
+
     // Calculate the progress percentage
     const percentage = Math.round((currentStep / totalSteps) * 100);
-    
+
     // Update the progress bar properties
     progressBar.style.width = percentage + '%';  // Width of the bar
     progressBar.setAttribute('aria-valuenow', percentage);  // Update accessibility
     progressBar.textContent = percentage + '%';  // Displayed text
+}
+
+function cleanupAndRedirect(url) {
+    const btn = document.getElementById('btn_go_home');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
+    fetch('cleanup_install.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=cleanup'
+    }).finally(function() {
+        window.location.href = url;
+    });
 }
