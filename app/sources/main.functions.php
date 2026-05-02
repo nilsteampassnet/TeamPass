@@ -1214,8 +1214,9 @@ function prepareExchangedData($data, string $type, ?string $key = null)
                 $key
             );
         } else {
-            // Double html encoding received
-            $data = html_entity_decode(html_entity_decode(/** @scrutinizer ignore-type */$data)); // @codeCoverageIgnore Is always a string (not an array)
+            // Recover the JSON envelope without decoding literal entities inside
+            // field values such as "&lt;".
+            $data = teampassDecodeJsonPayload((string) $data);
         }
 
         // Check if $data is not empty before json_decode
@@ -3568,6 +3569,99 @@ function doDataDecryption(string $data, string $key): string
 }
 
 /**
+ * Normalize legacy passwords that were historically entity-encoded before
+ * encryption. We only decode when the decoded length matches the stored
+ * pw_len, which avoids altering legitimate new passwords such as "&lt;".
+ */
+function teampassNormalizeLegacyPassword(string $password, ?int $storedLength = null): string
+{
+    if ($password === '' || $storedLength === null || $storedLength < 0 || strpos($password, '&') === false) {
+        return $password;
+    }
+
+    $decodedPassword = html_entity_decode($password, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedPassword === $password || strlen($password) === $storedLength) {
+        return $password;
+    }
+
+    return strlen($decodedPassword) === $storedLength ? $decodedPassword : $password;
+}
+
+/**
+ * Decode an HTML-encoded JSON payload conservatively.
+ *
+ * We first try the raw payload, then one HTML entity decode, then a second
+ * decode only if JSON is still invalid. This preserves literal values such as
+ * "&lt;" inside JSON strings while still supporting request payloads that were
+ * HTML-escaped before reaching PHP.
+ */
+function teampassDecodeJsonPayload(string $data): string
+{
+    if ($data === '') {
+        return '';
+    }
+
+    $candidates = [$data];
+
+    $decodedOnce = html_entity_decode($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedOnce !== $data) {
+        $candidates[] = $decodedOnce;
+
+        $decodedTwice = html_entity_decode($decodedOnce, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($decodedTwice !== $decodedOnce) {
+            $candidates[] = $decodedTwice;
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        json_decode($candidate, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $candidate;
+        }
+    }
+
+    return end($candidates) ?: $data;
+}
+
+/**
+ * Decode a secret transported as base64 when the caller explicitly marks it
+ * as such.
+ *
+ * This keeps passwords stable even when client/server exchange encryption is
+ * disabled and the surrounding request payload passes through legacy request
+ * sanitization layers.
+ */
+function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = false): string
+{
+    if ($value === '' || $isBase64Encoded !== true) {
+        return $value;
+    }
+
+    $decodedValue = base64_decode($value, true);
+
+    return $decodedValue === false ? $value : $decodedValue;
+}
+
+/**
+ * Decrypt an item password and normalize legacy entity-encoded values when
+ * pw_len proves that the decoded form is the original one.
+ */
+function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null): string
+{
+    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey);
+    if ($decryptedB64 === '') {
+        return '';
+    }
+
+    $password = base64_decode($decryptedB64, true);
+    if ($password === false) {
+        return '';
+    }
+
+    return teampassNormalizeLegacyPassword($password, $storedLength);
+}
+
+/**
  * Encrypts using RSA a string using a public key.
  *
  * @param string $key       Key to be encrypted
@@ -5062,6 +5156,7 @@ function upgradeRequired(): bool
  * @param string $recovery_public_key
  * @param string $recovery_private_key
  * @param bool $userHasToEncryptPersonalItemsAfter
+ * @param string $finalSpecialAfterGeneration
  * @return string
  */
 function handleUserKeys(
@@ -5077,7 +5172,8 @@ function handleUserKeys(
     bool $user_self_change = false,
     string $recovery_public_key = '',
     string $recovery_private_key = '',
-    bool $userHasToEncryptPersonalItemsAfter = false
+    bool $userHasToEncryptPersonalItemsAfter = false,
+    string $finalSpecialAfterGeneration = ''
 ): string
 {
     $session = SessionManager::getSession();
@@ -5248,6 +5344,7 @@ function handleUserKeys(
                 'email_body' => $emailBody,
                 'user_self_change' => $user_self_change === true ? 1 : 0,
                 'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
+                'final_special_after_generation' => $finalSpecialAfterGeneration,
             ]),
         )
     );
