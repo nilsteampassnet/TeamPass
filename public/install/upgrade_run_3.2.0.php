@@ -104,6 +104,51 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_kb', '0')"
 );
 
+
+// Add HIBP (HaveIBeenPwned) columns to teampass_items
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'hibp_status',
+    'TINYINT(1) NOT NULL DEFAULT 0'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column hibp_status to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'hibp_count',
+    'INT NOT NULL DEFAULT 0'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column hibp_count to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$res = addColumnIfNotExist(
+    $pre . 'items',
+    'hibp_checked_at',
+    'VARCHAR(30) NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column hibp_checked_at to items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add admin settings for HIBP feature (disabled by default)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'hibp_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'hibp_check_interval_days', '7')"
+);
+
 //---------------------------------------------------------------------
 
 //---< END 3.2.X upgrade steps

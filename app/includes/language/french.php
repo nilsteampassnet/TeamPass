@@ -2206,5 +2206,11 @@ return array(
     'kb_pending_attachments_after_save' => 'Les fichiers sélectionnés seront téléversés automatiquement après l’enregistrement de l’entrée de base de connaissance.',
     'kb_save_before_attachments' => 'Enregistrez d’abord l’entrée de base de connaissance avant de téléverser des fichiers.',
     'kb_no_attachments' => 'Aucun fichier joint',
+    'hibp_safe' => 'Non compromis',
+    'hibp_pwned' => 'Compromis',
+    'settings_hibp_enabled' => 'Activer la vérification des mots de passe HaveIBeenPwned',
+    'settings_hibp_enabled_tip' => 'Lorsque activé, les mots de passe sont vérifiés dans la base HaveIBeenPwned en utilisant le k-anonymat (seuls 5 caractères du hachage SHA-1 sont transmis). Nécessite un accès HTTPS sortant.',
+    'settings_hibp_interval_days' => 'Intervalle de re-vérification (jours)',
+    'settings_hibp_interval_days_tip' => 'Nombre de jours avant qu’un mot de passe soit re-vérifié contre HaveIBeenPwned. Par défaut : 7.',
 
 );
