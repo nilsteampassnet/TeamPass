@@ -6,19 +6,19 @@ declare(strict_types=1);
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- *
+ * 
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- *
+ * 
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
+ * 
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
@@ -35,10 +35,8 @@ use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 
-// Load functions
-require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/main.functions.php';
 
-// init
 loadClasses();
 $session = SessionManager::getSession();
 $request = SymfonyRequest::createFromGlobals();
@@ -48,15 +46,13 @@ if ($session->get('key') === null) {
     die('Hacking attempt...');
 }
 
-// Load config
 $configManager = new ConfigManager();
 $SETTINGS = $configManager->getAllSettings();
 
-// Do checks
 $checkUserAccess = new PerformChecks(
     dataSanitizer(
         [
-            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
+            'type' => htmlspecialchars((string) $request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
         ],
         [
             'type' => 'trim|escape',
@@ -67,489 +63,1029 @@ $checkUserAccess = new PerformChecks(
         'user_key' => returnIfSet($session->get('key'), null),
     ]
 );
+
 echo $checkUserAccess->caseHandler();
 if (
-    $checkUserAccess->checkSession() === false ||
-    $checkUserAccess->userAccessPage('kb') === false
+    $checkUserAccess->checkSession() === false
+    || $checkUserAccess->userAccessPage('kb') === false
+    || !isset($SETTINGS['enable_kb'])
+    || (int) $SETTINGS['enable_kb'] !== 1
+    || (int) $session->get('user-admin') === 1
 ) {
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include TEAMPASS_ROOT . '/public/error.php';
     exit;
 }
 ?>
-<script type='text/javascript'>
-var userIsAdmin = <?php echo (int) $session->get('user-admin') === 1 ? 'true' : 'false'; ?>
 
-// Load article list and category filter on page ready
-$(function() {
-    loadKbCategories()
-    loadKbList(0)
+<script type="text/javascript">
+    const kbSessionKey = <?php echo json_encode((string) $session->get('key')); ?>;
+    const kbTranslations = {
+        server_answer_error: <?php echo json_encode($lang->get('server_answer_error')); ?>,
+        kb_saved: <?php echo json_encode($lang->get('kb_saved')); ?>,
+        kb_deleted: <?php echo json_encode($lang->get('kb_deleted')); ?>,
+        kb_delete_confirm: <?php echo json_encode($lang->get('kb_delete_confirm')); ?>,
+        kb_no_entries: <?php echo json_encode($lang->get('kb_no_entries')); ?>,
+        kb_direct_link_not_found: <?php echo json_encode($lang->get('kb_direct_link_not_found')); ?>,
+        kb_add_entry: <?php echo json_encode($lang->get('kb_add_entry')); ?>,
+        kb_edit_entry: <?php echo json_encode($lang->get('kb_edit_entry')); ?>,
+        kb_page_subtitle: <?php echo json_encode($lang->get('kb_page_subtitle')); ?>,
+        kb_created_by: <?php echo json_encode($lang->get('kb_created_by')); ?>,
+        kb_empty_description: <?php echo json_encode($lang->get('kb_empty_description')); ?>,
+        kb_allow_comments: <?php echo json_encode($lang->get('kb_allow_comments')); ?>,
+        kb_comments: <?php echo json_encode($lang->get('kb_comments')); ?>,
+        kb_no_comments: <?php echo json_encode($lang->get('kb_no_comments')); ?>,
+        kb_comments_closed: <?php echo json_encode($lang->get('kb_comments_closed')); ?>,
+        kb_comments_disabled: <?php echo json_encode($lang->get('kb_comments_disabled')); ?>,
+        kb_add_comment: <?php echo json_encode($lang->get('kb_add_comment')); ?>,
+        kb_comment_placeholder: <?php echo json_encode($lang->get('kb_comment_placeholder')); ?>,
+        kb_comment_help: <?php echo json_encode($lang->get('kb_comment_help')); ?>,
+        kb_comment_added: <?php echo json_encode($lang->get('kb_comment_added')); ?>,
+        kb_comment_deleted: <?php echo json_encode($lang->get('kb_comment_deleted')); ?>,
+        kb_comment_required: <?php echo json_encode($lang->get('kb_comment_required')); ?>,
+        kb_comment_too_long: <?php echo json_encode($lang->get('kb_comment_too_long')); ?>,
+        kb_comment_delete_confirm: <?php echo json_encode($lang->get('kb_comment_delete_confirm')); ?>,
+        kb_attachment_deleted: <?php echo json_encode($lang->get('kb_attachment_deleted')); ?>,
+        kb_attachment_uploaded: <?php echo json_encode($lang->get('kb_attachment_uploaded')); ?>,
+        kb_delete_attachment_confirm: <?php echo json_encode($lang->get('kb_delete_attachment_confirm')); ?>,
+        kb_save_before_attachments: <?php echo json_encode($lang->get('kb_save_before_attachments')); ?>,
+        kb_pending_attachments_after_save: <?php echo json_encode($lang->get('kb_pending_attachments_after_save')); ?>,
+        kb_no_attachments: <?php echo json_encode($lang->get('kb_no_attachments')); ?>,
+        close: <?php echo json_encode($lang->get('close')); ?>,
+        edit: <?php echo json_encode($lang->get('edit')); ?>,
+        delete: <?php echo json_encode($lang->get('delete')); ?>,
+        open: <?php echo json_encode($lang->get('open')); ?>,
+        all_fields_are_required: <?php echo json_encode($lang->get('all_fields_are_required')); ?>,
+        search_items_placeholder: <?php echo json_encode($lang->get('kb_search_items_placeholder')); ?>,
+        no_data_to_display: <?php echo json_encode($lang->get('no_data_to_display')); ?>,
+        select_files: <?php echo json_encode($lang->get('select_files')); ?>,
+        start_upload: <?php echo json_encode($lang->get('start_upload')); ?>,
+        attached_files: <?php echo json_encode($lang->get('attached_files')); ?>
+    };
 
-    // Category filter change
-    $('#kb-category-filter').on('change', function() {
-        loadKbList(parseInt($(this).val()) || 0)
-    })
+    const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
+    let kbTable = null;
+    let kbLoadedDirectId = false;
 
-    // New article button
-    $('#kb-btn-new').on('click', function() {
-        openEditModal(0)
-    })
-
-    // Trash button (admin only)
-    $('#kb-btn-trash').on('click', function() {
-        loadKbTrash()
-        $('#kb-modal-trash').modal('show')
-    })
-
-    // Save button
-    $('#kb-btn-save').on('click', function() {
-        saveArticle()
-    })
-
-    // Item search button
-    $('#kb-btn-item-search').on('click', function() {
-        searchItemsForKb()
-    })
-    $('#kb-item-search').on('keypress', function(e) {
-        if (e.which === 13) searchItemsForKb()
-    })
-})
-
-/**
- * Load category list into the filter dropdown.
- */
-function loadKbCategories() {
-    $.post('sources/kb.queries.php', {
-        type: 'get_categories',
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) return
-
-        const $select = $('#kb-category-filter')
-        $select.find('option:not(:first)').remove()
-
-        $.each(resp.categories, function(i, cat) {
-            $select.append($('<option>', { value: cat.id, text: cat.category }))
-        })
-    })
-}
-
-/**
- * Load article list, optionally filtered by category.
- *
- * @param {number} categoryId  0 = all categories
- */
-function loadKbList(categoryId) {
-    $('#kb-loading').show()
-    $('#kb-articles-body').html(
-        '<tr><td colspan="4" class="text-center text-muted" id="kb-loading"><i class="fas fa-spinner fa-spin mr-1"></i><?php echo $lang->get('loading_wait'); ?></td></tr>'
-    )
-
-    $.post('sources/kb.queries.php', {
-        type: 'get_list',
-        data: JSON.stringify({ category_id: categoryId }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        const $body = $('#kb-articles-body')
-        $body.empty()
-
-        if (resp.error === true) {
-            $body.html('<tr><td colspan="4" class="text-center text-danger"><?php echo $lang->get('error_could_not_load'); ?></td></tr>')
-            return
-        }
-
-        if (resp.articles.length === 0) {
-            $body.html('<tr><td colspan="4" class="text-center text-muted"><?php echo $lang->get('kb_no_articles'); ?></td></tr>')
-            return
-        }
-
-        $.each(resp.articles, function(i, art) {
-            let actions = '<button class="btn btn-xs btn-info mr-1 kb-btn-view" data-id="' + art.id + '" title="<?php echo $lang->get('view'); ?>"><i class="fas fa-eye"></i></button>'
-            if (art.can_edit) {
-                actions += '<button class="btn btn-xs btn-warning mr-1 kb-btn-edit" data-id="' + art.id + '" title="<?php echo $lang->get('edit'); ?>"><i class="fas fa-edit"></i></button>'
-            }
-            if (art.can_delete) {
-                actions += '<button class="btn btn-xs btn-danger kb-btn-delete" data-id="' + art.id + '" title="<?php echo $lang->get('delete'); ?>"><i class="fas fa-trash"></i></button>'
-            }
-
-            $body.append(
-                '<tr>' +
-                '<td><a href="#" class="kb-btn-view" data-id="' + art.id + '">' + art.label + '</a></td>' +
-                '<td>' + art.category + '</td>' +
-                '<td>' + art.author + '</td>' +
-                '<td class="text-right">' + actions + '</td>' +
-                '</tr>'
-            )
-        })
-
-        // Bind row actions
-        $body.find('.kb-btn-view').on('click', function(e) {
-            e.preventDefault()
-            viewArticle($(this).data('id'))
-        })
-        $body.find('.kb-btn-edit').on('click', function() {
-            openEditModal($(this).data('id'))
-        })
-        $body.find('.kb-btn-delete').on('click', function() {
-            deleteArticle($(this).data('id'))
-        })
-    })
-}
-
-/**
- * Open the edit modal. id=0 for a new article.
- *
- * @param {number} id
- */
-function openEditModal(id) {
-    $('#kb-edit-error').addClass('d-none').text('')
-    $('#kb-edit-id').val(0)
-    $('#kb-edit-label').val('')
-    $('#kb-edit-category').val('')
-    $('#kb-edit-description').val('')
-    $('#kb-edit-anyone-modify').prop('checked', false)
-
-    if (id === 0) {
-        $('#kb-modal-edit-title').text('<?php echo $lang->get('kb_new_article'); ?>')
-        $('#kb-modal-edit').modal('show')
-        return
+    function kbEncodePayload(payload) {
+        return prepareExchangedData(JSON.stringify(payload), 'encode', kbSessionKey, 'kb.queries.php', 'encode', false);
     }
 
-    $.post('sources/kb.queries.php', {
-        type: 'get_entry',
-        data: JSON.stringify({ id: id }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) return
-
-        $('#kb-modal-edit-title').text('<?php echo $lang->get('kb_edit_article'); ?>')
-        $('#kb-edit-id').val(resp.id)
-        $('#kb-edit-label').val(resp.label)
-        $('#kb-edit-category').val(resp.category)
-        $('#kb-edit-description').val(resp.description)
-        $('#kb-edit-anyone-modify').prop('checked', resp.anyone_can_modify === 1)
-        loadLinkedItemsForEdit(resp.id, resp.can_edit)
-        $('#kb-modal-edit').modal('show')
-    })
-}
-
-/**
- * Submit article create/update.
- */
-function saveArticle() {
-    const id          = parseInt($('#kb-edit-id').val()) || 0
-    const label       = $('#kb-edit-label').val().trim()
-    const category    = $('#kb-edit-category').val().trim()
-    const description = $('#kb-edit-description').val().trim()
-    const anyoneModify= $('#kb-edit-anyone-modify').is(':checked') ? 1 : 0
-
-    if (!label || !category || !description) {
-        $('#kb-edit-error').removeClass('d-none').text('<?php echo $lang->get('missing_fields'); ?>')
-        return
+    function kbDecodeResponse(response, actionName) {
+        return prepareExchangedData(response, 'decode', kbSessionKey, 'kb.queries.php', actionName, false);
     }
 
-    $('#kb-btn-save').prop('disabled', true)
+    function kbToastError(message) {
+        toastr.remove();
+        toastr.error(message || kbTranslations.server_answer_error, '', {
+            timeOut: 5000,
+            progressBar: true
+        });
+    }
 
-    $.post('sources/kb.queries.php', {
-        type: 'save_entry',
-        data: JSON.stringify({
-            id: id,
-            label: label,
-            category: category,
-            description: description,
-            anyone_can_modify: anyoneModify
-        }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        $('#kb-btn-save').prop('disabled', false)
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) {
-            $('#kb-edit-error').removeClass('d-none').text('<?php echo $lang->get('error_occurred'); ?>')
-            return
-        }
-        $('#kb-modal-edit').modal('hide')
-        toastr.success('<?php echo $lang->get('kb_article_saved'); ?>')
-        const categoryId = parseInt($('#kb-category-filter').val()) || 0
-        loadKbCategories()
-        loadKbList(categoryId)
-    })
-}
+    function kbToastSuccess(message) {
+        toastr.remove();
+        toastr.success(message, '', {
+            timeOut: 1800,
+            progressBar: true
+        });
+    }
 
-/**
- * View an article in a read-only modal.
- *
- * @param {number} id
- */
-function viewArticle(id) {
-    $.post('sources/kb.queries.php', {
-        type: 'get_entry',
-        data: JSON.stringify({ id: id }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) return
+    function kbSanitizeHtml(html) {
+        return DOMPurify.sanitize(html || '', {
+            ALLOWED_TAGS: ['a', 'br', 'p', 'ul', 'ol', 'li', 'blockquote'],
+            ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+            ALLOW_DATA_ATTR: false
+        });
+    }
 
-        $('#kb-modal-view-title').text(resp.label)
-        $('#kb-view-category').text(resp.category)
-        $('#kb-view-author').text(resp.author)
-        // Render description — use text() to avoid XSS; replace newlines for readability
-        $('#kb-view-description').text(resp.description)
-        $('#kb-view-items-section').addClass('d-none')
-        $('#kb-view-items-list').empty()
-        loadLinkedItemsForView(resp.id)
-        $('#kb-modal-view').modal('show')
-    })
-}
+    function kbEscapeHtml(value) {
+        return $('<div>').text(value || '').html();
+    }
 
-/**
- * Soft-delete an article.
- *
- * @param {number} id
- */
-function deleteArticle(id) {
-    if (!confirm('<?php echo $lang->get('confirm_deletion'); ?>')) return
-
-    $.post('sources/kb.queries.php', {
-        type: 'delete_entry',
-        data: JSON.stringify({ id: id }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) {
-            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
-            return
-        }
-        toastr.success('<?php echo $lang->get('kb_article_deleted'); ?>')
-        const categoryId = parseInt($('#kb-category-filter').val()) || 0
-        loadKbCategories()
-        loadKbList(categoryId)
-    })
-}
-
-/**
- * Load deleted articles into the trash modal.
- */
-function loadKbTrash() {
-    $('#kb-trash-body').html('<tr><td colspan="5" class="text-center text-muted"><?php echo $lang->get('loading_wait'); ?></td></tr>')
-
-    $.post('sources/kb.queries.php', {
-        type: 'get_deleted_list',
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        const $body = $('#kb-trash-body')
-        $body.empty()
-
-        if (resp.error === true || resp.articles.length === 0) {
-            $body.html('<tr><td colspan="5" class="text-center text-muted"><?php echo $lang->get('kb_no_articles'); ?></td></tr>')
-            return
+    function kbBuildSafeLink(label, href) {
+        const rawHref = (href || '').toString().trim();
+        if (rawHref === '') {
+            return kbEscapeHtml(label || '');
         }
 
-        $.each(resp.articles, function(i, art) {
-            $body.append(
-                '<tr>' +
-                '<td>' + art.label + '</td>' +
-                '<td>' + art.category + '</td>' +
-                '<td>' + art.author + '</td>' +
-                '<td>' + art.deleted_at + '</td>' +
-                '<td><button class="btn btn-xs btn-success kb-btn-restore" data-id="' + art.id + '">' +
-                '<i class="fas fa-undo mr-1"></i><?php echo $lang->get('kb_restore_article'); ?></button></td>' +
-                '</tr>'
-            )
-        })
-
-        $body.find('.kb-btn-restore').on('click', function() {
-            restoreArticle($(this).data('id'))
-        })
-    })
-}
-
-/**
- * Restore a soft-deleted article (admin only).
- *
- * @param {number} id
- */
-function restoreArticle(id) {
-    $.post('sources/kb.queries.php', {
-        type: 'restore_entry',
-        data: JSON.stringify({ id: id }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) {
-            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
-            return
+        let safeHref = rawHref;
+        if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/i.test(rawHref) === true) {
+            safeHref = 'mailto:' + rawHref;
+        } else if (/^www\./i.test(rawHref) === true) {
+            safeHref = 'https://' + rawHref;
         }
-        toastr.success('<?php echo $lang->get('kb_article_restored'); ?>')
-        loadKbTrash()
-        loadKbList(0)
-        loadKbCategories()
-        $('#kb-category-filter').val('0')
-    })
-}
 
-/**
- * Load linked items into the edit modal (called when opening an existing article).
- *
- * @param {number} kbId
- * @param {boolean} canEdit
- */
-function loadLinkedItemsForEdit(kbId, canEdit) {
-    $.post('sources/kb.queries.php', {
-        type: 'get_linked_items',
-        data: JSON.stringify({ id: kbId }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        const $list = $('#kb-edit-items-list')
-        $list.empty()
+        if (/^(https?:\/\/|mailto:)/i.test(safeHref) !== true) {
+            return kbEscapeHtml(label || rawHref);
+        }
 
-        if (resp.error === true) return
+        return '<a class="tp-kb-link" href="' + kbEscapeHtml(safeHref) + '" target="_blank" rel="noopener noreferrer">' +
+            kbEscapeHtml(label || rawHref) +
+            '</a>';
+    }
 
-        if (resp.items.length === 0) {
-            $list.html('<span class="text-muted small"><?php echo $lang->get('kb_no_linked_items'); ?></span>')
-        } else {
-            $.each(resp.items, function(i, item) {
-                let badge = '<span class="badge badge-info mr-1 mb-1">' +
-                    '<i class="fas fa-key fa-sm mr-1"></i>' + item.label +
-                    (item.folder ? ' <small class="text-light">(' + item.folder + ')</small>' : '')
-                if (canEdit) {
-                    badge += ' <a href="#" class="text-white ml-1 kb-item-remove" data-kb="' + kbId +
-                        '" data-item="' + item.item_id + '" title="<?php echo $lang->get('delete'); ?>">' +
-                        '<i class="fas fa-times"></i></a>'
+    function kbLinkifyPlainText(text) {
+        const value = (text || '').toString();
+        const pattern = /(\[([^\]\n]{1,200})\]\(((?:https?:\/\/|www\.)[^\s)<>]+|[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,})\)|((?:https?:\/\/|www\.)[^\s<]+|[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}))/ig;
+        let rendered = '';
+        let lastIndex = 0;
+        let match = null;
+
+        while ((match = pattern.exec(value)) !== null) {
+            const markdownLabel = match[2] || '';
+            const markdownHref = match[3] || '';
+            let href = markdownHref !== '' ? markdownHref : (match[4] || '');
+            let label = markdownLabel !== '' ? markdownLabel : href;
+            let trailing = '';
+
+            if (markdownHref === '') {
+                const trimmedHref = href.replace(/[.,;:!?\)\]\}>"']+$/g, '');
+                trailing = href.substring(trimmedHref.length);
+                href = trimmedHref;
+                label = href;
+            }
+
+            rendered += kbEscapeHtml(value.substring(lastIndex, match.index));
+            rendered += kbBuildSafeLink(label, href);
+            rendered += kbEscapeHtml(trailing);
+            lastIndex = match.index + match[0].length;
+        }
+
+        rendered += kbEscapeHtml(value.substring(lastIndex));
+        return rendered;
+    }
+
+    function kbDecodeHtmlEntities(text) {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = (text || '').toString();
+        return textarea.value;
+    }
+
+    function kbNormalizeLegacyPlainText(text) {
+        return kbDecodeHtmlEntities(text)
+            .replace(/<a\s+[^>]*href=(['"])(.*?)\1[^>]*>(.*?)<\/a>/ig, function(match, quote, href, label) {
+                const safeHref = kbDecodeHtmlEntities(href || '').trim();
+                const safeLabel = kbDecodeHtmlEntities(label || '').replace(/<[^>]*>/g, '').trim();
+
+                if (safeHref === '') {
+                    return safeLabel;
                 }
-                badge += '</span>'
-                $list.append(badge)
-            })
 
-            $list.find('.kb-item-remove').on('click', function(e) {
-                e.preventDefault()
-                removeItemLink($(this).data('kb'), $(this).data('item'))
+                return (safeLabel !== '' && safeLabel !== safeHref ? safeLabel + ' ' : '') + '(' + safeHref + ')';
             })
+            .replace(/<br\s*\/?>/ig, '\n')
+            .replace(/<\/p>\s*<p[^>]*>/ig, '\n\n')
+            .replace(/<\/?p[^>]*>/ig, '\n');
+    }
+
+    function kbFormatPlainText(text) {
+        const value = kbNormalizeLegacyPlainText(text).replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        if (value === '') {
+            return '';
         }
 
-        if (canEdit) {
-            $('#kb-edit-items-section').removeClass('d-none')
+        return value
+            .split(/\n{2,}/)
+            .map(function(block) {
+                const lines = block.split('\n').map(function(line) {
+                    return kbLinkifyPlainText(line);
+                });
+                return '<p>' + lines.join('<br>') + '</p>';
+            })
+            .join('\n');
+    }
+
+    function kbRenderRichContent(html, plainText) {
+        const serverHtml = (html || '').toString();
+        if (/<(?:a|br|p|ul|ol|li|blockquote)\b/i.test(serverHtml) === true) {
+            return kbSanitizeHtml(serverHtml);
+        }
+
+        return kbSanitizeHtml(kbFormatPlainText((plainText || serverHtml || '').toString()));
+    }
+
+    function kbFormatBytes(bytes) {
+        const size = parseInt(bytes || 0, 10);
+        if (!Number.isFinite(size) || size <= 0) {
+            return '';
+        }
+
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = size;
+        let unitIndex = 0;
+        while (value >= 1024 && unitIndex < units.length - 1) {
+            value /= 1024;
+            unitIndex += 1;
+        }
+
+        return value.toFixed(value >= 10 || unitIndex === 0 ? 0 : 1) + ' ' + units[unitIndex];
+    }
+
+    function kbGetSelectedFiles() {
+        const input = $('#kb-attachments-input')[0];
+        if (!input || !input.files) {
+            return [];
+        }
+
+        return Array.from(input.files);
+    }
+
+    function kbHasPendingAttachments() {
+        return kbGetSelectedFiles().length > 0;
+    }
+
+    function kbRefreshAttachmentsHelp() {
+        const kbId = parseInt($('#kb-id').val(), 10) || 0;
+        const helpText = kbHasPendingAttachments() === true && kbId === 0
+            ? kbTranslations.kb_pending_attachments_after_save
+            : kbTranslations.kb_save_before_attachments;
+
+        $('#kb-attachments-help').text(helpText);
+    }
+
+    function kbResetForm() {
+        $('#kb-id').val('0');
+        $('#kb-label').val('');
+        $('#kb-category').val('');
+        $('#kb-description').val('');
+        $('#kb-anyone-can-modify').prop('checked', false);
+        $('#kb-allow-comments').prop('checked', false);
+        $('#kb-associated-items').empty().trigger('change');
+        $('#kb-editor-title').text(kbTranslations.kb_add_entry);
+        $('#kb-editor-attachments-list').html('<div class="text-muted">' + DOMPurify.sanitize(kbTranslations.kb_no_attachments) + '</div>');
+        $('#kb-attachments-input').val('');
+        $('.custom-file-label[for="kb-attachments-input"]').text(kbTranslations.select_files);
+        kbRefreshAttachmentsHelp();
+    }
+
+    function kbHideEditor() {
+        kbResetForm();
+        $('#kb-editor-card').addClass('hidden');
+    }
+
+    function kbHideViewer() {
+        $('#kb-viewer-card').addClass('hidden');
+        $('#kb-viewer-card').data('id', 0);
+        $('#button-kb-edit-from-view').addClass('hidden').data('id', 0);
+        $('#button-kb-delete-from-view').addClass('hidden').data('id', 0);
+        $('#kb-viewer-title').text('');
+        $('#kb-viewer-category').text('');
+        $('#kb-viewer-author').text('');
+        $('#kb-viewer-comments-badge').addClass('hidden').text('');
+        $('#kb-viewer-description').html('');
+        $('#kb-viewer-comments-count').text('0');
+        $('#kb-viewer-comments-list').html('');
+        $('#kb-viewer-comments-zone').addClass('hidden');
+        $('#kb-viewer-comments-disabled').addClass('hidden');
+        $('#kb-viewer-comment-form').addClass('hidden');
+        $('#kb-comment-text').val('');
+    }
+
+    function kbAttachmentDownloadUrl(attachmentId) {
+        return 'sources/kb.queries.php?type=download_attachment&attachment_id=' + encodeURIComponent(attachmentId) + '&key=' + encodeURIComponent(kbSessionKey);
+    }
+
+    function kbRenderAssociatedItems(items) {
+        const $zone = $('#kb-viewer-items-zone');
+        const $container = $('#kb-viewer-items');
+        $container.html('');
+
+        if (!Array.isArray(items) || items.length === 0) {
+            $zone.addClass('hidden');
+            return;
+        }
+
+        items.forEach(function(item) {
+            const safeText = DOMPurify.sanitize(item.label || '', {USE_PROFILES: {html: false}});
+            const safeLink = DOMPurify.sanitize(item.link || '#', {USE_PROFILES: {html: false}});
+            $container.append('<a class="badge badge-primary tp-kb-associated-item" href="' + safeLink + '">' + safeText + '</a>');
+        });
+
+        $zone.removeClass('hidden');
+    }
+
+    function kbRenderViewerAttachments(attachments) {
+        const $zone = $('#kb-viewer-attachments-zone');
+        const $container = $('#kb-viewer-attachments');
+        $container.html('');
+
+        if (!Array.isArray(attachments) || attachments.length === 0) {
+            $zone.addClass('hidden');
+            return;
+        }
+
+        attachments.forEach(function(attachment) {
+            const safeName = DOMPurify.sanitize(attachment.name || '', {USE_PROFILES: {html: false}});
+            const safeSize = DOMPurify.sanitize(kbFormatBytes(attachment.size), {USE_PROFILES: {html: false}});
+            const safeUrl = DOMPurify.sanitize(kbAttachmentDownloadUrl(attachment.id), {USE_PROFILES: {html: false}});
+            $container.append('<a class="badge badge-secondary tp-kb-attachment-item" href="' + safeUrl + '"><i class="fa-solid fa-paperclip mr-1"></i>' + safeName + (safeSize !== '' ? ' (' + safeSize + ')' : '') + '</a>');
+        });
+
+        $zone.removeClass('hidden');
+    }
+
+    function kbRenderEditorAttachments(attachments) {
+        const kbId = parseInt($('#kb-id').val(), 10) || 0;
+        const $container = $('#kb-editor-attachments-list');
+        $container.html('');
+
+        if (!kbId) {
+            $container.html('<div class="text-muted">' + DOMPurify.sanitize(kbHasPendingAttachments() === true ? kbTranslations.kb_pending_attachments_after_save : kbTranslations.kb_save_before_attachments) + '</div>');
+            kbRefreshAttachmentsHelp();
+            return;
+        }
+
+        if (!Array.isArray(attachments) || attachments.length === 0) {
+            $container.html('<div class="text-muted">' + DOMPurify.sanitize(kbTranslations.kb_no_attachments) + '</div>');
+            kbRefreshAttachmentsHelp();
+            return;
+        }
+
+        const $list = $('<div class="list-group tp-kb-attachment-list"></div>');
+        attachments.forEach(function(attachment) {
+            const safeName = DOMPurify.sanitize(attachment.name || '', {USE_PROFILES: {html: false}});
+            const safeSize = DOMPurify.sanitize(kbFormatBytes(attachment.size), {USE_PROFILES: {html: false}});
+            const safeUrl = DOMPurify.sanitize(kbAttachmentDownloadUrl(attachment.id), {USE_PROFILES: {html: false}});
+            const $item = $(
+                '<div class="list-group-item d-flex justify-content-between align-items-center">' +
+                    '<div><a href="' + safeUrl + '"><i class="fa-solid fa-paperclip mr-1"></i>' + safeName + '</a>' + (safeSize !== '' ? '<small class="text-muted ml-2">' + safeSize + '</small>' : '') + '</div>' +
+                    '<button type="button" class="btn btn-sm btn-outline-danger kb-action-delete-attachment" data-id="' + attachment.id + '" data-kb-id="' + kbId + '"><i class="fa-solid fa-trash"></i></button>' +
+                '</div>'
+            );
+            $list.append($item);
+        });
+
+        $container.append($list);
+        kbRefreshAttachmentsHelp();
+    }
+
+    function kbRenderComments(entry) {
+        const comments = Array.isArray(entry.comments) ? entry.comments : [];
+        const allowComments = parseInt(entry.allow_comments || 0, 10) === 1;
+        const canComment = entry.can_comment === true;
+        const commentsCount = parseInt(entry.comments_count || comments.length || 0, 10) || 0;
+        const $zone = $('#kb-viewer-comments-zone');
+        const $list = $('#kb-viewer-comments-list');
+        const $disabled = $('#kb-viewer-comments-disabled');
+        const $form = $('#kb-viewer-comment-form');
+        const $badge = $('#kb-viewer-comments-badge');
+
+        $('#kb-viewer-comments-count').text(String(commentsCount));
+
+        if (commentsCount > 0 || allowComments === true) {
+            $badge.text(String(commentsCount) + ' ' + kbTranslations.kb_comments.toLowerCase()).removeClass('hidden');
         } else {
-            $('#kb-edit-items-section').addClass('d-none')
-        }
-    })
-}
-
-/**
- * Load linked items for the view modal.
- *
- * @param {number} kbId
- */
-function loadLinkedItemsForView(kbId) {
-    $.post('sources/kb.queries.php', {
-        type: 'get_linked_items',
-        data: JSON.stringify({ id: kbId }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true || resp.items.length === 0) {
-            $('#kb-view-items-section').addClass('d-none')
-            return
+            $badge.addClass('hidden').text('');
         }
 
-        const $list = $('#kb-view-items-list')
-        $list.empty()
-        $.each(resp.items, function(i, item) {
-            $list.append(
-                '<a class="badge badge-info mr-1 mb-1" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=items&id=' + item.item_id + '">' +
-                '<i class="fas fa-key fa-sm mr-1"></i>' + item.label +
-                (item.folder ? ' <small>(' + item.folder + ')</small>' : '') +
-                '</a>'
-            )
-        })
-        $('#kb-view-items-section').removeClass('d-none')
-    })
-}
-
-/**
- * Search TeamPass items by label for the KB link picker.
- */
-function searchItemsForKb() {
-    const search = $('#kb-item-search').val().trim()
-    if (search.length < 2) return
-
-    const kbId = parseInt($('#kb-edit-id').val()) || 0
-
-    $.post('sources/kb.queries.php', {
-        type: 'search_items_for_kb',
-        data: JSON.stringify({ search: search }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        const $results = $('#kb-item-search-results')
-        $results.empty()
-
-        if (resp.error === true || resp.items.length === 0) {
-            $results.html('<span class="text-muted small"><?php echo $lang->get('kb_no_items_found'); ?></span>')
-            return
+        if (comments.length === 0 && allowComments === false) {
+            $zone.addClass('hidden');
+            $list.html('');
+            $disabled.addClass('hidden');
+            $form.addClass('hidden');
+            return;
         }
 
-        $.each(resp.items, function(i, item) {
-            $results.append(
-                '<button type="button" class="btn btn-xs btn-outline-info mr-1 mb-1 kb-item-add-btn" ' +
-                'data-kb="' + kbId + '" data-item="' + item.item_id + '">' +
-                '<i class="fas fa-plus fa-sm mr-1"></i>' + item.label +
-                (item.folder ? ' <small>(' + item.folder + ')</small>' : '') +
-                '</button>'
-            )
-        })
+        $zone.removeClass('hidden');
+        $list.html('');
 
-        $results.find('.kb-item-add-btn').on('click', function() {
-            addItemLink($(this).data('kb'), $(this).data('item'))
-        })
-    })
-}
+        if (comments.length === 0) {
+            $list.html('<div class="text-muted small">' + DOMPurify.sanitize(kbTranslations.kb_no_comments) + '</div>');
+        } else {
+            comments.forEach(function(comment) {
+                const safeAuthor = DOMPurify.sanitize(comment.author || '', {USE_PROFILES: {html: false}});
+                const safeDate = DOMPurify.sanitize(comment.created_at_label || '', {USE_PROFILES: {html: false}});
+                const safeBody = kbRenderRichContent(comment.content_html || '', comment.content || '');
+                const deleteButton = comment.can_delete === true
+                    ? '<button type="button" class="btn btn-sm btn-outline-danger kb-action-delete-comment" data-id="' + comment.id + '" data-kb-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>'
+                    : '';
 
-/**
- * Link a TeamPass item to a KB article.
- *
- * @param {number} kbId
- * @param {number} itemId
- */
-function addItemLink(kbId, itemId) {
-    $.post('sources/kb.queries.php', {
-        type: 'add_item_link',
-        data: JSON.stringify({ kb_id: kbId, item_id: itemId }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) {
-            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
-            return
+                $list.append(
+                    '<div class="tp-kb-comment">' +
+                        '<div class="tp-kb-comment-header">' +
+                            '<div class="tp-kb-comment-meta">' +
+                                '<span class="tp-kb-comment-author">' + safeAuthor + '</span>' +
+                                (safeDate !== '' ? '<small class="text-muted tp-kb-comment-date">- ' + safeDate + '</small>' : '') +
+                            '</div>' +
+                            deleteButton +
+                        '</div>' +
+                        '<div class="tp-kb-comment-body tp-kb-content">' + safeBody + '</div>' +
+                    '</div>'
+                );
+            });
         }
-        $('#kb-item-search').val('')
-        $('#kb-item-search-results').empty()
-        loadLinkedItemsForEdit(kbId, true)
-    })
-}
 
-/**
- * Remove a link between a KB article and an item.
- *
- * @param {number} kbId
- * @param {number} itemId
- */
-function removeItemLink(kbId, itemId) {
-    $.post('sources/kb.queries.php', {
-        type: 'remove_item_link',
-        data: JSON.stringify({ kb_id: kbId, item_id: itemId }),
-        key: '<?php echo $session->get('key'); ?>'
-    }, function(data) {
-        const resp = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
-        if (resp.error === true) {
-            toastr.error('<?php echo $lang->get('error_occurred'); ?>')
-            return
+        if (allowComments === true && canComment === true) {
+            $form.removeClass('hidden');
+            $disabled.addClass('hidden');
+        } else {
+            $form.addClass('hidden');
+            if (comments.length > 0) {
+                $disabled.removeClass('hidden');
+            } else {
+                $disabled.addClass('hidden');
+            }
         }
-        loadLinkedItemsForEdit(kbId, true)
-    })
-}
+    }
+
+    function kbRenderViewer(entry) {
+        const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+        $('#kb-viewer-title').text(entry.label || '');
+        $('#kb-viewer-category').text(entry.category || '');
+        $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
+        $('#kb-viewer-description').html(entry.description_html || entry.description ? kbRenderRichContent(entry.description_html || '', entry.description || '') : DOMPurify.sanitize(kbTranslations.kb_empty_description));
+        kbRenderAssociatedItems(entry.associated_items || []);
+        kbRenderViewerAttachments(entry.attachments || []);
+        kbRenderComments(entry);
+        $('#kb-viewer-card').data('id', entry.id || 0);
+        if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+            $('#kb-viewer-comments-badge').text(String(commentsCount) + ' ' + kbTranslations.kb_comments.toLowerCase()).removeClass('hidden');
+        } else {
+            $('#kb-viewer-comments-badge').addClass('hidden').text('');
+        }
+
+        if (entry.can_edit === true) {
+            $('#button-kb-edit-from-view').removeClass('hidden').data('id', entry.id);
+        } else {
+            $('#button-kb-edit-from-view').addClass('hidden').data('id', 0);
+        }
+
+        if (entry.can_delete === true) {
+            $('#button-kb-delete-from-view').removeClass('hidden').data('id', entry.id);
+        } else {
+            $('#button-kb-delete-from-view').addClass('hidden').data('id', 0);
+        }
+
+        $('#kb-viewer-card').removeClass('hidden');
+    }
+
+    function kbOpenViewer(id) {
+        if (!id || id < 1) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'get_kb',
+                data: kbEncodePayload({id: id, log_view: 1}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'get_kb');
+                if (data.error === true) {
+                    kbToastError(data.message || kbTranslations.kb_direct_link_not_found);
+                    return;
+                }
+
+                kbHideEditor();
+                kbRenderViewer(data.entry || {});
+                kbLoadedDirectId = true;
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbFillEditor(entry) {
+        kbResetForm();
+        $('#kb-id').val(String(entry.id || 0));
+        $('#kb-label').val(entry.label || '');
+        $('#kb-category').val(entry.category || '');
+        $('#kb-description').val(entry.description || '');
+        $('#kb-anyone-can-modify').prop('checked', parseInt(entry.anyone_can_modify || 0, 10) === 1);
+        $('#kb-allow-comments').prop('checked', parseInt(entry.allow_comments || 0, 10) === 1);
+        $('#kb-editor-title').text((entry.id || 0) > 0 ? kbTranslations.kb_edit_entry : kbTranslations.kb_add_entry);
+
+        if (Array.isArray(entry.associated_items)) {
+            entry.associated_items.forEach(function(item) {
+                const option = new Option(item.label, item.id, true, true);
+                $('#kb-associated-items').append(option);
+            });
+        }
+        $('#kb-associated-items').trigger('change');
+        kbRenderEditorAttachments(entry.attachments || []);
+    }
+
+    function kbOpenEditor(id) {
+        kbHideViewer();
+
+        if (!id || id < 1) {
+            kbResetForm();
+            $('#kb-editor-card').removeClass('hidden');
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'get_kb',
+                data: kbEncodePayload({id: id, log_view: 0}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'get_kb');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                kbFillEditor(data.entry || {});
+                $('#kb-editor-card').removeClass('hidden');
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbDeleteEntry(id) {
+        if (!id || id < 1) {
+            return;
+        }
+
+        if (window.confirm(kbTranslations.kb_delete_confirm) !== true) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'delete_kb',
+                data: kbEncodePayload({id: id}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'delete_kb');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                kbHideViewer();
+                kbHideEditor();
+                loadKbList();
+                kbToastSuccess(kbTranslations.kb_deleted);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbUploadAttachments(kbId, onSuccess) {
+        if (!kbId || kbId < 1) {
+            kbToastError(kbTranslations.kb_save_before_attachments);
+            return;
+        }
+
+        const files = kbGetSelectedFiles();
+        if (!files.length) {
+            kbToastError(kbTranslations.no_data_to_display);
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('type', 'upload_attachment');
+        formData.append('kb_id', kbId);
+        formData.append('key', kbSessionKey);
+        files.forEach(function(file) {
+            formData.append('attachments[]', file, file.name);
+        });
+
+        $.ajax({
+            url: 'sources/kb.queries.php',
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                const data = kbDecodeResponse(response, 'upload_attachment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                $('#kb-attachments-input').val('');
+                $('.custom-file-label[for="kb-attachments-input"]').text(kbTranslations.select_files);
+                kbRefreshAttachmentsHelp();
+
+                if (data.entry && Array.isArray(data.entry.attachments)) {
+                    kbRenderEditorAttachments(data.entry.attachments);
+                } else {
+                    kbRenderEditorAttachments([]);
+                }
+
+                if (typeof onSuccess === 'function') {
+                    onSuccess(data);
+                    return;
+                }
+
+                kbToastSuccess(kbTranslations.kb_attachment_uploaded);
+            },
+            error: function() {
+                kbToastError(kbTranslations.server_answer_error);
+            }
+        });
+    }
+
+    function kbSaveEntry() {
+        const label = ($('#kb-label').val() || '').toString().trim();
+        const category = ($('#kb-category').val() || '').toString().trim();
+        const description = ($('#kb-description').val() || '').toString().trim();
+
+        if (label === '' || category === '' || description === '') {
+            kbToastError(kbTranslations.all_fields_are_required);
+            return false;
+        }
+
+        const associatedItems = ($('#kb-associated-items').val() || []).map(function(itemId) {
+            return parseInt(itemId, 10);
+        }).filter(function(itemId) {
+            return Number.isInteger(itemId) && itemId > 0;
+        });
+
+        const payload = {
+            id: parseInt($('#kb-id').val(), 10) || 0,
+            label: DOMPurify.sanitize(label, {USE_PROFILES: {html: false}}),
+            category: DOMPurify.sanitize(category, {USE_PROFILES: {html: false}}),
+            description: description,
+            anyone_can_modify: $('#kb-anyone-can-modify').is(':checked') ? 1 : 0,
+            allow_comments: $('#kb-allow-comments').is(':checked') ? 1 : 0,
+            associated_items: associatedItems
+        };
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'save_kb',
+                data: kbEncodePayload(payload),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'save_kb');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                const entryId = parseInt((data.entry && data.entry.id) ? data.entry.id : (data.id || 0), 10) || 0;
+                const finalizeSave = function(message) {
+                    kbHideEditor();
+                    loadKbList();
+                    if (entryId > 0) {
+                        kbOpenViewer(entryId);
+                    }
+                    kbToastSuccess(message || kbTranslations.kb_saved);
+                };
+
+                if (entryId > 0 && kbHasPendingAttachments() === true) {
+                    $('#kb-id').val(entryId);
+                    kbUploadAttachments(entryId, function() {
+                        finalizeSave(kbTranslations.kb_attachment_uploaded);
+                    });
+                    return;
+                }
+
+                finalizeSave(kbTranslations.kb_saved);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+
+        return false;
+    }
+
+    function kbBuildActions(entry) {
+        let html = '<button type="button" class="btn btn-sm btn-default mr-1 kb-action-view" data-id="' + entry.id + '" title="' + kbTranslations.open + '"><i class="fa-solid fa-eye"></i></button>';
+
+        if (entry.can_edit === true) {
+            html += '<button type="button" class="btn btn-sm btn-default mr-1 kb-action-edit" data-id="' + entry.id + '" title="' + kbTranslations.edit + '"><i class="fa-solid fa-pen"></i></button>';
+        }
+
+        if (entry.can_delete === true) {
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>';
+        }
+
+        return html;
+    }
+
+    function loadKbList() {
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'list_kbs',
+                data: kbEncodePayload({}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'list_kbs');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                const entries = Array.isArray(data.entries) ? data.entries : [];
+                kbTable.clear();
+
+                entries.forEach(function(entry) {
+                    const safeLabel = DOMPurify.sanitize(entry.label || '', {USE_PROFILES: {html: false}});
+                    const safeExcerpt = DOMPurify.sanitize(entry.description_excerpt || '', {USE_PROFILES: {html: false}});
+                    const safeCategory = DOMPurify.sanitize(entry.category || '', {USE_PROFILES: {html: false}});
+                    const safeAuthor = DOMPurify.sanitize(entry.author || '', {USE_PROFILES: {html: false}});
+                    const itemsCount = parseInt(entry.items_count || 0, 10) || 0;
+                    const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+                    const metaBadges = [];
+
+                    if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
+                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-comments mr-1"></i>' + commentsCount + '</span>');
+                    }
+
+                    if (itemsCount > 0) {
+                        metaBadges.push('<span class="badge badge-light border"><i class="fa-solid fa-link mr-1"></i>' + itemsCount + '</span>');
+                    }
+
+                    kbTable.row.add([
+                        '<div class="tp-kb-list-entry">' +
+                            '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
+                            (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
+                            (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
+                        '</div>',
+                        safeCategory !== '' ? '<span class="badge badge-info">' + safeCategory + '</span>' : '',
+                        safeAuthor,
+                        itemsCount,
+                        kbBuildActions(entry)
+                    ]);
+                });
+
+                kbTable.draw();
+
+                if (kbDirectId > 0 && kbLoadedDirectId === false) {
+                    kbOpenViewer(kbDirectId);
+                }
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    $(document).ready(function() {
+        kbTable = $('#table-kb-list').DataTable({
+            paging: true,
+            pageLength: 25,
+            searching: true,
+            info: true,
+            responsive: false,
+            scrollX: true,
+            autoWidth: false,
+            order: [[0, 'asc']],
+            language: {
+                url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+            },
+            columnDefs: [
+                {targets: 0, className: 'kb-col-label', width: '38%'},
+                {targets: 1, className: 'kb-col-category', width: '22%'},
+                {targets: 2, className: 'kb-col-author', width: '20%'},
+                {targets: 3, className: 'kb-col-items text-center text-nowrap', width: '90px'},
+                {targets: 4, orderable: false, searchable: false, className: 'kb-col-actions text-center text-nowrap', width: '150px'}
+            ]
+        });
+
+        $('#kb-associated-items').select2({
+            width: '100%',
+            multiple: true,
+            ajax: {
+                transport: function(params, success, failure) {
+                    $.post(
+                        'sources/kb.queries.php',
+                        {
+                            type: 'search_items',
+                            data: kbEncodePayload({term: params.data.term || ''}),
+                            key: kbSessionKey
+                        },
+                        function(response) {
+                            const data = kbDecodeResponse(response, 'search_items');
+                            success({results: data.results || []});
+                        }
+                    ).fail(failure);
+                },
+                delay: 250,
+                processResults: function(data) {
+                    return data;
+                }
+            },
+            placeholder: kbTranslations.search_items_placeholder,
+            minimumInputLength: 0
+        });
+
+        $('#kb-category').autocomplete({
+            minLength: 0,
+            source: function(request, response) {
+                $.post(
+                    'sources/kb.queries.php',
+                    {
+                        type: 'search_categories',
+                        data: kbEncodePayload({term: request.term || ''}),
+                        key: kbSessionKey
+                    },
+                    function(result) {
+                        const data = kbDecodeResponse(result, 'search_categories');
+                        response(data.categories || []);
+                    }
+                ).fail(function() {
+                    response([]);
+                });
+            }
+        }).focus(function() {
+            if ($(this).val() === '') {
+                $(this).autocomplete('search', '');
+            }
+        });
+
+        $('#kb-attachments-input').on('change', function() {
+            const files = this.files || [];
+            if (!files.length) {
+                $('.custom-file-label[for="kb-attachments-input"]').text(kbTranslations.select_files);
+                kbRefreshAttachmentsHelp();
+                return;
+            }
+
+            if (files.length === 1) {
+                $('.custom-file-label[for="kb-attachments-input"]').text(files[0].name);
+            } else {
+                $('.custom-file-label[for="kb-attachments-input"]').text(files.length + ' ' + kbTranslations.attached_files);
+            }
+
+            kbRefreshAttachmentsHelp();
+        });
+
+        kbRefreshAttachmentsHelp();
+        loadKbList();
+
+        $('#button-kb-new').on('click', function() {
+            kbOpenEditor(0);
+        });
+
+        $('#button-kb-cancel').on('click', function() {
+            kbHideEditor();
+        });
+
+        $('#button-kb-close-view').on('click', function() {
+            kbHideViewer();
+        });
+
+        $('#button-kb-edit-from-view').on('click', function() {
+            kbOpenEditor(parseInt($(this).data('id'), 10) || 0);
+        });
+
+        $('#button-kb-delete-from-view').on('click', function() {
+            kbDeleteEntry(parseInt($(this).data('id'), 10) || 0);
+        });
+
+        $('#button-kb-upload-attachments').on('click', function() {
+            const kbId = parseInt($('#kb-id').val(), 10) || 0;
+            if (kbId > 0) {
+                kbUploadAttachments(kbId);
+                return;
+            }
+
+            kbSaveEntry();
+        });
+
+        $('#button-kb-save').on('click', function() {
+            kbSaveEntry();
+        });
+
+        $('#button-kb-comment-save').on('click', function() {
+            kbAddComment();
+        });
+
+        $(document).on('click', '.kb-action-view', function(event) {
+            event.preventDefault();
+            kbOpenViewer(parseInt($(this).data('id'), 10) || 0);
+        });
+
+        $(document).on('click', '.kb-action-edit', function(event) {
+            event.preventDefault();
+            kbOpenEditor(parseInt($(this).data('id'), 10) || 0);
+        });
+
+        $(document).on('click', '.kb-action-delete', function(event) {
+            event.preventDefault();
+            kbDeleteEntry(parseInt($(this).data('id'), 10) || 0);
+        });
+
+        $(document).on('click', '.kb-action-delete-attachment', function(event) {
+            event.preventDefault();
+            kbDeleteAttachment(($(this).data('id') || '').toString(), parseInt($(this).data('kb-id'), 10) || 0);
+        });
+
+        $(document).on('click', '.kb-action-delete-comment', function(event) {
+            event.preventDefault();
+            kbDeleteComment(parseInt($(this).data('id'), 10) || 0, parseInt($(this).data('kb-id'), 10) || 0);
+        });
+    });
+
+    function kbDeleteAttachment(attachmentId, kbId) {
+        if (!attachmentId || !kbId) {
+            return;
+        }
+
+        if (window.confirm(kbTranslations.kb_delete_attachment_confirm) !== true) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'delete_attachment',
+                data: kbEncodePayload({attachment_id: attachmentId, kb_id: kbId}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'delete_attachment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                kbRenderEditorAttachments((data.entry && data.entry.attachments) ? data.entry.attachments : []);
+                kbToastSuccess(kbTranslations.kb_attachment_deleted);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbAddComment() {
+        const kbId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+        const comment = ($('#kb-comment-text').val() || '').toString().trim();
+
+        if (!kbId) {
+            return;
+        }
+        if (comment === '') {
+            kbToastError(kbTranslations.kb_comment_required);
+            return;
+        }
+        if (comment.length > 3000) {
+            kbToastError(kbTranslations.kb_comment_too_long);
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'add_comment',
+                data: kbEncodePayload({
+                    kb_id: kbId,
+                    comment: comment
+                }),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'add_comment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                $('#kb-comment-text').val('');
+                kbRenderViewer(data.entry || {});
+                kbToastSuccess(kbTranslations.kb_comment_added);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
+
+    function kbDeleteComment(commentId, kbId) {
+        if (!commentId || !kbId) {
+            return;
+        }
+
+        if (window.confirm(kbTranslations.kb_comment_delete_confirm) !== true) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'delete_comment',
+                data: kbEncodePayload({comment_id: commentId, kb_id: kbId}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'delete_comment');
+                if (data.error === true) {
+                    kbToastError(data.message);
+                    return;
+                }
+
+                kbRenderViewer(data.entry || {});
+                kbToastSuccess(kbTranslations.kb_comment_deleted);
+            }
+        ).fail(function() {
+            kbToastError(kbTranslations.server_answer_error);
+        });
+    }
 </script>
