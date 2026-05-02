@@ -539,7 +539,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
     // KB menu
-    if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1) {
+    if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && (int) $session_user_admin === 0) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '', '">
@@ -1357,7 +1357,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'kb', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
