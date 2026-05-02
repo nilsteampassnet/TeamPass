@@ -342,22 +342,12 @@ class AuthModel
         }
 
         // Add all personal folders
-        if ($hasRoles) {
-            $rows = DB::queryFirstRow(
-                'SELECT id
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE title = %i AND personal_folder = 1 AND id NOT IN %li',
-                $userInfo['id'],
-                $userFunctionId
-            );
-        } else {
-            $rows = DB::queryFirstRow(
-                'SELECT id
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE title = %i AND personal_folder = 1',
-                $userInfo['id']
-            );
-        }
+        $rows = DB::queryFirstRow(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE title = %i AND personal_folder = 1',
+            $userInfo['id']
+        );
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
             // get all descendants
