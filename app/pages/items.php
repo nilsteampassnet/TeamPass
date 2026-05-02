@@ -1245,7 +1245,7 @@ if ((int) $session_user_admin === 1) {
                                     <b><?php echo $lang->get('tags'); ?></b>
                                     <a id="card-item-tags" class="float-right ml-1"></a>
                                 </li>
-                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) : ?>
+                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) : ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('kb_menu'); ?></b>
                                     <span id="card-item-kbs" class="float-right ml-1"></span>
