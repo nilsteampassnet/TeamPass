@@ -130,6 +130,33 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
 
     /**
+     * Copy text to clipboard with fallback for non-HTTPS contexts.
+     * @param {string} text
+     * @returns {Promise<void>}
+     */
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text)
+        }
+        return new Promise(function(resolve, reject) {
+            try {
+                const ta = document.createElement('textarea')
+                ta.value = text
+                ta.style.position = 'fixed'
+                ta.style.opacity = '0'
+                document.body.appendChild(ta)
+                ta.focus()
+                ta.select()
+                document.execCommand('copy')
+                document.body.removeChild(ta)
+                resolve()
+            } catch (e) {
+                reject(e)
+            }
+        })
+    }
+
+    /**
      * Start edition lock heartbeat via AJAX.
      * Sends a renew_lock request every 60 seconds to keep the lock alive.
      */
@@ -1250,7 +1277,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             //
         } else if ($(this).data('item-action') === 'link') {
             // Add link to clipboard.
-            navigator.clipboard.writeText("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+            const itemLink = "<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id
+            copyToClipboard(itemLink)
 
             // Display message.
             toastr.remove();
@@ -5264,7 +5292,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     // Copy the password to the clipboard
-                    await navigator.clipboard.writeText(password);
+                    await copyToClipboard(password);
 
                     // User notifications
                     const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -5320,7 +5348,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     // Copy text to clipboard
-                    await navigator.clipboard.writeText(loginText);
+                    await copyToClipboard(loginText);
 
                     // Send notification to user
                     toastr.info(
@@ -6141,24 +6169,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }	
                                 if (!textToCopy) throw new Error('empty');
 
-                                // Try modern API, fallback to execCommand
-                                const fallbackCopy = () => {
-                                    const ta = document.createElement('textarea');
-                                    ta.value = textToCopy;
-                                    ta.setAttribute('readonly', '');
-                                    ta.style.position = 'absolute';
-                                    ta.style.left = '-9999px';
-                                    document.body.appendChild(ta);
-                                    ta.select();
-                                    document.execCommand('copy');
-                                    document.body.removeChild(ta);
-                                };
-                    
-                                if (navigator.clipboard && navigator.clipboard.writeText) {
-                                    await navigator.clipboard.writeText(textToCopy);
-                                } else {
-                                    fallbackCopy();
-                                }
+                                // Copy to clipboard
+                                await copyToClipboard(textToCopy);
 
                                 // Success toast
                                 toastr.remove();
@@ -6217,7 +6229,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }
 
                                 // Copy to clipboard
-                                await navigator.clipboard.writeText(password);
+                                await copyToClipboard(password);
 
                                 // Notification for the user
                                 const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -6687,7 +6699,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }
 
                                 // Copy to clipboard
-                                await navigator.clipboard.writeText(otpCode);
+                                await copyToClipboard(otpCode);
 
                                 // Send success notification
                                 toastr.info(
@@ -7164,7 +7176,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
 
                             // Copy to clipboard
-                            await navigator.clipboard.writeText(urlOtv);
+                            await copyToClipboard(urlOtv);
 
                             // Send success notification
                             toastr.info(
@@ -7224,7 +7236,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
 
                             // Copy to clipboard
-                            await navigator.clipboard.writeText(urlOtv);
+                            await copyToClipboard(urlOtv);
 
                             // Send success notification
                             toastr.info(
