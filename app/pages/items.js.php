@@ -7047,8 +7047,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         nbHistoryEvents = 0,
                         previousPasswords = '<h6 class="mb-3"><?php echo $lang->get('next_passwords_were_valid_until_date'); ?></h6>';
                     $.each(data.history, function(i, value) {
+                        const sourceBadge = value.is_api === true ? '<span class="badge badge-info ml-2 align-middle">API</span>' : ''
                         html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                            '<span class="direct-chat-name float-left">' + value.name + '</span>' +
+                            '<span class="direct-chat-name float-left">' + value.name + sourceBadge + '</span>' +
                             '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
                             '</div>' +
                             '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
