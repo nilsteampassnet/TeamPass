@@ -1399,6 +1399,47 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
 }
 
 /**
+ * Extract internal source markers from an item log reason.
+ *
+ * @param string|null $reason Reason stored in log_items.raison.
+ *
+ * @return array{reason: string, is_api: bool}
+ */
+function parseItemLogReasonSource(?string $reason): array
+{
+    $sourceMarker = 'tp_src=api';
+    $reason = $reason === null ? '' : trim($reason);
+
+    if ($reason === '') {
+        return [
+            'reason' => '',
+            'is_api' => false,
+        ];
+    }
+
+    $isApi = false;
+    $displayParts = [];
+    $parts = array_map('trim', explode('|', $reason));
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        if ($part === $sourceMarker) {
+            $isApi = true;
+            continue;
+        }
+
+        $displayParts[] = $part;
+    }
+
+    return [
+        'reason' => implode(' | ', $displayParts),
+        'is_api' => $isApi,
+    ];
+}
+
+/**
  * Permits to log events into DB
  *
  * @param array  $SETTINGS Teampass settings
@@ -1570,7 +1611,7 @@ function logItems(
     }
 
     // Timestamp the last change
-    if (in_array($action, ['at_creation', 'at_modifiation', 'at_delete', 'at_import'], true)) {
+    if (in_array($action, ['at_creation', 'at_modification', 'at_delete', 'at_import'], true)) {
         try {
             DB::update(
                 prefixTable('misc'),
@@ -1588,13 +1629,10 @@ function logItems(
     }
 
     // Prepare reason for syslog: remove internal source marker if present
-    $raisonForSyslog = $raison;
-    if ($isApiContext && $raisonForSyslog !== null) {
-        $raisonForSyslog = preg_replace('/\s*\|\s*tp_src=api\s*$/', '', (string) $raisonForSyslog);
-        $raisonForSyslog = trim((string) $raisonForSyslog);
-        if ($raisonForSyslog === '') {
-            $raisonForSyslog = null;
-        }
+    $raisonForSyslog = $raison === null ? null : (string) $raison;
+    if ($isApiContext) {
+        $parsedReason = parseItemLogReasonSource($raisonForSyslog);
+        $raisonForSyslog = $parsedReason['reason'] === '' ? null : $parsedReason['reason'];
     }
 
     // SYSLOG
