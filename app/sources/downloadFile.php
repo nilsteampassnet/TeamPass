@@ -241,6 +241,10 @@ else {
     $fileContent = '';
 
     if ($isEncrypted) {
+        // Verify user still has access even when a sharekey exists (access may have been revoked)
+        if (!userHasAccessToFile((int) $session->get('user-id'), $get_fileid)) {
+            sendError('ERROR_Not_allowed');
+        }
         // Decrypt the file with automatic v1→v3 migration
         $fileContent = decryptFile(
             $file_info['file'],
@@ -265,8 +269,12 @@ else {
         if (DB::count() === 0) {
             sendError('ERROR_No_file_found');
         }
+        // Authorization check: unencrypted files have no implicit protection
+        if (!userHasAccessToFile((int) $session->get('user-id'), $get_fileid)) {
+            sendError('ERROR_Not_allowed');
+        }
     }
-    
+
     // Prepare filename for download
     $filename = str_replace('b64:', '', $file_info['name']);
     $filename = basename($filename, '.' . $file_info['extension']);

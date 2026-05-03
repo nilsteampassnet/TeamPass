@@ -7202,6 +7202,29 @@ switch ($inputData['type']) {
         // prepare variables
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
+        // For existing items, enforce edit permission before deleting pending files
+        if ($inputData['itemId'] > 0) {
+            $itemRowDelete = DB::queryFirstRow(
+                'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $inputData['itemId']
+            );
+            if (DB::count() > 0) {
+                $deleteAccessRights = getCurrentAccessRights(
+                    (int) $session->get('user-id'),
+                    $inputData['itemId'],
+                    (int) $itemRowDelete['id_tree'],
+                    'edit'
+                );
+                if ($deleteAccessRights['edit'] !== true) {
+                    echo (string) prepareExchangedData(
+                        array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                        'encode'
+                    );
+                    break;
+                }
+            }
+        }
+
         // Delete non confirmed files for this item
         // And related logs
         $rows = DB::query(
@@ -7280,6 +7303,32 @@ switch ($inputData['type']) {
 
         // prepare variables
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        // Enforce edit permission before confirming attachments
+        $itemRow = DB::queryFirstRow(
+            'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+            $inputData['itemId']
+        );
+        if (DB::count() === 0) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+        $confirmAccessRights = getCurrentAccessRights(
+            (int) $session->get('user-id'),
+            $inputData['itemId'],
+            (int) $itemRow['id_tree'],
+            'edit'
+        );
+        if ($confirmAccessRights['edit'] !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
 
         // Confirm attachments
         $rows = DB::query(

@@ -6127,8 +6127,39 @@ function userHasAccessToFile(int $userId, int $fileId): bool
 }
 
 /**
+ * Check if a user has edit permission on a given item.
+ *
+ * @param integer $userId
+ * @param integer $itemId
+ * @return boolean
+ */
+function userCanEditItem(int $userId, int $itemId): bool
+{
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $itemId
+    );
+    if (DB::count() === 0) {
+        return false;
+    }
+
+    // items.queries.php has top-level init code (echo, switch) for its own entry-point context.
+    // Buffer its output to avoid corrupting the upload response.
+    ob_start();
+    include_once __DIR__ . '/items.queries.php';
+    ob_end_clean();
+    $access = getCurrentAccessRights(
+        $userId,
+        $itemId,
+        (int) $item['id_tree'],
+        'edit'
+    );
+    return $access['edit'] === true;
+}
+
+/**
  * Check if a user has access to a backup file
- * 
+ *
  * @param integer $userId
  * @param string $file
  * @param string $key

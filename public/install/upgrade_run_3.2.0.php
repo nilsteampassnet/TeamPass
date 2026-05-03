@@ -167,6 +167,32 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Migrate path_to_upload_folder and path_to_files_folder to storage/ subdirectories
+// if they still point to the old root-level locations ({root}/upload and {root}/files).
+$row = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_dir'"));
+if ($row && !empty($row['valeur'])) {
+    $cpassmanDir = rtrim((string) $row['valeur'], '/');
+
+    $rowUpload = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_upload_folder'"));
+    if ($rowUpload && strpos((string) $rowUpload['valeur'], '/storage/upload') === false) {
+        mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($cpassmanDir . '/storage/upload') . "' WHERE type='admin' AND intitule='path_to_upload_folder'");
+    }
+
+    $rowFiles = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_files_folder'"));
+    if ($rowFiles && strpos((string) $rowFiles['valeur'], '/storage/files') === false) {
+        mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($cpassmanDir . '/storage/files') . "' WHERE type='admin' AND intitule='path_to_files_folder'");
+    }
+
+    $rowUrl = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='url_to_files_folder'"));
+    if ($rowUrl && strpos((string) $rowUrl['valeur'], '/storage/files') === false) {
+        $rowCpassmanUrl = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_url'"));
+        if ($rowCpassmanUrl && !empty($rowCpassmanUrl['valeur'])) {
+            $newUrl = rtrim((string) $rowCpassmanUrl['valeur'], '/') . '/storage/files';
+            mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($newUrl) . "' WHERE type='admin' AND intitule='url_to_files_folder'");
+        }
+    }
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

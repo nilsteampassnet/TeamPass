@@ -224,6 +224,17 @@ header('Cache-Control: post-check=0, pre-check=0', false);
 
 $targetDir = $SETTINGS['path_to_upload_folder'];
 
+// Permission check for existing items — done here, before the temp file is deleted below.
+if (
+    $post_type_upload === 'item_attachments'
+    && (int) ($post_isNewItem ?? 1) === 0
+    && !empty($post_itemId)
+) {
+    if (!userCanEditItem((int) $session->get('user-id'), (int) $post_itemId)) {
+        handleAttachmentError('Not allowed to modify this item.', 403, 403);
+    }
+}
+
 $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
 $MAX_FILENAME_LENGTH = 260;
