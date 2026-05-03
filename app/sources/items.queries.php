@@ -6849,10 +6849,12 @@ switch ($inputData['type']) {
             '"at_shown","at_password_copied", "at_shown", "at_password_shown", "at_password_shown_edit_form"'
         );
         foreach ($rows as $record) {
-            if (empty($record['raison']) === true) {
-                $reason[0] = '';
-            } else {
-                $reason = array_map('trim', explode(':', $record['raison']));
+            $parsedReason = parseItemLogReasonSource(isset($record['raison']) === true ? (string) $record['raison'] : null);
+            $record['raison'] = $parsedReason['reason'];
+            $isApiSource = $parsedReason['is_api'];
+            $reason = [''];
+            if (empty($record['raison']) === false) {
+                $reason = array_map('trim', explode(':', (string) $record['raison']));
             }
             
             // imported via API
@@ -6932,8 +6934,8 @@ switch ($inputData['type']) {
                     $detail = $reason[0];
                 }
             } else {
-                $detail = $lang->get($record['action']);
-                $action = '';
+                $action = $lang->get($record['action']);
+                $detail = '';
             }
 
             array_push(
@@ -6945,6 +6947,7 @@ switch ($inputData['type']) {
                     'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])),
                     'action' => $action,
                     'detail' => $detail,
+                    'is_api' => $isApiSource,
                 )
             );
         }
