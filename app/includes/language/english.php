@@ -2175,7 +2175,7 @@ return array(
     'settings_show_corrupted_items_in_list' => 'Highlight corrupted items in items list',
     'settings_show_corrupted_items_in_list_tip' => 'When enabled, users will see corrupted items highlighted in the items list.',
     'hibp_safe' => 'Not compromised',
-    'hibp_pwned' => 'Compromised',
+    'hibp_pwned' => 'Password is compromised - You should change it. Pwned %s times.',
     'settings_hibp_enabled' => 'Enable HaveIBeenPwned password check',
     'settings_hibp_enabled_tip' => 'When enabled, passwords are checked against the HaveIBeenPwned database using k-anonymity (only 5 chars of SHA-1 hash are transmitted). Requires outbound HTTPS access.',
     'settings_hibp_interval_days' => 'Re-check interval (days)',

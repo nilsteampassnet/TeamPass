@@ -78,15 +78,6 @@ git pull
 > `includes/config/`, `includes/avatars/`) are listed in `.gitignore`.
 > If you have any doubt, use Option A instead.
 
-#### Install Composer dependencies
-
-> Not required, as the libraries are included in the GitHub project.
-
-```bash
-cd /path/to/teampass
-composer install --no-dev --optimize-autoloader
-```
-
 ---
 
 ### Step 3 — Run the filesystem migration script (3.2.0 only)

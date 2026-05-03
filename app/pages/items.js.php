@@ -5814,15 +5814,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // an other tab or window)
                     $('#items-details-container').data('id', data.id);
 
-                    // Prepare card
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
 
                     // HIBP badge — show cached status and trigger async re-check if needed
-                    $('#item-hibp-badge').html('')
                     const hibpApp = store.get('teampassApplication') || {}
-                    console.info(hibpApp)
-                    console.info(hibpApp.hibpEnabled)
                     if (hibpApp.hibpEnabled === 1) {
                         _showHibpBadge(data.hibp_status, data.hibp_count)
                         const hibpAge = data.hibp_checked_at ? (Date.now() / 1000) - parseInt(data.hibp_checked_at) : Infinity
@@ -5854,12 +5850,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $pwBadge
                             .removeClass('hidden badge-danger')
                             .addClass('badge-success')
-                            .html('<i class="fa-solid fa-shield-halved mr-1"></i><?php echo $lang->get('secure'); ?>')
+                            .html('<i class="fa-solid fa-shield mr-1 infotip" title="<?php echo $lang->get('secure'); ?>"></i>')
                     } else if (data.pw_is_secure === false) {
                         $pwBadge
                             .removeClass('hidden badge-success')
                             .addClass('badge-danger')
-                            .html('<i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('not_secure'); ?>')
+                            .html('<i class="fa-solid fa-shield-halved mr-1" infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
                     } else {
                         $pwBadge.addClass('hidden').removeClass('badge-success badge-danger')
                     }
@@ -8089,12 +8085,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function _showHibpBadge(status, count) {
         let html = ''
-        if (status === 1) {
-            html = '<span class="badge badge-success"><i class="fas fa-shield-alt mr-1"></i><?php echo addslashes($lang->get('hibp_safe')); ?></span>'
-        } else if (status === 2) {
-            html = '<span class="badge badge-danger"><i class="fas fa-exclamation-triangle mr-1"></i><?php echo addslashes($lang->get('hibp_pwned')); ?> (' + (count || 0) + '&times;)</span>'
+        if (status === 2) {
+            html = '<span class="badge badge-warning"><i class="fas fa-unlock-keyhole mr-1 infotip" title="' + '<?php echo addslashes($lang->get('hibp_pwned')); ?>'.replace('%s', count) + '"></i></span>';
+            $('#item-hibp-badge')
+                .html(html)
+                .removeClass('hidden');
+            return;
         }
-        $('#item-hibp-badge').html(html)
+        
+        $('#item-hibp-badge').html(html).addClass('hidden');        
     }
 
     /**

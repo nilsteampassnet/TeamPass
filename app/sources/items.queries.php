@@ -7566,7 +7566,7 @@ switch ($inputData['type']) {
             foreach ($hibpUserKeys as $hibpKey) {
                 $hibpObjectKey = decryptUserObjectKey($hibpKey['share_key'], $session->get('user-private_key'));
                 if (!empty($hibpObjectKey)) {
-                    $hibpPw = doDataDecryption($hibpItem['pw'], $hibpObjectKey);
+                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey));
                     break;
                 }
             }
