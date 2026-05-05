@@ -3474,32 +3474,29 @@ switch ($inputData['type']) {
                         'title' => $record['title'],
                     )
                 );
-                $rows2 = DB::query(
-                    'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname, ur.role_id AS fonction_id
+            }
+
+            // Batch-load all users for all folder roles in a single query instead of one per role.
+            if (!empty($listOptionsForRoles)) {
+                $roleIds = array_column($listOptionsForRoles, 'id');
+                $allRoleUsers = DB::query(
+                    'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
                     FROM ' . prefixTable('users') . ' AS u
                     INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    WHERE ur.role_id = %i AND ur.source = %s',
-                    $record['role_id'],
+                    WHERE ur.role_id IN %ls AND ur.source = %s',
+                    $roleIds,
                     'manual'
                 );
-
-                foreach ($rows2 as $record2) {
-                    foreach (explode(';', $record2['fonction_id']) as $role) {
-                        if (
-                            array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
-                            && $role === $record['role_id']
-                        ) {
-                            array_push(
-                                $listOptionsForUsers,
-                                array(
-                                    'id' => intval($record2['id']),
-                                    'login' => $record2['login'],
-                                    'name' => strval($record2['name']) . ' ' . strval($record2['lastname']),
-                                    'email' => $record2['email'],
-                                )
-                            );
-                        }
-                    }
+                foreach ($allRoleUsers as $user) {
+                    array_push(
+                        $listOptionsForUsers,
+                        array(
+                            'id' => intval($user['id']),
+                            'login' => $user['login'],
+                            'name' => strval($user['name']) . ' ' . strval($user['lastname']),
+                            'email' => $user['email'],
+                        )
+                    );
                 }
             }
 
@@ -4290,11 +4287,13 @@ switch ($inputData['type']) {
                     }
                 }
 
-                // Batch: get all role restrictions for these items
+                // Batch: get all role restrictions for these items.
+                // INNER JOIN with roles_title filters out orphaned entries from deleted roles.
                 $roleRestrictions = DB::query(
-                    'SELECT item_id, role_id
-                    FROM ' . prefixTable('restriction_to_roles') . '
-                    WHERE item_id IN %ls',
+                    'SELECT r.item_id, r.role_id
+                    FROM ' . prefixTable('restriction_to_roles') . ' AS r
+                    INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
+                    WHERE r.item_id IN %ls',
                     $allItemIds
                 );
                 $userRolesArray = $session->get('user-roles_array');
@@ -4345,19 +4344,9 @@ switch ($inputData['type']) {
                         $record['perso'] = 1;
                     }
 
-                    // Does this item has restriction to groups of users?
-                    // Use INNER JOIN to exclude orphaned entries from deleted roles
-                    $item_is_restricted_to_role = false;
-                    DB::queryFirstRow(
-                        'SELECT r.role_id
-                        FROM ' . prefixTable('restriction_to_roles') . ' AS r
-                        INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
-                        WHERE r.item_id = %i',
-                        $record['id']
-                    );
-                    if (DB::count() > 0) {
-                        $item_is_restricted_to_role = true;
-                    }
+                    // Does this item have a restriction to groups of users?
+                    // Use batch pre-fetched data (already INNER JOIN'd with roles_title to exclude orphaned roles).
+                    $item_is_restricted_to_role = isset($batchRestrictedToRoles[$record['id']]);
 
                     // Has this item a restriction to Groups of Users (batch pre-fetched)
                     $user_is_included_in_role = isset($batchUserIncludedInRole[$record['id']]);
@@ -4879,35 +4868,32 @@ switch ($inputData['type']) {
                     'title' => $record['title'],
                 )
             );
-            $rows2 = DB::query(
-                'SELECT u.id, u.login, u.email, u.name, u.lastname,
-                GROUP_CONCAT(DISTINCT ur.role_id ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+        }
+
+        // Batch-load all users for all folder roles in a single query instead of one per role.
+        if (!empty($listOptionsForRoles)) {
+            $roleIds = array_column($listOptionsForRoles, 'id');
+            $allRoleUsers = DB::query(
+                'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
                 FROM ' . prefixTable('users') . ' AS u
                 INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                WHERE u.admin = 0 AND ur.source = %s
-                GROUP BY u.id, u.login, u.email, u.name, u.lastname',
+                WHERE u.admin = 0 AND ur.role_id IN %ls AND ur.source = %s',
+                $roleIds,
                 'manual'
             );
-            foreach ($rows2 as $record2) {
-                foreach (explode(';', $record2['fonction_id']) as $role) {
-                    if (
-                        array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
-                        && $role === $record['role_id']
-                    ) {
-                        array_push(
-                            $listOptionsForUsers,
-                            array(
-                                'id' => $record2['id'],
-                                'login' => $record2['login'],
-                                'name' => strval($record2['name']) . ' ' . strval($record2['lastname']),
-                                'email' => $record2['email'],
-                            )
-                        );
-                    }
-                }
+            foreach ($allRoleUsers as $user) {
+                array_push(
+                    $listOptionsForUsers,
+                    array(
+                        'id' => $user['id'],
+                        'login' => $user['login'],
+                        'name' => strval($user['name']) . ' ' . strval($user['lastname']),
+                        'email' => $user['email'],
+                    )
+                );
             }
         }
-        
+
         // Get access level for this folder
         $accessLevel = 0;
         if ($folder_is_personal === 0) {

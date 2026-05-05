@@ -2891,6 +2891,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
+            // Highlight the selected row persistently
+            $('#teampass_items_list tr').removeClass('item-selected')
+            $(this).closest('tr').addClass('item-selected')
             resetItemDetailSkeleton();
 
             // Apply full layout switch immediately so skeleton is visible in the right position
@@ -2909,7 +2912,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#items-list-container').removeClass('col-md-4').addClass('col-md-7 hidden');
                 $('#items-details-container').removeClass('col-md-5').addClass('col-md-12');
             }
-            $('#items-details-container').removeClass('hidden');
+            const $detailPanel = $('#items-details-container')
+            const wasHidden = $detailPanel.hasClass('hidden')
+            $detailPanel.removeClass('hidden')
+            if (wasHidden) {
+                // Trigger slide-in animation only when the panel first appears
+                $detailPanel.removeClass('tp-panel-appearing')
+                void $detailPanel[0].offsetWidth // force reflow to restart animation
+                $detailPanel.addClass('tp-panel-appearing')
+            }
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
@@ -4850,7 +4861,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             query_in_progress = groupe_id;
             if (start == 0) {
                 //clean form
-                $('#teampass_items_list, #items_folder_path').html('');
+                $('#items_folder_path').html('');
+                // Show skeleton rows while items load so the list is never blank
+                let skeletonRows = ''
+                for (let i = 0; i < 8; i++) {
+                    skeletonRows +=
+                        '<tr class="tp-skeleton-row"><td class="list-item-description px-3 py-2">' +
+                        '<span class="skeleton-line skeleton-sm mr-2"></span>' +
+                        '<span class="skeleton-line skeleton-lg"></span>' +
+                        '<span class="d-block mt-1"><span class="skeleton-line skeleton-md"></span></span>' +
+                        '</td></tr>'
+                }
+                $('#teampass_items_list').html(skeletonRows)
             }
 
             store.update(
@@ -4908,6 +4930,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // reset doubleclick prevention
                     requestRunning = false;
                     startedItemsListQuery = false;
+
+                    // Remove skeleton placeholder rows — the real content (or error) is now available
+                    $('#teampass_items_list .tp-skeleton-row').remove()
 
                     // manage not allowed
                     if (data.error === true) {

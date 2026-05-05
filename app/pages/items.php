@@ -1062,12 +1062,16 @@ if ((int) $session_user_admin === 1) {
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
+                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i>Sub-folders</th></tr></thead>
                             <tbody id="teampass_subfolders_list">
-                                <tr><td colspan="100%" class="text-center"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-lg"></span></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-md"></span></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-sm"></span></td></tr>
                             </tbody>
                         </table>
 
                         <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
+                            <thead><tr><th><i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?></th></tr></thead>
                             <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->
@@ -1139,6 +1143,40 @@ if ((int) $session_user_admin === 1) {
             background-size: 200% 100%;
             animation: tp-shimmer 1.4s ease-in-out infinite;
             border-radius: 3px;
+        }
+
+        /* Persistent highlight on the currently selected item row */
+        #teampass_items_list tr.item-selected td {
+            background-color: rgba(0, 123, 255, 0.07) !important;
+            box-shadow: inset 3px 0 0 #007bff;
+        }
+
+        /* Fade-in animation when the detail panel first appears */
+        @keyframes tp-panel-fadein {
+            from { opacity: 0; transform: translateX(12px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        #items-details-container.tp-panel-appearing {
+            animation: tp-panel-fadein 180ms ease-out forwards;
+        }
+
+        /* Section headers distinguishing sub-folders from items */
+        #table_teampass_subfolders_list thead th,
+        #table_teampass_items_list thead th {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            padding: 4px 10px;
+            background-color: #f8f9fa;
+        }
+        #table_teampass_subfolders_list thead th {
+            color: #856404;
+            border-bottom: 2px solid #ffc107 !important;
+        }
+        #table_teampass_items_list thead th {
+            color: #0056b3;
+            border-bottom: 2px solid #007bff !important;
         }
         </style>
 
