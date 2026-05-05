@@ -1122,6 +1122,24 @@ if ((int) $session_user_admin === 1) {
         .skeleton-lg    { width: 200px; }
         .skeleton-xl    { width: 280px; }
         .skeleton-title { width: 240px; height: 1.3em; }
+        .skeleton-input {
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%) !important;
+            background-size: 200% 100% !important;
+            animation: tp-shimmer 1.4s ease-in-out infinite !important;
+            color: transparent !important;
+            border-color: transparent !important;
+            box-shadow: none !important;
+            border-radius: 3px !important;
+            pointer-events: none;
+        }
+        .skeleton-block {
+            display: block;
+            width: 100%;
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: tp-shimmer 1.4s ease-in-out infinite;
+            border-radius: 3px;
+        }
         </style>
 
         <div id="items-details-container" class="col-md-5 overflow-auto hidden">

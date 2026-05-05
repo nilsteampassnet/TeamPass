@@ -1053,17 +1053,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
 
-            // Launch both requests in parallel: privileges check and password fetch
+            // Capture previous view before the skeleton hides/shows panels
+            savePreviousView();
+            // Fields are already populated by Details('show') — only clear password
+            resetEditFormSkeleton(false);
+
+            // Launch both requests in parallel: privileges check and password fetch.
+            // Password is applied as soon as it resolves — independently of privileges.
             const _pwdPromise = getItemPassword(
                 'at_password_shown_edit_form',
                 'item_id',
                 store.get('teampassItem').id
             );
-            $.when(
-                getPrivilegesOnItem(item_tree_id, 1, 'item_edit_current_folder'),
-                _pwdPromise
-            ).then(function(retData, _pwdResult) {
-                const _prefetchedPassword = Array.isArray(_pwdResult) ? _pwdResult[0] : _pwdResult;
+
+            // Apply password the moment it is decrypted, without waiting for privileges.
+            _pwdPromise.then(function(item_pwd) {
+                loadPasswordIntoEditForm(Promise.resolve(item_pwd), store.get('teampassItem').id);
+            });
+
+            // Apply form setup once privileges are confirmed (independent of password).
+            getPrivilegesOnItem(item_tree_id, 1, 'item_edit_current_folder').then(function(retData) {
                 if (retData.error === true) {
                     toastr.remove();
                     toastr.error(
@@ -1073,10 +1082,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
-
                     requestRunning = false;
-
-                    // Finished
+                    // Revert skeleton form visibility on error
+                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
+                    $(store.get('teampassUser').previousView).removeClass('hidden');
                     return false;
                 }
 
@@ -1090,11 +1099,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
+                    // Revert skeleton form visibility on error
+                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
+                    $(store.get('teampassUser').previousView).removeClass('hidden');
                     return false;
                 }
-
-                // Store current view
-                savePreviousView();
 
                 // Store not a new item
                 store.update(
@@ -1107,12 +1116,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Remove validated class
                 $('#form-item').removeClass('was-validated');
 
-                // Now manage edition using the folder resolved by backend.
+                // Apply folder/visibility/complexity/custom-fields.
+                // Password is already being handled by the independent _pwdPromise.then() above.
                 showItemEditForm(
                     retData.folderId !== undefined && retData.folderId !== ''
                         ? parseInt(retData.folderId, 10)
                         : item_tree_id,
-                    _prefetchedPassword
+                    null,
+                    true  // skipPassword — already wired up independently
                 );
             });
 
@@ -2815,6 +2826,40 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
+     * Reset the edit form to skeleton state before async data arrives.
+     * Shows the form immediately with shimmer placeholders.
+     *
+     * @param {boolean} clearFields  true  = Chemin 1 (pencil from list): fields not yet loaded,
+     *                                       replace them with skeleton bars.
+     *                               false = Chemin 2 (Edit button from detail view): fields are
+     *                                       already populated by Details('show'), keep them as-is.
+     */
+    function resetEditFormSkeleton(clearFields) {
+        if (clearFields) {
+            // Title placeholder in card header
+            $('#form-item-title').html('<span class="skeleton-line skeleton-title"></span>');
+            // Skeleton shimmer on main input fields
+            $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                .val('').addClass('skeleton-input');
+            // Description: show a tall skeleton block while editor initialises
+            $('#form-item-description').html(
+                '<div class="skeleton-block" style="height:80px;"></div>'
+            );
+        }
+        // Always clear password field and show its dedicated spinner
+        $('#form-item-password').val('').attr('placeholder', '');
+        $('#form-item-password-loader').removeClass('hidden');
+        // Reset form-level state
+        userDidAChange = false;
+        $('#form-item').removeClass('was-validated');
+        // Show the form immediately (same show/hide logic as showItemEditForm)
+        $('.form-item, #form-item-attachments-zone').removeClass('hidden');
+        $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+            .addClass('hidden');
+        $('#but_back_top_left, #but_back_top_right').addClass('hidden');
+    }
+
+    /**
      * Click on button with class but-navigate-item
      */
     $(document)
@@ -2874,15 +2919,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            // Capture previous view before the skeleton hides/shows panels
+            savePreviousView();
+            // Fields not yet loaded — show skeleton bars on all inputs
+            resetEditFormSkeleton(true);
 
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
 
-            // Hide top back buttons
-            $('#but_back_top_left, #but_back_top_right').addClass('hidden');
-            
             // Load item info
             Details($(this).closest('tr'), 'edit');
         })
@@ -4141,7 +4186,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
-    function showItemEditForm(selectedFolderId, prefetchedPassword) {
+    function showItemEditForm(selectedFolderId, prefetchedPassword, skipPassword = false) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
         // Reset item
         store.update(
@@ -4161,6 +4206,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
             );
         } else {
+            // Remove skeleton state set by resetEditFormSkeleton() (chemin 2: edit from detail view)
+            $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                .removeClass('skeleton-input');
+
             // Set selected folder id.
             // getPrivilegesOnItem already called get_complixity_level and populated
             // the store with fresh visibility/complexity — read from it directly.
@@ -4210,11 +4259,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             toastr.remove();
 
             // Show loading state in password field and apply password asynchronously.
-            // Pass the pre-fetched promise when available (parallel fetch), or null to start fresh.
-            const _prefetchedPromise = (prefetchedPassword !== undefined && prefetchedPassword !== null)
-                ? Promise.resolve(prefetchedPassword)
-                : null;
-            loadPasswordIntoEditForm(_prefetchedPromise, store.get('teampassItem').id);
+            // skipPassword = true when the caller already wired up loadPasswordIntoEditForm
+            // independently (Chemin 2 decoupled path) to avoid a redundant fetch.
+            if (!skipPassword) {
+                const _prefetchedPromise = (prefetchedPassword !== undefined && prefetchedPassword !== null)
+                    ? Promise.resolve(prefetchedPassword)
+                    : null;
+                loadPasswordIntoEditForm(_prefetchedPromise, store.get('teampassItem').id);
+            }
         }
         //});
     }
@@ -5604,9 +5656,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
 
-            // Store current view
-            savePreviousView();
-            
+            // Store current view — for 'edit' it was already captured before the skeleton was shown
+            if (actionType !== 'edit') {
+                savePreviousView();
+            }
+
             if (debugJavascript === true) console.log("Request is running: " + requestRunning)
 
             // Store status query running
@@ -5648,6 +5702,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // do
             $('#card-item-password-history-button').addClass('hidden');
+
+            // For edit: pre-update store so parallel getPrivilegesOnItem uses the correct item ID,
+            // then start it immediately in parallel with show_details_item.
+            if (actionType === 'edit' && itemId) {
+                store.update('teampassItem', function(teampassItem) {
+                    teampassItem.id = parseInt(itemId);
+                    teampassItem.tree_id = parseInt(itemTreeId);
+                });
+            }
+            const _editPrivilegesPromise = (actionType === 'edit')
+                ? getPrivilegesOnItem(itemTreeId, 1, 'item_edit_current_folder')
+                : null;
 
             // Prepare data to be sent
             var data = {
@@ -5935,6 +6001,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // Store current item id in the DOM (cannot be updated in
                     // an other tab or window)
                     $('#items-details-container').data('id', data.id);
+
+                    // Remove skeleton state set by resetEditFormSkeleton() before populating fields
+                    if (actionType === 'edit') {
+                        $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                            .removeClass('skeleton-input');
+                    }
 
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
@@ -6634,11 +6706,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 if (actionType === 'show') {
                     loadItemHistory(store.get('teampassItem').id);
                 } else if (actionType === 'edit') {
-                    const currentItemFolderId = parseInt(data.folder, 10) || parseInt(store.get('teampassItem').tree_id, 10) || 0;
-
-                    $.when(
-                        getPrivilegesOnItem(currentItemFolderId, 1, 'item_edit_current_folder')
-                    ).then(function(retData) {
+                    // _editPrivilegesPromise was started in parallel with show_details_item.
+                    // Wait for it here — show_details_item has now updated the store, so
+                    // re-applying restriction selection below will use the correct values.
+                    $.when(_editPrivilegesPromise).then(function(retData) {
                         if (debugJavascript === true) {
                             console.log('getPrivilegesOnItem 3');
                             console.log(retData);
@@ -6661,6 +6732,23 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             if (retData.folderId !== undefined && retData.folderId !== '') {
                                 $('#form-item-folder').val(String(retData.folderId));
                             }
+
+                            // Re-apply restriction selection: getPrivilegesOnItem may have run before
+                            // show_details_item updated the store, so enforce correct values now.
+                            const _restrictedUsers = store.get('teampassItem').id_restricted_to;
+                            const _restrictedRoles  = store.get('teampassItem').id_restricted_to_roles;
+                            const _selectedValues = [];
+                            if (Array.isArray(_restrictedUsers)) {
+                                _restrictedUsers.forEach(function(uid) { if (uid) _selectedValues.push(String(uid)); });
+                            } else if (_restrictedUsers) {
+                                String(_restrictedUsers).split(';').forEach(function(uid) { if (uid) _selectedValues.push(uid); });
+                            }
+                            if (Array.isArray(_restrictedRoles)) {
+                                _restrictedRoles.forEach(function(rid) { if (rid) _selectedValues.push('role_' + rid); });
+                            } else if (_restrictedRoles) {
+                                String(_restrictedRoles).split(';').forEach(function(rid) { if (rid) _selectedValues.push('role_' + rid); });
+                            }
+                            $('#form-item-restrictedto').val(_selectedValues).trigger('change');
 
                             // Retrieve the password and synchronize the complexity meter
                             getItemPassword(
