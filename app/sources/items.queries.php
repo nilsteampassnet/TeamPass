@@ -4154,14 +4154,17 @@ switch ($inputData['type']) {
                 );
                 break;
             } else {
-                $counter = intval(DB::queryFirstField(
+                $counter = (int) DB::queryFirstField(
                     'SELECT COUNT(*)
                     FROM ' . prefixTable('items') . '
-                    WHERE inactif = %i AND id_tree = %i',
+                    WHERE inactif = %i AND id_tree = %i AND deleted_at IS NULL',
                     0,
                     $inputData['id']
-                ));
+                );
+                // Store counter_full here to avoid a second query later
+                $counter_full = $counter;
                 $uniqueLoadData['counter'] = $counter;
+                $uniqueLoadData['counter_full'] = $counter_full;
             }
 
             // Get folder complexity
@@ -4304,26 +4307,23 @@ switch ($inputData['type']) {
                     }
                 }
 
-                // Batch: get expiration dates (most recent between creation and last pw modification)
+                // Batch: get the most recent relevant date per item (creation or last pw change)
                 $logRows = DB::query(
-                    'SELECT id_item, date
+                    'SELECT id_item, MAX(date) AS date
                     FROM ' . prefixTable('log_items') . '
                     WHERE id_item IN %ls
                     AND (
                         action = %s
                         OR (action = %s AND raison = %s)
                     )
-                    ORDER BY date DESC',
+                    GROUP BY id_item',
                     $allItemIds,
                     'at_creation',
                     'at_modification',
                     'at_pw'
                 );
                 foreach ($logRows as $logRow) {
-                    // Keep only the most recent date per item
-                    if (!isset($batchExpirationDates[$logRow['id_item']])) {
-                        $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
-                    }
+                    $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
                 }
             }
 
@@ -4572,18 +4572,8 @@ switch ($inputData['type']) {
             $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
         }
 
-        // count
-        if ((int) $start === 0) {
-            DB::query(
-                'SELECT i.id
-                FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                WHERE %l',
-                $where
-            );
-            $counter_full = DB::count();
-            $uniqueLoadData['counter_full'] = $counter_full;
-        }
+        // counter_full is already set: on first load from the COUNT query above,
+        // on subsequent loads from uniqueLoadData (line ~4210).
 
         // Check list to be continued status
         if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {

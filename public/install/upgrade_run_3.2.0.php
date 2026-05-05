@@ -167,6 +167,23 @@ try {
     mysqli_rollback($db_link);
 }
 
+// Performance indexes for folder item listing (fixes 12s load times)
+checkIndexExist(
+    $pre . 'items',
+    'idx_items_tree_inactif_deleted',
+    'ADD INDEX idx_items_tree_inactif_deleted (id_tree, inactif, deleted_at)'
+);
+checkIndexExist(
+    $pre . 'restriction_to_roles',
+    'idx_restriction_item_id',
+    'ADD INDEX idx_restriction_item_id (item_id)'
+);
+checkIndexExist(
+    $pre . 'log_items',
+    'idx_log_items_item_action_raison_date',
+    'ADD INDEX idx_log_items_item_action_raison_date (id_item, action, raison, date)'
+);
+
 // Migrate path_to_upload_folder and path_to_files_folder to storage/ subdirectories
 // if they still point to the old root-level locations ({root}/upload and {root}/files).
 $row = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_dir'"));
