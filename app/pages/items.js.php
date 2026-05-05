@@ -5714,6 +5714,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             const _editPrivilegesPromise = (actionType === 'edit')
                 ? getPrivilegesOnItem(itemTreeId, 1, 'item_edit_current_folder')
                 : null;
+            // OPT-C: prefetch password in parallel with show_details_item (no dependency)
+            const _editPasswordPromise = (actionType === 'edit')
+                ? getItemPassword('at_password_shown_edit_form', 'item_id', itemId)
+                : null;
 
             // Prepare data to be sent
             var data = {
@@ -6071,10 +6075,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     syncItemPasswordComplexity('');
 
-                    // For the direct-edit path (pencil from list), load the actual item
-                    // password asynchronously — same loading state as showItemEditForm().
+                    // For the direct-edit path (pencil from list), wire the pre-fetched
+                    // password promise — it has been in-flight since checkAccess returned.
                     if (actionType === 'edit') {
-                        loadPasswordIntoEditForm(null, itemId);
+                        loadPasswordIntoEditForm(_editPasswordPromise, itemId);
                     }
 
                     $('#form-item-label').focus();
@@ -6509,8 +6513,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
-                        // continue loading data
-                        showDetailsStep2(itemId, actionType);
+                        // continue loading data — pass pre-fetched promises to avoid scope issues
+                        showDetailsStep2(itemId, actionType, _editPrivilegesPromise, _editPasswordPromise);
+                        // OPT-A: load history in parallel with showDetailsStep2 (only needs itemId)
+                        if (actionType === 'show') {
+                            loadItemHistory(store.get('teampassItem').id);
+                        }
                     } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
                         $('#item_details_nok').addClass('hidden');
                         $('#item_details_ok').addClass('hidden');
@@ -6561,7 +6569,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     /*
      * Loading Item details step 2
      */
-    function showDetailsStep2(id, actionType) {
+    function showDetailsStep2(id, actionType, editPrivilegesPromise = null, editPasswordPromise = null) {
         requestRunning = true;
         $.post(
             'sources/items.queries.php', {
@@ -6702,14 +6710,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 $('.infotip').tooltip();
 
-                // Now load History
-                if (actionType === 'show') {
-                    loadItemHistory(store.get('teampassItem').id);
-                } else if (actionType === 'edit') {
-                    // _editPrivilegesPromise was started in parallel with show_details_item.
-                    // Wait for it here — show_details_item has now updated the store, so
-                    // re-applying restriction selection below will use the correct values.
-                    $.when(_editPrivilegesPromise).then(function(retData) {
+                // For edit mode, apply privileges (already fetched in parallel with show_details_item).
+                // show_details_item has now hydrated the store, so restriction selection is correct.
+                if (actionType === 'edit') {
+                    $.when(editPrivilegesPromise).then(function(retData) {
                         if (debugJavascript === true) {
                             console.log('getPrivilegesOnItem 3');
                             console.log(retData);
@@ -6750,12 +6754,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
                             $('#form-item-restrictedto').val(_selectedValues).trigger('change');
 
-                            // Retrieve the password and synchronize the complexity meter
-                            getItemPassword(
-                                'at_password_shown_edit_form',
-                                'item_id',
-                                id
-                            ).then(item_pwd => {
+                            // Re-sync complexity meter after privileges are confirmed;
+                            // reuse the pre-fetched promise — no second network request.
+                            $.when(editPasswordPromise).then(function(item_pwd) {
                                 if (item_pwd || item_pwd === '') {
                                     syncItemPasswordComplexity(item_pwd);
                                 }
