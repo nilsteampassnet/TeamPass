@@ -3254,6 +3254,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     var resize = <?php echo json_encode($resize); ?>;
     let toastrElement;
     let fileId;
+    let globalUploadToast = null;
+    let filesUploadedCount = 0;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
@@ -3273,10 +3275,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         init: {
             BeforeUpload: function(up, file) {
                 fileId = file.id;
-                toastr.remove();         
-                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>', '', { timeOut: 0 });
-                // Show file name
-                $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
+
+                // Create the global toastr once for the whole upload batch
+                if (globalUploadToast === null) {
+                    filesUploadedCount = 0;
+                    toastr.remove();
+                    globalUploadToast = toastrElement = toastr.info(
+                        '<?php echo $lang->get('loading_item'); ?> ... ' +
+                        '(<span id="upload-global-counter">0/' + up.files.length + '</span>) ' +
+                        '<i class="fas fa-cloud-arrow-up fa-bounce fa-2x ml-2"></i>',
+                        '', { timeOut: 0 }
+                    );
+                }
+
+                // Show individual file with its own progress percentage
+                $('#upload-file_' + file.id).html(
+                    '<i class="fa-solid fa-file fa-sm mr-2"></i>' +
+                    htmlEncode(file.name) +
+                    ' <span id="filePercent_' + file.id + '" class="text-muted small mr-1">0%</span>' +
+                    '<span id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin ml-2"></i></span>'
+                );
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -3302,12 +3320,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 });
             },
             UploadProgress: function(up, file) {
-                // Update only the percentage inside the Toastr message
-                $('#plupload-progress').text(file.percent + '%');
+                // Update the per-file percentage in the upload list
+                $('#filePercent_' + file.id).text(file.percent + '%');
             },
             UploadComplete: function(up, files) {
-                // Inform user
+                // Remove the global toastr once all files are done
                 toastr.remove();
+                globalUploadToast = null;
+                filesUploadedCount = 0;
             },
             Error: function(up, args) {
                 console.log("ERROR arguments:");
@@ -3317,10 +3337,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     });
 
     uploader_attachments.bind('FileUploaded', function(up, file) {
-        $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+        filesUploadedCount++;
+        $('#filePercent_' + file.id).text('100%');
+        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+        $('#upload-global-counter').text(filesUploadedCount + '/' + up.files.length);
         userUploadedFile = true;
         userDidAChange = true;
-        toastr.remove();
+        // Do not remove the global toastr here — UploadComplete handles it
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
@@ -3342,6 +3365,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Arrêter l'upload des chunks
             up.stop();
             errorMessage += ' - Upload stopped.';
+            globalUploadToast = null;
+            filesUploadedCount = 0;
 
             // Affiche l'erreur dans l'interface utilisateur
             toastr.error(
@@ -6382,12 +6407,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             .removeClass('hidden');
                     }
 
-                    // Inform user
-                    //toastr.remove();
-                    toastrUpdate(loadingToast, 'success',
-                        '<?php echo $lang->get('done'); ?>',
-                        { timeOut: 1000 }
-                    );
+                    // Dismiss loading indicator once item is visible
+                    toastr.remove();
 
                     return true;
                 }
@@ -6470,9 +6491,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                             htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
                                 '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                                '<div class="info-box-content"><span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
-                                '<span class="info-box-text">' + downloadIcon +'</span>' +
-                                '<span class="info-box-text"><i class="fa-solid fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
+                                '<div class="info-box-content">' +
+                                '<span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
+                                '<span class="info-box-text">' +
+                                '<a class="text-info infotip mr-3" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
+                                '<i class="fa-solid fa-file-download"></i></a>' +
+                                '<i class="fa-solid fa-trash pointer delete-file infotip text-danger" data-file-id="' + value.id + '" title="<?php echo $lang->get('delete'); ?>"></i>' +
+                                '</span></div>' +
                                 '</div></div>';
 
                             if (counter === 2) {
