@@ -1102,6 +1102,27 @@ if ((int) $session_user_admin === 1) {
         </div>
 
         
+        <style>
+        .skeleton-line {
+            display: inline-block;
+            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+            background-size: 200% 100%;
+            animation: tp-shimmer 1.4s ease-in-out infinite;
+            border-radius: 3px;
+            height: 0.85em;
+            vertical-align: middle;
+        }
+        @keyframes tp-shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .skeleton-sm    { width: 70px; }
+        .skeleton-md    { width: 130px; }
+        .skeleton-lg    { width: 200px; }
+        .skeleton-xl    { width: 280px; }
+        .skeleton-title { width: 240px; height: 1.3em; }
+        </style>
+
         <div id="items-details-container" class="col-md-5 overflow-auto hidden">
             <!-- ITEM DETAILS -->
             <div class="row item-details-card item-details-card-menu">
@@ -1113,7 +1134,7 @@ if ((int) $session_user_admin === 1) {
                                     <i class="fa-solid fa-arrow-left"></i>
                                 </button>
                             </span>
-                            <h3 class="d-inline align-middle" id="card-item-label"></h3>
+                            <h3 class="d-inline align-middle" id="card-item-label"><span class="skeleton-line skeleton-title"></span></h3>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>
@@ -1202,7 +1223,7 @@ if ((int) $session_user_admin === 1) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-toggle-button">
                                         <i class="fa-regular fa-eye pwd-toggle-icon"></i>
                                     </button>
-                                    <span id="card-item-pwd" class="float-right pointer mr-2"></span>
+                                    <span id="card-item-pwd" class="float-right pointer mr-2"><span class="skeleton-line skeleton-md"></span></span>
                                     <input id="hidden-item-pwd" type="hidden">
                                 </li>
                                 <li class="list-group-item">
@@ -1210,14 +1231,14 @@ if ((int) $session_user_admin === 1) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-login" id="card-item-login-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <span id="card-item-login" class="float-right"></span>
+                                    <span id="card-item-login" class="float-right"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('email'); ?></b>
                                     <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-email" id="card-item-email-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <span id="card-item-email" class="float-right ml-1"></span>
+                                    <span id="card-item-email" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('url'); ?></b>
@@ -1227,7 +1248,7 @@ if ((int) $session_user_admin === 1) {
                                     <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>
-                                    <span id="card-item-url-text" class="float-right ml-1"></span>
+                                    <span id="card-item-url-text" class="float-right ml-1"><span class="skeleton-line skeleton-lg"></span></span>
                                 </li>
                             </ul>
                             <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
@@ -1240,11 +1261,11 @@ if ((int) $session_user_admin === 1) {
                             <ul class="list-group list-group-unbordered mb-3">
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('restricted_to'); ?></b>
-                                    <a id="card-item-restrictedto" class="float-right ml-1"></a>
+                                    <a id="card-item-restrictedto" class="float-right ml-1"><span class="skeleton-line skeleton-md"></span></a>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('tags'); ?></b>
-                                    <a id="card-item-tags" class="float-right ml-1"></a>
+                                    <a id="card-item-tags" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
                                 </li>
                                 <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) : ?>
                                 <li class="list-group-item">
@@ -1267,7 +1288,7 @@ if ((int) $session_user_admin === 1) {
 
             <div class="row item-details-card">
                 <div class="col-12">
-                    <div class="callout callout-info visible" id="card-item-description">No description</div>
+                    <div class="callout callout-info visible" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
                 </div>
             </div>
 

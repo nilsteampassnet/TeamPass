@@ -2755,12 +2755,35 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 
     /**
+     * Reset the item detail panel to skeleton state before loading a new item.
+     * Clears previous item data and removes any dynamic extra elements.
+     */
+    function resetItemDetailSkeleton() {
+        // Skeleton placeholders for main fields
+        $('#card-item-label').html('<span class="skeleton-line skeleton-title"></span>');
+        $('#card-item-pwd').html('<span class="skeleton-line skeleton-md"></span>');
+        $('#card-item-login').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-email').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-url-text').html('<span class="skeleton-line skeleton-lg"></span>');
+        $('#card-item-restrictedto').html('<span class="skeleton-line skeleton-md"></span>');
+        $('#card-item-tags').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-description').html('<span class="skeleton-line skeleton-xl"></span>');
+        // Remove dynamic elements inserted by the previous item
+        $('#items-details-container .delete-after-usage').remove();
+        $('#items-details-container .edition-lock-detail-badge').remove();
+        $('#card-item-corrupted-warning').addClass('hidden').html('');
+        $('#card-item-misc').html('');
+        $('#item-hibp-badge').addClass('hidden');
+        $('#card-item-pwd-security-badge').addClass('hidden');
+    }
+
+    /**
      * Click on button with class but-navigate-item
      */
     $(document)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            resetItemDetailSkeleton();
 
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
@@ -2786,7 +2809,25 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            resetItemDetailSkeleton();
+
+            // Apply full layout switch immediately so skeleton is visible in the right position
+            $('.item-details-card').removeClass('hidden');
+            $('.form-item').addClass('hidden');
+            if (store.get('teampassUser').split_view_mode === 1) {
+                $('#folders-tree-card').removeClass('hidden');
+                $('#folder-tree-container').removeClass('hidden col-md-5').addClass('col-md-3');
+                $('#items-list-container').removeClass('hidden col-md-7').addClass('col-md-4');
+                $('#items-details-container').removeClass('hidden col-md-12').addClass('col-md-5');
+                if ($('body').hasClass('sidebar-collapse') === false) {
+                    $('a[data-widget="pushmenu"]').click();
+                }
+            } else {
+                $('#folder-tree-container').removeClass('col-md-3').addClass('col-md-5 hidden');
+                $('#items-list-container').removeClass('col-md-4').addClass('col-md-7 hidden');
+                $('#items-details-container').removeClass('col-md-5').addClass('col-md-12');
+            }
+            $('#items-details-container').removeClass('hidden');
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
