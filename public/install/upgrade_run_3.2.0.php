@@ -178,10 +178,11 @@ checkIndexExist(
     'idx_restriction_item_id',
     'ADD INDEX idx_restriction_item_id (item_id)'
 );
+// action/raison are VARCHAR(255) utf8mb4 — use prefix lengths to stay within 3072-byte limit
 checkIndexExist(
     $pre . 'log_items',
-    'idx_log_items_item_action_raison_date',
-    'ADD INDEX idx_log_items_item_action_raison_date (id_item, action, raison, date)'
+    'idx_log_items_item_action_raison',
+    'ADD INDEX idx_log_items_item_action_raison (id_item, action(30), raison(10))'
 );
 
 // Migrate path_to_upload_folder and path_to_files_folder to storage/ subdirectories
