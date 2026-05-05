@@ -129,6 +129,43 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         loadingToast = '',
         showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
 
+    var tpFolderProgress = (function () {
+        var _timer = null, _wrap = null, _bar = null;
+        function _els() {
+            if (!_wrap) _wrap = document.getElementById('tp-folder-progress-wrap');
+            if (!_bar)  _bar  = document.getElementById('tp-folder-progress-bar');
+        }
+        function start() {
+            _els(); if (!_wrap) return;
+            if (_timer) { clearTimeout(_timer); _timer = null; }
+            _bar.classList.remove('tp-progress-done');
+            _bar.style.transition = 'none';
+            _bar.style.width = '0%';
+            _wrap.classList.add('tp-progress-active');
+            _bar.offsetWidth; // force reflow to reset transition
+            _bar.style.transition = '';
+            _bar.style.width = '15%';
+        }
+        function update(pct) {
+            _els(); if (!_wrap) return;
+            _bar.style.width = Math.min(Math.max(pct, 5), 95) + '%';
+        }
+        function done() {
+            _els(); if (!_wrap) return;
+            _bar.style.width = '100%';
+            _timer = setTimeout(function () {
+                _bar.classList.add('tp-progress-done');
+                _timer = setTimeout(function () {
+                    _wrap.classList.remove('tp-progress-active');
+                    _bar.style.width = '0%';
+                    _bar.classList.remove('tp-progress-done');
+                    _timer = null;
+                }, 400);
+            }, 50);
+        }
+        return { start: start, update: update, done: done };
+    }());
+
     /**
      * Copy text to clipboard with fallback for non-HTTPS contexts.
      * @param {string} text
@@ -4576,13 +4613,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // do NOT call toastr.remove() so we don't wipe out the loading toastr of the new folder.
                 if (action === 'update') {
                     if (parseInt(folders) === store.get('teampassApplication').selectedFolder) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('data_refreshed'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
+                        tpFolderProgress.done();
                     }
                     // else: stale response for a folder the user already left — do nothing
                 } else {
@@ -4681,11 +4712,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
         requestRunning = true;
         // Inform user
-        if (showToastr === true) {
-            toastr.remove();
-            toastr.info(
-                '<?php echo $lang->get('opening_folder'); ?><i class="fa-solid fa-circle-notch fa-spin ml-2"></i>'
-            );
+        if (start === 0) {
+            tpFolderProgress.start();
         }
 
         // case where we should stop listing the items
@@ -4881,10 +4909,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 teampassApplication.queryUniqueLoad = data.uniqueLoadData;
                             }
                         );
-                        if ($('#items_loading_progress').length == 0) {
-                            $('#items_list_loader').after('<span id="items_loading_progress">' + Math.round(data.next_start * 100 / data.counter_full, 0) + '%</span>');
-                        } else {
-                            $('#items_loading_progress').html(Math.round(data.next_start * 100 / data.counter_full, 0) + '%');
+                        if (data.counter_full > 0) {
+                            tpFolderProgress.update(
+                                Math.round(data.next_start * 100 / data.counter_full)
+                            );
                         }
                     }
                     //-----

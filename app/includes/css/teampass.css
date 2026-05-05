@@ -576,3 +576,28 @@
         width: min(340px, calc(100vw - 1rem));
     }
 }
+
+/* ============================================================
+   Items folder loading progress bar (NProgress-style)
+   ============================================================ */
+#tp-folder-progress-wrap {
+    position: relative;
+    height: 0;
+    overflow: hidden;
+}
+#tp-folder-progress-wrap.tp-progress-active {
+    height: 3px;
+}
+#tp-folder-progress-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 3px;
+    width: 0%;
+    background-color: #007bff;
+    transition: width 0.25s ease-out, opacity 0.4s ease;
+    will-change: width;
+}
+#tp-folder-progress-bar.tp-progress-done {
+    opacity: 0;
+}

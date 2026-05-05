@@ -1058,6 +1058,7 @@ if ((int) $session_user_admin === 1) {
                     <!-- /.card-tools -->
                 </div>
                 <!-- /.card-header -->
+                <div id="tp-folder-progress-wrap"><div id="tp-folder-progress-bar"></div></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
