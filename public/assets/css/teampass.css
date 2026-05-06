@@ -423,3 +423,22 @@
 #tp-folder-progress-bar.tp-progress-done {
     opacity: 0;
 }
+
+/* Section headers distinguishing sub-folders from items */
+#table_teampass_subfolders_list thead th,
+#table_teampass_items_list thead th {
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 4px 10px;
+    background-color: #f8f9fa;
+}
+#table_teampass_subfolders_list thead th {
+    color: #856404;
+    border-bottom: 2px solid #ffc107 !important;
+}
+#table_teampass_items_list thead th {
+    color: #0056b3;
+    border-bottom: 2px solid #007bff !important;
+}
