@@ -184,6 +184,11 @@ checkIndexExist(
     'idx_log_items_item_action_raison',
     'ADD INDEX idx_log_items_item_action_raison (id_item, action(30), raison(10))'
 );
+checkIndexExist(
+    $pre . 'files',
+    'idx_files_item_confirmed',
+    'ADD INDEX idx_files_item_confirmed (id_item, confirmed)'
+);
 
 // Migrate path_to_upload_folder and path_to_files_folder to storage/ subdirectories
 // if they still point to the old root-level locations ({root}/upload and {root}/files).

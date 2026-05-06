@@ -4549,13 +4549,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         // Manage case where no folders
         if (folders === '' || folders === undefined) {
             $('#teampass_subfolders_list').html('<tr><td colspan="2" class="text-center text-muted"><?php echo $lang->get('no_folder_selected');?></td></tr>');
+            $('#count-subfolders-badge').text('');
             return false;
         }
-        
+
         // Use requestAnimationFrame to avoid blocking UI
         requestAnimationFrame(() => {
             const directChildren = folders.filter(folder => folder.parent_id === parentId);
-            
+
             // Build all HTML at once (better performance)
             const html = directChildren.map(folder => `
                 <tr data-tree-id="${folder.id}" class="pointer open-folder">
@@ -4565,9 +4566,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     </td>
                 </tr>
             `).join('');
-            
+
             // Inject all at once (single reflow)
             $('#teampass_subfolders_list').html(html);
+            $('#count-subfolders-badge').text(directChildren.length > 0 ? directChildren.length : '');
         });
     }
 
@@ -4862,6 +4864,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (start == 0) {
                 //clean form
                 $('#items_folder_path').html('');
+                $('#count-items-badge').text('');
                 // Show skeleton rows while items load so the list is never blank
                 let skeletonRows = ''
                 for (let i = 0; i < 8; i++) {
@@ -5079,6 +5082,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                         // show items
                         sList(data.html_json);
+                        if (data.counter_full !== undefined) {
+                            $('#count-items-badge').text(data.counter_full > 0 ? data.counter_full : '');
+                        }
 
                         // Prepare next iteration if needed
                         if (call_to_be_continued === true) {

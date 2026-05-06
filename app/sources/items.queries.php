@@ -4265,6 +4265,8 @@ switch ($inputData['type']) {
             }
 
             $idManaged = '';
+            $itemsToMarkPerso = [];
+            $currentUserId = (string) $session->get('user-id');
 
             // --- Batch fetch data for all items to avoid N+1 queries ---
             $allItemIds = array_column($rows, 'id');
@@ -4332,15 +4334,7 @@ switch ($inputData['type']) {
                 if (empty($idManaged) === true || $idManaged !== $record['id']) {
                     // Fix a bug on Personal Item creation - field `perso` must be set to `1`
                     if (intval($record['perso']) !== 1 && intval($folder_is_personal) === 1) {
-                        DB::update(
-                            prefixTable('items'),
-                            array(
-                                'perso' => 1,
-                                'updated_at' => time(),
-                            ),
-                            'id=%i',
-                            $record['id']
-                        );
+                        $itemsToMarkPerso[] = $record['id'];
                         $record['perso'] = 1;
                     }
 
@@ -4354,7 +4348,7 @@ switch ($inputData['type']) {
                     // Is user in restricted list of users
                     if (empty($record['restricted_to']) === false) {
                         if (
-                            in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
+                            in_array($currentUserId, explode(';', $record['restricted_to'])) === true
                             || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                                 && (int) $SETTINGS['manager_edit'] === 1)
                         ) {
@@ -4567,6 +4561,15 @@ switch ($inputData['type']) {
                     );
                 }
                 $idManaged = $record['id'];
+            }
+
+            // Batch update `perso` flag — avoids one UPDATE per item inside the loop
+            if (!empty($itemsToMarkPerso)) {
+                DB::query(
+                    'UPDATE ' . prefixTable('items') . ' SET perso=1, updated_at=%i WHERE id IN %ls',
+                    time(),
+                    $itemsToMarkPerso
+                );
             }
 
             $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
@@ -7314,14 +7317,11 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             0
         );
-        foreach ($rows as $file) {
-            DB::update(
-                prefixTable('files'),
-                array(
-                    'confirmed' => 1,
-                ),
-                'id_item = %i',
-                $inputData['itemId']
+        $fileIdsToConfirm = array_column($rows, 'id');
+        if (!empty($fileIdsToConfirm)) {
+            DB::query(
+                'UPDATE ' . prefixTable('files') . ' SET confirmed=1 WHERE id IN %ls',
+                $fileIdsToConfirm
             );
         }
 

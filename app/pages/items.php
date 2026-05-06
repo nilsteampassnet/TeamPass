@@ -1062,7 +1062,7 @@ if ((int) $session_user_admin === 1) {
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
-                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i>Sub-folders</th></tr></thead>
+                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i>Sub-folders<span class="badge badge-secondary ml-2" id="count-subfolders-badge"></span></th></tr></thead>
                             <tbody id="teampass_subfolders_list">
                                 <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-lg"></span></td></tr>
                                 <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-md"></span></td></tr>
@@ -1071,7 +1071,7 @@ if ((int) $session_user_admin === 1) {
                         </table>
 
                         <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
-                            <thead><tr><th><i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?></th></tr></thead>
+                            <thead><tr><th><i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?><span class="badge badge-secondary ml-2" id="count-items-badge"></span></th></tr></thead>
                             <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->
@@ -1105,80 +1105,6 @@ if ((int) $session_user_admin === 1) {
             </div>
             </div>
         </div>
-
-        
-        <style>
-        .skeleton-line {
-            display: inline-block;
-            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-            background-size: 200% 100%;
-            animation: tp-shimmer 1.4s ease-in-out infinite;
-            border-radius: 3px;
-            height: 0.85em;
-            vertical-align: middle;
-        }
-        @keyframes tp-shimmer {
-            0%   { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        .skeleton-sm    { width: 70px; }
-        .skeleton-md    { width: 130px; }
-        .skeleton-lg    { width: 200px; }
-        .skeleton-xl    { width: 280px; }
-        .skeleton-title { width: 240px; height: 1.3em; }
-        .skeleton-input {
-            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%) !important;
-            background-size: 200% 100% !important;
-            animation: tp-shimmer 1.4s ease-in-out infinite !important;
-            color: transparent !important;
-            border-color: transparent !important;
-            box-shadow: none !important;
-            border-radius: 3px !important;
-            pointer-events: none;
-        }
-        .skeleton-block {
-            display: block;
-            width: 100%;
-            background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
-            background-size: 200% 100%;
-            animation: tp-shimmer 1.4s ease-in-out infinite;
-            border-radius: 3px;
-        }
-
-        /* Persistent highlight on the currently selected item row */
-        #teampass_items_list tr.item-selected td {
-            background-color: rgba(0, 123, 255, 0.07) !important;
-            box-shadow: inset 3px 0 0 #007bff;
-        }
-
-        /* Fade-in animation when the detail panel first appears */
-        @keyframes tp-panel-fadein {
-            from { opacity: 0; transform: translateX(12px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        #items-details-container.tp-panel-appearing {
-            animation: tp-panel-fadein 180ms ease-out forwards;
-        }
-
-        /* Section headers distinguishing sub-folders from items */
-        #table_teampass_subfolders_list thead th,
-        #table_teampass_items_list thead th {
-            font-size: 0.68rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.07em;
-            padding: 4px 10px;
-            background-color: #f8f9fa;
-        }
-        #table_teampass_subfolders_list thead th {
-            color: #856404;
-            border-bottom: 2px solid #ffc107 !important;
-        }
-        #table_teampass_items_list thead th {
-            color: #0056b3;
-            border-bottom: 2px solid #007bff !important;
-        }
-        </style>
 
         <div id="items-details-container" class="col-md-5 overflow-auto hidden">
             <!-- ITEM DETAILS -->
