@@ -442,7 +442,7 @@ function handleNode(
         (int) $nbItemsInFolder,
         (int) $nbItemsInSubfolders,
         (int) $nbSubfolders,
-        isset($SETTINGS['tree_counters']) === true && isset($SETTINGS['enable_tasks_manager']) === true && (int) $SETTINGS['enable_tasks_manager'] === 1 && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
+        isset($SETTINGS['tree_counters']) === true && (int) $SETTINGS['tree_counters'] === 1 ? 1 : 0,
         (bool) $inputData['userReadOnly'],
         $listRestrictedFoldersForItemsKeys,
         $inputData['restrictedFoldersForItems'],
@@ -665,7 +665,7 @@ function prepareNodeData(
 
     } elseif (in_array($nodeId, $listRestrictedFoldersForItemsKeys) === true) {
         return [
-            'html' => $session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '' .
+            'html' => ($session_user_read_only === true ? '<i class="far fa-eye fa-xs mr-1"></i>' : '') .
                 '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' . $nodeId . '">' . count($session_list_restricted_folders_for_items[$nodeId]) . '</span>',
             'title' => '',
             'restricted' => 1,

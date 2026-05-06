@@ -259,10 +259,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         console.log(store.get('teampassUser'))
     }
 
-    // Show loader
-    toastr.remove();
-    toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-
     // Build tree
     $('#jstree').jstree({
         'core': {
@@ -2823,7 +2819,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#items-details-container .delete-after-usage').remove();
         $('#items-details-container .edition-lock-detail-badge').remove();
         $('#card-item-corrupted-warning').addClass('hidden').html('');
-        $('#card-item-misc').html('');
+        $('#card-item-misc').html(
+            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
+            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
+            '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
+        );
         $('#item-hibp-badge').addClass('hidden');
         $('#card-item-pwd-security-badge').addClass('hidden');
     }
@@ -3948,23 +3948,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 $('#folder-tree-container, #items-list-container').addClass('hidden');
                                 $('#folders-tree-card').removeClass('hidden');
 
-                                // Show item container immediately with loading spinner
-                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                // Show read form immediately with skeleton placeholders
+                                resetItemDetailSkeleton();
+                                $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                                 $('#items-details-container')
                                     .removeClass('col-md-5 hidden')
-                                    .addClass('col-md-12')
-                                    .prepend(
-                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
-                                            '<div class="text-center text-muted">' +
-                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
-                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
-                                            '</div>' +
-                                        '</div>'
-                                    );
+                                    .addClass('col-md-12');
 
-                                // Show loading toast
+                                // Clear loading toast
                                 toastr.clear(loadingToast);
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Reload item details
                                 // When an encryption task exists, prefer the WebSocket refresh path
@@ -4021,24 +4013,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 $('#folder-tree-container, #items-list-container').addClass('hidden');
                                 $('#folders-tree-card').removeClass('hidden');
 
-                                // Show item container immediately with loading spinner
-                                // (spinner is removed by Details() via .delete-after-usage at line 5093)
-                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                // Show read form immediately with skeleton placeholders
+                                resetItemDetailSkeleton();
+                                $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                                 $('#items-details-container')
                                     .removeClass('col-md-5 hidden')
-                                    .addClass('col-md-12')
-                                    .prepend(
-                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
-                                            '<div class="text-center text-muted">' +
-                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
-                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
-                                            '</div>' +
-                                        '</div>'
-                                    );
+                                    .addClass('col-md-12');
 
-                                // Show loading toast
+                                // Clear loading toast
                                 toastr.clear(loadingToast);
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Load item details
                                 // When an encryption task exists, prefer the WebSocket refresh path
@@ -5050,6 +5033,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         // show items
                         sList(data.html_json);
 
+                        // Sync the jstree badge for this read-only folder
+                        if (data.counter_full !== undefined) {
+                            $('#count-items-badge').text(data.counter_full);
+                            const $badge = $('#itcount_' + groupe_id)
+                            if ($badge.length > 0) {
+                                $badge.text(data.counter_full)
+                            } else {
+                                const $link = $('#fld_' + groupe_id)
+                                if ($link.length > 0) {
+                                    $link.append(
+                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
+                                    )
+                                }
+                            }
+                        }
+
                         if (call_to_be_continued === true) {
                             //set next start for query
                             store.update(
@@ -5087,6 +5086,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         sList(data.html_json);
                         if (data.counter_full !== undefined) {
                             $('#count-items-badge').text(data.counter_full);
+                            // Sync the jstree badge for the current folder (covers read-only folders
+                            // whose badge may be absent from the server-side cached tree HTML)
+                            const $badge = $('#itcount_' + groupe_id)
+                            if ($badge.length > 0) {
+                                $badge.text(data.counter_full)
+                            } else {
+                                const $link = $('#fld_' + groupe_id)
+                                if ($link.length > 0) {
+                                    $link.append(
+                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
+                                    )
+                                }
+                            }
                         }
 
                         // Prepare next iteration if needed
