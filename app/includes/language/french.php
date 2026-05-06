@@ -2215,5 +2215,6 @@ return array(
     'settings_ldap_allowed_login_group_dn' => 'Restreindre la connexion au groupe LDAP (DN)',
     'settings_ldap_allowed_login_group_dn_tip' => 'DN complet du groupe LDAP dont les membres sont autorisés à se connecter. Laisser vide pour aucune restriction. Le groupe peut être en dehors du DN de base des utilisateurs. Exemple : cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
     'ldap_not_in_allowed_group' => 'Accès refusé : votre compte n’est pas dans le groupe LDAP requis.',
+    'sub-folders' => 'Sous-répertoires',
 
 );

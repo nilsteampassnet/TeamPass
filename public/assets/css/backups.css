@@ -1,0 +1,3 @@
+/* Fun restore progress: a little cat that moves along the progress bar */
+.tp-restore-progress-track { position: relative; overflow: visible; }
+.tp-restore-progress-cat { position: absolute; top: -18px; left: 2%; transform: translateX(-50%); font-size: 18px; }

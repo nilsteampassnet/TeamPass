@@ -1062,7 +1062,7 @@ if ((int) $session_user_admin === 1) {
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
-                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i>Sub-folders<span class="badge badge-secondary ml-2" id="count-subfolders-badge"></span></th></tr></thead>
+                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i><?php echo $lang->get('sub-folders'); ?><span class="badge badge-secondary ml-2" id="count-subfolders-badge"></span></th></tr></thead>
                             <tbody id="teampass_subfolders_list">
                                 <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-lg"></span></td></tr>
                                 <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-md"></span></td></tr>

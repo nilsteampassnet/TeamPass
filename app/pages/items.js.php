@@ -1595,7 +1595,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $(store.get('teampassUser').previousView).removeClass('hidden');
             $(store.get('teampassUser').currentView).addClass('hidden');
         }
-        $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+        // Only hide navigation buttons when no item details panel is open
+        if ($('#items-details-container').hasClass('hidden')) {
+            $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+        }
     });
 
 
@@ -4569,7 +4572,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Inject all at once (single reflow)
             $('#teampass_subfolders_list').html(html);
-            $('#count-subfolders-badge').text(directChildren.length > 0 ? directChildren.length : '');
+            $('#count-subfolders-badge').text(directChildren.length);
         });
     }
 
@@ -5083,7 +5086,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         // show items
                         sList(data.html_json);
                         if (data.counter_full !== undefined) {
-                            $('#count-items-badge').text(data.counter_full > 0 ? data.counter_full : '');
+                            $('#count-items-badge').text(data.counter_full);
                         }
 
                         // Prepare next iteration if needed

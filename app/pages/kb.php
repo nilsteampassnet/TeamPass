@@ -271,12 +271,4 @@ $isAdmin = (int) $session->get('user-admin') === 1;
 </div>
 <?php endif; ?>
 
-<style>
-.kb-description-content {
-    white-space: pre-wrap;
-    word-break: break-word;
-    max-height: 500px;
-    overflow-y: auto;
-    font-family: inherit;
-}
-</style>
+<link rel="stylesheet" href="./assets/css/kb.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">

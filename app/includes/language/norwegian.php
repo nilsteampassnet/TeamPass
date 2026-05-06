@@ -2216,5 +2216,6 @@ Path: %s',
     'settings_ldap_allowed_login_group_dn' => 'Restrict login to LDAP group (DN)',
     'settings_ldap_allowed_login_group_dn_tip' => 'Full DN of the LDAP group whose members are allowed to log in. Leave empty for no restriction. The group can be outside the users base DN. Example: cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
     'ldap_not_in_allowed_group' => 'Access denied: your account is not in the required LDAP group.',
+    'sub-folders' => 'Sub-folders',
 
 );

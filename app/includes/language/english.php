@@ -2180,4 +2180,5 @@ return array(
     'settings_hibp_enabled_tip' => 'When enabled, passwords are checked against the HaveIBeenPwned database using k-anonymity (only 5 chars of SHA-1 hash are transmitted). Requires outbound HTTPS access.',
     'settings_hibp_interval_days' => 'Re-check interval (days)',
     'settings_hibp_interval_days_tip' => 'Number of days before a password is re-checked against HaveIBeenPwned. Default: 7.',
+    'Sub-folders' => 'Sub-folders',
     );

@@ -553,11 +553,7 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
 
 
 
-<style>
-/* Fun restore progress: a little cat that moves along the progress bar */
-.tp-restore-progress-track { position: relative; overflow: visible; }
-.tp-restore-progress-cat { position: absolute; top: -18px; left: 2%; transform: translateX(-50%); font-size: 18px; }
-</style>
+<link rel="stylesheet" href="./assets/css/backups.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
 
 <!-- Strict mode: Connected users modal -->
 <div class="modal fade" id="tp-connected-users-modal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
