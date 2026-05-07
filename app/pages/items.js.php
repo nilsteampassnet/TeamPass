@@ -1098,17 +1098,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
             
-            // Store current view
-            savePreviousView('.form-item-copy');
-
             if (store.get('teampassItem').user_can_modify === 1) {
-                // Show copy form
-                $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-                $('.form-item-copy, .item-details-card-menu').removeClass('hidden');
-                // Prepare some data in the form
+                // Prepare form data then open modal
                 $('#form-item-copy-new-label').val($('#form-item-label').val());
                 $('#form-item-copy-destination').val($('#form-item-folder').val()).change();
                 toastr.remove();
+                $('#modal-item-copy').modal('show');
             } else {
                 toastr.remove();
                 toastr.error(
@@ -1139,9 +1134,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-delete');
-
             $.when(
                 checkAccess(store.get('teampassItem').id, store.get('teampassItem').folderId, <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
@@ -1164,9 +1156,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 if (debugJavascript === true) console.info('SHOW DELETE ITEM');
                 if (store.get('teampassItem').user_can_modify === 1) {
-                    // Show delete form
-                    $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-                    $('.form-item-delete, .item-details-card-menu').removeClass('hidden');
+                    $('#modal-item-delete').modal('show');
                 } else {
                     toastr.remove();
                     toastr.error(
@@ -1186,12 +1176,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW SHARE ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-share');
-
-            // Show share form
-            $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-            $('.form-item-share').removeClass('hidden');
+            // Open share modal
+            $('#modal-item-share').modal('show');
 
             //
             // > END <
@@ -1200,13 +1186,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW NOTIFY ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-notify');
-
-            $('#form-item-notify-checkbox').iCheck('uncheck');
-            // Show notify form
-            $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-            $('.form-item-notify, .item-details-card-menu').removeClass('hidden');
+            // Set checkbox to reflect the current notification status
+            if ($('#card-item-misc-notification').find('.text-success').length > 0) {
+                $('#form-item-notify-checkbox').iCheck('check');
+            } else {
+                $('#form-item-notify-checkbox').iCheck('uncheck');
+            }
+            // Open notify modal
+            $('#modal-item-notify').modal('show');
 
             //
             // > END <
@@ -1215,19 +1202,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW OTV ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-otv');
-
-
             // Generate link
             $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
             $('#form-item-otv-views').val('1');
             prepareOneTimeView();
 
             $('#form-item-otv-link').val('');
-            // Show notify form
-            $('#folders-tree-card').addClass('hidden');
-            $('.form-item-otv, .item-details-card-menu').removeClass('hidden');
+            // Open OTV modal
+            $('#modal-item-otv').modal('show');
 
             //
             // > END <
@@ -1770,7 +1752,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     $('#form-item-notify-perform').click(function() {
         var form = $('#form-item-notify');
-
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
 
         var data = {
             'notification_status': $('#form-item-notify-checkbox').is(':checked') === true ? 1 : 0,
@@ -1789,6 +1772,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 if (data.error !== false) {
                     // Show error
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('confirm'); ?>');
                     toastr.remove();
                     toastr.error(
                         data.message,
@@ -1807,9 +1791,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             .html('<span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span>');
                     }
 
-                    // Show/hide forms
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-notify').addClass('hidden');
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('confirm'); ?>');
+                    // Close notify modal
+                    $('#modal-item-notify').modal('hide');
 
                     $('.infotip').tooltip();
 
@@ -1869,8 +1853,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         { timeOut: 5000 }
                     );
                 } else {
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-share').addClass('hidden');
+                    // Close share modal
+                    $('#modal-item-share').modal('hide');
 
                     // Inform user
                     toastrUpdate(loadingToast, 'info',
@@ -1945,7 +1929,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
-                    $('.form-item-action, .item-details-card-menu').addClass('hidden');
+                    $('#modal-item-delete').modal('hide');
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
@@ -2018,6 +2002,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * COPY - perform copy item
      */
     $('#form-item-copy-perform').click(function() {
+        var $btn = $(this);
+
         // Do check
         if ($('#form-item-copy-new-label').val() === '') {
             toastr.remove();
@@ -2031,6 +2017,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             return false;
         }
 
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
+
         // Show cog
         toastr.remove();
         loadingToast = toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
@@ -2039,15 +2027,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         userDidAChange = false;
         userUploadedFile = false;
 
+        var sourceItemId = store.get('teampassItem').id;
         var data = {
-            'item_id': store.get('teampassItem').id,
+            'item_id': sourceItemId,
             'source_id': selectedFolderId,
             'dest_id': $('#form-item-copy-destination').val(),
             'new_label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
         }
-        
-        console.log("COPY ITEM data:");
-        console.log(data);
 
         // Launch action
         $.post(
@@ -2061,6 +2047,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (typeof data !== 'undefined' && data.error !== true) {
+                    // Release any edition lock held on the source item
+                    stopEditionLockHeartbeat();
+                    $.post('sources/items.queries.php', {
+                        type: 'handle_item_edition_lock',
+                        data: prepareExchangedData(JSON.stringify({
+                            'item_id': sourceItemId,
+                            'action': 'release_lock',
+                        }), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    });
+
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
@@ -2083,11 +2080,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         true
                     );
 
-                    // Close
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-copy').addClass('hidden');
+                    // Close modal
+                    $('#modal-item-copy').modal('hide');
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                 } else {
                     // ERROR
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
                         data.message,
                         { timeOut: 5000 }
@@ -7206,6 +7204,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Handle update OTV button
     $(document).on('click', '#form-item-otv-update', function() {
+        var $btn = $(this);
+        $btn.addClass('disabled').html('<i class="fa-solid fa-circle-notch fa-spin"></i><br>');
+
         var data = {
             "otv_id": $('#form-item-otv-link').data('otv-id'),
             "days": $('#form-item-otv-days').val(),
@@ -7222,6 +7223,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                $btn.removeClass('disabled').html('<i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>');
                 // Display new url
                 if (data.new_url !== undefined) {
                     $('#form-item-otv-link').val(data.new_url);
