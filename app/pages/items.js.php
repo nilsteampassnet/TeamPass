@@ -2927,6 +2927,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Fields not yet loaded — show skeleton bars on all inputs
             resetEditFormSkeleton(true);
 
+            // Pre-fill title immediately from list row data so the user knows
+            // which item is being edited — AJAX response will overwrite it.
+            const rowLabel = unescape($(this).closest('tr').data('label') || '')
+            if (rowLabel) {
+                $('#form-item-title').text(rowLabel)
+                $('#form-item-label').val(rowLabel).removeClass('skeleton-input')
+            }
+
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
