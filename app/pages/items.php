@@ -570,14 +570,19 @@ if ((int) $session_user_admin === 1) {
         </div>
     </div>
 
-    <!-- COPY ITEM FORM -->
-    <div class="row hidden form-item-copy form-item-action">
-        <div class="col-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-copy mr-2"></i><?php echo $lang->get('copy_item'); ?></h5>
+    <!-- COPY ITEM MODAL -->
+    <div class="modal fade" id="modal-item-copy" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-copy mr-2"></i><?php echo $lang->get('copy_item'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="form-group">
                         <label><?php echo $lang->get('new_label'); ?></label>
                         <input type="text" class="form-control form-item-control" id="form-item-copy-new-label">
@@ -587,76 +592,89 @@ if ((int) $session_user_admin === 1) {
                         <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-copy-perform"><?php echo $lang->get('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-copy-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
         </div>
     </div>
 
 
-    <!-- DELETE ITEM FORM -->
-    <div class="row hidden form-item-delete form-item-action">
-        <div class="col-12">
-
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete_item'); ?></h5>
+    <!-- DELETE ITEM MODAL -->
+    <div class="modal fade" id="modal-item-delete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete_item'); ?>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info alert-dismissible">
-                        <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('warning'); ?></h5>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="icon fa fa-exclamation-triangle mr-2"></i><?php echo $lang->get('warning'); ?></h5>
                         <?php echo $lang->get('delete_item_message'); ?>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-warning" id="form-item-delete-perform"><?php echo $lang->get('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="form-item-delete-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
 
-    <!-- SHARE ITEM FORM -->
-    <div class="row hidden form-item-share form-item-action">
-        <div class="col-12">
-            <form id="form-item-share" class="needs-validation" novalidate onsubmit="return false;">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h5><i class="fa-solid fa-share-alt mr-2"></i><?php echo $lang->get('share_item'); ?></h5>
-                    </div>
-                    <div class="card-body">
+    <!-- SHARE ITEM MODAL -->
+    <div class="modal fade" id="modal-item-share" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-share-alt mr-2"></i><?php echo $lang->get('share_item'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-item-share" class="needs-validation" novalidate onsubmit="return false;">
                         <div class="callout callout-info">
                             <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                             <p><?php echo $lang->get('share_item_message'); ?></p>
                         </div>
                         <div class="form-group">
                             <label for="form-item-share-email"><?php echo $lang->get('email_address'); ?></label>
-                            <input type="email" class="form-control clear-me-val" id="form-item-share-email" placeholder="<?php echo $lang->get('enter_email'); ?>" required>
+                            <input type="email" class="form-control clear-me-val" id="form-item-share-email"
+                                   placeholder="<?php echo $lang->get('enter_email'); ?>" required>
                         </div>
-                    </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary" id="form-item-share-perform"><?php echo $lang->get('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
-                    </div>
+                    </form>
                 </div>
-            </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-share-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                </div>
+            </div>
         </div>
     </div>
 
 
-    <!-- NOTIFY ITEM FORM -->
-    <div class="row hidden form-item-notify form-item-action">
-        <div class="col-12">
-
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-bullhorn mr-2"></i><?php echo $lang->get('notification'); ?></h5>
+    <!-- NOTIFY ITEM MODAL -->
+    <div class="modal fade" id="modal-item-notify" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-bullhorn mr-2"></i><?php echo $lang->get('notification'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                         <p><?php echo $lang->get('notification_message'); ?></p>
@@ -665,34 +683,37 @@ if ((int) $session_user_admin === 1) {
                         <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo $lang->get('notify_on_change'); ?></label>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo $lang->get('confirm'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-notify-perform"><?php echo $lang->get('confirm'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
 
-    <!-- OTV ITEM FORM -->
-    <div class="row hidden form-item-otv form-item-action">
-        <div class="col-12">
-
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-brands fa-slideshare mr-2"></i><?php echo $lang->get('one_time_view'); ?></h5>
+    <!-- OTV ITEM MODAL -->
+    <div class="modal fade" id="modal-item-otv" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-brands fa-slideshare mr-2"></i><?php echo $lang->get('one_time_view'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                         <p><?php
                             echo str_replace(
-        ['##otv_expiration_period##', '. '],
-        ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
-        $lang->get('otv_message')
-    );
-                            ?></p>
+                                ['##otv_expiration_period##', '. '],
+                                ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
+                                $lang->get('otv_message')
+                            );
+                        ?></p>
                     </div>
 
                     <div class="form-group">
@@ -740,11 +761,10 @@ if ((int) $session_user_admin === 1) {
                         </div>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('close'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
