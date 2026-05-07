@@ -1049,57 +1049,29 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
 
-            // Capture previous view before the skeleton hides/shows panels
-            savePreviousView();
-            // Fields are already populated by Details('show') — only clear password
-            resetEditFormSkeleton(false);
-
-            // Launch both requests in parallel: privileges check and password fetch.
-            // Password is applied as soon as it resolves — independently of privileges.
-            const _pwdPromise = getItemPassword(
-                'at_password_shown_edit_form',
-                'item_id',
-                store.get('teampassItem').id
-            );
-
-            // Apply password the moment it is decrypted, without waiting for privileges.
-            _pwdPromise.then(function(item_pwd) {
-                loadPasswordIntoEditForm(Promise.resolve(item_pwd), store.get('teampassItem').id);
-            });
-
-            // Apply form setup once privileges are confirmed (independent of password).
+            // Check privileges first — do not show form or fetch password until confirmed.
             getPrivilegesOnItem(item_tree_id, 1, 'item_edit_current_folder').then(function(retData) {
+                // getPrivilegesOnItem() already showed a toastr for denied access —
+                // just clean up and bail out without duplicating the message.
                 if (retData.error === true) {
-                    toastr.remove();
-                    toastr.error(
-                        retData.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
                     requestRunning = false;
-                    // Revert skeleton form visibility on error
-                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
-                    $(store.get('teampassUser').previousView).removeClass('hidden');
                     return false;
                 }
 
-                // Is user allowed
-                if (store.get('teampassItem').item_rights < 20) {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('error_not_allowed_to'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                    // Revert skeleton form visibility on error
-                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
-                    $(store.get('teampassUser').previousView).removeClass('hidden');
-                    return false;
-                }
+                // Permission confirmed — now show the form
+                savePreviousView();
+                // Fields are already populated by Details('show') — only clear password
+                resetEditFormSkeleton(false);
+
+                // Fetch password now that we know the user is allowed
+                const _pwdPromise = getItemPassword(
+                    'at_password_shown_edit_form',
+                    'item_id',
+                    store.get('teampassItem').id
+                );
+                _pwdPromise.then(function(item_pwd) {
+                    loadPasswordIntoEditForm(Promise.resolve(item_pwd), store.get('teampassItem').id);
+                });
 
                 // Store not a new item
                 store.update(
@@ -1112,14 +1084,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Remove validated class
                 $('#form-item').removeClass('was-validated');
 
-                // Apply folder/visibility/complexity/custom-fields.
-                // Password is already being handled by the independent _pwdPromise.then() above.
                 showItemEditForm(
                     retData.folderId !== undefined && retData.folderId !== ''
                         ? parseInt(retData.folderId, 10)
                         : item_tree_id,
                     null,
-                    true  // skipPassword — already wired up independently
+                    true  // skipPassword — wired up independently above
                 );
             });
 
@@ -1230,8 +1200,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW NOTIFY ITEM');
             toastr.remove();
 
-            // Set checkbox to reflect the current notification status
-            if ($('#card-item-misc-notification').find('.text-success').length > 0) {
+            // Set checkbox to reflect the current notification status (read from store, not DOM)
+            if (store.get('teampassItem').notificationStatus === true) {
                 $('#form-item-notify-checkbox').iCheck('check');
             } else {
                 $('#form-item-notify-checkbox').iCheck('uncheck');
@@ -1829,8 +1799,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         }
                     );
                 } else {
+                    const newNotifStatus = $('#form-item-notify-checkbox').is(':checked') === true;
+
+                    // Update store so checkbox is correct if modal is reopened
+                    store.update('teampassItem', function(teampassItem) {
+                        teampassItem.notificationStatus = newNotifStatus;
+                    });
+
                     // Change the icon for Notification
-                    if ($('#form-item-notify-checkbox').is(':checked') === true) {
+                    if (newNotifStatus) {
                         $('#card-item-misc-notification')
                             .html('<span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span>');
                     } else {
@@ -1851,9 +1828,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             timeOut: 1000
                         }
                     );
-
-                    // Clear
-                    $('#form-item-notify-checkbox').iCheck('uncheck');
                 }
             }
         );
@@ -1921,6 +1895,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * DELETE - recycle item
      */
     $('#form-item-delete-perform').click(function() {
+        $(this).prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
         goDeleteItem(
             store.get('teampassItem').id,
             store.get('teampassItem').item_key !== undefined ? store.get('teampassItem').item_key : '',
@@ -1992,6 +1967,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     requestRunning = false;
                 } else {
                     // ERROR
+                    $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
                         data.message,
                         { timeOut: 5000 }
@@ -2868,6 +2844,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             toastr.remove();
             resetItemDetailSkeleton();
 
+            // Show target item label immediately (known from list, no need to wait for AJAX)
+            const targetId = $(this).hasClass('but-prev-item')
+                ? $(this).attr('data-prev-item-id')
+                : $(this).attr('data-next-item-id')
+            const navRowLabel = unescape($('#list-item-row_' + targetId).data('label') || '')
+            if (navRowLabel) {
+                $('#card-item-label').text(navRowLabel)
+            }
+
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
             }
@@ -2896,6 +2881,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $('#teampass_items_list tr').removeClass('item-selected')
             $(this).closest('tr').addClass('item-selected')
             resetItemDetailSkeleton();
+
+            // Show item label immediately (known from the list row, no need to wait for AJAX)
+            const rowLabel = unescape($(this).closest('tr').data('label') || '')
+            if (rowLabel) {
+                $('#card-item-label').text(rowLabel)
+            }
 
             // Apply full layout switch immediately so skeleton is visible in the right position
             $('.item-details-card').removeClass('hidden');
@@ -5201,7 +5192,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
                 
                 // Prepare anyone can modify icon
-                if ((value.anyone_can_modify === 1 || value.open_edit === 1)) {
+                if (value.open_edit === 1) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo $lang->get('edit'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-pen fa-stack-1x fa-inverse"></i></span>';
                 }
 
@@ -5610,6 +5601,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item-description').summernote('destroy');
         $('#form-item-suggestion-description').summernote('destroy');
 
+        // Reset badge and action buttons immediately so state from the previous item
+        // doesn't bleed through while the new item's data is loading.
+        if (actionType === 'show') {
+            $('#card-item-readonly-badge').addClass('hidden');
+            $('[data-item-action="edit"], [data-item-action="delete"]').removeClass('hidden');
+        }
+
         // Init
         var hasItemAccess = false;
         if (hotlink === false) {
@@ -5695,6 +5693,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         progressBar: true
                     }
                 );
+                // Restore previous view if skeleton was shown prematurely for an edit
+                if (actionType === 'edit') {
+                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
+                    const prevView = store.get('teampassUser').previousView;
+                    if (prevView) {
+                        $(prevView).removeClass('hidden');
+                    }
+                }
                 // Finished
                 requestRunning = false;
                 return false;
@@ -5975,11 +5981,29 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             teampassItem.edit_item_salt_key = data.edit_item_salt_key,
                             teampassItem.id_restricted_to = data.id_restricted_to,
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
-                            teampassItem.item_rights = itemRights
+                            teampassItem.item_rights = itemRights,
+                            teampassItem.notificationStatus = data.notification_status === true
                         }
                     );
 
                     if (actionType === 'show') {
+                        // Edit button and badge — user_can_modify=0 covers R, NE, NDNE.
+                        // Computed via getRoleBasedAccess(), same logic as checkAccess().
+                        if (parseInt(data.user_can_modify) === 0) {
+                            $('#card-item-readonly-badge').removeClass('hidden');
+                            $('[data-item-action="edit"]').addClass('hidden');
+                        } else {
+                            $('#card-item-readonly-badge').addClass('hidden');
+                            $('[data-item-action="edit"]').removeClass('hidden');
+                        }
+
+                        // Delete button — hide when role denies delete (ND, NDNE, R).
+                        if (parseInt(data.user_can_delete) === 0) {
+                            $('[data-item-action="delete"]').addClass('hidden');
+                        } else {
+                            $('[data-item-action="delete"]').removeClass('hidden');
+                        }
+
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
@@ -7544,9 +7568,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: retData.message });
+                    return;
                 }
 
                 // if edition and retData.edition_locked === true then show message
@@ -7561,11 +7586,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     );
                     // Track this item so WebSocket can notify when it becomes available
                     window.tpBlockedEditItemId = parseInt(store.get('teampassItem').id);
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: '<?php echo $lang->get('error_item_currently_being_updated'); ?>' });
+                    return;
                 }
-                
+
                 // Is the user allowed?
                 // edit===0 means new item creation: check create right (NDNE allows it, R does not).
                 // edit===1 means editing an existing item: check edit right instead.
@@ -7581,9 +7607,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: '<?php echo $lang->get('error_not_allowed_to'); ?>' });
+                    return;
                 }
                 $.post(
                     "sources/items.queries.php", {

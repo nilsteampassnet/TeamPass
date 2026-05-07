@@ -2883,13 +2883,23 @@ switch ($inputData['type']) {
             // Allow show details
             $arrData['show_details'] = 1;
 
-            // Display menu icon for deleting if user is allowed
-            if (
-                intval($dataItem['id_user']) === (int) $session->get('user-id')
+            // Compute role-based edit and delete rights — same logic as getCurrentAccessRights().
+            // NE/NDNE folders: edit=false → user_can_modify=0; ND/NDNE folders: delete=false.
+            [$roleBasedEdit, $roleBasedDelete] = getRoleBasedAccess($session, (int) $dataItem['id_tree']);
+            if (in_array((int) $dataItem['id_tree'], $session->get('user-read_only_folders') ?? [])) {
+                $roleBasedEdit   = false;
+                $roleBasedDelete = false;
+            }
+
+            $isOwnerOrPrivileged = intval($dataItem['id_user']) === (int) $session->get('user-id')
                 || (int) $session->get('user-admin') === 1
-                || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1)
-                || intval($dataItem['anyone_can_modify']) === 1
-                || in_array($dataItem['id_tree'], $session->get('system-list_folders_editable_by_role')) === true
+                || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1);
+
+            if (
+                $isOwnerOrPrivileged
+                || (intval($dataItem['anyone_can_modify']) === 1
+                    && !in_array((int) $dataItem['id_tree'], $session->get('user-read_only_folders') ?? []))
+                || $roleBasedEdit === true
                 || in_array($session->get('user-id'), $restrictedTo) === true
                 //|| count($restrictedTo) === 0
                 || (int) $post_folder_access_level === 30
@@ -2901,6 +2911,19 @@ switch ($inputData['type']) {
                 $arrData['user_can_modify'] = 0;
                 $user_is_allowed_to_modify = false;
             }
+
+            // Delete rights: owner/admin/manager always can delete; otherwise role-based.
+            $arrData['user_can_delete'] = ($isOwnerOrPrivileged
+                || $roleBasedDelete === true
+                || in_array($session->get('user-id'), $restrictedTo) === true
+            ) ? 1 : 0;
+
+            // Explicit read-only folder flag — used by the frontend to gate the Edit button.
+            // Based solely on user-read_only_folders (same list checked by getCurrentAccessRights()).
+            $arrData['is_read_only_folder'] = in_array(
+                (int) $dataItem['id_tree'],
+                $session->get('user-read_only_folders') ?? []
+            ) || (int) $session->get('user-read_only') === 1;
 
             $arrData['corruption_notice'] = teampassCorruptedItemsBuildNotice(
                 $lang,
@@ -4452,6 +4475,7 @@ switch ($inputData['type']) {
                         intval($record['anyone_can_modify']) === 1
                         && intval($record['perso']) !== 1
                         && (int) $session->get('user-read_only') === 0
+                        && !in_array((int) $record['tree_id'], $session->get('user-read_only_folders') ?? [])
                     ) {
                         // Case 3 - Has this item the setting "anyone can modify" set to true?
                         // Allow all rights
@@ -7734,28 +7758,29 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
 {
     $session = SessionManager::getSession();
 
-    // Check if the item is locked and whether the current user can edit it
-    $editionLock = isItemLocked($itemId, $session, $userId, $action);
+    // All permission checks come FIRST so that the edition lock is never
+    // created for a user who will ultimately be denied edit access.
 
     // Check if user is allowed restriction list of users
-    // If the item is restricted to specific users, check if the current user is in that list
     if (getItemRestrictedUsersList($itemId, $userId) === false) {
         return getAccessResponse(false, false, false, false);
     }
-    
+
     // Check if the item is being processed by another user
     if (isProcessOnGoing($itemId)) {
         return getAccessResponse(false, true, false, false);
     }
-    
+
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
     }
-    
+
     // Check if the folder is in the user's allowed folders list defined by admin
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
-        return getAccessResponse(false, true, true, true, [], true);
+        // User has full access — create/check the edition lock now that edit is confirmed
+        $editionLock = isItemLocked($itemId, $session, $userId, $action);
+        return getAccessResponse(false, true, true, true, $editionLock, true);
     }
 
     // Retrieve user's visible folders from the cache_tree table
@@ -7764,16 +7789,16 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {
         if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            return getAccessResponse(false, true, true, true, [], true);
+            $editionLock = isItemLocked($itemId, $session, $userId, $action);
+            return getAccessResponse(false, true, true, true, $editionLock, true);
         }
     }
-    
+
     // Determine the user's access rights based on their roles for this folder
     [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
 
     // Is this folder in the list of visible folders?
     if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
-        // If the folder is not visible to the user, they cannot edit or delete items in it
         return getAccessResponse(false, false, false, false);
     }
 
@@ -7781,6 +7806,10 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (LOG_TO_SERVER === true) {
         error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
     }
+
+    // Only create/check the edition lock when the user actually has edit rights.
+    // If edit=false, pass an empty status — no lock is acquired for a denied user.
+    $editionLock = $edit ? isItemLocked($itemId, $session, $userId, $action) : ['status' => false];
 
     return getAccessResponse(false, true, $edit, $delete, $editionLock, $create);
 }
