@@ -34,26 +34,19 @@ class ItemController extends BaseController
      * Get user's private key from database
      *
      * Retrieves the user's private key by decrypting it from the database.
-     * The private key is stored ENCRYPTED in the database and is decrypted
-     * using the session_key from the JWT token.
+     * The AES key used for decryption (session_aes_key) is stored server-side in
+     * teampass_api and is never transmitted in the JWT.
      *
-     * @param array $userData User data from JWT token (must include id, key_tempo, and session_key)
+     * @param array $userData User data from JWT token (must include id and key_tempo)
      * @return string|null Decrypted private key or null if not found/invalid session
      */
     private function getUserPrivateKey(array $userData): ?string
     {
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
 
-        // Verify session_key exists in JWT payload
-        if (!isset($userData['session_key']) || empty($userData['session_key'])) {
-            error_log('getUserPrivateKey: Missing session_key in JWT token for user ID ' . $userData['id']);
-            return null;
-        }
-
         $userKeys = get_user_keys(
             (int) $userData['id'],
-            (string) $userData['key_tempo'],
-            (string) $userData['session_key'] // Session key from JWT for decryption
+            (string) $userData['key_tempo']
         );
 
         if ($userKeys === null) {

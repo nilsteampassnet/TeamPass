@@ -1194,7 +1194,6 @@ return array(
     'kb_restore_article' => 'Restore',
     'kb_deleted_articles' => 'Deleted articles',
     'kb_category' => 'Category',
-    'kb_category_placeholder' => 'Existing or new category name',
     'kb_anyone_can_modify' => 'Anyone can modify this article',
     'kb_no_articles' => 'No articles found',
     'kb_article_saved' => 'Article saved',

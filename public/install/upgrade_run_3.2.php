@@ -83,6 +83,18 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Add server-side AES key column to teampass_api (session_aes_key is no longer stored in JWT)
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'session_aes_key',
+    'VARCHAR(64) NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column session_aes_key to api table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Add enable_local_password_recovery setting, aligned with the legacy visibility flag when present.
 $legacyForgotPwdRecovery = mysqli_query(
     $db_link,

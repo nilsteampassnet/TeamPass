@@ -202,6 +202,32 @@ function kbAttachmentSanitizeFilename(string $filename): string
     return $filename === '' ? 'file' : $filename;
 }
 
+/**
+ * Returns a safe MIME type for use in Content-Type headers.
+ * Detects the real MIME type from the stored file via mime_content_type()
+ * and neutralises any type that could trigger in-browser execution (HTML, JS, SVG…).
+ */
+function kbSanitizeMimeType(string $storedFilePath): string
+{
+    $dangerous = [
+        'text/html', 'text/javascript', 'application/javascript',
+        'application/x-javascript', 'application/xhtml+xml', 'image/svg+xml',
+    ];
+
+    $mimeType = is_file($storedFilePath) ? (string) mime_content_type($storedFilePath) : '';
+    if ($mimeType === '' || $mimeType === false) {
+        return 'application/octet-stream';
+    }
+
+    foreach ($dangerous as $pattern) {
+        if (stripos($mimeType, $pattern) !== false) {
+            return 'application/octet-stream';
+        }
+    }
+
+    return $mimeType;
+}
+
 
 function kbNormalizeExtensionsList(string $extensions): array
 {
@@ -1370,12 +1396,13 @@ switch ($type) {
             $attachmentId = kbGenerateToken();
             $storedName = $attachmentId . '_' . $originalName;
             $uploadedAt = time();
-            $mimeType = (string) ($uploadedFile->getClientMimeType() ?? '');
 
             $uploadedFile->move($directory, $storedName);
 
+            $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
+            $mimeType = kbSanitizeMimeType($storedPath);
+
             if ($fileSize <= 0) {
-                $storedPath = $directory . DIRECTORY_SEPARATOR . $storedName;
                 if (is_file($storedPath)) {
                     $resolvedSize = filesize($storedPath);
                     $fileSize = $resolvedSize === false ? 0 : (int) $resolvedSize;
