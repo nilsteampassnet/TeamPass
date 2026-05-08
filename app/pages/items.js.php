@@ -5714,6 +5714,33 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
 
+            // Apply badge and action-button visibility for the 'show' view using the
+            // authoritative check_current_access_rights result — no need to wait for
+            // the show_details_item response.
+            if (actionType === 'show') {
+                const canEdit   = retData.edit   === true
+                const canDelete = retData.delete  === true
+
+                // Badge visible whenever at least one right is missing.
+                if (!canEdit || !canDelete) {
+                    $('#card-item-readonly-badge').removeClass('hidden');
+                } else {
+                    $('#card-item-readonly-badge').addClass('hidden');
+                }
+
+                if (!canEdit) {
+                    $('[data-item-action="edit"]').addClass('hidden');
+                } else {
+                    $('[data-item-action="edit"]').removeClass('hidden');
+                }
+
+                if (!canDelete) {
+                    $('[data-item-action="delete"]').addClass('hidden');
+                } else {
+                    $('[data-item-action="delete"]').removeClass('hidden');
+                }
+            }
+
             // Store current view — for 'edit' it was already captured before the skeleton was shown
             if (actionType !== 'edit') {
                 savePreviousView();
@@ -5995,23 +6022,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     );
 
                     if (actionType === 'show') {
-                        // Edit button and badge — user_can_modify=0 covers R, NE, NDNE.
-                        // Computed via getRoleBasedAccess(), same logic as checkAccess().
-                        if (parseInt(data.user_can_modify) === 0) {
-                            $('#card-item-readonly-badge').removeClass('hidden');
-                            $('[data-item-action="edit"]').addClass('hidden');
-                        } else {
-                            $('#card-item-readonly-badge').addClass('hidden');
-                            $('[data-item-action="edit"]').removeClass('hidden');
-                        }
-
-                        // Delete button — hide when role denies delete (ND, NDNE, R).
-                        if (parseInt(data.user_can_delete) === 0) {
-                            $('[data-item-action="delete"]').addClass('hidden');
-                        } else {
-                            $('[data-item-action="delete"]').removeClass('hidden');
-                        }
-
                         // Prepare Views
                         $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                         $('.form-item').addClass('hidden');
