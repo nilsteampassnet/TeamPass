@@ -7055,6 +7055,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         if (data.error === false) {
                             $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
                         } else {
+                            $('#card-item-opt_code').html('');
                             $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="<?php echo $lang->get('error_otp_secret'); ?>"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
                             $('.infotip').tooltip();
                         }
@@ -8046,8 +8047,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function searchItemsWithTags(criteria) {
         if (criteria !== '') {
-            $('#folders-tree-card, .columns-position').removeClass('hidden');
-            $('.form-item-action, .form-item, .form-folder-action').addClass('hidden');
+            closeItemDetailsCard();
 
             $('#find_items').val(criteria);
 

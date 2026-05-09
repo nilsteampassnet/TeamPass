@@ -980,11 +980,12 @@ if ((int) $session_user_admin === 1) {
     <div class="row h-25" id="folders-tree-card">
         <div id="folder-tree-container" class="col-md-5 column-left">
             <div class="card card-info card-outline">
-                <div class="card-header">
-                    <div class="row justify-content-end">
+                <div class="card-header align-items-center py-2">
+                    <div class="row">
                         <div class="col-6">
-                            <h3 class="card-title"><i class="fa-regular fa-folder-open mr-2">
+                            <h3 class="card-title mb-0 mt-2"><i class="fa-regular fa-folder-open mr-2 text-info">
                                 </i><span class=""><?php echo $lang->get('folders'); ?></span>
+                            </h3>
                         </div>
                         <div class="col-6">
                             <div class="btn-group float-right">
