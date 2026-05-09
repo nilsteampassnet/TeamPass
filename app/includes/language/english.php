@@ -1359,6 +1359,7 @@ return array(
     'at_password_shown' => 'Password shown',
     'at_password_copied' => 'Password copied',
     'searching' => 'Searching ...',
+    'search_results' => 'Search results',
     'list_items_with_tag' => 'List items with this tag',
     'no_item_to_display' => 'No items to display',
     'opening_folder' => 'Reading folder ...',

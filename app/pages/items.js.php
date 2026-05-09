@@ -4303,6 +4303,34 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
             $('#teampass_items_list').html('');
 
+            // Hide subfolder list during search
+            $('#table_teampass_subfolders_list').addClass('hidden');
+            // Update items table header to reflect search mode
+            $('#table_teampass_items_list thead th').html(
+                '<i class="fa-solid fa-search mr-1"></i><?php echo $lang->get('search_results'); ?>'
+                + ' : <em class="text-muted" id="search-criteria-label"></em>'
+                + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                + '<button type="button" class="btn btn-sm btn-link float-right p-0 text-muted" id="search-results-close" title="<?php echo $lang->get('close'); ?>">'
+                + '<i class="fa-solid fa-times"></i>'
+                + '</button>'
+            );
+            $('#search-criteria-label').text(criteria);
+
+            // Close button restores the previous folder view
+            $('#search-results-close').off('click').on('click', function() {
+                const currentFolder = store.get('teampassApplication').selectedFolder;
+                if (currentFolder !== undefined && currentFolder !== '') {
+                    ListerItems(currentFolder, '', 0);
+                } else {
+                    $('#table_teampass_items_list thead th').html(
+                        '<i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?>'
+                        + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                    );
+                    $('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
+                    $('#teampass_items_list').html('');
+                }
+            });
+
             // Continu the list of results
             finishingItemsFind(
                 'search_for_items',
@@ -4860,6 +4888,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (start == 0) {
                 //clean form
                 $('#items_folder_path').html('');
+                // Restore normal items header when entering folder view
+                $('#table_teampass_items_list thead th').html(
+                    '<i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?>'
+                    + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                );
                 $('#count-items-badge').text('');
                 // Show skeleton rows while items load so the list is never blank
                 let skeletonRows = ''
