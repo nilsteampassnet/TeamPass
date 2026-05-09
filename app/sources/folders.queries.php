@@ -1401,14 +1401,13 @@ if (null !== $post_type) {
                             if (DB::count() > 0) {
                                 // Decrypt / Encrypt the password
                                 $cryptedStuff = doDataEncryption(
-                                    base64_decode(
-                                        doDataDecryption(
-                                            $record['pw'],
-                                            decryptUserObjectKey(
-                                                $itemUserTpKey['share_key'],
-                                                $userTpPrivateKey
-                                            )
-                                        )
+                                    teampassDecryptPasswordValue(
+                                        $record['pw'],
+                                        decryptUserObjectKey(
+                                            $itemUserTpKey['share_key'],
+                                            $userTpPrivateKey
+                                        ),
+                                        (int) ($record['pw_len'] ?? 0)
                                     )
                                 );                                
 

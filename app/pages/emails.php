@@ -81,7 +81,9 @@ header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
 // --------------------------------- //
- 
+$localPasswordRecoveryEnabled = isset($SETTINGS['enable_local_password_recovery']) === true
+    ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+    : ((int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1);
 
 ?>
 <!-- Content Header (Page header) -->
@@ -151,6 +153,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             </div>
                             <div class="col-7 mb-0">
                                 <input type='text' class='form-control form-control-sm' id='email_server_url' value='<?php echo isset($SETTINGS['email_server_url']) === true ? $SETTINGS['email_server_url'] : ''; ?>'>
+                            </div>
+                        </div>
+
+                        <div class="row mb-2">
+                            <div class="col-5">
+                                <?php echo $lang->get('settings_enable_local_password_recovery'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_enable_local_password_recovery_tip'); ?>
+                                </small>
+                            </div>
+                            <div class="col-7 mb-0">
+                                <div class='toggle toggle-modern' id='enable_local_password_recovery' data-toggle-on='<?php echo $localPasswordRecoveryEnabled === true ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_local_password_recovery_input' value='<?php echo $localPasswordRecoveryEnabled === true ? '1' : '0'; ?>' />
                             </div>
                         </div>
 

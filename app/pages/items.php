@@ -1273,15 +1273,15 @@ if ((int) $session_user_admin === 1) {
                                     <b><?php echo $lang->get('tags'); ?></b>
                                     <a id="card-item-tags" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
                                 </li>
-                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) : ?>
+                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) : ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('kb_menu'); ?></b>
-                                    <span id="card-item-kbs" class="float-right ml-1"></span>
+                                    <span id="card-item-kbs" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <?php endif; ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('otp_code'); ?></b>
-                                    <a id="card-item-opt_code" class="float-right ml-1"></a>
+                                    <a id="card-item-opt_code" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
                                     <span id="card-item-opt_code_error" class="float-right"></span>
                                 </li>
                                 <li class="list-group-item" id="card-item-misc">

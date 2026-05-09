@@ -131,28 +131,22 @@ function get_bearer_data($jwt) {
 /**
  * Get user encryption keys from database
  *
- * This function retrieves the user's public and private keys from the database.
- * The private key is stored ENCRYPTED in the database and is decrypted using
- * the session key from the JWT token.
- *
- * Security architecture (defense in depth):
- * - The encrypted private key in DB is useless without the session_key
- * - The session_key in JWT is useless without the encrypted key from DB
- * - Both are required together to get the decrypted private key
- * - key_tempo is validated to ensure session is still valid
+ * The private key is stored encrypted in teampass_api (encrypted_private_key).
+ * The AES key used for that encryption (session_aes_key) is also stored server-side —
+ * it is never embedded in the JWT. A stolen JWT alone is therefore insufficient
+ * to decrypt the private key; server (DB) access is also required.
  *
  * @param int $userId User ID from JWT token
  * @param string $keyTempo Session token from JWT (for validation)
- * @param string $sessionKey Session key from JWT (base64 encoded) for decryption
  * @return array|null Array containing public_key and private_key (decrypted), or null if validation fails
  */
-function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?array
+function get_user_keys(int $userId, string $keyTempo): ?array
 {
     require_once API_ROOT_PATH . '/inc/encryption_utils.php';
 
-    // Retrieve user's public key and encrypted private key from database
+    // Retrieve user's public key, encrypted private key, and server-side AES key
     $userInfo = DB::queryFirstRow(
-        "SELECT u.public_key, a.encrypted_private_key, a.session_key AS key_tempo
+        "SELECT u.public_key, a.encrypted_private_key, a.session_key AS key_tempo, a.session_aes_key
         FROM " . prefixTable('users') . " AS u
         INNER JOIN " . prefixTable('api') . " AS a ON (a.user_id = u.id)
         WHERE u.id = %i",
@@ -160,47 +154,48 @@ function get_user_keys(int $userId, string $keyTempo, string $sessionKey): ?arra
     );
 
     if (DB::count() === 0) {
-        // User not found or no API configuration
         error_log('[API] get_user_keys: User not found or no API config for user ID ' . $userId);
         return null;
     }
 
-    // Validate key_tempo matches (security check - ensures session is still valid)
+    // Validate key_tempo (ensures the session is still valid)
     if (($userInfo['key_tempo']) !== $keyTempo) {
-        // Session invalid or expired
         error_log('[API] get_user_keys: Invalid key_tempo (' . $keyTempo.') for user ID ' . $userId);
         return null;
     }
 
-    // Check if encrypted private key exists
+    // Check that both encrypted blobs are present
     if (empty($userInfo['encrypted_private_key'])) {
-        // No encrypted key found - user needs to re-authenticate
         error_log('[API] get_user_keys: No encrypted private key found for user ID ' . $userId);
         return null;
     }
 
-    // Decode the session key from base64
-    $sessionKeyDecoded = base64_decode($sessionKey, true);
-
-    if ($sessionKeyDecoded === false || strlen($sessionKeyDecoded) !== 32) {
-        error_log('[API] get_user_keys: Invalid session key format');
+    if (empty($userInfo['session_aes_key'])) {
+        error_log('[API] get_user_keys: No session AES key found for user ID ' . $userId . ' — re-authentication required');
         return null;
     }
 
-    // Decrypt the private key using the session key
+    // Decode the AES key stored server-side
+    $sessionKeyDecoded = base64_decode((string) $userInfo['session_aes_key'], true);
+
+    if ($sessionKeyDecoded === false || strlen($sessionKeyDecoded) !== 32) {
+        error_log('[API] get_user_keys: Invalid session AES key format for user ID ' . $userId);
+        return null;
+    }
+
+    // Decrypt the private key using the server-side AES key
     $privateKeyDecrypted = decrypt_with_session_key(
         $userInfo['encrypted_private_key'],
         $sessionKeyDecoded
     );
 
     if ($privateKeyDecrypted === false) {
-        // Decryption failed - wrong key or tampered data
         error_log('[API] get_user_keys: Failed to decrypt private key for user ID ' . $userId);
         return null;
     }
 
     return [
         'public_key' => $userInfo['public_key'],
-        'private_key' => $privateKeyDecrypted, // Returns the DECRYPTED private key
+        'private_key' => $privateKeyDecrypted,
     ];
 }

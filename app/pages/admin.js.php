@@ -609,7 +609,8 @@ function loadLiveActivity() {
                 let html = ''
                 
                 data.activities.forEach(activity => {
-                    const iconClass = getActivityIcon(activity.action)
+                    const iconClass = getActivityIcon(activity.action, activity.source_type)
+                    const sourceHint = getActivitySourceHint(activity.source_type)
                     const timeAgo = formatTimeAgo(activity.timestamp)
                     
                     html += `
@@ -624,6 +625,7 @@ function loadLiveActivity() {
                                 <strong>${escapeHtml(activity.user_login)}</strong> 
                                 ${escapeHtml(activity.action_text)}
                                 ${activity.item_label ? `"<em>${escapeHtml(activity.item_label)}</em>"` : ''}
+                                ${sourceHint ? `<small class="text-muted ml-1">${escapeHtml(sourceHint)}</small>` : ''}
                             </p>
                         </li>
                     `
@@ -1023,18 +1025,30 @@ function updateLastRefreshTime() {
  * Get icon class for activity type
  * 
  * @param {string} action - Action type
+ * @param {string} sourceType - Activity source
  * @return {string} - Icon class
  */
-function getActivityIcon(action) {
+function getActivityIcon(action, sourceType = 'item') {
     const icons = {
-        'access': 'fas fa-eye text-info',
-        'create': 'fas fa-plus-circle text-success',
-        'modify': 'fas fa-edit text-warning',
-        'delete': 'fas fa-trash text-danger',
-        'login': 'fas fa-sign-in-alt text-primary',
-        'logout': 'fas fa-sign-out-alt text-secondary'
+        'at_shown': sourceType === 'kb' ? 'fas fa-book text-info' : 'fas fa-eye text-info',
+        'at_creation': 'fas fa-plus-circle text-success',
+        'at_modification': 'fas fa-edit text-warning',
+        'at_delete': 'fas fa-trash text-danger',
+        'at_restored': 'fas fa-undo text-success',
+        'at_password_shown_edit_form': 'fas fa-edit text-warning',
+        'at_copy': 'fas fa-copy text-primary'
     }
     return icons[action] || 'fas fa-info-circle text-muted'
+}
+
+/**
+ * Get a subtle source hint for KB entries
+ *
+ * @param {string} sourceType - Activity source
+ * @return {string} - Source hint
+ */
+function getActivitySourceHint(sourceType) {
+    return sourceType === 'kb' ? '(KB)' : ''
 }
 
 /**

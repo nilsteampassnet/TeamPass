@@ -257,6 +257,7 @@ function performStep5() {
         { id: 'check18', action: 'kb' },
         { id: 'check19', action: 'kb_categories' },
         { id: 'check20', action: 'kb_items' },
+        { id: 'check61', action: 'kb_comments' },
         { id: 'check21', action: 'ldap_groups_roles' },
         { id: 'check22', action: 'languages' },
         { id: 'check23', action: 'log_items' },
@@ -746,16 +747,15 @@ window.addEventListener('resize', adjustScrollableHeight);
 
 function updateProgressBar(currentStep, totalSteps) {
     const progressBar = document.getElementById('progressbar');
-
+    
     // Calculate the progress percentage
     const percentage = Math.round((currentStep / totalSteps) * 100);
-
+    
     // Update the progress bar properties
     progressBar.style.width = percentage + '%';  // Width of the bar
     progressBar.setAttribute('aria-valuenow', percentage);  // Update accessibility
     progressBar.textContent = percentage + '%';  // Displayed text
 }
-
 function cleanupAndRedirect(url) {
     const btn = document.getElementById('btn_go_home');
     btn.disabled = true;

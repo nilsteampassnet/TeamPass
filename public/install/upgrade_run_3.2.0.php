@@ -19,7 +19,7 @@
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
- * @file      upgrade_run_3.2.php
+ * @file      upgrade_run_3.2.0.php
  * @author    Nils Laumaillé (nils@teampass.net)
  * @copyright 2009-2026 Teampass.net
  * @license   GPL-3.0
@@ -83,8 +83,29 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
-// Add enable_local_password_recovery setting (disabled by default)
-mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin','enable_local_password_recovery', 0)");
+// Add server-side AES key column to teampass_api (session_aes_key is no longer stored in JWT)
+$res = addColumnIfNotExist(
+    $pre . 'api',
+    'session_aes_key',
+    'VARCHAR(64) NULL DEFAULT NULL'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column session_aes_key to api table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Add enable_local_password_recovery setting, aligned with the legacy visibility flag when present.
+$legacyForgotPwdRecovery = mysqli_query(
+    $db_link,
+    "SELECT `valeur` FROM `" . $pre . "misc` WHERE `type` = 'admin' AND `intitule` = 'disable_show_forgot_pwd_link' LIMIT 1"
+);
+$enableLocalPasswordRecovery = 1;
+if ($legacyForgotPwdRecovery !== false && mysqli_num_rows($legacyForgotPwdRecovery) > 0) {
+    $legacyForgotPwdRecoveryRow = mysqli_fetch_assoc($legacyForgotPwdRecovery);
+    $enableLocalPasswordRecovery = (int) ($legacyForgotPwdRecoveryRow['valeur'] ?? 0) === 1 ? 0 : 1;
+}
+mysqli_query($db_link, "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin','enable_local_password_recovery', " . (int) $enableLocalPasswordRecovery . ")");
 
 // Add soft-delete column to kb table
 $res = addColumnIfNotExist(
@@ -147,6 +168,62 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'hibp_check_interval_days', '7')"
+);
+
+// Add knowledge base comments support.
+$res = addColumnIfNotExist(
+    $pre . 'kb',
+    'allow_comments',
+    'TINYINT(1) NOT NULL DEFAULT 0'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column allow_comments to kb table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "kb_comments` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `content` text NOT NULL,
+            `author_id` int(12) NOT NULL,
+            `created_at` int(12) NOT NULL DEFAULT 0,
+            `updated_at` int(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            KEY `idx_kb_id` (`kb_id`),
+            KEY `idx_author_id` (`author_id`),
+            KEY `idx_created_at` (`created_at`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_kb_id',
+    'ADD KEY `idx_kb_id` (`kb_id`)'
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_author_id',
+    'ADD KEY `idx_author_id` (`author_id`)'
+);
+
+checkIndexExist(
+    $pre . 'kb_comments',
+    'idx_created_at',
+    'ADD KEY `idx_created_at` (`created_at`)'
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_comments` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 );
 
 //---------------------------------------------------------------------

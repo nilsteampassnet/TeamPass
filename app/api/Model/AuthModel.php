@@ -114,14 +114,16 @@ class AuthModel
                     return ["error" => "Login failed.", "info" => "Failed to encrypt private key"];
                 }
 
-                // Store the ENCRYPTED private key in the API table
-                // Even if the database is compromised, the key cannot be used without the session_key from the JWT
+                // Store the ENCRYPTED private key and the AES session key server-side.
+                // The session_aes_key never leaves the server (not embedded in JWT),
+                // so a stolen JWT alone cannot decrypt the private key.
                 DB::update(
                     prefixTable('api'),
                     [
                         'encrypted_private_key' => $encryptedPrivateKey,
                         'session_key_salt' => $sessionKeySalt,
                         'session_key' => $keyTempo,
+                        'session_aes_key' => base64_encode($sessionKey),
                         'timestamp' => time(),
                     ],
                     'user_id = %i',
@@ -169,16 +171,15 @@ class AuthModel
                         $originForDb
                     );
                 }
-                // create JWT with session key
+                // create JWT (session_aes_key is stored server-side, not in the token)
                 return $this->createUserJWT(
                     (int) $userInfo['id'],
                     (string) $inputData['login'],
                     (string) $userInfo['email'],
                     (int) $userInfo['personal_folder'],
-                    '', // folders_list — kept empty, extension uses writableFolders endpoint                                
-                    '', // restricted_items_list — kept empty, no longer computed at auth time  
+                    '', // folders_list — kept empty, extension uses writableFolders endpoint
+                    '', // restricted_items_list — kept empty, no longer computed at auth time
                     (string) $keyTempo,
-                    (string) base64_encode($sessionKey), // Session key for decrypting private key
                     (int) $userInfo['admin'],
                     (int) $userInfo['gestionnaire'],
                     (int) $userInfo['can_create_root_folder'],
@@ -203,15 +204,10 @@ class AuthModel
     /**
      * Create a JWT
      *
-     * Note: User encryption keys (public_key, private_key) are no longer stored in the JWT
-     * to reduce token size. Instead, the private key is encrypted with a session key and
-     * stored in the database. The session key is stored in the JWT (~44 bytes) which is
-     * used to decrypt the private key when needed.
-     *
-     * Security approach (defense in depth):
-     * - Encrypted private key in DB is useless without session_key
-     * - session_key in JWT is useless without encrypted private key from DB
-     * - Both are required together to access the decrypted private key
+     * The private key is encrypted with a per-session AES key (session_aes_key) stored
+     * server-side in teampass_api. The JWT carries only key_tempo (a reference used to
+     * validate the session and locate the row). The AES key never leaves the server,
+     * so a stolen JWT alone cannot be used to decrypt the private key.
      *
      * @param integer $id
      * @param string $login
@@ -220,7 +216,6 @@ class AuthModel
      * @param string $folders
      * @param string $items
      * @param string $keyTempo
-     * @param string $sessionKey Session key (base64) for decrypting private key from DB
      * @param integer $admin
      * @param integer $manager
      * @param integer $can_create_root_folder
@@ -244,7 +239,6 @@ class AuthModel
         string $folders,
         string $items,
         string $keyTempo,
-        string $sessionKey,
         int $admin,
         int $manager,
         int $can_create_root_folder,
@@ -272,7 +266,6 @@ class AuthModel
             'folders_list' => $folders,
             'restricted_items_list' => $items,
             'key_tempo' => $keyTempo,
-            'session_key' => $sessionKey, // Session key for decrypting private key from database
             'is_admin' => $admin,
             'is_manager' => $manager,
             'user_can_create_root_folder' => $can_create_root_folder,
@@ -342,22 +335,12 @@ class AuthModel
         }
 
         // Add all personal folders
-        if ($hasRoles) {
-            $rows = DB::queryFirstRow(
-                'SELECT id
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE title = %i AND personal_folder = 1 AND id NOT IN %li',
-                $userInfo['id'],
-                $userFunctionId
-            );
-        } else {
-            $rows = DB::queryFirstRow(
-                'SELECT id
-                FROM ' . prefixTable('nested_tree') . '
-                WHERE title = %i AND personal_folder = 1',
-                $userInfo['id']
-            );
-        }
+        $rows = DB::queryFirstRow(
+            'SELECT id
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE title = %i AND personal_folder = 1',
+            $userInfo['id']
+        );
         if (empty($rows['id']) === false) {
             array_push($personalFolders, $rows['id']);
             // get all descendants
