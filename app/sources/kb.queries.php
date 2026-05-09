@@ -162,7 +162,7 @@ function kbInsertMiscRow(string $type, string $intitulePrefix, array $payload, i
             }
             usleep(1000);
         }
-    } while ($attempt < 5);
+    } while (true);
 }
 
 function kbMiscEncode(array $payload): string
@@ -215,7 +215,7 @@ function kbSanitizeMimeType(string $storedFilePath): string
     ];
 
     $mimeType = is_file($storedFilePath) ? (string) mime_content_type($storedFilePath) : '';
-    if ($mimeType === '' || $mimeType === false) {
+    if ($mimeType === '') {
         return 'application/octet-stream';
     }
 
@@ -503,8 +503,8 @@ function kbNormalizeLegacyRichTextMarkers(string $text): string
     $text = preg_replace_callback(
         '/<a\s+[^>]*href=(["\'])(.*?)\1[^>]*>(.*?)<\/a>/isu',
         static function (array $matches): string {
-            $href = trim(html_entity_decode(strip_tags((string) ($matches[2] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-            $label = trim(html_entity_decode(strip_tags((string) ($matches[3] ?? '')), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $href = trim(html_entity_decode(strip_tags((string) $matches[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $label = trim(html_entity_decode(strip_tags((string) $matches[3]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 
             if ($href === '') {
                 return $label;
@@ -553,8 +553,8 @@ function kbRenderInlineText(string $text): string
 
     if (preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE) !== false) {
         foreach ($matches[0] as $index => $matchData) {
-            $match = (string) ($matchData[0] ?? '');
-            $position = (int) ($matchData[1] ?? 0);
+            $match = (string) $matchData[0];
+            $position = (int) $matchData[1];
             $markdownLabel = (string) ($matches[2][$index][0] ?? '');
             $markdownCandidate = (string) ($matches[3][$index][0] ?? '');
             $directCandidate = (string) ($matches[4][$index][0] ?? '');
@@ -1430,7 +1430,7 @@ switch ($type) {
         }
 
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
-        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
 
@@ -1484,7 +1484,7 @@ switch ($type) {
         );
 
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'comment_add');
-        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_comment_added'), 'entry' => $entry], 'encode');
         break;
 
@@ -1529,7 +1529,7 @@ switch ($type) {
 
         DB::delete(prefixTable('kb_comments'), 'id = %i', $commentId);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'comment_delete');
-        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_comment_deleted'), 'entry' => $entry], 'encode');
         break;
 
@@ -1572,7 +1572,7 @@ switch ($type) {
 
         kbDeleteAttachmentFileAndRow($attachmentRow, $SETTINGS);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_delete');
-        $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
+        $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_deleted'), 'entry' => $entry], 'encode');
         break;
 
@@ -1601,10 +1601,6 @@ switch ($type) {
             http_response_code(404);
             exit;
         }
-        if (!kbCanEdit($kb, $session) && kbIsAdmin($session) === false) {
-            // Any non-admin user can consult KB; attachment follows same visibility.
-        }
-
         $directory = kbAttachmentBaseDirectory($SETTINGS);
         $storedName = (string) ($payload['stored_name'] ?? '');
         $filePath = $directory . DIRECTORY_SEPARATOR . $storedName;

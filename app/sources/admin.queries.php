@@ -4438,7 +4438,7 @@ case 'get_live_activity':
     usort(
         $activityList,
         static function (array $left, array $right): int {
-            return ($right['timestamp'] ?? 0) <=> ($left['timestamp'] ?? 0);
+            return $right['timestamp'] <=> $left['timestamp'];
         }
     );
 
