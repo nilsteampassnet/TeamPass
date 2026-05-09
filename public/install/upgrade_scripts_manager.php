@@ -64,7 +64,7 @@ $scripts_list = array(
     array('upgrade_run_3.1.6.php', 'user_id'),
     array('upgrade_run_3.1.7.php', 'user_id'),
     array('upgrade_operations.php', 'deduplicate_misc'),
-    array('upgrade_run_3.2.php', 'user_id'),
+    array('upgrade_run_3.2.0.php', 'user_id'),
 );
 $param = '';
 

@@ -467,8 +467,32 @@ $directKbId = (int) $request->query->get('id', 0);
         white-space: nowrap;
     }
 
-    #table-kb-list td.kb-col-actions .btn {
-        margin: 0 0.15rem;
+    #table-kb-list th.kb-col-actions,
+    #table-kb-list td.kb-col-actions {
+        min-width: 100px;
+        padding-left: 0.4rem;
+        padding-right: 0.4rem;
+    }
+
+    .tp-kb-actions-wrap {
+        display: flex;
+        gap: 0.2rem;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: nowrap;
+    }
+
+    .tp-kb-actions-wrap .btn {
+        padding: 0.2rem 0.4rem;
+        flex-shrink: 0;
+    }
+
+    #table-kb-list td.kb-col-label {
+        min-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 0;
     }
 
     #table-kb-list td.kb-col-label a {

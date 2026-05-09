@@ -756,17 +756,17 @@ if (
     }
 
     function kbBuildActions(entry) {
-        let html = '<button type="button" class="btn btn-sm btn-default mr-1 kb-action-view" data-id="' + entry.id + '" title="' + kbTranslations.open + '"><i class="fa-solid fa-eye"></i></button>';
+        let html = '<button type="button" class="btn btn-sm btn-default kb-action-view" data-id="' + entry.id + '" title="' + kbTranslations.open + '"><i class="fa-solid fa-eye"></i></button>';
 
         if (entry.can_edit === true) {
-            html += '<button type="button" class="btn btn-sm btn-default mr-1 kb-action-edit" data-id="' + entry.id + '" title="' + kbTranslations.edit + '"><i class="fa-solid fa-pen"></i></button>';
+            html += '<button type="button" class="btn btn-sm btn-default kb-action-edit" data-id="' + entry.id + '" title="' + kbTranslations.edit + '"><i class="fa-solid fa-pen"></i></button>';
         }
 
         if (entry.can_delete === true) {
             html += '<button type="button" class="btn btn-sm btn-default kb-action-delete" data-id="' + entry.id + '" title="' + kbTranslations.delete + '"><i class="fa-solid fa-trash"></i></button>';
         }
 
-        return html;
+        return '<div class="tp-kb-actions-wrap">' + html + '</div>';
     }
 
     function loadKbList() {
@@ -834,20 +834,23 @@ if (
             pageLength: 25,
             searching: true,
             info: true,
-            responsive: false,
-            scrollX: true,
+            responsive: true,
             autoWidth: false,
             order: [[0, 'asc']],
             language: {
                 url: '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
             },
             columnDefs: [
-                {targets: 0, className: 'kb-col-label', width: '38%'},
-                {targets: 1, className: 'kb-col-category', width: '22%'},
-                {targets: 2, className: 'kb-col-author', width: '20%'},
-                {targets: 3, className: 'kb-col-items text-center text-nowrap', width: '90px'},
-                {targets: 4, orderable: false, searchable: false, className: 'kb-col-actions text-center text-nowrap', width: '150px'}
+                {targets: 0, className: 'kb-col-label'},
+                {targets: 1, className: 'kb-col-category', width: '160px'},
+                {targets: 2, className: 'kb-col-author', width: '140px'},
+                {targets: 3, orderable: false, searchable: false, className: 'kb-col-items text-center text-nowrap', width: '80px'},
+                {targets: 4, orderable: false, searchable: false, className: 'kb-col-actions text-center text-nowrap', width: '130px'}
             ]
+        });
+
+        $(window).on('resize.kbTable', function () {
+            kbTable.columns.adjust()
         });
 
         $('#kb-associated-items').select2({
