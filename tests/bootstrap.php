@@ -2,4 +2,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../vendor/autoload.php';
+$autoload = __DIR__ . '/../vendor/autoload.php';
+if (is_file($autoload) === false) {
+    $autoload = __DIR__ . '/../app/vendor/autoload.php';
+}
+
+require_once $autoload;
