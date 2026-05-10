@@ -357,9 +357,15 @@ class ItemModel
     private function getFolderSettings(int $folderId) : array
     {
         $dataFolderSettings = DB::queryFirstRow(
-            'SELECT bloquer_creation, bloquer_modification, personal_folder
-            FROM ' . prefixTable('nested_tree') . ' 
-            WHERE id = %i',
+            'SELECT nt.bloquer_creation, nt.bloquer_modification,
+            CASE WHEN COUNT(personal_root.id) > 0 THEN 1 ELSE nt.personal_folder END AS personal_folder
+            FROM ' . prefixTable('nested_tree') . ' AS nt
+            LEFT JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+                ON personal_root.personal_folder = 1
+                AND nt.nleft >= personal_root.nleft
+                AND nt.nright <= personal_root.nright
+            WHERE nt.id = %i
+            GROUP BY nt.id, nt.bloquer_creation, nt.bloquer_modification, nt.personal_folder',
             $folderId
         );
 
@@ -655,9 +661,17 @@ class ItemModel
             // Handle folder_id change
             if (isset($params['folder_id'])) {
                 $newFolderId = (int) $params['folder_id'];
+                $folderAccessModel = new FolderAccessModel();
 
-                // Check if user has access to the new folder
-                if (!in_array((string) $newFolderId, $userData['folders_list'], true)) {
+                if ($folderAccessModel->canUseFolder($userData, (int) $currentItem['id_tree']) === false) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied to the source folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                if ($folderAccessModel->canUseFolder($userData, $newFolderId) === false) {
                     return [
                         'error' => true,
                         'error_message' => 'Access denied to the target folder',
@@ -665,7 +679,9 @@ class ItemModel
                     ];
                 }
 
+                $targetItemInfos = $this->getFolderSettings($newFolderId);
                 $updateData['id_tree'] = $newFolderId;
+                $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
             }
 
             // Generate favicon URL if URL is provided and favicon_url is empty
