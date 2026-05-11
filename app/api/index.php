@@ -179,6 +179,24 @@ if (isset($uri[0]) && $uri[0] === 'authorize') {
         }
     }
 
+    $userId = (int) ($userData['data']['id'] ?? 0);
+    if ($userId > 0) {
+        $folderAccessModel = new FolderAccessModel();
+        $currentFolders = $folderAccessModel->normalizeFolderIds($userData['data']['folders_list'] ?? '');
+        $filteredFolders = $folderAccessModel->filterFoldersForUser($currentFolders, $userId);
+
+        if ($filteredFolders !== $currentFolders) {
+            DB::update(
+                prefixTable('cache_tree'),
+                ['folders' => json_encode($filteredFolders), 'timestamp' => time(), 'invalidated_at' => 0],
+                'user_id = %i',
+                $userId
+            );
+        }
+
+        $userData['data']['folders_list'] = implode(',', $filteredFolders);
+    }
+
 
 
     // define the position of controller in $uri

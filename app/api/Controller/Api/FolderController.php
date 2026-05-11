@@ -156,39 +156,33 @@ class FolderController extends BaseController
 
         if (strtoupper($requestMethod) === 'GET') {
             try {
-                $userFolders = !empty($userData['folders_list']) ? explode(',', $userData['folders_list']) : [];
-                $rows = DB::query(
-                    'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
-                    FROM ' . prefixTable('nested_tree') . ' AS nt
-                    LEFT JOIN ' . prefixTable('nested_tree') . ' AS personal 
-                        ON personal.personal_folder = 1 
-                        AND personal.title = %s
-                    WHERE nt.id IN %li
-                    AND (
-                        nt.personal_folder = 0
-                        OR (
-                            personal.id IS NOT NULL
-                            AND nt.nleft >= personal.nleft 
-                            AND nt.nright <= personal.nright
-                        )
-                    )
-                    GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
-                    ORDER BY nt.nlevel ASC, nt.title ASC',
-                    $userData['id'],
-                    $userFolders
-                );
+                $folderAccessModel = new FolderAccessModel();
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userFolders = $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? []);
 
                 $userId = (string) $userData['id'];
                 $username = $userData['username'];
                 $writableFolders = [];
-                foreach ($rows as $row) {
-                    $writableFolders[] = [
-                        'id' => (int) $row['folder_id'],
-                        'label' => $row['title'] === $userId ? $username : $row['title'],
-                        'level' => (int) $row['nlevel'],
-                        'parent_id' => (int) $row['parent_id'],
-                        'first_position' => $row['title'] === $userId ? 1 : 0,
-                    ];
+
+                if (empty($userFolders) === false) {
+                    $rows = DB::query(
+                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
+                        FROM ' . prefixTable('nested_tree') . ' AS nt
+                        WHERE nt.id IN %li
+                        GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
+                        ORDER BY nt.nlevel ASC, nt.title ASC',
+                        $userFolders
+                    );
+
+                    foreach ($rows as $row) {
+                        $writableFolders[] = [
+                            'id' => (int) $row['folder_id'],
+                            'label' => $row['title'] === $userId ? $username : $row['title'],
+                            'level' => (int) $row['nlevel'],
+                            'parent_id' => (int) $row['parent_id'],
+                            'first_position' => $row['title'] === $userId ? 1 : 0,
+                        ];
+                    }
                 }
 
                 $responseData = json_encode($writableFolders);

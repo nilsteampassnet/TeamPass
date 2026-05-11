@@ -350,18 +350,23 @@ class AuthModel
             }
         }
 
+        $folderAccessModel = new FolderAccessModel();
+
         // All accessible folders
         return [
-            'folders' => array_values(array_unique(
-                array_filter(
-                    array_merge(
-                        $allowedFolders,
-                        $allowedFoldersByRoles,
-                        $readOnlyFolders,
-                        $personalFolders
+            'folders' => $folderAccessModel->filterFoldersForUser(
+                array_values(array_unique(
+                    array_filter(
+                        array_merge(
+                            $allowedFolders,
+                            $allowedFoldersByRoles,
+                            $readOnlyFolders,
+                            $personalFolders
+                        )
                     )
-                )
-            )),
+                )),
+                (int) $userInfo['id']
+            ),
         ];
     }
     //end buildUserFoldersList
