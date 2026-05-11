@@ -157,10 +157,8 @@ class FolderController extends BaseController
         if (strtoupper($requestMethod) === 'GET') {
             try {
                 $folderAccessModel = new FolderAccessModel();
-                $userFolders = $folderAccessModel->filterFoldersForUser(
-                    $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? []),
-                    (int) $userData['id']
-                );
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userFolders = $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? []);
 
                 $userId = (string) $userData['id'];
                 $username = $userData['username'];
@@ -171,18 +169,9 @@ class FolderController extends BaseController
                         'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
                         FROM ' . prefixTable('nested_tree') . ' AS nt
                         WHERE nt.id IN %li
-                        AND NOT EXISTS (
-                            SELECT 1
-                            FROM ' . prefixTable('nested_tree') . ' AS other_personal
-                            WHERE other_personal.personal_folder = 1
-                            AND other_personal.title <> %s
-                            AND nt.nleft >= other_personal.nleft
-                            AND nt.nright <= other_personal.nright
-                        )
                         GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
                         ORDER BY nt.nlevel ASC, nt.title ASC',
-                        $userFolders,
-                        $userId
+                        $userFolders
                     );
 
                     foreach ($rows as $row) {

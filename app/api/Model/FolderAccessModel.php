@@ -135,6 +135,13 @@ class FolderAccessModel
         );
     }
 
+    /**
+     * Returns true when the folder is not nested inside another user's personal root.
+     *
+     * @param int $folderId Folder to test
+     * @param int $userId   Current user ID (their personal root is excluded from the deny list)
+     * @return bool
+     */
     public function isFolderInsideAllowedPersonalRoot(int $folderId, int $userId): bool
     {
         if ($folderId <= 0 || $userId <= 0) {
@@ -160,6 +167,14 @@ class FolderAccessModel
         return (int) $allowedCount > 0;
     }
 
+    /**
+     * Returns true when the user is allowed to write into the given folder.
+     *
+     * @param array $userData            JWT user data (id, folders_list, user_can_create_root_folder)
+     * @param int   $folderId            Folder ID to check
+     * @param bool  $allowCreateRootBypass When true, root-folder creators bypass the explicit-list check
+     * @return bool
+     */
     public function canUseFolder(array $userData, int $folderId, bool $allowCreateRootBypass = false): bool
     {
         if ($this->isFolderInsideAllowedPersonalRoot($folderId, (int) ($userData['id'] ?? 0)) === false) {
@@ -175,6 +190,14 @@ class FolderAccessModel
             && (int) ($userData['user_can_create_root_folder'] ?? 0) === 1;
     }
 
+    /**
+     * Returns true when the user can read the given item (folder access or restricted-items list).
+     *
+     * @param array $userData JWT user data (id, folders_list, restricted_items_list)
+     * @param int   $folderId Folder that contains the item
+     * @param int   $itemId   Item ID (used to check the restricted-items fallback)
+     * @return bool
+     */
     public function canAccessItemInFolder(array $userData, int $folderId, int $itemId): bool
     {
         if ($this->isFolderInsideAllowedPersonalRoot($folderId, (int) ($userData['id'] ?? 0)) === false) {
@@ -191,6 +214,18 @@ class FolderAccessModel
         return in_array($itemId, $restrictedItems, true) === true;
     }
 
+    /**
+     * Returns a SQL fragment that excludes items located inside another user's personal folder tree.
+     *
+     * The returned string is designed to be appended to an existing WHERE clause.
+     * $itemFolderColumn must be a qualified column reference (e.g. 'i.id_tree'); it is
+     * validated against a strict allowlist before being interpolated into the query.
+     * Fails closed (AND 1 = 0) on invalid input.
+     *
+     * @param string $itemFolderColumn Qualified column holding the folder ID (e.g. 'i.id_tree')
+     * @param int    $userId           Current user ID
+     * @return string
+     */
     public function getItemFolderSqlConstraint(string $itemFolderColumn, int $userId): string
     {
         if (preg_match('/^[A-Za-z0-9_.]+$/', $itemFolderColumn) !== 1 || $userId <= 0) {

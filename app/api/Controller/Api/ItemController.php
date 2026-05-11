@@ -80,10 +80,8 @@ class ItemController extends BaseController
                 $userData['folders_list'] = [];
             }
             $folderAccessModel = new FolderAccessModel();
-            $userData['folders_list'] = $folderAccessModel->filterFoldersForUser(
-                $folderAccessModel->normalizeFolderIds($userData['folders_list']),
-                (int) $userData['id']
-            );
+            // folders_list is already filtered by index.php — normalize to int[] only
+            $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
             // SQL where clause with folders list
             if (isset($arrQueryStringParams['folders']) === true) {
@@ -228,10 +226,8 @@ class ItemController extends BaseController
                     $userData['folders_list'] = [];
                 }
                 $folderAccessModel = new FolderAccessModel();
-                $userData['folders_list'] = $folderAccessModel->filterFoldersForUser(
-                    $folderAccessModel->normalizeFolderIds($userData['folders_list']),
-                    (int) $userData['id']
-                );
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
                 // get parameters
                 $arrQueryStringParams = $this->getQueryStringParams();
@@ -313,14 +309,11 @@ class ItemController extends BaseController
         $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
-        // Sanitize folder/item IDs from JWT claims as strict integers before SQL interpolation
+        // Sanitize folder/item IDs — already filtered by index.php, normalize to strict integers
         $folderAccessModel = new FolderAccessModel();
         $safeFolders = implode(
             ',',
-            $folderAccessModel->filterFoldersForUser(
-                $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? ''),
-                (int) $userData['id']
-            )
+            $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
         ) ?: '0';
         $sql_constraint = ' AND (i.id_tree IN (' . $safeFolders . ')';
         if (!empty($userData['restricted_items_list'])) {
@@ -431,14 +424,11 @@ class ItemController extends BaseController
                 $userData['folders_list'] = [];
             }*/
 
-            // Build SQL constraint for accessible folders — sanitize JWT claims as strict integers
+            // Build SQL constraint for accessible folders — already filtered by index.php, normalize to strict integers
             $folderAccessModel = new FolderAccessModel();
             $safeFoldersFbu = implode(
                 ',',
-                $folderAccessModel->filterFoldersForUser(
-                    $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? ''),
-                    (int) $userData['id']
-                )
+                $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
             ) ?: '0';
             $sql_constraint = ' AND (i.id_tree IN (' . $safeFoldersFbu . ')';
             if (!empty($userData['restricted_items_list'])) {
@@ -733,10 +723,8 @@ class ItemController extends BaseController
                     $userData['folders_list'] = [];
                 }
                 $folderAccessModel = new FolderAccessModel();
-                $userData['folders_list'] = $folderAccessModel->filterFoldersForUser(
-                    $folderAccessModel->normalizeFolderIds($userData['folders_list']),
-                    (int) $userData['id']
-                );
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
                 // Get parameters
                 $arrQueryStringParams = $this->getQueryStringParams();

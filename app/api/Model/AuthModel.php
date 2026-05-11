@@ -350,9 +350,6 @@ class AuthModel
             }
         }
 
-        if (class_exists('FolderAccessModel') === false) {
-            require_once API_ROOT_PATH . '/Model/FolderAccessModel.php';
-        }
         $folderAccessModel = new FolderAccessModel();
 
         // All accessible folders

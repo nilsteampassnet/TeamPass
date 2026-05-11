@@ -369,6 +369,10 @@ class ItemModel
             $folderId
         );
 
+        if ($dataFolderSettings === false || $dataFolderSettings === null) {
+            return ['personal_folder' => 0, 'no_complex_check_on_modification' => 0, 'no_complex_check_on_creation' => 0];
+        }
+
         return [
             'personal_folder' => $dataFolderSettings['personal_folder'],
             'no_complex_check_on_modification' => (int) $dataFolderSettings['personal_folder'] === 1 ? 1 : (int) $dataFolderSettings['bloquer_modification'],
