@@ -110,7 +110,7 @@ class ItemController extends BaseController
             // SQL LIMIT
             $intLimit = 0;
             if (isset($arrQueryStringParams['limit']) === true) {
-                $intLimit = $arrQueryStringParams['limit'];
+                $intLimit = (int) $arrQueryStringParams['limit'];
             }
 
             // send query
@@ -324,7 +324,7 @@ class ItemController extends BaseController
                     ? DB::escape('%' . $arrQueryStringParams['label'] . '%')
                     : DB::escape($arrQueryStringParams['label']);
                 $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE ' : '= ') . $escapedLabel . $sql_constraint;
-                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
+                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? (int) $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
                 $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
