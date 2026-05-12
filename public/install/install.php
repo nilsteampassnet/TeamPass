@@ -194,6 +194,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 							<div class="card-body">
 								<div class="form-group">
 									<label>Absolute path to TeamPass folder</label>
+									<small class="form-text text-muted d-block mb-1">
+										This must be the absolute path to the TeamPass <code>public/</code> directory (e.g. <code>/var/www/html/teampass/public</code>).
+									</small>
 									<input type="text" class="form-control required" data-label="Absolute path" name="absolute_path" id="absolute_path" class="ui-widget" value="<?php echo $serverPath;?>">
 								</div>
 								<div class="form-group mt-3">
@@ -201,11 +204,13 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 									<input type="text" class="form-control required" data-label="Url" name="url_path" id="url_path" class="ui-widget" value="<?php echo $serverUrl;?>">
 								</div>
 								<div class="form-group mt-3">
-									<label>Absolute path to secure path</label><br>
-									<small class="form-text text-muted">
-										For security reasons, the secure path shall be defined outside the WWW folder of your server (example: /var/teampass/). It will host an encryption key used for several Teampass features.
-									</small>
-									<input type="text" class="form-control required" data-label="Secure path" name="secure_path" id="secure_path" class="ui-widget" value="">
+									<label>Secure path <span class="badge badge-secondary">auto-configured</span></label>
+									<div class="alert alert-info py-2 px-3 mb-0 mt-1">
+										<i class="fa-solid fa-lock fa-sm"></i>&nbsp;
+										The secure path is automatically set to the <code>secrets/</code> directory at the root of your TeamPass installation:
+										<br><code><?php echo htmlspecialchars(TEAMPASS_SECRETS); ?></code>
+										<br><small>This directory stores the encryption key file and must remain outside the web-accessible <code>public/</code> folder.</small>
+									</div>
 								</div>
 							</div>
 						</div>

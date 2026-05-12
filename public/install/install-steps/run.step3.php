@@ -45,7 +45,6 @@ $superGlobal = new SuperGlobal();
 $keys = [
     'teampassAbsolutePath',
     'teampassUrl',
-    'teampassSecurePath',
     'dbHost',
     'dbName',
     'dbLogin',
@@ -136,9 +135,10 @@ function checks($inputData)
             'value' => $inputData['teampassUrl'],
         ]);
 
+        // The secure path is always TEAMPASS_ROOT/secrets (fixed in app/config/include.php)
         DB::insertUpdate('_install', [
             'key' => 'teampassSecurePath',
-            'value' => $inputData['teampassSecurePath'],
+            'value' => rtrim(TEAMPASS_SECRETS, '/') . '/',
         ]);
 
         DB::insertUpdate('_install', [

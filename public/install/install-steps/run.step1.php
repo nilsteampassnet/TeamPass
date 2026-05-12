@@ -45,7 +45,6 @@ $superGlobal = new SuperGlobal();
 $keys = [
     'absolutePath',
     'urlPath',
-    'TEAMPASS_SECRETS',
 ];
 
 // Initialize arrays
@@ -87,36 +86,48 @@ echo json_encode($response);
 
 /**
  * Checks the data
- * 
+ *
  * @param array $inputData
- * 
+ *
  * @return array
  */
-function checks($inputData)
+function checks($inputData): array
 {
-    // Is absolute path a folder?
-    if (!is_dir($inputData['absolutePath'])) {
+    // Absolute path must end with /public
+    $absolutePath = rtrim($inputData['absolutePath'], '/');
+    if (!str_ends_with(strtolower($absolutePath), '/public')) {
         return [
             'success' => false,
-            'message' => 'Path ' . $inputData['absolutePath'] . ' is not a folder!',
+            'message' => 'The absolute path must end with /public (got: ' . $absolutePath . ').',
         ];
     }
 
-    // Is secure path a folder?
-    if (!is_dir($inputData['TEAMPASS_SECRETS'])) {
+    // Is absolute path a folder?
+    if (!is_dir($absolutePath)) {
         return [
             'success' => false,
-            'message' => 'Path ' . $inputData['TEAMPASS_SECRETS'] . ' is not a folder!',
+            'message' => 'Path ' . $absolutePath . ' is not a folder!',
+        ];
+    }
+
+    // The secure path is fixed at TEAMPASS_ROOT/secrets (defined in app/config/include.php)
+    $secretsPath = TEAMPASS_SECRETS;
+
+    // Is secure path a folder?
+    if (!is_dir($secretsPath)) {
+        return [
+            'success' => false,
+            'message' => 'Secrets directory not found: ' . $secretsPath . '. Please create it before installing.',
         ];
     }
 
     // Is secure path writable?
-    if (is_writable($inputData['TEAMPASS_SECRETS']) === false) {
+    if (!is_writable($secretsPath)) {
         return [
             'success' => false,
-            'message' => 'Path ' . $inputData['TEAMPASS_SECRETS'] . ' is not writable!',
+            'message' => 'Secrets directory is not writable: ' . $secretsPath . '.',
         ];
-    }    
+    }
 
     return [
         'success' => true,

@@ -447,8 +447,7 @@ function performStep3() {
             dbPort: $('#db_port').val(),
             tablePrefix: $('#tbl_prefix').val(),
             teampassAbsolutePath: store.get('TeamPassInstallation').teampassAbsolutePath,
-            teampassUrl: store.get('TeamPassInstallation').teampassUrl,
-            teampassSecurePath: store.get('TeamPassInstallation').teampassSecurePath
+            teampassUrl: store.get('TeamPassInstallation').teampassUrl
         },
         success: function(response) {
             if (typeof response === 'string') {
@@ -601,6 +600,13 @@ function performStep2() {
 function performStep1() {
     show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
 
+    // Validate that absolute_path ends with /public
+    const absolutePathVal = $('#absolute_path').val().trim().replace(/\/$/, '')
+    if (!/\/public$/i.test(absolutePathVal)) {
+        show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> The absolute path must end with <code>/public</code> (e.g. /var/www/html/teampass/public).')
+        return
+    }
+
     $.ajax({
         type: 'POST',
         url: './install-steps/run.step1.php',
@@ -608,9 +614,8 @@ function performStep1() {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
         data: {
-            absolutePath: $('#absolute_path').val(),
+            absolutePath: absolutePathVal,
             urlPath: $('#url_path').val(),
-            TEAMPASS_SECRETS: $('#secure_path').val(),
         },
         success: function(response) {
             if (typeof response === 'string') {
@@ -629,9 +634,11 @@ function performStep1() {
                         const ensureTrailingSlash = (path) => {
                             return path.endsWith('/') ? path : path + '/';
                         };
-                        TeamPassInstallation.teampassAbsolutePath = ensureTrailingSlash($('#absolute_path').val()),
+                        // Derive the secure path: replace trailing /public with /secrets
+                        const securePath = absolutePathVal.replace(/\/public$/i, '/secrets');
+                        TeamPassInstallation.teampassAbsolutePath = ensureTrailingSlash(absolutePathVal),
                         TeamPassInstallation.teampassUrl = ensureTrailingSlash($('#url_path').val()),
-                        TeamPassInstallation.teampassSecurePath = ensureTrailingSlash($('#secure_path').val())
+                        TeamPassInstallation.teampassSecurePath = ensureTrailingSlash(securePath)
                     }
                 )
 
