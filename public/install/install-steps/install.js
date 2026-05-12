@@ -504,14 +504,18 @@ function performStep3() {
  * 
  */
 function performStep2() {
+    // teampassAbsolutePath ends with /public/ — derive the project root by stripping that suffix
+    const publicPath = store.get('TeamPassInstallation').teampassAbsolutePath
+    const rootPath = publicPath.replace(/public\/$/, '')
+
     // List of checks to perform
     const checks = [
-        { id: 'check2', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/config/' },
-        { id: 'check3', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/avatars/', optional: true },
-        { id: 'check4', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/libraries/csrfp/libs/' },
-        { id: 'check6', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/libraries/csrfp/log/' },
-        { id: 'check7', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'files/' },
-        { id: 'check8', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'upload/', optional: true },
+        { id: 'check2', type: 'directory', path: rootPath+'app/config/' },
+        { id: 'check3', type: 'directory', path: publicPath+'assets/avatars/', optional: true },
+        { id: 'check4', type: 'directory', path: rootPath+'app/includes/libraries/csrfp/libs/' },
+        { id: 'check6', type: 'directory', path: rootPath+'app/includes/libraries/csrfp/log/' },
+        { id: 'check7', type: 'directory', path: rootPath+'storage/files/' },
+        { id: 'check8', type: 'directory', path: rootPath+'storage/upload/', optional: true },
         { id: 'check9', type: 'extension', name: 'mbstring' },
         { id: 'check10', type: 'extension', name: 'openssl' },
         { id: 'check11', type: 'extension', name: 'bcmath' },
