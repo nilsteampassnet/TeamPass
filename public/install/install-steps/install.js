@@ -44,6 +44,14 @@ $(function() {
         store.remove('TeamPassInstallation');
     }
 
+    // Disable Continue whenever absolute_path is changed — user must re-run Start
+    $('#absolute_path').on('input', function() {
+        if ($('#installStep').val() === '1') {
+            $('#button_next').prop('disabled', true)
+            $('#button_start').prop('disabled', false)
+        }
+    })
+
     // Next button clicked
     $("#button_next").on('click', function(event) {
         event.preventDefault();
@@ -604,6 +612,7 @@ function performStep1() {
     const absolutePathVal = $('#absolute_path').val().trim().replace(/\/$/, '')
     if (!/\/public$/i.test(absolutePathVal)) {
         show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> The absolute path must end with <code>/public</code> (e.g. /var/www/html/teampass/public).')
+        $('#button_next').prop('disabled', true)
         return
     }
 
