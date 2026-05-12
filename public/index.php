@@ -74,9 +74,9 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {
-        echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+        echo '<script type="text/javascript">document.location.replace("/install/install.php");</script>';
     } else {
-        header('Location: install/install.php');
+        header('Location: /install/install.php');
     }
     // Now either way, we should stop processing further
     exit;

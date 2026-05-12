@@ -548,7 +548,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 
 <script type="text/javascript" src="../plugins/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../plugins/jqueryUI/jquery-ui.min.js"></script>
-<script type="text/javascript" src="../includes/js/CreateRandomString.js"></script>
+<script type="text/javascript" src="../assets/js/CreateRandomString.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>
 <script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
 <script type="text/javascript" src="../plugins/popper/umd/popper.min.js"></script>
