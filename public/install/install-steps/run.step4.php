@@ -210,7 +210,7 @@ function isPasswordStrongEnough($inputData) {
     $hasNumber = preg_match('/[0-9]/', $inputData['adminPassword']);
     $hasSpecialChar = preg_match('/[\W_]/', $inputData['adminPassword']);
     
-    return $length >= 8
+    return $length >= 10
            && $hasUppercase
            && $hasLowercase
            && ($hasNumber || $hasSpecialChar);
