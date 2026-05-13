@@ -160,7 +160,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
         $fileCreation = fwrite(
             $file_handled,
-            utf8_encode($settingsTxt)
+            $settingsTxt
         );
 
         fclose($file_handled);
@@ -617,7 +617,7 @@ if (isset($post_type)) {
             mysqli_query(
                 $db_link,
                 'ALTER DATABASE `' . $database . '`
-                DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci'
+                DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
             );
 
             //convert tables
@@ -626,13 +626,13 @@ if (isset($post_type)) {
                 if (substr($table[0], 0, 4) != 'old_') {
                     mysqli_query(
                         $db_link,
-                        'ALTER TABLE ' . $database . '.`{$table[0]}`
-                        CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci'
+                        'ALTER TABLE ' . $database . '.`' . $table[0] . '`
+                        CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
                     );
                     mysqli_query(
                         $db_link,
-                        'ALTER TABLE' . $database . '.`{$table[0]}`
-                        DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci'
+                        'ALTER TABLE ' . $database . '.`' . $table[0] . '`
+                        DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'
                     );
                 }
             }
@@ -697,7 +697,7 @@ if (isset($post_type)) {
                         // SKEY
                         $tmp = mysqli_query(
                             $db_link,
-                            "SELECT INTO `" . $pre . "misc`
+                            "SELECT * FROM `" . $pre . "misc`
                             WHERE type = 'admin' AND intitule = 'duo_skey'"
                         );
                         if ($tmp) {
@@ -718,7 +718,7 @@ if (isset($post_type)) {
                         // IKEY
                         $tmp = mysqli_query(
                             $db_link,
-                            "SELECT INTO `" . $pre . "misc`
+                            "SELECT * FROM `" . $pre . "misc`
                             WHERE type = 'admin' AND intitule = 'duo_ikey'"
                         );
                         if ($tmp) {
@@ -739,7 +739,7 @@ if (isset($post_type)) {
                         // HOST
                         $tmp = mysqli_query(
                             $db_link,
-                            "SELECT INTO `" . $pre . "misc`
+                            "SELECT * FROM `" . $pre . "misc`
                             WHERE type = 'admin' AND intitule = 'duo_host'"
                         );
                         if ($tmp) {
@@ -769,8 +769,7 @@ if (isset($post_type)) {
 
                 $fileCreation = fwrite(
                     $file_handled,
-                    utf8_encode(
-                        '<?php
+                    '<?php
     // DATABASE connexion parameters
     define("DB_HOST", "' . DB_HOST . '");
     define("DB_USER", "' . DB_USER . '");
@@ -797,7 +796,6 @@ if (isset($post_type)) {
     date_default_timezone_set($_SESSION[\'settings\'][\'timezone\']);
     }
     '
-                    )
                 );
 
                 fclose($file_handled);

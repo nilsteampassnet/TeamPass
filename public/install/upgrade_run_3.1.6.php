@@ -400,7 +400,7 @@ if (mysqli_num_rows($result) > 0) {
     // Check if a private key already exists in user_private_keys for this user
     $keyResult = mysqli_query(
         $db_link,
-        "SELECT id FROM `" . $pre . "user_private_keys`
+        "SELECT id, private_key FROM `" . $pre . "user_private_keys`
          WHERE user_id = " . TP_USER_ID
     );
 

@@ -489,7 +489,7 @@ if (null !== $post_step) {
                             $db_link,
                             'SELECT share_key
                             FROM ' . $pre . 'sharekeys_logs
-                            WHERE object_id = ' . (int) $item['id'] . ' AND user_id = ' . (int) $adminId
+                            WHERE object_id = ' . (int) $item['increment_id'] . ' AND user_id = ' . (int) $adminId
                         )
                     );
 

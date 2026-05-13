@@ -104,7 +104,7 @@ if (empty($userPassword) === true || empty($userLogin) === true || empty($userId
     $userQuery = mysqli_fetch_array(
         mysqli_query(
             $db_link,
-            'SELECT public_key, private_key
+            'SELECT id, public_key, private_key
             FROM '.$pre.'users
             WHERE id = '.(int) $userId
         )

@@ -209,7 +209,7 @@ mysqli_query(
         `share_key` text NOT NULL,
         PRIMARY KEY (`increment_id`),
         INDEX idx_object_user (`object_id`, `user_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table SHAREKEYS LOGS
@@ -221,7 +221,7 @@ mysqli_query(
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table SHAREKEYS FIELDS
@@ -233,7 +233,7 @@ mysqli_query(
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table SHAREKEYS SUGGESTIONS
@@ -245,7 +245,7 @@ mysqli_query(
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table SHAREKEYS FILES
@@ -257,7 +257,7 @@ mysqli_query(
         `user_id` int(12) NOT NULL,
         `share_key` text NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table defuse_passwords
@@ -269,7 +269,7 @@ mysqli_query(
         `object_id` int(12) NOT NULL,
         `password` text NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table Notifications
@@ -280,7 +280,7 @@ mysqli_query(
         `item_id` INT(12) NOT NULL,
         `user_id` INT(12) NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Alter table FILES
@@ -782,7 +782,7 @@ mysqli_query(
         `timestamp` varchar(50) NOT NULL,
         `user_id` int(12) NOT NULL,
         PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add the Primary INDEX CACHE to the cache_tree table
@@ -889,7 +889,7 @@ mysqli_query(
         `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
         `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
         PRIMARY KEY (`increment_id`)
-        ) CHARSET=utf8;'
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add new table PROCESSES
@@ -906,7 +906,7 @@ mysqli_query(
         `arguments` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`arguments`)),
         `is_in_progress` tinyint(1) NOT NULL DEFAULT 0,
         PRIMARY KEY (`increment_id`)
-        ) CHARSET=utf8;'
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 
 // Add field masked to CATEGORIES table
@@ -1383,7 +1383,7 @@ mysqli_query(
     `item_id` int(12) NOT NULL,
     `category_id` int(12) NOT NULL,
     PRIMARY KEY (`increment_id`)
-    ) CHARSET=utf8;'
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 mysqli_query(
     $db_link,
@@ -1670,7 +1670,7 @@ mysqli_query(
         `updated_at` varchar(20) DEFAULT NULL,
         `finished_at` varchar(20) DEFAULT NULL,
         PRIMARY KEY (`increment_id`)
-        ) CHARSET=utf8;'
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
 );
 //---<END 3.0.0.22
 
@@ -1845,7 +1845,7 @@ mysqli_query(
         `ldap_group_label` VARCHAR(255) NOT NULL,
         PRIMARY KEY (`increment_id`),
         KEY `ROLE` (`role_id`)
-        ) CHARSET=utf8;"
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 );
 
 // Add new setting enable_ad_users_with_ad_groups
