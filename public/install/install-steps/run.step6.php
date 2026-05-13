@@ -635,7 +635,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
             // Save the installation status
             DB::query(
-                "INSERT INTO " . $this->inputData['tablePrefix'] . "misc 
+                "INSERT IGNORE INTO " . $this->inputData['tablePrefix'] . "misc 
                     (`type`, `intitule`, `valeur`) VALUES 
                     ('install', 'clear_install_folder', 'true');"
             );
