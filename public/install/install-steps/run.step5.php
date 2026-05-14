@@ -429,6 +429,9 @@ class DatabaseInstaller
             `created_at` varchar(30) NULL,
             `updated_at` varchar(30) NULL,
             `deleted_at` varchar(30) NULL,
+            `hibp_status` tinyint(1) NOT NULL DEFAULT '0',
+            `hibp_count` int NOT NULL DEFAULT '0',
+            `hibp_checked_at` varchar(30) NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
             INDEX items_perso_id_idx (`perso`, `id`)
@@ -539,6 +542,8 @@ class DatabaseInstaller
             array('admin', 'enable_user_can_create_folders', '0'),
             array('admin', 'insert_manual_entry_item_history', '0'),
             array('admin', 'enable_kb', '0'),
+            array('admin', 'hibp_enabled', '0'),
+            array('admin', 'hibp_check_interval_days', '7'),
             array('admin', 'enable_email_notification_on_item_shown', '0'),
             array('admin', 'enable_email_notification_on_user_pw_change', '0'),
             array('admin', 'custom_logo', ''),

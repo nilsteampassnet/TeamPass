@@ -905,6 +905,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Remove validated class
             $('#form-item').removeClass('was-validated');
 
+            // Reset item ID to 0 so getPrivilegesOnItem doesn't create a spurious
+            // edition lock on the previously-viewed item (isItemLocked short-circuits on 0)
+            store.update('teampassItem', function(teampassItem) {
+                teampassItem.id = 0;
+            });
+
             // Get some info
             $.when(
                 getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
