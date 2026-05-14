@@ -434,7 +434,8 @@ class DatabaseInstaller
             `hibp_checked_at` varchar(30) NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
-            INDEX items_perso_id_idx (`perso`, `id`)
+            INDEX items_perso_id_idx (`perso`, `id`),
+            INDEX idx_items_tree_inactif_deleted (`id_tree`, `inactif`, `deleted_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
@@ -453,7 +454,8 @@ class DatabaseInstaller
             `old_value` MEDIUMTEXT NULL DEFAULT NULL,
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             PRIMARY KEY (`increment_id`),
-            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
+            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`),
+            INDEX idx_log_items_item_action_raison (`id_item`, `action`(30), `raison`(10))
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
@@ -1001,7 +1003,8 @@ class DatabaseInstaller
             `status` varchar(50) NOT NULL DEFAULT '0',
             `content` longblob DEFAULT NULL,
             `confirmed` INT(1) NOT NULL DEFAULT '0',
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            INDEX idx_files_item_confirmed (`id_item`, `confirmed`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
@@ -1149,7 +1152,8 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `role_id` int(12) NOT NULL,
             `item_id` int(12) NOT NULL,
-            PRIMARY KEY (`increment_id`)
+            PRIMARY KEY (`increment_id`),
+            INDEX idx_restriction_item_id (`item_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
