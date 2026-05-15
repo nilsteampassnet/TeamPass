@@ -905,6 +905,25 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Remove validated class
             $('#form-item').removeClass('was-validated');
 
+            // Release any active edition lock before creating a new item.
+            // The user may have been editing another item (heartbeat running + lock in DB).
+            // Mirrors what the "Back" button does when leaving edit mode.
+            const previousItemId = store.get('teampassItem').id;
+            if (previousItemId && parseInt(previousItemId) > 0) {
+                stopEditionLockHeartbeat();
+                $.post(
+                    'sources/items.queries.php', {
+                        type: 'handle_item_edition_lock',
+                        data: prepareExchangedData(
+                            JSON.stringify({'item_id': previousItemId, 'action': 'release_lock'}),
+                            'encode',
+                            '<?php echo $session->get('key'); ?>'
+                        ),
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                );
+            }
+
             // Reset item ID to 0 so getPrivilegesOnItem doesn't create a spurious
             // edition lock on the previously-viewed item (isItemLocked short-circuits on 0)
             store.update('teampassItem', function(teampassItem) {
