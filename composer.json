@@ -9,7 +9,7 @@
         "apcu-autoloader": true,
         "discard-changes": true,
         "platform": {
-            "php": "8.1"
+            "php": "8.2"
         }
     },
     "version": "3.2.0",
@@ -152,7 +152,7 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-mysqli": ">=5.1.0",
         "ext-mbstring": "*",
         "ext-openssl": "*",

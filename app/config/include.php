@@ -94,7 +94,7 @@ define('TP_PW_STRENGTH_2', 20);
 define('TP_PW_STRENGTH_3', 38);
 define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
-define('MIN_PHP_VERSION', '8.1');
+define('MIN_PHP_VERSION', '8.2');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 

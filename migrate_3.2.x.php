@@ -24,7 +24,7 @@ declare(strict_types=1);
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const SCRIPT_VERSION = '1.0.0';
-const MIN_PHP_VERSION = '8.1.0';
+const MIN_PHP_VERSION = '8.2.0';
 
 // ── CLI bootstrap ─────────────────────────────────────────────────────────────
 

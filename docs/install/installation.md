@@ -6,7 +6,7 @@ The easiest way to install Teampass is to install a LAMP stack dedicated to the 
 
 This document highlights a basic setup. You can refer to many other existing tutorials to install Apache, MariaDB (or MySQL) and PHP.
 
-> :bulb: **Note:** Teampass requires **PHP 8.1** or later. The `master` branch targets the most recent stable PHP version.
+> :bulb: **Note:** Teampass requires **PHP 8.2** or later. The `master` branch targets the most recent stable PHP version.
 
 ---
 
