@@ -218,6 +218,9 @@ class ItemModel
             // Step 9: Handle post-insert tasks (logging, sharing, tagging)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $data, $SETTINGS);
 
+            // Notify WebSocket subscribers so other users viewing this folder see the new item
+            emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
+
             // Success response
             return [
                 'error' => false,
