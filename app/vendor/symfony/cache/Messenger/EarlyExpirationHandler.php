@@ -21,18 +21,14 @@ use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 #[AsMessageHandler]
 class EarlyExpirationHandler
 {
-    private ReverseContainer $reverseContainer;
     private array $processedNonces = [];
 
-    public function __construct(ReverseContainer $reverseContainer)
-    {
-        $this->reverseContainer = $reverseContainer;
+    public function __construct(
+        private ReverseContainer $reverseContainer,
+    ) {
     }
 
-    /**
-     * @return void
-     */
-    public function __invoke(EarlyExpirationMessage $message)
+    public function __invoke(EarlyExpirationMessage $message): void
     {
         $item = $message->getItem();
         $metadata = $item->getMetadata();
@@ -64,7 +60,7 @@ class EarlyExpirationHandler
         static $setMetadata;
 
         $setMetadata ??= \Closure::bind(
-            function (CacheItem $item, float $startTime) {
+            static function (CacheItem $item, float $startTime) {
                 if ($item->expiry > $endTime = microtime(true)) {
                     $item->newMetadata[CacheItem::METADATA_EXPIRY] = $item->expiry;
                     $item->newMetadata[CacheItem::METADATA_CTIME] = (int) ceil(1000 * ($endTime - $startTime));

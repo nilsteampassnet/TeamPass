@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace voku\helper;
 
-/**
- * @psalm-immutable
- */
 class Bootup
 {
     /**
@@ -77,8 +74,31 @@ class Bootup
     /**
      * @return bool
      */
+    public static function isAutoEncodingChangeDisabled(): bool
+    {
+        if (!\defined('PORTABLE_UTF8__DISABLE_AUTO_ENCODING')) {
+            return false;
+        }
+
+        return \constant('PORTABLE_UTF8__DISABLE_AUTO_ENCODING') === true
+            || \constant('PORTABLE_UTF8__DISABLE_AUTO_ENCODING') === 1
+            || \constant('PORTABLE_UTF8__DISABLE_AUTO_ENCODING') === '1';
+    }
+
+    /**
+     * By default this keeps the historical behavior and sets UTF-8 related globals.
+     *
+     * Define "PORTABLE_UTF8__DISABLE_AUTO_ENCODING" before loading the composer
+     * autoloader to skip these automatic global encoding changes.
+     *
+     * @return bool
+     */
     public static function initAll(): bool
     {
+        if (self::isAutoEncodingChangeDisabled()) {
+            return true;
+        }
+
         $result = \ini_set('default_charset', 'UTF-8');
 
         // everything else is init via composer, so we are done here ...

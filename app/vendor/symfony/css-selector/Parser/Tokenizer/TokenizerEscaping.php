@@ -23,11 +23,9 @@ namespace Symfony\Component\CssSelector\Parser\Tokenizer;
  */
 class TokenizerEscaping
 {
-    private TokenizerPatterns $patterns;
-
-    public function __construct(TokenizerPatterns $patterns)
-    {
-        $this->patterns = $patterns;
+    public function __construct(
+        private TokenizerPatterns $patterns,
+    ) {
     }
 
     public function escapeUnicode(string $value): string
@@ -46,7 +44,7 @@ class TokenizerEscaping
 
     private function replaceUnicodeSequences(string $value): string
     {
-        return preg_replace_callback($this->patterns->getUnicodeEscapePattern(), function ($match) {
+        return preg_replace_callback($this->patterns->getUnicodeEscapePattern(), static function ($match) {
             $c = hexdec($match[1]);
 
             if (0x80 > $c %= 0x200000) {
