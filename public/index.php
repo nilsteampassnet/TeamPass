@@ -1418,7 +1418,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         window.TeamPassWebSocketEnabled = true;
         window.TeamPassWebSocketDebug = <?php echo (isset($SETTINGS['debug_mode']) && $SETTINGS['debug_mode'] === '1') ? 'true' : 'false'; ?>;
         window.TeamPassWebSocketToken = <?php echo $wsToken ? json_encode($wsToken) : 'null'; ?>;
-        window.TeamPassWebSocketUrl = 'ws://<?php echo $wsHost . ':' . $wsPort; ?>';
+        window.TeamPassWebSocketUrl = <?php
+            $wsIsLoopback = in_array($wsHost, ['127.0.0.1', 'localhost', '::1'], true);
+            echo json_encode($wsIsLoopback ? '/ws' : 'ws://' . $wsHost . ':' . $wsPort);
+        ?>;
+
         window.TeamPassWsLang = {
             realtime_connection_lost: <?php echo json_encode($lang->get('ws_realtime_connection_lost')); ?>,
             reconnecting: <?php echo json_encode($lang->get('ws_reconnecting')); ?>,
