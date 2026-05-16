@@ -181,6 +181,12 @@ class ItemController extends BaseController
                     'strErrorDesc' => 'User is not allowed in this folder',
                     'strErrorHeader' => 'HTTP/1.1 401 Unauthorized',
                 ];
+            } elseif ($folderAccessModel->isFolderReadOnlyForUser($folderId, (int) ($userData['id'] ?? 0))) {
+                return [
+                    'error' => true,
+                    'strErrorDesc' => 'Access denied: folder is read-only',
+                    'strErrorHeader' => 'HTTP/1.1 403 Forbidden',
+                ];
             } else if (empty($arrQueryStringParams['label']) === true) {
                 return [
                     'error' => true,
@@ -758,6 +764,9 @@ class ItemController extends BaseController
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
+                                    $strErrorDesc = 'Access denied: folder is read-only';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
                                     $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp'];
@@ -880,6 +889,9 @@ class ItemController extends BaseController
 
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
+                                    $strErrorDesc = 'Access denied: folder is read-only';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // delete the item

@@ -215,6 +215,61 @@ class FolderAccessModel
     }
 
     /**
+     * Returns true when the given folder is read-only for the user.
+     *
+     * Replicates the read-only detection logic from AuthModel::buildUserFoldersList():
+     * a folder is read-only when the user has R-type access via at least one role
+     * and no write-type access (W/ND/NE/NDNE) via any role, and no direct folder grant.
+     *
+     * @param int $folderId
+     * @param int $userId
+     * @return bool
+     */
+    public function isFolderReadOnlyForUser(int $folderId, int $userId): bool
+    {
+        // Direct folder grants (groupes_visibles) are always writable
+        $directGrant = DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i AND group_id = %i',
+            $userId,
+            $folderId
+        );
+        if ((int) $directGrant > 0) {
+            return false;
+        }
+
+        // Get user's role IDs (manual source only, matching buildUserFoldersList logic)
+        $roleRows = DB::query(
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i AND source = "manual"',
+            $userId
+        );
+        $roleIds = array_map(static fn($r) => (int) $r['role_id'], $roleRows);
+
+        if (empty($roleIds)) {
+            return false;
+        }
+
+        // Fetch access types for this folder from user's roles
+        $accessRows = DB::query(
+            'SELECT type FROM ' . prefixTable('roles_values') .
+            ' WHERE role_id IN %li AND folder_id = %i AND type IN ("W", "ND", "NE", "NDNE", "R")',
+            $roleIds,
+            $folderId
+        );
+
+        $hasWrite = false;
+        $hasReadOnly = false;
+        foreach ($accessRows as $row) {
+            if ($row['type'] === 'R') {
+                $hasReadOnly = true;
+            } else {
+                $hasWrite = true;
+            }
+        }
+
+        return $hasReadOnly && !$hasWrite;
+    }
+
+    /**
      * Returns a SQL fragment that excludes items located inside another user's personal folder tree.
      *
      * The returned string is designed to be appended to an existing WHERE clause.

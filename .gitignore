@@ -80,3 +80,9 @@ tests/_support/_generated/
 mempalace.yaml
 entities.json
 *:Zone.Identifier
+# Added by code-review-graph
+.code-review-graph/
+
+# Claude Code — developer-local config (paths and permissions specific to each machine)
+.claude/settings.local.json
+.mcp.json
