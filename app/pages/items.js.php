@@ -2911,6 +2911,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $(this).closest('tr').addClass('item-selected')
             resetItemDetailSkeleton();
 
+            // Show breadcrumb skeleton while folder path loads (search results only)
+            if ($(this).closest('tr').data('is-search-result') == 1) {
+                $('#form-folder-path').html('<li class="breadcrumb-item"><span class="skeleton-line skeleton-md"></span></li>');
+            }
+
             // Show item label immediately (known from the list row, no need to wait for AJAX)
             const rowLabel = unescape($(this).closest('tr').data('label') || '')
             if (rowLabel) {
@@ -5347,7 +5352,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + corruption_row_class + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
+                    '<tr class="list-item-row' + corruption_row_class + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '" data-item-folder="' + escape(value.folder !== undefined ? value.folder : '') + '">' +
                     '<td class="list-item-description px-3 py-0 align-middle d-flex">' +
                     '<span class="icon-container">' +
                     // Show user a grippy bar to move item
@@ -5700,6 +5705,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             var itemOpenEdit = parseInt($(itemDefinition).data('item-open-edit')) || 0;
             var itemReload = parseInt($(itemDefinition).data('item-reload')) || 0;
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
+            var itemFolder = unescape($(itemDefinition).data('item-folder') || '');
         } else {
             var itemId = itemDefinition || '';
             var itemKey = itemDefinition || '';
@@ -5711,6 +5717,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             var itemOpenEdit = 0;
             var itemReload = 0;
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
+            var itemFolder = '';
         }
 
         // check if user still has access
@@ -6171,6 +6178,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
+
+                    // Populate breadcrumb with folder path when item comes from a search result
+                    if (itemFolder !== '') {
+                        var breadcrumbHtml = '';
+                        itemFolder.split(' » ').forEach(function(part) {
+                            breadcrumbHtml += '<li class="breadcrumb-item">' + $('<span>').text(part).html() + '</li>';
+                        });
+                        $('#form-folder-path').html(breadcrumbHtml);
+                    }
 
                     // HIBP badge — show cached status and trigger async re-check if needed
                     const hibpApp = store.get('teampassApplication') || {}
