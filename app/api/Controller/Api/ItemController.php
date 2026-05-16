@@ -255,7 +255,7 @@ class ItemController extends BaseController
                             'icon' => (string) ($arrQueryStringParams['icon'] ?? ''),
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
-                            'totp' => (string) ($userData['totp'] ?? ''),
+                            'totp' => (string) ($arrQueryStringParams['totp'] ?? ''),
                         ];
 
                         // launch

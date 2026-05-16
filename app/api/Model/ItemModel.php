@@ -503,7 +503,7 @@ class ItemModel
         $newItemId = DB::insertId();
 
         // Handle TOTP if provided
-        if (empty($data['totp']) === true) {
+        if (empty($data['totp']) === false) {
             $encryptedSecret = cryption(
                 $data['totp'],
                 '',

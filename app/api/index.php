@@ -36,12 +36,19 @@ if ($host !== false) {
     header("Access-Control-Allow-Origin: 'null'");
 }
 header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST, GET");
+header("Access-Control-Allow-Methods: POST, GET, PUT, DELETE");
 header("Access-Control-Max-Age: 3600");
 header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("Referrer-Policy: no-referrer");
+
+// Handle CORS preflight — browsers send OPTIONS before PUT/DELETE cross-origin requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
 require __DIR__ . "/inc/bootstrap.php";
 
 if (!isset($SETTINGS) || is_array($SETTINGS) === false) {
