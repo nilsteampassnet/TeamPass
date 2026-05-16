@@ -235,7 +235,6 @@ switch ($inputData['type']) {
         if (is_array($dataReceived) === true && count($dataReceived) > 0) {
             // Prepare variables
             $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-            $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
             $post_description = $antiXss->xss_clean(strval($dataReceived['description']));
             $post_diffusion_list = filter_var_array(
                 $dataReceived['diffusion_list'],
@@ -261,6 +260,9 @@ switch ($inputData['type']) {
                 isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '',
                 isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
             );
+            // Compute complexity server-side from plaintext — single source of truth with the API path
+            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -889,7 +891,14 @@ switch ($inputData['type']) {
         $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
         $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-        $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+        // Compute complexity server-side from plaintext — single source of truth with the API path
+        // When password is unchanged (empty), fall back to the client-sent value for the folder minimum check
+        if (empty($post_password) === false) {
+            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+        } else {
+            $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+        }
         $inputData['folderId'] = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
         $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
         $post_restricted_to = filter_var_array(
