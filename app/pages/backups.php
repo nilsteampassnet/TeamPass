@@ -344,7 +344,7 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
 
                                                 <div class="mb-3">
                                                     <label class="form-label" for="scheduled-output-dir"><?php echo $lang->get('bck_scheduled_output_dir'); ?></label>
-                                                    <input class="form-control" type="text" id="scheduled-output-dir" placeholder="/path/to/files/backups">
+                                                    <input class="form-control" type="text" id="scheduled-output-dir" placeholder="<?php echo htmlspecialchars(defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : 'storage/backups'); ?>">
                                                     <small class="form-text text-muted mt-4">
                                                         <?php echo $lang->get('bck_scheduled_output_dir_help'); ?>
                                                     </small>
