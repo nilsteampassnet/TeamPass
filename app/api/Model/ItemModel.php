@@ -93,9 +93,9 @@ class ItemModel
                     )
                 );
             } catch (Exception $e) {
-                // Password is not encrypted
-                // deepcode ignore ServerLeak: No important data
-                echo "ERROR";
+                error_log('[API] ItemModel::getItems decryption error for item ' . $row['id'] . ': ' . $e->getMessage());
+                // Skip this item — decryption failed (e.g. legacy sharekey not yet migrated)
+                continue;
             }
             
 
@@ -673,6 +673,14 @@ class ItemModel
                     return [
                         'error' => true,
                         'error_message' => 'Access denied to the target folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                if ($folderAccessModel->isFolderReadOnlyForUser($newFolderId, (int) $userData['id'])) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: target folder is read-only',
                         'error_header' => 'HTTP/1.1 403 Forbidden',
                     ];
                 }

@@ -28,9 +28,11 @@ use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 class UserController extends BaseController
 {
     /**
-     * "/user/list" Endpoint - Get list of users
+     * "/user/list" Endpoint - Get list of users (admin only)
+     *
+     * @param array $userData Decoded JWT payload.
      */
-    public function listAction()
+    public function listAction(array $userData): void
     {
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
@@ -38,23 +40,30 @@ class UserController extends BaseController
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'GET') {
-            try {
-                $userModel = new UserModel();
+            // Restricted to administrators only — the user list exposes account metadata
+            if ((int) ($userData['is_admin'] ?? 0) !== 1) {
+                $strErrorDesc = 'Access denied: administrator rights required';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                try {
+                    $userModel = new UserModel();
 
-                $intLimit = 10;
-                if (isset($arrQueryStringParams['limit']) === true && empty($arrQueryStringParams['limit']) === false) {
-                    $intLimit = $arrQueryStringParams['limit'];
+                    $intLimit = 10;
+                    if (isset($arrQueryStringParams['limit']) === true && empty($arrQueryStringParams['limit']) === false) {
+                        $intLimit = (int) $arrQueryStringParams['limit'];
+                    }
+
+                    $arrUsers = $userModel->getUsers($intLimit);
+                    $responseData = json_encode($arrUsers);
+                } catch (Error $e) {
+                    error_log('[API] UserController::listAction error: ' . $e->getMessage());
+                    $strErrorDesc = 'An internal error occurred. Please contact support.';
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
-
-                $arrUsers = $userModel->getUsers($intLimit);
-                $responseData = json_encode($arrUsers);
-            } catch (Error $e) {
-                $strErrorDesc = $e->getMessage().'. Something went wrong! Please contact support.7';
-                $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
         }
 
         // send output
@@ -65,7 +74,7 @@ class UserController extends BaseController
             );
         } else {
             $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
+                json_encode(['error' => $strErrorDesc]),
                 ['Content-Type: application/json', $strErrorHeader]
             );
         }

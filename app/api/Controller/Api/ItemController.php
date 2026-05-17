@@ -273,9 +273,8 @@ class ItemController extends BaseController
                     }
                 
                 } else {
-                    // Gérer le cas où les paramètres ne sont pas un tableau
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {
@@ -808,13 +807,14 @@ class ItemController extends BaseController
                                 }
                             }
                         } catch (Error $e) {
-                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            error_log('[API] ItemController error: ' . $e->getMessage());
+                            $strErrorDesc = 'An internal error occurred. Please contact support.';
                             $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                         }
                     }
                 } else {
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {
@@ -910,13 +910,14 @@ class ItemController extends BaseController
                                 }
                             }
                         } catch (Error $e) {
-                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            error_log('[API] ItemController error: ' . $e->getMessage());
+                            $strErrorDesc = 'An internal error occurred. Please contact support.';
                             $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                         }
                     }
                 } else {
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {

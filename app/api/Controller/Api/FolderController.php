@@ -48,7 +48,8 @@ class FolderController extends BaseController
                     $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
                     $responseData = json_encode($arrFolders);
                 } catch (Error $e) {
-                    $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.3';
+                    error_log('[API] FolderController::listFoldersAction error: ' . $e->getMessage());
+                    $strErrorDesc = 'An internal error occurred. Please contact support.';
                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                 }
             }
@@ -90,8 +91,8 @@ class FolderController extends BaseController
                 // Is user allowed to create a folder
                 // We check if allowed_to_create
                 if ((int) $userData['allowed_to_create'] !== 1) {
-                    $strErrorDesc = 'User is not allowed to create a folder';
-                    $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                    $strErrorDesc = 'Access denied: insufficient permissions to create a folder';
+                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                 } else {
                     // get parameters
                     $arrQueryStringParams = $this->getQueryStringParams();
@@ -118,7 +119,8 @@ class FolderController extends BaseController
                         
                         $responseData = json_encode($arrFolder);
                     } catch (Error $e) {
-                        $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.1';
+                        error_log('[API] FolderController::createAction error: ' . $e->getMessage());
+                        $strErrorDesc = 'An internal error occurred. Please contact support.';
                         $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                     }
                 }
@@ -188,12 +190,13 @@ class FolderController extends BaseController
                 $responseData = json_encode($writableFolders);
 
             } catch (Error $e) {
-                $strErrorDesc = $e->getMessage() . ' Something went wrong! Please contact support.';
+                error_log('[API] FolderController::writableFoldersAction error: ' . $e->getMessage());
+                $strErrorDesc = 'An internal error occurred. Please contact support.';
                 $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
         }
 
         // send output

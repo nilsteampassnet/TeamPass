@@ -29,6 +29,52 @@ use Firebase\JWT\Key;
 use Firebase\JWT\SignatureInvalidException;
 use Firebase\JWT\BeforeValidException;
 use Firebase\JWT\ExpiredException;
+use TeampassClasses\ConfigManager\ConfigManager;
+
+/**
+ * Return a dedicated JWT signing key, distinct from the DB password.
+ * The key is lazily generated on first call and persisted in teampass_misc.
+ * Rotation: delete the 'api_jwt_secret' row and all live tokens are invalidated.
+ *
+ * @return string 64-char hex key (256 bits of entropy)
+ */
+function getApiJwtSigningKey(): string
+{
+    $configManager = new ConfigManager();
+    $SETTINGS = $configManager->getAllSettings();
+
+    if (!empty($SETTINGS['api_jwt_secret']) && strlen((string) $SETTINGS['api_jwt_secret']) >= 32) {
+        return (string) $SETTINGS['api_jwt_secret'];
+    }
+
+    // Generate a new 256-bit signing key
+    $newKey = bin2hex(random_bytes(32));
+
+    $existing = DB::queryFirstRow(
+        'SELECT increment_id FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+        'admin',
+        'api_jwt_secret'
+    );
+
+    if ($existing === null) {
+        DB::insert(prefixTable('misc'), [
+            'type'     => 'admin',
+            'intitule' => 'api_jwt_secret',
+            'valeur'   => $newKey,
+        ]);
+    } else {
+        DB::update(
+            prefixTable('misc'),
+            ['valeur' => $newKey],
+            'increment_id = %i',
+            (int) $existing['increment_id']
+        );
+    }
+
+    ConfigManager::invalidateCache();
+
+    return $newKey;
+}
 
 /**
  * Is the JWT valid
@@ -38,16 +84,12 @@ use Firebase\JWT\ExpiredException;
  */
 function is_jwt_valid($jwt) {
 	try {
-		$decoded = (array) JWT::decode($jwt, new Key(DB_PASSWD, 'HS256'));
+		$decoded = (array) JWT::decode($jwt, new Key(getApiJwtSigningKey(), 'HS256'));
 
 		// Check if expiration is reached
 		if ($decoded['exp'] - time() < 0) {
 			return false;
 		}
-/*
-		$decoded1 = JWT::decode($jwt, new Key(DB_PASSWD, 'HS256'), $headers = new stdClass());
-		print_r($headers);
-*/
 
 		return true;
 	} catch (InvalidArgumentException $e) {

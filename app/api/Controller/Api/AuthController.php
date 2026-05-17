@@ -76,7 +76,8 @@ class AuthController extends BaseController
                             $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                         }
                     } catch (Error $e) {
-                        $strErrorDesc = $e->getMessage().' Something went wrong! Please contact support.2';
+                        error_log('[API] AuthController::authorizeAction error: ' . $e->getMessage());
+                        $strErrorDesc = 'An internal error occurred. Please contact support.';
                         $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                     }
                 }

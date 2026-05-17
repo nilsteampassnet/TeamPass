@@ -64,38 +64,50 @@ class AuthModel
                 'apikey' => 'trim|escape|strip_tags',
             ]
         );
-        
+
+        // Load config early — needed for bruteforce settings and logging
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+
         // Check apikey and credentials
         if (empty($inputData['login']) === true || empty($inputData['apikey']) === true || empty($inputData['password']) === true) {
-            // case where it is a generic key
-            // Not allowed to use this API
+            return ["error" => "Login failed.", "info" => "Missing credentials"];
+        }
 
-            return ["error" => "Login failed.", "info" => "User password is requested"];
-        } else {
-            // case where it is a user api key
-            // Check if user exists
-            $userInfo = getUserCompleteData($inputData['login']);
+        $clientIp = $this->getClientIp();
 
-            if ($userInfo === null) {
-                return ["error" => "Login failed.", "info" => "Credentials not valid"];
+        // Anti-bruteforce: check for active lock before any DB lookup
+        $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
+        if ($lockUntil !== null) {
+            logEvents($SETTINGS, 'failed_auth', 'bruteforce_account_locked', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Account temporarily locked"];
+        }
+
+        // case where it is a user api key
+        // Check if user exists
+        $userInfo = getUserCompleteData($inputData['login']);
+
+        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0) {
+            // Uniform message — prevents user enumeration
+            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        }
+
+        // Check password
+        $passwordManager = new PasswordManager();
+        if ($passwordManager->verifyPassword($userInfo['pw'], $inputData['password']) === true) {
+            // Correct credentials
+            // get user keys
+            $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
+
+            // check API key — timing-safe comparison to prevent timing attacks
+            $expectedApiKey = base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyClear));
+            if (hash_equals($expectedApiKey, $inputData['apikey']) === false) {
+                $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+                logEvents($SETTINGS, 'failed_auth', 'api_invalid_apikey', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+                return ["error" => "Login failed.", "info" => "Invalid credentials"];
             }
-
-            // Check if user is enabled
-            if ((int) $userInfo['api_enabled'] === 0) {
-                return ["error" => "Login failed.", "info" => "User not allowed to use API"];
-            }
-            
-            // Check password
-            $passwordManager = new PasswordManager();
-            if ($passwordManager->verifyPassword($userInfo['pw'], $inputData['password']) === true) {
-                // Correct credentials
-                // get user keys
-                $privateKeyClear = decryptPrivateKey($inputData['password'], (string) $userInfo['private_key']);
-
-                // check API key
-                if ($inputData['apikey'] !== base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyClear))) {
-                    return ["error" => "Login failed.", "info" => "API Key not valid"];
-                }
 
                 // Update user's key_tempo
                 $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
@@ -133,10 +145,6 @@ class AuthModel
                 // get user folders list and persist in cache_tree
                 $ret = $this->buildUserFoldersList($userInfo);
                 $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
-
-                // Load config
-                $configManager = new ConfigManager();
-                $SETTINGS = $configManager->getAllSettings();
 
                 // Log user
                 // Log user (API / browser extension)
@@ -194,12 +202,112 @@ class AuthModel
                     (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
                     (int) ($SETTINGS['maintenance_mode'] ?? 0),
                 );
-            } else {
-                return ["error" => "Login failed.", "info" => "Credentials not valid"];
-            }
+        } else {
+            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
         }
     }
     //end getUserAuth
+
+    /**
+     * Return the client IP address for bruteforce tracking.
+     *
+     * @return string
+     */
+    private function getClientIp(): string
+    {
+        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'] as $key) {
+            if (!empty($_SERVER[$key])) {
+                $ip = trim(explode(',', $_SERVER[$key])[0]);
+                if (filter_var($ip, FILTER_VALIDATE_IP)) {
+                    return $ip;
+                }
+            }
+        }
+        return '0.0.0.0';
+    }
+
+    /**
+     * Check if the login or IP is currently locked by anti-bruteforce.
+     * Uses the same teampass_auth_failures table as the web interface.
+     *
+     * @param string $login
+     * @param string $ip
+     * @return string|null unlock_at timestamp if locked, null if OK
+     */
+    private function checkBruteforceProtection(string $login, string $ip): ?string
+    {
+        $unlockAt = DB::queryFirstField(
+            'SELECT MAX(unlock_at)
+             FROM ' . prefixTable('auth_failures') . '
+             WHERE unlock_at > %s
+             AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+            date('Y-m-d H:i:s', time()),
+            'login',
+            $login,
+            'remote_ip',
+            $ip
+        );
+
+        return $unlockAt ?: null;
+    }
+
+    /**
+     * Record a failed authentication attempt in teampass_auth_failures.
+     * Mirrors the web interface logic (same table, same thresholds from settings).
+     *
+     * @param string $login
+     * @param string $ip
+     * @param array  $SETTINGS
+     */
+    private function recordFailedAttempt(string $login, string $ip, array $SETTINGS): void
+    {
+        $userLimit = max(0, (int) ($SETTINGS['nb_bad_authentication'] ?? 10));
+        $ipLimit   = max(0, (int) ($SETTINGS['nb_bad_authentication_by_ip'] ?? 30));
+        $lockMin   = max(1, (int) ($SETTINGS['bruteforce_lock_duration'] ?? 10));
+
+        if ($userLimit > 0 && !empty($login)) {
+            $this->insertAuthFailure('login', $login, $userLimit, $lockMin);
+        }
+        if ($ipLimit > 0 && !empty($ip) && $ip !== '0.0.0.0') {
+            $this->insertAuthFailure('remote_ip', $ip, $ipLimit, $lockMin);
+        }
+
+        // Purge stale unlocked entries to keep the table lean
+        DB::delete(
+            prefixTable('auth_failures'),
+            'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+            date('Y-m-d H:i:s', time() - (24 * 3600)),
+            date('Y-m-d H:i:s', time())
+        );
+    }
+
+    /**
+     * Insert one failure row and set a lock when the threshold is reached.
+     *
+     * @param string $source 'login' or 'remote_ip'
+     * @param string $value  The login or IP
+     * @param int    $limit  Failure threshold
+     * @param int    $lockMin Lock duration in minutes
+     */
+    private function insertAuthFailure(string $source, string $value, int $limit, int $lockMin): void
+    {
+        $count = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('auth_failures') . ' WHERE source = %s AND value = %s',
+            $source,
+            $value
+        );
+        $count++;
+        $unlockAt = $count >= $limit ? date('Y-m-d H:i:s', time() + ($lockMin * 60)) : null;
+
+        DB::insert(prefixTable('auth_failures'), [
+            'source'      => $source,
+            'value'       => $value,
+            'unlock_at'   => $unlockAt,
+            'unlock_code' => null,
+        ]);
+    }
 
     /**
      * Create a JWT
@@ -282,7 +390,8 @@ class AuthModel
             'maintenance_mode' => $maintenance_mode,
         ];
 
-        return ['token' => JWT::encode($payload, DB_PASSWD, 'HS256')];
+        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+        return ['token' => JWT::encode($payload, getApiJwtSigningKey(), 'HS256')];
     }
 
     //end createUserJWT
