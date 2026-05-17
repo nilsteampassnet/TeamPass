@@ -2217,5 +2217,7 @@ return array(
     'ldap_not_in_allowed_group' => 'Accès refusé : votre compte n’est pas dans le groupe LDAP requis.',
     'sub-folders' => 'Sous-répertoires',
     'search_results' => 'Résultats de recherche',
+    'settings_api_cors_origins' => 'Origines CORS autorisées',
+    'settings_api_cors_origins_tip' => 'Laissez vide pour autoriser toutes les origines (recommandé pour la plupart des configurations — le jeton JWT constitue la véritable protection). Saisissez une liste d’origines séparées par des virgules pour restreindre l’accès à des sources spécifiques uniquement, par exemple : chrome-extension://abc123, moz-extension://xyz789.',
 
 );

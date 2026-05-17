@@ -2218,5 +2218,7 @@ Path: %s',
     'ldap_not_in_allowed_group' => 'Access denied: your account is not in the required LDAP group.',
     'sub-folders' => 'Sub-folders',
     'search_results' => 'Search results',
+    'settings_api_cors_origins' => 'Allowed CORS origins',
+    'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
 
 );
