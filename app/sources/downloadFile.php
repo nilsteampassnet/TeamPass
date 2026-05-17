@@ -173,6 +173,24 @@ function tpDownloadGetOntheflyBackupDefaultDir(): string
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : TEAMPASS_ROOT . '/storage/onthefly';
 }
 
+function tpUserCanDownloadBackupFromSession(int $userId, string $key, string $keyTmp): bool
+{
+    $session = SessionManager::getSession();
+
+    if ($session->get('key') !== $key || (string) $session->get('user-key_tmp') !== $keyTmp) {
+        return false;
+    }
+
+    $user = DB::queryFirstRow(
+        'SELECT admin
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+
+    return DB::count() > 0 && (int) ($user['admin'] ?? 0) === 1;
+}
+
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);
 $get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
 $get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
@@ -200,7 +218,7 @@ if ((int) $get_pathIsOnthefly === 1) {
         sendError('ERROR_File_not_found');
     }
 
-    if (!userHasAccessToBackupFile((int) $session->get('user-id'), $get_file, $get_key, $get_key_tmp)) {
+    if (!tpUserCanDownloadBackupFromSession((int) $session->get('user-id'), $get_key, $get_key_tmp)) {
         sendError('ERROR_Not_allowed');
     }
 
