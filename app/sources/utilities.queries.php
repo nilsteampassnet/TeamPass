@@ -3188,6 +3188,11 @@ function tpHealthGetSettingsValue(string $key, string $default = ''): string
     return $s === '' ? $default : $s;
 }
 
+function tpHealthGetOntheflyBackupDefaultDir(): string
+{
+    return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : __DIR__ . '/../../storage/onthefly';
+}
+
 function tpGetBackupsStatus(array $SETTINGS): array
 {
     $now = time();
@@ -3198,12 +3203,8 @@ function tpGetBackupsStatus(array $SETTINGS): array
         require_once $backupFunctionsPath;
     }
 
-    // Base files directory
-    $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? '');
-    if ($baseFilesDir === '') {
-        $baseFilesDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files';
-    }
-    $baseFilesDir = rtrim($baseFilesDir, '/');
+    // On-the-fly backups directory
+    $ontheflyDir = rtrim(tpHealthGetOntheflyBackupDefaultDir(), '/');
 
     // Scheduled output dir is configurable; default is storage/backups
     $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
@@ -3221,16 +3222,16 @@ function tpGetBackupsStatus(array $SETTINGS): array
     // List files (all + latest)
     // ------------------------
     $scheduledAll = tpListBackupSqlFiles($scheduledDir, true, 0);
-    $ontheflyAll = tpListBackupSqlFiles($baseFilesDir, false, 0);
+    $ontheflyAll = tpListBackupSqlFiles($ontheflyDir, false, 0);
 
     $scheduledLatest = tpListBackupSqlFiles($scheduledDir, true, 10);
-    $ontheflyLatest = tpListBackupSqlFiles($baseFilesDir, false, 10);
+    $ontheflyLatest = tpListBackupSqlFiles($ontheflyDir, false, 10);
 
     // ------------------------
     // Orphan metadata (.meta.json) monitoring
     // ------------------------
     $scheduledMetaOrphans = function_exists('tpListOrphanBackupMetaFiles') ? count(tpListOrphanBackupMetaFiles($scheduledDir)) : 0;
-    $ontheflyMetaOrphans = function_exists('tpListOrphanBackupMetaFiles') ? count(tpListOrphanBackupMetaFiles($baseFilesDir)) : 0;
+    $ontheflyMetaOrphans = function_exists('tpListOrphanBackupMetaFiles') ? count(tpListOrphanBackupMetaFiles($ontheflyDir)) : 0;
 
     // ------------------------
     // Build directory health (stats are computed on ALL files)
@@ -3248,7 +3249,7 @@ function tpGetBackupsStatus(array $SETTINGS): array
     );
 
     $ontheflyDirHealth = tpBuildBackupDirHealth(
-        $baseFilesDir,
+        $ontheflyDir,
         'health_backup_onthefly',
         $ontheflyLatest,
         $ontheflyMetaOrphans,
