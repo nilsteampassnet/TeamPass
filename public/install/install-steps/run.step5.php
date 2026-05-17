@@ -647,6 +647,7 @@ class DatabaseInstaller
             array('admin', 'ldap_password', '', '1'),
             array('admin', 'ldap_username', ''),
             array('admin', 'api_token_duration', '60'),
+            array('admin', 'api_cors_origins', ''),
             array('timestamp', 'last_folder_change', ''),
             array('admin', 'enable_tasks_manager', '1'),
             array('admin', 'task_maximum_run_time', '300'),

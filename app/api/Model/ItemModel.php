@@ -48,6 +48,16 @@ class ItemModel
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
     {
+        // Fetch user's public key once for migration-aware decryption
+        $userPublicKey = '';
+        $userKeyRow = DB::queryFirstRow(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if ($userKeyRow !== null) {
+            $userPublicKey = (string) $userKeyRow['public_key'];
+        }
+
         // Get items
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
@@ -68,7 +78,7 @@ class ItemModel
         $ret = [];
         foreach ($rows as $row) {
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $userId,
@@ -80,15 +90,18 @@ class ItemModel
                 continue;
             }
 
-            // Get password
+            // Get password (migration-aware: upgrades phpseclib v1 sharekeys to v3 on access)
             $pwd = '';
             try {
                 $pwd = base64_decode(
                     (string) doDataDecryption(
                         $row['pw'],
-                        decryptUserObjectKey(
+                        decryptUserObjectKeyWithMigration(
                             $userKey['share_key'],
-                            $userPrivateKey
+                            $userPrivateKey,
+                            $userPublicKey,
+                            (int) $userKey['increment_id'],
+                            'sharekeys_items'
                         )
                     )
                 );

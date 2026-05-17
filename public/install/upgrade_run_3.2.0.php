@@ -293,6 +293,12 @@ if ($row && !empty($row['valeur'])) {
     }
 }
 
+// Add api_cors_origins setting (CORS origin whitelist for API, empty = same-host only)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_cors_origins', '')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

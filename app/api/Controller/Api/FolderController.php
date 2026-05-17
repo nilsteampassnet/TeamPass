@@ -177,12 +177,14 @@ class FolderController extends BaseController
                     );
 
                     foreach ($rows as $row) {
+                        $folderId = (int) $row['folder_id'];
                         $writableFolders[] = [
-                            'id' => (int) $row['folder_id'],
+                            'id' => $folderId,
                             'label' => $row['title'] === $userId ? $username : $row['title'],
                             'level' => (int) $row['nlevel'],
                             'parent_id' => (int) $row['parent_id'],
                             'first_position' => $row['title'] === $userId ? 1 : 0,
+                            'is_readonly' => $folderAccessModel->isFolderReadOnlyForUser($folderId, (int) $userData['id']) ? 1 : 0,
                         ];
                     }
                 }

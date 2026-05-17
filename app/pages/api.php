@@ -170,6 +170,18 @@ function getDomainFromSettingsUrl(string $url): string
                             </div>
                         </div>
 
+                        <div class='row mb-3'>
+                            <div class='col-7'>
+                                <?php echo $lang->get('settings_api_cors_origins'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_api_cors_origins_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-5'>
+                                <input type='text' class='form-control form-control-sm' id='api_cors_origins' value='<?php echo htmlspecialchars((string) ($SETTINGS['api_cors_origins'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>'>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>

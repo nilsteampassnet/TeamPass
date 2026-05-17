@@ -369,7 +369,7 @@ class AuthModel
 		$payload = [
             'username' => $login,
             'id' => $id,
-            'exp' => (time() + $SETTINGS['api_token_duration'] + 600),
+            'exp' => (time() + (int) $SETTINGS['api_token_duration']),
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,

@@ -112,11 +112,10 @@ class ItemController extends BaseController
                 return;
             }
 
-            // SQL LIMIT
-            $intLimit = 0;
-            if (isset($arrQueryStringParams['limit']) === true) {
-                $intLimit = (int) $arrQueryStringParams['limit'];
-            }
+            // SQL LIMIT (hard cap at 500 to prevent resource exhaustion)
+            $intLimit = isset($arrQueryStringParams['limit'])
+                ? min(max(0, (int) $arrQueryStringParams['limit']), 500)
+                : 0;
 
             // send query
             try {
@@ -339,15 +338,25 @@ class ItemController extends BaseController
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
                 $isLikeLabel = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
-                $escapedLabel = $isLikeLabel
-                    ? DB::escape('%' . $arrQueryStringParams['label'] . '%')
-                    : DB::escape($arrQueryStringParams['label']);
+                if ($isLikeLabel) {
+                    $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['label']);
+                    $escapedLabel = DB::escape('%' . $likeVal . '%');
+                } else {
+                    $escapedLabel = DB::escape($arrQueryStringParams['label']);
+                }
                 $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE ' : '= ') . $escapedLabel . $sql_constraint;
-                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? (int) $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
+                $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
+                    ? min((int) $arrQueryStringParams['limit'], 500)
+                    : 50;
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
                 $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
-                $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                if ($isLikeDesc) {
+                    $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['description']);
+                    $escapedDesc = DB::escape('%' . $likeVal . '%');
+                } else {
+                    $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                }
                 $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE ' : '= ') . $escapedDesc . $sql_constraint;
             } else {
                 // Send error
@@ -442,8 +451,9 @@ class ItemController extends BaseController
             }
             $sql_constraint .= ')' . $folderAccessModel->getItemFolderSqlConstraint('i.id_tree', (int) $userData['id']);
 
-            // Decode URL if needed
+            // Decode URL and escape LIKE metacharacters to prevent wildcard injection
             $searchUrl = urldecode($arrQueryStringParams['url']);
+            $likeUrl = str_replace(['%', '_'], ['\\%', '\\_'], $searchUrl);
 
             try {
                 // Get user's private key from database
@@ -461,7 +471,7 @@ class ItemController extends BaseController
                         WHERE i.url LIKE %s" . $sql_constraint . "
                             AND i.deleted_at IS NULL
                         ORDER BY i.label ASC",
-                        "%".$searchUrl."%"
+                        "%" . $likeUrl . "%"
                     );
 
                     // Fetch all sharekeys for matched items in a single query (avoids N+1)
@@ -715,7 +725,7 @@ class ItemController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = $responseData = '';
 
-        if (strtoupper($requestMethod) === 'PUT' || strtoupper($requestMethod) === 'POST') {
+        if (strtoupper($requestMethod) === 'PUT') {
             // Check if user is allowed to update items
             if ((int) $userData['allowed_to_update'] !== 1) {
                 $strErrorDesc = 'User is not allowed to update items';
