@@ -78,14 +78,14 @@ function robustDeleteDir(string $dir): array
     foreach (array_diff($entries, ['.', '..']) as $entry) {
         $path = $dir . DIRECTORY_SEPARATOR . $entry;
         if (is_link($path)) {
-            if (unlink($path) === false) {
+            if (@unlink($path) === false) {
                 $failures[] = $path;
             }
         } elseif (is_dir($path)) {
             $failures = array_merge($failures, robustDeleteDir($path));
         } else {
             @chmod($path, 0666);
-            if (unlink($path) === false) {
+            if (@unlink($path) === false) {
                 $failures[] = $path;
             }
         }
@@ -93,7 +93,7 @@ function robustDeleteDir(string $dir): array
 
     if (empty($failures)) {
         @chmod($dir, 0777);
-        if (rmdir($dir) === false) {
+        if (@rmdir($dir) === false) {
             $failures[] = $dir;
         }
     }

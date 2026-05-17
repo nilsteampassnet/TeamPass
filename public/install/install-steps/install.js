@@ -782,18 +782,39 @@ function cleanupAndRedirect(url) {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
 
     function showCleanupError() {
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-up-right-from-square"></i> Move to Teampass home page';
+        // Prevent duplicate blocks on repeated clicks
+        if (document.getElementById('cleanup-error-alert')) {
+            btn.disabled = false;
+            return;
+        }
+        // Hide the original button — actions move into the alert block
+        btn.style.display = 'none';
+
         const alertBox = document.createElement('div');
-        alertBox.className = 'alert alert-warning mt-3';
+        alertBox.id = 'cleanup-error-alert';
+        alertBox.className = 'alert alert-info mt-3';
+
+        const msg = document.createElement('p');
+        msg.className = 'mb-2';
+        msg.textContent = 'The install folder could not be fully deleted. ' +
+            'A retry will occur automatically on next admin login, or delete it manually.';
+        alertBox.appendChild(msg);
+
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn btn-primary btn-sm mr-2';
+        retryBtn.innerHTML = '<i class="fa-solid fa-up-right-from-square mr-1"></i>Move to Teampass home page';
+        retryBtn.addEventListener('click', function() {
+            document.getElementById('cleanup-error-alert').remove();
+            btn.style.display = '';
+            cleanupAndRedirect(url);
+        });
+
         const continueBtn = document.createElement('button');
-        continueBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+        continueBtn.className = 'btn btn-outline-secondary btn-sm';
         continueBtn.textContent = 'Continue anyway';
         continueBtn.addEventListener('click', function() { window.location.href = url; });
-        alertBox.appendChild(document.createTextNode(
-            'The install folder could not be fully deleted. ' +
-            'A retry will occur automatically on next admin login, or delete it manually. '
-        ));
+
+        alertBox.appendChild(retryBtn);
         alertBox.appendChild(continueBtn);
         btn.closest('div').insertAdjacentElement('afterend', alertBox);
     }
