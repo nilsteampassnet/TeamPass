@@ -101,6 +101,7 @@ $getData = dataSanitizer(
         'key' => $request->query->get('key'),
         'key_tmp' => $request->query->get('key_tmp'),
         'pathIsFiles' => $request->query->get('pathIsFiles'),
+        'pathIsOnthefly' => $request->query->get('pathIsOnthefly'),
     ],
     [
         'filename' => 'trim|escape',
@@ -110,6 +111,7 @@ $getData = dataSanitizer(
         'key' => 'trim|escape',
         'key_tmp' => 'trim|escape',
         'pathIsFiles' => 'trim|escape',
+        'pathIsOnthefly' => 'trim|escape',
     ]
 );
 
@@ -166,15 +168,53 @@ function validateSecurePath($basePath, $filename) {
     return file_exists($filepath) && is_file($filepath) && is_readable($filepath) ? $filepath : false;
 }
 
+function tpDownloadGetOntheflyBackupDefaultDir(): string
+{
+    return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : TEAMPASS_ROOT . '/storage/onthefly';
+}
+
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);
 $get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
 $get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
+$get_pathIsOnthefly = (string) $antiXss->xss_clean($getData['pathIsOnthefly']);
 $get_action = (string) $antiXss->xss_clean($getData['action']);
 $get_file = (string) $antiXss->xss_clean($getData['file']);
 $get_key = (string) $antiXss->xss_clean($getData['key']);
 $get_key_tmp = (string) $antiXss->xss_clean($getData['key_tmp']);
 
-// Branch 1: Files from files folder (pathIsFiles = 1)
+// Branch 1: On-the-fly backups from storage/onthefly (pathIsOnthefly = 1)
+if ((int) $get_pathIsOnthefly === 1) {
+    $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
+    $get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
+
+    if (empty($get_filename)) {
+        sendError('ERROR_Invalid_filename');
+    }
+
+    if ($get_action !== 'backup') {
+        sendError('ERROR_Not_allowed');
+    }
+
+    $filepath = validateSecurePath(tpDownloadGetOntheflyBackupDefaultDir(), $get_filename);
+    if (!$filepath) {
+        sendError('ERROR_File_not_found');
+    }
+
+    if (!userHasAccessToBackupFile((int) $session->get('user-id'), $get_file, $get_key, $get_key_tmp)) {
+        sendError('ERROR_Not_allowed');
+    }
+
+    setDownloadHeaders($get_filename, filesize($filepath));
+
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    readfile($filepath);
+    exit;
+}
+
+// Branch 2: Files from files folder (pathIsFiles = 1)
 if (null !== $get_pathIsFiles && (int) $get_pathIsFiles === 1) {
 
     // Clean filename
