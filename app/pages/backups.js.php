@@ -448,7 +448,7 @@ function tpSafePrepareDecode(resp) {
     var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
 
 // ---------------------------------------------------------------------
-// On-the-fly upload safety (prevent duplicates in <files>)
+// On-the-fly upload safety (prevent duplicates in storage/onthefly)
 // ---------------------------------------------------------------------
 // Template uses {FILENAME}
 var tpBckUploadFileAlreadyExistsTpl = "<?php echo addslashes($lang->get('bck_upload_error_file_already_exists')); ?>";
@@ -848,7 +848,7 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
             .html('');
     });
 
-        // Load existing on-the-fly backups stored on server (<files> directory)
+        // Load existing on-the-fly backups stored on server (storage/onthefly)
 // Simple template helper: replaces {KEY} tokens
 function tpTpl(str, map) {
     str = (str || '').toString();
@@ -1117,7 +1117,7 @@ function tpFmtBytes(bytes) {
             if (fileName === '') return;
 
             // Select server-side file for restore and clear any uploaded operation id
-            // This is an on-the-fly server backup stored under <files> (not scheduled scope)
+            // This is an on-the-fly server backup stored under storage/onthefly.
             $('#onthefly-restore-serverfile').val(fileName); // used for validation
             $('#onthefly-restore-server-scope').val('');
             $('#onthefly-restore-server-file').val(fileName);
@@ -1204,7 +1204,7 @@ function tpFmtBytes(bytes) {
                             $('#onthefly-backup-progress').addClass('hidden').empty();
 
 
-                            // Refresh on-the-fly server backups list (new file is stored in <files>)
+                            // Refresh on-the-fly server backups list (new file is stored in storage/onthefly)
                             try { loadOnTheFlyServerBackups(); } catch (e) {}
 
                             // Inform user
@@ -1601,7 +1601,7 @@ $maxFileSizeDisplay = preg_replace('/\s*(MB|GB)$/', ' $1', $maxFileSizeDisplay);
                                     teampassUser.uploadToken = data[0].token;
                                 }
                             );
-// Before starting upload, block if original filename already exists in <files>
+// Before starting upload, block if original filename already exists in storage/onthefly
 var fn = (files && files.length && files[0] && files[0].name) ? (files[0].name + '') : '';
 $.post(
     "sources/backups.queries.php",
