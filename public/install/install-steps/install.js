@@ -780,11 +780,38 @@ function cleanupAndRedirect(url) {
     const btn = document.getElementById('btn_go_home');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
+
+    function showCleanupError() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-up-right-from-square"></i> Move to Teampass home page';
+        const alertBox = document.createElement('div');
+        alertBox.className = 'alert alert-warning mt-3';
+        const continueBtn = document.createElement('button');
+        continueBtn.className = 'btn btn-sm btn-outline-secondary mt-2';
+        continueBtn.textContent = 'Continue anyway';
+        continueBtn.addEventListener('click', function() { window.location.href = url; });
+        alertBox.appendChild(document.createTextNode(
+            'The install folder could not be fully deleted. ' +
+            'A retry will occur automatically on next admin login, or delete it manually. '
+        ));
+        alertBox.appendChild(continueBtn);
+        btn.closest('div').insertAdjacentElement('afterend', alertBox);
+    }
+
     fetch('cleanup_install.php', {
         method: 'POST',
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: 'action=cleanup'
-    }).finally(function() {
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'ok') {
+            window.location.href = url;
+        } else {
+            showCleanupError();
+        }
+    })
+    .catch(function() {
         window.location.href = url;
     });
 }

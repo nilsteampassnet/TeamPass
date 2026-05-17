@@ -49,8 +49,6 @@ if ($isUpgradeAuthorized === false && $isInstallAuthorized === false) {
     exit;
 }
 
-require_once __DIR__ . '/tp.functions.php';
-
 $installDir = realpath(__DIR__);
 if ($installDir === false) {
     // Directory already gone
@@ -58,6 +56,94 @@ if ($installDir === false) {
     exit;
 }
 
-deleteAllFolder($installDir);
+/**
+ * Recursively delete a directory and all its contents.
+ *
+ * Uses scandir() instead of glob() so dotfiles (e.g. .htaccess) are included.
+ * Attempts chmod before each unlink/rmdir to maximise chances of success
+ * when file ownership differs from the web server user.
+ *
+ * @param string $dir Absolute path to the directory to delete.
+ * @return string[]   Paths that could not be removed (empty = full success).
+ */
+function robustDeleteDir(string $dir): array
+{
+    $failures = [];
 
-echo json_encode(['status' => 'ok']);
+    $entries = scandir($dir);
+    if ($entries === false) {
+        return [$dir];
+    }
+
+    foreach (array_diff($entries, ['.', '..']) as $entry) {
+        $path = $dir . DIRECTORY_SEPARATOR . $entry;
+        if (is_link($path)) {
+            if (unlink($path) === false) {
+                $failures[] = $path;
+            }
+        } elseif (is_dir($path)) {
+            $failures = array_merge($failures, robustDeleteDir($path));
+        } else {
+            @chmod($path, 0666);
+            if (unlink($path) === false) {
+                $failures[] = $path;
+            }
+        }
+    }
+
+    if (empty($failures)) {
+        @chmod($dir, 0777);
+        if (rmdir($dir) === false) {
+            $failures[] = $dir;
+        }
+    }
+
+    return $failures;
+}
+
+// After the HTTP response is sent, make a last-resort pass over whatever
+// remains — this handles platforms where open file handles on executing
+// scripts prevent rmdir in the main pass.
+register_shutdown_function(static function() use ($installDir): void {
+    if (is_dir($installDir) === false) {
+        return;
+    }
+    if (function_exists('fastcgi_finish_request')) {
+        fastcgi_finish_request();
+    }
+    $it = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($installDir, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($it as $item) {
+        /** @var SplFileInfo $item */
+        if ($item->isDir()) {
+            @chmod($item->getPathname(), 0777);
+            @rmdir($item->getPathname());
+        } else {
+            @chmod($item->getPathname(), 0666);
+            @unlink($item->getPathname());
+        }
+    }
+    @rmdir($installDir);
+});
+
+$remaining = robustDeleteDir($installDir);
+
+if (empty($remaining)) {
+    echo json_encode(['status' => 'ok']);
+    exit;
+}
+
+$relativeRemaining = array_values(array_map(
+    static fn(string $p): string => str_replace($installDir . DIRECTORY_SEPARATOR, '', $p),
+    $remaining
+));
+
+error_log('[TeamPass] install cleanup partial — could not remove: ' . implode(', ', $relativeRemaining));
+
+echo json_encode([
+    'status' => 'partial',
+    'remaining' => $relativeRemaining,
+    'msg' => 'Some files could not be deleted. A retry will occur automatically on next admin login.',
+]);

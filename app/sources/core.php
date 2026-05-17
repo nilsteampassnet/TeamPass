@@ -155,26 +155,29 @@ if (
         if (function_exists('delTree') === false) {
             function delTree(string $dir): bool
             {
-                $directories = scandir($dir);
-                if ($directories !== false) {
-                    $files = array_diff($directories, ['.', '..']);
-                    foreach ($files as $file) {
-                        $path = $dir . '/' . $file;
-                        if (is_dir($path) === true) {
-                            delTree($path);
-                        } else {
-                            try {
-                                unlink($path);
-                            } catch (Exception $e) {
-                                // do nothing... php will ignore and continue
-                            }
+                $entries = scandir($dir);
+                if ($entries === false) {
+                    return false;
+                }
+                $success = true;
+                foreach (array_diff($entries, ['.', '..']) as $entry) {
+                    $path = $dir . '/' . $entry;
+                    if (is_dir($path) === true && is_link($path) === false) {
+                        if (delTree($path) === false) {
+                            $success = false;
+                        }
+                    } else {
+                        @chmod($path, 0666);
+                        if (@unlink($path) === false) {
+                            $success = false;
                         }
                     }
-
-                    return @rmdir($dir);
                 }
-
-                return false;
+                if ($success === false) {
+                    return false;
+                }
+                @chmod($dir, 0777);
+                return rmdir($dir);
             }
         }
 
@@ -196,6 +199,8 @@ if (
                 'install',
                 'clear_install_folder'
             );
+        } else {
+            error_log('[TeamPass] install folder auto-cleanup failed — check ownership/permissions of ' . TEAMPASS_ROOT . '/public/install');
         }
     }
 }

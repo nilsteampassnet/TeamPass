@@ -863,6 +863,9 @@ function retireOldIncludes(string $root, int $priorErrors): int
  */
 function chownRecursive(string $path, int $uid, int $gid): bool
 {
+    if (!function_exists('posix_chown')) {
+        return false;
+    }
     if (!posix_chown($path, $uid, $gid)) {
         return false;
     }
@@ -1000,7 +1003,7 @@ function setPermissions(string $root): void
         }
 
         if ($uid !== -1) {
-            if (!posix_chown($dir, $uid, $gid)) {
+            if (!function_exists('posix_chown') || !posix_chown($dir, $uid, $gid)) {
                 warn("Could not chown {$WEB_USER}: $relPath/ — set manually if needed");
             } else {
                 ok("chown {$WEB_USER}:{$WEB_USER}: $relPath/");
@@ -1024,7 +1027,7 @@ function setPermissions(string $root): void
             dry("Would chmod 0640 app/config/settings.php");
         } else {
             if ($uid !== -1) {
-                if (!posix_chown($settingsFile, $uid, $gid)) {
+                if (!function_exists('posix_chown') || !posix_chown($settingsFile, $uid, $gid)) {
                     warn("Could not chown {$WEB_USER}: app/config/settings.php — set manually if needed");
                 } else {
                     ok("chown {$WEB_USER}:{$WEB_USER}: app/config/settings.php");

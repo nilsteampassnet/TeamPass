@@ -4707,9 +4707,9 @@ function defineComplexity() : void
  *
  * @param array     $data
  * @param array     $filters
- * @return array|string
+ * @return array
  */
-function dataSanitizer(array $data, array $filters): array|string
+function dataSanitizer(array $data, array $filters): array
 {
     // Load Sanitizer library
     $sanitizer = new Sanitizer($data, $filters);

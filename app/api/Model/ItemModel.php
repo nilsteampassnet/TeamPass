@@ -329,10 +329,7 @@ class ItemModel
             'totp' => 'trim|escape',
         ];
 
-        $inputData = dataSanitizer($data, $filters);
-        if (is_string($inputData)) {
-            throw new Exception('Data is not valid');
-        }
+        dataSanitizer($data, $filters);
     }
 
     /**
