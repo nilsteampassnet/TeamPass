@@ -11,6 +11,19 @@
 
 ---
 
+## Versioning
+
+Routes are available both with and without a version prefix — `BaseController::getUriSegments()` strips the `/vN/` segment transparently:
+
+```
+GET /api/item/get          # legacy, treated as v1
+GET /api/v1/item/get       # explicit v1
+```
+
+All responses include `X-Api-Version: 1`.
+
+---
+
 ## Authentication
 
 ### `POST /api/authorize`
@@ -44,7 +57,7 @@ Credentials must be in the body — query string is rejected (400).
 
 - Algorithm: HS256
 - Signing key: `api_jwt_secret` in `teampass_misc` (256-bit hex, lazy-generated on first use — **distinct from DB password**)
-- Expiry: `api_token_duration + 600` seconds (configurable in settings)
+- Expiry: `api_token_duration` seconds (configurable in Settings → API)
 - Key claims: `id`, `username`, `exp`, `key_tempo`, `is_admin`, `is_manager`, `allowed_to_create`, `allowed_to_read`, `allowed_to_update`, `allowed_to_delete`, `folders_list`
 
 **Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in `teampass_api`. The JWT carries only `key_tempo` (a reference). A stolen JWT alone cannot decrypt the private key.
@@ -61,11 +74,13 @@ All require `Authorization: Bearer <jwt>`.
 
 Get item(s) by ID or label.
 
-**Params:** `id` (int) OR `label` (string) OR `description` (string), optional `limit` (default 50).
+**Params:** `id` (int) OR `label` (string) OR `description` (string), optional `limit` (default 50, max 500).
 
 **Response:** array of item objects `{ id, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags }`.
 
 **Permissions:** `allowed_to_read`. Uses folder access constraint — IDOR protection via sharekey (item skipped if no sharekey found for user).
+
+**LIKE search:** `label` and `description` params trigger a `LIKE %value%` search. The `%` and `_` characters in the input are escaped to prevent LIKE injection.
 
 ---
 
@@ -73,7 +88,7 @@ Get item(s) by ID or label.
 
 Get items in one or more folders.
 
-**Params:** `folders` (comma-separated or JSON array of folder IDs), optional `limit`.
+**Params:** `folders` (comma-separated or JSON array of folder IDs), optional `limit` (default 50, max 500).
 
 **Permissions:** `allowed_to_read`.
 
@@ -83,7 +98,7 @@ Get items in one or more folders.
 
 Find items by URL match.
 
-**Params:** `url` (string).
+**Params:** `url` (string). The `%` and `_` characters are escaped before the LIKE query.
 
 **Response:** array of `{ id, label, login, url, folder_id, has_otp, favicon_url }`.
 
@@ -126,13 +141,13 @@ Create a new item.
 
 **Response 200:** item object with `id`.
 
-**Permissions:** `allowed_to_create`. Blocked if folder is read-only for user.
+**Permissions:** `allowed_to_create`. Blocked with 403 if folder is read-only for user.
 
 ---
 
 ### `PUT /api/item/update`
 
-Update an existing item.
+Update an existing item. **Only PUT is accepted** — POST returns 405.
 
 **Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`.
 
@@ -146,7 +161,7 @@ Soft-delete an item.
 
 **Params:** `id` (int).
 
-**Permissions:** `allowed_to_delete`. Blocked if folder is read-only.
+**Permissions:** `allowed_to_delete`. Blocked with 403 if folder is read-only.
 
 ---
 
@@ -164,9 +179,14 @@ List all folders accessible to the authenticated user.
 
 ### `GET /api/folder/writableFolders`
 
-List folders from `folders_list` with label and level info.
+List all folders accessible to the user with label, level, and read-only flag.
 
-**Note:** name is historical — returns all accessible folders (read-only included). Use folder metadata to determine write access.
+**Response:** array of `{ id, label, level, parent_id, first_position, is_readonly }`.
+
+- `is_readonly: 1` — user has read access only (R-type role on this folder)
+- `is_readonly: 0` — user can write
+
+**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry.
 
 **Permissions:** `allowed_to_read`.
 
@@ -198,7 +218,7 @@ List users. **Admin only** (`is_admin = 1` in JWT).
 
 ## Misc Endpoints
 
-### `POST /api/misc/refreshExtensionSettings`
+### `GET|POST /api/misc/refreshExtensionSettings`
 
 Returns browser extension connection settings.
 
@@ -226,17 +246,18 @@ Returns browser extension connection settings.
 
 ## CORS
 
-Current (v3.2): `Access-Control-Allow-Origin` reflects the server's own `Host` header. Browser extensions (`chrome-extension://`, `moz-extension://`) are blocked by CORS — this will be fixed in Vague 2 with an origin whitelist configurable in `teampass_misc` (`api_cors_origins`).
+Behaviour depends on the **Allowed CORS origins** field in Settings → API (`api_cors_origins` in `teampass_misc`):
 
-Security headers present: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`.
+| Field value | Behaviour |
+|---|---|
+| **Empty** (default) | `Access-Control-Allow-Origin: *` — all origins accepted. JWT is the real auth layer. |
+| **Comma-separated origins** | Only listed origins get the header. Unlisted browser clients are blocked. |
 
-Missing (Vague 2): `Strict-Transport-Security`, `Content-Security-Policy`.
+When a whitelist is active, the server echoes the matching `Origin` back (`Access-Control-Allow-Origin: <origin>`) and adds `Vary: Origin`. Browser tool and curl calls without an `Origin` header receive the server's own host.
 
----
+Security headers on all responses: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'`.
 
-## Versioning
-
-No API versioning yet — all routes are `/api/<controller>/<action>`. Vague 2 will introduce `/api/v1/` with backward compatibility, plus `X-Api-Version` response header.
+On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 ---
 
@@ -244,14 +265,22 @@ No API versioning yet — all routes are `/api/<controller>/<action>`. Vague 2 w
 
 1. **JWT secret** is stored in `teampass_misc` (key: `api_jwt_secret`, type: `admin`), lazily generated on first call. Rotation: delete or update the row + wait for existing tokens to expire.
 2. **User private key** never leaves the server unencrypted. The JWT carries only `key_tempo` (a reference). The server-side `session_aes_key` in `teampass_api` is required to decrypt the private key on each request.
-3. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
-4. **Read-only folders**: enforced in create/update/delete item operations and folder create. An item move to a read-only target folder is also blocked (as of wave 1).
-5. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
+3. **Sharekey decryption** uses `decryptUserObjectKeyWithMigration()` — transparently upgrades phpseclib v1 (SHA-1) sharekeys to v3 (SHA-256) on access.
+4. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
+5. **Read-only folders**: enforced in create/update/delete item operations and folder create. An item move to a read-only target folder is also blocked.
+6. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
+7. **Input sanitization**: body and query-string params are trimmed only — no HTML encoding — so passwords containing `<>&"'` are stored correctly. SQL injection is prevented by MeekroDB placeholders throughout.
 
 ---
 
-## Known Gaps (Roadmap)
+## Known Gaps (Vague 3 Roadmap)
 
-**Vague 2 (robustness):** CORS origin whitelist for extensions, versioning `/api/v1/`, HSTS, uniform response format, `decryptUserObjectKeyWithMigration` in `ItemModel::getItems`, strict HTTP verbs, cap `limit` on all endpoints.
+**Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), OTV (one-time view link), request_access, edition_lock.
 
-**Vague 3 (completeness):** item move/copy/history/favorites/attachments/OTV, folder update/delete, user CRUD (admin), search, refresh token, JWT scopes, logout/revoke, OpenAPI 3.1.
+**Folders:** update, delete, copy.
+
+**Users (admin scope):** create, update, delete, disable, folder_rights.
+
+**Auth:** refresh token (`POST /api/v1/auth/refresh`), logout/revoke (`POST /api/v1/auth/logout`), JWT scopes (`scope=full|extension|mobile|readonly`).
+
+**Discovery:** unified search (`GET /api/v1/search?q=...`), OpenAPI 3.1 spec (`/api/v1/openapi.json`).
