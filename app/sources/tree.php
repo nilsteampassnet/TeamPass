@@ -89,7 +89,6 @@ $data = [
     'userReadOnly' => null !== $session->get('user-read_only') ? $session->get('user-read_only') : '',
     'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
     'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
-    'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
     'forceRefresh' => null !== $request->query->get('force_refresh') ? $request->query->get('force_refresh') : '',
     'nodeId' => null !== $request->query->get('id') ? $request->query->get('id') : '',
     'restrictedFoldersForItems' => null !== $request->query->get('list_restricted_folders_for_items') ? json_encode($request->query->get('list_restricted_folders_for_items')) : '{}',
@@ -108,7 +107,6 @@ $filters = [
     'userReadOnly' => 'cast:boolean',
     'readOnlyFolders' => 'cast:array',
     'personalVisibleFolders' => 'cast:array',
-    'userTreeLastRefresh' => 'cast:integer',
     'forceRefresh' => 'cast:integer',
     'nodeId' => 'cast:integer',
     'restrictedFoldersForItems' => 'cast:array',
@@ -136,11 +134,16 @@ if (DB::count() === 0) {
 /** @var int|string $lastFolderChangeValeur */
 $lastFolderChangeValeur = $lastFolderChange['valeur'] ?? 0;
 
+// Drop legacy heavy session entries if they exist; cache_tree is the server-side source.
+foreach (['user-tree_structure', 'user-cache_tree'] as $legacyTreeSessionKey) {
+    if ($session->has($legacyTreeSessionKey) === true) {
+        $session->remove($legacyTreeSessionKey);
+    }
+}
+
 // Should we use a cache or refresh the tree
 $goTreeRefresh = loadTreeStrategy(
     (int) $lastFolderChangeValeur,
-    (int) $inputData['userTreeLastRefresh'],
-    (null === $session->get('user-tree_structure') || empty($session->get('user-tree_structure')) === true) ? [] : $session->get('user-tree_structure'),
     (int) $inputData['userId'],
     (int) $inputData['forceRefresh']
 );
@@ -190,9 +193,9 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
         }
     }
 
-    // Save in SESSION
-    $session->set('user-tree_structure', $ret_json);
-    $session->set('user-tree_last_refresh_timestamp', time());
+    // Keep only lightweight tree metadata in SESSION.
+    $treeBuiltAt = time();
+    $session->set('user-tree_last_refresh_timestamp', $treeBuiltAt);
 
     // Build visible_folders synchronously from the same tree data
     $visibleFoldersArray = buildVisibleFoldersFromTree($ret_json, $completTree, $inputData);
@@ -211,6 +214,12 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
 
     // Send back with version for client-side caching
     $treeVersion = md5($ret_json);
+    // Lightweight diagnostic metadata — not a cache; used to correlate tree responses with DB state.
+    $session->set('user-cache_tree_meta', [
+        'timestamp' => $treeBuiltAt,
+        'version' => $treeVersion,
+        'source' => 'rebuilt',
+    ]);
     if (!empty($inputData['treeVersion']) && $inputData['treeVersion'] === $treeVersion) {
         echo json_encode(['unchanged' => true, 'version' => $treeVersion]);
     } else {
@@ -220,6 +229,14 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     // Cached data path — also version it
     $cachedData = $goTreeRefresh['data'];
     $treeVersion = md5($cachedData);
+    $cacheTimestamp = (int) ($goTreeRefresh['timestamp'] ?? time());
+    $session->set('user-tree_last_refresh_timestamp', $cacheTimestamp);
+    // Lightweight diagnostic metadata — not a cache; used to correlate tree responses with DB state.
+    $session->set('user-cache_tree_meta', [
+        'timestamp' => $cacheTimestamp,
+        'version' => $treeVersion,
+        'source' => 'cache_tree',
+    ]);
     if (!empty($inputData['treeVersion']) && $inputData['treeVersion'] === $treeVersion) {
         echo json_encode(['unchanged' => true, 'version' => $treeVersion]);
     } else {
@@ -800,16 +817,12 @@ function buildVisibleFoldersFromTree(
  * Permits to check if we can user a cache instead of loading from DB
  *
  * @param integer $lastTreeChange
- * @param integer $userTreeLastRefresh
- * @param array $userSessionTreeStructure
  * @param integer $userId
  * @param integer $forceRefresh
  * @return array
  */
 function loadTreeStrategy(
     int $lastTreeChange,
-    int $userTreeLastRefresh,
-    array $userSessionTreeStructure,
     int $userId,
     int $forceRefresh
 ): array
@@ -819,24 +832,6 @@ function loadTreeStrategy(
         return [
             'state' => true,
             'data' => [],
-        ];
-    }
-
-    // Case when an update in the tree has been done
-    // Refresh is then mandatory
-    if ((int) $lastTreeChange > (int) $userTreeLastRefresh) {
-        return [
-            'state' => true,
-            'data' => [],
-        ];
-    }
-
-    // Does this user has the tree structure in session?
-    // If yes then use it
-    if (count($userSessionTreeStructure) > 0) {
-        return [
-            'state' => false,
-            'data' => json_encode($userSessionTreeStructure),
         ];
     }
 
@@ -859,9 +854,17 @@ function loadTreeStrategy(
                 'data' => [],
             ];
         }
+        if ((int) $lastTreeChange > (int) $cacheTimestamp) {
+            return [
+                'state' => true,
+                'data' => [],
+            ];
+        }
         return [
             'state' => false,
             'data' => $userCacheTree['data'],
+            'timestamp' => (int) $cacheTimestamp,
+            'invalidated_at' => (int) $invalidatedAt,
         ];
     }
 

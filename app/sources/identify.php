@@ -950,15 +950,26 @@ function performPostLoginTasks(
     // Get some more elements
     $session->set('system-screen_height', $dataReceived['screenHeight']);
 
-    // Get cache tree info
+    // Get cache tree metadata without loading the full visible_folders payload into session.
     $cacheTreeData = DB::queryFirstRow(
-        'SELECT visible_folders
+        'SELECT increment_id, timestamp, IFNULL(invalidated_at, 0) AS invalidated_at,
+            COALESCE(CHAR_LENGTH(visible_folders), 0) AS visible_folders_size
         FROM ' . prefixTable('cache_tree') . '
         WHERE user_id=%i',
         (int) $session->get('user-id')
     );
-    if (DB::count() > 0 && empty($cacheTreeData['visible_folders']) === true) {
-        $session->set('user-cache_tree', '');
+
+    // Drop the legacy heavy session entry if it exists; cache_tree remains the server-side source.
+    $session->remove('user-cache_tree');
+    // Lightweight diagnostic metadata — not a cache; used to correlate login state with DB cache.
+    $session->set('user-cache_tree_meta', [
+        'cache_id' => (int) ($cacheTreeData['increment_id'] ?? 0),
+        'timestamp' => (int) ($cacheTreeData['timestamp'] ?? 0),
+        'invalidated_at' => (int) ($cacheTreeData['invalidated_at'] ?? 0),
+        'visible_folders_size' => (int) ($cacheTreeData['visible_folders_size'] ?? 0),
+    ]);
+
+    if (empty($cacheTreeData) === true || (int) ($cacheTreeData['visible_folders_size'] ?? 0) === 0) {
         // Prepare new task
         DB::insert(
             prefixTable('background_tasks'),
@@ -976,8 +987,6 @@ function performPostLoginTasks(
 
         // Trigger background handler to process tasks
         triggerBackgroundHandler();
-    } else {
-        $session->set('user-cache_tree', $cacheTreeData['visible_folders']);
     }
 
     // Send email notification if enabled
