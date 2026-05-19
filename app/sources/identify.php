@@ -961,6 +961,7 @@ function performPostLoginTasks(
 
     // Drop the legacy heavy session entry if it exists; cache_tree remains the server-side source.
     $session->remove('user-cache_tree');
+    // Lightweight diagnostic metadata — not a cache; used to correlate login state with DB cache.
     $session->set('user-cache_tree_meta', [
         'cache_id' => (int) ($cacheTreeData['increment_id'] ?? 0),
         'timestamp' => (int) ($cacheTreeData['timestamp'] ?? 0),

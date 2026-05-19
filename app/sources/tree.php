@@ -89,7 +89,6 @@ $data = [
     'userReadOnly' => null !== $session->get('user-read_only') ? $session->get('user-read_only') : '',
     'readOnlyFolders' => null !== $session->get('user-read_only_folders') ? json_encode($session->get('user-read_only_folders')) : '{}',
     'personalVisibleFolders' => null !== $session->get('user-personal_visible_folders') ? json_encode($session->get('user-personal_visible_folders')) : '{}',
-    'userTreeLastRefresh' => null !== $session->get('user-tree_last_refresh_timestamp') ? $session->get('user-tree_last_refresh_timestamp') : '',
     'forceRefresh' => null !== $request->query->get('force_refresh') ? $request->query->get('force_refresh') : '',
     'nodeId' => null !== $request->query->get('id') ? $request->query->get('id') : '',
     'restrictedFoldersForItems' => null !== $request->query->get('list_restricted_folders_for_items') ? json_encode($request->query->get('list_restricted_folders_for_items')) : '{}',
@@ -108,7 +107,6 @@ $filters = [
     'userReadOnly' => 'cast:boolean',
     'readOnlyFolders' => 'cast:array',
     'personalVisibleFolders' => 'cast:array',
-    'userTreeLastRefresh' => 'cast:integer',
     'forceRefresh' => 'cast:integer',
     'nodeId' => 'cast:integer',
     'restrictedFoldersForItems' => 'cast:array',
@@ -216,7 +214,8 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
 
     // Send back with version for client-side caching
     $treeVersion = md5($ret_json);
-    $session->set('user-tree_cache_meta', [
+    // Lightweight diagnostic metadata — not a cache; used to correlate tree responses with DB state.
+    $session->set('user-cache_tree_meta', [
         'timestamp' => $treeBuiltAt,
         'version' => $treeVersion,
         'source' => 'rebuilt',
@@ -232,7 +231,8 @@ if ($goTreeRefresh['state'] === true || empty($inputData['nodeId']) === false) {
     $treeVersion = md5($cachedData);
     $cacheTimestamp = (int) ($goTreeRefresh['timestamp'] ?? time());
     $session->set('user-tree_last_refresh_timestamp', $cacheTimestamp);
-    $session->set('user-tree_cache_meta', [
+    // Lightweight diagnostic metadata — not a cache; used to correlate tree responses with DB state.
+    $session->set('user-cache_tree_meta', [
         'timestamp' => $cacheTimestamp,
         'version' => $treeVersion,
         'source' => 'cache_tree',
