@@ -3188,6 +3188,11 @@ function tpHealthGetSettingsValue(string $key, string $default = ''): string
     return $s === '' ? $default : $s;
 }
 
+/**
+ * Returns the default directory for on-the-fly backups (storage/onthefly).
+ * Duplicated from backups.queries.php because utilities.queries.php is a
+ * standalone script with its own include chain.
+ */
 function tpHealthGetOntheflyBackupDefaultDir(): string
 {
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : __DIR__ . '/../../storage/onthefly';

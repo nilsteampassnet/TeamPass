@@ -168,11 +168,21 @@ function validateSecurePath($basePath, $filename) {
     return file_exists($filepath) && is_file($filepath) && is_readable($filepath) ? $filepath : false;
 }
 
+/**
+ * Returns the default directory for on-the-fly backups (storage/onthefly).
+ * Duplicated from backups.queries.php because downloadFile.php is a standalone
+ * script with its own include chain.
+ */
 function tpDownloadGetOntheflyBackupDefaultDir(): string
 {
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : TEAMPASS_ROOT . '/storage/onthefly';
 }
 
+/**
+ * Checks that the current session matches the given key pair and that the
+ * session user is an administrator. The $userId parameter is taken from the
+ * session by the caller, so it is authoritative.
+ */
 function tpUserCanDownloadBackupFromSession(int $userId, string $key, string $keyTmp): bool
 {
     $session = SessionManager::getSession();
@@ -188,7 +198,7 @@ function tpUserCanDownloadBackupFromSession(int $userId, string $key, string $ke
         $userId
     );
 
-    return DB::count() > 0 && (int) ($user['admin'] ?? 0) === 1;
+    return DB::count() > 0 && is_array($user) && (int) ($user['admin'] ?? 0) === 1;
 }
 
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);

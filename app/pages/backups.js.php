@@ -1091,7 +1091,7 @@ function tpFmtBytes(bytes) {
                         html += '        <i class="fas fa-pen"></i>';
                         html += '      </button>';
                         if (dl !== '') {
-                            html += '      <a class="btn btn-outline-primary" href="' + dl + '" download="' + titleName + '" title="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" aria-label="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" data-toggle="tooltip">';
+                            html += '      <a class="btn btn-outline-primary" href="' + dl + '" download="' + titleName.replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '" title="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" aria-label="<?php echo addslashes($lang->get('bck_onthefly_download')); ?>" data-toggle="tooltip">';
                             html += '        <i class="fas fa-download"></i>';
                             html += '      </a>';
                         }

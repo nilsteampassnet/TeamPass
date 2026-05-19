@@ -210,16 +210,28 @@ $post_data = filter_input(
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 
+    /**
+     * Returns the default directory for scheduled backups (storage/backups).
+     */
     function tpGetScheduledBackupDefaultDir(): string
     {
         return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
     }
 
+    /**
+     * Returns the default directory for on-the-fly backups (storage/onthefly).
+     * Note: an equivalent helper exists in downloadFile.php and utilities.queries.php
+     * because each is a standalone script with its own include chain.
+     */
     function tpGetOntheflyBackupDefaultDir(): string
     {
         return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : __DIR__ . '/../../storage/onthefly';
     }
 
+    /**
+     * Returns the resolved real path for the on-the-fly backup directory,
+     * optionally creating it if it does not exist.
+     */
     function tpGetOntheflyBackupDir(bool $create = false): string
     {
         $dir = tpGetOntheflyBackupDefaultDir();
@@ -232,6 +244,11 @@ $post_data = filter_input(
         return $dirReal !== false ? $dirReal : rtrim($dir, '/\\');
     }
 
+    /**
+     * Normalizes a path string for cross-platform comparison:
+     * converts backslashes to forward slashes, strips trailing slashes,
+     * and lowercases on Windows.
+     */
     function tpNormalizePathForCompare(string $path): string
     {
         $normalized = rtrim(str_replace('\\', '/', $path), '/');
@@ -239,6 +256,10 @@ $post_data = filter_input(
         return DIRECTORY_SEPARATOR === '\\' ? strtolower($normalized) : $normalized;
     }
 
+    /**
+     * Returns true if $path is equal to or a direct child of $baseDir,
+     * after resolving $baseDir with realpath() to prevent symlink bypass.
+     */
     function tpIsResolvedPathInsideDirectory(string $path, string $baseDir): bool
     {
         $baseReal = realpath($baseDir);
@@ -252,6 +273,13 @@ $post_data = filter_input(
         return $pathNormalized === $baseNormalized || str_starts_with($pathNormalized, $baseNormalized . '/');
     }
 
+    /**
+     * Resolves the real path that would result from creating $path,
+     * by walking up to the deepest existing ancestor and appending
+     * the missing components. Uses realpath() on the existing portion
+     * to neutralize symlinks and ".." segments.
+     * Returns '' if no existing ancestor can be found.
+     */
     function tpResolveDirectoryCreationPath(string $path): string
     {
         $path = rtrim($path, '/\\');
@@ -285,6 +313,12 @@ $post_data = filter_input(
     }
 
     /**
+     * Resolves and validates the scheduled backup output directory.
+     * Falls back to the default storage/backups path when $requestedDir is empty.
+     * Creates missing allowed base directories before validation.
+     * Returns ['success' => true, 'path' => <real path>] on success,
+     * or ['success' => false, 'path' => ''] when the path falls outside all allowed bases.
+     *
      * @param string[] $allowedBaseDirs
      * @return array{success: bool, path: string}
      */
@@ -944,7 +978,15 @@ try {
             }
 
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
-            @mkdir($dir, 0750, true);
+
+            // Validate the retrieved path before creating it (defensive check against direct DB edits).
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $resolvedListDir = tpResolveScheduledBackupOutputDir($dir, [tpGetScheduledBackupDefaultDir(), $baseFilesDir]);
+            if ($resolvedListDir['success'] === false) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
+                break;
+            }
+            $dir = $resolvedListDir['path'];
 
             // Ensure we have a temporary key for downloadFile.php
             $keyTmp = (string) $session->get('user-key_tmp');
