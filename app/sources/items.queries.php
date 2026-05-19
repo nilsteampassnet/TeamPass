@@ -3003,11 +3003,11 @@ switch ($inputData['type']) {
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $arrData['pw_length'] = strlen($passwordForMetrics);
-            // Password security badge: OWASP ASVS aligned policy (min length 12, min complexity score 70)
+            // Password security badge: OWASP ASVS aligned policy (min length 12, max TeamPass complexity level)
             if (strlen($passwordForMetrics) === 0) {
                 $arrData['pw_is_secure'] = null; // empty password → no badge
             } else {
-                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= 70;
+                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= TP_PW_STRENGTH_5;
             }
 
             // HIBP cached status (no API call here — async check is triggered by the JS)

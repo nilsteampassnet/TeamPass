@@ -3389,7 +3389,7 @@ case 'get_operational_statistics':
 
         // ---- ITEMS (password security - OWASP ASVS aligned policy)
         $pwMinLen = 12;
-        $pwMinComplexity = 70;
+        $pwMinComplexity = TP_PW_STRENGTH_5;
 
         $passwordSecurityRow = DB::queryFirstRow(
             "SELECT

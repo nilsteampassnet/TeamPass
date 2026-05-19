@@ -6226,7 +6226,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $pwBadge
                             .removeClass('hidden badge-success')
                             .addClass('badge-danger')
-                            .html('<i class="fa-solid fa-shield-halved mr-1" infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
+                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
                     } else {
                         $pwBadge.addClass('hidden').removeClass('badge-success badge-danger')
                     }
