@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
-session_start();
+@session_start();
 
 // Authorization check:
 // - Upgrade flow: session has user_granted = '1'
@@ -144,6 +144,7 @@ error_log('[TeamPass] install cleanup partial — could not remove: ' . implode(
 
 echo json_encode([
     'status' => 'partial',
+    'install_dir' => $installDir,
     'remaining' => $relativeRemaining,
-    'msg' => 'Some files could not be deleted. A retry will occur automatically on next admin login.',
+    'msg' => 'Some files could not be deleted. Remove the directory manually, then log in.',
 ]);

@@ -181,12 +181,6 @@ if (
             }
         }
 
-        // Set the permissions on the install directory and delete
-        // is server Windows or Linux?
-        if (strtoupper(substr(PHP_OS, 0, 3)) !== 'WIN') {
-            recursiveChmod(TEAMPASS_ROOT . '/public/install', 0440, 0755);
-        }
-
         $installFolderDeleted = delTree(TEAMPASS_ROOT . '/public/install');
 
         if ($installFolderDeleted === true) {

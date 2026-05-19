@@ -781,41 +781,42 @@ function cleanupAndRedirect(url) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
 
-    function showCleanupError() {
+    function showCleanupError(installDir) {
         // Prevent duplicate blocks on repeated clicks
         if (document.getElementById('cleanup-error-alert')) {
-            btn.disabled = false;
             return;
         }
-        // Hide the original button — actions move into the alert block
         btn.style.display = 'none';
 
         const alertBox = document.createElement('div');
         alertBox.id = 'cleanup-error-alert';
         alertBox.className = 'alert alert-info mt-3';
 
+        const title = document.createElement('strong');
+        title.className = 'd-block mb-2';
+        title.textContent = 'The install directory could not be removed automatically.';
+        alertBox.appendChild(title);
+
         const msg = document.createElement('p');
         msg.className = 'mb-2';
-        msg.textContent = 'The install folder could not be fully deleted. ' +
-            'A retry will occur automatically on next admin login, or delete it manually.';
+        msg.textContent = 'This is usually a file ownership issue (the directory is not owned by the web server user). ' +
+            'Please remove it manually before exposing your TeamPass instance:';
         alertBox.appendChild(msg);
 
-        const retryBtn = document.createElement('button');
-        retryBtn.className = 'btn btn-primary btn-sm mr-2';
-        retryBtn.innerHTML = '<i class="fa-solid fa-up-right-from-square mr-1"></i>Move to Teampass home page';
-        retryBtn.addEventListener('click', function() {
-            document.getElementById('cleanup-error-alert').remove();
-            btn.style.display = '';
-            cleanupAndRedirect(url);
-        });
+        if (installDir) {
+            const pre = document.createElement('pre');
+            pre.className = 'bg-light p-2 mb-3';
+            pre.textContent = 'sudo rm -rf ' + installDir;
+            alertBox.appendChild(pre);
+        }
 
         const continueBtn = document.createElement('button');
-        continueBtn.className = 'btn btn-outline-secondary btn-sm';
-        continueBtn.textContent = 'Continue anyway';
+        continueBtn.type = 'button';
+        continueBtn.className = 'btn btn-primary btn-sm';
+        continueBtn.textContent = 'Continue to login';
         continueBtn.addEventListener('click', function() { window.location.href = url; });
-
-        alertBox.appendChild(retryBtn);
         alertBox.appendChild(continueBtn);
+
         btn.closest('div').insertAdjacentElement('afterend', alertBox);
     }
 
@@ -829,7 +830,7 @@ function cleanupAndRedirect(url) {
         if (data.status === 'ok') {
             window.location.href = url;
         } else {
-            showCleanupError();
+            showCleanupError(data.install_dir || '');
         }
     })
     .catch(function() {
