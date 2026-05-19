@@ -48,7 +48,7 @@ function tpCliErr(string $msg): void
 
 function tpCliHelp(): void
 {
-    tpCliOut('Usage: php scripts/restore.php --file "/path/to/backup.sql" --auth-token "TOKEN" [--force-disconnect]');
+    tpCliOut('Usage: php app/scripts/restore.php --file "/path/to/backup.sql" --auth-token "TOKEN" [--force-disconnect]');
 }
 
 function tpCliIsInteractive(): bool
