@@ -1481,8 +1481,7 @@ return array(
     'bck_scheduled_dom' => '每月第几天',
     'bck_scheduled_retention_days' => '保留期(天)',
     'bck_scheduled_output_dir' => '输出目录',
-    'bck_scheduled_output_dir_help' => '必须位于 TeamPass storage/backups 文件夹内，或位于已配置的 files 文件夹内。',
-    'bck_scheduled_output_dir_invalid' => '输出目录无效。请使用 TeamPass storage/backups 文件夹，或已配置的 files 文件夹中的目录。',
+    'bck_scheduled_output_dir_help' => '必须保存在TeamPass的 \’files\’ 文件夹中(安全限制)。',
     'bck_scheduled_save' => '保存',
     'bck_scheduled_run_now' => '立即运行',
     'bck_scheduled_refresh' => '刷新',
@@ -2220,5 +2219,6 @@ return array(
     'search_results' => '搜索结果',
     'settings_api_cors_origins' => 'Allowed CORS origins',
     'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
+    'bck_scheduled_output_dir_invalid' => 'Invalid output directory. Use TeamPass storage/backups folder or a folder inside the configured files folder.',
 
 );

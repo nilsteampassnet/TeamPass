@@ -1481,8 +1481,7 @@ return array(
     'bck_scheduled_dom' => 'Dzień miesiąca',
     'bck_scheduled_retention_days' => 'Retencja (dni)',
     'bck_scheduled_output_dir' => 'Katalog wyjściowy',
-    'bck_scheduled_output_dir_help' => 'Musi pozostać w folderze TeamPass storage/backups albo w skonfigurowanym folderze "files".',
-    'bck_scheduled_output_dir_invalid' => 'Nieprawidłowy katalog wyjściowy. Użyj folderu TeamPass storage/backups albo katalogu w skonfigurowanym folderze "files".',
+    'bck_scheduled_output_dir_help' => 'Musi pozostać wewnątrz folderu "files" (ograniczenie bezpieczeństwa).',
     'bck_scheduled_save' => 'Zapisz',
     'bck_scheduled_run_now' => 'Uruchom teraz',
     'bck_scheduled_refresh' => 'Odśwież',
@@ -2221,5 +2220,6 @@ Path: %s',
     'search_results' => 'Search results',
     'settings_api_cors_origins' => 'Allowed CORS origins',
     'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
+    'bck_scheduled_output_dir_invalid' => 'Invalid output directory. Use TeamPass storage/backups folder or a folder inside the configured files folder.',
 
 );
