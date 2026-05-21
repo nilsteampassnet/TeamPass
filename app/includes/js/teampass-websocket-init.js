@@ -107,6 +107,7 @@
 
   // Current folder tracking
   var currentFolderId = null
+  var activeItemView = null
 
   /**
    * Initialize WebSocket connection
@@ -153,6 +154,12 @@
    * Set up handlers for various WebSocket events
    */
   function setupEventHandlers() {
+    tpWs.on('connected', function(data) {
+      if (data && data.user_id) {
+        window.TeamPassCurrentUserId = parseInt(data.user_id, 10)
+      }
+    })
+
     // Item events
     tpWs.on('item_created', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
@@ -243,6 +250,13 @@
       }
     })
 
+    tpWs.on('item_viewers_changed', function(data) {
+      if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
+        setItemViewers(data.item_id, data.viewers || [])
+      }
+      updateItemViewersInDetailView(data.item_id, data.viewers || [])
+    })
+
     // Item moved event
     tpWs.on('item_moved', function(data) {
       var fromFolder = parseInt(data.from_folder_id)
@@ -259,6 +273,7 @@
           if (!$container.hasClass('hidden') &&
               parseInt($container.data('id')) === parseInt(data.item_id)) {
             $container.find('.edition-lock-detail-badge').remove()
+            $container.find('.item-view-detail-badge').remove()
             toastr.remove()
             toastr.warning(
               '"' + data.label + '" ' + (L.item_moved_away || 'has been moved to another folder by') + ' ' + data.moved_by,
@@ -381,6 +396,10 @@
   function subscribeToFolder(folderId) {
     if (!folderId || !tpWs.isConnectedNow()) return
 
+    if (activeItemView && parseInt(activeItemView.folderId) !== parseInt(folderId)) {
+      stopItemView()
+    }
+
     // Unsubscribe from previous folder and clear its lock indicators
     if (currentFolderId && currentFolderId !== folderId) {
       tpWs.unsubscribeFromFolder(currentFolderId).catch(function() {})
@@ -389,6 +408,13 @@
           removeEditionLockIndicator(itemId)
         })
         window.tpLockedItems = {}
+      }
+      if (window.tpViewingItems) {
+        Object.keys(window.tpViewingItems).forEach(function(itemId) {
+          removeItemViewIndicator(itemId)
+          removeItemViewFromDetailView(itemId)
+        })
+        window.tpViewingItems = {}
       }
     }
 
@@ -399,11 +425,32 @@
         tpWsDebug('[TeamPass WS] Subscribed to folder ' + folderId, 'log')
         // Sync initial lock state: show badges for items already locked in this folder
         if (response && Array.isArray(response.locked_items)) {
-          if (!window.tpLockedItems) window.tpLockedItems = {}
+          if (window.tpLockedItems) {
+            Object.keys(window.tpLockedItems).forEach(function(itemId) {
+              removeEditionLockIndicator(itemId)
+              removeEditionLockFromDetailView(itemId)
+            })
+          }
+          window.tpLockedItems = {}
           response.locked_items.forEach(function(lock) {
             window.tpLockedItems[lock.item_id] = lock.user_login
             showEditionLockIndicator(lock.item_id, lock.user_login)
           })
+        }
+        if (response && Array.isArray(response.viewing_items)) {
+          if (window.tpViewingItems) {
+            Object.keys(window.tpViewingItems).forEach(function(itemId) {
+              removeItemViewIndicator(itemId)
+              removeItemViewFromDetailView(itemId)
+            })
+          }
+          window.tpViewingItems = {}
+          response.viewing_items.forEach(function(itemView) {
+            setItemViewers(itemView.item_id, itemView.viewers || [])
+          })
+        }
+        if (activeItemView && parseInt(activeItemView.folderId) === parseInt(folderId)) {
+          sendStartItemView(activeItemView.itemId, activeItemView.folderId)
         }
       })
       .catch(function(err) {
@@ -576,6 +623,203 @@
     $container.find('.edition-lock-detail-badge').remove()
   }
 
+  function getCurrentUserId() {
+    if (window.TeamPassCurrentUserId) {
+      return parseInt(window.TeamPassCurrentUserId, 10)
+    }
+    if (typeof store !== 'undefined' && store.get('teampassUser')) {
+      var user = store.get('teampassUser')
+      return parseInt(user.id || user.user_id || user.userId || 0, 10)
+    }
+    return 0
+  }
+
+  function escapeHtml(value) {
+    if (typeof $ === 'undefined') return String(value || '')
+    return $('<span>').text(value || '').html()
+  }
+
+  function escapeAttribute(value) {
+    return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+  }
+
+  function normalizeViewers(viewers) {
+    var currentUserId = getCurrentUserId()
+    var unique = {}
+
+    ;(viewers || []).forEach(function(viewer) {
+      var userId = parseInt(viewer.user_id || viewer.id || 0, 10)
+      if (!userId || userId === currentUserId) return
+      unique[userId] = {
+        user_id: userId,
+        user_login: viewer.user_login || viewer.login || ''
+      }
+    })
+
+    return Object.keys(unique).map(function(userId) {
+      return unique[userId]
+    })
+  }
+
+  function buildViewerLabel(viewers) {
+    if (viewers.length === 0) return ''
+    if (viewers.length === 1) return viewers[0].user_login
+    return viewers[0].user_login + ' +' + (viewers.length - 1)
+  }
+
+  function setItemViewers(itemId, viewers) {
+    itemId = parseInt(itemId, 10)
+    if (!itemId) return
+
+    var normalizedViewers = normalizeViewers(viewers)
+    if (!window.tpViewingItems) window.tpViewingItems = {}
+
+    if (normalizedViewers.length === 0) {
+      delete window.tpViewingItems[itemId]
+      removeItemViewIndicator(itemId)
+      removeItemViewFromDetailView(itemId)
+      return
+    }
+
+    window.tpViewingItems[itemId] = normalizedViewers
+    showItemViewIndicator(itemId, normalizedViewers)
+    updateItemViewersInDetailView(itemId, normalizedViewers)
+  }
+
+  function sendStartItemView(itemId, folderId) {
+    if (!tpWs.isConnectedNow()) return
+    tpWs.send({
+      action: 'start_item_view',
+      data: {
+        item_id: parseInt(itemId, 10),
+        folder_id: parseInt(folderId, 10)
+      }
+    }).catch(function(err) {
+      tpWsDebug('[TeamPass WS] Failed to start item view presence - ' + err, 'warn')
+    })
+  }
+
+  function startItemView(itemId, folderId) {
+    itemId = parseInt(itemId, 10)
+    folderId = parseInt(folderId || currentFolderId, 10)
+    if (!itemId || !folderId) return
+
+    if (activeItemView &&
+        parseInt(activeItemView.itemId) === itemId &&
+        parseInt(activeItemView.folderId) === folderId) {
+      return
+    }
+
+    var previousItemView = activeItemView
+    activeItemView = { itemId: itemId, folderId: folderId }
+
+    var start = function() {
+      sendStartItemView(itemId, folderId)
+    }
+
+    if (previousItemView && tpWs.isConnectedNow()) {
+      tpWs.send({
+        action: 'stop_item_view',
+        data: {
+          item_id: parseInt(previousItemView.itemId, 10),
+          folder_id: parseInt(previousItemView.folderId, 10)
+        }
+      }).then(start).catch(start)
+    } else {
+      start()
+    }
+  }
+
+  function stopItemView(itemId) {
+    itemId = itemId ? parseInt(itemId, 10) : null
+    if (!activeItemView) return
+    if (itemId && parseInt(activeItemView.itemId) !== itemId) return
+
+    var previousItemView = activeItemView
+    activeItemView = null
+
+    if (!tpWs.isConnectedNow()) return
+    tpWs.send({
+      action: 'stop_item_view',
+      data: {
+        item_id: parseInt(previousItemView.itemId, 10),
+        folder_id: parseInt(previousItemView.folderId, 10)
+      }
+    }).catch(function(err) {
+      tpWsDebug('[TeamPass WS] Failed to stop item view presence - ' + err, 'warn')
+    })
+  }
+
+  /**
+   * Show consultation presence on an item row in the items list.
+   */
+  function showItemViewIndicator(itemId, viewers) {
+    if (typeof $ === 'undefined') return
+
+    var $row = $('#list-item-row_' + itemId)
+    if ($row.length === 0) return
+
+    removeItemViewIndicator(itemId)
+
+    var names = viewers.map(function(viewer) {
+      return viewer.user_login
+    })
+    var label = buildViewerLabel(viewers)
+    var badge = $('<span class="item-view-badge badge badge-success ml-2" ' +
+      'title="' + escapeAttribute((L.item_viewed_by || 'Viewed by') + ' ' + names.join(', ')) + '">' +
+      '<i class="fa-regular fa-eye mr-1"></i>' + escapeHtml(label) +
+      '</span>')
+
+    $row.find('.list-item-row-description').first().after(badge)
+  }
+
+  function removeItemViewIndicator(itemId) {
+    if (typeof $ === 'undefined') return
+    $('#list-item-row_' + itemId).find('.item-view-badge').remove()
+  }
+
+  function updateItemViewersInDetailView(itemId, viewers) {
+    var normalizedViewers = normalizeViewers(viewers)
+    if (normalizedViewers.length === 0) {
+      removeItemViewFromDetailView(itemId)
+      return
+    }
+    showItemViewInDetailView(itemId, normalizedViewers)
+  }
+
+  /**
+   * Show consultation presence in the item detail panel.
+   */
+  function showItemViewInDetailView(itemId, viewers) {
+    if (typeof $ === 'undefined') return
+    var $container = $('#items-details-container')
+    if ($container.hasClass('hidden')) return
+    if (parseInt($container.data('id')) !== parseInt(itemId)) return
+
+    removeItemViewFromDetailView(itemId)
+
+    var names = viewers.map(function(viewer) {
+      return viewer.user_login
+    })
+    var badge = $('<div class="item-view-detail-badge alert alert-success py-1 px-2 mt-1 mb-0 ml-2 d-inline-block">' +
+      '<i class="fa-regular fa-eye mr-1"></i>' +
+      (L.item_viewed_by || 'Viewed by') + ' <strong>' + escapeHtml(names.join(', ')) + '</strong>' +
+      '</div>')
+    var $lockBadge = $container.find('.edition-lock-detail-badge').last()
+    if ($lockBadge.length > 0) {
+      $lockBadge.after(badge)
+    } else {
+      $('#card-item-label').after(badge)
+    }
+  }
+
+  function removeItemViewFromDetailView(itemId) {
+    if (typeof $ === 'undefined') return
+    var $container = $('#items-details-container')
+    if (itemId && parseInt($container.data('id')) !== parseInt(itemId)) return
+    $container.find('.item-view-detail-badge').remove()
+  }
+
   /**
    * Refresh user folders after a permission change
    *
@@ -596,6 +840,11 @@
   window.tpWsRemoveEditionLock = removeEditionLockIndicator
   window.tpWsShowEditionLockDetail = showEditionLockInDetailView
   window.tpWsRemoveEditionLockDetail = removeEditionLockFromDetailView
+  window.tpWsStartItemView = startItemView
+  window.tpWsStopItemView = stopItemView
+  window.tpWsSetItemViewers = setItemViewers
+  window.tpWsRemoveItemView = removeItemViewIndicator
+  window.tpWsRemoveItemViewDetail = removeItemViewFromDetailView
   window.refreshUserFolders = refreshUserFolders
 
   // Initialize when DOM is ready
