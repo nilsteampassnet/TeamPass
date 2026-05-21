@@ -29,6 +29,8 @@ class MessageHandler
         'get_status',         // Get connection status
         'get_stats',          // Get server stats (admin only)
         'renew_item_lock',    // Renew edition lock heartbeat
+        'start_item_view',    // Mark an item as opened in read-only consultation
+        'stop_item_view',     // Clear read-only consultation presence
     ];
 
     public function __construct(
@@ -88,6 +90,8 @@ class MessageHandler
             'get_status' => $this->handleGetStatus($conn, $requestId),
             'get_stats' => $this->handleGetStats($conn, $requestId),
             'renew_item_lock' => $this->handleRenewItemLock($conn, $message, $requestId),
+            'start_item_view' => $this->handleStartItemView($conn, $message, $requestId),
+            'stop_item_view' => $this->handleStopItemView($conn, $message, $requestId),
             default => null,
         };
     }
@@ -140,18 +144,21 @@ class MessageHandler
             $lockedItems = [];
             try {
                 $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
-                $heartbeatTimeout = 300; // must match EDITION_LOCK_HEARTBEAT_TIMEOUT
+                $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+                    ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+                    : 300;
                 $rows = \DB::query(
                     'SELECT ie.item_id, u.login AS user_login
                      FROM %l ie
                      JOIN %l i ON ie.item_id = i.id
                      JOIN %l u ON ie.user_id = u.id
-                     WHERE i.id_tree = %i AND ie.timestamp >= %i',
+                     WHERE i.id_tree = %i AND ie.timestamp >= %i AND ie.user_id <> %i',
                     $tablePrefix . 'items_edition',
                     $tablePrefix . 'items',
                     $tablePrefix . 'users',
                     $folderId,
-                    time() - $heartbeatTimeout
+                    time() - $heartbeatTimeout,
+                    (int) $userData['user_id']
                 );
                 foreach ($rows as $row) {
                     $lockedItems[] = [
@@ -173,6 +180,7 @@ class MessageHandler
                 'channel'      => 'folder',
                 'folder_id'    => $folderId,
                 'locked_items' => $lockedItems,
+                'viewing_items' => $this->connections->getItemViewersForFolder($folderId),
                 'request_id'   => $requestId,
             ];
         }
@@ -206,6 +214,11 @@ class MessageHandler
                 'user_id' => $userData['user_id'] ?? null,
                 'folder_id' => $folderId,
             ]);
+
+            $affectedViews = $this->connections->stopItemView($conn, $folderId);
+            foreach ($affectedViews as $target) {
+                $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+            }
 
             return [
                 'type' => 'response',
@@ -351,6 +364,130 @@ class MessageHandler
 
             return $this->error('server_error', 'Failed to renew lock', $requestId);
         }
+    }
+
+    /**
+     * Handle start_item_view: track read-only consultation presence.
+     */
+    private function handleStartItemView(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        $userId = $userData['user_id'] ?? null;
+
+        if ($userId === null) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $itemId = isset($data['item_id']) ? (int) $data['item_id'] : 0;
+
+        if ($itemId <= 0) {
+            return $this->error('invalid_request', 'item_id is required', $requestId);
+        }
+
+        $folderId = $this->getItemFolderId($itemId);
+        if ($folderId === null) {
+            return $this->error('not_found', 'Item not found', $requestId);
+        }
+
+        if (!$this->authValidator->canAccessFolder($userData, $folderId)) {
+            return $this->error('forbidden', 'Access denied to this item folder', $requestId);
+        }
+
+        $affectedViews = $this->connections->startItemView($conn, $folderId, $itemId);
+        foreach ($affectedViews as $target) {
+            $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+        }
+
+        return [
+            'type' => 'response',
+            'status' => 'success',
+            'action' => 'item_view_started',
+            'item_id' => $itemId,
+            'folder_id' => $folderId,
+            'viewers' => $this->connections->getItemViewers($folderId, $itemId),
+            'request_id' => $requestId,
+        ];
+    }
+
+    /**
+     * Handle stop_item_view: clear read-only consultation presence.
+     */
+    private function handleStopItemView(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        if (!isset($userData['user_id'])) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $itemId = isset($data['item_id']) ? (int) $data['item_id'] : null;
+        $folderId = isset($data['folder_id']) ? (int) $data['folder_id'] : null;
+        $itemId = $itemId !== null && $itemId > 0 ? $itemId : null;
+        $folderId = $folderId !== null && $folderId > 0 ? $folderId : null;
+
+        if ($itemId !== null) {
+            $actualFolderId = $this->getItemFolderId($itemId);
+            if ($actualFolderId !== null) {
+                $folderId = $actualFolderId;
+            }
+        }
+
+        $affectedViews = $this->connections->stopItemView($conn, $folderId, $itemId);
+        foreach ($affectedViews as $target) {
+            $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+        }
+
+        return [
+            'type' => 'response',
+            'status' => 'success',
+            'action' => 'item_view_stopped',
+            'item_id' => $itemId,
+            'folder_id' => $folderId,
+            'request_id' => $requestId,
+        ];
+    }
+
+    /**
+     * Broadcast the current consultation viewer list for one item.
+     */
+    private function broadcastItemViewersChanged(int $folderId, int $itemId): void
+    {
+        $this->connections->broadcastToFolder($folderId, [
+            'type' => 'event',
+            'event' => 'item_viewers_changed',
+            'data' => [
+                'item_id' => $itemId,
+                'folder_id' => $folderId,
+                'viewers' => $this->connections->getItemViewers($folderId, $itemId),
+                'server_timestamp' => time(),
+            ],
+            'timestamp' => time(),
+        ]);
+    }
+
+    /**
+     * Resolve the current folder of an item from the database.
+     */
+    private function getItemFolderId(int $itemId): ?int
+    {
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            $folderId = \DB::queryFirstField(
+                'SELECT id_tree FROM %l WHERE id = %i',
+                $tablePrefix . 'items',
+                $itemId
+            );
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to resolve item folder for presence', [
+                'item_id' => $itemId,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+
+        return $folderId === null || $folderId === false ? null : (int) $folderId;
     }
 
     /**
