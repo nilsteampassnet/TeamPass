@@ -1094,18 +1094,6 @@ switch ($inputData['type']) {
             );
             break;
         }
-        if (($checkRights['edition_locked'] ?? false) === true) {
-            echo (string) prepareExchangedData(
-                array(
-                    'error' => true,
-                    'message' => $lang->get('error_item_currently_being_updated'),
-                    'delay' => $checkRights['edition_locked_delay'] ?? null,
-                ),
-                'encode'
-            );
-            break;
-        }
-
         if ($editionLockForSave['allowed'] !== true) {
             echo (string) prepareExchangedData(
                 array(
@@ -7940,15 +7928,26 @@ function getItemRestrictedUsersList(int $itemId, int $userId): bool
     return false;
 }
 
+/**
+ * Returns the edition lock heartbeat expiry delay in seconds.
+ *
+ * Uses the EDITION_LOCK_HEARTBEAT_TIMEOUT constant when defined; defaults to 300 s.
+ *
+ * @return int Expiry delay in seconds (always > 0)
+ */
 function getEditionLockHeartbeatTimeout(): int
 {
-    $timeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+    return defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
         ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
         : 300;
-
-    return $timeout > 0 ? $timeout : 300;
 }
 
+/**
+ * Returns the most recent edition lock row for an item, or null if none exists.
+ *
+ * @param int $itemId Item ID to look up
+ * @return array{timestamp: int, user_id: int, increment_id: int}|null
+ */
 function getLatestItemEditionLock(int $itemId): ?array
 {
     $lock = DB::queryFirstRow(
@@ -7959,9 +7958,22 @@ function getLatestItemEditionLock(int $itemId): ?array
         $itemId
     );
 
-    return $lock === null ? null : $lock;
+    return $lock;
 }
 
+/**
+ * Determines whether the given user is allowed to save an item based on the edition lock state.
+ *
+ * Returns ['allowed' => true] when the user holds an active lock.
+ * Returns ['allowed' => false, 'reason' => string] otherwise, with an optional 'delay' key
+ * (seconds remaining) when the item is locked by another user.
+ *
+ * Possible reasons: 'invalid', 'missing', 'locked_by_other_user', 'missing_active_lock'.
+ *
+ * @param int $itemId Item ID
+ * @param int $userId Current user ID
+ * @return array{allowed: bool, reason?: string, delay?: int}
+ */
 function getItemEditionLockSaveStatus(int $itemId, int $userId): array
 {
     if ($itemId <= 0 || $userId <= 0) {

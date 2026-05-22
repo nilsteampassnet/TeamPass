@@ -217,7 +217,7 @@ class MessageHandler
 
             $affectedViews = $this->connections->stopItemView($conn, $folderId);
             foreach ($affectedViews as $target) {
-                $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+                $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
             }
 
             return [
@@ -396,7 +396,7 @@ class MessageHandler
 
         $affectedViews = $this->connections->startItemView($conn, $folderId, $itemId);
         foreach ($affectedViews as $target) {
-            $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+            $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
         }
 
         return [
@@ -435,7 +435,7 @@ class MessageHandler
 
         $affectedViews = $this->connections->stopItemView($conn, $folderId, $itemId);
         foreach ($affectedViews as $target) {
-            $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+            $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
         }
 
         return [
@@ -446,24 +446,6 @@ class MessageHandler
             'folder_id' => $folderId,
             'request_id' => $requestId,
         ];
-    }
-
-    /**
-     * Broadcast the current consultation viewer list for one item.
-     */
-    private function broadcastItemViewersChanged(int $folderId, int $itemId): void
-    {
-        $this->connections->broadcastToFolder($folderId, [
-            'type' => 'event',
-            'event' => 'item_viewers_changed',
-            'data' => [
-                'item_id' => $itemId,
-                'folder_id' => $folderId,
-                'viewers' => $this->connections->getItemViewers($folderId, $itemId),
-                'server_timestamp' => time(),
-            ],
-            'timestamp' => time(),
-        ]);
     }
 
     /**

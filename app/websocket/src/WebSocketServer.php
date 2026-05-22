@@ -279,7 +279,7 @@ class WebSocketServer implements MessageComponentInterface
         // Clear volatile consultation presence held by this browser tab.
         $affectedViews = $this->connections->clearItemViewsForConnection($conn);
         foreach ($affectedViews as $target) {
-            $this->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+            $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
         }
 
         // Clean up
@@ -372,24 +372,6 @@ class WebSocketServer implements MessageComponentInterface
                 'error' => $e->getMessage(),
             ]);
         }
-    }
-
-    /**
-     * Broadcast the current read-only consultation viewer list for one item.
-     */
-    private function broadcastItemViewersChanged(int $folderId, int $itemId): void
-    {
-        $this->connections->broadcastToFolder($folderId, [
-            'type' => 'event',
-            'event' => 'item_viewers_changed',
-            'data' => [
-                'item_id' => $itemId,
-                'folder_id' => $folderId,
-                'viewers' => $this->connections->getItemViewers($folderId, $itemId),
-                'server_timestamp' => time(),
-            ],
-            'timestamp' => time(),
-        ]);
     }
 
     /**

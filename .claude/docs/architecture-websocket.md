@@ -161,3 +161,18 @@ Tables created by `/install/upgrade_run_3.1.7.php`.
 4. JS client:
    → tpWs.on('item_updated', handler) fires → UI refreshes
 ```
+
+## Deployment / Upgrade
+
+**After any change to `app/websocket/src/*`**, the WebSocket daemon must be restarted:
+
+```bash
+sudo systemctl restart teampass-websocket.service
+```
+
+Without a restart, the running process uses the old code. Clients may send new actions
+(e.g., `start_item_view`) that will be silently ignored by the outdated server.
+
+**Hard browser refresh recommended** when the application version number is unchanged between
+deployments, because `teampass-websocket-init.js` is loaded with a version query string
+(`?v=X.Y.Z`). If the version did not change, browsers may serve a cached copy of the old JS.

@@ -517,4 +517,25 @@ class ConnectionManager
         }
         return $ids;
     }
+
+    /**
+     * Broadcast the current read-only consultation viewer list for one item to all folder subscribers.
+     *
+     * @param int $folderId Folder the item belongs to
+     * @param int $itemId   Item whose viewer list changed
+     */
+    public function broadcastItemViewersChanged(int $folderId, int $itemId): void
+    {
+        $this->broadcastToFolder($folderId, [
+            'type' => 'event',
+            'event' => 'item_viewers_changed',
+            'data' => [
+                'item_id' => $itemId,
+                'folder_id' => $folderId,
+                'viewers' => $this->getItemViewers($folderId, $itemId),
+                'server_timestamp' => time(),
+            ],
+            'timestamp' => time(),
+        ]);
+    }
 }

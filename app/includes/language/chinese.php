@@ -2220,5 +2220,6 @@ return array(
     'settings_api_cors_origins' => 'Allowed CORS origins',
     'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
     'bck_scheduled_output_dir_invalid' => 'Invalid output directory. Use TeamPass storage/backups folder or a folder inside the configured files folder.',
+    'item_viewed_by' => 'Viewed by',
 
 );

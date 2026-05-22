@@ -267,6 +267,7 @@ return array(
     'password_length_by_default' => 'By default password length',
     'display_warning_icons' => 'Display warning icons',
     'error_item_currently_being_updated' => 'Item is currently being updated and cannot be edited',
+    'item_viewed_by' => 'Viewed by',
     'restore_in_progress' => 'Restore process is at',
     'settings_ldap_group_objectclasses_attibute' => 'AD Group ObjectClasses attribute',
     'settings_ldap_group_objectclasses_attibute_tip' => 'The objectClasses to use when searching for groups. Several objectClasses are separated by a comma (,). Example: groupOfNames,group or top,posixGroup',

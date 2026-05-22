@@ -2220,5 +2220,6 @@ return array(
     'settings_api_cors_origins' => 'Origines CORS autorisées',
     'settings_api_cors_origins_tip' => 'Laissez vide pour autoriser toutes les origines (recommandé pour la plupart des configurations — le jeton JWT constitue la véritable protection). Saisissez une liste d’origines séparées par des virgules pour restreindre l’accès à des sources spécifiques uniquement, par exemple : chrome-extension://abc123, moz-extension://xyz789.',
     'bck_scheduled_output_dir_invalid' => 'Dossier de sauvegarde invalide. Utilisez le dossier storage/backups de TeamPass ou un dossier situé dans le dossier Fichiers configuré.',
+    'item_viewed_by' => 'Consulté par',
 
 );
