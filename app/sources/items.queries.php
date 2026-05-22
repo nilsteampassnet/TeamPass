@@ -1058,6 +1058,9 @@ switch ($inputData['type']) {
             'at_creation',
             $inputData['itemId']
         );
+        $originalFolderId = (int) ($dataItem['id_tree'] ?? $inputData['folderId']);
+        $targetFolderId = (int) $inputData['folderId'];
+        $editionLockForSave = getItemEditionLockSaveStatus((int) $inputData['itemId'], (int) $session->get('user-id'));
 
         // Always check what rights user has on requested folder
         $checkRights = getCurrentAccessRights(
@@ -1086,6 +1089,17 @@ switch ($inputData['type']) {
                 array(
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_item_currently_being_updated'),
+                    'delay' => $editionLockForSave['delay'] ?? null,
                 ),
                 'encode'
             );
@@ -2150,19 +2164,30 @@ switch ($inputData['type']) {
             // Remove the edition lock after a successful save
             DB::delete(
                 prefixTable('items_edition'),
-                'item_id = %i AND user_id = %i',
-                $inputData['itemId'],
-                $session->get('user-id')
+                'item_id = %i',
+                $inputData['itemId']
             );
 
-            // Notify other users via WebSocket that this item is now free
+            // Notify other users via WebSocket that this item is now free.
+            // If the item has been moved while editing, notify both folders so
+            // stale lock badges are cleared for users still subscribed to the
+            // original folder.
             emitEditionLockEvent(
                 'stopped',
                 (int) $inputData['itemId'],
-                (int) $inputData['folderId'],
+                $originalFolderId,
                 $session->get('user-login') ?? '',
                 (int) $session->get('user-id')
             );
+            if ($targetFolderId !== $originalFolderId) {
+                emitEditionLockEvent(
+                    'stopped',
+                    (int) $inputData['itemId'],
+                    $targetFolderId,
+                    $session->get('user-login') ?? '',
+                    (int) $session->get('user-id')
+                );
+            }
 
             // Notifiy changes to the users
             notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
@@ -7244,8 +7269,7 @@ switch ($inputData['type']) {
                 $deleteAccessRights = getCurrentAccessRights(
                     (int) $session->get('user-id'),
                     $inputData['itemId'],
-                    (int) $itemRowDelete['id_tree'],
-                    'edit'
+                    (int) $itemRowDelete['id_tree']
                 );
                 if ($deleteAccessRights['edit'] !== true) {
                     echo (string) prepareExchangedData(
@@ -7351,8 +7375,7 @@ switch ($inputData['type']) {
         $confirmAccessRights = getCurrentAccessRights(
             (int) $session->get('user-id'),
             $inputData['itemId'],
-            (int) $itemRow['id_tree'],
-            'edit'
+            (int) $itemRow['id_tree']
         );
         if ($confirmAccessRights['edit'] !== true) {
             echo (string) prepareExchangedData(
@@ -7807,8 +7830,10 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
 
     // Check if the folder is in the user's allowed folders list defined by admin
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
-        // User has full access — create/check the edition lock now that edit is confirmed
-        $editionLock = isItemLocked($itemId, $session, $userId, $action);
+        // Edition locks are only touched when the user actually enters edit mode.
+        $editionLock = $action === 'edit'
+            ? isItemLocked($itemId, $session, $userId, $action)
+            : ['status' => false];
         return getAccessResponse(false, true, true, true, $editionLock, true);
     }
 
@@ -7818,7 +7843,9 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {
         if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            $editionLock = isItemLocked($itemId, $session, $userId, $action);
+            $editionLock = $action === 'edit'
+                ? isItemLocked($itemId, $session, $userId, $action)
+                : ['status' => false];
             return getAccessResponse(false, true, true, true, $editionLock, true);
         }
     }
@@ -7836,9 +7863,11 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
         error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
     }
 
-    // Only create/check the edition lock when the user actually has edit rights.
-    // If edit=false, pass an empty status — no lock is acquired for a denied user.
-    $editionLock = $edit ? isItemLocked($itemId, $session, $userId, $action) : ['status' => false];
+    // Only create/check the edition lock when the user actually enters edit mode.
+    // If edit=false or the action is read-only, no lock is acquired or refreshed.
+    $editionLock = ($edit && $action === 'edit')
+        ? isItemLocked($itemId, $session, $userId, $action)
+        : ['status' => false];
 
     return getAccessResponse(false, true, $edit, $delete, $editionLock, $create);
 }
@@ -7900,6 +7929,95 @@ function getItemRestrictedUsersList(int $itemId, int $userId): bool
 }
 
 /**
+ * Returns the edition lock heartbeat expiry delay in seconds.
+ *
+ * Uses the EDITION_LOCK_HEARTBEAT_TIMEOUT constant when defined; defaults to 300 s.
+ *
+ * @return int Expiry delay in seconds (always > 0)
+ */
+function getEditionLockHeartbeatTimeout(): int
+{
+    return defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+        ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+        : 300;
+}
+
+/**
+ * Returns the most recent edition lock row for an item, or null if none exists.
+ *
+ * @param int $itemId Item ID to look up
+ * @return array{timestamp: int, user_id: int, increment_id: int}|null
+ */
+function getLatestItemEditionLock(int $itemId): ?array
+{
+    $lock = DB::queryFirstRow(
+        'SELECT timestamp, user_id, increment_id
+         FROM ' . prefixTable('items_edition') . '
+         WHERE item_id = %i
+         ORDER BY increment_id DESC',
+        $itemId
+    );
+
+    return $lock;
+}
+
+/**
+ * Determines whether the given user is allowed to save an item based on the edition lock state.
+ *
+ * Returns ['allowed' => true] when the user holds an active lock.
+ * Returns ['allowed' => false, 'reason' => string] otherwise, with an optional 'delay' key
+ * (seconds remaining) when the item is locked by another user.
+ *
+ * Possible reasons: 'invalid', 'missing', 'locked_by_other_user', 'missing_active_lock'.
+ *
+ * @param int $itemId Item ID
+ * @param int $userId Current user ID
+ * @return array{allowed: bool, reason?: string, delay?: int}
+ */
+function getItemEditionLockSaveStatus(int $itemId, int $userId): array
+{
+    if ($itemId <= 0 || $userId <= 0) {
+        return ['allowed' => false, 'reason' => 'invalid'];
+    }
+
+    $locks = DB::query(
+        'SELECT timestamp, user_id, increment_id
+         FROM ' . prefixTable('items_edition') . '
+         WHERE item_id = %i
+         ORDER BY increment_id DESC',
+        $itemId
+    );
+    if (count($locks) === 0) {
+        return ['allowed' => false, 'reason' => 'missing'];
+    }
+
+    $now = time();
+    $timeout = getEditionLockHeartbeatTimeout();
+    $hasOwnActiveLock = false;
+
+    foreach ($locks as $lock) {
+        $elapsed = abs($now - (int) $lock['timestamp']);
+        if ($elapsed > $timeout) {
+            continue;
+        }
+
+        if ((int) $lock['user_id'] !== $userId) {
+            return [
+                'allowed' => false,
+                'reason' => 'locked_by_other_user',
+                'delay' => max(0, $timeout - $elapsed),
+            ];
+        }
+
+        $hasOwnActiveLock = true;
+    }
+
+    return $hasOwnActiveLock === true
+        ? ['allowed' => true]
+        : ['allowed' => false, 'reason' => 'missing_active_lock'];
+}
+
+/**
  * Checks if the item is locked by another user or if there is an ongoing encryption process.
  * If the item is locked, the function determines if the lock has expired or not.
  * 
@@ -7920,16 +8038,10 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
     }
 
     $now = time();
-    $editionLocks = DB::query(
-        'SELECT timestamp, user_id, increment_id
-         FROM ' . prefixTable('items_edition') . '
-         WHERE item_id = %i
-         ORDER BY increment_id DESC',
-        $itemId
-    );
+    $lastLock = getLatestItemEditionLock($itemId);
 
     // Check if there are any locks for this item
-    if (count($editionLocks) === 0) {
+    if ($lastLock === null) {
         // If no locks exist and the action is 'edit', create a new lock
         if ($actionType === 'edit') {
             createEditionLock($itemId, $userId, $now);
@@ -7943,17 +8055,17 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
         return ['status' => false];
     }
 
-    // Check if the last lock is older than the defined period
-    $lastLock = $editionLocks[0];
-
-    // If the lock is for the current user, update the timestamp
+    // If the lock is for the current user, update the timestamp only while
+    // entering edit mode. Read-only access checks must never keep a lock alive.
     if (intval($lastLock['user_id']) === $userId) {
-        DB::update(
-            prefixTable('items_edition'),
-            ['timestamp' => $now],
-            'increment_id = %i',
-            $lastLock['increment_id']
-        );
+        if ($actionType === 'edit') {
+            DB::update(
+                prefixTable('items_edition'),
+                ['timestamp' => $now],
+                'increment_id = %i',
+                $lastLock['increment_id']
+            );
+        }
         return [
             'status' => false,
         ];
@@ -7962,9 +8074,7 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
     // Use heartbeat-based timeout: lock expires only if no heartbeat renewal
     // was received within EDITION_LOCK_HEARTBEAT_TIMEOUT (default 5 minutes).
     // The client sends a WebSocket renew_item_lock every 60s while editing.
-    $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
-        ? EDITION_LOCK_HEARTBEAT_TIMEOUT
-        : 300;
+    $heartbeatTimeout = getEditionLockHeartbeatTimeout();
 
     // Calculate the elapsed time since the last lock refresh (heartbeat or creation)
     $elapsed = abs($now - intval($lastLock['timestamp']));

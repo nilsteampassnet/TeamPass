@@ -87,6 +87,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 
 <script type="text/javascript">
+    window.TeamPassCurrentUserId = <?php echo (int) $session->get('user-id'); ?>;
+
     // BIP-39 wordlist for the passphrase generator (language: <?php echo htmlspecialchars($session->get('user-language') ?? 'english', ENT_QUOTES, 'UTF-8'); ?>)
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
 
@@ -230,9 +232,31 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     }
 
+    function clearLocalEditionLock(itemId) {
+        itemId = parseInt(itemId, 10)
+        if (!itemId) return
+
+        if (window.tpLockedItems) {
+            delete window.tpLockedItems[itemId]
+        }
+        if (typeof window.tpWsRemoveEditionLock === 'function') {
+            window.tpWsRemoveEditionLock(itemId)
+        }
+        if (typeof window.tpWsRemoveEditionLockDetail === 'function') {
+            window.tpWsRemoveEditionLockDetail(itemId)
+        }
+    }
+
+    function stopConsultationPresence(itemId) {
+        if (typeof window.tpWsStopItemView === 'function') {
+            window.tpWsStopItemView(itemId)
+        }
+    }
+
     // Clean up edition lock on page unload (tab close, navigation away)
     $(window).on('beforeunload', function() {
         stopEditionLockHeartbeat()
+        stopConsultationPresence()
     })
 
     // Manage memory
@@ -910,6 +934,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Mirrors what the "Back" button does when leaving edit mode.
             const previousItemId = store.get('teampassItem').id;
             if (previousItemId && parseInt(previousItemId) > 0) {
+                stopConsultationPresence(previousItemId);
                 stopEditionLockHeartbeat();
                 $.post(
                     'sources/items.queries.php', {
@@ -1084,6 +1109,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 // Permission confirmed — now show the form
+                stopConsultationPresence(store.get('teampassItem').id);
                 savePreviousView();
                 // Fields are already populated by Details('show') — only clear password
                 resetEditFormSkeleton(false);
@@ -2671,6 +2697,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 closeItemDetailsCard();
             });
         } else {
+            stopConsultationPresence(store.get('teampassItem').id);
             if (store.get('teampassUser').previousView === '.item-details-card' &&
                 $('.item-details-card').hasClass('hidden') === false
             ) {
@@ -2888,6 +2915,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Refresh password visibility
             resetPasswordDisplay();
+            stopConsultationPresence(store.get('teampassItem').id);
 
             // Load item info
             Details(
@@ -2906,6 +2934,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
+            stopConsultationPresence(store.get('teampassItem').id);
             // Highlight the selected row persistently
             $('#teampass_items_list tr').removeClass('item-selected')
             $(this).closest('tr').addClass('item-selected')
@@ -2956,6 +2985,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
+            stopConsultationPresence(store.get('teampassItem').id);
             // Capture previous view before the skeleton hides/shows panels
             savePreviousView();
             // Fields not yet loaded — show skeleton bars on all inputs
@@ -3942,6 +3972,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         } else {
                             // Stop edition lock heartbeat on successful save
                             stopEditionLockHeartbeat()
+                            clearLocalEditionLock(store.get('teampassItem').id)
 
                             // Refresh tree
                             if ($('#form-item-button-save').data('action') === 'update_item') {
@@ -4225,6 +4256,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     function showItemEditForm(selectedFolderId, prefetchedPassword, skipPassword = false) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        stopConsultationPresence(store.get('teampassItem').id);
         // Reset item
         store.update(
             'teampassItem',
@@ -5420,6 +5452,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 window.tpWsShowEditionLock(parseInt(itemId), window.tpLockedItems[itemId])
             })
         }
+        if (window.tpViewingItems && typeof window.tpWsSetItemViewers === 'function') {
+            Object.keys(window.tpViewingItems).forEach(function(itemId) {
+                window.tpWsSetItemViewers(parseInt(itemId), window.tpViewingItems[itemId])
+            })
+        }
     }
 
     $(document).on('click', '.open-folder', function() {
@@ -5763,6 +5800,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             
             // Start edition lock heartbeat when editing is allowed
             if (actionType === 'edit' && retData.edition_locked !== true) {
+                stopConsultationPresence(itemId)
                 startEditionLockHeartbeat(itemId)
             }
 
@@ -6199,12 +6237,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         }
                     }
 
-                    // Remove any stale edition lock badge from a previously viewed item
-                    $('#items-details-container').find('.edition-lock-detail-badge').remove();
+                    // Remove any stale real-time badges from a previously viewed item
+                    $('#items-details-container').find('.edition-lock-detail-badge, .item-view-detail-badge').remove();
                     // If this item is already being edited by another user, show the lock badge
                     if (window.tpLockedItems && window.tpLockedItems[data.id] &&
                         typeof window.tpWsShowEditionLockDetail === 'function') {
                         window.tpWsShowEditionLockDetail(data.id, window.tpLockedItems[data.id]);
+                    }
+                    if (window.tpViewingItems && window.tpViewingItems[data.id] &&
+                        typeof window.tpWsSetItemViewers === 'function') {
+                        window.tpWsSetItemViewers(data.id, window.tpViewingItems[data.id]);
+                    }
+                    if (actionType === 'show' && typeof window.tpWsStartItemView === 'function') {
+                        window.tpWsStartItemView(data.id, data.folder);
                     }
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
                     $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));

@@ -130,6 +130,31 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 
 ---
 
+### Step 4b — Restart WebSocket daemon (if WebSocket is enabled)
+
+> Skip this step if the WebSocket feature is disabled in your instance
+> (Admin → Settings → WebSocket → `websocket_enabled = 0`).
+
+Any upgrade that modifies files under `app/websocket/src/` requires a daemon restart.
+Without it, the running process continues to use the old code and silently ignores new
+client actions (e.g., `start_item_view`).
+
+```bash
+sudo systemctl restart teampass-websocket.service
+```
+
+Check that the service restarted cleanly:
+
+```bash
+sudo systemctl status teampass-websocket.service
+```
+
+**Hard browser refresh recommended** if the application version number is unchanged between
+releases, because `teampass-websocket-init.js` is cached using the version as a query string.
+Use `Ctrl + Shift + R` (or `Cmd + Shift + R` on macOS) to bypass the cache.
+
+---
+
 ### Step 5 — Update Apache / Nginx configuration (3.2.0 only)
 
 If upgrading from 3.1.x, update your virtual host so `DocumentRoot` points to the `public/` subdirectory.
