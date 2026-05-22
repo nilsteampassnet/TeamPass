@@ -196,8 +196,12 @@ require_once __DIR__.'/../../app/sources/main.functions.php';
 
 // init
 loadClasses('DB');
+// Resume the encrypted session opened by upgrade.php.
+// SessionManager registers the EncryptedSessionProxy handler; a bare session_start()
+// would read unintelligible encrypted bytes and return an empty $_SESSION.
+SessionManager::getSession();
 $superGlobal = new SuperGlobal();
-$lang = new Language(); 
+$lang = new Language();
 
 error_reporting(E_ERROR | E_PARSE);
 
