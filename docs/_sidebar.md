@@ -27,6 +27,8 @@
 - [Folders](features/folders.md)
 - [Users](features/users.md)
 - [Profile](features/profile.md)
+- [Knowledge Base](features/knowledge-base.md)
+- [Breach Detection](features/breach-detection.md)
 - **Manage**
 - [Settings](manage/settings.md)
 - [Tasks](manage/tasks.md)
