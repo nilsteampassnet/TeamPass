@@ -194,6 +194,14 @@ $settingsFileNewlyCreated = $check['value'];
 // Load functions
 require_once __DIR__.'/../../app/sources/main.functions.php';
 
+// Resume the session started by upgrade.php so $_SESSION['user_granted'] is available.
+if (session_status() === PHP_SESSION_NONE) {
+    ini_set('session.cookie_httponly', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_secure', 0);
+    session_start();
+}
+
 // init
 loadClasses('DB');
 $superGlobal = new SuperGlobal();
