@@ -5,6 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 2.10.2 - 2026-05-25
+
+### Security
+
+- Reject control and whitespace characters in URI host components (GHSA-hq7v-mx3g-29hw)
+- Reject malformed Host values when constructing request URIs (GHSA-34xg-wgjx-8xph)
+
+### Fixed
+
+- Make `ServerRequest::fromGlobals()` robust against unexpected HTTP header value types in `$_SERVER`
+
+## 2.10.1 - 2026-05-20
+
+### Fixed
+
+- Fix `Utils::modifyRequest()` with numeric header names
+
+## 2.10.0 - 2026-05-19
+
+### Changed
+
+- Harden `ServerRequest::fromGlobals()` against malformed `$_SERVER` values
+- Prevent custom stream metadata from affecting internal size handling
+- Throw when `StreamWrapper::getResource()` cannot create a resource
+- Preserve custom request implementations in `Utils::modifyRequest()`
+- Preserve custom URI implementations in `UriResolver::resolve()`
+- Make `Uri::__toString()` side-effect-free
+
+## 2.9.1 - 2026-05-19
+
+### Fixed
+
+- Fix parsing of relative path references containing a colon in a non-initial path segment
+- Fix `CachingStream::detach()` returning an incomplete resource before the decorated stream has been fully read
+- Fix `Message::bodySummary()` returning `null` when truncating printable UTF-8 bodies inside a multibyte character
+
 ## 2.9.0 - 2026-03-10
 
 ### Added
