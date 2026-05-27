@@ -3396,6 +3396,16 @@ switch ($inputData['type']) {
             }
         }
 
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // prepare return array
         $returnArray = [
             'show_details' => 0,
@@ -3460,6 +3470,14 @@ switch ($inputData['type']) {
             );
         // Get all expected data about this ITEM
         } else {
+            // Per-item restriction (restricted_to / roles) blocks access even for folder members.
+            // Mirror the step-1 (show_details_item) behaviour: return empty details.
+            if ($restrictionActive === true) {
+                $returnArray['show_details'] = 0;
+                echo (string) prepareExchangedData($returnArray, 'encode');
+                break;
+            }
+
             // generate 2d key
             $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
 
@@ -3837,6 +3855,16 @@ switch ($inputData['type']) {
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to'),
                 ),
+                'encode'
+            );
+            break;
+        }
+
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
                 'encode'
             );
             break;
@@ -5224,6 +5252,12 @@ switch ($inputData['type']) {
         $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
         $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted($itemId, $SETTINGS);
+        if ($granted !== true) {
+            exit;
+        }
+
         if ($action === 0) {
             // Add to favorites
             addUserFavorite((int) $session->get('user-id'), $itemId);
@@ -6162,6 +6196,16 @@ switch ($inputData['type']) {
                 ""
             );
         } elseif ($inputData['cat'] === 'share_this_item') {
+            // Verify the current user can access this item's folder before sharing its details.
+            $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+            if ($granted !== true) {
+                echo (string) prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
+
             $dataItem = DB::queryFirstRow(
                 'SELECT label,id_tree
                 FROM ' . prefixTable('items') . '
@@ -6302,6 +6346,14 @@ switch ($inputData['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
+
         // Do
         DB::delete(
             prefixTable('items_edition'),
@@ -6447,6 +6499,19 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
+
+        // Verify the current user owns this OTV link and can access the underlying item.
+        $otvRow = DB::queryFirstRow(
+            'SELECT item_id, originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
+            $dataReceived['otv_id']
+        );
+        if (DB::count() === 0
+            || (int) $otvRow['originator'] !== (int) $session->get('user-id')
+            || accessToItemIsGranted((int) $otvRow['item_id'], $SETTINGS) !== true
+        ) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
 
         // get parameters from original link
         $url = $dataReceived['original_link'];
@@ -6867,7 +6932,17 @@ switch ($inputData['type']) {
             );
             break;
         }
-        
+
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // get item info
         $dataItem = DB::queryFirstRow(
             'SELECT *
@@ -7042,6 +7117,16 @@ switch ($inputData['type']) {
         $comment = htmlspecialchars_decode($data_received['comment']);
         $item_id = htmlspecialchars_decode($data_received['item_id']);
 
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $item_id, $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         if (empty($pwd)) {
             $cryptedStuff['encrypted'] = '';
             $cryptedStuff['objectKey'] = '';
@@ -7134,6 +7219,16 @@ switch ($inputData['type']) {
         //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // Send email
         $dataItem = DB::queryFirstRow(
             'SELECT label, id_tree
@@ -7188,6 +7283,16 @@ switch ($inputData['type']) {
         // prepare variables
         $post_notification_status = (int) filter_var($dataReceived['notification_status'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => 'key_not_conform', 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
 
         DB::query(
             'SELECT *
@@ -7452,9 +7557,9 @@ switch ($inputData['type']) {
             }
         }
 
-        // Check rights
+        // Check rights — always use the current session user's id, never the client-supplied one.
         $data = getCurrentAccessRights(
-            (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
+            (int) $session->get('user-id'),
             $checkItemId,
             $checkTreeId,
             (string) filter_var($dataReceived['action'], FILTER_SANITIZE_SPECIAL_CHARS),

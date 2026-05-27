@@ -1,10 +1,12 @@
 # Encryption Architecture
 
+> Last updated: 2026-05-26 — Analysis in `workReadmeFiles/encryption-analysis.md`
+
 ## Two-Layer Encryption Model
 
 1. **Application-Level** (Defuse PHP Encryption)
    - Master key stored in `TEAMPASS_SECRETS/SECUREFILE`
-   - Used for: session data, settings.php DB password, misc settings
+   - Used for: session data, settings.php DB password, misc settings, password history (`log_items.old_value`)
 
 2. **User-Level** (RSA via phpseclib + AES)
    - Each user has an RSA public/private key pair (generated at account creation)
@@ -17,11 +19,20 @@
 
 ```
 Save item:
-1. doDataEncryption() → generate random objectKey, AES-encrypt item data
-2. storeUsersShareKey() → for each user with folder access:
-   a. encryptUserObjectKey(objectKey, userPublicKey)
+1. doDataEncryption() → generate random objectKey (KEY_LENGTH=16 hex, 64-bit entropy),
+                        AES-encrypt item data with objectKey
+2. DB::insert('items', { pw: encrypted, pw_iv: '' })
+   ↑ pw_iv is always '' (IV is fixed, not stored)
+3. storeUsersShareKey() [synchronous, only for creator]:
+   a. encryptUserObjectKey(objectKey, creatorPublicKey)
       → CryptoManager::rsaEncrypt() with SHA-256/OAEP (phpseclib v3)
-   b. INSERT INTO teampass_sharekeys_items (object_id, user_id, share_key, encryption_version=3)
+   b. batchUpsertSharekeys() → INSERT ... ON DUPLICATE KEY UPDATE
+4. [Non-personal items] storeTask('new_item', ...) → background task for all other users
+
+Background task (background_tasks___worker.php):
+   → generateUserPasswordKeys() → storeUsersShareKey() for all users except creator
+   → generateUserFieldKeys()    → storeUsersShareKey() on 'sharekeys_fields'
+   → generateUserFileKeys()     → storeUsersShareKey() on 'sharekeys_files'
 
 Retrieve item:
 1. SELECT share_key FROM teampass_sharekeys_items WHERE object_id=? AND user_id=?
@@ -30,19 +41,50 @@ Retrieve item:
 3. doDataDecryption(encryptedData, objectKey) → plaintext
 ```
 
+**Note:** `decryptUserObjectKeyWithMigration()` must be used in new code (auto-upgrades v1→v3 sharekeys).
+`decryptUserObjectKey()` (non-migration-aware) is still present in many read paths — existing call sites to watch.
+
+## AES Internals (current implementation — known weaknesses)
+
+```php
+// In CryptoManager::aesEncrypt() / aesDecrypt()
+$cipher = new AES('cbc');
+$cipher->setIV(str_repeat("\0", 16));         // ⚠ Fixed zero IV
+$cipher->setPassword($objectKey, 'pbkdf2',
+    'sha1',              // hash (sha1 for items, sha256 for private keys)
+    'phpseclib/salt',    // ⚠ Fixed salt — never random
+    1000                 // ⚠ Only 1000 iterations (NIST: 600 000+)
+);
+```
+
+**Stored columns:**
+- `teampass_items.pw_iv` — exists in schema but always `''` (IV not stored, it's fixed)
+- `teampass_categories_items.data_iv` — same, always `''`
+
+These two columns are available without ALTER TABLE to store IV + salt metadata when the AES fix is applied.
+
+**Planned AES improvement** (see `workReadmeFiles/encryption-analysis.md`, section 8):
+- New format: `pw_iv = base64(version[1] + IV[16] + salt[32])`, `pw` = AES-GCM ciphertext
+- Detection: `pw_iv = ''` → legacy format (backward-compatible lazy migration on item access)
+- Sharekeys are **not affected** by this change (RSA layer is independent)
+
 ## Sharekeys Database Tables
 
 Identical schema, one per object type:
 - `teampass_sharekeys_items` — items
 - `teampass_sharekeys_fields` — custom fields
 - `teampass_sharekeys_files` — attached files
-- `teampass_sharekeys_logs` — log entries
+- `teampass_sharekeys_logs` — log entries (maintained during key regeneration; not used for password history display)
 - `teampass_sharekeys_suggestions` — suggestions
 
 ```sql
 object_id INT, user_id INT, share_key TEXT,
 encryption_version TINYINT(1)  -- 1 = phpseclib v1 (SHA-1), 3 = phpseclib v3 (SHA-256)
 ```
+
+**Password history note:** `log_items.old_value` (previous passwords) is encrypted with the
+application master key (Defuse/SECUREFILE), NOT with per-user RSA sharekeys. `sharekeys_logs`
+is maintained for key-regeneration flows, not for history display decryption.
 
 ---
 
@@ -65,8 +107,11 @@ TeamPass supports two versions of phpseclib simultaneously for backward compatib
 CryptoManager::rsaEncrypt(string $data, string $publicKey): string
 CryptoManager::rsaDecrypt(string $data, string $privateKey, bool $tryLegacy = true): string
 CryptoManager::rsaDecryptWithVersionDetection(string $data, string $privateKey): array
+CryptoManager::rsaDecryptWithVersion(string $data, string $privateKey, int $version): string
 CryptoManager::aesEncrypt(string $data, string $key, string $mode = 'cbc', string $hash = 'sha1'): string
 CryptoManager::aesDecrypt(string $data, string $key, string $mode = 'cbc', string $hash = 'sha1'): string
+CryptoManager::aesDecryptWithVersionDetection(string $data, string $password, string $mode = 'cbc'): array
+CryptoManager::generateRSAKeyPair(int $bits = 4096): array
 ```
 
 **Fallback chain:**
@@ -76,9 +121,9 @@ rsaDecrypt(sharekey, privateKey)
   → Failure → Try phpseclib v1 + SHA-1/OAEP → Return result (or '' on total failure)
 ```
 
-**Auto-migration on item access** (`decryptUserObjectKeyWithMigration()` in `sources/main.functions.php:3031`):
+**Auto-migration on item access** (`decryptUserObjectKeyWithMigration()` in `sources/main.functions.php:3792`):
 ```
-decryptUserObjectKeyWithMigration(sharekey, privateKey, objectId, userId, table)
+decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyId, sharekeyTable)
   → rsaDecryptWithVersionDetection() → {data, version_used}
   → If version_used == 1:
       migrateSharekeyToV3()  ← re-encrypt with v3 (SHA-256)
@@ -90,18 +135,37 @@ decryptUserObjectKeyWithMigration(sharekey, privateKey, objectId, userId, table)
 
 | Function | Line | Purpose |
 |---|---|---|
-| `doDataEncryption()` | ~2887 | AES-encrypt item data, generate random objectKey |
-| `doDataDecryption()` | ~2913 | AES-decrypt item data with objectKey |
-| `encryptUserObjectKey()` | ~2949 | RSA-encrypt objectKey with user public key |
-| `decryptUserObjectKey()` | ~2982 | RSA-decrypt sharekey (v3 + v1 fallback) |
-| `decryptUserObjectKeyWithMigration()` | ~3031 | Decrypt + auto-migrate v1→v3 |
-| `migrateSharekeyToV3()` | ~3101 | Re-encrypt a single sharekey to v3 |
-| `storeUsersShareKey()` | ~3307 | Create/update sharekeys for all eligible users |
-| `insertOrUpdateSharekey()` | ~3402 | Upsert a single sharekey row in DB |
+| `doDataEncryption()` | ~3555 | AES-encrypt item data, generate random objectKey |
+| `doDataDecryption()` | ~3581 | AES-decrypt item data with objectKey |
+| `teampassDecryptPasswordValue()` | ~3687 | Decrypt + normalize legacy HTML-encoded passwords |
+| `encryptUserObjectKey()` | ~3710 | RSA-encrypt objectKey with user public key |
+| `decryptUserObjectKey()` | ~3743 | RSA-decrypt sharekey (v3 + v1 fallback, no migration) |
+| `decryptUserObjectKeyWithMigration()` | ~3792 | Decrypt + auto-migrate v1→v3 (**use this in new code**) |
+| `migrateSharekeyToV3()` | ~3862 | Re-encrypt a single sharekey to v3 |
+| `encryptPrivateKey()` | ~2940 | AES-encrypt user private key with password |
+| `decryptPrivateKey()` | ~2861 | AES-decrypt private key (2-pass: raw pwd then xss_clean pwd) |
+| `decryptPrivateKeyWithMigration()` | ~2984 | Decrypt + auto-migrate private key to v3 AES |
+| `migrateAllUserKeysToV3()` | ~3105 | Re-encrypt private_key + backup to SHA-256 |
+| `storeUsersShareKey()` | ~4068 | Create/update sharekeys for all eligible users |
+| `batchUpsertSharekeys()` | ~4198 | Batch INSERT...ON DUPLICATE KEY UPDATE (chunks of 100) |
+| `insertOrUpdateSharekey()` | ~4164 | Upsert a single sharekey row in DB |
+| `uniqidReal()` | ~2718 | CSPRNG key generator (random_bytes → hex) |
+
+**storeUsersShareKey() behavior:**
+- Queries all active users with a non-empty public key
+- Excludes special user IDs: `OTV_USER_ID`, `SSH_USER_ID`, `API_USER_ID`, and optionally `all_users_except_id`
+- Calls `encryptUserObjectKey()` for each user → RSA-4096 per user (**throws RuntimeException on failure** — no per-user catch, one failure aborts the whole batch)
+- Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible
+- ⚠ **Dead parameters** (confirmed by code inspection, `main.functions.php:4068`):
+  - `$post_folder_is_personal` (2nd param) — accepted in signature, **never read** in body
+  - `$onlyForUser` (5th param, default `false`) — accepted in signature, **never read** in body
+  - Consequence: the function **always** creates/updates sharekeys for ALL eligible users, regardless of what callers pass. During `update_item` this means N×RSA-4096 operations happen synchronously in the HTTP request handler — a performance issue, not a security gap.
+- `deleteAll=TRUE` IS active: removes sharekeys for users no longer in the eligible set (access removed, not an access gap for current users)
 
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
 - Triggered when `teampass_users.phpseclibv3_migration_completed = 0`
+- Covers tables: `sharekeys_items`, `sharekeys_logs`, `sharekeys_fields`, `sharekeys_files`, `sharekeys_suggestions`
 - Diagnostic/repair: `/scripts/repair_phpseclib_migration.php`
 
 **Rule: always use `decryptUserObjectKeyWithMigration()` in new code** — never call `rsaDecrypt()` directly for sharekeys.
@@ -116,7 +180,7 @@ Custom fields (`teampass_categories`) can be individually encrypted (`encrypted_
 
 **Tables:**
 - `teampass_categories` — field definitions (`encrypted_data` flag, `type`, `masked`, etc.)
-- `teampass_categories_items` — field values per item (`data`, `encryption_type`, `field_id`, `item_id`)
+- `teampass_categories_items` — field values per item (`data`, `data_iv`, `encryption_type`, `field_id`, `item_id`)
 - `teampass_sharekeys_fields` — per-user sharekeys; `object_id` references `categories_items.id` (not `categories.id`)
 
 **`encryption_type` in `teampass_categories_items`:**
@@ -127,7 +191,7 @@ Custom fields (`teampass_categories`) can be individually encrypted (`encrypted_
 ```
 1. Encrypt before INSERT:
    doDataEncryption($plaintext) → {encrypted, objectKey}
-   INSERT categories_items (data=encrypted, encryption_type=TP_ENCRYPTION_NAME)   ← atomic
+   INSERT categories_items (data=encrypted, data_iv='', encryption_type=TP_ENCRYPTION_NAME)  ← atomic
    $newId = DB::insertId()
 2. storeUsersShareKey('sharekeys_fields', ..., $newId, objectKey)
 ```
@@ -155,3 +219,31 @@ For custom fields, the loop must:
 2. If the moving user has no sharekey, the object key is **unrecoverable** — delete the `categories_items` row and log
 
 **Orphaned sharekey invariant:** a `categories_items` row with `encryption_type = TP_ENCRYPTION_NAME` must always have at least one corresponding row in `sharekeys_fields`. If violated, the encrypted value cannot be recovered — delete the field row.
+
+---
+
+## Known Security Weaknesses (to address)
+
+See full analysis in `workReadmeFiles/encryption-analysis.md`.
+
+| ID | Issue | Location | Priority |
+|---|---|---|---|
+| SEC-1 | Fixed zero IV in AES-CBC | `CryptoManager.php:199,262` | 🔴 Critical |
+| SEC-2 | PBKDF2 only 1 000 iterations | `CryptoManager.php:205,268` | 🟠 High |
+| SEC-3 | Fixed PBKDF2 salt `'phpseclib/salt'` | `CryptoManager.php:205,268` | 🔴 Critical |
+| SEC-4 | objectKey only 64-bit entropy (`KEY_LENGTH=16`) | `include.php:46` | 🟠 High |
+| SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical |
+| SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate |
+| SEC-7 | `decryptUserObjectKey()` (non-migration) used in ~12 read call sites | `items.queries.php` | 🟠 High |
+| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` (dead `$onlyForUser` param) | `items.queries.php`, `main.functions.php:4068` | 🟡 Performance |
+| FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience |
+| FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience |
+| FUNC-5 | Dead params `$post_folder_is_personal` + `$onlyForUser` in `storeUsersShareKey()` | `main.functions.php:4068` | 🟢 Cleanup |
+| FUNC-6 | No DB transaction wrapping item INSERT + creator sharekey creation | `items.queries.php` | 🟡 Consistency |
+
+**Fixing SEC-1/3/5 does not affect sharekeys** — the RSA layer is independent. Only `items.pw`,
+`categories_items.data`, and `users.private_key` need re-encryption. The `pw_iv` and `data_iv`
+columns (already in schema, currently `''`) can store the new format metadata without ALTER TABLE.
+Migration strategy: lazy on-access, identical pattern to phpseclib v1→v3 migration already in place.
+
+**Implementation details for all fixes:** see `workReadmeFiles/encryption-analysis.md`, section 10.
