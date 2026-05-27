@@ -1,6 +1,6 @@
 # Teampass License Compliance Report
 
-**Generated:** 2026-05-22 11:34:16
+**Generated:** 2026-05-27 05:55:19
 **Project License:** GNU General Public License v3.0
 
 ## PHP Dependencies (Composer)
@@ -11,7 +11,7 @@
 | brick/math | 0.12.3 | MIT | ✅ Compatible |
 | carbonphp/carbon-doctrine-types | 3.2.0 | MIT | ✅ Compatible |
 | cboden/ratchet | v0.4.4 | MIT | ✅ Compatible |
-| composer/ca-bundle | 1.5.11 | MIT | ✅ Compatible |
+| composer/ca-bundle | 1.5.12 | MIT | ✅ Compatible |
 | composer/class-map-generator | 1.7.3 | MIT | ✅ Compatible |
 | composer/composer | 2.9.8 | MIT | ✅ Compatible |
 | composer/metadata-minifier | 1.0.0 | MIT | ✅ Compatible |
@@ -29,12 +29,12 @@
 | egulias/email-validator | 4.0.4 | MIT | ✅ Compatible |
 | elegantweb/sanitizer | v2.4.0 | MIT | ✅ Compatible |
 | evenement/evenement | v3.0.2 | MIT | ✅ Compatible |
-| ezimuel/php-secure-session | dev-fix/php8.2 | BSD-3-Clause | ✅ Compatible |
+| ezimuel/php-secure-session | dev-preparing/3.2.0.0 | BSD-3-Clause | ✅ Compatible |
 | firebase/php-jwt | v7.0.5 | BSD-3-Clause | ✅ Compatible |
 | goodby/csv | 1.3.0 | MIT | ✅ Compatible |
-| guzzlehttp/guzzle | 7.10.0 | MIT | ✅ Compatible |
-| guzzlehttp/promises | 2.3.0 | MIT | ✅ Compatible |
-| guzzlehttp/psr7 | 2.9.0 | MIT | ✅ Compatible |
+| guzzlehttp/guzzle | 7.10.4 | MIT | ✅ Compatible |
+| guzzlehttp/promises | 2.4.1 | MIT | ✅ Compatible |
+| guzzlehttp/psr7 | 2.10.2 | MIT | ✅ Compatible |
 | hackzilla/password-generator | 1.7.0 | MIT | ✅ Compatible |
 | illuminate/collections | v10.49.0 | MIT | ✅ Compatible |
 | illuminate/conditionable | v10.49.0 | MIT | ✅ Compatible |
@@ -86,38 +86,38 @@
 | symfony/filesystem | v7.4.11 | MIT | ✅ Compatible |
 | symfony/finder | v6.4.34 | MIT | ✅ Compatible |
 | symfony/http-foundation | v6.4.35 | MIT | ✅ Compatible |
-| symfony/mime | v6.4.37 | MIT | ✅ Compatible |
+| symfony/mime | v6.4.40 | MIT | ✅ Compatible |
 | symfony/password-hasher | v6.4.32 | MIT | ✅ Compatible |
 | symfony/polyfill-ctype | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-iconv | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-grapheme | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-idn | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-intl-normalizer | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-mbstring | v1.37.0 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-grapheme | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-idn | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-intl-normalizer | v1.38.0 | MIT | ✅ Compatible |
+| symfony/polyfill-mbstring | v1.38.1 | MIT | ✅ Compatible |
 | symfony/polyfill-php72 | v1.31.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php73 | v1.37.0 | MIT | ✅ Compatible |
 | symfony/polyfill-php80 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php81 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php83 | v1.37.0 | MIT | ✅ Compatible |
-| symfony/polyfill-php84 | v1.37.0 | MIT | ✅ Compatible |
+| symfony/polyfill-php81 | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-php83 | v1.38.1 | MIT | ✅ Compatible |
+| symfony/polyfill-php84 | v1.38.1 | MIT | ✅ Compatible |
 | symfony/process | v6.4.39 | MIT | ✅ Compatible |
-| symfony/routing | v6.4.37 | MIT | ✅ Compatible |
+| symfony/routing | v6.4.40 | MIT | ✅ Compatible |
 | symfony/string | v7.4.11 | MIT | ✅ Compatible |
 | symfony/translation | v6.4.38 | MIT | ✅ Compatible |
-| teampassclasses/configmanager | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/cryptomanager | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/emailservice | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/encryption | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/folderservices | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/language | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/ldapextra | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/nestedtree | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/oauth2controller | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/passwordgeneratorservice | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/passwordmanager | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/performchecks | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/sessionmanager | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
-| teampassclasses/superglobal | dev-fix/php8.2 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/configmanager | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/cryptomanager | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/emailservice | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/encryption | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/folderservices | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/language | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/ldapextra | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/nestedtree | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/oauth2controller | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/passwordgeneratorservice | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/passwordmanager | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/performchecks | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/sessionmanager | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
+| teampassclasses/superglobal | dev-preparing/3.2.0.0 | GPL-3.0-only | ✅ Compatible |
 | tecnickcom/tcpdf | 6.11.3 | LGPL-3.0-or-later | ✅ Compatible |
 | thenetworg/oauth2-azure | v2.2.5 | MIT | ✅ Compatible |
 | tiben/crontab-manager | v1.4.0 | Apache-2.0 | ✅ Compatible |
@@ -171,4 +171,4 @@ php _tools/licences/compliance-checker.php
 
 ---
 
-*Auto-generated report - Last updated: 2026-05-22 11:34:16*
+*Auto-generated report - Last updated: 2026-05-27 05:55:19*
