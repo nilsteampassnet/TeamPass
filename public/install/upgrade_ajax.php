@@ -32,6 +32,7 @@ use TeampassClasses\SuperGlobal\SuperGlobal;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PasswordManager\PasswordManager;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\SessionManager\SessionManager;
 
 
 $_SESSION = [];
