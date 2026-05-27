@@ -38,7 +38,7 @@ TeamPass is a Collaborative Passwords Manager solution installed On-Premise.
 
 * MySQL 5.7 or higher
 * MariaDB 10.7 or higher
-* PHP 8.1 or newer (PHP 8.2+ recommended)
+* PHP 8.2 or newer
 * PHP extensions (required):
   * `openssl`
   * `mysqli`
@@ -58,7 +58,7 @@ TeamPass is a Collaborative Passwords Manager solution installed On-Premise.
 
 ### About PHP versions
 
-TeamPass follows active PHP support. The `master` branch requires **at least PHP 8.1** and is tested against PHP 8.2 and 8.3. Using the latest stable PHP release is strongly recommended for both security and performance.
+TeamPass follows active PHP support. The `master` branch requires **at least PHP 8.2** and is tested against PHP 8.3. Using the latest stable PHP release is strongly recommended for both security and performance.
 
 ## Installation
 
@@ -76,16 +76,16 @@ Official images are available for containerized deployments. Docker is convenien
 
 - Docker Hub: `teampass/teampass`
 - GitHub Container Registry: `ghcr.io/nilsteampassnet/teampass`
-- 📖 [Docker Installation Guide](DOCKER.md) — configuration options, environment variables, and volumes
-- 📖 [Migration Guide](DOCKER-MIGRATION.md) — upgrading from older Docker setups
+- 📖 [Docker Installation Guide](docs/DOCKER.md) — configuration options, environment variables, and volumes
+- 📖 [Migration Guide](docs/DOCKER-MIGRATION.md) — upgrading from older Docker setups
 
 ## Documentation
 
 > ✍️ [Documentation](https://documentation.teampass.net) is available.
 
 **Key documentation:**
-- [Docker Installation](DOCKER.md) - Complete Docker deployment guide
-- [Docker Migration](DOCKER-MIGRATION.md) - Upgrade from older versions
+- [Docker Installation](docs/DOCKER.md) - Complete Docker deployment guide
+- [Docker Migration](docs/DOCKER-MIGRATION.md) - Upgrade from older versions
 - [Official Documentation](https://documentation.teampass.net) - Full user and admin guides
 - [API Documentation](https://documentation.teampass.net/#/api/api-basic) - REST API reference
 

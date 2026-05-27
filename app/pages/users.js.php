@@ -1,0 +1,4180 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      users.js.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use TeampassClasses\Language\Language;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses();
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language($session->get('user-language') ?? 'english');
+
+if ($session->get('key') === null) {
+    die('Hacking attempt...');
+}
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('users') === false) {
+    // Not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+?>
+
+
+<script type='text/javascript'>
+    //<![CDATA[
+    // Initialization
+    var userDidAChange = false,
+        userTemporaryCode = '',
+        userClipboard,
+        ProcessInProgress = false,
+        debugJavascript = false,
+        allFolderData = [];
+
+    // Prepare tooltips
+    $('.infotip').tooltip();
+
+    // Prepare Select2
+    $('.select2').select2({
+        language: '<?php echo $session->get('user-language_code'); ?>'
+    });
+
+    // Prepare iCheck format for checkboxes
+    $('input[type="checkbox"].flat-blue, input[type="radio"].flat-blue').iCheck({
+        radioClass: 'iradio_flat-blue',
+        checkboxClass: 'icheckbox_flat-blue',
+    });
+    $('#form-create-special-folder').iCheck('disable');
+
+    // Prevent submit on button
+    $('.btn-no-click')
+        .click(function(e) {
+            e.preventDefault();
+        });
+
+    var loadingToast = null;
+
+    //Launch the datatables pluggin
+    var oTable = $('#table-users').DataTable({
+        'paging': true,
+        'searching': true,
+        'order': [
+            [1, 'asc']
+        ],
+        'info': true,
+        'processing': false,
+        'serverSide': true,
+        'responsive': false,
+        'select': false,
+        'stateSave': true,
+        'autoWidth': true,
+        'ajax': {
+            url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
+            data: function(d) {
+                d.display_warnings = $('#warnings_display').is(':checked');
+            },
+            error: function(d) {
+                loadingToast.remove();
+                toastr.error("<?php echo $lang->get('users_fetch_error'); ?>", '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
+            }
+        },
+        'language': {
+            'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+        },
+        'columns': [{
+                'width': '80px',
+                className: 'details-control',
+                'render': function(data, type, row, meta) {
+                    return '<div class="group-btn btn-user-action">' +
+                        '' +
+                        '<button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown"><i class="fa-solid fa-cog"></i>&nbsp;' +
+                        '</button>' +
+                        '<ul class="dropdown-menu" role="menu">' +
+                        ($(data).data('auth-type') === 'local' ?
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="new-password"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('change_login_password'); ?></li>' :
+                            ''
+                        ) +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="edit"><i class="fa-solid fa-pen mr-2"></i><?php echo $lang->get('edit'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="reset-antibruteforce"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('bruteforce_reset_account'); ?></li>' +
+                        ($(data).data('auth-type') !== 'local' ?
+                            '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="new-enc-code"><i class="fa-solid fa-key mr-2"></i><?php echo $lang->get('generate_new_keys'); ?></li>'
+                            : '') +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '" data-action="logs"><i class="fa-solid fa-newspaper mr-2"></i><?php echo $lang->get('see_logs'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
+                        '</ul>' +
+                        '</div>';
+                }
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                className: 'dt-body-left'
+            },
+            {
+                'width': '70px',
+                className: 'dt-body-center'
+            },
+            {
+                'width': '70px',
+                className: 'dt-body-center'
+            },
+            {
+                'width': '70px',
+                className: 'dt-body-center'
+            }
+        ],
+        'preDrawCallback': function() {
+            loadingToast = toastr.info(
+                '<?php echo $lang->get('loading'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>',
+                ''
+            );
+        },
+        'drawCallback': function() {
+            // Tooltips
+            $('.infotip').tooltip();
+
+            // Remove progress toast
+            $('.toast').remove();
+
+            // Decorate users list with LDAP/AD account status icons
+            scheduleDecorateUsersLdapStatus();
+        },
+    });
+
+    // ---------------------------------------------------------------------
+    // LDAP/AD account status icons on main Users list
+    // ---------------------------------------------------------------------
+    var tpLdapStatusCache = {};
+    var tpLdapStatusDebounceTimer = null;
+    var tpLdapStatusRequestInFlight = false;
+
+    function scheduleDecorateUsersLdapStatus() {
+        // LDAP enabled?
+        if (parseInt(<?php echo (int) $SETTINGS['ldap_mode']; ?>) !== 1) {
+            return;
+        }
+        if (tpLdapStatusDebounceTimer !== null) {
+            clearTimeout(tpLdapStatusDebounceTimer);
+        }
+        tpLdapStatusDebounceTimer = setTimeout(function() {
+            decorateUsersLdapStatus();
+        }, 250);
+    }
+
+    function decorateUsersLdapStatus() {
+        if (tpLdapStatusRequestInFlight === true) {
+            // Let the current request finish; next draw will re-trigger.
+            return;
+        }
+
+        // Collect visible TeamPass user IDs from the current datatable page
+        var userIds = [];
+        $('#table-users tbody tr').each(function() {
+            var id = $(this).find('.tp-action[data-id]').first().data('id');
+            if (id !== undefined && id !== null && id !== '') {
+                userIds.push(parseInt(id, 10));
+            }
+        });
+
+        // Unique
+        userIds = userIds.filter(function(v, i, a) { return a.indexOf(v) === i; });
+
+        if (userIds.length === 0) {
+            return;
+        }
+
+        // Apply cached statuses immediately
+        userIds.forEach(function(uid) {
+            if (tpLdapStatusCache[uid] !== undefined) {
+                applyLdapStatusIcons(uid, tpLdapStatusCache[uid]);
+            }
+        });
+
+        // Query only missing ones
+        var missing = userIds.filter(function(uid) { return tpLdapStatusCache[uid] === undefined; });
+        if (missing.length === 0) {
+            return;
+        }
+
+        tpLdapStatusRequestInFlight = true;
+
+        const data_to_send = {
+            'user_ids': missing,
+        };
+
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'get_ldap_status_for_user_ids',
+                data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                tpLdapStatusRequestInFlight = false;
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (data.error === true || data.statuses === undefined) {
+                    // Silent fail: LDAP may be unreachable, no need to spam toasts on each draw.
+                    return;
+                }
+
+                Object.keys(data.statuses).forEach(function(k) {
+                    var uid = parseInt(k, 10);
+                    tpLdapStatusCache[uid] = data.statuses[k];
+                    applyLdapStatusIcons(uid, data.statuses[k]);
+                });
+
+                // Tooltips
+                $('.infotip').tooltip();
+            }
+        ).fail(function() {
+            tpLdapStatusRequestInFlight = false;
+        });
+    }
+
+    function applyLdapStatusIcons(userId, status) {
+        // Remove existing icons to avoid duplicates on redraw
+        $('#user-ldap-disabled-' + userId).remove();
+        $('#user-ldap-expired-' + userId).remove();
+        $('#user-ldap-missing-' + userId).remove();
+
+        var $login = $('#user-login-' + userId);
+        if ($login.length === 0) {
+            return;
+        }
+
+        if (status === null || status === undefined) {
+            return;
+        }
+
+        // Not found in LDAP/AD
+        if (status.ldapAccountMissing !== null && parseInt(status.ldapAccountMissing, 10) === 1) {
+            $login.before(
+                '<i class="fa-solid fa-user-xmark infotip text-muted mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_not_found')); ?>" ' +
+                'id="user-ldap-missing-' + userId + '"></i>'
+            );
+            return;
+        }
+
+        // Disabled in LDAP/AD
+        if (status.ldapAccountDisabled !== null && parseInt(status.ldapAccountDisabled, 10) === 1) {
+            $login.before(
+                '<i class="fa-solid fa-user-slash infotip text-danger mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_disabled')); ?>" ' +
+                'id="user-ldap-disabled-' + userId + '"></i>'
+            );
+        }
+
+        // Expired in LDAP/AD
+        if (status.ldapAccountExpired !== null && parseInt(status.ldapAccountExpired, 10) === 1) {
+            var expiresHint = '';
+            if (status.ldapAccountExpiresAt !== undefined && status.ldapAccountExpiresAt !== null) {
+                var d = new Date(parseInt(status.ldapAccountExpiresAt, 10) * 1000);
+                expiresHint = ' - ' + d.toLocaleDateString();
+            }
+            $login.before(
+                '<i class="fa-solid fa-hourglass-end infotip text-warning mr-2" ' +
+                'title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '" ' +
+                'id="user-ldap-expired-' + userId + '"></i>'
+            );
+        }
+    }
+
+
+
+    // Prepare iCheck format for checkboxes
+    $('input[type="checkbox"]').iCheck({
+        checkboxClass: 'icheckbox_flat-blue',
+        radioClass: 'iradio_flat-blue'
+    });
+    $("#warnings_display").on("ifChanged", function() {
+        $('.form').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // Force LDAP status refresh (cache) when display settings change
+        tpLdapStatusCache = {};
+        tpLdapStatusRequestInFlight = false;
+
+        oTable.ajax.reload(function() {
+            toastr.remove();
+            scheduleDecorateUsersLdapStatus();
+        }, false);
+    });
+
+
+    $('#form-email').change(function() {
+        //extract domain from email
+        var domain = $(this).val().split('@')[1];
+        if (domain === undefined) {
+            return false;
+        }
+        domain = domain.toLowerCase()
+
+        //check if domain exists
+        $.post("sources/users.queries.php", {
+                type: "check_domain",
+                domain: domain
+            },
+            function(data) {
+                data = $.parseJSON(data);
+                if (debugJavascript === true) console.log(data);
+
+                $("#new_folder_role_domain").attr("disabled", "disabled");
+                if (data.folder === 'not_exists' && data.role === 'not_exists' && domain !== '') {
+                    $('#form-create-special-folder').iCheck('enable');
+                    $('#form-special-folder').val(domain);
+                } else {
+                    $('#form-create-special-folder').iCheck('disable');
+                    $('#form-special-folder').val('');
+                }
+            }
+        );
+    });
+
+
+
+    /**
+     * 
+     */
+    // Fires when user click on button SEND
+    $(document).on('click', '#warningModalButtonClose', function() {
+        // check if uform is the one expected
+        if ($('#warningModal-button-user-pwd').length === 0) {
+            return false;
+        } 
+        if (debugJavascript === true) console.log('Closing warning dialog')
+        toastr.remove();
+        $('#warningModal').modal('hide');
+
+        // Fianlize UI
+        // clear form fields
+        $(".clear-me").val('');
+        $('.select2').val('').change();
+        //$('#privilege-user').iCheck('check');
+        $('.form-check-input')
+            .iCheck('disable')
+            .iCheck('uncheck');
+
+        // refresh table content
+        oTable.ajax.reload();
+
+        // Show list of users
+        //$('#row-form').addClass('hidden');
+        //$('#header-menu').removeClass('hidden');
+    });
+
+
+    /**
+     * 
+     */
+    // Fires when user click on button SEND
+    $(document).on('click', '#warningModalButtonAction', function() {
+        // check if uform is the one expected
+        if ($('#warningModal-button-user-pwd').length === 0) {
+            return false;
+        } 
+        //console.log('send email for '+store.get('teampassUser').admin_new_user_temporary_encryption_code)
+        //console.log(store.get('teampassUser'))
+        //console.log(store.get('teampassApplication'))
+
+        showModalDialogBox(
+            '#warningModal',
+            '<i class="fa-solid fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+            '<?php echo $lang->get('sending_email_message'); ?>',
+            '',
+            '',
+            true,
+            false,
+            false
+        );
+
+        // Prepare data
+        if (store.get('teampassApplication').formUserAction === "add_new_user") {
+            var data = {
+                'receipt': $('#form-email').val(),
+                'subject': 'TEAMPASS - <?php echo $lang->get('temporary_encryption_code');?>',
+                'body': '<?php echo $lang->get('email_body_new_user');?>',
+                'pre_replace' : {
+                    '#login#' : store.get('teampassUser').admin_new_user_login,
+                    '#password#' : store.get('teampassUser').admin_new_user_password,
+                }
+            }
+        }
+
+        // Launch action
+        $.post(
+            'sources/main.queries.php', {
+                type: 'mail_me',
+                type_category: 'action_mail',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                //console.log(data);
+
+                if (data.error !== false) {
+                    $('#warningModal').modal('hide');
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // Fianlize UI
+                    // clear form fields
+                    $(".clear-me").val('');
+                    $('.select2').val('').change();
+                    //$('#privilege-user').iCheck('check');
+                    $('.form-check-input')
+                        .iCheck('disable')
+                        .iCheck('uncheck');
+
+                    // Show list of users
+                    $('#row-form').addClass('hidden');
+                    $('#header-menu').removeClass('hidden');
+
+                    // Hide dialogbox
+                    $('#warningModal').modal('hide');
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+
+                    // change the user status to ready to use
+                    data = {
+                        'user_id': store.get('teampassUser').admin_new_user_id,
+                    }
+
+                    $.post(
+                        'sources/main.queries.php', {
+                            type: 'user_is_ready',
+                            type_category: 'action_user',
+                            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                            key: '<?php echo $session->get('key'); ?>'
+                        },
+                        function(data) {
+                            if (debugJavascript === true) console.log('User has been created');
+
+                            // refresh table content
+                            oTable.ajax.reload();
+
+                            // Remove action from store
+                            if (debugJavascript === true) console.log('Clear Store variables')
+                            store.update(
+                                'teampassApplication',
+                                function(teampassApplication) {
+                                    teampassApplication.formUserAction = '',
+                                    teampassApplication.formUserId = '';
+                                }
+                            );
+                            store.update(
+                                'teampassUser',
+                                function(teampassUser) {
+                                    teampassUser.admin_new_user_password = '',
+                                    teampassUser.admin_new_user_temporary_encryption_code = '',
+                                    teampassUser.admin_new_user_login = '';
+                                }
+                            );
+                        }
+                    );
+                }
+            }
+        );
+    });
+
+
+    /**
+     * BUILD AND CHECK THE USER LOGIN
+     */
+    $('.build-login').change(function() {
+        // Build login only if it is empty
+        if ($("#form-login").val() === '') {
+            //return false;
+        }
+        // Build login
+        if ($(this).attr('id') !== 'form-login') {
+            $("#form-login").val(
+                $("#form-name")
+                .val()
+                .toLowerCase()
+                .replace(/ /g, "") + "." + $("#form-lastname").val().toLowerCase().replace(/ /g, "")
+            );
+        }
+
+        // Check if login exists
+        $.post(
+            'sources/users.queries.php', {
+                type: 'is_login_available',
+                login: $('#form-login').val(),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // Show result
+                    if (data.login_exists === 0) {
+                        $('#form-login')
+                            .removeClass('is-invalid')
+                            .addClass('is-valid');
+                        $('#form-login-conform').val(true);
+                    } else {
+                        $('#form-login')
+                            .removeClass('is-valid')
+                            .addClass('is-invalid');
+                        $('#form-login-conform').val(false);
+                    }
+                }
+            }
+        );
+    });
+
+    /**
+     * 
+     */
+    // Launch recursive action to encrypt the keys
+    function callRecursiveUserDataEncryption(
+        userId,
+        step,
+        start
+    ) {
+        var dfd = $.Deferred();
+        ProcessInProgress = true;
+        
+        var stepText = '';
+        if (debugJavascript === true) console.log('Performing '+step)
+
+        // Prepare progress string
+        if (step === 'step0') {
+            stepText = '<?php echo $lang->get('inititialization'); ?>';
+        } else if (step === 'step10') {
+            stepText = '<?php echo $lang->get('items'); ?>';
+        } else if (step === 'step20') {
+            stepText = '<?php echo $lang->get('logs'); ?>';
+        } else if (step === 'step30') {
+            stepText = '<?php echo $lang->get('suggestions'); ?>';
+        } else if (step === 'step40') {
+            stepText = '<?php echo $lang->get('fields'); ?>';
+        } else if (step === 'step50') {
+            stepText = '<?php echo $lang->get('files'); ?>';
+        } else if (step === 'step60') {
+            stepText = '<?php echo $lang->get('personal_items'); ?>';
+        }
+
+        if (step !== 'finished') {
+            if (store.get('teampassUser').related_items_number !== null) {
+                $nbItemsToConvert = " / " + store.get('teampassUser').related_items_number;
+            } else {
+                $nbItemsToConvert = '';
+            }
+            // Inform user
+            $("#warningModalBody").html('<b><?php echo $lang->get('encryption_keys'); ?> - ' +
+                stepText + '</b> [' + start + ' - ' + (parseInt(start) + <?php echo NUMBER_ITEMS_IN_BATCH;?>) + ']<span id="warningModalBody_extra">' + $nbItemsToConvert + '</span> ' +
+                '... <?php echo $lang->get('please_wait'); ?><i class="fa-solid fa-spinner fa-pulse ml-3 text-primary"></i>');
+
+            var data = {
+                action: step,
+                start: start,
+                length: <?php echo NUMBER_ITEMS_IN_BATCH;?>,
+                user_id: userId,
+            }
+            if (debugJavascript === true) {
+                console.info("Envoi des données :")
+                console.log(data);
+            }
+
+            // Do query
+            $.post(
+                "sources/main.queries.php", {
+                    type: "user_sharekeys_reencryption_next",
+                    type_category: 'action_key',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                    if (debugJavascript === true) {
+                        console.info("Réception des données :")
+                        console.log(data);
+                    }
+                    
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+
+                        dfd.reject();
+                    } else {
+                        // Prepare variables
+                        userId = data.userId;
+                        step = data.step;
+                        start = data.start;
+
+                        // Do recursive call until step = finished
+                        callRecursiveUserDataEncryption(
+                            userId,
+                            step,
+                            start
+                        ).done(function(response) {
+                            dfd.resolve(response);
+                        });
+                    }
+                }
+            );
+        } else {
+            // Ask user
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-envelope-open-text fa-lg warning mr-2"></i><?php echo $lang->get('information'); ?>',
+                '<i class="fa-solid fa-info-circle mr-2"></i><?php echo $lang->get('send_user_password_by_email'); ?>'+
+                '<div class="row">'+
+                    (store.get('teampassApplication').formUserAction === "add_new_user" ?
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2" id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_password'); ?></button></div>'+
+                    '<div class="col-lg-4 hidden" id="warningModal-user-pwd">'+
+                        '<div class="form-group">'+
+                            '<label for="warningModal-generated-user-password"><?php echo $lang->get('user_password'); ?></label>'+
+                            '<div class="input-group">'+
+                                '<input type="text" readonly class="form-control form-item-control" id="warningModal-generated-user-password" value="">'+
+                                '<div class="input-group-append">'+
+                                    '<button type="button" class="btn btn-secondary clipboard-copy" clipboard-target="warningModal-generated-user-password" title="<?php echo $lang->get('copy_to_clipboard'); ?>">'+
+                                        '<i class="fa-solid fa-copy"></i>'+
+                                    '</button>'+
+                                '</div>'+
+                            '</div>'+
+                        '</div>'+
+                        '<div class="form-group mb-0">'+
+                            '<label for="warningModal-generated-user-otc"><?php echo $lang->get('user_temporary_encryption_code'); ?></label>'+
+                            '<input type="text" readonly class="form-control form-item-control" id="warningModal-generated-user-otc" value="">'+
+                        '</div>'+
+                    '</div>'
+                    :
+                    '<div class="col-lg-2"><button type="button" class="btn btn-block btn-secondary mr-2"  id="warningModal-button-user-pwd"><?php echo $lang->get('show_user_temporary_encryption_code'); ?></button></div>'+
+                    '<div class="col-lg-4 hidden" id="warningModal-user-pwd"><input class="form-control form-item-control" value="'+store.get('teampassUser').admin_new_user_temporary_encryption_code+'"></div></div>'
+                    )+
+                '</div>',
+                '<?php echo $lang->get('send_by_email'); ?>',
+                '<?php echo $lang->get('close'); ?>',
+                true,
+                false,
+                false
+            );
+            $('#warningModal-generated-user-password').val(store.get('teampassUser').admin_new_user_password);
+            $('#warningModal-generated-user-otc').val(store.get('teampassUser').admin_new_user_temporary_encryption_code);
+            $('#warningModal').modal('show');
+
+            $(document).on('click', '#warningModal-button-user-pwd', function() {
+                $('#warningModal-user-pwd').removeClass('hidden');
+                $('#warningModal-button-user-pwd').prop( "disabled", true );
+                setTimeout(
+                    () => {
+                        $('#warningModal-user-pwd').addClass('hidden');
+                        $('#warningModal-button-user-pwd').prop( "disabled", false );
+                    },
+                    5000
+                );
+            });
+
+            ProcessInProgress = false;
+        }
+        return dfd.promise();
+    }
+
+
+
+    /**
+     * TOP MENU BUTTONS ACTIONS
+     */
+    $(document).on('click', '.tp-action', function(event) {
+        // Hide if user is not admin
+        if (parseInt(store.get('teampassUser').user_admin) === 1 || parseInt(store.get('teampassUser').user_can_manage_all_users) === 1) {
+            $('.only-admin').removeClass('hidden');
+        } else {
+            $('.only-admin').addClass('hidden');
+        }
+
+        var action = $(this).data('action');
+        var trackedActions = ['edit', 'new', 'logs', 'propagate', 'inactive-users', 'deleted-users', 'refresh', 'ldap-sync', 'oauth2-sync'];
+        
+        // Show relevant content
+        if (trackedActions.includes(action)) {
+            $('.user-content').addClass('hidden');    // Hide all        
+            $('.user-content[data-content="' + action + '"]').removeClass('hidden');
+            $('.user-content[data-content-alternative="' + action + '"]').removeClass('hidden');            
+        
+            // Show header menu if expected
+            if ($('.user-content[data-content="' + action + '"]').hasClass('with-header-menu')) {
+                $('#header-menu').removeClass('hidden');
+            } else {
+                $('#header-menu').addClass('hidden');
+            }
+        }
+
+        if ($(this).data('action') === 'new') {
+            // ADD NEW USER
+            $('#group-create-special-folder, .not-for-admin').removeClass('hidden');
+
+            // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
+            if (parseInt(store.get('teampassUser').user_admin) === 1) {
+                $('input[type=radio].only-admin').iCheck('enable');
+            } else if (parseInt(store.get('teampassUser').user_can_manage_all_users) === 1) {
+                $('input[type=radio].only-admin').iCheck('enable');
+                $('#privilege-admin').iCheck('disable');
+                $('#privilege-hr').iCheck('disable');
+                $('#privilege-manager').iCheck('disable');
+            } else {
+                $('#privilege-admin').iCheck('disable');
+                $('#privilege-hr').iCheck('disable');
+                $('#privilege-manager').iCheck('disable');
+            }
+
+            // Prepare checks
+            $('#privilege-user').iCheck('check');
+            $('#form-create-special-folder').iCheck('disable');
+
+            // Personal folder
+            if (store.get('teampassSettings') !== undefined && store.get('teampassSettings').enable_pf_feature === '1') {
+                $('#form-create-personal-folder')
+                    .iCheck('enable')
+                    .iCheck('check');
+            } else {
+                $('#form-create-personal-folder').iCheck('disable');
+            }
+            
+            // MFA enabled
+            if (store.get('teampassSettings') !== undefined && (store.get('teampassSettings').duo === '1' || store.get('teampassSettings').google_authentication === '1')) {
+                $('#form-create-mfa-enabled')
+                    .iCheck('enable')
+                    .iCheck('check');
+                $('#form-create-mfa-enabled-div').removeClass('hidden');
+            } else {
+                $('#form-create-mfa-enabled').iCheck('disable');
+                $('#form-create-mfa-enabled-div').addClass('hidden');
+            }
+
+            // What type of form? Edit or new user
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.formUserAction = 'add_new_user';
+                }
+            );
+
+        } else if ($(this).data('action') === 'edit') {
+            // SHow user
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            // EDIT EXISTING USER
+            $('.form-check-input').iCheck('enable');
+
+            // Personal folder
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassSettings').enable_pf_feature) === 0) {
+                $('#form-create-personal-folder').iCheck('disable');
+            }
+
+            // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
+            if (store.get('teampassSettings') !== undefined && parseInt(store.get('teampassUser').user_admin) === 1) {
+                $('input[type=radio].only-admin').iCheck('enable');
+            } else {
+                $('input[type=radio].only-admin').iCheck('disable');
+            }
+
+            // What type of form? Edit or new user
+            var userID = $(this).data('id');
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.formUserAction = 'store_user_changes',
+                        teampassApplication.formUserId = userID; // Store user ID   
+                }
+            );
+
+            var data = {
+                'user_id': userID,
+            };
+
+            $.post(
+                "sources/users.queries.php", {
+                    type: "get_user_info",
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    if (debugJavascript === true) console.log(data);
+
+                    if (data.error === false) {
+                        // Prefil with user data
+                        $('#form-login').val($('<div>').html(data.login).text());
+                        $('#form-email').val($('<div>').html(data.email).text());
+                        $('#form-name').val($('<div>').html(data.name).text());
+                        $('#form-lastname').val($('<div>').html(data.lastname).text());
+                        $('#form-create-root-folder').iCheck(data.can_create_root_folder === 1 ? 'check' : 'uncheck');
+                        $('#form-create-personal-folder').iCheck(data.personal_folder === 1 ? 'check' : 'uncheck');
+                        $('#form-create-mfa-enabled').iCheck(data.mfa_enabled === 1 ? 'check' : 'uncheck');
+
+                        // Case of user locked
+                        if (data.disabled === 1) {
+                            $('#group-delete-user').removeClass('hidden');
+                            $('#form-delete-user-confirm').iCheck('uncheck');
+                        }
+
+                        // Clear selects
+                        $('#form-roles, #form-managedby, #form-auth, #form-forbid')
+                            .find('option')
+                            .remove();
+
+                        var tmp = '';
+                        $(data.foldersAllow).each(function(i, value) {
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                        });
+                        $('#form-auth').append(tmp);
+
+                        tmp = '';
+                        $(data.foldersForbid).each(function(i, value) {
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                        });
+                        $('#form-forbid').append(tmp);
+
+                        tmp = '';
+                        $(data.managedby).each(function(i, value) {
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                        });
+                        $('#form-managedby').append(tmp);
+
+                        tmp = '';
+                        $(data.function).each(function(i, value) {
+                            tmp += '<option value="' + value.id + '" ' + value.selected + '>' + value.title + '</option>';
+                        });
+                        $('#form-roles').append(tmp);
+
+                        // Generate select2
+                        $('#form-roles, #form-managedby, #form-auth, #form-forbid').select2();
+
+                        // User's current privilege
+                        if (data.admin === 1) {
+                            $('#privilege-admin').iCheck('check');
+                            $('.not-for-admin').addClass('hidden');
+                        } else if (data.can_manage_all_users === 1) {
+                            $('#privilege-hr').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
+                        } else if (data.gestionnaire === 1) {
+                            $('#privilege-manager').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
+                        } else if (data.read_only === 1) {
+                            $('#privilege-ro').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
+                        } else {
+                            $('#privilege-user').iCheck('check');
+                            $('.not-for-admin').removeClass('hidden');
+                        }
+
+                        $('input:radio[name=privilege]').on('ifChanged', function() {
+                            userDidAChange = true;
+                            $(this).data('change-ongoing', true);
+                            
+                            // show extra fields or not
+                            if ($(this).attr('id') === 'privilege-admin') {
+                                $('.not-for-admin').addClass('hidden');
+                            } else {
+                                $('.not-for-admin').removeClass('hidden');
+                            }
+                        });
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    } else {
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        return false;
+                    }
+                }
+            );
+        } else if ($(this).data('action') === 'submit') {
+            // Loop on all changed fields
+            var arrayQuery = [];
+            $('.form-control').each(function(i, obj) {
+                if ($(this).data('change-ongoing') === true
+                    //|| $('#form-password').val() !== 'do_not_change'
+                ) {
+                    arrayQuery.push({
+                        'field': $(this).prop('id'),
+                        'value': $(this).val(),
+                    });
+                }
+            });
+
+            if (arrayQuery.length > 0) {
+                // Now save
+                // get lists
+                var forbidFld = [],
+                    authFld = [],
+                    groups = [];
+                $("#form-roles option:selected").each(function() {
+                    groups.push($(this).val())
+                });
+                $("#form-auth option:selected").each(function() {
+                    authFld.push($(this).val())
+                });
+                $("#form-forbid option:selected").each(function() {
+                    forbidFld.push($(this).val())
+                });
+
+                // Mandatory?
+                var validated = true,
+                    validEmailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,15})+$/;
+                $('.required').each(function(i, obj) {
+                    // exclude fields when user is admin
+                    if ($(this).hasClass('no-root') === true && $('#privilege-admin').prop('checked') === true) {
+                        // do nothing
+                    } else if ($(this).val() === '' && $(this).hasClass('select2') === false) {
+                        $(this).addClass('is-invalid');
+                        validated = false;
+                    } else if ($('#' + $(this).attr('id') + ' :selected').length === 0 && $(this).hasClass('select2') === true) {
+                        $('#' + $(this).attr('id') + ' + span').addClass('is-invalid');
+                        validated = false;
+                    } else if ($(this).hasClass('validate-email') === true) {
+                        if ($(this).val().match(validEmailRegex)) {
+                            $(this).removeClass('is-invalid');
+                        } else {
+                            $(this).addClass('is-invalid');
+                            validated = false;
+                        }
+                    } else {
+                        $(this).removeClass('is-invalid');
+                        $('#' + $(this).attr('id') + ' + span').removeClass('is-invalid');
+                    }
+                });
+                if (validated === false) {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo $lang->get('fields_with_mandatory_information_are_missing'); ?>',
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return false;
+                }
+
+                // SHow user
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+                // Get number of items to treat
+                data_tmp = {
+                    'user_id': <?php echo $session->get('user-id'); ?>,
+                }
+                $.post(
+                    'sources/main.queries.php', {
+                        type: 'get_number_of_items_to_treat',
+                        type_category: 'action_system',
+                        data: prepareExchangedData(JSON.stringify(data_tmp), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data_tmp) {
+                        data_tmp = prepareExchangedData(data_tmp, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        store.update(
+                            'teampassUser',
+                            function(teampassUser) {
+                                teampassUser.related_items_number = data_tmp.nbItems;
+                            }
+                        );
+                    }
+                );
+
+                // Sanitize text fields
+                purifyRes = fieldDomPurifierLoop('#form-user .purify');
+                if (purifyRes.purifyStop === true) {
+                    // if purify failed, stop
+                    return false;
+                }
+
+                //prepare data
+                var data = {
+                    'user_id': store.get('teampassApplication').formUserId,
+                    'login': purifyRes.arrFields['login'],
+                    'name': purifyRes.arrFields['name'],
+                    'lastname': purifyRes.arrFields['lastname'],
+                    'email': purifyRes.arrFields['email'],
+                    'admin': $('#privilege-admin').prop('checked'),
+                    'manager': $('#privilege-manager').prop('checked'),
+                    'hr': $('#privilege-hr').prop('checked'),
+                    'read_only': $('#privilege-ro').prop('checked'),
+                    'personal_folder': $('#form-create-personal-folder').prop('checked'),
+                    'new_folder_role_domain': $('#form-create-special-folder').prop('checked'),
+                    'domain': $('#form-special-folder').val(),
+                    'isAdministratedByRole': $('#form-managedby').val(),
+                    'groups': groups,
+                    'allowed_flds': authFld,
+                    'forbidden_flds': forbidFld,
+                    'action_on_user': 'update',
+                    'form-create-root-folder': $('#form-create-root-folder').prop('checked'),
+                    'form-user-disabled': $('#form-user-disabled').prop('checked'),
+                    'mfa_enabled': $('#form-create-mfa-enabled').prop('checked'),
+                };
+                if (debugJavascript === true) {
+                    console.log(data);
+                    console.log(store.get('teampassApplication').formUserAction);
+                }                
+                var formUserId = store.get('teampassApplication').formUserId;
+                
+                $.post(
+                    'sources/users.queries.php', {
+                        type: store.get('teampassApplication').formUserAction,
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: "<?php echo $session->get('key'); ?>"
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error !== false) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            return false;
+                        } else if (store.get('teampassApplication').formUserAction === 'add_new_user') {
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('new_user_info_by_mail'); ?>',
+                                '', {
+                                    timeOut: 4000
+                                }
+                            );
+
+                            if (typeof data.user_password !== 'undefined' && data.user_password !== '') {
+                                showModalDialogBox(
+                                    '#warningModal',
+                                    '<i class="fas fa-user-shield fa-lg warning mr-2"></i><?php echo $lang->get('caution'); ?>',
+                                    '<div class="form-group mb-0">'+
+                                        '<label for="warningModal-created-user-password"><?php echo $lang->get('user_password'); ?></label>'+
+                                        '<div class="input-group">'+
+                                            '<input type="text" readonly class="form-control form-item-control" id="warningModal-created-user-password" value="">'+
+                                            '<div class="input-group-append">'+
+                                                '<button type="button" class="btn btn-secondary clipboard-copy" clipboard-target="warningModal-created-user-password" title="<?php echo $lang->get('copy_to_clipboard'); ?>">'+
+                                                    '<i class="fa-solid fa-copy"></i>'+
+                                                '</button>'+
+                                            '</div>'+
+                                        '</div>'+
+                                    '</div>',
+                                    '',
+                                    '<?php echo $lang->get('close'); ?>',
+                                    false,
+                                    false,
+                                    false
+                                );
+                                $('#warningModal-created-user-password').val(data.user_password);
+                            }
+                            // ---
+                        } else {
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('done'); ?>',
+                                '', {
+                                    timeOut: 2000
+                                }
+                            );
+                        }
+
+                        // Reload list of users
+                        oTable.ajax.reload();
+
+                        // Prepare UI
+                        //$('#header-menu, #group-create-special-folder, #group-delete-user').removeClass('hidden');
+                        $('#row-form').addClass('hidden');
+
+                        // Clean form
+                        $('.clear-me').val('');
+                        $('.select2').val('').change();
+
+                        // Hide and show relevant divs
+                        $('.user-content').addClass('hidden');
+                        $('#users-list, #header-menu').removeClass('hidden');
+
+                        // Prepare checks
+                        $('.form-check-input').iCheck('uncheck');
+
+                        // Remove action from store
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.formUserAction = '',
+                                    teampassApplication.formUserId = '';
+                            }
+                        );
+                    }
+                )
+            } else {
+                // No change performed on form
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('no_change_performed'); ?>',
+                    '', {
+                        timeOut: 1000
+                    }
+                );
+            }
+        } else if ($(this).data('action') === 'cancel') {
+            $('.clear-me').val('');
+            $('.select2').val('').change();
+
+            // Hide and show relevant divs
+            $('.user-content').addClass('hidden');
+            $('#users-list, #header-menu').removeClass('hidden');
+            
+            // Prepare checks
+            $('.form-check-input').iCheck('uncheck');
+
+            // Remove action from store
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.formUserAction = '',
+                        teampassApplication.formUserId = '';
+                }
+            );
+        } else if ($(this).data('action') === 'qrcode') {
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            // This sends a GA Code by email to user
+            data = {
+                'user_id': $(this).data('id'),
+                'demand_origin': 'users_management_list',
+                'send_email': 1
+            }
+
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'ga_generate_qr',
+                    type_category: 'action_user',
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    if (debugJavascript === true) console.log(data);
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('share_sent_ok'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                }
+            );
+            // ---
+        } else if ($(this).data('action') === 'new-password') {
+            const userId = $(this).data('id');
+            // Check if no tasks on-going for this user
+            const data_to_send = {
+                'user_id': userId,
+            }
+            $.post(
+                "sources/users.queries.php", {
+                    type: "get_user_infos",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Continue   
+                        if (data.user_infos.ongoing_process_id !== null) {  
+                            toastr.remove();
+                            toastr.warning(
+                                data.message,
+                                '<?php echo $lang->get('user_encryption_ongoing'); ?>', {
+                                    timeOut: 10000,
+                                    progressBar: true
+                                }
+                            ); 
+                        } else {                 
+                            // HIde
+                            $('.content-header, .content').addClass('hidden');
+
+                            // PRepare info
+                            $('#dialog-admin-change-user-password-info')
+                                .html('<i class="icon fas fa-info mr-2"></i><?php echo $lang->get('admin_change_user_password_info'); ?>');
+                            $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
+                            $('#dialog-admin-change-user-password-show-password-div').removeClass('hidden');
+                            if ($.fn.iCheck && $('#dialog-admin-change-user-password-do-show-password').parent('.icheckbox_flat-blue').length > 0) {
+                                $('#dialog-admin-change-user-password-do-show-password').iCheck('uncheck');
+                            } else {
+                                $('#dialog-admin-change-user-password-do-show-password').prop('checked', false);
+                            }
+
+                            // SHow form
+                            $('#dialog-admin-change-user-password').removeClass('hidden');
+
+                            $('#admin_change_user_password_target_user').val(userId);
+                            $('#admin_change_user_encryption_code_target_user').val('');
+                        }
+                    }
+                }
+            );
+
+        } else if ($(this).data('action') === 'reset-antibruteforce') {
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            const data = {
+                'user_id': $(this).data('id'),
+            };
+
+            $.post(
+                "sources/users.queries.php", {
+                    type: "reset_antibruteforce",
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data) {
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+
+                    // refresh table content
+                    oTable.ajax.reload();
+                }
+            );
+        
+        } else if ($(this).data('action') === 'new-enc-code') {
+            // HIde
+            $('.content-header, .content').addClass('hidden');
+
+            // PRepare info
+            $('#dialog-admin-change-user-password-info')
+                .html('<i class="icon fas fa-info mr-2"></i><?php echo $lang->get('admin_change_user_encryption_code_info'); ?>');
+            $("#dialog-admin-change-user-password-progress").html('<?php echo $lang->get('provide_current_psk_and_click_launch'); ?>');
+            $('#dialog-admin-change-user-password-show-password-div').addClass('hidden');
+            if ($.fn.iCheck && $('#dialog-admin-change-user-password-do-show-password').parent('.icheckbox_flat-blue').length > 0) {
+                $('#dialog-admin-change-user-password-do-show-password').iCheck('uncheck');
+            } else {
+                $('#dialog-admin-change-user-password-do-show-password').prop('checked', false);
+            }
+
+            // SHow form
+            $('#dialog-admin-change-user-password').removeClass('hidden');
+
+            $('#admin_change_user_password_target_user').val('');
+            $('#admin_change_user_encryption_code_target_user').val($(this).data('id'));
+            // ---
+
+        } else if ($(this).data('action') === 'logs') {
+            //$('#header-menu, #row-folders').addClass('hidden');
+           // $('#row-logs').removeClass('hidden');
+
+            $('#row-logs-title').text(
+                $(this).data('fullname')
+            )
+            var userID = $(this).data('id');
+
+            //Launch the datatables pluggin
+            $('#table-logs').DataTable({
+                'destroy': true,
+                'paging': true,
+                'searching': true,
+                'order': [
+                    [0, 'desc']
+                ],
+                'info': true,
+                'processing': false,
+                'serverSide': true,
+                'responsive': false,
+                'select': true,
+                'stateSave': false,
+                'retrieve': false,
+                'autoWidth': false,
+                'ajax': {
+                    url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.logs.datatable.php',
+                    data: function(d) {
+                        d.userId = userID;
+                    }
+                },
+                'language': {
+                    'url': '<?php echo $SETTINGS['cpassman_url']; ?>/includes/language/datatables.<?php echo $session->get('user-language'); ?>.txt'
+                },
+                'columns': [{
+                        className: 'dt-body-left'
+                    },
+                    {
+                        className: 'dt-body-left'
+                    },
+                    {
+                        className: 'dt-body-left'
+                    }
+                ],
+                'preDrawCallback': function() {
+                    toastr.remove();
+                    toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+                },
+                'drawCallback': function() {
+                    // Tooltips
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                },
+            });
+            
+        } else if ($(this).data('action') === 'visible-folders') {
+            $('#row-folders-title').text($(this).data('fullname'))
+            var userID = $(this).data('id')
+
+            // Reset state and open modal
+            $('#row-folders-filter-bar').hide()
+            $('#row-folders-results').html('')
+            $('.folder-type-filter').removeClass('active')
+            $('#modal-folders-rights').modal('show')
+
+            // Start progress bar
+            var folderLoadProgress = 10
+            var folderLoadTimer = null
+            $('#row-folders-progress-bar').css('width', folderLoadProgress + '%')
+            $('#row-folders-progress').show()
+            folderLoadTimer = setInterval(function() {
+                // Slow down as we approach 90%
+                folderLoadProgress += Math.max(1, Math.floor((90 - folderLoadProgress) / 8))
+                if (folderLoadProgress >= 90) {
+                    folderLoadProgress = 90
+                    clearInterval(folderLoadTimer)
+                }
+                $('#row-folders-progress-bar').css('width', folderLoadProgress + '%')
+            }, 200)
+
+            // Send query
+            $.post(
+                'sources/users.queries.php', {
+                    type: 'user_folders_rights',
+                    user_id: userID,
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    // Complete and hide progress bar
+                    clearInterval(folderLoadTimer)
+                    $('#row-folders-progress-bar').css('width', '100%')
+                    setTimeout(function() { $('#row-folders-progress').hide() }, 300)
+
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+                    if (debugJavascript === true) console.log(data)
+
+                    if (data.error !== false) {
+                        toastr.remove()
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        )
+                    } else {
+                        // Store full data for client-side filtering
+                        allFolderData = data.folders
+
+                        // Render table (all types visible by default)
+                        renderFolderRightsTable(allFolderData)
+
+                        // Show filter bar
+                        $('#row-folders-filter-bar').show()
+
+                        toastr.remove()
+                        toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 })
+                    }
+                }
+            );
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'disable-user') {
+            var userID = $(this).data('id'),
+                disabledStatus = $('#user-disable-'+userID).data('disabled') === 1 ? ' checked' : '';
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                '<div class="form-group">'+
+                    '<span class="mr-3"><?php echo $lang->get('user_disable_status'); ?></span>'+
+                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-disabled"' + disabledStatus + '>' +
+                '</div>',
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
+            );
+            $('input[type="checkbox"].flat-blue').iCheck({
+                checkboxClass: 'icheckbox_flat-blue',
+            });
+            // Disable Perform button by default; enable only when state differs from initial
+            const initialDisabledChecked = disabledStatus !== ''
+            $('#warningModalButtonAction').prop('disabled', true)
+            $('#user-disabled').on('ifChanged', function() {
+                $('#warningModalButtonAction').prop('disabled', $(this).prop('checked') === initialDisabledChecked)
+            })
+            $(document).one('click', '#warningModalButtonAction', function() {
+
+                // Show spinner
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+                $('#warningModal').modal('hide');
+
+                var data = {
+                    'user_id': userID,
+                    'disabled_status': $('#user-disabled').prop('checked') === true ? 1 : 0,
+                };
+
+                // Send query
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'manage_user_disable_status',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error !== false) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // Show icon or not
+                            if ($('#user-disabled').prop('checked') === true) {
+                                $('#user-login-'+userID).before('<i class="fa-solid fa-user-slash infotip text-danger mr-2" title="<?php echo $lang->get('account_is_locked');?>" id="user-disable-'+userID+'"></i>');
+                            } else {
+                                $('#user-disable-'+userID).remove();
+                            }
+                            
+
+                            // Prepare tooltips
+                            $('.infotip').tooltip();
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+                        }
+                    }
+                );
+            });
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'delete-user') {
+            var userID = $(this).data('id');
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                '<div class="form-group">'+
+                    '<span class="mr-3"><?php echo $lang->get('by_clicking_this_checkbox_confirm_user_deletion'); ?></span>'+
+                    '<input type="checkbox" class="form-check-input form-control flat-blue" id="user-to-delete">' +
+                '</div>',
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
+            );
+            $('input[type="checkbox"].flat-blue').iCheck({
+                checkboxClass: 'icheckbox_flat-blue',
+            });
+            // Disable Perform button by default; enable only when checkbox is checked
+            $('#warningModalButtonAction').prop('disabled', true)
+            $('#user-to-delete').on('ifChecked', function() {
+                $('#warningModalButtonAction').prop('disabled', false)
+            }).on('ifUnchecked', function() {
+                $('#warningModalButtonAction').prop('disabled', true)
+            })
+            $(document).one('click', '#warningModalButtonAction', function() {
+
+                // Show spinner
+                toastr.remove();
+                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+                $('#warningModal').modal('hide');
+
+                var data = {
+                    'user_id': userID,
+                };
+
+                // Send query
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'delete_user',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error !== false) {
+                            // Show error
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            // refresh table content
+                            oTable.ajax.reload();
+
+                            // Prepare tooltips
+                            $('.infotip').tooltip();
+                            // Inform user
+                            toastr.remove();
+                            toastr.success(
+                                '<?php echo $lang->get('done'); ?>',
+                                '', {
+                                    timeOut: 1000
+                                }
+                            );
+
+                            // Update counter
+                            update_deleted_users_button(data.deleted_accounts_count);
+                        }
+                    }
+                );
+            });
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'refresh') {
+            // Refresh main users datatable
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            // Force LDAP status refresh (cache)
+            tpLdapStatusCache = {};
+            tpLdapStatusRequestInFlight = false;
+
+            oTable.ajax.reload(function() {
+                toastr.remove();
+                scheduleDecorateUsersLdapStatus();
+            }, false);
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'propagate') {
+            //$('#header-menu, #row-folders').addClass('hidden');
+            //$('#row-propagate').removeClass('hidden');
+
+            // Show spinner
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            // Load list of users
+            $.post(
+                'sources/users.queries.php', {
+                    type: 'get_list_of_users_for_sharing',
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    if (debugJavascript === true) console.log(data);
+
+                    if (data.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Build select
+                        var html = '';
+                        $.each(data.values, function(i, value) {
+                            html += '<option value="' + value.id + '" data-groups="' + value.groups + '" data-managed-by="' + value.managedBy + '" data-folders-allowed="' + value.foldersAllowed + '" data-folders-forbidden="' + value.foldersForbidden + '" data-groups-id="' + value.groupIds + '" data-managed-by-id="' + value.managedById + '" data-folders-allowed-id="' + value.foldersAllowedIds + '" data-folders-forbidden-id="' + value.foldersForbiddenIds + '" data-admin="' + value.admin + '" data-manager="' + value.manager + '" data-hr="' + value.hr + '" data-read-only="' + value.readOnly + '" data-personal-folder="' + value.personalFolder + '" data-root-folder="' + value.rootFolder + '">' + value.name + ' ' + value.lastname + ' [' + value.login + ']</option>';
+                        });
+
+                        $('#propagate-from, #propagate-to')
+                            .find('option')
+                            .remove()
+                            .end()
+                            .append(html)
+                            .change();
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                }
+            );
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'do-propagate') {
+            // Show spinner
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+
+            // destination users
+            var userIds = $('#propagate-to').val();
+
+            if (userIds.length === 0) return false;
+
+            // Prepare data
+            var data = {
+                source_id: $("#propagate-from option:selected").val(),
+                destination_ids: userIds,
+                user_functions: $("#propagate-from option:selected").data('groups-id'),
+                user_managedby: $("#propagate-from option:selected").data('managed-by-id'),
+                user_fldallowed: $("#propagate-from option:selected").data('folders-allowed-id'),
+                user_fldforbid: $("#propagate-from option:selected").data('folders-forbidden-id'),
+                user_admin: $("#propagate-from option:selected").data('admin'),
+                user_manager: $("#propagate-from option:selected").data('manager'),
+                user_hr: $("#propagate-from option:selected").data('hr'),
+                user_readonly: $("#propagate-from option:selected").data('read-only'),
+                user_personalfolder: $("#propagate-from option:selected").data('personal-folder'),
+                user_rootfolder: $("#propagate-from option:selected").data('root-folder'),
+            };
+            if (debugJavascript === true) console.log(data);
+            $.post(
+                "sources/users.queries.php", {
+                    type: "update_users_rights_sharing",
+                    data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data) {
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+
+                    if (data.error === true) {
+                        // ERROR
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        $('.clear-me').val('');
+                        $('.select2').val('').change();
+                        //$('.extra-form, #row-folders').addClass('hidden');
+                        //$('#header-menu').removeClass('hidden');
+
+                        // Prepare checks
+                        $('.form-check-input')
+                            .iCheck('disable')
+                            .iCheck('uncheck');
+
+                        // Remove action from store
+                        store.update(
+                            'teampassApplication',
+                            function(teampassApplication) {
+                                teampassApplication.formUserAction = '',
+                                    teampassApplication.formUserId = '';
+                            }
+                        );
+
+                        // Inform user
+                        toastr.remove();
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                          
+                        // Rrefresh list of users in Teampass
+                        oTable.ajax.reload();
+                    }
+                }
+            );
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'ldap-sync') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#row-ldap').removeClass('hidden');
+
+            refreshListUsersLDAP();
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'oauth2-sync') {
+            $('.extra-form, .form').addClass('hidden');
+            $('#row-oauth2').removeClass('hidden');
+
+            refreshListUsersOAuth2();
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close') {
+            $('.extra-form, .form, .user-content').addClass('hidden');
+            $('#users-list').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close-ldap-new-role') {
+            $('#ldap-new-role').addClass('hidden');
+            $('#ldap-users-table').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'ldap-existing-users') {
+            refreshListUsersLDAP();
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'ldap-add-role') {
+            $('#ldap-users-table').addClass('hidden');
+            $('#ldap-new-role').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close-new-role') {
+            $('.user-content').addClass('hidden');
+            $('#users-list').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'add-new-role') {
+            if ($('#ldap-new-role-selection').val() === '') {
+                // ERROR
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_field_is_mandatory'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                // Add new role to Teampass
+
+                // Prepare data
+                var data = {
+                    'label': simplePurifier($('#ldap-new-role-selection').val()),
+                    'complexity': $('#ldap-new-role-complexity').val(),
+                    'allowEdit': 0,
+                    'action': 'add_role',
+                    'folderId' : -1,
+                }
+
+                if (debugJavascript === true) console.log(data);
+                
+                $.post(
+                    'sources/roles.queries.php', {
+                        type: 'change_role_definition',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#ldap-new-role-selection').val('');
+                            $('#ldap-users-table').removeClass('hidden');
+                            $('#row-ldap-body').html('');
+                            $('#ldap-new-role').addClass('hidden');
+
+                            refreshListUsersLDAP();
+                        }
+                    }
+                );
+
+            }
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'oauth2-existing-users') {
+            refreshListUsersOAuth2();
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'oauth2-add-role') {
+            $('#oauth2-users-table').addClass('hidden');
+            $('#oauth2-new-role').removeClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'close-new-role-oauth2') {
+            $('#oauth2-users-table').removeClass('hidden');
+            $('#oauth2-new-role').addClass('hidden');
+
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'add-new-role-oauth2') {
+            if ($('#oauth2-new-role-selection').val() === '') {
+                // ERROR
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_field_is_mandatory'); ?>',
+                    '<?php echo $lang->get('caution'); ?>', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+            } else {
+                // Add new role to Teampasstoastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('please_wait'); ?>',
+                    '',
+                    {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+
+                // Prepare data
+                var data = {
+                    'label': simplePurifier($('#oauth2-new-role-selection').val()),
+                    'complexity': $('#oauth2-new-role-complexity').val(),
+                    'allowEdit': 0,
+                    'action': 'add_role',
+                    'folderId' : -1,
+                }
+
+                if (debugJavascript === true) console.log(data);
+                
+                $.post(
+                    'sources/roles.queries.php', {
+                        type: 'change_role_definition',
+                        data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        //decrypt data
+                        data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                        if (debugJavascript === true) console.log(data);
+
+                        if (data.error === true) {
+                            // ERROR
+                            toastr.remove();
+                            toastr.error(
+                                data.message,
+                                '<?php echo $lang->get('caution'); ?>', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                        } else {
+                            $('#oauth2-new-role-selection').val('');
+                            $('#oauth2-users-table').removeClass('hidden');
+                            $('#row-oauth2-body').html('');
+                            $('#oauth2-new-role').addClass('hidden');
+
+                            refreshListUsersOAuth2();
+                        }
+                    }
+                );
+
+            }
+
+            /**/
+            //
+            // --- END
+            //
+            const userID = $(this).data('id');
+
+            const data_to_send = {
+                'user_id': userID,
+            }
+//TODO : analyser et supprimer peut etre le OTP code pour une user AD
+            $.post(
+                "sources/users.queries.php", {
+                    type: "get_user_infos",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                    if (data.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // Continue   
+                        if (data.user_infos.ongoing_process_id !== null) {  
+                            toastr.remove();
+                            toastr.warning(
+                                data.message,
+                                '<?php echo $lang->get('user_encryption_ongoing'); ?>', {
+                                    timeOut: 10000,
+                                    progressBar: true
+                                }
+                            ); 
+                        } else {  
+                            showModalDialogBox(
+                                '#warningModal',
+                                '<i class="fa-solid fa-exclamation-circle fa-lg warning mr-2"></i><?php echo $lang->get('your_attention_please'); ?>',
+                                '<div class="form-group">'+
+                                    '<span class="mr-3"><?php echo $lang->get('generate_new_otp_informations'); ?></span>'+
+                                '</div>',
+                                '<?php echo $lang->get('perform'); ?>',
+                                '<?php echo $lang->get('cancel'); ?>'
+                            );
+                            
+                            $(document).one('click', '#warningModalButtonAction', function() {
+                                // prepare user
+
+                                // Show spinner
+                                toastr.remove();
+                                toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+                                // generate keys
+                                generateUserKeys(
+                                    {
+                                        'user_id': userID,
+                                    },
+                                    ''
+                                );
+                            });
+                        }
+                    }
+                }
+            );
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'inactive-users') {
+            refreshInactiveUsersMgmtBanner();
+            refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+
+            /**/
+            //
+            // --- END
+            //
+        } else if ($(this).data('action') === 'deleted-users') {
+            refreshListDeletedUsers();
+
+            /**/
+            //
+            // --- END
+            //
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+    });
+
+    // ---------------------------------------------------------------------
+    // Shared confirmation modal (inactive / deleted users actions)
+    // ---------------------------------------------------------------------
+    var tpUsersActionModal = {
+        onConfirm: null,
+        isOpen: false
+    };
+
+    function showUsersActionModal(options) {
+        var opts = options || {};
+        var $modal = $('#users-action-modal');
+        var $title = $('#users-action-modal-title');
+        var $body = $('#users-action-modal-body');
+        var $confirm = $('#users-action-modal-confirm');
+
+        // Title
+        if (opts.title) {
+            $title.html(opts.title);
+        } else {
+            $title.html('<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>');
+        }
+
+        // Body
+        $body.html(opts.message || '');
+
+        // Confirm button
+        $confirm
+            .text(opts.confirmText || '<?php echo $lang->get('confirm'); ?>')
+            .removeClass('btn-danger btn-secondary btn-warning btn-primary btn-success')
+            .addClass(opts.confirmBtnClass || 'btn-danger')
+            .prop('disabled', false);
+
+        // Store callback
+        tpUsersActionModal.onConfirm = typeof opts.onConfirm === 'function' ? opts.onConfirm : null;
+        tpUsersActionModal.isOpen = true;
+
+        $modal.modal('show');
+    }
+
+    // Confirm click
+    $(document).on('click', '#users-action-modal-confirm', function() {
+        if (typeof tpUsersActionModal.onConfirm !== 'function') {
+            $('#users-action-modal').modal('hide');
+            return;
+        }
+
+        // Prevent double click
+        $(this).prop('disabled', true);
+
+        var fn = tpUsersActionModal.onConfirm;
+        tpUsersActionModal.onConfirm = null;
+
+        $('#users-action-modal').modal('hide');
+
+        // Execute after the modal is hidden (avoids overlay glitches)
+        setTimeout(function() {
+            fn();
+        }, 50);
+    });
+
+    // Reset on close
+    $('#users-action-modal').on('hidden.bs.modal', function() {
+        tpUsersActionModal.onConfirm = null;
+        tpUsersActionModal.isOpen = false;
+        $('#users-action-modal-confirm')
+            .prop('disabled', false)
+            .removeClass('btn-danger btn-secondary btn-warning btn-primary btn-success');
+        $('#users-action-modal-body').empty();
+    });
+
+    // Purge single user
+    $(document).on('click', '.btn-purge-user', function() {
+        var btn = $(this);
+        var userId = btn.data('user-id');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("confirm_purge_user")); ?>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                var originalIcon = btn.find('i').attr('class');
+                btn.find('i').attr('class', 'fa-solid fa-circle-notch fa-spin');
+                btn.prop('disabled', true);
+
+                const data_to_send = {
+                    'user_id': userId,
+                }
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'purge_user',
+                        data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            // Restore button
+                            btn.find('i').attr('class', originalIcon);
+                            btn.prop('disabled', false);
+
+                            toastr.error(
+                                data.message,
+                                '', {
+                                    timeOut: 5000
+                                }
+                            );
+                        } else {
+                            toastr.success(
+                                data.message,
+                                '', {
+                                    timeOut: 2000
+                                }
+                            );
+
+                            // Remove the line
+                            btn.closest('tr').fadeOut(300, function() {
+                                $(this).remove();
+
+                                // Check if some lines remain
+                                var remainingRows = $('#table-deleted-users tbody tr:visible').length;
+                                if (remainingRows === 0) {
+                                    $('#table-deleted-users tbody').html(
+                                        '<tr><td colspan="6" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>'
+                                    );
+                                }
+
+                                // Adjust counter in button
+                                update_deleted_users_button(data.deleted_accounts_count);
+                            });
+                        }
+                    }
+                );
+            }
+        });
+    });
+    
+    // Purge old users in mass
+    $('#btn-purge-old-users').on('click', function() {
+        var btn = $(this);
+        var retention = btn.data('retention');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: ('<?php echo addslashes($lang->get("confirm_purge_old_users")); ?>').replace('%days%', retention),
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                btn.prop('disabled', true);
+        
+                const data_to_send = {
+                    'days_retention': retention,
+                }
+
+                // Step 1 : Get list of users to purge
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'get_purgeable_users',
+                        data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        console.log('Users to purge:', data);
+
+                        if (data.error) {
+                            toastr.remove();
+                            toastr.error(data.message);
+                            btn.prop('disabled', false);
+                            return;
+                        }
+
+                        if (data.user_ids.length === 0) {
+                            toastr.remove();
+                            toastr.info('<?php echo $lang->get('no_users_to_purge'); ?>');
+                            btn.prop('disabled', false);
+                            return;
+                        }
+
+                        // Step 2 : Process in batches of 2
+                        processPurgeBatch(data.user_ids, retention, btn);
+                    }
+                ).fail(function() {
+                    toastr.remove();
+                    toastr.error('<?php echo $lang->get('an_error_occurred'); ?>');
+                    btn.prop('disabled', false);
+                });
+            }
+        });
+    });
+    // Purge selected deleted users
+    $('#btn-purge-selected-users').on('click', function() {
+        var btn = $(this);
+        var userIds = getSelectedDeletedUserIds();
+
+        if (userIds.length === 0) {
+            toastr.info('<?php echo $lang->get('deleted_users_select_at_least_one'); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("confirm_purge_selected_users")); ?>' + '<br><small>(' + userIds.length + ')</small>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                btn.prop('disabled', true);
+                processPurgeBatch(userIds, 0, btn);
+            }
+        });
+    });
+
+
+    function refreshListDeletedUsers()
+    {
+        var list = $('#deleted-users-list');
+                        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'list_deleted_users',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                
+                if (data.error) {
+                    toastr.error(data.message);
+                    return;
+                }
+                
+                var tbody = $('#table-deleted-users tbody');
+                tbody.empty();
+                
+                if (data.result.users.length === 0) {
+                    tbody.append('<tr><td colspan="6" class="text-center"><?php echo $lang->get("no_deleted_users"); ?></td></tr>');
+                } else {
+                    $.each(data.result.users, function(i, user) {
+                        var row = '<tr>' +
+                            '<td class="text-center align-middle px-1">' +
+                                '<input type="checkbox" class="deleted-user-select" value="' + user.id + '">' +
+                            '</td>' +
+                            '<td class="align-middle pl-1 text-left">' + user.login + '</td>' +
+                            '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
+                            '<td>' + new Date(user.deleted_at * 1000).toLocaleDateString() + '</td>' +
+                            '<td>' + user.days_since_deletion + ' <?php echo $lang->get("days"); ?></td>' +
+                            '<td>' +
+                                '<button class="btn btn-sm btn-danger btn-purge-user" data-user-id="' + user.id + '">' +
+                                    '<i class="fas fa-trash infotip" title="<?php echo $lang->get("purge"); ?>"></i>' +
+                                '</button>' +
+                                '<button class="btn btn-sm btn-success ml-2 btn-restore-user" data-user-id="' + user.id + '">' +
+                                    '<i class="fas fa-undo infotip" title="<?php echo $lang->get("restore"); ?>"></i>' +
+                                '</button>' +
+                            '</td>' +
+                        '</tr>';
+                        tbody.append(row);
+                    });
+                }
+                
+                $('#deleted-users-check-all').prop('checked', false);
+                list.slideDown();
+
+                update_deleted_users_button(data.result.users.length);
+            }
+        );
+    }
+
+
+    /**
+     * Deleted users - selection helpers
+     */
+    function getSelectedDeletedUserIds() {
+        return $('#table-deleted-users .deleted-user-select:checked').map(function() {
+            return parseInt($(this).val(), 10);
+        }).get();
+    }
+
+    // Check all in deleted users table
+    $(document).on('change', '#deleted-users-check-all', function() {
+        const checked = $(this).is(':checked');
+        $('#table-deleted-users .deleted-user-select').prop('checked', checked);
+    });
+
+    /**
+     * Perform the purge 
+     */
+    function processPurgeBatch(userIds, retention, btn) {
+        var totalUsers = userIds.length;
+        var processedCount = 0;
+        var successCount = 0;
+        var errorCount = 0;
+        var errors = [];
+        var batchSize = 2; // Only 2 users
+        var currentIndex = 0;
+        
+        // Show progress bar
+        var progressToast = toastr.info(
+            '<div class="progress" style="margin-top: 10px;">' +
+                '<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" ' +
+                    'style="width: 0%;" id="purge-progress-bar">' +
+                    '0/' + totalUsers +
+                '</div>' +
+            '</div>' +
+            '<div style="margin-top: 10px; font-size: 12px;" id="purge-progress-text">' +
+                '<?php echo $lang->get('starting_purge'); ?>...' +
+            '</div>',
+            '<?php echo $lang->get('purging_users'); ?><i class="fa-solid fa-broom fa-beat-fade ml-2"></i>',
+            {
+                timeOut: 0,
+                extendedTimeOut: 0,
+                closeButton: false,
+                tapToDismiss: false,
+                escapeHtml: false
+            }
+        );
+        
+        /**
+         * Treat next lot
+         */
+        function processNextBatch() {
+            if (currentIndex >= totalUsers) {
+                // All users has been treated
+                finalizePurge();
+                return;
+            }
+            
+            // Get next lot
+            var batch = userIds.slice(currentIndex, currentIndex + batchSize);
+            currentIndex += batch.length;
+            
+            // update progressbar
+            updateProgress(processedCount, totalUsers);
+        
+            const data_to_send = {
+                'days_retention': retention,
+                'user_ids': batch,
+            }
+            
+            // Perform lot
+            $.post(
+                'sources/users.queries.php',
+                {
+                    type: 'purge_users_batch',
+                    data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    console.log('Batch result:', data);
+                    
+                    if (data.error) {
+                        errorCount += batch.length;
+                        errors.push(data.message);
+                    } else {
+                        successCount += data.purged_count;
+                        errorCount += (batch.length - data.purged_count);
+                        
+                        if (data.errors && data.errors.length > 0) {
+                            errors = errors.concat(data.errors);
+                        }
+                    }
+                    
+                    processedCount += batch.length;
+                    
+                    // Perform next lot
+                    processNextBatch();
+                }
+            ).fail(function(xhr, status, error) {
+                console.error('Batch processing failed:', error);
+                errorCount += batch.length;
+                errors.push('Batch error: ' + error);
+                processedCount += batch.length;
+                
+                // Precess anyway next lot
+                processNextBatch();
+            });
+        }
+        
+        /**
+         * Updating the progressbar
+         */
+        function updateProgress(processed, total) {
+            var percentage = Math.round((processed / total) * 100);
+            $('#purge-progress-bar')
+                .css('width', percentage + '%')
+                .text(processed + '/' + total);
+            
+            $('#purge-progress-text').text(
+                '<?php echo $lang->get('purging_in_progress'); ?>: ' + processed + '/' + total
+            );
+        }
+        
+        /**
+         * Finalize the purge process
+         */
+        function finalizePurge() {
+            toastr.remove();
+            
+            // SHow sumary
+            var message = '<?php echo $lang->get('purge_completed'); ?><br>' +
+                        '<?php echo $lang->get('success'); ?>: ' + successCount + '<br>';
+            
+            if (errorCount > 0) {
+                message += '<?php echo $lang->get('errors'); ?>: ' + errorCount + '<br>';
+                
+                if (errors.length > 0 && errors.length <= 5) {
+                    message += '<br><small>' + errors.join('<br>') + '</small>';
+                } else if (errors.length > 5) {
+                    message += '<br><small>' + errors.slice(0, 5).join('<br>') + 
+                            '<br><?php echo $lang->get('and_x_more_errors'); ?>'.replace('%x%', (errors.length - 5)) +
+                            '</small>';
+                }
+                
+                toastr.warning(message, '', {
+                    //timeOut: 10000,
+                    escapeHtml: false
+                });
+            } else {
+                toastr.success(message, '', {
+                    //timeOut: 5000,
+                    escapeHtml: false
+                });
+            }
+            
+            // Enable back the button
+            btn.prop('disabled', false);
+            
+            // Refresh the list of deleted users
+            if (successCount > 0) {
+                if ($('#deleted-users-list').is(':visible')) {
+                    refreshListDeletedUsers();
+                }
+            }
+        }
+        
+        // Start process
+        processNextBatch();
+    }
+
+    /**
+     * update_deleted_users_button
+     *
+     * Updates the counter and the blinking status of the 'deleted-users' button.
+     * This function should be called after a successful user reactivation.
+     *
+     * @param int new_count The updated count of deleted users after the action.
+     * @return void
+     */
+    function update_deleted_users_button(new_count) {
+        const $button = $('button[data-action="deleted-users"]');
+        const $textContainer = $button.find('.fa-user-xmark').next(); // Get the text element after the icon
+        
+        // 1. Mettre à jour le contenu du bouton (y compris le badge)
+        if (new_count > 0) {
+            // Update the badge content (or create it if it wasn't there)
+            let $badge = $button.find('.badge');
+            if ($badge.length === 0) {
+                // Re-create the full HTML if the badge needs to be added (rarely happens on decrease)
+                const langText = $textContainer.text();
+                $textContainer.html(`${langText} <span class="badge badge-danger ml-1">${new_count}</span>`);
+            } else {
+                // Update existing badge
+                $badge.text(new_count);
+            }
+
+            // 2. Continue to blink
+            $button.addClass('blink_me');
+
+        } else {
+            // If count = 0
+            // Remove badge if exists
+            $button.find('.badge').remove();
+
+            // 3. Stop blicking
+            $button.removeClass('blink_me');
+        }
+    }
+
+    $(document).on('click', '.btn-restore-user', function() {
+        var userId = $(this).data('user-id');
+        
+        const data_to_send = {
+            'user_id': userId,
+        }
+        
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'restore_user',
+                data : prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                
+                if (data.error === false) {
+                    toastr.success(data.message);
+                    // Rafraîchissez la liste des utilisateurs
+                    location.reload();
+                } else {
+                    toastr.error(data.message);
+                }
+            }
+        );
+    });
+
+    $(document).on('click', '.btn-close-deleted-users', function() {
+        //$('.extra-form, .form, #deleted-users-section').addClass('hidden');
+        $('.user-content').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        $('html, body').animate({scrollTop: 0}, 'slow');
+    });
+
+    // ---------------------------------------------------------------------
+    // Inactive users (never connected / inactive since X days)
+    // ---------------------------------------------------------------------
+
+    function update_inactive_users_button(neverConnectedCount) {
+        const $button = $('button[data-action="inactive-users"]');
+        if (parseInt(neverConnectedCount, 10) > 0) {
+            $button.addClass('blink_me');
+        } else {
+            $button.removeClass('blink_me');
+        }
+    }
+
+    function refreshNeverConnectedBlink() {
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'count_never_connected_active_users',
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (!data.error) {
+                    update_inactive_users_button(data.count);
+                }
+            }
+        );
+    }
+
+    function refreshInactiveUsersMgmtBanner() {
+        const $b = $('#inactive-users-mgmt-banner');
+        if (!$b.length) return;
+
+        $.post(
+            'sources/inactive_users_mgmt.queries.php',
+            {
+                type: 'inactive_users_mgmt_get_status',
+                data: prepareExchangedData(JSON.stringify({}), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (!data || data.error || !data.result) {
+                    $b.addClass('d-none');
+                    return;
+                }
+
+                $b.removeClass('d-none alert-info alert-warning alert-danger alert-success')
+                    .addClass('alert-' + (data.result.banner_type || 'info'))
+                    .html(data.result.banner_html || '');
+            }
+        );
+}
+
+function refreshListInactiveUsers(filterValue) {
+        const data_to_send = {
+            filter: filterValue || 'never'
+        };
+
+        $.post(
+            'sources/users.queries.php',
+            {
+                type: 'list_inactive_users',
+                data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (data.error) {
+                    toastr.error(data.message);
+                    return;
+                }
+
+                const tbody = $('#table-inactive-users tbody');
+                tbody.empty();
+
+                if (!data.result || !data.result.users || data.result.users.length === 0) {
+                    tbody.append('<tr><td colspan="6" class="text-center"><?php echo $lang->get("inactive_users_no_results"); ?></td></tr>');
+                } else {
+                    $.each(data.result.users, function(i, user) {
+                        const neverConnected = (parseInt(user.never_connected, 10) === 1)
+                            || (user.last_connexion_ts === null)
+                            || (parseInt(user.last_connexion_ts, 10) <= 0);
+
+                        const lastActivityTxt = neverConnected
+                            ? '<?php echo $lang->get("inactive_users_never_connected"); ?>'
+                            : new Date(parseInt(user.last_connexion_ts, 10) * 1000).toLocaleDateString();                        const daysInactive = parseInt(user.days_inactive, 10);
+                        const daysInactiveTxt = neverConnected
+                            ? '-'
+                            : (isNaN(daysInactive) ? '-' : (daysInactive + ' <?php echo $lang->get("days"); ?>'));
+
+                        const warnedAt = parseInt(user.inactivity_warned_at || 0, 10);
+                        const actionAt = parseInt(user.inactivity_action_at || 0, 10);
+                        const noEmail = parseInt(user.inactivity_no_email || 0, 10) === 1;
+                        const nowTs = Math.floor(Date.now() / 1000);
+
+                        let badges = '';
+                        if (noEmail) {
+                            badges += ' <span class="badge badge-secondary infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_no_email")); ?>"><?php echo addslashes($lang->get("inactive_users_mgmt_badge_no_email")); ?></span>';
+                        }
+                        if (warnedAt > 0) {
+                            badges += ' <span class="badge badge-warning infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_warned_at")); ?>"><?php echo addslashes($lang->get("inactive_users_mgmt_badge_warned")); ?></span>';
+                        }
+                        if (actionAt > 0) {
+                            const due = actionAt <= nowTs;
+                            const badgeLbl = due ? '<?php echo addslashes($lang->get("inactive_users_mgmt_badge_action_due")); ?>'
+                                                 : '<?php echo addslashes($lang->get("inactive_users_mgmt_badge_action_scheduled")); ?>';
+                            const badgeCls = due ? 'badge-danger' : 'badge-info';
+                            badges += ' <span class="badge ' + badgeCls + ' infotip" title="<?php echo addslashes($lang->get("inactive_users_mgmt_tt_action_at")); ?>">' + badgeLbl + '</span>';
+                        }
+
+                        const row =
+                            '<tr>' +
+                                '<td class="text-center align-middle px-1"><input type="checkbox" class="inactive-user-select" value="' + user.id + '"></td>' +
+                                '<td class="align-middle pl-1 text-left">' + user.login + badges + '</td>' +
+                                '<td class="align-middle text-left">' + (user.email || '-') + '</td>' +
+                                '<td class="align-middle">' + lastActivityTxt + '</td>' +
+                                '<td class="align-middle">' + daysInactiveTxt + '</td>' +
+                                '<td>' +
+                                    '<button class="btn btn-sm btn-secondary btn-disable-inactive-user" data-user-id="' + user.id + '">' +
+                                        '<i class="fa-solid fa-lock infotip" title="<?php echo $lang->get("inactive_users_disable"); ?>"></i>' +
+                                    '</button>' +
+                                    '<button class="btn btn-sm btn-danger ml-2 btn-delete-inactive-user" data-user-id="' + user.id + '">' +
+                                        '<i class="fas fa-trash infotip" title="<?php echo $lang->get("delete"); ?>"></i>' +
+                                    '</button>' +
+                                '</td>' +
+                            '</tr>';
+
+                        tbody.append(row);
+                    });
+                }
+
+                // checkbox header reset
+                $('#inactive-users-check-all').prop('checked', false);
+
+                // refresh tooltips for dynamically inserted badges
+                $('.infotip').tooltip();
+
+                // refresh blink state based on server truth (never connected)
+                refreshNeverConnectedBlink();
+            }
+        );
+    }
+
+    // Filter change
+    $(document).on('change', '#inactive-users-filter', function() {
+        refreshListInactiveUsers($(this).val());
+    });
+
+    // Check all
+    $(document).on('change', '#inactive-users-check-all', function() {
+        const checked = $(this).is(':checked');
+        $('#table-inactive-users .inactive-user-select').prop('checked', checked);
+    });
+
+    // Disable single
+    $(document).on('click', '.btn-disable-inactive-user', function() {
+        const userId = $(this).data('user-id');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_disable_one")); ?>',
+            confirmBtnClass: 'btn-secondary',
+            onConfirm: function() {
+                const data_to_send = {
+                    user_id: userId,
+                    disabled_status: 1
+                };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'manage_user_disable_status',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Delete single (soft delete => will appear in Deleted users)
+    $(document).on('click', '.btn-delete-inactive-user', function() {
+        const userId = $(this).data('user-id');
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_delete_one")); ?>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                const data_to_send = {
+                    user_id: userId
+                };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'delete_user',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    function getSelectedInactiveUserIds() {
+        return $('#table-inactive-users .inactive-user-select:checked').map(function() {
+            return parseInt($(this).val(), 10);
+        }).get();
+    }
+
+    // Disable batch
+    $(document).on('click', '#btn-inactive-users-disable-selected', function() {
+        const ids = getSelectedInactiveUserIds();
+
+        if (ids.length === 0) {
+            toastr.info('<?php echo $lang->get("inactive_users_select_at_least_one"); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_disable_many")); ?>' + '<br><small>(' + ids.length + ')</small>',
+            confirmBtnClass: 'btn-secondary',
+            onConfirm: function() {
+                const data_to_send = { user_ids: ids };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'disable_users_batch',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Delete batch
+    $(document).on('click', '#btn-inactive-users-delete-selected', function() {
+        const ids = getSelectedInactiveUserIds();
+
+        if (ids.length === 0) {
+            toastr.info('<?php echo $lang->get("inactive_users_select_at_least_one"); ?>');
+            return;
+        }
+
+        showUsersActionModal({
+            title: '<i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('confirm'); ?>',
+            message: '<?php echo addslashes($lang->get("inactive_users_confirm_delete_many")); ?>' + '<br><small>(' + ids.length + ')</small>',
+            confirmBtnClass: 'btn-danger',
+            onConfirm: function() {
+                const data_to_send = { user_ids: ids };
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'delete_users_batch',
+                        data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+
+                        if (data.error) {
+                            toastr.error(data.message);
+                            return;
+                        }
+
+                        toastr.success('<?php echo $lang->get("done"); ?>');
+                        refreshListInactiveUsers($('#inactive-users-filter').val() || 'never');
+                    }
+                );
+            }
+        });
+    });
+
+    // Close inactive users
+    $(document).on('click', '.btn-close-inactive-users', function() {
+        $('.user-content').addClass('hidden');
+        $('#users-list').removeClass('hidden');
+        $('html, body').animate({scrollTop: 0}, 'slow');
+    });
+
+
+
+
+    /**
+     * Permit to show some info while selecting a  User
+     */
+    $(document).on('change', '#propagate-from', function() {
+        var selectedOption = $(this).find('option:selected');
+        $('#propagate-user-roles').html($(selectedOption).data('groups'));
+        $('#propagate-user-managedby').html($(selectedOption).data('managed-by'));
+        $('#propagate-user-allowed').html($(selectedOption).data('folders-allowed'));
+        $('#propagate-user-fordidden').html($(selectedOption).data('folders-forbidden'));
+    });
+
+
+    /**
+     * TRACK CHANGES IN FORM
+     */
+    $('#form-user .track-change')
+        .on('change', function() {
+            if ($(this).val() !== null && $(this).val().length > 0) {
+                userDidAChange = true;
+                $(this).data('change-ongoing', true);
+            } else {
+                $(this).data('change-ongoing', false);
+            }
+        })
+        .on('ifChecked', function() {
+            userDidAChange = true;
+            $(this).data('change-ongoing', true);
+        });
+
+    //************************************************************* */
+
+
+
+    /**
+     * EDIT EACH ROW
+     */
+    var currentText = '',
+        item = '',
+        initialColumnWidth = '',
+        actionOnGoing = false,
+        field = '',
+        columnId = '',
+        tableDef = {
+            'login': {
+                'column': 2
+            },
+            'name': {
+                'column': 3
+            },
+            'lastname': {
+                'column': 4
+            },
+            'isAdministratedByRole': {
+                'column': 5
+            },
+            'fonction_id': {
+                'column': 6
+            }
+        };
+
+    /**
+     * EDIT TEXT INPUT
+     */
+    $(document).on('click', '.edit-text', function() {
+        currentText = $(this).text();
+        item = $(this);
+        field = $(this).data('field');
+        columnId = tableDef[field].column;
+
+        $(this)
+            .addClass('hidden')
+            .after('<input type="text" class="form-control form-item-control remove-me save-me" value="' + currentText + '">');
+
+        // Store current width and change it
+        initialColumnWidth = $('#table-users thead th:eq(' + (columnId - 1) + ')').width();
+        $('#table-users thead th:eq(' + (columnId - 1) + ')').width('300');
+        if (debugJavascript === true) console.log('Width ' + initialColumnWidth)
+
+        // Launch save on focus lost
+        $('.save-me')
+            .focus()
+            .focusout(function() {
+                if (actionOnGoing === false) {
+                    actionOnGoing = true;
+                    saveChange(item, currentText, $(this), field);
+                }
+            });
+    });
+
+    /**
+     * EDIT SELECT LIST
+     */
+    $(document).on('click', '.edit-select', function() {
+        currentText = $(this).text();
+        item = $(this);
+        field = $(this).data('field');
+        columnId = tableDef[field].column;
+        if (debugJavascript === true) console.log(columnId)
+
+        $(this).addClass('hidden');
+
+        // Show select
+        $("#select-managedBy")
+            .insertAfter('#' + $(this).attr('id'))
+            .after('<i class="fa-solid fa-close text-danger pointer temp-button mr-3" id="select-managedBy-close"></i>');
+        $('#select-managedBy option[value="' + $(this).data('value') + '"]').prop('selected', true);
+
+        // Store current width and change it
+        initialColumnWidth = $('#table-users thead th:eq(' + (columnId - 1) + ')').width();
+        $('#table-users thead th:eq(' + (columnId - 1) + ')').width('300');
+
+        // Launch save on focus lost
+        $('.save-me')
+            .focus()
+            .focusout(function() {
+                if (actionOnGoing === false) {
+                    actionOnGoing = true;
+                    saveChange(item, currentText, $(this), field);
+                }
+            });
+
+        $('#select-managedBy-close').click(function() {
+            $("#select-managedBy").detach().appendTo('#hidden-managedBy');
+            $('#table-users thead th:eq(' + (columnId - 1) + ')').width(initialColumnWidth);
+            $('.edit-select').removeClass('hidden');
+            $('.tmp-loader, .temp-button').remove();
+        });
+    });
+
+
+    /**
+     * MANAGE USER KEYS PRESSED
+     */
+    $(document).keyup(function(e) {
+        if (e.keyCode === 27) {
+            // Escape Key
+            $('.remove-me, .tmp-loader').remove();
+            $('.edit-text').removeClass('hidden');
+        }
+        if (e.keyCode === 13 && actionOnGoing === false) {
+            // Enter key
+            // Only trigger save when an inline editable field is focused (avoid DataTables search input, etc.)
+            var focusedElement = $(':focus');
+
+            if (
+                focusedElement.length === 1
+                && focusedElement.hasClass('save-me') === true
+                && item !== ''
+                && typeof item.data === 'function'
+                && field !== ''
+            ) {
+                actionOnGoing = true;
+                saveChange(item, currentText, focusedElement, field);
+            }
+        }
+    });
+
+
+    function saveChange(item, currentText, change, field) {
+        if (change.val() !== currentText) {
+            change
+                .after('<i class="fa-solid fa-refresh fa-spin fa-fw tmp-loader"></i>');
+
+            // prepare data
+            var data = {
+                'user_id': item.data('id'),
+                'field': field,
+                'value': change.val()
+            };
+            
+            // Save
+            $.post(
+                'sources/users.queries.php', {
+                    type: 'save_user_change',
+                    data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    if (change.is('input') === true) {
+                        change.remove();
+                        $('.tmp-loader').remove();
+                        item
+                            .text(change.val())
+                            .removeClass('hidden');
+                        $('#table-users thead th:eq(' + (columnId - 1) + ')').width(initialColumnWidth)
+                    } else if (change.is('select') === true) {
+                        $("#select-managedBy").detach().appendTo('#hidden-managedBy');
+                        $('#table-users thead th:eq(' + (columnId - 1) + ')').width(initialColumnWidth)
+                        $('.tmp-loader, .temp-button').remove();
+
+                        // Show change
+                        if (debugJavascript === true) console.log(change)
+                        item
+                            .html(change.text())
+                            .attr('data-value', change.val())
+                            .removeClass('hidden');
+                    }
+                    actionOnGoing = false;
+                },
+                'json'
+            );
+        } else {
+            change.remove();
+            $('.tmp-loader').remove();
+            item
+                .text(change.val())
+                .removeClass('hidden');
+            $('#table-users thead th:eq(' + (columnId - 1) + ')').width(initialColumnWidth)
+        }
+    }
+
+    /**
+     * Refreshing list of users from LDAP
+     *
+     * @return void
+     */
+    function refreshListUsersLDAP() {
+        // IS LDAP enabled? (#3800)
+        if (parseInt(<?php echo $SETTINGS['ldap_mode']; ?>) === 0) {
+            console.log("LDAP is enabled, refreshing list of users from LDAP "+parseInt(<?php echo $SETTINGS['ldap_mode']; ?>));
+            return false;
+        }
+
+        // FIND ALL USERS IN LDAP
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+        $('#row-ldap-body')
+            .addClass('overlay')
+            .html('');
+
+        $.post(
+            "sources/users.queries.php", {
+                type: "get_list_of_users_in_ldap",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data)
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // loop on users list
+                    var html = '',
+                        groupsNumber = 0,
+                        userLogin,
+                        group;
+                    var entry;
+
+                    $.each(data.entries, function(i, entry) {
+                        userLogin = entry[store.get('teampassSettings').ldap_user_attribute] !== undefined ? entry[store.get('teampassSettings').ldap_user_attribute][0] : '';
+                        // CHeck if not empty
+                        if (userLogin !== '') {
+                            // LDAP/AD account status indicators
+                            var ldapStatusIcons = '';
+                            if (entry.ldapAccountDisabled !== undefined && parseInt(entry.ldapAccountDisabled) === 1) {
+                                ldapStatusIcons += '<i class="fa-solid fa-user-slash ml-2 infotip text-danger" title="<?php echo addslashes($lang->get('ldap_account_disabled')); ?>"></i>';
+                            }
+                            if (entry.ldapAccountExpired !== undefined && parseInt(entry.ldapAccountExpired) === 1) {
+                                var expiresHint = '';
+                                if (entry.ldapAccountExpiresAt !== undefined && entry.ldapAccountExpiresAt !== null) {
+                                    var d = new Date(parseInt(entry.ldapAccountExpiresAt) * 1000);
+                                    expiresHint = ' - ' + d.toLocaleDateString();
+                                }
+                                ldapStatusIcons += '<i class="fa-solid fa-hourglass-end ml-2 infotip text-warning" title="<?php echo addslashes($lang->get('ldap_account_expired')); ?>' + expiresHint + '"></i>';
+                            }
+                            html += '<tr>' +
+                                '<td>' + userLogin +
+                                '</td>' +
+                                '<td class="text-center text-nowrap" style="min-width: 85px;">' +
+                                '<span class="d-inline-flex align-items-center justify-content-center" style="white-space:nowrap;">' +
+                                '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i>' +
+                                (entry.displayname !== undefined ? '' + entry.displayname[0] + '' : '') + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (entry.mail !== undefined ? '' + entry.mail[0] + '' : '') + '</p>' +
+                                '"></i>' + ldapStatusIcons + '</span>' +
+                                '</td><td>' +
+                                (entry.userInTeampass === 0 ? '' :
+                                '<i class="fa-solid ' + (entry.userAuthType !== undefined && entry.userAuthType === 'ldap' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-ldap-synchronization" data-user-id="' + entry.userInTeampass + '" data-user-auth-type="' + entry.userAuthType + '"></i>') +
+                                '</td><td>';
+                            groupsNumber = 0;
+                            // Use ldap_user_groups which contains group names directly
+                            // Works with both OpenLDAP and ActiveDirectory
+                            $.each(entry.ldap_user_groups || [], function(j, group) {
+                                let icon = '';
+
+                                // Check if this group exists in Teampass
+                                let teampassGroup = data.teampass_groups.filter(p => p.title === group);
+
+                                if (teampassGroup.length === 0) {
+                                    // Role doesn't exit in Teampass
+                                    icon = '<i class="far fa-circle-xmark text-danger ml-2 infotip" title="<?php echo $lang->get('role_not_exists_in_teampass'); ?>"></i>';
+                                } else if (entry.userInTeampass !== 0) {
+                                    // User exists in teampass, check if he has this role
+                                    // userTeampassRoles contains all roles in Teampass
+                                    let userHasRole = entry.userTeampassRoles && entry.userTeampassRoles.includes(group);
+
+                                    if (userHasRole) {
+                                        // User has already this role in Teampass
+                                        icon = '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i>';
+                                    } else {
+                                        // Propose to add the user to the role
+                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + entry.userInTeampass + '" data-role-id="' + teampassGroup[0].id + '"></i>';
+                                    }
+                                }
+
+                                html += group + icon + '<br>';
+                                groupsNumber++;
+                            });
+                            html += '</td><td>';
+                            // Action icons
+                            html += (entry.userInTeampass === 0 ? '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + userLogin + '" data-user-email="' + (entry.mail !== undefined ? entry.mail[0] : '') + '" data-user-name="' + (entry.givenname !== undefined ? entry.givenname[0] : '') + '" data-user-lastname="' + (entry.sn !== undefined ? entry.sn[0] : '') + '" data-user-auth-type="ldap"></i>' : '');
+
+                            html += '</td></tr>';
+                        }
+                    });
+
+                    $('#row-ldap-body').html(html);
+
+                    $('#row-ldap-body').removeClass('overlay');
+
+                    $('.infotip').tooltip('update');
+
+                    // Build list box of new roles that could be created
+                    $('#ldap-new-role-selection')
+                        .empty()
+                        .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
+                    $.each(data.ldap_groups, function(i, group) {
+                        tmp = data.teampass_groups.filter(p => p.title === group);
+                        if (tmp.length === 0) {
+                            $('#ldap-new-role-selection').append(
+                                '<option value="' + group + '">' + group + '</option>'
+                            );
+                        }
+                    });
+
+                    // Rrefresh list of users in Teampass
+                    oTable.ajax.reload();
+
+                    // Inform user
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    $('.close-toastr-progress').closest('.toast').remove();
+                }
+            }
+        );
+    }
+
+    function refreshListUsersOAuth2() {
+        // IS LDAP enabled? (#3800)
+        if (parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>) === 0) {
+            console.log("OAuth2 is enabled, refreshing list of users from OAuth2 "+parseInt(<?php echo $SETTINGS['oauth2_enabled']; ?>));
+            return false;
+        }
+
+        // FIND ALL USERS IN LDAP
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+        $('#row-oauth2-body')
+            .addClass('overlay')
+            .html('');
+
+        $.post(
+            "sources/users.queries.php", {
+                type: "get_list_of_users_in_oauth2",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                //decrypt data
+                data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data)
+
+                if (data.error === true) {
+                    // ERROR
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // PUrify data
+                    data = purifyData(data);
+                    // Do init
+                    var html = '',
+                        groupsNumber = 0,
+                        userLogin,
+                        group;
+                    var entry;
+                    // loop on users list
+                    $.each(data.ad_users, function(i, user) {
+                        // CHeck if not empty
+                        if (userLogin !== '') {
+                            html += '<tr>' +
+                                '<td>' + user.login +
+                                '</td>' +
+                                '<td>' +
+                                '<i class="fa-solid fa-info-circle ml-3 infotip text-info pointer text-center" data-toggle="tooltip" data-html="true" title="' +
+                                '<p class=\'text-left\'><i class=\'fas fa-user mr-1\'></i> ' +
+                                user.displayName + '</p>' +
+                                '<p class=\'text-left\'><i class=\'fas fa-envelope mr-1\'></i>' + (user.mail !== null ? '' + user.mail + '' : '') + '</p>' +
+                                '"></i>' +
+                                '</td><td>' +
+                                (user.userInTeampass === 0 ? '' :
+                                '<i class="fa-solid ' + (user.userAuthType === 'oauth2' ? 'fa-toggle-on text-info ' : 'fa-toggle-off ') + 'mr-1 text-center pointer action-change-oauth2-synchronization" data-user-id="' + user.userInTeampass + '" data-user-auth-type="' + user.userAuthType + '" infotip title="<?php echo $lang->get('toggle_user_authentification'); ?>"></i>') +
+                                '</td><td>';
+                            groupsNumber = 0;
+                            $.each(user.groups, function(j, group) {
+                                let icon = '';
+
+                                if (group.id === null) {
+                                    // Le groupe n'existe pas dans Teampass
+                                    icon = '<i class="far fa-circle-xmark text-danger ml-2 infotip" title="<?php echo $lang->get('role_not_exists_in_teampass'); ?>"></i>';
+                                } else if (user.userInTeampass !== 0) {
+                                    if (group.insideGroupInTeampass === 1) {
+                                        // L'utilisateur est déjà dans ce groupe dans Teampass
+                                        icon = '<i class="far fa-check-circle text-success ml-2 infotip" title="<?php echo $lang->get('user_has_this_role_in_teampass'); ?>"></i>';
+                                    } else if (user.userAuthType === 'oauth2') {
+                                        // Proposer d'ajouter l'utilisateur au groupe
+                                        icon = '<i class="fa-solid fa-user-graduate text-primary ml-2 pointer infotip action-add-role-to-user" title="<?php echo $lang->get('add_user_to_role'); ?>" data-user-id="' + user.userInTeampass + '" data-role-id="' + group.id + '"></i>';
+                                    }
+                                }
+
+                                html += group.name + icon + '<br>';
+                                groupsNumber++;
+                            });
+
+                            html += '</td><td>';
+                            // Action icons
+                            html += (user.userInTeampass === 0 ? 
+                                 (user.mail !== null ? 
+                                    '<i class="fa-solid fa-user-plus text-warning ml-2 infotip pointer add-user-icon" title="<?php echo $lang->get('add_user_in_teampass'); ?>" data-user-login="' + user.login + '" data-user-email="' + user.mail + '" data-user-name="' + user.surname + '" data-user-lastname="' + user.givenName + '" data-user-auth-type="oauth2"></i>'
+                                    : '<i class="fa-solid fa-user-large-slash text-danger ml-2 infotip" title="<?php echo $lang->get('oauth2_user_has_no_mail'); ?>"></i>'
+                                )
+                                : ''
+                            );
+
+                            html += '</td></tr>';
+                        }
+                    });
+                    
+                    $('#row-oauth2-body').html(html);
+                    $('#row-oauth2-body').removeClass('overlay');
+                    $('.infotip').tooltip('update');
+
+                    // Build list box of new roles that could be created
+                    $('#oauth2-new-role-selection')
+                        .empty()
+                        .append('<option value="">--- <?php echo $lang->get('select'); ?> ---</option>');
+                    let htmlGroups = '';
+                    $.each(data.ad_groups, function(i, group) {
+                        tmp = data.teampass_groups.filter(p => p.title === group);
+                        if (tmp.length === 0) {
+                            group = simplePurifier(group)
+                            htmlGroups += '<option value="' + group + '">' + group + '</option>';
+                        }
+                    });
+                    $('#oauth2-new-role-selection').append(htmlGroups);
+
+                    // Inform user
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                    $('.close-toastr-progress').closest('.toast').remove();
+                }
+            }
+        );
+    }
+
+    /**
+     * Permits to add a role to a Teampass user
+     *
+     * @return void
+     */
+    function addRoleToUser() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $('.selected-role').data('user-id'),
+            'field': 'fonction_id',
+            'value': $('.selected-role').data('role-id'),
+            'context': 'add_one_role_to_user'
+        };
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon
+                    $('.selected-role')
+                        .removeClass('fas fa-user-graduate text-primary pointer action-add-role-to-user')
+                        .addClass('far fa-check-circle text-success')
+                        .prop('title', '<?php echo $lang->get('user_has_this_role_in_teampass'); ?>');
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+                $('.selected-role').removeClass('selected-role');
+            }
+        );
+    }
+
+    $(document).on('click', '.action-add-role-to-user', function() {
+        $(this).addClass('selected-role');
+
+        toastr.warning(
+            '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="addRoleToUser()"><?php echo $lang->get('please_confirm'); ?></button>',
+            '<?php echo $lang->get('info'); ?>', {
+                positionClass: 'toast-bottom-right',
+                closeButton: true
+            }
+        );
+    });
+
+    // Enable/disable ldap sync on user
+    $(document).on('click', '.action-change-ldap-synchronization', function() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $(this).data('user-id'),
+            'field': 'auth_type',
+            'value': $(this).hasClass('fa-toggle-off') === true ? 'ldap' : 'local',
+            'context': ''
+        },
+        selectedIcon = $(this);
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon format
+                    if (selectedIcon.hasClass('fa-toggle-off') === true) {
+                        selectedIcon
+                            .removeClass('fa-toggle-off')
+                            .addClass('fa-toggle-on text-info')
+                            .prop('data-user-auth-type', 'ldap');
+                    } else {
+                        selectedIcon
+                            .removeClass('fa-toggle-on text-info')
+                            .addClass('fa-toggle-off')
+                            .prop('data-user-auth-type', 'local');
+                    }
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
+    });
+
+    // Enable/disable ldap sync on user
+    $(document).on('click', '.action-change-oauth2-synchronization', function() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $(this).data('user-id'),
+            'field': 'auth_type',
+            'value': $(this).hasClass('fa-toggle-off') === true ? 'oauth2' : 'local',
+            'context': ''
+        },
+        selectedIcon = $(this);
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'save_user_change',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // CHange icon format
+                    if (selectedIcon.hasClass('fa-toggle-off') === true) {
+                        selectedIcon
+                            .removeClass('fa-toggle-off')
+                            .addClass('fa-toggle-on text-info')
+                            .prop('data-user-auth-type', 'oauth2');
+                    } else {
+                        selectedIcon
+                            .removeClass('fa-toggle-on text-info')
+                            .addClass('fa-toggle-off')
+                            .prop('data-user-auth-type', 'local');
+                    }
+
+                    $('.infotip').tooltip();
+
+                    // Inform user
+                    toastr.remove();
+                    toastr.success(
+                        '<?php echo $lang->get('done'); ?>',
+                        '', {
+                            timeOut: 1000
+                        }
+                    );
+                }
+            }
+        );
+    });
+
+
+    /**
+     * Permits to add an AD user in Teampass
+     *
+     * @return void
+     */
+    function addUserInTeampass(authType) {
+        $('#warningModal').modal('hide');
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i><span class="close-toastr-progress"></span>');
+
+        // what roles
+        var roles = [];
+        $("#auth-user-roles option:selected").each(function() {
+            roles.push($(this).val())
+        });
+        
+        // Sanitize text fields
+        purifyRes = fieldDomPurifierLoop('#form-user .purify');
+        if (purifyRes.purifyStop === true) {
+            // if purify failed, stop
+            return false;
+        }
+        
+        // prepare data
+        var data = {
+            'login': simplePurifier($('.selected-user').data('user-login')),
+            'name': simplePurifier($('.selected-user').data('user-name') === '' ? $('#ldap-user-name').val() : $('.selected-user').data('user-name')),
+            'lastname': simplePurifier($('.selected-user').data('user-lastname')),
+            'email': simplePurifier($('.selected-user').data('user-email')),
+            'roles': roles,
+            'authType': authType,
+        };
+        if (debugJavascript === true) console.log(data)
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'add_user_from_ad',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+                userTemporaryCode = data.user_code;
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {                    
+                    generateUserKeys(data, userTemporaryCode, authType);
+                }
+            }
+        );
+    }
+
+
+    function generateUserKeys(data, userTemporaryCode, authType)
+    {
+        // manage keys encryption for new user
+        // Case where we need to encrypt new keys for the user
+        // Process is: 
+        // 1/ clear all keys for this user
+        // 2/ generate keys for this user with encryption key
+
+        if (ProcessInProgress === false) {
+            ProcessInProgress = true;
+        } else {
+            return false;
+        }
+
+        
+        // If expected to create new encryption key
+        const parameters = {
+            'user_id': data.user_id,
+        };
+
+        if (debugJavascript === true) {
+            console.log(parameters);
+            console.info('Prepare TASK for new user encryption keys')
+        }
+
+        // Si userTemporaryCode est fourni, on l'utilise directement
+        if (userTemporaryCode && userTemporaryCode !== '') {
+            // Utiliser le code temporaire fourni
+            const data_otc = {
+                error: false,
+                code: userTemporaryCode,
+            };
+
+            // Passer directement à la création des tâches
+            createUserTasks(data_otc, data, authType);
+        } else {
+            // Générer un nouveau code temporaire
+            $.post(
+                'sources/main.queries.php', {
+                    type: 'generate_temporary_encryption_key',
+                    type_category: 'action_key',
+                    data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                    key: "<?php echo $session->get('key'); ?>"
+                },
+                function(data_otc) {
+                    data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $session->get('key'); ?>');
+
+                    if (data_otc.error !== false) {
+                        // Show error
+                        toastr.remove();
+                        toastr.error(
+                            data_otc.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        ProcessInProgress = false;
+                    } else {
+                        // Passer à la création des tâches
+                        createUserTasks(data_otc, data, authType);
+                    }
+                }
+            );
+        }
+
+        // Fonction pour créer les tâches utilisateur
+        function createUserTasks(data_otc, data, authType) {
+            // update the process
+            // add all tasks
+            const data_to_send = {
+                user_id: data.user_id,
+                user_code: data_otc.code,
+            };
+
+            //console.log(data_to_send);
+            //return false;
+
+            // Do query
+            $.post(
+                "sources/users.queries.php", {
+                    type: "create_new_user_tasks",
+                    data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data_tasks) {
+                    data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $session->get('key'); ?>");
+                     console.log(data_tasks)
+                     console.log(data_otc)
+                    
+                    if (data_tasks.error === true) {
+                        // error
+                        toastr.remove();
+                        toastr.error(
+                            data_tasks.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                    } else {
+                        // show message to user
+
+                        // Now close in progress toast
+                        $('.close-toastr-progress').closest('.toast').remove();
+                        
+                        // refresh the list of users in LDAP not added in Teampass
+                        if (authType === 'ldap') {
+                            refreshListUsersLDAP();
+                        } else if (authType === 'oauth2') {
+                            refreshListUsersOAuth2();
+                        }  
+
+                        // Refresh list of users in Teampass
+                        oTable.ajax.reload();
+
+                        toastr.success(
+                            '<?php echo $lang->get('done'); ?>',
+                            '', {
+                                timeOut: 1000
+                            }
+                        );
+                    }
+                    ProcessInProgress = false;
+                }
+            );
+        }
+    }
+
+/*
+        $.post(
+            'sources/main.queries.php', {
+                type: 'generate_temporary_encryption_key',
+                type_category: 'action_key',
+                data: prepareExchangedData(JSON.stringify(parameters), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data_otc) {
+                data_otc = prepareExchangedData(data_otc, 'decode', '<?php echo $session->get('key'); ?>');
+
+                if (data_otc.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data_otc.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    // If expected, show the OPT to the admin
+                    if (data_otc.visible_otp === true) {
+                        showModalDialogBox(
+                            '#warningModal',
+                            '<i class="fa-solid fa-user-secret mr-2"></i><<?php echo $lang->get('your_attention_is_required'); ?>',
+                            '<?php echo $lang->get('show_encryption_code_to_admin'); ?>' +
+                            '<div><input class="form-control form-item-control flex-nowrap ml-2" value="' + data_otc.code + '" readonly></div>',
+                            '',
+                            '<?php echo $lang->get('close'); ?>'
+                        );
+                    }
+
+                    // update the process
+                    // add all tasks
+                    const data_to_send = {
+                        user_id: data.user_id,
+                        user_code: data_otc.code,
+                    }
+
+                    //console.log(data_to_send);
+                    //return false;
+
+                    // Do query
+                    $.post(
+                        "sources/users.queries.php", {
+                            type: "create_new_user_tasks",
+                            data: prepareExchangedData(JSON.stringify(data_to_send), 'encode', '<?php echo $session->get('key'); ?>'),
+                            key: '<?php echo $session->get('key'); ?>'
+                        },
+                        function(data_tasks) {
+                            data_tasks = prepareExchangedData(data_tasks, "decode", "<?php echo $session->get('key'); ?>");
+                            
+                            if (data_tasks.error === true) {
+                                // error
+                                toastr.remove();
+                                toastr.error(
+                                    data_tasks.message,
+                                    '<?php echo $lang->get('caution'); ?>', {
+                                        timeOut: 5000,
+                                        progressBar: true
+                                    }
+                                );
+                            } else {
+                                // show message to user
+                                // Finalizing
+                                //$('#warningModal').modal('hide');
+
+                                // Now close in progress toast
+                                $('.close-toastr-progress').closest('.toast').remove();
+                                
+                                // refresh the list of users in LDAP not added in Teampass
+                                if (authType === 'ldap') {
+                                    refreshListUsersLDAP();
+                                } else if (authType === 'oauth2') {
+                                    refreshListUsersOAuth2();
+                                }  
+
+                                // Rrefresh list of users in Teampass
+                                oTable.ajax.reload();
+
+                                toastr.success(
+                                    '<?php echo $lang->get('done'); ?>',
+                                    '', {
+                                        timeOut: 1000
+                                    }
+                                );
+                            }
+                            ProcessInProgress = false;
+                        }
+                    );
+                }
+            }
+        );
+    }*/
+
+    /**
+     * Permits to change the auth type of the user
+     *
+     * @return void
+     */
+    function changeUserAuthType(auth) {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        // prepare data
+        var data = {
+            'user_id': $('.selected-user').data('user-id'),
+            'auth_type': auth
+        };
+        if (debugJavascript === true) console.log(data)
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'change_user_auth_type',
+                data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                if (data.error !== false) {
+                    // Show error
+                    toastr.remove();
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    refreshListUsersLDAP();
+                }
+            }
+        );
+    }
+
+    $(document)
+        .on('click', '.add-user-icon', function() {
+            var thisElement = $(this);
+            $(thisElement).addClass('selected-user');
+
+            showModalDialogBox(
+                '#warningModal',
+                '<h3><i class="fa-solid fa-user-plus fa-lg warning mr-2"></i><?php echo $lang->get('new_ldap_user_info'); ?> <span class="badge badge-primary">'+$(this)[0].dataset.userLogin+'</span></h3>',
+                '<div class="form-group">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('name'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-name" value="'+ $(this).attr('data-user-name')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('lastname'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-lastname" value="'+ $(this).attr('data-user-lastname')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="auth-user-name"><?php echo $lang->get('email'); ?></label>'+
+                    '<input readonly type="text" class="form-control required" id="auth-user-email" value="'+ $(this).attr('data-user-email')+'">'+
+                '</div>'+
+                '<div class="form-group">'+
+                    '<label for="auth-user-roles"><?php echo $lang->get('roles'); ?></label>'+
+                    '<select id="auth-user-roles" class="form-control form-item-control select2 required" style="width:100%;" multiple="multiple">'+
+                    '<?php echo $optionsRoles ?? ''; ?></select>'+
+                '</div>'+
+                '<input type="hidden" id="auth-user-type" value="'+ $(this).attr('data-user-auth-type')+'">',
+                '<?php echo $lang->get('perform'); ?>',
+                '<?php echo $lang->get('cancel'); ?>'
+            );
+            $(document).off('click', '#warningModalButtonAction');
+            $(document).on('click', '#warningModalButtonAction', function(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                if ($('#auth-user-name').val() !== "" && $('#auth-user-roles :selected').length > 0) {
+                    addUserInTeampass($('#auth-user-type').val());
+                    $(thisElement).removeClass('selected-user');
+                }
+            });
+            $(document).off('click', '#warningModalButtonClose');
+            $(document).on('click', '#warningModalButtonClose', function() {
+                $(thisElement).removeClass('selected-user');
+            });
+        })
+        .on('click', '.auth-ldap', function() {
+            $(this).addClass('selected-user');
+
+            toastr.warning(
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'ldap\')"><?php echo $lang->get('please_confirm'); ?></button>',
+                '<?php echo $lang->get('change_authentification_type_to_ldap'); ?>', {
+                    positionClass: 'toast-bottom-right',
+                    closeButton: true
+                }
+            );
+        })
+        .on('click', '.auth-local', function() {
+            $(this).addClass('selected-user');
+
+            toastr.warning(
+                '&nbsp;<button type="button" class="btn clear btn-toastr" style="width:100%;" onclick="changeUserAuthType(\'local\')"><?php echo $lang->get('please_confirm'); ?></button>',
+                '<?php echo $lang->get('change_authentification_type_to_local'); ?>', {
+                    positionClass: 'toast-bottom-right',
+                    closeButton: true
+                }
+            );
+        });
+
+
+
+
+    /**
+     * Render the folder rights table, applying the currently active type filters.
+     * @param {Array} folders - Full folder list as returned by user_folders_rights
+     */
+    function renderFolderRightsTable(folders) {
+        // Collect active permission types from filter buttons
+        const activeTypes = $('.folder-type-filter.active').map(function() {
+            return $(this).data('type')
+        }).get()
+
+        // Keep folders whose type is in the active set (unknown types always shown)
+        const visible = folders.filter(f => activeTypes.length === 0 || activeTypes.includes(f.type) || f.type === '')
+
+        // Badge color per permission type
+        const typeBadgeClass = {
+            'W':    'badge-success',
+            'ND':   'badge-warning',
+            'NE':   'badge-warning',
+            'NDNE': 'badge-warning',
+            'R':    'badge-info',
+        }
+
+        let html = '<table class="table table-bordered table-striped dt-responsive nowrap" style="width:100%">' +
+            '<thead><tr>' +
+            '<th><?php echo $lang->get('folder'); ?></th>' +
+            '<th><?php echo $lang->get('accesses'); ?></th>' +
+            '<th><?php echo $lang->get('roles'); ?></th>' +
+            '</tr></thead><tbody>'
+
+        visible.forEach(folder => {
+            // Indentation
+            let ident = ''
+            for (let y = 1; y < folder.nlevel; ++y) {
+                ident += '<i class="fas fa-long-arrow-alt-right mr-2"></i>'
+            }
+
+            // Permission icons
+            let label = ''
+            if (folder.type === 'W') {
+                label = '<i class="fas fa-indent infotip text-success mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                        '<i class="fas fa-edit infotip text-success mr-2" title="<?php echo $lang->get('edit'); ?>"></i>' +
+                        '<i class="fas fa-eraser infotip text-success" title="<?php echo $lang->get('delete'); ?>"></i>'
+            } else if (folder.type === 'ND') {
+                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                        '<i class="fas fa-edit infotip text-success mr-2" title="<?php echo $lang->get('edit'); ?>"></i>' +
+                        '<i class="fas fa-eraser infotip text-danger" title="<?php echo $lang->get('no_delete'); ?>"></i>'
+            } else if (folder.type === 'NE') {
+                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                        '<i class="fas fa-edit infotip text-danger mr-2" title="<?php echo $lang->get('no_edit'); ?>"></i>' +
+                        '<i class="fas fa-eraser infotip text-success" title="<?php echo $lang->get('delete'); ?>"></i>'
+            } else if (folder.type === 'NDNE') {
+                label = '<i class="fas fa-indent infotip text-warning mr-2" title="<?php echo $lang->get('write'); ?>"></i>' +
+                        '<i class="fas fa-edit infotip text-danger mr-2" title="<?php echo $lang->get('no_edit'); ?>"></i>' +
+                        '<i class="fas fa-eraser infotip text-danger" title="<?php echo $lang->get('no_delete'); ?>"></i>'
+            } else if (folder.type === '') {
+                label = '<i class="fas fa-eye-slash infotip text-danger mr-2" title="<?php echo $lang->get('no_access'); ?>"></i>'
+            } else {
+                label = '<i class="fas fa-eye infotip text-info mr-2" title="<?php echo $lang->get('read'); ?>"></i>'
+            }
+
+            // Role badges: one per contributing role, showing its individual type
+            let rolesBadges = ''
+            if (folder.special === true) {
+                // Direct user assignment, not role-based
+                rolesBadges = '<span class="badge badge-primary"><?php echo $lang->get('user_specific_right'); ?></span>'
+            } else if (Array.isArray(folder.roles) && folder.roles.length > 0) {
+                folder.roles.forEach(role => {
+                    const cls = typeBadgeClass[role.type] || 'badge-secondary'
+                    rolesBadges += '<span class="badge ' + cls + ' mr-1 infotip" title="' + role.type + '">' +
+                        role.title + '</span>'
+                })
+            }
+
+            html += '<tr data-folder-type="' + folder.type + '">' +
+                '<td>' + ident + folder.title +
+                ' <small class="text-info">[' + folder.id + ']</small></td>' +
+                '<td>' + label + '</td>' +
+                '<td>' + rolesBadges + '</td>' +
+                '</tr>'
+        })
+
+        html += '</tbody></table>'
+        $('#row-folders-results').html(html)
+        $('.infotip').tooltip()
+    }
+
+    // Toggle permission type filter and re-render table
+    $(document).on('click', '.folder-type-filter', function() {
+        $(this).toggleClass('active')
+        if (allFolderData.length > 0) {
+            renderFolderRightsTable(allFolderData)
+        }
+    })
+
+    //]]>
+</script>

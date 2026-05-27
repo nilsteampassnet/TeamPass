@@ -9,6 +9,9 @@
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
         </testsuite>
+        <testsuite name="Api">
+            <directory>tests/Unit/Api</directory>
+        </testsuite>
     </testsuites>
 
     <source>
@@ -16,6 +19,7 @@
             <directory suffix=".php">includes/libraries/teampassclasses</directory>
             <directory suffix=".php">includes/libraries/bip39</directory>
             <directory suffix=".php">websocket/src</directory>
+            <directory suffix=".php">app/api</directory>
         </include>
     </source>
 

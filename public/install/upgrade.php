@@ -1,0 +1,1595 @@
+<?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      upgrade.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use TeampassClasses\SessionManager\SessionManager;
+
+header('X-XSS-Protection: 1; mode=block');
+header('X-Frame-Options: SameOrigin');
+
+// **PREVENTING SESSION HIJACKING**
+// Prevents javascript XSS attacks aimed to steal the session ID
+ini_set('session.cookie_httponly', 1);
+
+// **PREVENTING SESSION FIXATION**
+// Session ID cannot be passed through URLs
+ini_set('session.use_only_cookies', 1);
+
+// Uses a secure connection (HTTPS) if possible
+ini_set('session.cookie_secure', 0);
+
+require_once './libs/SecureHandler.php';
+require_once __DIR__.'/../../app/config/include.php';
+require_once '../sources/main.functions.php';
+
+// init
+loadClasses();
+$session = SessionManager::getSession();
+
+// Prepare POST variables
+$post_root_url = filter_input(INPUT_POST, 'root_url', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_step = filter_input(INPUT_POST, 'step', FILTER_SANITIZE_NUMBER_INT);
+$post_actual_cpm_version = filter_input(INPUT_POST, 'actual_cpm_version', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_cpm_isUTF8 = filter_input(INPUT_POST, 'cpm_isUTF8', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_user_granted = filter_input(INPUT_POST, 'user_granted', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_session_salt = filter_input(INPUT_POST, 'session_salt', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_url_path = filter_input(INPUT_POST, 'url_path', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_infotmp = filter_input(INPUT_POST, 'infotmp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+//###############
+//# Function permits to get the value from a line
+//###############
+/**
+ * @param string $val
+ */
+function getSettingValue($val)
+{
+    $val = trim(strstr($val, '='));
+
+    return trim(str_replace('"', '', substr($val, 1, strpos($val, ';') - 1)));
+}
+
+//get infos from SETTINGS.PHP file
+$filename = '../app/config/settings.php';
+$events = '';
+
+// Load settings (TEAMPASS_SECRETS is now defined in app/config/include.php, not in settings.php)
+if (file_exists($filename)) {
+    include_once $filename;
+}
+
+// Pre-flight: read the DB version to detect whether migrate_3.2.x.php needs to run.
+// Only attempted when DB credentials are available (settings.php was loaded).
+$dbVersion = null;
+$needsMigration320 = false;
+if (defined('DB_HOST') && defined('DB_USER') && defined('DB_PASSWD') && defined('DB_NAME') && defined('DB_PORT')) {
+    try {
+        $dbPassClear = defuseReturnDecrypted(DB_PASSWD);
+        $dbLinkCheck = @mysqli_connect(DB_HOST, DB_USER, $dbPassClear, DB_NAME, (int) DB_PORT);
+        if ($dbLinkCheck !== false) {
+            $versionRow = mysqli_fetch_row(
+                mysqli_query(
+                    $dbLinkCheck,
+                    "SELECT valeur FROM `" . DB_PREFIX . "misc` WHERE type='admin' AND intitule='teampass_version'"
+                )
+            );
+            if (is_array($versionRow) && isset($versionRow[0])) {
+                $dbVersion = $versionRow[0];
+            }
+            mysqli_close($dbLinkCheck);
+        }
+    } catch (Throwable $e) {
+        // DB not yet configured or unreachable — silently skip
+    }
+}
+if ($dbVersion !== null
+    && version_compare(TP_VERSION, '3.2.0', '>=')
+    && version_compare($dbVersion, '3.2.0', '<')
+) {
+    $needsMigration320 = true;
+}
+
+// Check that at least PHP version is correct
+if (version_compare(PHP_VERSION, MIN_PHP_VERSION, '>=')) {
+    $phpVersionisOkay = true;
+} else {
+    $phpVersionisOkay = false;
+}
+
+?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+    <head>
+        <title>TeamPass Upgrade</title>
+        
+        <meta http-equiv='Content-Type' content='text/html;charset=utf-8' />
+        <meta name="viewport" content="width=device-width, initial-scale=1"/>
+        <meta http-equiv="x-ua-compatible" content="ie=edge"/>
+
+        <link rel="stylesheet" href="css/install.css" type="text/css" />
+        <link rel="stylesheet" href="../plugins/fontawesome-free/css/all.css">
+        
+        <!-- Theme style -->
+        <link rel="stylesheet" href="../plugins/adminlte/css/adminlte.min.css">
+        <link rel="stylesheet" href="../plugins/alertifyjs/css/alertify.min.css"/>
+        <link rel="stylesheet" href="../plugins/alertifyjs/css/themes/bootstrap.min.css"/>
+        
+        
+    </head>
+    
+    <body>
+<?php
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+
+if (empty($post_root_url) === false) {
+    $_SESSION['fullurl'] = $post_root_url;
+}
+
+// In the new public/app/storage structure, DOCUMENT_ROOT points to public/ not the app root.
+// TEAMPASS_ROOT is defined in include.php as dirname(dirname(__DIR__)) and always resolves
+// to the application root regardless of where the webroot is located.
+$abs_path = TEAMPASS_ROOT;
+if (isset($_SERVER['HTTPS'])) {
+    $protocol = 'https://';
+} else {
+    $protocol = 'http://';
+}
+
+$conversion_utf8 = false;
+
+// HEADER
+echo '
+    <div id="top" class="center-screen">
+        <div id="logo" class="lcol"><img src="../assets/images/teampass-logo2-home.png" /></div>
+        <div class="lcol">
+            <span class="header-title">'.strtoupper(TP_TOOL_NAME).'</span>
+            <!--<span class="header-title-small"> v'.TP_VERSION.'</span>-->
+        </div>
+    <div id="content">
+        <form name="install" method="post" action="">
+        <div class="card card-default color-palette-box">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-people-carry mr-2"></i>Teampass upgrade
+                </h3>
+            </div>
+            <div class="card-body">';
+
+//HIDDEN THINGS
+echo '
+                <input type="hidden" id="step" name="step" value="', isset($post_step) ? $post_step : '', '" />
+                <input type="hidden" id="actual_cpm_version" name="actual_cpm_version" value="', isset($post_actual_cpm_version) ? $post_actual_cpm_version : '', '" />
+                <input type="hidden" id="cpm_isUTF8" name="cpm_isUTF8" value="', isset($post_cpm_isUTF8) ? $post_cpm_isUTF8 : '', '" />
+                <input type="hidden" name="menu_action" id="menu_action" value="" />
+                <input type="hidden" name="user_granted" id="user_granted" value="" />
+                <input type="hidden" name="infotmp" id="infotmp" value="', isset($post_infotmp) ? $post_infotmp : '', '" />
+                <input type="hidden" name="url_path" id="url_path" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'" />
+                <input type="hidden" name="session_salt" id="session_salt" value="', (isset($post_session_salt) && !empty($post_session_salt)) ? $post_session_salt : @$_SESSION['encrypt_key'], '" />';
+
+if (!isset($_GET['step']) && !isset($post_step)) {
+    //ETAPE O
+    echo '
+                <div class="row">';
+
+    // Show a blocking warning when the filesystem migration has not been performed yet
+    if ($needsMigration320 === true) {
+        echo '
+                    <div class="callout callout-danger col-12">
+                        <h5><i class="fas fa-exclamation-circle mr-2"></i>Migration script required — do not proceed yet</h5>
+                        <p>
+                            Your database is at version <code>' . htmlspecialchars((string) $dbVersion) . '</code>
+                            but the TeamPass code is at version <code>' . TP_VERSION . '</code>.
+                        </p>
+                        <p>
+                            TeamPass 3.2.0 introduced a new directory layout (<code>app/</code>, <code>public/</code>, <code>storage/</code>).
+                            Before running this upgrade wizard you must execute the migration script from the command line:
+                        </p>
+                        <pre class="bg-dark text-white p-2 rounded">php migrate_3.2.x.php</pre>
+                        <p>
+                            Once the script completes successfully, refresh this page and then proceed with the upgrade.<br>
+                            See the <a href="https://documentation.teampass.net/#/install/upgrade" target="_blank" class="text-info">upgrade documentation</a> for full instructions.
+                        </p>
+                        <p class="mb-0"><strong>Do not click START until this step has been completed.</strong></p>
+                    </div>';
+    }
+
+    echo '
+                    <div class="callout callout-warning col-12">
+                        <h5><i class="fas fa-info-circle mr-2"></i>Before you start</h5>
+                        <p>
+                            This wizard will upgrade your Teampass installation to version
+                            <code>' . TP_VERSION . '.' . TP_VERSION_MINOR . '</code>.
+                            The process may take several minutes depending on your data volume and server performance.
+                        </p>
+                        <p>
+                            If you are upgrading from version 3.0.x or earlier, a One-Time Code will be generated
+                            for every user and sent by email. Make sure all user accounts have a valid email address
+                            before proceeding.
+                        </p>
+                    </div>
+
+                    <div class="callout callout-info col-12">
+                        <h5>Backup checklist — please complete all items before clicking START:</h5>
+                        <p>
+                        <ul>
+                            <li><i class="fas fa-exclamation-circle mr-2 text-danger"></i>Clear your browser cache (<kbd>Ctrl + F5</kbd>)</li>
+                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a dump of your database</li>
+                            <li><i class="fas fa-exclamation-triangle mr-2 text-warning"></i>Create a zip archive of the current Teampass folder</li>
+                            <li><i class="fas fa-info-circle mr-2 text-success"></i>Read the <a href="https://documentation.teampass.net" target="_blank" class="text-info">upgrade documentation</a></li>
+                        </ul>
+                        </p>';
+    if ($phpVersionisOkay === false) {
+        echo '
+                        <div class="alert alert-danger mt-2 mb-0">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>
+                            Minimum PHP version required is <code>' . MIN_PHP_VERSION . '</code>.
+                            Your server is running <code>' . PHP_VERSION . '</code>.
+                            Please upgrade PHP before proceeding.
+                        </div>';
+    }
+    echo '
+                    </div>
+                </div>
+
+                <div class="row card card-primary">
+                    <div class="card-body col-12">
+                        <div class="form-group">
+                            <label>Administrator Login</label>
+                            <input type="text" class="form-control" id="user_login" placeholder="Enter admin login">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" class="form-control" id="user_pwd" placeholder="Enter admin password">
+                        </div>
+                        <div class="alert alert-warning hidden" id="res_step0"></div>
+                    </div>
+                </div>
+
+
+                <input type="hidden" id="step0" name="step0" value="" />
+
+            </div>';
+// STEP1
+} elseif ((isset($post_step) && $post_step == 1)
+    || (isset($_GET['step']) && $_GET['step'] == 1)
+    && $post_user_granted === '1'
+) {
+    //ETAPE 1
+    $_SESSION['user_granted'] = $post_user_granted;
+    echo '
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h5>Server information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label>Absolute path to TeamPass folder</label>
+                                <input type="text" class="form-control" id="root_path" value="'.$abs_path.'">
+                            </div>
+                            <div class="form-group">
+                                <label>Full URL to TeamPass</label>
+                                <input type="text" class="form-control" id="root_url" value="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h5>Requirements check</h5>
+                        </div>
+                        <div class="card-body">
+
+                            <div id="res_step1">
+                            <div class="alert alert-info mb-3">
+                                <i class="fa-solid fa-circle-info mr-1"></i>
+                                The following items will be verified when you click <strong>Start</strong>.
+                                For detailed explanations and remediation commands, see the
+                                <a href="https://documentation.teampass.net/#/install/file-permissions" target="_blank" rel="noopener"><strong>file permissions documentation</strong></a>.
+                            </div>
+
+                            <p class="font-weight-bold mb-1">Writable directories</p>
+                            <ul class="list-unstyled mb-3">
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div class="">
+                                        <code>app/config/settings.php</code> <span class="badge badge-secondary">required</span>
+                                        <span id="upg-chk-settings" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Settings file storing encrypted database credentials.</div>
+                                        <div id="upg-chk-settings-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/config/settings.php &amp;&amp; chmod 0640 app/config/settings.php</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>app/config/</code> <span class="badge badge-secondary">required</span>
+                                        <span id="upg-chk-config" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Configuration directory — written during upgrades only.</div>
+                                        <div id="upg-chk-config-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/config &amp;&amp; chmod 0750 app/config</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>app/includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required</span>
+                                        <span id="upg-chk-csrfp-libs" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Stores <code>csrfp.config.php</code> (CSRF token). May be rewritten during upgrade.</div>
+                                        <div id="upg-chk-csrfp-libs-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/includes/libraries/csrfp/libs &amp;&amp; chmod 0750 app/includes/libraries/csrfp/libs</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>app/includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required</span>
+                                        <span id="upg-chk-csrfp-log" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">CSRF protection audit log written during normal operation.</div>
+                                        <div id="upg-chk-csrfp-log-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown www-data:www-data app/includes/libraries/csrfp/log &amp;&amp; chmod 0750 app/includes/libraries/csrfp/log</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>public/assets/avatars/</code> <span class="badge badge-light border">optional</span>
+                                        <span id="upg-chk-avatars" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">User avatar images — only needed if avatar upload is enabled.</div>
+                                        <div id="upg-chk-avatars-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 public/assets/avatars</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/files/</code> <span class="badge badge-secondary">required</span>
+                                        <span id="upg-chk-files" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Background task trigger/lock files and restore logs.</div>
+                                        <div id="upg-chk-files-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/files</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/upload/</code> <span class="badge badge-light border">optional</span>
+                                        <span id="upg-chk-upload" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Encrypted file attachments — only needed if file upload is enabled.</div>
+                                        <div id="upg-chk-upload-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/upload</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/backups/</code> <span class="badge badge-light border">optional</span>
+                                        <span id="upg-chk-backups" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">SQL backup files generated before schema migrations.</div>
+                                        <div id="upg-chk-backups-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage/backups</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            </ul>
+
+                            <p class="font-weight-bold mb-1">Directory security posture</p>
+                            <ul class="list-unstyled mb-3">
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>storage/</code> <span class="badge badge-secondary">required — writable</span>
+                                        <span id="upg-chk-storage-writable" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Parent runtime directory — must be writable so PHP can create sub-directories at runtime.</div>
+                                        <div id="upg-chk-storage-writable-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 storage</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>secrets/</code> <span class="badge badge-secondary">required — readable</span>
+                                        <span id="upg-chk-secrets-readable" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Encryption key directory — must be readable by the web server. Must not be web-accessible (outside webroot).</div>
+                                        <div id="upg-chk-secrets-readable-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0750 secrets &amp;&amp; chown www-data:www-data secrets</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>app/</code> <span class="badge badge-warning">must not be writable</span>
+                                        <span id="upg-chk-app-safe" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Application source code — must not be writable by the web server to prevent code tampering.</div>
+                                        <div id="upg-chk-app-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 app</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            <li class="mb-2">
+                                <div class="d-flex align-items-start ml-3">
+                                    <div>
+                                        <code>public/</code> <span class="badge badge-warning">must not be writable</span>
+                                        <span id="upg-chk-public-safe" style="min-width:20px" class="ml-2"></span>
+                                        <div class="text-muted small">Webroot — must not be globally writable to prevent unauthorized file uploads into the web-accessible directory.</div>
+                                        <div id="upg-chk-public-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 public</code></div>
+                                    </div>
+                                </div>
+                            </li>
+                            </ul>
+
+                            <p class="font-weight-bold mb-1">PHP extensions &amp; environment</p>
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>openssl</code></span> <span class="badge badge-secondary">required</span><span id="upg-chk-openssl" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">PHP extension <code>mbstring</code></span> <span class="badge badge-secondary">required</span><span id="upg-chk-mbstring" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>bcmath</code></span> <span class="badge badge-secondary">required</span><span id="upg-chk-bcmath" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">PHP extension <code>xml</code></span> <span class="badge badge-secondary">required</span><span id="upg-chk-xml" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>curl</code></span> <span class="badge badge-secondary">required</span><span id="upg-chk-curl" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">PHP max_execution_time &ge; 30&thinsp;s</span> <span class="badge badge-secondary">required</span><span id="upg-chk-exec-time" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP version &ge; '.MIN_PHP_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-php-version" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">MySQL &ge; '.MIN_MYSQL_VERSION.' / MariaDB &ge; '.MIN_MARIADB_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-mysql-version" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"></span><span class="text-muted">Encryption key (TEAMPASS_SECRETS)</span> <span class="badge badge-secondary">required</span><span id="upg-chk-encrypt-key" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">Background tasks queue is empty</span> <span class="badge badge-secondary">required</span><span id="upg-chk-tasks" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">User password hashes compatibility</span> <span class="badge badge-light border">verified</span><span id="upg-chk-passwords" style="min-width:20px" class="ml-2"></span><div id="upg-chk-passwords-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i><code>Some users still have their password hashed with the old algorithm. They need to log in to have their password automatically updated.</code></div></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>posix</code></span> <span class="badge badge-light border">optional &mdash; WebSocket</span><span id="upg-chk-posix" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>pcntl</code></span> <span class="badge badge-light border">optional &mdash; WebSocket</span><span id="upg-chk-pcntl" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">Zend OPcache</span> <span class="badge badge-light border">optional &mdash; strongly recommended</span><span id="upg-chk-opcache" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP-FPM (fpm-fcgi)</span> <span class="badge badge-light border">optional &mdash; high-load</span><span id="upg-chk-fpm" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>APCu</code></span> <span class="badge badge-light border">optional &mdash; settings cache</span><span id="upg-chk-apcu" style="min-width:20px" class="ml-2"></span></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">PHP extension <code>redis</code></span> <span class="badge badge-light border">optional &mdash; Redis sessions</span><span id="upg-chk-redis" style="min-width:20px" class="ml-2"></span></li>
+                            </ul>
+                            </div>
+                        
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <input type="hidden" id="step1" name="step1" value="" />';
+// STEP2
+} elseif ((isset($post_step) && $post_step == 2)
+    || (isset($_GET['step']) && $_GET['step'] == 2)
+    && $_SESSION['user_granted'] === '1'
+) {
+    // Do we have all database settings
+    if (defined('DB_HOST')
+        && defined('DB_USER')
+        && defined('DB_PASSWD')
+        && defined('DB_NAME')
+        && defined('DB_PREFIX')
+        && defined('DB_PORT')
+    ) {
+        $dbSettings = true;
+    } else {
+        $dbSettings = false;
+    }
+    require_once '../sources/main.functions.php';
+    if (defined('DB_PASSWD_CLEAR') === false) {
+        define('DB_PASSWD_CLEAR', defuseReturnDecrypted(DB_PASSWD));
+    }
+    //ETAPE 2
+    echo '
+        <div class="row">
+            <div class="col-12">
+                <div class="card card-',$dbSettings === true ? 'primary' : 'warning','">
+                    <div class="card-header">
+                        <h5>DataBase Informations</h5>
+                    </div>
+                    <div class="card-body">
+                        <!--<div class="form-group">
+                            <label>Host</label>
+                            <input type="text" class="form-control" name="db_host" id="db_host" class="ui-widget" value="'.DB_HOST.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Database name</label>
+                            <input type="text" class="form-control" name="db_name" id="db_name" class="ui-widget" value="'.DB_NAME.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Login</label>
+                            <input type="text" class="form-control" name="db_user" id="db_user" class="ui-widget" value="'.DB_USER.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" class="form-control" name="db_pw" id="db_pw" class="ui-widget" value="'.DB_PASSWD_CLEAR.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Prefix</label>
+                            <input type="text" class="form-control" name="db_prefix" id="db_prefix" class="ui-widget" value="'.DB_PREFIX.'">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Port</label>
+                            <input type="text" class="form-control" name="db_port" id="db_port" class="ui-widget" value="'.DB_PORT.'">
+                        </div>-->';
+
+    // check if all database  info are available
+    if ($dbSettings === true) {
+        echo '
+                        <div>
+                        Database settings has been retreived.<br>
+                        If you need to change them, please edit file `/app/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+    } else {
+        echo '
+                        <div>
+                        The database information has not been retreived from the settings file.<br>
+                        You need to adapt the file `/app/config/settings.php` and relaunch the upgrade process.
+                        </div>';
+    }
+
+    echo '
+                        <a href="'.$protocol.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/install/upgrade.php">Restart upgrade process</a>
+                    </div>
+                </div>
+
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>Maintenance Mode</h5>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            <input type="checkbox" class="mr-2" id="no_maintenance_mode">
+                            <label for="no_maintenance_mode">Don\'t activate the Maintenance mode</label>
+                        </div>
+                        <small class="form-text text-muted">
+                            By default, the maintenance mode is enabled when an Update is performed. This prevents the use of TeamPass while the scripts are running.<br />
+                            However, some administrators may prefer to warn the users in another way. Nevertheless, keep in mind that the update process may fail or even be corrupted due to parallel queries.
+                        </small>
+                    </div>
+                </div>
+
+                <div class="card card-primary">
+                    <div class="card-header">
+                        <h5>Database dump</h5>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            If you have NOT performed a dump of your database, please considere to create one now.
+                        </div>
+                        <div>
+                            <a href="#" onclick="launch_database_dump(); return false;">Launch a new database dump</a>
+                        </div>
+                        <div>
+                            <span id="dump_result" style="margin-top:4px;" class="card card-info"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- teampass_version = 2.1.27 and no encrypt_key in db -->
+                <div class="callout card-warning hidden" id="no_encrypt_key">
+                    <div class="card-header">
+                        <h5>Database Origine</h5>
+                    </div>
+                    <div class="card-body">
+                        <div>
+                            Please select:&nbsp;<select id="no_key_selection">
+                            <option value="false">-- select --</option>
+                            <option value="no_previous_sk_sel">We have never used Teampass in an older version than 2.1.27(.x)</option>
+                            <option value="previous_sk_sel">We have used Teampass in an older version (example: 2.1.26)</option>
+                        </select>
+                        <div id="previous_sk_div" style="display:none;">
+                            <p>Please use the next field to enter the saltkey you used in previous version of Teampass. It can be retrieved by editing sk.php file (in case you are upgrading from a version older than 2.1.27) or a sk.php backup file (in case you are upgrading from 2.1.27).<br>
+                            </p>
+                            <label for="previous_sk">Previous SaltKey:&nbsp</label>
+                            <input type="text" id="previous_sk" size="100px" value="'.@$_SESSION['encrypt_key'].'" />
+                        </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step2"></div>
+                <input type="hidden" id="step2" name="step2" value="">
+
+            </div>
+        </div>';
+
+
+// STEP3
+} elseif ((isset($post_step) && $post_step == 3 || isset($_GET['step']) && $_GET['step'] == 3)
+    && isset($post_actual_cpm_version)
+    && intVal($_SESSION['user_granted']) === 1
+) {
+    if (version_compare($post_actual_cpm_version, '2.1.26', '<')) {
+        $conversion_utf8 = true;
+    } else {
+        $conversion_utf8 = false;
+    }
+    echo '
+        <div class="card card-primary">
+            <div class="card-header">
+                <h5>Converting database to UTF-8</h5>
+            </div>
+            <div class="card-body">
+                <div>
+                ', $conversion_utf8 === true ?
+                'Notice that TeamPass is now only using UTF-8 charset.
+                This step will convert the database to this charset.
+                <div>
+                <input type="checkbox" id="prefix_before_convert" class="mr-2"><label for="prefix_before_convert">Save previous tables before converting (prefix "old_" will be used)</label>
+                </div>' :
+                'The database is currently using UTF-8 charset <i class="fas fa-check-circle fa-lg text-success ml-3"></i>', '
+                </div>
+            </div>
+        </div>';
+// STEP4
+} elseif ((isset($post_step) && $post_step == 4) || (isset($_GET['step'])
+    && $_GET['step'] == 4)
+    && $_SESSION['user_granted'] === '1'
+) {
+    echo '
+        <div class="card card-primary">
+            <div class="card-header">
+                <h5>Database updates</h5>
+            </div>
+            <div class="card-body">
+                <small class="form-text text-muted">
+                    The database needs to be adapted. This step can take a very long time depending on the data volume and server performance.
+                </small>
+                <div class="progress mt-2" style="height: 22px;">
+                    <div class="progress-bar progress-bar-striped bg-primary"
+                         id="step4_progress_bar"
+                         role="progressbar"
+                         style="width: 0%; transition: width 0.4s ease;"
+                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                <div id="step4_progress_label" class="text-muted small mt-1 mb-1"></div>
+
+                <div class="row card card-primary mt-2">
+                    <div class="card-body col-12 font-weight-light" id="step4_progress" style="overflow-y: scroll; height:400px;">
+                        Please click the button START.
+                    </div>
+                </div>
+
+                <div class="hidden" id="change_pw_encryption">
+                    <br />
+                    <p><b>Encryption protocol of existing passwords now has to be started. It may take a very long time depending on the data volume and server performance.</b></p>
+                    <p>
+                        <div style="display:none;" id="change_pw_encryption_progress"></div>
+                    </p>
+                    <input type="button" value="Click to continue" id="but_encrypt_continu" onclick="newEncryptPw(0);" />
+                    <input type="hidden" id="change_pw_encryption_start" value="" />
+                    <input type="hidden" id="change_pw_encryption_total" value="" />
+                </div>
+
+                <div style="margin-top:20px;font-weight:bold;text-align:center;height:27px;" id="res_step4"></div>
+                <input type="hidden" id="step4" name="step4" value="">
+            </div>
+        </div>';
+// STEP5
+} elseif ((isset($post_step) && $post_step == 5)
+    || (isset($_GET['step']) && $_GET['step'] == 5)
+    && $_SESSION['user_granted'] === '1'
+) {
+    //STEP 5
+    echo '
+        <h4>Finalization</h4>
+        <div>
+            <ul>
+            <li>Regenerate settings.php file <span id="step5_settingFile"></span></li>
+            <li>Anonymize saltkey file <span id="step5_saltkeyFile"></span></li>
+            <li>Generate CSRFP config file <span id="step5_csrfpFile"></span></li>
+            <li>Add new cron job <span id="step5_cronJob"></span></li>	
+            </ul>
+        </div>';
+
+    echo '
+        <div class="card card-primary">
+            <div class="card-header">
+                <h5>Encryption key</h5>
+            </div>
+            <div class="card-body">
+                <small class="form-text text-muted">
+                The encryption key is stored in <code>', TEAMPASS_SECRETS, '</code> (fixed path, no configuration needed).
+                </small>
+            </div>
+        </div>';
+
+    echo '
+        <div class="alert alert-info mt-4 hidden" id="res_step5"></div>';
+} elseif ((isset($post_step) && $post_step == 6)
+    || (isset($_GET['step']) && $_GET['step'] == 6)
+    && $_SESSION['user_granted'] === '1'
+) {
+    // STEP 6
+    $homeUrl = ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php';
+    echo '
+        <h4>Upgrade is now completed</h4>
+        <div class="callout callout-info mt-4">
+            <div>
+                For news, help and information, visit <a href="https://teampass.net" target="_blank" class="text-info">TeamPass website</a>
+            </div>
+        </div>
+        <div class="alert alert-primary mt-4">
+            <i class="far fa-lightbulb text-warning mr-2 fa-lg"></i>It is recommended to clean the cache of your Web Browser before trying to log in.
+        </div>
+        <div class="alert alert-warning mt-4">
+            <i class="fas fa-trash-alt mr-2"></i>Clicking the button below will delete the <code>install</code> directory for security purposes and the page will refresh.
+        </div>';
+
+    echo '
+        <div class="mt-5">
+        <a href="#" class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect(\'../index.php\'); return false;"><b>Continue</b></a>
+        </div>
+        <script>
+        function cleanupAndRedirect(url) {
+            const btn = document.getElementById(\'btn_go_home\');
+            btn.disabled = true;
+            btn.innerHTML = \'<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...\';
+
+            function showCleanupError(installDir) {
+                // Prevent duplicate blocks on repeated clicks
+                if (document.getElementById(\'cleanup-error-alert\')) {
+                    return;
+                }
+                btn.style.display = \'none\';
+
+                const alertBox = document.createElement(\'div\');
+                alertBox.id = \'cleanup-error-alert\';
+                alertBox.className = \'alert alert-info mt-3\';
+
+                const title = document.createElement(\'strong\');
+                title.className = \'d-block mb-2\';
+                title.textContent = \'The install directory could not be removed automatically.\';
+                alertBox.appendChild(title);
+
+                const msg = document.createElement(\'p\');
+                msg.className = \'mb-2\';
+                msg.textContent = \'This is usually a file ownership issue (the directory is not owned by the web server user). \' +
+                    \'Please remove it manually before exposing your TeamPass instance:\';
+                alertBox.appendChild(msg);
+
+                if (installDir) {
+                    const pre = document.createElement(\'pre\');
+                    pre.className = \'bg-light p-2 mb-3\';
+                    pre.textContent = \'sudo rm -rf \' + installDir;
+                    alertBox.appendChild(pre);
+                }
+
+                const continueBtn = document.createElement(\'button\');
+                continueBtn.type = \'button\';
+                continueBtn.className = \'btn btn-primary btn-sm\';
+                continueBtn.textContent = \'Continue to login\';
+                continueBtn.addEventListener(\'click\', function() { window.location.href = url; });
+                alertBox.appendChild(continueBtn);
+
+                btn.closest(\'div\').insertAdjacentElement(\'afterend\', alertBox);
+            }
+
+            fetch(\'cleanup_install.php\', {
+                method: \'POST\',
+                headers: {\'Content-Type\': \'application/x-www-form-urlencoded\'},
+                body: \'action=cleanup\'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === \'ok\') {
+                    window.location.href = url;
+                } else {
+                    showCleanupError(data.install_dir || \'\');
+                }
+            })
+            .catch(function() {
+                window.location.href = url;
+            });
+        }
+        </script>';
+}
+
+echo '
+            <div class="card-footer">';
+//buttons
+if (!isset($post_step)) {
+    echo '
+            <input type="button" id="but_launch" data-step="step0" class="btn btn-primary" value="START">
+            <input type="button" id="but_next" data-target="1" style="" class="btn btn-primary" value="NEXT" disabled="disabled">';
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === false && ($_SESSION['user_granted'] ?? null) === '1') {
+    echo '
+            <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT">';
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === true && ($_SESSION['user_granted'] ?? null) === '1') {
+    echo '
+            <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START">
+            <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
+} elseif (intVal($post_step) === 6 && ($_SESSION['user_granted'] ?? null) === '1') {
+    // Nothong to do
+} else {
+    echo '
+            <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START" />
+            <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
+}
+
+echo '
+            </div>
+        </div>
+        </form>
+    </div>';
+//FOOTER
+echo '
+    <div id="footer">
+        <div style="width:500px; font-size:16px;">
+            '.TP_TOOL_NAME.' '.TP_VERSION.' &#169; copyright 2009-'.date("Y").'
+        </div>
+        <div style="float:right;margin-top:-15px;">
+        </div>
+    </div>';
+?>
+    </div>
+
+</body>
+</html>
+
+
+<script type="text/javascript" src="js/aes.min.js"></script>
+<!-- jQuery -->
+<script src="../plugins/jquery/jquery.min.js"></script>
+<!-- jQuery -->
+<script src="../plugins/jqueryUI/jquery-ui.min.js"></script>
+<!-- Popper -->
+<script src="../plugins/popper/umd/popper.min.js"></script>
+<!-- Bootstrap -->
+<script src="../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+<!-- AdminLTE -->
+<script src="../plugins/adminlte/js/adminlte.min.js"></script>
+<!-- Altertify -->
+<script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
+
+
+
+
+<script type="text/javascript">
+var timeTaken = '',
+    total_scripts = 0;
+
+
+$(function(){
+    // click on button NEXT
+    $("#but_next").click(function(event) {
+        $("#step").val($(this).data("target"));
+        document.install.submit();
+    });
+
+    $("#dump_done").click(function(event) {
+        if($("#dump_done").is(':checked')) {
+            $("#but_next").prop("disabled", false);
+        } else {
+            $("#but_next").prop("disabled", true);
+        }
+    });
+
+    $("#no_key_selection").change(function() {
+        if ($("#no_key_selection").val() === "no_previous_sk_sel") {
+            $("#previous_sk_div").hide();
+            $("#previous_sk").val("");
+        } else if ($("#no_key_selection").val() === "previous_sk_sel") {
+            $("#previous_sk_div").show();
+        }
+    });
+
+    // click on button START
+    $('#but_launch').click(function(event) {
+        var currentStep = $(this).data('step'),
+            postData = '';
+        // STEP 0
+        if (currentStep === 'step0') {
+            $("#res_step0").html("").addClass("hidden");
+            if ($("#user_login").val() === "" || $("#user_pwd").val() === "") {
+                alertify
+                    .error('<i class="fas fa-ban mr-2">[ERROR] You must provide credentials</i>', 10)
+                    .dismissOthers();
+                return false;
+            }
+
+            postData = {
+                type : currentStep,
+                login : $("#user_login").val(),
+                pwd : window.btoa(aesEncrypt($("#user_pwd").val()))
+            }
+            
+        } else if (currentStep === 'step1') {
+            postData = {
+                type : currentStep,
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val()
+            }
+        } else if (currentStep === 'step2') {
+            postData = {
+                type : currentStep,
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val()
+            }
+        } else if (currentStep === 'step3') {
+            postData = {
+                type : currentStep,
+                abspath : $("#root_path").val(),
+                fullurl : $("#root_url").val(),
+                prefix_before_convert : $('#prefix_before_convert').prop("checked")
+            }
+
+        } else if (currentStep === "step4") {
+            upgrade_file = "";
+            timeTaken = getTime();
+            manageUpgradeScripts("0");
+            return false;
+
+        } else if (currentStep === "step5") {
+            postData = {
+                type : currentStep,
+                url_path : $("#url_path").val()
+            }
+        }
+
+        alertify
+            .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+            .dismissOthers();
+        if (currentStep === 'step1') {
+            // For step1, keep the pre-built HTML structure; just reset icon spans and hide hints
+            $('#res_step1 [id^="upg-chk-"]').not('[id$="-hint"]').html('')
+            $('#res_step1 [id$="-hint"]').addClass('d-none')
+            $('#res_step1').addClass('hidden')
+        } else {
+            $("#res_"+currentStep).html("").addClass("hidden");
+        }
+
+        // EXECUTE AJAX REQUEST
+        return $.ajax({
+            url: "upgrade_ajax.php",
+            type : "POST",
+            dataType : "json",
+            async: false,
+            data : postData,
+            complete : function(result, status){
+                //console.log(result.responseText)
+                data = $.parseJSON(result.responseText)[0];
+                console.log(data)
+                // manage error
+                if (data.error !== "") {
+                    $("#user_granted").val("0");
+                    $('#but_next').attr('disabled');
+
+                    if (currentStep === 'step1' && data.checks) {
+                        var iconMapErr = {
+                            'ok':      '<i class="fa-solid fa-circle-check text-success"></i>',
+                            'warning': '<i class="fa-solid fa-triangle-exclamation text-warning"></i>',
+                            'error':   '<i class="fa-solid fa-circle-minus text-danger"></i>',
+                            'info':    '<i class="fa-solid fa-circle-info text-info"></i>'
+                        }
+                        $.each(data.checks, function(i, chk) {
+                            $('#' + chk.id).html(iconMapErr[chk.status] || '')
+                            if (chk.fix && chk.status !== 'ok') {
+                                $('#' + chk.id + '-hint').removeClass('d-none')
+                            }
+                        })
+                        $('#res_step1').removeClass('hidden')
+                    } else if (data.info !== "") {
+                        $('#res_'+currentStep).html(data.info).removeClass("hidden");
+                    }
+                    alertify
+                        .error('<i class="fas fa-exclamation-triangle mr-2"></i>  '+data.error, 5)
+                        .dismissOthers();
+
+                    if (currentStep === 'step0') {
+                        $("#res_step0").html('<i class="fa-solid fa-exclamation-triangle mr-2"></i>'+data.error).removeClass("hidden");
+                    }
+                } else {
+                    $("#step").val(data.index);
+                    $("#user_granted").val("1");
+                    $('#but_next').removeAttr('disabled');
+
+                    // Special
+                    if (currentStep === 'step0') {
+                        $("#infotmp").val(data.info);
+                    } else if (currentStep === 'step1') {
+                        if (data.checks) {
+                            var iconMap = {
+                                'ok':      '<i class="fa-solid fa-circle-check text-success"></i>',
+                                'warning': '<i class="fa-solid fa-triangle-exclamation text-warning"></i>',
+                                'error':   '<i class="fa-solid fa-circle-minus text-danger"></i>',
+                                'info':    '<i class="fa-solid fa-circle-info text-info"></i>'
+                            }
+                            $.each(data.checks, function(i, chk) {
+                                $('#' + chk.id).html(iconMap[chk.status] || '')
+                                if (chk.fix && chk.status !== 'ok') {
+                                    $('#' + chk.id + '-hint').removeClass('d-none')
+                                }
+                            })
+                        }
+                        $('#res_step1').removeClass('hidden');
+                    } else if (currentStep === 'step2') {
+                        
+                        $('#res_step2').html(data.info).removeClass('hidden');
+                        $('#cpm_isUTF8').val(data.isUtf8);
+                        if (parseInt(data.isUtf8) === 1) {
+                            $('#step').val(4);
+                            $('#but_next').data('target', "4");
+                        }
+                    } else if (currentStep === 'step5') {
+                        $("#res_step5").html("Operations are successfully completed.").removeClass("hidden");
+                        var res = $.parseJSON(atob(data.info));
+                        
+                        $.each(res, function(index, value) {
+                            $('#'+value.id).html(value.html);
+                        });
+                    }
+
+                    // Display
+                    alertify
+                        .success('<i class="fas fa-thumbs-up mr-2">  Done</i>', 5)
+                        .dismissOthers();
+                }
+            }
+        });
+    });
+
+});
+
+function aesEncrypt(text)
+{
+    return Aes.Ctr.encrypt(text, "cpm", 128);
+}
+
+
+function updateProgressBar(current, total)
+{
+    if (total <= 0) return;
+    var pct = Math.round((current / total) * 100);
+    $('#step4_progress_bar')
+        .css('width', pct + '%')
+        .attr('aria-valuenow', pct)
+        .text(pct + '%');
+    $('#step4_progress_label').text('Script ' + current + ' / ' + total);
+}
+
+function manageUpgradeScripts(file_number)
+{
+    var start_at = 0;
+    var noitems_by_loop = 1000;
+    var loop_number = 0;
+
+    if (file_number == 0) {
+        $("#step4_progress").html("");
+        $('#step4_progress_bar').css('width', '0%').attr('aria-valuenow', 0).text('');
+        $('#step4_progress_label').text('');
+        alertify
+            .success('Done', 1)
+            .dismissOthers();
+    }
+
+    request = $.post(
+        "upgrade_scripts_manager.php",
+        {
+            file_number : parseInt(file_number)
+        },
+        function(data) {
+            //console.log(data[0])
+            // Store total on first call
+            if (data[0].total && parseInt(data[0].total) > 0) {
+                total_scripts = parseInt(data[0].total);
+            }
+            // Update progress bar
+            updateProgressBar(file_number, total_scripts);
+
+            // work not finished
+            if (data[0].finish !== "1") {
+                // loop
+                runUpdate(data[0].scriptname, data[0].parameter, start_at, noitems_by_loop, loop_number, file_number);
+            }
+            // work finished
+            else {
+                // refresh categories cache
+                rand_number = createRandomId();
+                $("#step4_progress")
+                    .html(
+                        "<div>" + getTime() + " - <span id='user_"+rand_number+"'>Performing database update operations ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ 
+                        $("#step4_progress").html()
+                    );
+                $.ajax({
+                    url: "upgrade_ajax.php",
+                    type : "POST",
+                    dataType : "json",
+                    async: false,
+                    data : {
+                        type : "perform_nestedtree_categories_population_3.0.0.18"
+                    },
+                    complete : function(result, status) {
+                        console.log("Tash perform_nestedtree_categories_population_3.0.0.18 DONE");
+                        $("#user_"+rand_number)
+                            .html('Database update operations done <i class="fas fa-thumbs-up" style="color:green"></i>');
+                        // Show 100% only after all scripts + the final ajax task
+                        updateProgressBar(total_scripts, total_scripts);
+                        migrateUsersToV3('step1', '', 'init', createRandomId(), 0, false, 0);
+
+                        alertify
+                            .success('Done with initialization phase', 3)
+                            .dismissOthers();
+                    }
+                });
+            }
+        },
+        "json"
+    );
+}
+
+var usersList = [],
+    previousStep = '',
+    usersRestList = [];
+/**
+    * We need to migrate all users
+    * This will change the users encryption and generate a OTC
+    *
+    * @return void
+    */
+function migrateUsersToV3(step, data, number, rand_number, loop_start, loop_finished, tp_user_done)
+{
+    console.log("> "+step+" - Number: "+number + " - Previous step: "+previousStep);
+    console.log(usersList);
+    var d = new Date(),
+        count_in_loop = <?php echo (int) NUMBER_ITEMS_IN_BATCH;?>,
+        userSteps = {};
+
+
+    // Decode data
+    var newData = '';
+    if (data !== '' && step === 'step1') {
+        newData = JSON.parse(window.atob(data));
+    }
+    console.log("TO DO : "+step+" -- "+number+" -- "+loop_start+" -- "+loop_finished+" -- "+newData.id)
+
+    if (step === 'step1') {
+        userInfo = '';
+        // Show progress to user
+        $("#user_"+rand_number).html("User id " + newData.id + " done <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+        if (newData !== '') {
+            usersList.push(newData);
+        }
+        console.log('List of users');
+        console.log(JSON.stringify(usersList))
+        
+        if (usersRestList.length > 0) {
+            number = usersRestList[0];
+            usersRestList.shift();
+        } else if (number !== 'init') {
+            number = 'end';
+        }
+        //console.log('List of next users');
+        //console.log(JSON.stringify(usersRestList) + " ; Number = "+number)
+        
+        rand_number = createRandomId();
+        $("#step4_progress").html("<div>" + getTime() + " - <span id='user_"+rand_number+"'>Treating User account ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
+        // --
+        // --
+    } else {
+        // Prepare array                
+        if (usersList[number] !== undefined) {
+            userSteps = {
+                'step1' : {
+                    'text' : 'Users public / private keys were generated if needed',
+                    'number' : 0,
+                    'start' : 0
+                },
+                'step2' : {
+                    'text' : 'User '+usersList[number].id+' - All ITEMS keys generated',
+                    'number' : 0,
+                    'start' : 0
+                },
+                'step3' : {
+                    'text' : 'User '+usersList[number].id+' - All LOGS keys generated',
+                    'number' : number,
+                    'start' : 0
+                },
+                'step4' : {
+                    'text' : 'User '+usersList[number].id+' - All FIELDS keys generated',
+                    'number' : number,
+                    'start' : 0
+                },
+                'step5' : {
+                    'text' : 'User '+usersList[number].id+' - All SUGGESTIONS keys generated',
+                    'number' : number,
+                    'start' : 0
+                },
+                'step6' : {
+                    'text' : 'User '+usersList[number].id+' - All FILES keys generated',
+                    'number' : number,
+                    'start' : 0
+                },
+                'nextUser' : {
+                    'number' : parseInt(number) + 1,
+                    'start' : 0
+                }
+            };
+        }
+
+        // What strategy to have for next treatment
+        if (previousStep === 'step1') {
+            $("#user_"+rand_number).html("Users public / private keys were generated if needed <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+            number = 0;
+            loop_start = 0;
+            // --
+        } else if (previousStep === step) {
+            // IF we are in the same step and we continue
+            $("#user_"+rand_number).html(userSteps[previousStep].text + " until " + (loop_start + count_in_loop) + " done <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+            loop_start += count_in_loop;
+            // --
+        } else if (step !== 'nextUser' && loop_finished === "true") {
+            // The loop on current topic is finished but still with same user
+            $("#user_"+rand_number).html(userSteps[previousStep].text + " <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+            number = userSteps[step].number;
+            loop_start = userSteps[step].start;
+            // --
+        } else if (step === 'nextUser') {
+            // The treatment of current user is finished
+            // Select next user
+            $("#user_"+rand_number)
+                .html(userSteps[previousStep].text + " <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+            $("#user_"+rand_number).parent()
+                .prepend('<div>' + getTime() +' - User ' + usersList[number].id + ' fully treated <i class="fas fa-thumbs-up" style="color:green"></i></div>');                    
+
+            // Have we handled all users
+            // If not then restart at step2 for next user
+            if ((parseInt(number)+1) < usersList.length) {
+                number = userSteps[step].number;
+                loop_start = userSteps[step].start;
+                step = 'step2';
+            } else {
+                // Prepare list of users to be displayed
+                if (usersList.length === 1 && usersList[0].login === 'TP') {
+                    // do nothing and finish
+                    sendPwdToUsers(usersList, true, 0, usersList.length);
+                } else {
+                    var htmlUsersList = '<i class="fas fa-info-circle mr-2"></i>You could provide those unique codes to users by your own.<br><ul>';
+                    $.each(usersList, function(index, user) {
+                        htmlUsersList += '<li>User: '+user.name+' '+user.lastname+' (login: '+user.login+') ; OneTime code: '+user.otp+'</li>'
+                    });
+                    htmlUsersList += '</ul>';
+
+                    // Done
+                    $("#user_"+rand_number).parent()
+                        .prepend(
+                            '<div>' + getTime() +' - All keys have been generated for users <i class="fas fa-thumbs-up" style="color:green"></i>'+
+                            '<br>'+
+                            '<div type="button" class="btn btn-primary btn-sm" id="buttonListOfUsers">Show/Hide list of users</div>'+
+                            '<div class="hidden alert alert-secondary mt-2" id="htmlListOfUsers" role="alert">'+htmlUsersList+'</div>'+
+                            '</div>'
+                        );
+
+                    // Act on button click
+                    $(document).on('click', '#buttonListOfUsers', function() { 
+                        if ($('#htmlListOfUsers').hasClass('hidden') === true) {
+                            $('#htmlListOfUsers').removeClass('hidden');
+                        } else {
+                            $('#htmlListOfUsers').addClass('hidden');
+                        }
+                    });
+
+                    console.log(usersList);
+                    // Now send passwords
+                    console.log("Send emails to users from now");
+                    sendPwdToUsers(usersList, true, 0, usersList.length);
+                }
+
+                return;
+            }
+        }
+        
+        if (usersList.length === 0 && step === 'step2' && loop_finished === 'true' && number === 0 && loop_start === 0) {
+            /* Unlock this step */
+            document.getElementById("but_next").disabled = "";
+            document.getElementById("but_launch").disabled = "disabled";
+            
+            $("#user_"+rand_number).parent()
+                .prepend('<div>' + getTime() +' - All steps have been successfully performed <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
+            return;
+        } else {
+            // Show progress
+            rand_number = createRandomId();
+            $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>User "+usersList[number].id+" - Creating keys until "+(loop_start + count_in_loop)+" ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
+
+            // Prepare user information                
+            userInfo = {
+                'id' : usersList[number].id,
+                'otp' : usersList[number].otp,
+                'public_key' : usersList[number].public_key,
+                'private_key' : usersList[number].private_key,
+                'login' : usersList[number].login,
+                'name' : encode_utf8(usersList[number].name),
+                'lastname' : encode_utf8(usersList[number].lastname),
+            };
+        }
+    }
+    // Migrate if needed all account to new AES encryption
+    //console.log('Posting number = '+number);
+    $.post(
+        "upgrade_run_3.0.0_users.php",
+        {
+            step : step,
+            number : number === 'init' ? '' : number,
+            userInfo : window.btoa(unescape(encodeURIComponent(JSON.stringify(userInfo)))),
+            start : loop_start,
+            count_in_loop : count_in_loop,
+            info : $('#infotmp').val(),
+            extra : number === 'end' ? 'all_users_created' : '',
+            tp_user_done : tp_user_done,
+        },
+        function(data) {
+            console.log(data[0]);
+            //console.log(JSON.parse(window.atob(data[0].rest)));
+            //console.log(JSON.parse(window.atob(data[0].data)));
+            previousStep = step;
+
+            if (data[0].finish !== "1") {
+                // Manage list of users that is provide on number = 0
+                if (number === 'init' && step === 'step1') {
+                    if (data[0].rest !== '') {
+                        usersRestList = JSON.parse(window.atob(data[0].rest));
+                    }else {
+                        usersRestList = '';
+                    }
+                    console.log("USERLIST = "+usersRestList);
+                }
+
+                // loop
+                migrateUsersToV3(
+                    data[0].next,
+                    data[0].data,
+                    data[0].number,
+                    rand_number,
+                    loop_start,
+                    data[0].loop_finished,
+                    1
+                );
+            } else {
+                // Done
+                /* Unlock this step */
+                document.getElementById("but_next").disabled = "";
+                document.getElementById("but_launch").disabled = "disabled";
+            }
+        },
+        "json"
+    );
+}
+
+/**
+* 
+ */
+function sendPwdToUsers(usersList, init, cpt, total)
+{
+    var d = new Date();
+
+    // Inform
+    if (init === true) {
+        rand_number = createRandomId();
+        $("#step4_progress").html("<div>" + getTime() +" - <span id='user_"+rand_number+"'>Now sending new users password by email ... " +
+            "<i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i><span id='sending_emails_pct' class='ml-3'>0%</span></div>"+ $("#step4_progress").html());
+    }
+    
+    // Prepare user data to be sent
+    userInfo = {
+        'id' : usersList[0].id,
+        'otp' : usersList[0].otp,
+    };
+    //console.log('Envoi email pour : ');
+    //console.log(userInfo);
+
+    // Remove user from list
+    usersList.shift();
+
+    // Send email for each user
+    $.post(
+        "upgrade_run_3.0.0_users.php",
+        {
+            step : 'send_pwd_by_email',
+            userInfo : window.btoa(JSON.stringify(userInfo))
+        },
+        function(data) {
+            //console.log(data);
+            //console.log('----');
+            // Done with sending the user email
+            if (usersList.length === 0) {
+                // all users have received their email
+                $("#user_"+rand_number)
+                    .html("Emails were sent <i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>");
+
+                /* Unlock this step */
+                document.getElementById("but_next").disabled = "";
+                document.getElementById("but_launch").disabled = "disabled";
+                
+                $("#user_"+rand_number).parent()
+                .prepend('<div>' + getTime() +' - All steps have been successfully performed <i class="fas fa-thumbs-up" style="color:green"></i></div>'); 
+                
+            } else {
+                // current user received his email
+                // Send to the next one
+                $("#sending_emails_pct").text(Math.round((cpt / total) * 100) + "%");
+
+                sendPwdToUsers(usersList, false, cpt++, total);
+            }
+        },
+        "json"
+    );
+}
+
+function runUpdate (script_file, type_parameter, start_at, noitems_by_loop, loop_number, file_number)
+{
+    var d = new Date(),
+        info = '',
+        text_action_in_progress = script_file;
+    loop_number ++;
+    var rand_number = createRandomId();
+
+    // Inform
+    if (script_file === 'upgrade_operations.php') {
+        text_action_in_progress = 'Performing operation ' + type_parameter;
+    }
+
+    $("#step4_progress").html("<div>" + getTime() +" - <i>"+text_action_in_progress+"</i> - Loop #"+loop_number+" <span id='span_"+rand_number+"'>is now running ... <i class=\"fas fa-cog fa-spin\" style=\"color:orange\"></i></span></div>"+ $("#step4_progress").html());
+
+    if (type_parameter === 'user_id') {
+        info = $("#infotmp").val();
+    }
+
+    request = $.post(
+        script_file,
+        {
+            type        : type_parameter,
+            start       : start_at,
+            total       : start_at,
+            nb          : noitems_by_loop,
+            session_salt: $("#session_salt").val(),
+            info        : info,
+        },
+        function(data) {
+            console.info(type_parameter)
+            console.log(data)
+            // work not finished
+            if (data[0].finish !== "1") {
+                $("#span_"+rand_number).html("<i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>")
+                // loop
+                runUpdate(script_file, type_parameter, data[0].next, noitems_by_loop, loop_number, file_number);
+            // is there an error
+            } else if (data[0].finish === "1" && data[0].error !== "") {
+                $("#span_"+rand_number).html("<i class=\"fas fa-thumbs-down\" style=\"color:red\"></i>");
+                $("#step4_progress").html("<div style=\"margin:15px 0 15px 0; font-style:italic;\">"+getTime() +" - <b>ERROR</b>: "+data[0].error+"</div>"+ $("#step4_progress").html());
+                $("#step4_progress").html("<div>An error occurred. Please check and relaunch.</div>"+ $("#step4_progress").html());
+            // work finished
+            } else {
+                $("#span_"+rand_number).html("<i class=\"fas fa-thumbs-up\" style=\"color:green\"></i>")
+                // continue with next script file
+                file_number ++;
+                manageUpgradeScripts(file_number);
+            }
+        },
+        "json"
+    );
+}
+
+function newEncryptPw(suggestion)
+{
+    var nb = 20;
+    var start = 0;
+
+    if ($("#change_pw_encryption_start").val() != "") {
+        start = $("#change_pw_encryption_start").val();
+    } else {
+        $("#change_pw_encryption_progress").html('Progress: 0% <i class="fas fa-cog fa-spin fa-2x"></i>');
+    }
+    var request = $.post("upgrade_ajax.php",
+        {
+            type        : "new_encryption_of_pw",
+            start       : start,
+            total       : $("#change_pw_encryption_total").val(),
+            suggestion  : suggestion,
+            nb          : nb
+        },
+        function(data) {
+            if (data[0].finish != 1 && data[0].finish != "suggestion") {
+                // handle re-encryption of passwords in Items table
+                $("#change_pw_encryption_start").val(data[0].next);
+                $("#change_pw_encryption_progress").html('Progress: '+data[0].progress+'% <i class="fas fa-cog fa-spin fa-2x"></i>');
+                if (parseInt(start) < parseInt($("#change_pw_encryption_total").val())) {
+                    newEncryptPw("0");
+                }
+            } else if (data[0].finish == "suggestion") {
+                // handle the re-encryption of passwords in suggestion table
+                newEncryptPw("1");
+            } else {
+                // handle finishing
+                $("#change_pw_encryption_progress").html("Done");
+                $("#but_encrypt_continu").hide();
+                /* Unlock this step */
+                document.getElementById("but_next").disabled = "";
+                document.getElementById("but_launch").disabled = "disabled";
+                document.getElementById("res_step4").innerHTML = "dataBase has been populated";
+                document.getElementById("loader").style.display = "none";
+            }
+        },
+        "json"
+    );
+
+}
+
+function launch_database_dump() {
+    alertify
+        .message('<i class="fas fa-cog fa-spin fa-2x"></i>', 0)
+        .dismissOthers();
+
+    request = $.post(
+        "upgrade_ajax.php",
+        {
+            type      : "perform_database_dump"
+        },
+        function(data) {
+            console.log(data)
+            if (data[0].error !== "") {
+                // ERROR
+                $("#dump_result").html(data[0].error);
+
+                alertify
+                    .Error('Error', 1)
+                    .dismissOthers();
+            } else {
+                // DONE
+                $("#dump_result").html('<div class="alert alert-info mt-2">Dump is successfull. File stored in file <b>' + data[0].filename + '</b></div>');
+                $('#but_next').attr("disabled", false);
+                alertify
+                    .success('Success', 1)
+                    .dismissOthers();
+            }
+        },
+        "json"
+    );
+}
+
+function createRandomId()
+{
+    var randLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    return randLetter + Date.now();
+}
+
+function getTime()
+{
+    var d = new Date();
+    return ("0" +d.getHours()).slice(-2)+":"+("0" + d.getMinutes()).slice(-2)+":"+("0" + d.getSeconds()).slice(-2)
+}
+
+function encode_utf8( s )
+{
+    return unescape( encodeURIComponent( s ) );
+}
+
+</script>
+

@@ -4,14 +4,15 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "config": {
+        "vendor-dir": "app/vendor",
         "optimize-autoloader": true,
         "apcu-autoloader": true,
         "discard-changes": true,
         "platform": {
-            "php": "8.1"
+            "php": "8.2"
         }
     },
-    "version": "3.1.1",
+    "version": "3.2.0",
     "keywords": ["passwords", "manager", "collaborative", "vault", "security"],
     "homepage": "https://www.teampass.net",
     "license": [
@@ -36,8 +37,8 @@
         "issues": "https://github.com/nilsteampassnet/TeamPass/issues",
         "source": "https://github.com/nilsteampassnet/TeamPass",
         "wiki": "https://www.teampass.net",
-        "docs": "https://teampass.readthedocs.io/en/latest/",
-        "forum": "https://www.reddit.com/r/TeamPass/"
+        "docs": "https://documentation.teampass.net/",
+        "forum": "https://github.com/nilsteampassnet/TeamPass/discussions"
     },
     "repositories": [
         {
@@ -46,112 +47,112 @@
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/nestedtree",
+            "url": "app/includes/libraries/teampassclasses/nestedtree",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/ezimuel/phpsecuresession",
+            "url": "app/includes/libraries/ezimuel/phpsecuresession",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/performchecks",
+            "url": "app/includes/libraries/teampassclasses/performchecks",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/encryption",
+            "url": "app/includes/libraries/teampassclasses/encryption",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/language",
+            "url": "app/includes/libraries/teampassclasses/language",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/sessionmanager",
+            "url": "app/includes/libraries/teampassclasses/sessionmanager",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/ldapextra",
+            "url": "app/includes/libraries/teampassclasses/ldapextra",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/superglobal",
+            "url": "app/includes/libraries/teampassclasses/superglobal",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/passwordmanager",
+            "url": "app/includes/libraries/teampassclasses/passwordmanager",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/oauth2controller",
+            "url": "app/includes/libraries/teampassclasses/oauth2controller",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/configmanager",
+            "url": "app/includes/libraries/teampassclasses/configmanager",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/emailservice",
+            "url": "app/includes/libraries/teampassclasses/emailservice",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/folderservices",
+            "url": "app/includes/libraries/teampassclasses/folderservices",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/cryptomanager",
+            "url": "app/includes/libraries/teampassclasses/cryptomanager",
             "options": {
                 "symlink": false
             }
         },
         {
             "type": "path",
-            "url": "includes/libraries/teampassclasses/passwordgeneratorservice",
+            "url": "app/includes/libraries/teampassclasses/passwordgeneratorservice",
             "options": {
                 "symlink": false
             }
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-mysqli": ">=5.1.0",
         "ext-mbstring": "*",
         "ext-openssl": "*",
@@ -218,7 +219,7 @@
     },
     "autoload": {
         "psr-4": {
-            "TeampassWebSocket\\": "websocket/src/"
+            "TeampassWebSocket\\": "app/websocket/src/"
         }
     }
 }

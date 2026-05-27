@@ -94,7 +94,7 @@ jobs:
             org.opencontainers.image.description=Collaborative Passwords Manager
             org.opencontainers.image.vendor=TeamPass
             org.opencontainers.image.url=https://teampass.net
-            org.opencontainers.image.documentation=https://teampass.readthedocs.io
+            org.opencontainers.image.documentation=https://documentation.teampass.net
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.licenses=GPL-3.0
 

@@ -1,0 +1,3815 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      identify.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use voku\helper\AntiXSS;
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use TeampassClasses\Language\Language;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PasswordManager\PasswordManager;
+use Duo\DuoUniversal\Client;
+use Duo\DuoUniversal\DuoException;
+use RobThree\Auth\TwoFactorAuth;
+use TeampassClasses\LdapExtra\LdapExtra;
+use TeampassClasses\LdapExtra\OpenLdapExtra;
+use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
+use TeampassClasses\OAuth2Controller\OAuth2Controller;
+
+// Load functions
+require_once 'main.functions.php';
+
+// init
+loadClasses('DB');
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language($session->get('user-language') ?? 'english');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Define Timezone
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+
+// --------------------------------- //
+
+// Prepare POST variables
+$post_type = filter_input(INPUT_POST, 'type', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_login = filter_input(INPUT_POST, 'login', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+$post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS, FILTER_FLAG_NO_ENCODE_QUOTES);
+
+if ($post_type === 'identify_user') {
+    //--------
+    // NORMAL IDENTICATION STEP
+    //--------
+
+    // Ensure Complexity levels are translated
+    defineComplexity();
+
+    // Identify the user through Teampass process
+    identifyUser($post_data, $SETTINGS);
+
+    // ---
+    // ---
+    // ---
+} elseif ($post_type === 'get2FAMethods') {
+    //--------
+    // Get MFA methods
+    //--------
+    //
+
+    // Encrypt data to return
+    echo json_encode([
+        'ret' => prepareExchangedData(
+            [
+                'agses' => isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true ? true : false,
+                'google' => isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true ? true : false,
+                'yubico' => isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true ? true : false,
+                'duo' => isKeyExistingAndEqual('duo', 1, $SETTINGS) === true ? true : false,
+            ],
+            'encode'
+        ),
+        'key' => $session->get('key'),
+    ]);
+    return false;
+} elseif ($post_type === 'get2FAMethodsForUser') {
+    //--------
+    // Get MFA methods required for a specific user based on their roles
+    //--------
+    //
+
+    $login = empty($post_login) === false ? $post_login : '';
+
+    $needsMfa = false;
+    $anyMfaEnabled = isOneVarOfArrayEqualToValue(
+        [
+            (int) ($SETTINGS['google_authentication'] ?? 0),
+            (int) ($SETTINGS['yubico_authentication'] ?? 0),
+            (int) ($SETTINGS['duo'] ?? 0),
+            (int) ($SETTINGS['agses_authentication_enabled'] ?? 0),
+        ],
+        1
+    );
+
+    if ($anyMfaEnabled === true && empty($login) === false) {
+        $userInfo = DB::queryFirstRow(
+            'SELECT u.admin, u.mfa_enabled,
+                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END SEPARATOR ";") AS fonction_id,
+                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END SEPARATOR ";") AS roles_from_ad_groups
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+            WHERE u.login=%s AND u.disabled=0 AND u.deleted_at IS NULL
+            GROUP BY u.id',
+            $login
+        );
+
+        if ($userInfo !== null) {
+            // Merge manual roles and AD-sourced roles, same as identifyUserDetails()
+            $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
+            if (empty($userInfo['roles_from_ad_groups']) === false) {
+                $fonctionId = empty($fonctionId) === true
+                    ? (string) $userInfo['roles_from_ad_groups']
+                    : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
+            }
+
+            $mfaForRoles = is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles'];
+            $userNeedsMfaByRole = mfa_auth_requested_roles($fonctionId, $mfaForRoles);
+
+            $isAdmin = (int) $userInfo['admin'] === 1;
+            $adminMfaRequired = isKeyExistingAndEqual('admin_2fa_required', 1, $SETTINGS) === true;
+
+            $needsMfa = ($isAdmin === false && (int) $userInfo['mfa_enabled'] === 1 && $userNeedsMfaByRole === true)
+                || ($isAdmin === true && $adminMfaRequired === true);
+        }
+    }
+
+    echo json_encode([
+        'ret' => prepareExchangedData(
+            [
+                'mfa_required' => $needsMfa,
+                'agses'  => $needsMfa === true && isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true,
+                'google' => $needsMfa === true && isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true,
+                'yubico' => $needsMfa === true && isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true,
+                'duo'    => $needsMfa === true && isKeyExistingAndEqual('duo', 1, $SETTINGS) === true,
+            ],
+            'encode'
+        ),
+        'key' => $session->get('key'),
+    ]);
+    return false;
+} elseif ($post_type === 'initiateSSOLogin') {
+    //--------
+    // Do initiateSSOLogin
+    //--------
+    //
+
+    // Création d'une instance du contrôleur
+    $OAuth2 = new OAuth2Controller($SETTINGS);
+
+    // Redirection vers Azure pour l'authentification
+    $OAuth2->redirect();
+
+    // Encrypt data to return
+    echo json_encode([
+        'key' => $session->get('key'),
+    ]);
+    return false;
+} elseif ($post_type === 'request_forgot_local_password') {
+    //--------
+    // Local password recovery request
+    //--------
+    echo prepareExchangedData(
+        requestForgotLocalPassword(
+            (string) ($post_data ?? ''),
+            $SETTINGS
+        ),
+        'encode'
+    );
+    return false;
+}
+
+/**
+ * Complete authentication of user through Teampass
+ *
+ * @param string $sentData Credentials
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return bool
+ */
+function identifyUser(string $sentData, array $SETTINGS): bool
+{
+    $session = SessionManager::getSession();
+    $request = SymfonyRequest::createFromGlobals();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    clearForgotLocalPasswordRequestContext($session);
+    
+    // Prepare GET variables
+    $sessionAdmin = $session->get('user-admin');
+    $sessionPwdAttempts = $session->get('pwd_attempts');
+    $sessionUrl = $session->get('user-initial_url');
+    $server = [];
+    $server['PHP_AUTH_USER'] =  $request->getUser();
+    $server['PHP_AUTH_PW'] = $request->getPassword();
+    
+    // decrypt and retreive data in JSON format
+    if ($session->get('key') === null) {
+        $dataReceived = $sentData;
+    } else {
+        $dataReceived = prepareExchangedData(
+            $sentData,
+            'decode',
+            $session->get('key')
+        );
+    }
+
+    // Sanitize input data
+    $toClean = [
+        'login' => 'trim|escape',
+    ];
+    $dataReceived = sanitizeData($dataReceived, $toClean);
+
+    // Base64 decode sensitive data
+    if (isset($dataReceived['pw'])) {
+        $dataReceived['pw'] = teampassDecodeTransportSecret((string) $dataReceived['pw'], true);
+    }
+    
+    // Check if Duo auth is in progress and pass the pw and login back to the standard login process
+    if(
+        isKeyExistingAndEqual('duo', 1, $SETTINGS) === true
+        && $dataReceived['user_2fa_selection'] === 'duo'
+        && $session->get('user-duo_status') === 'IN_PROGRESS'
+        && !empty($dataReceived['duo_state'])
+    ){
+        $key = hash('sha256', $dataReceived['duo_state']);
+        $iv = substr(hash('sha256', $dataReceived['duo_state']), 0, 16);
+        $duo_data_dec = openssl_decrypt(base64_decode($session->get('user-duo_data')), 'AES-256-CBC', $key, 0, $iv);
+        // Clear the data from the Duo process to continue clean with the standard login process
+        $session->set('user-duo_data','');
+        if($duo_data_dec === false) {
+            // Add failed authentication log
+            addFailedAuthentication(filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS), getClientIpServer(), $SETTINGS);
+
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('duo_error_decrypt'),
+                ],
+                'encode'
+            );
+            return false;
+        }
+        $duo_data = unserialize($duo_data_dec);
+        $dataReceived['pw'] = $duo_data['duo_pwd'];
+        $dataReceived['login'] = $duo_data['duo_login'];
+    }
+
+    if(isset($dataReceived['pw']) === false || isset($dataReceived['login']) === false) {
+        echo json_encode([
+            'data' => prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('ga_enter_credentials'),
+                ],
+                'encode'
+            ),
+            'key' => $session->get('key')
+        ]);
+        return false;
+    }
+    
+    // prepare variables
+    // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
+    // Sanitization was removed to fix authentication issues (see upgrade 3.1.5.10)
+    $userCredentials = identifyGetUserCredentials(
+        $SETTINGS,
+        (string) $server['PHP_AUTH_USER'],
+        (string) $server['PHP_AUTH_PW'],
+        (string) $dataReceived['pw'], // No more sanitization
+        (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+    );
+    $username = $userCredentials['username'];
+    $passwordClear = $userCredentials['passwordClear'];
+    
+    // DO initial checks
+    $userInitialData = identifyDoInitialChecks(
+        $SETTINGS,
+        (int) $sessionPwdAttempts,
+        (string) $username,
+        (int) $sessionAdmin,
+        (string) $sessionUrl,
+        (string) filter_var($dataReceived['user_2fa_selection'], FILTER_SANITIZE_FULL_SPECIAL_CHARS)
+    );
+
+    // if user doesn't exist in Teampass then return error
+    if ($userInitialData['error'] === true) {
+        // Add log on error unless skip_anti_bruteforce flag is set to true
+        if (empty($userInitialData['skip_anti_bruteforce'])) {
+
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        }
+
+        echo prepareExchangedData(
+            $userInitialData['array'],
+            'encode'
+        );
+        return false;
+    }
+
+    $userInfo = $userInitialData['userInfo'] + $dataReceived;
+    $return = '';
+
+    // Check if LDAP is enabled and user is in AD
+    $userLdap = identifyDoLDAPChecks(
+        $SETTINGS,
+        $userInfo,
+        (string) $username,
+        (string) $passwordClear,
+        (int) $sessionAdmin,
+        (string) $sessionUrl,
+        (int) $sessionPwdAttempts
+    );
+    if ($userLdap['error'] === true) {
+        // Log LDAP/AD failed authentication into teampass_log_system
+        logEvents(
+            $SETTINGS,
+            'failed_auth',
+            'password_is_not_correct',
+            '',
+            stripslashes($username),
+            stripslashes($username)
+        );
+
+        // Anti-bruteforce log
+        addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+
+        echo prepareExchangedData(
+            $userLdap['array'],
+            'encode'
+        );
+        return false;
+    }
+
+    // Reload userInfo from database after LDAP checks
+    // This is critical because identifyDoLDAPChecks() may have called
+    // attemptTransparentRecovery() which updates private_key in the database.
+    // Without this reload, prepareUserEncryptionKeys() would use a stale
+    // private_key and trigger a redundant second attemptTransparentRecovery() call.
+    if ($userLdap['error'] === false) {
+        $refreshedUserInfo = getUserCompleteData($username);
+        if ($refreshedUserInfo !== null && !empty($refreshedUserInfo)) {
+            $userInfo = $refreshedUserInfo + $dataReceived;
+            // Re-compute mfa_auth_requested_roles in case it was updated during the LDAP checks
+            $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+                (string) ($userInfo['fonction_id'] ?? ''),
+                is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+            );
+            // Re-add session-derived flags that getUserCompleteData() does not return.
+            // oauth2_login_ongoing is computed from the PHP session (not stored in DB), so it
+            // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
+            // treats the request as a plain-password attempt and returns error_bad_credentials
+            // for any user whose auth_type is 'oauth2'.
+            $userInfo['oauth2_login_ongoing'] = filter_var(
+                $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false,
+                FILTER_VALIDATE_BOOLEAN
+            );
+        }
+    }
+
+    if (isset($userLdap['retLDAP']['user_info']['has_been_created']) === true
+        && (int) $userLdap['retLDAP']['user_info']['has_been_created'] === 1
+    ) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => '',
+                'extra' => 'ad_user_created',
+            ],
+            'encode'
+        );
+        return false;
+    }
+    
+    // Is oauth2 user exists?
+    $userOauth2 = checkOauth2User(
+        (array) $SETTINGS,
+        (array) $userInfo,
+        (string) $username,
+        (string) $passwordClear,
+        (int) $userLdap['user_info']['has_been_created']
+    );
+    if ($userOauth2['error'] === true) {
+        $session->set('userOauth2Info', '');
+
+        // Add failed authentication log
+        if ($userOauth2['no_log_event'] !== true) {
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        }
+
+        // deepcode ignore ServerLeak: File and path are secured directly inside the function decryptFile()
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => $lang->get($userOauth2['message']),
+                'extra' => 'oauth2_user_not_found',
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // If a new OAuth2 user was just created, stop here and wait for async key generation
+    // (mirrors the same early-return logic used for LDAP user creation above)
+    if (isset($userOauth2['retExternalAD']['has_been_created']) === true
+        && (int) $userOauth2['retExternalAD']['has_been_created'] === 1
+    ) {
+        echo prepareExchangedData(
+            [
+                'error' => true,
+                'message' => '',
+                'extra' => 'ad_user_created',
+            ],
+            'encode'
+        );
+        return false;
+    }
+
+    // Check user and password
+    $authResult = checkCredentials($passwordClear, $userInfo);
+    if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
+        // Log failure (wrong password on existing account) into teampass_log_system
+        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
+        // Add failed authentication log
+        addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        $forgotLocalPasswordContext = getForgotLocalPasswordContext($userInfo, $SETTINGS);
+        if ($forgotLocalPasswordContext['available'] === true) {
+            storeForgotLocalPasswordRequestContext($session, (string) $username);
+        }
+        echo prepareExchangedData(
+            [
+                'value' => '',
+                'error' => true,
+                'message' => $lang->get('error_bad_credentials'),
+                'forgot_password_available' => $forgotLocalPasswordContext['available'],
+            ],
+            'encode'
+        );
+        return false;
+    }
+    
+    // If password was migrated, then update private key
+    if ($authResult['password_migrated'] === true) {
+        $userInfo['private_key'] = $authResult['private_key_reencrypted'];
+    }
+    
+    // Check if MFA is required
+    if ((
+        isOneVarOfArrayEqualToValue(
+            [
+                (int) $SETTINGS['yubico_authentication'],
+                (int) $SETTINGS['google_authentication'],
+                (int) $SETTINGS['duo']
+            ],
+            1
+        ) === true)
+        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
+        || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
+    ) {
+        // Check user against MFA method if selected
+        $userMfa = identifyDoMFAChecks(
+            $SETTINGS,
+            $userInfo,
+            $dataReceived,
+            $userInitialData,
+            (string) $username
+        );
+        if ($userMfa['error'] === true) {
+            // Add failed authentication log
+            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $userMfa['mfaData']['message'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
+                'encode'
+            );
+            return false;
+        } elseif ($userMfa['mfaQRCodeInfos'] === true) {
+            // Case where user has initiated Google Auth
+            // Return QR code
+            echo prepareExchangedData(
+                [
+                    'value' => $userMfa['mfaData']['value'],
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => false,
+                    'message' => $userMfa['mfaData']['message'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
+                'encode'
+            );
+            return false;
+        } elseif ($userMfa['duo_url_ready'] === true) {
+            // Case where user has initiated Duo Auth
+            // Return the DUO redirect URL
+            echo prepareExchangedData(
+                [
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => false,
+                    'message' => $userMfa['mfaData']['message'],
+                    'duo_url_ready' => $userMfa['mfaData']['duo_url_ready'],
+                    'duo_redirect_url' => $userMfa['mfaData']['duo_redirect_url'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                ],
+                'encode'
+            );
+            return false;
+        }
+    }
+
+    // Can connect if
+    // 1- no LDAP mode + user enabled + pw ok
+    // 2- LDAP mode + user enabled + ldap connection ok + user is not admin
+    // 3- LDAP mode + user enabled + pw ok + usre is admin
+    // This in order to allow admin by default to connect even if LDAP is activated
+    if (canUserGetLog(
+            $SETTINGS,
+            (int) $userInfo['disabled'],
+            $username,
+            $userLdap['ldapConnection']
+        ) === true
+    ) {
+        $session->set('pwd_attempts', 0);
+
+        // Check if any unsuccessfull login tries exist
+        handleLoginAttempts(
+            $userInfo['id'],
+            $userInfo['login'],
+            $userInfo['last_connexion'],
+            $username,
+            $SETTINGS,
+        );
+
+        // Avoid unlimited session.
+        $max_time = isset($SETTINGS['maximum_session_expiration_time']) ? (int) $SETTINGS['maximum_session_expiration_time'] : 60;
+        $session_time = min($dataReceived['duree_session'], $max_time);
+        $lifetime = time() + ($session_time * 60);
+
+        // Build user session - Extracted to separate function for readability
+        $sessionData = buildUserSession($session, $userInfo, $username, $passwordClear, $SETTINGS, $lifetime);
+        if (isset($sessionData['error']) && $sessionData['error'] === true) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('private_key_decryption_failed'),
+                ],
+                'encode'
+            );
+            return false;
+        }
+        $old_key = $sessionData['old_key'];
+        $returnKeys = $sessionData['returnKeys'];
+        
+        // Setup user roles and permissions - Extracted to separate function for readability
+        $rolesDbUpdateData = setupUserRolesAndPermissions($session, $userInfo, $SETTINGS);
+        
+        // Perform post-login tasks - Extracted to separate function for readability
+        $isNewExternalUser = $userLdap['user_initial_creation_through_external_ad'] === true 
+            || $userOauth2['retExternalAD']['has_been_created'] === 1;
+        
+        // Merge roles DB update into returnKeys for performPostLoginTasks
+        $returnKeys['roles_db_update'] = $rolesDbUpdateData;
+        
+        performPostLoginTasks(
+            $session,
+            $userInfo,
+            $passwordClear,
+            $SETTINGS,
+            $dataReceived,
+            $returnKeys,
+            $isNewExternalUser
+        );
+        
+        // send back the random key
+        $return = $dataReceived['randomstring'];
+        
+        // Ensure Complexity levels are translated
+        defineComplexity();
+        echo prepareExchangedData(
+            buildAuthResponse(
+                $session,
+                (string) $sessionUrl,
+                (int) $sessionPwdAttempts,
+                (string) $return,
+                (array) $userInfo,
+                true  // success
+            ),
+            'encode',
+            $old_key
+        );
+    
+        return true;
+
+    } elseif ((int) $userInfo['disabled'] === 1) {
+        // User and password is okay but account is locked
+        echo prepareExchangedData(
+            buildAuthResponse(
+                $session,
+                (string) $sessionUrl,
+                0,
+                (string) $return,
+                (array) $userInfo,
+                false,  // not success
+                'user_is_locked',
+                $lang->get('account_is_locked')
+            ),
+            'encode'
+        );
+        return false;
+    }
+
+    echo prepareExchangedData(
+        buildAuthResponse(
+            $session,
+            (string) $sessionUrl,
+            (int) $sessionPwdAttempts,
+            (string) $return,
+            (array) $userInfo,
+            false,  // not success
+            true,
+            $lang->get('error_not_allowed_to_authenticate')
+        ),
+        'encode'
+    );
+    return false;
+}
+
+/**
+ * Build authentication response array
+ * Unified function to avoid code duplication in identifyUser()
+ *
+ * @param SessionManager $session
+ * @param string $sessionUrl
+ * @param int $sessionPwdAttempts
+ * @param string $returnValue
+ * @param array $userInfo
+ * @param bool $success
+ * @param string|bool $errorType
+ * @param string $errorMessage
+ * @return array
+ */
+function buildAuthResponse(
+    $session,
+    string $sessionUrl,
+    int $sessionPwdAttempts,
+    string $returnValue,
+    array $userInfo,
+    bool $success = true,
+    $errorType = false,
+    string $errorMessage = ''
+): array {
+    $antiXss = new AntiXSS();
+    $session = SessionManager::getSession();
+    
+    // Base response (common to all responses)
+    $response = [
+        'value' => $returnValue,
+        'user_id' => $session->get('user-id') !== null ? (int) $session->get('user-id') : '',
+        'user_admin' => null !== $session->get('user-admin') ? (int) $session->get('user-admin') : 0,
+        'initial_url' => $success ? $antiXss->xss_clean($sessionUrl) : $sessionUrl,
+        'pwd_attempts' => $success ? 0 : $sessionPwdAttempts,
+        'first_connection' => $session->get('user-validite_pw') === 0 ? true : false,
+        'password_complexity' => TP_PW_COMPLEXITY[$session->get('user-pw_complexity')][1],
+        'password_change_expected' => ($userInfo['special'] ?? '') === 'password_change_expected' ? true : false,
+        'private_key_conform' => $session->get('user-id') !== null
+            && empty($session->get('user-private_key')) === false
+            && $session->get('user-private_key') !== 'none' ? true : false,
+        'session_key' => $session->get('key'),
+        'can_create_root_folder' => null !== $session->get('user-can_create_root_folder') ? (int) $session->get('user-can_create_root_folder') : '',
+    ];
+
+    // Add error or success specific fields
+    if (!$success) {
+        $response['error'] = true;
+        $response['error_type'] = $errorType;
+        $response['message'] = $errorMessage;
+    } else {
+        // Success-specific fields
+        $response['error'] = false;
+        $response['message'] = $session->has('user-upgrade_needed') 
+            && (int) $session->get('user-upgrade_needed') 
+            && (int) $session->get('user-upgrade_needed') === 1 
+                ? 'ask_for_otc' 
+                : '';
+        $response['upgrade_needed'] = isset($userInfo['upgrade_needed']) === true ? (int) $userInfo['upgrade_needed'] : 0;
+        $response['special'] = $userInfo['special'] ?? '';
+        $response['split_view_mode'] = isset($userInfo['split_view_mode']) === true ? (int) $userInfo['split_view_mode'] : 0;
+        $response['show_subfolders'] = isset($userInfo['show_subfolders']) === true ? (int) $userInfo['show_subfolders'] : 0;
+        $response['validite_pw'] = $session->get('user-validite_pw') !== null ? $session->get('user-validite_pw') : '';
+        $response['num_days_before_exp'] = $session->get('user-num_days_before_exp') !== null ? (int) $session->get('user-num_days_before_exp') : '';
+    }
+
+    return $response;
+}
+
+/**
+ * Build and configure user session variables
+ * Extracts session configuration logic from identifyUser()
+ *
+ * @param SessionManager $session
+ * @param array $userInfo
+ * @param string $username
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ * @param int $lifetime
+ * @return array Returns encryption keys data
+ */
+function buildUserSession(
+    $session,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    array $SETTINGS,
+    int $lifetime
+): array {
+    $session = SessionManager::getSession();
+
+    // Save old key for response encryption
+    $old_key = $session->get('key');
+
+    // Good practice: reset PHPSESSID and key after successful authentication
+    $session->migrate();
+    $session->set('key', bin2hex(random_bytes(16)));
+
+    // Save account in SESSION - Basic user info
+    $session->set('user-login', stripslashes($username));
+    $session->set('user-name', empty($userInfo['name']) === false ? stripslashes($userInfo['name']) : '');
+    $session->set('user-lastname', empty($userInfo['lastname']) === false ? stripslashes($userInfo['lastname']) : '');
+    $session->set('user-id', (int) $userInfo['id']);
+    $session->set('user-admin', (int) $userInfo['admin']);
+    $session->set('user-manager', (int) $userInfo['gestionnaire']);
+    $session->set('user-can_manage_all_users', $userInfo['can_manage_all_users']);
+    $session->set('user-read_only', $userInfo['read_only']);
+    $session->set('user-last_pw_change', $userInfo['last_pw_change']);
+    $session->set('user-last_pw', $userInfo['last_pw']);
+    $session->set('user-force_relog', $userInfo['force-relog']);
+    $session->set('user-can_create_root_folder', $userInfo['can_create_root_folder']);
+    $session->set('user-email', $userInfo['email']);
+    $session->set('user-avatar', $userInfo['avatar']);
+    $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
+    $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
+    $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
+    $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
+    $session->set(
+        'user-tree_load_strategy',
+        (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']
+    );
+    $session->set(
+        'user-split_view_mode',
+        (isset($userInfo['split_view_mode']) === false || empty($userInfo['split_view_mode']) === true) ? 0 : (int) $userInfo['split_view_mode']
+    );
+    $session->set(
+        'user-show_subfolders',
+        (isset($userInfo['show_subfolders']) === false || empty($userInfo['show_subfolders']) === true) ? 0 : (int) $userInfo['show_subfolders']
+    );
+    $session->set('user-language', $userInfo['user_language']);
+    $session->set('user-timezone', $userInfo['usertimezone']);
+    $session->set('user-keys_recovery_time', $userInfo['keys_recovery_time']);
+
+    // Manage session expiration
+    $session->set('user-session_duration', (int) $lifetime);
+
+    // User signature keys
+    try {
+        $returnKeys = prepareUserEncryptionKeys($userInfo, $passwordClear, $SETTINGS);
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'message' => $e->getMessage(),
+        ];
+    }
+    $session->set('user-public_key', $returnKeys['public_key']);
+    
+    // Did user has his AD password changed
+    if (null !== $session->get('user-private_key_recovered') && $session->get('user-private_key_recovered') === true) {
+        $session->set('user-private_key', $session->get('user-private_key'));
+    } else {
+        $session->set('user-private_key', $returnKeys['private_key_clear']);
+    }
+
+    // API key - use recovered private key from session if available, otherwise from returnKeys
+    $privateKeyForApiDecrypt = !empty($returnKeys['private_key_clear']) ? $returnKeys['private_key_clear'] : $session->get('user-private_key');
+    $session->set(
+        'user-api_key',
+        empty($userInfo['api_key']) === false && !empty($privateKeyForApiDecrypt) ? base64_decode(decryptUserObjectKey($userInfo['api_key'], $privateKeyForApiDecrypt)) : '',
+    );
+    
+    $session->set('user-special', $userInfo['special']);
+    $session->set('user-auth_type', $userInfo['auth_type']);
+
+    // Check feedback regarding user password validity
+    $return = checkUserPasswordValidity(
+        $userInfo,
+        (int) $session->get('user-num_days_before_exp'),
+        (int) $session->get('user-last_pw_change'),
+        $SETTINGS
+    );
+    $session->set('user-validite_pw', $return['validite_pw']);
+    $session->set('user-last_pw_change', $return['last_pw_change']);
+    $session->set('user-num_days_before_exp', $return['numDaysBeforePwExpiration']);
+    $session->set('user-force_relog', $return['user_force_relog']);
+    
+    $session->set('user-last_connection', empty($userInfo['last_connexion']) === false ? (int) $userInfo['last_connexion'] : (int) time());
+    $session->set('user-latest_items', empty($userInfo['latest_items']) === false ? explode(';', $userInfo['latest_items']) : []);
+    $session->set('user-favorites', empty($userInfo['favourites']) === false ? explode(';', $userInfo['favourites']) : []);
+    $session->set('user-no_access_folders', empty($userInfo['groupes_interdits']) === false ? explode(';', $userInfo['groupes_interdits']) : []);
+
+    return [
+        'old_key' => $old_key,
+        'returnKeys' => $returnKeys,
+    ];
+}
+
+/**
+ * Perform post-login tasks
+ * Handles migration, DB updates, rights configuration, cache and email notifications
+ *
+ * @param SessionManager $session
+ * @param array $userInfo
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ * @param array $dataReceived
+ * @param array $returnKeys
+ * @param bool $isNewExternalUser
+ * @return void
+ */
+function performPostLoginTasks(
+    $session,
+    array $userInfo,
+    string $passwordClear,
+    array $SETTINGS,
+    array $dataReceived,
+    array $returnKeys,
+    bool $isNewExternalUser
+): void {
+    $session = SessionManager::getSession();
+
+    // Version 3.1.5 - Migrate personal items password to similar encryption protocol as public ones.
+    checkAndMigratePersonalItems($session->get('user-id'), $session->get('user-private_key'), $passwordClear);
+
+    // Version 3.1.6 - Trigger forced phpseclib v3 migration if enabled
+    triggerPhpseclibV3MigrationOnLogin(
+        (int) $session->get('user-id'),
+        $session->get('user-private_key'),
+        $passwordClear
+    );
+
+    // Set some settings
+    $SETTINGS['update_needed'] = '';
+
+    // Update table - Final user update in database
+    $finalUpdateData = [
+        'key_tempo' => $session->get('key'),
+        'key_tempo_created_at' => time(),
+        'last_connexion' => time(),
+        'timestamp' => time(),
+        'disabled' => 0,
+        'session_end' => $session->get('user-session_duration'),
+        'user_ip' => $dataReceived['client'],
+    ];
+
+    // Merge encryption keys update if needed
+    if (!empty($returnKeys['update_keys_in_db'])) {
+        $finalUpdateData = array_merge($finalUpdateData, $returnKeys['update_keys_in_db']);
+    }
+    
+    // Merge role-based permissions update if needed
+    if (!empty($returnKeys['roles_db_update'])) {
+        $finalUpdateData = array_merge($finalUpdateData, $returnKeys['roles_db_update']);
+    }
+
+    DB::update(
+        prefixTable('users'),
+        $finalUpdateData,
+        'id=%i',
+        $userInfo['id']
+    );
+
+    // Store private key in dedicated table if it was generated/updated
+    if (!empty($returnKeys['update_keys_in_db']['private_key'])) {
+        insertPrivateKeyWithCurrentFlag(
+            (int) $userInfo['id'],
+            $returnKeys['update_keys_in_db']['private_key']
+        );
+    }
+
+    // Get user's rights
+    if ($isNewExternalUser) {
+        // is new LDAP/OAuth2 user. Show only his personal folder
+        if ($SETTINGS['enable_pf_feature'] === '1') {
+            $session->set('user-personal_visible_folders', [$userInfo['id']]);
+            $session->set('user-personal_folders', [$userInfo['id']]);
+        } else {
+            $session->set('user-personal_visible_folders', []);
+            $session->set('user-personal_folders', []);
+        }
+        $session->set('user-roles_array', []);
+        $session->set('user-read_only_folders', []);
+        $session->set('system-list_folders_editable_by_role', []);
+        $session->set('user-nb_folders', 1);
+        $session->set('user-nb_roles', 1);
+    } else {
+        identifyUserRights(
+            $session->get('user-no_access_folders'),
+            $userInfo['admin'],
+            $userInfo['fonction_id'],
+            $SETTINGS
+        );
+    }
+    
+    // Get some more elements
+    $session->set('system-screen_height', $dataReceived['screenHeight']);
+
+    // Get cache tree metadata without loading the full visible_folders payload into session.
+    $cacheTreeData = DB::queryFirstRow(
+        'SELECT increment_id, timestamp, IFNULL(invalidated_at, 0) AS invalidated_at,
+            COALESCE(CHAR_LENGTH(visible_folders), 0) AS visible_folders_size
+        FROM ' . prefixTable('cache_tree') . '
+        WHERE user_id=%i',
+        (int) $session->get('user-id')
+    );
+
+    // Drop the legacy heavy session entry if it exists; cache_tree remains the server-side source.
+    $session->remove('user-cache_tree');
+    // Lightweight diagnostic metadata — not a cache; used to correlate login state with DB cache.
+    $session->set('user-cache_tree_meta', [
+        'cache_id' => (int) ($cacheTreeData['increment_id'] ?? 0),
+        'timestamp' => (int) ($cacheTreeData['timestamp'] ?? 0),
+        'invalidated_at' => (int) ($cacheTreeData['invalidated_at'] ?? 0),
+        'visible_folders_size' => (int) ($cacheTreeData['visible_folders_size'] ?? 0),
+    ]);
+
+    if (empty($cacheTreeData) === true || (int) ($cacheTreeData['visible_folders_size'] ?? 0) === 0) {
+        // Prepare new task
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'user_build_cache_tree',
+                'arguments' => json_encode([
+                    'user_id' => (int) $session->get('user-id'),
+                ], JSON_HEX_QUOT | JSON_HEX_TAG),
+                'updated_at' => null,
+                'finished_at' => null,
+                'output' => null,
+            )
+        );
+
+        // Trigger background handler to process tasks
+        triggerBackgroundHandler();
+    }
+
+    // Send email notification if enabled
+    $lang = new Language($session->get('user-language') ?? 'english');
+    if (isKeyExistingAndEqual('enable_send_email_on_user_login', 1, $SETTINGS) === true) {
+        // get all Admin users
+        $val = DB::queryFirstRow('SELECT email FROM ' . prefixTable('users') . " WHERE admin = %i and email != ''", 1);
+        if (DB::count() > 0) {
+            // Add email to table
+            prepareSendingEmail(
+                $lang->get('email_subject_on_user_login'),
+                str_replace(
+                    [
+                        '#tp_user#',
+                        '#tp_date#',
+                        '#tp_time#',
+                    ],
+                    [
+                        ' ' . $session->get('user-login') . ' (IP: ' . getClientIpServer() . ')',
+                        date($SETTINGS['date_format'], (int) time()),
+                        date($SETTINGS['time_format'], (int) time()),
+                    ],
+                    $lang->get('email_body_on_user_login')
+                ),
+                $val['email'],
+                $lang->get('administrator')
+            );
+        }
+    }
+}
+
+/**
+ * Determine if user permissions should be adjusted based on role names
+ * Logic: Users with ID >= 1000000 get permissions from role "needles" in titles
+ *
+ * @param int $userId
+ * @param string $userLogin
+ * @param array $SETTINGS
+ * @return bool
+ */
+function shouldAdjustPermissionsFromRoleNames(int $userId, string $userLogin, array $SETTINGS): bool
+{
+    if ($userId < 1000000) {
+        return false;
+    }
+
+    $excludeUser = isset($SETTINGS['exclude_user']) ? str_contains($userLogin, $SETTINGS['exclude_user']) : false;
+    if ($excludeUser) {
+        return false;
+    }
+
+    return isset($SETTINGS['admin_needle']) 
+        || isset($SETTINGS['manager_needle']) 
+        || isset($SETTINGS['tp_manager_needle']) 
+        || isset($SETTINGS['read_only_needle']);
+}
+
+/**
+ * Apply role-based permissions using "needle" detection in role titles
+ * 
+ * @param array $role
+ * @param array $currentPermissions
+ * @param array $SETTINGS
+ * @return array Updated permissions
+ */
+function applyRoleNeedlePermissions(array $role, array $currentPermissions, array $SETTINGS): array
+{
+    $needleConfig = [
+        'admin_needle' => [
+            'admin' => 1,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 0,
+            'read_only' => 0,
+        ],
+        'manager_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 1,
+            'can_manage_all_users' => 0,
+            'read_only' => 0,
+        ],
+        'tp_manager_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 1,
+            'read_only' => 0,
+        ],
+        'read_only_needle' => [
+            'admin' => 0,
+            'gestionnaire' => 0,
+            'can_manage_all_users' => 0,
+            'read_only' => 1,
+        ],
+    ];
+
+    foreach ($needleConfig as $needleSetting => $permissions) {
+        if (isset($SETTINGS[$needleSetting]) && str_contains($role['title'], $SETTINGS[$needleSetting])) {
+            return $permissions;
+        }
+    }
+
+    return $currentPermissions;
+}
+
+/**
+ * Setup user roles and permissions
+ * Handles role conversion, AD groups merge, and permission calculation
+ *
+ * @param SessionManager $session
+ * @param array $userInfo (passed by reference to allow modifications)
+ * @param array $SETTINGS
+ * @return array DB update data if permissions were adjusted
+ */
+function setupUserRolesAndPermissions($session, array &$userInfo, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+
+    // User's roles - Convert , to ; if needed
+    if (strpos($userInfo['fonction_id'] !== NULL ? (string) $userInfo['fonction_id'] : '', ',') !== false) {
+        $userInfo['fonction_id'] = str_replace(',', ';', (string) $userInfo['fonction_id']);
+    }
+    
+    // Append with roles from AD groups
+    if (is_null($userInfo['roles_from_ad_groups']) === false) {
+        $userInfo['fonction_id'] = empty($userInfo['fonction_id']) === true 
+            ? $userInfo['roles_from_ad_groups'] 
+            : $userInfo['fonction_id'] . ';' . $userInfo['roles_from_ad_groups'];
+    }
+    
+    // Store roles in session
+    $session->set('user-roles', $userInfo['fonction_id']);
+    $session->set('user-roles_array', array_unique(array_filter(explode(';', $userInfo['fonction_id']))));
+    
+    // Build array of roles and calculate permissions
+    $session->set('user-pw_complexity', 0);
+    $session->set('system-array_roles', []);
+    
+    $dbUpdateData = [];
+    
+    if (count($session->get('user-roles_array')) > 0) {
+        // Get roles from database
+        $rolesList = DB::query(
+            'SELECT id, title, complexity
+            FROM ' . prefixTable('roles_title') . '
+            WHERE id IN %li',
+            $session->get('user-roles_array')
+        );
+        
+        // Check if we should adjust permissions based on role names
+        $adjustPermissions = shouldAdjustPermissionsFromRoleNames(
+            $session->get('user-id'),
+            $session->get('user-login'),
+            $SETTINGS
+        );
+        
+        if ($adjustPermissions) {
+            // Reset all permissions initially
+            $userInfo['admin'] = $userInfo['gestionnaire'] = $userInfo['can_manage_all_users'] = $userInfo['read_only'] = 0;
+        }
+        
+        // Process each role
+        foreach ($rolesList as $role) {
+            // Add to session roles array
+            SessionManager::addRemoveFromSessionAssociativeArray(
+                'system-array_roles',
+                [
+                    'id' => $role['id'],
+                    'title' => $role['title'],
+                ],
+                'add'
+            );
+            
+            // Adjust permissions based on role title "needles"
+            if ($adjustPermissions) {
+                $newPermissions = applyRoleNeedlePermissions($role, [
+                    'admin' => $userInfo['admin'],
+                    'gestionnaire' => $userInfo['gestionnaire'],
+                    'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                    'read_only' => $userInfo['read_only'],
+                ], $SETTINGS);
+                
+                $userInfo['admin'] = $newPermissions['admin'];
+                $userInfo['gestionnaire'] = $newPermissions['gestionnaire'];
+                $userInfo['can_manage_all_users'] = $newPermissions['can_manage_all_users'];
+                $userInfo['read_only'] = $newPermissions['read_only'];
+            }
+
+            // Get highest complexity
+            if ($session->get('user-pw_complexity') < (int) $role['complexity']) {
+                $session->set('user-pw_complexity', (int) $role['complexity']);
+            }
+        }
+        
+        // If permissions were adjusted, update session and prepare DB update
+        if ($adjustPermissions) {
+            $session->set('user-admin', (int) $userInfo['admin']);
+            $session->set('user-manager', (int) $userInfo['gestionnaire']);
+            $session->set('user-can_manage_all_users', (int) $userInfo['can_manage_all_users']);
+            $session->set('user-read_only', (int) $userInfo['read_only']);
+            
+            $dbUpdateData = [
+                'admin' => $userInfo['admin'],
+                'gestionnaire' => $userInfo['gestionnaire'],
+                'can_manage_all_users' => $userInfo['can_manage_all_users'],
+                'read_only' => $userInfo['read_only'],
+            ];
+        }
+    }
+    
+    return $dbUpdateData;
+}
+
+/**
+ * Check if any unsuccessfull login tries exist
+ *
+ * @param int       $userInfoId
+ * @param string    $userInfoLogin
+ * @param string    $userInfoLastConnection
+ * @param string    $username
+ * @param array     $SETTINGS
+ * @return array
+ */
+function handleLoginAttempts(
+    $userInfoId,
+    $userInfoLogin,
+    $userInfoLastConnection,
+    $username,
+    $SETTINGS
+) : array
+{
+    $rows = DB::query(
+        'SELECT date
+        FROM ' . prefixTable('log_system') . "
+        WHERE field_1 = %s
+        AND type = 'failed_auth'
+        AND label = 'password_is_not_correct'
+        AND date >= %s AND date < %s",
+        $userInfoLogin,
+        $userInfoLastConnection,
+        time()
+    );
+    $arrAttempts = [];
+    if (DB::count() > 0) {
+        foreach ($rows as $record) {
+            array_push(
+                $arrAttempts,
+                date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['date'])
+            );
+        }
+    }
+    
+
+    // Log into DB the user's connection
+    if (isKeyExistingAndEqual('log_connections', 1, $SETTINGS) === true) {
+        logEvents($SETTINGS, 'user_connection', 'connection', (string) $userInfoId, stripslashes($username));
+    }
+
+    return [
+        'attemptsList' => $arrAttempts,
+        'attemptsCount' => count($rows),
+    ];
+}
+
+
+/**
+ * Can you user get logged into main page
+ *
+ * @param array     $SETTINGS
+ * @param int       $userInfoDisabled
+ * @param string    $username
+ * @param bool      $ldapConnection
+ *
+ * @return boolean
+ */
+function canUserGetLog(
+    $SETTINGS,
+    $userInfoDisabled,
+    $username,
+    $ldapConnection
+) : bool
+{
+    include_once TEAMPASS_APP . '/sources/main.functions.php';
+
+    if ((int) $userInfoDisabled === 1) {
+        return false;
+    }
+
+    if (isKeyExistingAndEqual('ldap_mode', 0, $SETTINGS) === true) {
+        return true;
+    }
+    
+    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true 
+        && (
+            ($ldapConnection === true && $username !== 'admin')
+            || $username === 'admin'
+        )
+    ) {
+        return true;
+    }
+
+    if (isKeyExistingAndEqual('ldap_and_local_authentication', 1, $SETTINGS) === true
+        && isset($SETTINGS['ldap_mode']) === true && in_array($SETTINGS['ldap_mode'], ['1', '2']) === true
+    ) {
+        return true;
+    }
+
+    return false;
+}
+
+/**
+ * 
+ * Prepare user keys
+ * 
+ * @param array $userInfo   User account information
+ * @param string $passwordClear
+ *
+ * @return array
+ */
+function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = []) : array
+{
+    $updateData = [];
+    if (is_null($userInfo['private_key']) === true || empty($userInfo['private_key']) === true || $userInfo['private_key'] === 'none') {
+        // No keys have been generated yet
+        // Create them
+        $userKeys = generateUserKeys($passwordClear, $SETTINGS);
+
+        $updateData = [
+            'public_key' => $userKeys['public_key'],
+            'private_key' => $userKeys['private_key'],
+        ];
+
+        // Add transparent recovery data if available
+        if (isset($userKeys['user_seed'])) {
+            $updateData['user_derivation_seed'] = $userKeys['user_seed'];
+            $updateData['private_key_backup'] = $userKeys['private_key_backup'];
+            $updateData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+            $updateData['last_pw_change'] = time();
+        }
+
+        return [
+            'public_key' => $userKeys['public_key'],
+            'private_key_clear' => $userKeys['private_key_clear'],
+            'update_keys_in_db' => $updateData,
+        ];
+    }
+
+    if ($userInfo['special'] === 'generate-keys') {
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => '',
+            'update_keys_in_db' => [],
+        ];
+    }
+
+    // User must provide their old LDAP password via the re-encryption modal.
+    // Allow login to proceed with an empty private key so the modal is displayed.
+    if ($userInfo['special'] === 'recrypt-private-key') {
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => '',
+            'update_keys_in_db' => [],
+        ];
+    }
+
+    // Don't perform this in case of special login action
+    if ($userInfo['special'] === 'otc_is_required_on_next_login' || $userInfo['special'] === 'user_added_from_ad') {
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => '',
+            'update_keys_in_db' => [],
+        ];
+    }
+
+    // Get encryption version (default to 1 if not set)
+    $encryptionVersion = isset($userInfo['encryption_version']) ? (int) $userInfo['encryption_version'] : 1;
+    
+    // Try to decrypt private key with migration support
+    $decryptResult = decryptPrivateKeyWithMigration(
+        $passwordClear,
+        $userInfo['private_key'],
+        (int) $userInfo['id'],
+        $encryptionVersion
+    );
+
+    // What phpseclib version is used?
+    if ($encryptionVersion !== $decryptResult['version_used']) {
+        $updateData['encryption_version'] = $decryptResult['version_used'];
+    }
+
+    // Check for migration errors
+    if ($decryptResult['migration_error'] === true) {
+        // Decryption failed - try transparent recovery as fallback
+        if (!empty($userInfo['user_derivation_seed'])
+            && !empty($userInfo['private_key_backup'])) {
+
+            $recovery = attemptTransparentRecovery($userInfo, $passwordClear, $SETTINGS);
+
+            if ($recovery['success']) {
+                return [
+                    'public_key' => $userInfo['public_key'],
+                    'private_key_clear' => $recovery['private_key_clear'],
+                    'update_keys_in_db' => [],
+                ];
+            }
+        }
+
+        // No recovery possible - throw exception to trigger normal error handling
+        throw new Exception('Failed to decrypt private key');
+    }
+
+    $privateKeyClear = $decryptResult['private_key_clear'];
+
+    $migrationSuccess = false; // tracks v1→v3 (SHA-1→SHA-256) migration success
+
+    // If migration is needed, perform it now
+    if ($decryptResult['needs_migration'] === true) {
+        $migrationSuccess = migrateAllUserKeysToV3(
+            (int) $userInfo['id'],
+            $passwordClear,
+            $privateKeyClear,
+            $userInfo
+        );
+
+        if ($migrationSuccess) {
+            // Migration successful - encryption_version updated in DB by migrateAllUserKeysToV3
+        }
+        // Migration failed but decryption worked, so continue with v1
+    }
+
+    // Handle XSS migration: re-encrypt private key with raw password when it was
+    // historically encrypted with xss_clean($password) instead of the raw password.
+    // When needs_migration is ALSO true, migrateAllUserKeysToV3() above already used
+    // the raw $passwordClear + SHA-256, so both issues are fixed in one pass.
+    $xssMigrationDone = false;
+    if ($decryptResult['needs_xss_migration'] === false) {
+        // Key confirmed to use raw password already — nothing to do
+        $xssMigrationDone = true;
+    } elseif ($decryptResult['needs_xss_migration'] === true && $decryptResult['needs_migration'] === false) {
+        // Key uses xss_clean'd password but SHA-256 — re-encrypt with raw password
+        try {
+            $reEncrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                base64_decode($privateKeyClear),
+                $passwordClear,
+                'cbc',
+                'sha256'
+            );
+            $updateData['private_key'] = base64_encode($reEncrypted);
+            $xssMigrationDone = true;
+        } catch (Exception $e) {
+            // Log but do not block login — two-pass decryption will still work next time
+            error_log('TEAMPASS XSS Migration Error - User ' . $userInfo['id'] . ' re-encryption failed: ' . $e->getMessage());
+        }
+    } elseif ($decryptResult['needs_xss_migration'] === true && $decryptResult['needs_migration'] === true) {
+        // Both migrations needed — migrateAllUserKeysToV3() above handled both with raw password + SHA-256
+        $xssMigrationDone = $migrationSuccess;
+    }
+
+    // Update DB flag once key is confirmed to use raw password in AES key derivation.
+    // NULL = not yet verified; 1 = confirmed (key uses raw password, xss_clean removed).
+    if ($xssMigrationDone) {
+        $updateData['private_key_xss_migration'] = 1;
+    }
+
+    try {
+        // If user has seed but no backup, create it on first successful login
+        if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {
+            $derivedKey = deriveBackupKey($userInfo['user_derivation_seed'], $userInfo['public_key'], $SETTINGS);
+            // Encrypt private key backup using CryptoManager (use v3 if migration happened, otherwise v1)
+            $backupHashAlgorithm = ($decryptResult['needs_migration'] === true) ? 'sha256' : 'sha1';
+            $privateKeyBackup = base64_encode(
+                \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt(
+                    base64_decode($privateKeyClear),
+                    $derivedKey,
+                    'cbc',
+                    $backupHashAlgorithm
+                )
+            );
+
+            // Generate integrity hash
+            $serverSecret = getServerSecret();
+            $integrityHash = generateKeyIntegrityHash($userInfo['user_derivation_seed'], $userInfo['public_key'], $serverSecret);
+
+            $updateData['private_key_backup'] = $privateKeyBackup;
+            $updateData['key_integrity_hash'] = $integrityHash;
+            $updateData['last_pw_change'] = time();
+        }
+
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => $privateKeyClear,
+            'update_keys_in_db' => $updateData,
+        ];
+    } catch (Exception $e) {
+        // Exception during backup creation - log but don't fail login
+        error_log('TEAMPASS Error - prepareUserEncryptionKeys backup creation failed: ' . $e->getMessage());
+        return [
+            'public_key' => $userInfo['public_key'],
+            'private_key_clear' => $privateKeyClear,
+            'update_keys_in_db' => [],
+        ];
+    }
+}
+
+
+/**
+ * CHECK PASSWORD VALIDITY
+ * Don't take into consideration if LDAP in use
+ * 
+ * @param array $userInfo User account information
+ * @param int $numDaysBeforePwExpiration Number of days before password expiration
+ * @param int $lastPwChange Last password change
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return array
+ */
+function checkUserPasswordValidity(array $userInfo, int $numDaysBeforePwExpiration, int $lastPwChange, array $SETTINGS)
+{
+    if (isKeyExistingAndEqual('ldap_mode', 1, $SETTINGS) === true && $userInfo['auth_type'] !== 'local') {
+        return [
+            'validite_pw' => true,
+            'last_pw_change' => $userInfo['last_pw_change'],
+            'user_force_relog' => '',
+            'numDaysBeforePwExpiration' => '',
+        ];
+    }
+    
+    if (isset($userInfo['last_pw_change']) === true) {
+        if ((int) $SETTINGS['pw_life_duration'] === 0) {
+            return [
+                'validite_pw' => true,
+                'last_pw_change' => '',
+                'user_force_relog' => 'infinite',
+                'numDaysBeforePwExpiration' => '',
+            ];
+        } elseif ((int) $SETTINGS['pw_life_duration'] > 0) {
+            $numDaysBeforePwExpiration = (int) $SETTINGS['pw_life_duration'] - round(
+                (mktime(0, 0, 0, (int) date('m'), (int) date('d'), (int) date('y')) - $userInfo['last_pw_change']) / (24 * 60 * 60)
+            );
+            return [
+                'validite_pw' => $numDaysBeforePwExpiration <= 0 ? false : true,
+                'last_pw_change' => $userInfo['last_pw_change'],
+                'user_force_relog' => 'infinite',
+                'numDaysBeforePwExpiration' => (int) $numDaysBeforePwExpiration,
+            ];
+        } else {
+            return [
+                'validite_pw' => false,
+                'last_pw_change' => '',
+                'user_force_relog' => '',
+                'numDaysBeforePwExpiration' => '',
+            ];
+        }
+    } else {
+        return [
+            'validite_pw' => false,
+            'last_pw_change' => '',
+            'user_force_relog' => '',
+            'numDaysBeforePwExpiration' => '',
+        ];
+    }
+}
+
+
+/**
+ * Authenticate a user through AD/LDAP.
+ *
+ * @param string $username      Username
+ * @param array $userInfo       User account information
+ * @param string $passwordClear Password
+ * @param array $SETTINGS       Teampass settings
+ *
+ * @return array
+ */
+function authenticateThroughAD(string $username, array $userInfo, string $passwordClear, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    
+    try {
+        // Get LDAP connection and handler
+        $ldapHandler = initializeLdapConnection($SETTINGS);
+        
+        // Authenticate user
+        $authResult = authenticateUser($username, $passwordClear, $ldapHandler, $SETTINGS, $lang);
+        if ($authResult['error']) {
+            return $authResult;
+        }
+        
+        $userADInfos = $authResult['user_info'];
+        
+        // Verify account expiration
+        if (isAccountExpired($userADInfos)) {
+            return [
+                'error' => true,
+                'message' => $lang->get('error_ad_user_expired'),
+            ];
+        }
+        
+        // Handle user creation if needed
+        if ($userInfo['ldap_user_to_be_created']) {
+            $userInfo = handleNewUser($username, $passwordClear, $userADInfos, $userInfo, $SETTINGS, $lang);
+        }
+        
+        // Get and handle user groups
+        $userGroupsData = getUserADGroups($userADInfos, $ldapHandler, $SETTINGS, $username);
+        handleUserADGroups($username, $userInfo, $userGroupsData['userGroups'], $SETTINGS);
+        
+        // Finalize authentication
+        finalizeAuthentication($userInfo, $passwordClear, $SETTINGS);
+        
+        return [
+            'error' => false,
+            'message' => '',
+            'user_info' => $userInfo,
+        ];
+        
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'message' => "Error: " . $e->getMessage(),
+        ];
+    }
+}
+
+/**
+ * Initialize LDAP connection based on type
+ * 
+ * @param array $SETTINGS Teampass settings
+ * @return array Contains connection and type-specific handler
+ * @throws Exception
+ */
+function initializeLdapConnection(array $SETTINGS): array
+{
+    $ldapExtra = new LdapExtra($SETTINGS);
+    $ldapConnection = $ldapExtra->establishLdapConnection();
+    
+    switch ($SETTINGS['ldap_type']) {
+        case 'ActiveDirectory':
+            return [
+                'connection' => $ldapConnection,
+                'handler' => new ActiveDirectoryExtra(),
+                'type' => 'ActiveDirectory'
+            ];
+        case 'OpenLDAP':
+            return [
+                'connection' => $ldapConnection,
+                'handler' => new OpenLdapExtra(),
+                'type' => 'OpenLDAP'
+            ];
+        default:
+            throw new Exception("Unsupported LDAP type: " . $SETTINGS['ldap_type']);
+    }
+}
+
+/**
+ * Authenticate user against LDAP
+ * 
+ * @param string $username Username
+ * @param string $passwordClear Password
+ * @param array $ldapHandler LDAP connection and handler
+ * @param array $SETTINGS Teampass settings
+ * @param Language $lang Language instance
+ * @return array Authentication result
+ */
+function authenticateUser(string $username, string $passwordClear, array $ldapHandler, array $SETTINGS, Language $lang): array
+{
+    try {
+        $userAttribute = $SETTINGS['ldap_user_attribute'] ?? 'samaccountname';
+        $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+
+        // Define attributes to retrieve from LDAP
+        // These are needed for user creation and authentication
+        $ldapAttributes = [
+            'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
+            'samaccountname', 'userprincipalname', 'uid',
+            'shadowexpire', 'accountexpires', 'useraccountcontrol',
+            $userAttribute,
+            $dnAttribute
+        ];
+
+        $userADInfos = $ldapHandler['connection']->query()
+            ->select($ldapAttributes)
+            ->where($userAttribute, '=', $username)
+            ->firstOrFail();
+
+        // Verify user status for ActiveDirectory
+        if ($ldapHandler['type'] === 'ActiveDirectory' && !$ldapHandler['handler']->userIsEnabled((string) $userADInfos['dn'], $ldapHandler['connection'])) {
+            return [
+                'error' => true,
+                'message' => "Error: User is not enabled"
+            ];
+        }
+        // Attempt authentication
+        $authIdentifier = $ldapHandler['type'] === 'ActiveDirectory' 
+            ? $userADInfos['userprincipalname'][0] 
+            : $userADInfos['dn'];
+            
+        if (!$ldapHandler['connection']->auth()->attempt($authIdentifier, $passwordClear)) {
+            return [
+                'error' => true,
+                'message' => "Error: User is not authenticated"
+            ];
+        }
+        
+        return [
+            'error' => false,
+            'user_info' => $userADInfos
+        ];
+        
+    } catch (\LdapRecord\Query\ObjectNotFoundException $e) {
+        return [
+            'error' => true,
+            'message' => $lang->get('error_bad_credentials')
+        ];
+    }
+}
+
+/**
+ * Check if user account is expired
+ * 
+ * @param array $userADInfos User AD information
+ * @return bool
+ */
+function isAccountExpired(array $userADInfos): bool
+{
+    return (isset($userADInfos['shadowexpire'][0]) && (int) $userADInfos['shadowexpire'][0] === 1)
+        || (isset($userADInfos['accountexpires'][0]) 
+            && (int) $userADInfos['accountexpires'][0] < time() 
+            && (int) $userADInfos['accountexpires'][0] !== 0);
+}
+
+/**
+ * Handle creation of new user
+ * 
+ * @param string $username Username
+ * @param string $passwordClear Password
+ * @param array $userADInfos User AD information
+ * @param array $userInfo User information
+ * @param array $SETTINGS Teampass settings
+ * @param Language $lang Language instance
+ * @return array User information
+ */
+function handleNewUser(string $username, string $passwordClear, array $userADInfos, array $userInfo, array $SETTINGS, Language $lang): array
+{
+    $userInfo = externalAdCreateUser(
+        $username,
+        $passwordClear,
+        $userADInfos['mail'][0] ?? '',
+        $userADInfos['givenname'][0],
+        $userADInfos['sn'][0],
+        'ldap',
+        [],
+        $SETTINGS
+    );
+
+    handleUserKeys(
+        (int) $userInfo['id'],
+        $passwordClear,
+        (int) ($SETTINGS['maximum_number_of_items_to_treat'] ?? NUMBER_ITEMS_IN_BATCH),
+        uniqidReal(20),
+        true,
+        true,
+        true,
+        false,
+        $lang->get('email_body_user_config_2')
+    );
+
+    $userInfo['has_been_created'] = 1;
+    return $userInfo;
+}
+
+/**
+ * Get user groups based on LDAP type
+ *
+ * @param array $userADInfos User AD information
+ * @param array $ldapHandler LDAP connection and handler
+ * @param array $SETTINGS Teampass settings
+ * @param string $username User login name (used for posixGroup memberuid matching in OpenLDAP)
+ * @return array User groups
+ */
+function getUserADGroups(array $userADInfos, array $ldapHandler, array $SETTINGS, string $username = ''): array
+{
+    $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
+
+    if ($ldapHandler['type'] === 'ActiveDirectory') {
+        return $ldapHandler['handler']->getUserADGroups(
+            $userADInfos[$dnAttribute][0],
+            $ldapHandler['connection'],
+            $SETTINGS
+        );
+    }
+
+    if ($ldapHandler['type'] === 'OpenLDAP') {
+        return $ldapHandler['handler']->getUserADGroups(
+            $userADInfos['dn'],
+            $ldapHandler['connection'],
+            $SETTINGS,
+            $username
+        );
+    }
+
+    throw new Exception("Unsupported LDAP type: " . $ldapHandler['type']);
+}
+
+/**
+ * Permits to update the user's AD groups with mapping roles
+ *
+ * @param string $username
+ * @param array $userInfo
+ * @param array $groups
+ * @param array $SETTINGS
+ * @return void
+ */
+function handleUserADGroups(string $username, array $userInfo, array $groups, array $SETTINGS): void
+{
+    if (isset($SETTINGS['enable_ad_users_with_ad_groups']) === true && (int) $SETTINGS['enable_ad_users_with_ad_groups'] === 1) {
+        // Get user groups from AD
+        $user_ad_groups = [];
+        
+        foreach($groups as $group) {
+            // Skip invalid/corrupted group data
+            if (empty($group) || !mb_check_encoding($group, 'UTF-8') || !preg_match('/^[\x20-\x7E\x80-\xFF]+$/u', $group)) {
+                if (WIP === true) error_log('DEBUG TeamPass - LDAP: Invalid group data detected and skipped: ' . bin2hex($group));
+                continue;
+            }
+            
+            // Clean the group string
+            $group = trim($group);
+            
+            // get relation role id for AD group
+            $role = DB::queryFirstRow(
+                'SELECT lgr.role_id
+                FROM ' . prefixTable('ldap_groups_roles') . ' AS lgr
+                WHERE lgr.ldap_group_id = %s',
+                $group
+            );
+            if (DB::count() > 0) {
+                array_push($user_ad_groups, (int) $role['role_id']); 
+            }
+        }
+        
+        // Save AD roles in users_roles table with source='ad'
+        if (count($user_ad_groups) > 0) {
+            setUserRoles((int) $userInfo['id'], $user_ad_groups, 'ad');
+            
+            // Update userInfo array for session (format with semicolons for compatibility)
+            $userInfo['roles_from_ad_groups'] = implode(';', $user_ad_groups);
+        } else {
+            // Remove all AD roles
+            removeUserRolesBySource((int) $userInfo['id'], 'ad');
+            
+            $userInfo['roles_from_ad_groups'] = '';
+        }
+    } else {
+        // Delete all user's AD roles
+        removeUserRolesBySource((int) $userInfo['id'], 'ad');
+        
+        $userInfo['roles_from_ad_groups'] = '';
+    }
+}
+
+
+/**
+ * Permits to finalize the authentication process.
+ *
+ * @param array $userInfo
+ * @param string $passwordClear
+ * @param array $SETTINGS
+ */
+function finalizeAuthentication(
+    array $userInfo,
+    string $passwordClear,
+    array $SETTINGS
+): void
+{
+    $passwordManager = new PasswordManager();
+
+    // Migrate password if needed
+    $result = $passwordManager->migratePassword(
+        $userInfo['pw'],
+        $passwordClear,
+        (int) $userInfo['id']
+    );
+
+    // Check if password in Teampass needs to be synchronized with AD
+    // Covers: first login (empty pw), new AD user, or AD password change
+    $hashedPassword = $result['hashedPassword'];
+    $passwordNeedsSync = empty($userInfo['pw']) === true
+        || $userInfo['special'] === 'user_added_from_ad'
+        || $passwordManager->verifyPassword($hashedPassword, $passwordClear) === false;
+
+    if ($passwordNeedsSync) {
+        // Try transparent recovery to re-encrypt private key with new password
+        $recoveryResult = handleExternalPasswordChange(
+            (int) $userInfo['id'],
+            $passwordClear,
+            $userInfo,
+            $SETTINGS
+        );
+
+        // Update pw hash only on full success.
+        // For 'no_recovery_data': pw was already updated inside handleExternalPasswordChange()
+        //   so the re-encryption modal can verify the new LDAP password against the stored hash.
+        // For 'recovery_failed': leave pw unchanged so the mismatch stays detectable.
+        if ($recoveryResult['success'] === true) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                    'otp_provided' => 1,
+                    'special' => 'none',
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+    }
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param string $login          Login
+ * @param string $passwordClear  User password in clear
+ * @param string $userEmail      User email
+ * @param string $userName       User name
+ * @param string $userLastname   User lastname
+ * @param string $authType       Authentication type
+ * @param array  $userGroups     User groups
+ * @param array  $SETTINGS       Teampass settings
+ *
+ * @return array
+ */
+function externalAdCreateUser(
+    string $login,
+    string $passwordClear,
+    string $userEmail,
+    string $userName,
+    string $userLastname,
+    string $authType,
+    array $userGroups,
+    array $SETTINGS
+): array
+{
+    $session = SessionManager::getSession();
+
+    // Generate user keys pair with transparent recovery support
+    $userKeys = generateUserKeys($passwordClear, $SETTINGS);
+    
+    // Create password hash
+    $passwordManager = new PasswordManager();
+    $hashedPassword = $passwordManager->hashPassword($passwordClear);
+    
+    // If any groups provided, add user to them
+    $groupIds = [];
+    if (count($userGroups) > 0) {
+        foreach ($userGroups as $group) {
+            // Check if exists in DB
+            $groupData = DB::queryFirstRow(
+                'SELECT id
+                FROM ' . prefixTable('roles_title') . '
+                WHERE title = %s',
+                $group["displayName"]
+            );
+
+            if (DB::count() > 0) {
+                array_push($groupIds, $groupData['id']);
+            }
+        }
+    }
+    
+    if (empty($userGroups) && !empty($SETTINGS['oauth_selfregistered_user_belongs_to_role'])) {
+        $userGroups = $SETTINGS['oauth_selfregistered_user_belongs_to_role'];
+    }
+    
+    // Prepare user data
+    $userData = [
+        'login' => (string) $login,
+        'pw' => (string) $hashedPassword,
+        'email' => (string) $userEmail,
+        'name' => (string) $userName,
+        'lastname' => (string) $userLastname,
+        'admin' => '0',
+        'gestionnaire' => '0',
+        'can_manage_all_users' => '0',
+        'personal_folder' => $SETTINGS['enable_pf_feature'] === '1' ? '1' : '0',
+        'user_language' => (string) $SETTINGS['default_language'],
+        'encrypted_psk' => '',
+        'isAdministratedByRole' => $authType === 'ldap' ?
+            (isset($SETTINGS['ldap_new_user_is_administrated_by']) === true && empty($SETTINGS['ldap_new_user_is_administrated_by']) === false ? $SETTINGS['ldap_new_user_is_administrated_by'] : 0)
+            : (
+                $authType === 'oauth2' ?
+                (isset($SETTINGS['oauth_new_user_is_administrated_by']) === true && empty($SETTINGS['oauth_new_user_is_administrated_by']) === false ? $SETTINGS['oauth_new_user_is_administrated_by'] : 0)
+                : 0
+            ),
+        'public_key' => $userKeys['public_key'],
+        'private_key' => $userKeys['private_key'],
+        'special' => 'none',
+        'auth_type' => $authType,
+        'otp_provided' => '1',
+        'is_ready_for_usage' => '0',
+        'created_at' => time(),
+        'personal_items_migrated' => 1,
+        'encryption_version' => 3,
+        'phpseclibv3_migration_completed' => 1,
+    ];
+
+    // Add transparent recovery fields if available
+    if (isset($userKeys['user_seed'])) {
+        $userData['user_derivation_seed'] = $userKeys['user_seed'];
+        $userData['private_key_backup'] = $userKeys['private_key_backup'];
+        $userData['key_integrity_hash'] = $userKeys['key_integrity_hash'];
+        $userData['last_pw_change'] = time();
+    }
+    // Insert user in DB
+    DB::insert(prefixTable('users'), $userData);
+    $newUserId = DB::insertId();
+
+    // Store private key in dedicated table
+    insertPrivateKeyWithCurrentFlag($newUserId, $userKeys['private_key']);
+
+    // Add Groups and Roles
+    setUserRoles($newUserId, $groupIds, 'manual');
+
+    // Create the API key
+    DB::insert(
+        prefixTable('api'),
+        array(
+            'type' => 'user',
+            'user_id' => $newUserId,
+            'value' => encryptUserObjectKey(base64_encode(base64_encode(uniqidReal(39))), $userKeys['public_key']),
+            'timestamp' => time(),
+            'allowed_to_read' => 1,
+            'allowed_folders' => '',
+            'enabled' => 0,
+        )
+    );
+
+    // Create personnal folder
+    if (isKeyExistingAndEqual('enable_pf_feature', 1, $SETTINGS) === true) {
+        DB::insert(
+            prefixTable('nested_tree'),
+            [
+                'parent_id' => '0',
+                'title' => $newUserId,
+                'bloquer_creation' => '0',
+                'bloquer_modification' => '0',
+                'personal_folder' => '1',
+                'categories' => '',
+            ]
+        );
+        // Rebuild tree
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree->rebuild();
+    }
+
+    // Prevent PhpSeclibv3 migration on next login
+    $session->set('phpseclibv3_migration_started', false);
+    $session->set('phpseclibv3_migration_in_progress', false);
+
+    return [
+        'error' => false,
+        'message' => '',
+        'proceedIdentification' => true,
+        'user_initial_creation_through_external_ad' => true,
+        'id' => $newUserId,
+        'oauth2_login_ongoing' => true,
+        'pw' => $hashedPassword
+    ];
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param string                $username     Username
+ * @param array                 $userInfo     Result of query
+ * @param string|array|resource $dataReceived DataReceived
+ * @param array                 $SETTINGS     Teampass settings
+ *
+ * @return array
+ */
+function googleMFACheck(string $username, array $userInfo, $dataReceived, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();    
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    if (
+        isset($dataReceived['GACode']) === true
+        && empty($dataReceived['GACode']) === false
+    ) {
+        $sessionAdmin = $session->get('user-admin');
+        $sessionUrl = $session->get('user-initial_url');
+        $sessionPwdAttempts = $session->get('pwd_attempts');
+        // create new instance
+        $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
+        // Init
+        $firstTime = [];
+        // now check if it is the 1st time the user is using 2FA
+        if ($userInfo['ga_temporary_code'] !== 'none' && $userInfo['ga_temporary_code'] !== 'done') {
+            if ($userInfo['ga_temporary_code'] !== $dataReceived['GACode']) {
+                return [
+                    'error' => true,
+                    'message' => $lang->get('ga_bad_code'),
+                    'proceedIdentification' => false,
+                    'ga_bad_code' => true,
+                    'firstTime' => $firstTime,
+                ];
+            }
+
+            // If first time with MFA code
+            $proceedIdentification = false;
+            
+            // generate new QR
+            $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
+                'Teampass - ' . $username,
+                $userInfo['ga']
+            );
+            // clear temporary code from DB
+            DB::update(
+                prefixTable('users'),
+                [
+                    'ga_temporary_code' => 'done',
+                ],
+                'id=%i',
+                $userInfo['id']
+            );
+            $firstTime = [
+                'value' => '<img src="' . $new_2fa_qr . '">',
+                'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
+                'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'message' => $lang->get('ga_flash_qr_and_login'),
+                'mfaStatus' => 'ga_temporary_code_correct',
+            ];
+        } else {
+            // verify the user GA code
+            if ($tfa->verifyCode($userInfo['ga'], $dataReceived['GACode'])) {
+                $proceedIdentification = true;
+            } else {
+                return [
+                    'error' => true,
+                    'message' => $lang->get('ga_bad_code'),
+                    'proceedIdentification' => false,
+                    'ga_bad_code' => true,
+                    'firstTime' => $firstTime,
+                ];
+            }
+        }
+    } else {
+        return [
+            'error' => true,
+            'message' => $lang->get('ga_bad_code'),
+            'proceedIdentification' => false,
+            'ga_bad_code' => true,
+            'firstTime' => [],
+        ];
+    }
+
+    return [
+        'error' => false,
+        'message' => '',
+        'proceedIdentification' => $proceedIdentification,
+        'firstTime' => $firstTime,
+    ];
+}
+
+
+/**
+ * Perform DUO checks
+ *
+ * @param string $username
+ * @param string|array|resource $dataReceived
+ * @param array $SETTINGS
+ * @return array
+ */
+function duoMFACheck(
+    string $username,
+    $dataReceived,
+    array $SETTINGS
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    $sessionPwdAttempts = $session->get('pwd_attempts');
+    $saved_state = null !== $session->get('user-duo_state') ? $session->get('user-duo_state') : '';
+    $duo_status = null !== $session->get('user-duo_status') ? $session->get('user-duo_status') : '';
+
+    // Ensure state and login are set
+    if (
+        (empty($saved_state) || empty($dataReceived['login']) || !isset($dataReceived['duo_state']) || empty($dataReceived['duo_state']))
+        && $duo_status === 'IN_PROGRESS'
+        && $dataReceived['duo_status'] !== 'start_duo_auth'
+    ) {
+        return [
+            'error' => true,
+            'message' => $lang->get('duo_no_data'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+
+    // Ensure state matches from initial request
+    if ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_state'] !== $saved_state) {
+        $session->set('user-duo_state', '');
+        $session->set('user-duo_status', '');
+
+        // We did not received a proper Duo state
+        return [
+            'error' => true,
+            'message' => $lang->get('duo_error_state'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+
+    return [
+        'error' => false,
+        'pwd_attempts' => (int) $sessionPwdAttempts,
+        'saved_state' => $saved_state,
+        'duo_status' => $duo_status,
+    ];
+}
+
+
+/**
+ * Create the redirect URL or check if the DUO Universal prompt was completed successfully.
+ *
+ * @param string                $username               Username
+ * @param string|array|resource $dataReceived           DataReceived
+ * @param int                   $sessionPwdAttempts     Nb of pwd attempts
+ * @param string                $saved_state            Saved state
+ * @param string                $duo_status             Duo status
+ * @param array                 $SETTINGS               Teampass settings
+ *
+ * @return array
+ */
+function duoMFAPerform(
+    string $username,
+    $dataReceived,
+    int $sessionPwdAttempts,
+    string $saved_state,
+    string $duo_status,
+    array $SETTINGS
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    try {
+        $duo_client = new Client(
+            $SETTINGS['duo_ikey'],
+            $SETTINGS['duo_skey'],
+            $SETTINGS['duo_host'],
+            $SETTINGS['cpassman_url'].'/'.DUO_CALLBACK
+        );
+    } catch (DuoException $e) {
+        return [
+            'error' => true,
+            'message' => $lang->get('duo_config_error'),
+            'debug_message' => $e->getMessage(),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'proceedIdentification' => false,
+        ];
+    }
+        
+    try {
+        $duo_error = $lang->get('duo_error_secure');
+        $duo_failmode = "none";
+        $duo_client->healthCheck();
+    } catch (DuoException $e) {
+        //Not implemented Duo Failmode in case the Duo services are not available
+        /*if ($SETTINGS['duo_failmode'] == "safe") {
+            # If we're failing open, errors in 2FA still allow for success
+            $duo_error = $lang->get('duo_error_failopen');
+            $duo_failmode = "safe";
+        } else {
+            # Duo has failed and is unavailable, redirect user to the login page
+            $duo_error = $lang->get('duo_error_secure');
+            $duo_failmode = "secure";
+        }*/
+        return [
+            'error' => true,
+            'message' => $duo_error . $lang->get('duo_error_check_config'),
+            'pwd_attempts' => (int) $sessionPwdAttempts,
+            'debug_message' => $e->getMessage(),
+            'proceedIdentification' => false,
+        ];
+    }
+    
+    // Check if no one played with the javascript
+    if ($duo_status !== 'IN_PROGRESS' && $dataReceived['duo_status'] === 'start_duo_auth') {
+        # Create the Duo URL to send the user to
+        try {
+            $duo_state = $duo_client->generateState();
+            $duo_redirect_url = $duo_client->createAuthUrl($username, $duo_state);
+        } catch (DuoException $e) {
+            return [
+                'error' => true,
+                'message' => $duo_error . $lang->get('duo_error_url'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'debug_message' => $e->getMessage(),
+                'proceedIdentification' => false,
+            ];
+        }
+        
+        // Somethimes Duo return success but fail to return a URL, double check if the URL has been created
+        if (!empty($duo_redirect_url) && filter_var($duo_redirect_url,FILTER_SANITIZE_URL)) {
+            // Since Duo Universal requires a redirect, let's store some info when the user get's back after completing the Duo prompt
+            $key = hash('sha256', $duo_state);
+            $iv = substr(hash('sha256', $duo_state), 0, 16);
+            $duo_data = serialize([
+                'duo_login' => $username,
+                'duo_pwd' => $dataReceived['pw'],
+            ]);
+            $duo_data_enc = openssl_encrypt($duo_data, 'AES-256-CBC', $key, 0, $iv);
+            $session->set('user-duo_state', $duo_state);
+            $session->set('user-duo_data', base64_encode($duo_data_enc));
+            $session->set('user-duo_status', 'IN_PROGRESS');
+            $session->set('user-login', $username);
+            
+            // If we got here we can reset the password attempts
+            $session->set('pwd_attempts', 0);
+            
+            return [
+                'error' => false,
+                'message' => '',
+                'proceedIdentification' => false,
+                'duo_url_ready' => true,
+                'duo_redirect_url' => $duo_redirect_url,
+                'duo_failmode' => $duo_failmode,
+            ];
+        } else {
+            return [
+                'error' => true,
+                'message' => $duo_error . $lang->get('duo_error_url'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'proceedIdentification' => false,
+            ];
+        }
+    } elseif ($duo_status === 'IN_PROGRESS' && $dataReceived['duo_code'] !== '') {
+        try {
+            // Check if the Duo code received is valid
+            $decoded_token = $duo_client->exchangeAuthorizationCodeFor2FAResult($dataReceived['duo_code'], $username);
+        } catch (DuoException $e) {
+            return [
+                'error' => true,
+                'message' => $lang->get('duo_error_decoding'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'debug_message' => $e->getMessage(),
+                'proceedIdentification' => false,
+            ];
+        }
+        // return the response (which should be the user name)
+        if ($decoded_token['preferred_username'] === $username) {
+            $session->set('user-duo_status', 'COMPLET');
+            $session->set('user-duo_state','');
+            $session->set('user-duo_data','');
+            $session->set('user-login', $username);
+
+            return [
+                'error' => false,
+                'message' => '',
+                'proceedIdentification' => true,
+                'authenticated_username' => $decoded_token['preferred_username']
+            ];
+        } else {
+            // Something wrong, username from the original Duo request is different than the one received now
+            $session->set('user-duo_status','');
+            $session->set('user-duo_state','');
+            $session->set('user-duo_data','');
+
+            return [
+                'error' => true,
+                'message' => $lang->get('duo_login_mismatch'),
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'proceedIdentification' => false,
+            ];
+        }
+    }
+    // If we are here something wrong
+    $session->set('user-duo_status','');
+    $session->set('user-duo_state','');
+    $session->set('user-duo_data','');
+    return [
+        'error' => true,
+        'message' => $lang->get('duo_login_mismatch'),
+        'pwd_attempts' => (int) $sessionPwdAttempts,
+        'proceedIdentification' => false,
+    ];
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param string                $passwordClear Password in clear
+ * @param array|string          $userInfo      Array of user data
+ *
+ * @return array
+ */
+function checkCredentials($passwordClear, $userInfo): array
+{
+    $passwordManager = new PasswordManager();
+
+    // Strategy 1: Try with raw password (new behavior, correct way)
+    // Migrate password if needed
+    $result = $passwordManager->migratePassword(
+        $userInfo['pw'],
+        $passwordClear,
+        (int) $userInfo['id'],
+        (bool) $userInfo['admin']
+    );
+    
+    if ($result['status'] === true && $passwordManager->verifyPassword($result['hashedPassword'], $passwordClear) === true) {
+        // Password is correct with raw password (new behavior)
+        return [
+            'authenticated' => true,
+        ];
+    }
+
+    // Strategy 2: Try with sanitized password (legacy behavior for backward compatibility)
+    // This handles users who registered before fix 3.1.5.10
+    $passwordSanitized = filter_var($passwordClear, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+    // Only try sanitized version if it's different from the raw password
+    if ($passwordSanitized !== $passwordClear) {
+        $resultSanitized = $passwordManager->migratePassword(
+            $userInfo['pw'],
+            $passwordSanitized,
+            (int) $userInfo['id'],
+            (bool) $userInfo['admin']
+        );
+
+        if ($resultSanitized['status'] === true && $passwordManager->verifyPassword($resultSanitized['hashedPassword'], $passwordSanitized) === true) {
+            // Password is correct with sanitized password (legacy behavior)
+            // This means the user's hash in DB was created with the sanitized version
+            // We need to MIGRATE: re-hash the RAW password and save it
+
+            // Re-hash the raw (non-sanitized) password
+            $newHash = $passwordManager->hashPassword($passwordClear);
+            
+            $userCurrentPrivateKey = decryptPrivateKey($passwordSanitized, $userInfo['private_key']);
+            $newUserPrivateKey = encryptPrivateKey($passwordClear, $userCurrentPrivateKey);
+            
+            // Update user with new hash and mark migration as COMPLETE (0 = done)
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $newHash,
+                    'needs_password_migration' => 0,  // 0 = migration completed
+                    'private_key' => $newUserPrivateKey,
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            // Log the migration event
+            $configManager = new ConfigManager();
+            logEvents(
+                $configManager->getAllSettings(),
+                'user_password',
+                'password_migrated_from_sanitized',
+                (string) $userInfo['id'],
+                stripslashes($userInfo['login'] ?? ''),
+                ''
+            );
+
+            return [
+                'authenticated' => true,
+                'password_migrated' => true,
+                'private_key_reencrypted' => $newUserPrivateKey,
+            ];
+        }
+    }
+
+    // Password is not correct with either method
+    return [
+        'authenticated' => false,
+    ];
+}
+
+/**
+ * Undocumented function.
+ *
+ * @param bool   $enabled text1
+ * @param string $dbgFile text2
+ * @param string $text    text3
+ */
+function debugIdentify(bool $enabled, string $dbgFile, string $text): void
+{
+    if ($enabled === true) {
+        $fp = fopen($dbgFile, 'a');
+        if ($fp !== false) {
+            fwrite(
+                $fp,
+                $text
+            );
+        }
+    }
+}
+
+
+
+function identifyGetUserCredentials(
+    array $SETTINGS,
+    string $serverPHPAuthUser,
+    string $serverPHPAuthPw,
+    string $userPassword,
+    string $userLogin
+): array
+{
+    if ((int) $SETTINGS['enable_http_request_login'] === 1
+        && (int) $SETTINGS['maintenance_mode'] === 1
+    ) {
+        if (strpos($serverPHPAuthUser, '@') !== false) {
+            return [
+                'username' => explode('@', $serverPHPAuthUser)[0],
+                'passwordClear' => $serverPHPAuthPw
+            ];
+        }
+        
+        if (strpos($serverPHPAuthUser, '\\') !== false) {
+            return [
+                'username' => explode('\\', $serverPHPAuthUser)[1],
+                'passwordClear' => $serverPHPAuthPw
+            ];
+        }
+
+        return [
+            'username' => $serverPHPAuthPw,
+            'passwordClear' => $serverPHPAuthPw
+        ];
+    }
+    
+    return [
+        'username' => $userLogin,
+        'passwordClear' => $userPassword
+    ];
+}
+
+
+class initialChecks {
+    // Properties
+    public $login;
+
+    /**
+     * Check if the user or his IP address is blocked due to a high number of
+     * failed attempts.
+     * 
+     * @param string $username - The login tried to login.
+     * @param string $ip - The remote address of the user.
+     */
+    public function isTooManyPasswordAttempts($username, $ip) {
+
+        // Check for existing lock
+        $unlock_at = DB::queryFirstField(
+            'SELECT MAX(unlock_at)
+             FROM ' . prefixTable('auth_failures') . '
+             WHERE unlock_at > %s
+             AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+            date('Y-m-d H:i:s', time()),
+            'login',
+            $username,
+            'remote_ip',
+            $ip
+        );
+
+        // Account or remote address locked
+        if ($unlock_at) {
+            throw new Exception((string) $unlock_at);
+        }
+    }
+
+    public function getUserInfo($login, $enable_ad_user_auto_creation, $oauth2_enabled) {
+        $session = SessionManager::getSession();
+    
+        // Get user info from DB with all related data
+        $data = getUserCompleteData($login);
+        
+        $dataUserCount = DB::count();
+        
+        // User doesn't exist then return error
+        // Except if user creation from LDAP is enabled
+        if (
+            $dataUserCount === 0
+            && !filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) 
+            && !filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN)
+        ) {
+            throw new Exception("error");
+        }
+
+        // Check if similar login deleted exists
+        DB::queryFirstRow(
+            'SELECT id, login
+            FROM ' . prefixTable('users') . '
+            WHERE login LIKE %s AND deleted_at IS NOT NULL',
+            $login . '_deleted_%'
+        );
+
+        if (DB::count() > 0) {
+            throw new Exception("error_user_deleted_exists");
+        }
+
+        // We cannot create a user with LDAP if the OAuth2 login is ongoing
+        $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN);
+    
+        $data['ldap_user_to_be_created'] = (
+            filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
+            $dataUserCount === 0 &&
+            !$data['oauth2_login_ongoing']
+        );
+        $data['oauth2_user_not_exists'] = (
+            filter_var($oauth2_enabled, FILTER_VALIDATE_BOOLEAN) &&
+            $dataUserCount === 0 &&
+            $data['oauth2_login_ongoing']
+        );
+
+        // For a new OAuth2 user, inject profile fields (name, email, groups) from the
+        // OAuth2 session into $data so that externalAdCreateUser() can store them.
+        // Without this, name/lastname/email remain empty in teampass_users and the
+        // confirmation email is never sent (UserHandlerTrait checks !empty(email)).
+        if ($data['oauth2_user_not_exists'] === true) {
+            $oauth2SessionInfo = $session->get('userOauth2Info') ?? [];
+            foreach (['mail', 'givenName', 'givenname', 'surname', 'displayName', 'groups', 'userPrincipalName'] as $field) {
+                if (isset($oauth2SessionInfo[$field])) {
+                    $data[$field] = $oauth2SessionInfo[$field];
+                }
+            }
+            // Azure AD sometimes returns null for 'mail' (accounts without a dedicated mailbox).
+            // Fall back to userPrincipalName so the confirmation email can still be sent.
+            if (empty($data['mail']) && !empty($data['userPrincipalName'])) {
+                $data['mail'] = $data['userPrincipalName'];
+            }
+        }
+
+        return $data;
+    }
+
+    public function isMaintenanceModeEnabled($maintenance_mode, $user_admin) {
+        if ((int) $maintenance_mode === 1 && (int) $user_admin === 0) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+
+    public function is2faCodeRequired(
+        $yubico,
+        $ga,
+        $duo,
+        $admin,
+        $adminMfaRequired,
+        $mfa,
+        $userMfaSelection,
+        $userMfaEnabled
+    ) {
+        if (
+            (empty($userMfaSelection) === true &&
+            isOneVarOfArrayEqualToValue(
+                [
+                    (int) $yubico,
+                    (int) $ga,
+                    (int) $duo
+                ],
+                1
+            ) === true)
+            && (((int) $admin !== 1 && (int) $userMfaEnabled === 1) || ((int) $adminMfaRequired === 1 && (int) $admin === 1))
+            && $mfa === true
+        ) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+
+    public function isInstallFolderPresent($admin, $install_folder) {
+        if ((int) $admin === 1 && is_dir($install_folder) === true) {
+            throw new Exception(
+                "error" 
+            );
+        }
+    }
+}
+
+
+/**
+ * Permit to get info about user before auth step
+ *
+ * @param array $SETTINGS
+ * @param integer $sessionPwdAttempts
+ * @param string $username
+ * @param integer $sessionAdmin
+ * @param string $sessionUrl
+ * @param string $user2faSelection
+ * @return array
+ */
+function identifyDoInitialChecks(
+    $SETTINGS,
+    int $sessionPwdAttempts,
+    string $username,
+    int $sessionAdmin,
+    string $sessionUrl,
+    string $user2faSelection
+): array
+{
+    $session = SessionManager::getSession();
+    $checks = new initialChecks();
+    $enableAdUserAutoCreation = $SETTINGS['enable_ad_user_auto_creation'] ?? false;
+    $oauth2Enabled = $SETTINGS['oauth2_enabled'] ?? false;
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    // Brute force management
+    try {
+        $checks->isTooManyPasswordAttempts($username, getClientIpServer());
+    } catch (Exception $e) {
+        $session->set('userOauth2Info', '');
+        logEvents($SETTINGS, 'failed_auth', 'bruteforce_account_locked', '', stripslashes($username), stripslashes($username));
+        return [
+            'error' => true,
+            'skip_anti_bruteforce' => true,
+            'array' => [
+                'value' => 'bruteforce_wait',
+                'error' => true,
+                'message' => $lang->get('bruteforce_wait') . (string) $e->getMessage(),
+            ]
+        ];
+    }
+
+    // Check if user exists
+    try {
+        $userInfo = $checks->getUserInfo($username, $enableAdUserAutoCreation, $oauth2Enabled);
+    } catch (Exception $e) {
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($username), stripslashes($username));
+        return [
+            'error' => true,
+            'array' => [
+                'error' => true,
+                'message' => $e->getMessage() === 'error_user_deleted_exists' ? $lang->get('error_user_deleted_exists') : $lang->get('error_bad_credentials'),
+            ]
+        ];
+    }
+
+    // Manage Maintenance mode
+    try {
+        $checks->isMaintenanceModeEnabled(
+            $SETTINGS['maintenance_mode'],
+            $userInfo['admin']
+        );
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'skip_anti_bruteforce' => true,
+            'array' => [
+                'value' => '',
+                'error' => 'maintenance_mode_enabled',
+                'message' => '',
+            ]
+        ];
+    }
+    
+    // user should use MFA?
+    $userInfo['mfa_auth_requested_roles'] = mfa_auth_requested_roles(
+        (string) $userInfo['fonction_id'],
+        is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+
+    // Check if 2FA code is requested
+    try {
+        $checks->is2faCodeRequired(
+            $SETTINGS['yubico_authentication'],
+            $SETTINGS['google_authentication'],
+            $SETTINGS['duo'],
+            $userInfo['admin'],
+            $SETTINGS['admin_2fa_required'],
+            $userInfo['mfa_auth_requested_roles'],
+            $user2faSelection,
+            $userInfo['mfa_enabled']
+        );
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '2fa_not_set',
+                'user_admin' => (int) $sessionAdmin,
+                'initial_url' => $sessionUrl,
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => '2fa_not_set',
+                'message' => $lang->get('select_valid_2fa_credentials'),
+            ]
+        ];
+    }
+    // If admin user then check if folder install exists
+    // if yes then refuse connection
+    try {
+        $checks->isInstallFolderPresent(
+            $userInfo['admin'],
+            '../install'
+        );
+    } catch (Exception $e) {
+        return [
+            'error' => true,
+            'array' => [
+                'value' => '',
+                'user_admin' => $sessionAdmin,
+                'initial_url' => $sessionUrl,
+                'pwd_attempts' => (int) $sessionPwdAttempts,
+                'error' => true,
+                'message' => $lang->get('remove_install_folder'),
+            ]
+        ];
+    }
+
+    // Check if  migration of password hash has previously failed
+    //cleanFailedAuthRecords($userInfo);
+
+    // Return some usefull information about user
+    return [
+        'error' => false,
+        'user_mfa_mode' => $user2faSelection,
+        'userInfo' => $userInfo,
+    ];
+}
+
+function cleanFailedAuthRecords(array $userInfo) : void
+{
+    // Clean previous failed attempts
+    $failedTasks = DB::query(
+        'SELECT increment_id
+        FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND JSON_EXTRACT(arguments, "$.new_user_id") = %i
+        AND status = %s',
+        'create_user_keys',
+        $userInfo['id'],
+        'failed'
+    );
+
+    // Supprimer chaque tâche échouée et ses sous-tâches
+    foreach ($failedTasks as $task) {
+        $incrementId = $task['increment_id'];
+
+        // Supprimer les sous-tâches associées
+        DB::delete(
+            prefixTable('background_subtasks'),
+            'sub_task_in_progress = %i',
+            $incrementId
+        );
+
+        // Supprimer la tâche principale
+        DB::delete(
+            prefixTable('background_tasks'),
+            'increment_id = %i',
+            $incrementId
+        );
+    }
+}
+
+function identifyDoLDAPChecks(
+    $SETTINGS,
+    $userInfo,
+    string $username,
+    string $passwordClear,
+    int $sessionAdmin,
+    string $sessionUrl,
+    int $sessionPwdAttempts
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    // Prepare LDAP connection if set up
+    if ((int) $SETTINGS['ldap_mode'] === 1
+        && $username !== 'admin'
+        && ((string) $userInfo['auth_type'] === 'ldap' || $userInfo['ldap_user_to_be_created'] === true)
+    ) {
+        $retLDAP = authenticateThroughAD(
+            $username,
+            $userInfo,
+            $passwordClear,
+            $SETTINGS
+        );
+        if ($retLDAP['error'] === true) {
+            // Use specific message if available (e.g. private key decryption failure)
+            $errorMessage = !empty($retLDAP['message']) && strpos($retLDAP['message'], 'Failed to decrypt private key') !== false
+                ? $lang->get('private_key_decryption_failed')
+                : $lang->get('error_bad_credentials');
+            return [
+                'error' => true,
+                'array' => [
+                    'value' => '',
+                    'user_admin' => $sessionAdmin,
+                    'initial_url' => $sessionUrl,
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => true,
+                    'message' => $errorMessage,
+                ]
+            ];
+        }
+        return [
+            'error' => false,
+            'retLDAP' => $retLDAP,
+            'ldapConnection' => true,
+            'userPasswordVerified' => true,
+        ];
+    }
+
+    // return if no addmin
+    return [
+        'error' => false,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
+
+
+function shouldUserAuthWithOauth2(
+    array $SETTINGS,
+    array $userInfo,
+    string $username
+): array
+{
+    // Security issue without this return if an user auth_type == oauth2 and
+    // oauth2 disabled : we can login as a valid user by using hashUserId(username)
+    // as password in the login the form.
+    if ((int) $SETTINGS['oauth2_enabled'] !== 1 && filter_var($userInfo['oauth2_login_ongoing'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true) {
+        return [
+            'error' => true,
+            'message' => 'user_not_allowed_to_auth_to_teampass_app',
+            'oauth2Connection' => false,
+            'userPasswordVerified' => false,
+        ];
+    }
+
+    // Prepare Oauth2 connection if set up
+    if ($username !== 'admin') {
+        // User has started to auth with oauth2
+        if ((bool) $userInfo['oauth2_login_ongoing'] === true) {
+            // Case where user exists in Teampass password login type
+            if ((string) $userInfo['auth_type'] === 'ldap' || (string) $userInfo['auth_type'] === 'local') {
+                // Add transparent recovery data if available
+                /*if (isset($userKeys['user_seed'])) {
+                    // Recrypt user private key with oauth2
+                    recryptUserPrivateKeyWithOauth2(
+                        (int) $userInfo['id'],
+                        $userKeys['user_seed'],
+                        $userKeys['public_key']
+                    );
+                }*/
+                
+                // Update user in database:
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        //'special' => 'recrypt-private-key',
+                        'auth_type' => 'oauth2',
+                    ),
+                    'id = %i',
+                    $userInfo['id']
+                );
+                // Update session auth type
+                $session = SessionManager::getSession();
+                $session->set('user-auth_type', 'oauth2');
+                // Accept login request
+                return [
+                    'error' => false,
+                    'message' => '',
+                    'oauth2Connection' => true,
+                    'userPasswordVerified' => true,
+                ];
+            } elseif ((string) $userInfo['auth_type'] === 'oauth2' || $userInfo['oauth2_login_ongoing'] === true) {
+                // OAuth2 login request on OAuth2 user account.
+                return [
+                    'error' => false,
+                    'message' => '',
+                    'oauth2Connection' => true,
+                    'userPasswordVerified' => true,
+                ];
+            } else {
+                // Case where auth_type is not managed
+                return [
+                    'error' => true,
+                    'message' => 'user_not_allowed_to_auth_to_teampass_app',
+                    'oauth2Connection' => false,
+                    'userPasswordVerified' => false,
+                ];
+            }
+        } else {
+            // User has started to auth the normal way
+            if ((string) $userInfo['auth_type'] === 'oauth2') {
+                // Case where user exists in Teampass but not allowed to auth with Oauth2
+                return [
+                    'error' => true,
+                    'message' => 'error_bad_credentials',
+                    'oauth2Connection' => false,
+                    'userPasswordVerified' => false,
+                ];
+            }
+        }
+    }
+
+    // return if no addmin
+    return [
+        'error' => false,
+        'message' => '',
+        'oauth2Connection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
+
+function checkOauth2User(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    int $userLdapHasBeenCreated
+): array
+{
+    // Is oauth2 user in Teampass?
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+        && filter_var($userInfo['oauth2_user_not_exists'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
+        && (int) $userLdapHasBeenCreated === 0
+    ) {
+        // Is allowed to self register with oauth2?
+        if (empty($SETTINGS['oauth_self_register_groups'])) {
+            // No self registration is allowed
+            return [
+                'error' => true,
+                'message' => 'error_bad_credentials',
+            ];
+        } else {
+            // Self registration is allowed
+            // Create user in Teampass
+            $userInfo['oauth2_user_to_be_created'] = true;
+            return createOauth2User(
+                $SETTINGS,
+                $userInfo,
+                $username,
+                $passwordClear,
+                true
+            );
+        }
+    
+    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+        // User is in construction, please wait for email
+        if (
+            isset($userInfo['is_ready_for_usage']) && (int) $userInfo['is_ready_for_usage'] !== 1 && 
+            $userInfo['ongoing_process_id'] !== null && (int) $userInfo['ongoing_process_id'] >= 0
+        ) {
+            // Check if the creation of user keys has failed
+            $errorMessage = checkIfUserKeyCreationFailed((int) $userInfo['id']);
+            if (!is_null($errorMessage)) {
+                // Refresh user info to permit retry
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'is_ready_for_usage' => 1,
+                        'otp_provided' => 1,
+                        'ongoing_process_id' => NULL,
+                        'special' => 'none',
+                    ),
+                    'id = %i',
+                    $userInfo['id']
+                );
+
+                // Prepare task to create user keys again
+                handleUserKeys(
+                    (int) $userInfo['id'],
+                    (string) $passwordClear,
+                    (int) NUMBER_ITEMS_IN_BATCH,
+                    '',
+                    true,
+                    true,
+                    true,
+                    false,
+                    'email_body_user_config_4',
+                    true,
+                    '',
+                    '',
+                );
+
+                // Return error message
+                return [
+                    'error' => true,
+                    'message' => $errorMessage,
+                    'no_log_event' => true
+                ];
+            } else {
+                return [
+                    'error' => true,
+                    'message' => 'account_in_construction_please_wait_email',
+                    'no_log_event' => true
+                ];
+            }
+        }
+
+        // CCheck if user should use oauth2
+        $ret = shouldUserAuthWithOauth2(
+            $SETTINGS,
+            $userInfo,
+            $username
+        );
+        if ($ret['error'] === true) {
+            return [
+                'error' => true,
+                'message' => $ret['message'],
+            ];
+        }
+
+        // login/password attempt on a local account:
+        // Return to avoid overwrite of user password that can allow a user
+        // to steal a local account.
+        if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
+            return [
+                'error' => false,
+                'message' => $ret['message'],
+                'ldapConnection' => false,
+                'userPasswordVerified' => false,        
+            ];
+        }
+
+        // Oauth2 user already exists and authenticated
+        $userInfo['has_been_created'] = 0;
+        $passwordManager = new PasswordManager();
+
+        // Update user hash un database if needed
+        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+
+            // Transparent recovery: handle external OAuth2 password change
+            handleExternalPasswordChange(
+                (int) $userInfo['id'],
+                $passwordClear,
+                $userInfo,
+                $SETTINGS
+            );
+        }
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => $ret['oauth2Connection'],
+            'userPasswordVerified' => $ret['userPasswordVerified'],
+        ];
+    }
+
+    // return if no admin
+    return [
+        'error' => false,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
+
+/**
+ * Check if a "create_user_keys" task failed for the given user_id.
+ *
+ * @param int $userId The user ID to check.
+ * @return string|null Returns an error message in English if a failed task is found, otherwise null.
+ */
+function checkIfUserKeyCreationFailed(int $userId): ?string
+{
+    // Find the latest "create_user_keys" task for the given user_id
+    $latestTask = DB::queryFirstRow(
+        'SELECT arguments, status FROM ' . prefixTable('background_tasks') . '
+        WHERE process_type = %s
+        AND arguments LIKE %s
+        ORDER BY increment_id DESC
+        LIMIT 1',
+        'create_user_keys', '%"new_user_id":' . $userId . '%'
+    );
+
+    // If a failed task is found, return an error message
+    if ($latestTask && $latestTask['status'] === 'failed') {
+        return "The creation of user keys for user ID {$userId} failed. Please contact your administrator to check the background tasks log for more details.";
+    }
+
+    // No failed task found for this user_id
+    return null;
+}
+
+
+/* * Create the user in Teampass
+ *
+ * @param array $SETTINGS
+ * @param array $userInfo
+ * @param string $username
+ * @param string $passwordClear
+ *
+ * @return array
+ */
+function createOauth2User(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    string $passwordClear,
+    bool $userSelfRegister = false
+): array
+{
+    // Prepare creating the new oauth2 user in Teampass
+    if ((int) $SETTINGS['oauth2_enabled'] === 1
+        && $username !== 'admin'
+        && filter_var($userInfo['oauth2_user_to_be_created'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === true
+    ) {
+        $session = SessionManager::getSession();    
+        $lang = new Language($session->get('user-language') ?? 'english');
+
+        // Prepare user groups
+        foreach ($userInfo['groups'] as $key => $group) {
+            // Check if the group is in the list of groups allowed to self register
+            // If the group is in the list, we remove it
+            if ($userSelfRegister === true && $group["displayName"] === $SETTINGS['oauth_self_register_groups']) {
+                unset($userInfo['groups'][$key]);
+            }
+        }
+        // Rebuild indexes
+        $userInfo['groups'] = array_values($userInfo['groups'] ?? []);
+        
+        // Create Oauth2 user if not exists and tasks enabled
+        $ret = externalAdCreateUser(
+            $username,
+            $passwordClear,
+            $userInfo['mail'] ?? '',
+            is_null($userInfo['givenname']) ? (is_null($userInfo['givenName']) ? '' : $userInfo['givenName']) : $userInfo['givenname'],
+            is_null($userInfo['surname']) ? '' : $userInfo['surname'],
+            'oauth2',
+            $userInfo['groups'],
+            $SETTINGS
+        );
+        $userInfo = array_merge($userInfo, $ret);
+
+        // prepapre background tasks for item keys generation  
+        handleUserKeys(
+            (int) $userInfo['id'],
+            (string) $passwordClear,
+            (int) (isset($SETTINGS['maximum_number_of_items_to_treat']) === true ? $SETTINGS['maximum_number_of_items_to_treat'] : NUMBER_ITEMS_IN_BATCH),
+            uniqidReal(20),
+            true,
+            true,
+            true,
+            false,
+            $lang->get('email_body_user_config_2'),
+        );
+
+        // Complete $userInfo
+        $userInfo['has_been_created'] = 1;
+
+        if (WIP === true) error_log("--- USER CREATED ---");
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => true,
+            'userPasswordVerified' => true,
+        ];
+    
+    } elseif (isset($userInfo['id']) === true && empty($userInfo['id']) === false) {
+        // CHeck if user should use oauth2
+        $ret = shouldUserAuthWithOauth2(
+            $SETTINGS,
+            $userInfo,
+            $username
+        );
+        if ($ret['error'] === true) {
+            return [
+                'error' => true,
+                'message' => $ret['message'],
+            ];
+        }
+
+        // login/password attempt on a local account:
+        // Return to avoid overwrite of user password that can allow a user
+        // to steal a local account.
+        if (!$ret['oauth2Connection'] || !$ret['userPasswordVerified']) {
+            return [
+                'error' => false,
+                'message' => $ret['message'],
+                'ldapConnection' => false,
+                'userPasswordVerified' => false,        
+            ];
+        }
+
+        // Oauth2 user already exists and authenticated
+        if (WIP === true) error_log("--- USER AUTHENTICATED ---");
+        $userInfo['has_been_created'] = 0;
+
+        $passwordManager = new PasswordManager();
+
+        // Update user hash un database if needed
+        if (!$passwordManager->verifyPassword($userInfo['pw'], $passwordClear)) {
+            DB::update(
+                prefixTable('users'),
+                [
+                    'pw' => $passwordManager->hashPassword($passwordClear),
+                ],
+                'id = %i',
+                $userInfo['id']
+            );
+        }
+
+        return [
+            'error' => false,
+            'retExternalAD' => $userInfo,
+            'oauth2Connection' => $ret['oauth2Connection'],
+            'userPasswordVerified' => $ret['userPasswordVerified'],
+        ];
+    }
+
+    // return if no admin
+    return [
+        'error' => false,
+        'retLDAP' => [],
+        'ldapConnection' => false,
+        'userPasswordVerified' => false,
+    ];
+}
+
+function identifyDoMFAChecks(
+    $SETTINGS,
+    $userInfo,
+    $dataReceived,
+    $userInitialData,
+    string $username
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    switch ($userInitialData['user_mfa_mode']) {
+        case 'google':
+            $ret = googleMFACheck(
+                $username,
+                $userInfo,
+                $dataReceived,
+                $SETTINGS
+            );
+            if ($ret['error'] !== false) {
+                logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                return [
+                    'error' => true,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+
+            return [
+                'error' => false,
+                'mfaData' => $ret['firstTime'],
+                'mfaQRCodeInfos' => $userInitialData['user_mfa_mode'] === 'google'
+                && count($ret['firstTime']) > 0 ? true : false,
+            ];
+        
+        case 'duo':
+            // Prepare Duo connection if set up
+            $checks = duoMFACheck(
+                $username,
+                $dataReceived,
+                $SETTINGS
+            );
+
+            if ($checks['error'] === true) {
+                return [
+                    'error' => true,
+                    'mfaData' => $checks,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+
+            // If we are here
+            // Do DUO authentication
+            $ret = duoMFAPerform(
+                $username,
+                $dataReceived,
+                $checks['pwd_attempts'],
+                $checks['saved_state'],
+                $checks['duo_status'],
+                $SETTINGS
+            );
+
+            if ($ret['error'] !== false) {
+                logEvents($SETTINGS, 'failed_auth', 'bad_duo_mfa', '', stripslashes($username), stripslashes($username));
+                $session->set('user-duo_status','');
+                $session->set('user-duo_state','');
+                $session->set('user-duo_data','');
+                return [
+                    'error' => true,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            } else if ($ret['duo_url_ready'] === true){
+                return [
+                    'error' => false,
+                    'mfaData' => $ret,
+                    'duo_url_ready' => true,
+                    'mfaQRCodeInfos' => false,
+                ];
+            } else {
+                return [
+                    'error' => false,
+                    'mfaData' => $ret,
+                    'mfaQRCodeInfos' => false,
+                ];
+            }
+
+        default:
+            logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+            return [
+                'error' => true,
+                'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
+                'mfaQRCodeInfos' => false,
+            ];
+    }
+}
+
+function identifyDoAzureChecks(
+    array $SETTINGS,
+    $userInfo,
+    string $username
+): array
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+
+    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+    return [
+        'error' => true,
+        'mfaData' => ['message' => $lang->get('wrong_mfa_code')],
+        'mfaQRCodeInfos' => false,
+    ];
+}
+
+/**
+ * Return an integer admin setting while preserving backward-compatible defaults.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ * @param string               $key      Setting key to look up.
+ * @param int                  $default  Value returned when key is missing or empty.
+ * @param int                  $minimum  Minimum accepted value (clamped via max()).
+ *
+ * @return int
+ */
+function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
+{
+    if (array_key_exists($key, $settings) === false) {
+        return $default;
+    }
+
+    $rawValue = trim((string) $settings[$key]);
+    if ($rawValue == '') {
+        return $default;
+    }
+
+    return max($minimum, (int) $rawValue);
+}
+
+/**
+ * Add a failed authentication attempt to the database.
+ * If the number of failed attempts exceeds the limit, a lock is triggered.
+ *
+ * @param string $source              Source of the failed attempt (login or remote_ip).
+ * @param string $value               Value for this source (username or IP address).
+ * @param int    $limit               Failure attempt limit after which the source is locked.
+ * @param int    $lockDurationMinutes Fixed lock duration in minutes.
+ */
+function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
+{
+    if ($limit <= 0 || trim($value) === '') {
+        return;
+    }
+    // Count failed attempts from this source
+    $count = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('auth_failures') . '
+        WHERE source = %s AND value = %s',
+        $source,
+        $value
+    );
+
+    // Add this attempt
+    $count++;
+
+    // Calculate unlock time if number of attempts exceeds limit
+    $unlock_at = $count >= $limit
+        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
+        : null;
+
+    // Unlock account one time code
+    $unlock_code = ($count >= $limit && $source === 'login')
+        ? generateQuickPassword(30, false)
+        : null;
+
+    // Insert the new failure into the database
+    DB::insert(
+        prefixTable('auth_failures'),
+        [
+            'source' => $source,
+            'value' => $value,
+            'unlock_at' => $unlock_at,
+            'unlock_code' => $unlock_code,
+        ]
+    );
+
+    if ($unlock_at !== null && $source === 'login') {
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $lang = new Language($SETTINGS['default_language'] ?? 'english');
+
+        // Get user details
+        $userInfos = DB::queryFirstRow(
+            'SELECT email, name
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $value
+        );
+
+        // Notify all administrators about the locked account
+        notifyAdminsAboutLockedAccount(
+            $SETTINGS,
+            $lang,
+            $value,
+            is_array($userInfos) === true ? $userInfos : [],
+            getClientIpServer(),
+            $unlock_at
+        );
+
+        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
+
+        sendMailToUser(
+            $userInfos['email'],
+            $lang->get('bruteforce_reset_mail_body'),
+            $lang->get('bruteforce_reset_mail_subject'),
+            [
+                '#name#' => (string) ($userInfos['name'] ?? ''),
+                '#reset_url#' => $unlock_url,
+                '#unlock_at#' => $unlock_at,
+            ],
+            true
+        );
+    }
+}
+
+/**
+ * Notify all administrators when a user account is locked by anti brute force.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfos
+ */
+function notifyAdminsAboutLockedAccount(
+    array $SETTINGS,
+    Language $lang,
+    string $login,
+    array $userInfos,
+    string $sourceIp,
+    string $unlockAt
+): void {
+    $adminUsers = DB::query(
+        'SELECT email, name
+         FROM ' . prefixTable('users') . '
+         WHERE admin = %i
+            AND disabled = %i
+            AND deleted_at IS NULL
+            AND email IS NOT NULL
+            AND email != %s',
+        1,
+        0,
+        ''
+    );
+
+    if (empty($adminUsers) === true) {
+        return;
+    }
+
+    $userName = trim((string) ($userInfos['name'] ?? ''));
+    $userEmail = trim((string) ($userInfos['email'] ?? ''));
+    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
+    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
+
+    $unlockAtTimestamp = strtotime($unlockAt);
+    $formattedUnlockAt = $unlockAtTimestamp === false
+        ? $unlockAt
+        : date(
+            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
+            $unlockAtTimestamp
+        );
+
+    $mailBody = str_replace(
+        [
+            '#tp_user#',
+            '#tp_name#',
+            '#tp_email#',
+            '#tp_ip#',
+            '#tp_date#',
+            '#tp_time#',
+            '#tp_unlock_at#',
+        ],
+        [
+            $login,
+            $userDisplayName,
+            $userDisplayEmail,
+            $sourceIp,
+            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
+            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
+            $formattedUnlockAt,
+        ],
+        $lang->get('email_body_on_user_lock')
+    );
+
+    foreach ($adminUsers as $adminUser) {
+        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_on_user_lock'),
+            $mailBody,
+            (string) $adminUser['email'],
+            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
+        );
+    }
+}
+
+/**
+ * Add failed authentication attempts for both user login and IP address.
+ * This function checks the number of attempts for both the username and IP,
+ * and triggers a lock if the number exceeds the configured limits.
+ * Old technical entries are purged after 24 hours once unlocked.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ */
+function addFailedAuthentication(string $username, string $ip, array $settings): void
+{
+    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
+    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
+    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
+
+    if ($userLimit <= 0 && $ipLimit <= 0) {
+        return;
+    }
+
+    // Remove old logs (more than 24 hours) once the related lock is over.
+    DB::delete(
+        prefixTable('auth_failures'),
+        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+        date('Y-m-d H:i:s', time() - (24 * 3600)),
+        date('Y-m-d H:i:s', time())
+    );
+
+    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
+    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
+}
+
+/**
+ * Returns context data indicating whether local password recovery is available for the given user.
+ *
+ * @param array<string,mixed>|null $userInfo
+ * @param array<string,mixed>      $SETTINGS
+ * @return array{available: bool}
+ */
+function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
+{
+    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
+        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
+    $hasOngoingProcess = is_array($userInfo) === true
+        && empty($userInfo['ongoing_process_id']) === false;
+
+    return [
+        'available' => is_array($userInfo) === true
+            && ($userInfo['auth_type'] ?? '') === 'local'
+            && $featureEnabled === true
+            && $emailConfigured === true
+            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && $hasOngoingProcess === false,
+    ];
+}
+
+function clearForgotLocalPasswordRequestContext($session = null): void
+{
+    $session = $session ?? SessionManager::getSession();
+    $session->remove('forgot_local_password_login');
+    $session->remove('forgot_local_password_requested_at');
+}
+
+function storeForgotLocalPasswordRequestContext($session, string $login): void
+{
+    clearForgotLocalPasswordRequestContext($session);
+    $session->set('forgot_local_password_login', $login);
+    $session->set('forgot_local_password_requested_at', time());
+}
+
+function forgotLocalPasswordRequestIsAuthorized($session, string $login): bool
+{
+    $authorizedLogin = (string) ($session->get('forgot_local_password_login') ?? '');
+    $requestedAt = (int) ($session->get('forgot_local_password_requested_at') ?? 0);
+
+    return $authorizedLogin !== ''
+        && hash_equals($authorizedLogin, $login)
+        && $requestedAt > 0
+        && (time() - $requestedAt) <= 600;
+}
+
+/**
+ * Processes a local password recovery request.
+ * Generates a temporary password, resets the user's encryption keys immediately
+ * and sends a dedicated notification email in the target user's language.
+ *
+ * @param string               $sentData  Raw POST data field
+ * @param array<string,mixed>  $SETTINGS
+ * @return array{error: bool, message: string}
+ */
+function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
+{
+    $session = SessionManager::getSession();
+    $lang    = new Language($session->get('user-language') ?? 'english');
+
+    $dataReceived = $session->get('key') === null
+        ? $sentData
+        : prepareExchangedData($sentData, 'decode', $session->get('key'));
+    if (is_array($dataReceived) !== true) {
+        $dataReceived = [];
+    }
+    $dataReceived = sanitizeData($dataReceived, ['login' => 'trim|escape']);
+
+    $login = trim((string) ($dataReceived['login'] ?? ''));
+
+    if ($login === '') {
+        clearForgotLocalPasswordRequestContext($session);
+        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    }
+
+    if (forgotLocalPasswordRequestIsAuthorized($session, $login) !== true) {
+        clearForgotLocalPasswordRequestContext($session);
+        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    }
+
+    $userInfo    = getUserCompleteData($login);
+    $forgotCtx   = getForgotLocalPasswordContext($userInfo, $SETTINGS);
+    if ($forgotCtx['available'] !== true) {
+        clearForgotLocalPasswordRequestContext($session);
+        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    }
+
+    $temporaryPassword = GenerateCryptKey(20, false, true, true, false, true);
+    $resetResult = prepareExchangedData(
+        handleUserKeys(
+            (int) $userInfo['id'],
+            $temporaryPassword,
+            isset($SETTINGS['maximum_number_of_items_to_treat']) === true
+                ? (int) $SETTINGS['maximum_number_of_items_to_treat']
+                : NUMBER_ITEMS_IN_BATCH,
+            '',
+            true,
+            false,
+            true,
+            false,
+            '',
+            false,
+            '',
+            '',
+            false,
+            'auth-pwd-change'
+        ),
+        'decode'
+    );
+
+    if (is_array($resetResult) !== true || (isset($resetResult['error']) === true && $resetResult['error'] === true)) {
+        clearForgotLocalPasswordRequestContext($session);
+        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    }
+
+    DB::delete(
+        prefixTable('auth_failures'),
+        'source = %s AND value = %s',
+        'login',
+        $userInfo['login']
+    );
+    $session->set('pwd_attempts', 0);
+
+    $emailServerUrl = empty(trim((string) ($SETTINGS['email_server_url'] ?? ''))) === false
+        ? (string) $SETTINGS['email_server_url']
+        : (string) ($SETTINGS['cpassman_url'] ?? '');
+    $userLanguageName = trim((string) ($userInfo['user_language'] ?? ''));
+    if ($userLanguageName === '' || $userLanguageName === '0') {
+        $userLanguageName = (string) ($SETTINGS['default_language'] ?? 'english');
+    }
+    $userLanguage = new Language($userLanguageName);
+    sendMailToUser(
+        (string) $userInfo['email'],
+        $userLanguage->get('forgot_local_password_email_body'),
+        $userLanguage->get('forgot_local_password_email_subject'),
+        [
+            '#login#' => (string) $userInfo['login'],
+            '#name#' => (string) ($userInfo['name'] ?? ''),
+            '#lastname#' => (string) ($userInfo['lastname'] ?? ''),
+            '#tp_link#' => $emailServerUrl,
+        ],
+        false,
+        cryption($temporaryPassword, '', 'encrypt')['string'],
+        trim(((string) ($userInfo['name'] ?? '')) . ' ' . ((string) ($userInfo['lastname'] ?? '')))
+    );
+    clearForgotLocalPasswordRequestContext($session);
+
+    logEvents(
+        $SETTINGS,
+        'user_mngt',
+        'at_user_pwd_changed',
+        (string) $userInfo['id'],
+        (string) $userInfo['login'],
+        (string) $userInfo['id']
+    );
+
+    return ['error' => false, 'message' => $lang->get('forgot_local_password_email_sent')];
+}

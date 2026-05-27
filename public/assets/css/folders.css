@@ -1,0 +1,45 @@
+/* Progress bar: no transition so it stays in sync with the counter */
+#folders-load-progress .progress-bar { transition: none; }
+
+/* Sidebar */
+#folder-edit-sidebar {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 400px;
+    background: #fff;
+    box-shadow: -4px 0 16px rgba(0,0,0,.15);
+    z-index: 1055;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s ease;
+}
+#folder-edit-sidebar.open { transform: translateX(0); }
+#folder-edit-sidebar .sidebar-header { border-bottom: 1px solid #dee2e6; flex-shrink: 0; }
+#folder-edit-sidebar .sidebar-body   { flex: 1; overflow-y: auto; }
+#folder-edit-sidebar .sidebar-footer { border-top: 1px solid #dee2e6; flex-shrink: 0; }
+
+#folder-edit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.3);
+    z-index: 1054;
+}
+
+/* Dark mode */
+.dark-mode #folder-edit-sidebar { background: #343a40; color: #dee2e6; }
+.dark-mode #folder-edit-sidebar .sidebar-header,
+.dark-mode #folder-edit-sidebar .sidebar-footer { border-color: #495057; }
+
+/* iCheck widget inside flex rows: prevent shrink so it never clips into the label */
+#folder-edit-sidebar .d-flex > [class*="icheckbox"],
+#folder-edit-sidebar .d-flex > [class*="iradio"],
+#modal-folder-new .d-flex > [class*="icheckbox"],
+#modal-folder-new .d-flex > [class*="iradio"] {
+    flex-shrink: 0;
+}
+
+/* Edited row highlight */
+#table-folders tbody tr.editing-active { background-color: #fffbf0 !important; }
+.dark-mode #table-folders tbody tr.editing-active { background-color: #3d3a28 !important; }

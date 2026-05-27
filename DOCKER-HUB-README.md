@@ -194,7 +194,7 @@ docker-compose up -d
 
 - **Full Docker Guide:** [DOCKER.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER.md)
 - **Migration Guide:** [DOCKER-MIGRATION.md](https://github.com/nilsteampassnet/TeamPass/blob/master/DOCKER-MIGRATION.md)
-- **Official Docs:** https://teampass.readthedocs.io
+- **Official Docs:** https://documentation.teampass.net
 - **Website:** https://teampass.net
 
 ## 🏗️ Architecture

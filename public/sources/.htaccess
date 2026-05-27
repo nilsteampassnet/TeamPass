@@ -1,0 +1,3 @@
+# AJAX handler proxies — directory listing disabled.
+# Individual PHP files remain accessible for AJAX calls.
+Options -Indexes

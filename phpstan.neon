@@ -1,0 +1,70 @@
+includes:
+    - phar://app/vendor/phpstan/phpstan/phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    level: 4
+    phpVersion: 80100
+
+    bootstrapFiles:
+        - app/vendor/autoload.php
+        - app/config/include.php
+        - app/config/settings.php
+
+    paths:
+        - app/sources
+        - app/api
+        - app/scripts
+        - app/includes
+        - app/pages
+
+    excludePaths:
+        - app/vendor/*
+        - app/includes/libraries/phpseclibV1/*
+        - public/plugins/*
+        - app/includes/libraries/*
+        - public/install/libs/*
+        - public/install/js/crypt/*
+        #- app/api/*
+
+    # Chargement des classes qui ne sont pas autoloadées
+    scanFiles:
+        - app/vendor/autoload.php
+        - public/install/libs/aesctr.php
+        - app/includes/libraries/bip39/loader.php
+        - app/vendor/tecnickcom/tcpdf/tcpdf_autoconfig.php
+
+    ignoreErrors:
+        - '#Call to an undefined static method DB::count#'
+        - '#Call to an undefined static method DB::escape#'
+        # Methods called via call_user_func() dynamic dispatch in installer
+        - message: '#Method .+ is unused\.#'
+          path: public/install/install-steps/run.step5.php
+        - message: '#Method .+ is unused\.#'
+          path: public/install/install-steps/run.step6.php
+
+    reportUnmatchedIgnoredErrors: false
+
+    # Constants whose values are dynamic (PHPStan won't inline them)
+    dynamicConstantNames:
+        - WIP
+        - LOG_TO_SERVER
+        - DEBUG
+        - LOG_TASKS
+        - TASKS_TRIGGER_FILE
+        - TASKS_LOCK_FILE
+        - TP_USER_ID
+        - API_USER_ID
+        - OTV_USER_ID
+        - SSH_USER_ID
+        - MIN_PHP_VERSION
+        - SECUREFILE
+        - DB_SSL
+        - UPGRADE_SEND_EMAILS
+        - TP_VERSION
+        - DB_ENCODING
+
+    # Activation des vérifications avancées
+    checkExplicitMixed: false
+    checkMissingCallableSignature: false
+    checkFunctionArgumentTypes: false
+    checkMissingTypehints: false

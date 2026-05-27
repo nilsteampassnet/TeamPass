@@ -47,7 +47,7 @@ General behaviour and defaults.
 | **Default language** | Language applied to new accounts and the login page |
 | **Get TeamPass info** | Allows Teampass to check for available updates |
 | **Password maximum length** | Upper bound on password length for items |
-| **Password default length** | Pre-filled length in the password generator |
+| **Password default length** | Pre-filled length in the password generator. The generator enforces the folder's minimum complexity, so the effective length may be higher than this value |
 
 ---
 
@@ -68,7 +68,8 @@ Access control, encryption, and session security parameters.
 | **Delete after consultation** | Marks items for deletion after a user views them (one-shot credentials) |
 | **Clipboard password lifetime** | Seconds before the copied password is cleared from the clipboard |
 | **Restrict item access to roles** | Item access is further restricted to explicitly listed roles |
-| **PBKDF2 iterations** | Number of iterations for the transparent key recovery derivation function |
+| **Enable local password recovery** | Shows a *Forgot password?* link on the login page. Users can recover account access without contacting an administrator, using a PBKDF2-derived key. LDAP and OAuth2 accounts are excluded (see [Local password recovery](../features/keys.md#local-password-recovery)) |
+| **PBKDF2 iterations** | Number of iterations for the PBKDF2 key derivation used by local password recovery. Higher values increase brute-force resistance at the cost of slightly longer key derivation time (default is suitable for most deployments) |
 
 ---
 
@@ -184,8 +185,21 @@ Sharing, export, and content features.
 | **Allow import** | Enables CSV and KeePass2 XML import (see [Import](../features/import.md)) |
 | **Enable offline mode** | Users can export an encrypted HTML snapshot for offline consultation |
 | **Offline mode key complexity** | Minimum password complexity required to protect an offline export |
-| **Enable knowledge base** | Activates the built-in knowledge base feature |
+| **Enable knowledge base** | Activates the built-in knowledge base feature. When enabled, the Knowledge Base entry appears in the navigation menu for all users (see [Knowledge Base](../features/knowledge-base.md)) |
 | **Enable suggestions** | Users can submit password change suggestions to administrators |
+
+---
+
+## Breach Detection
+
+Check item passwords against the Have I Been Pwned database. Disabled by default.
+
+| Option | Description |
+|--------|-------------|
+| **Enable HIBP breach detection** (`hibp_enabled`) | Activates password breach checking globally. When enabled, passwords are checked against the HIBP Pwned Passwords API using k-anonymity (see [Breach detection](../features/breach-detection.md)) |
+| **Check interval (days)** (`hibp_check_interval_days`) | Minimum number of days between re-checks for the same item. Default: 7. Set to 0 to check on every item view (not recommended on high-traffic instances) |
+
+> 🔔 The server must be able to reach `api.pwnedpasswords.com` over HTTPS. Verify outbound access if your server operates behind a strict firewall.
 
 ---
 

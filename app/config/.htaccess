@@ -1,0 +1,6 @@
+Options -Indexes
+# Apache 2.4 syntax — deny all HTTP access to this directory.
+# This is a defence-in-depth measure: app/config/ is outside the webroot
+# (DocumentRoot points to public/) so Apache should never serve these files
+# even without this rule. A misconfigured server would still be blocked here.
+Require all denied

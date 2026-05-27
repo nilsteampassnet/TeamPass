@@ -1,0 +1,25 @@
+Options -Indexes
+
+# Rewrite engine for clean URLs
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Set RewriteBase to match where TeamPass is served from:
+    #   - Domain root (https://teampass.example.com/)  → RewriteBase /
+    #   - Subdirectory alias (https://example.com/teampass/) → RewriteBase /teampass/
+    RewriteBase /
+
+    # Route /api/* requests through the proxy entry point
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+
+    # Route everything else through the main front controller
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
+</IfModule>
+
+# Deny direct access to core.php (bootstrap include, not an endpoint)
+<FilesMatch "^core\.php$">
+    Require all denied
+</FilesMatch>

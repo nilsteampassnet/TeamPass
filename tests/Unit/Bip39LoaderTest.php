@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../../includes/libraries/bip39/loader.php';
+require_once __DIR__ . '/../../app/includes/libraries/bip39/loader.php';
 
 /**
  * Unit tests for loadBip39Wordlist() defined in includes/libraries/bip39/loader.php.
