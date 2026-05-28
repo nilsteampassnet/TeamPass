@@ -29,7 +29,6 @@ namespace TeampassClasses\PasswordManager;
  */
 
  use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactory;
- use PasswordLib\PasswordLib;
  Use DB;
 
 class PasswordManager
@@ -73,7 +72,17 @@ class PasswordManager
         return $hasher->verify($hashedPassword, $plainPassword);
     }
 
-    // --- Handle migration from PasswordLib to Symfony PasswordHasher
+    /**
+     * Migrate a legacy bcrypt hash (produced by PasswordLib / PHP's native bcrypt) to
+     * the current Symfony PasswordHasher scheme. Safe to call on every login: if the
+     * hash is already in the new format the method returns immediately with status=true.
+     *
+     * @param string $hashedPassword The stored hash to check / migrate.
+     * @param string $plainPassword  The plain-text password supplied at login.
+     * @param int    $userId         The user's ID (for DB update and task launch).
+     * @param bool   $isAdmin        Skip key-regeneration tasks for admin accounts.
+     * @return array{status: bool, hashedPassword: string, migratedUser: bool}
+     */
     public function migratePassword(string $hashedPassword, string $plainPassword, int $userId, bool $isAdmin = false): array
     {
         $result = [
@@ -82,13 +91,9 @@ class PasswordManager
             'migratedUser' => false,
         ];
 
-        // If the password has been hashed with PasswordLib
-        if ($this->isPasswordLibHash($hashedPassword)) {
-            // Utilisez la vérification de passwordlib ici
-            if (
-                $this->passwordLibVerify($hashedPassword, html_entity_decode($plainPassword))
-                || $this->verifyPasswordWithbCrypt(html_entity_decode($plainPassword), $hashedPassword)
-            ) {
+        // Legacy hashes were produced by PHP's native bcrypt (cost 10) — verifiable by password_verify().
+        if ($this->isLegacyBcryptHash($hashedPassword)) {
+            if ($this->verifyPasswordWithbCrypt(html_entity_decode($plainPassword), $hashedPassword)) {
                 // Password is valid, hash it with new system
                 $newHashedPassword = $this->hashPassword($plainPassword);
                 $this->updateInDatabase($newHashedPassword, $userId);
@@ -121,33 +126,15 @@ class PasswordManager
 
 
     /**
-     * Check if the password has been hashed with PasswordLib.
+     * Detect a legacy bcrypt hash (cost 10, produced by PHP's native bcrypt or the
+     * now-removed PasswordLib library). These hashes must be re-hashed on first login.
      *
-     * @param string $hashedPassword The hashed password to check.
-     * @return bool True if the password is a PasswordLib hash, false otherwise.
+     * @param string $hashedPassword The stored hash to inspect.
+     * @return bool True when the hash is a legacy bcrypt hash.
      */
-    private function isPasswordLibHash(string $hashedPassword): bool
+    private function isLegacyBcryptHash(string $hashedPassword): bool
     {
-        // Check if the password has been hashed with passwordlib
         return str_starts_with($hashedPassword, '$2y$10$');
-    }
-    
-    /**
-     * Verify a password using PasswordLib.
-     *
-     * @param string $hashedPassword The hashed password to verify against.
-     * @param string $plainPassword The plain text password to verify.
-     * @return bool True if the password matches, false otherwise.
-     */
-    private function passwordLibVerify(string $hashedPassword, string $plainPassword): bool
-    {
-        $pwdlib = new PasswordLib();
-        try {
-            return $pwdlib->verifyPasswordHash($plainPassword, $hashedPassword);
-        } catch (\Exception $e) {
-            if (WIP === true) error_log("PasswordLib setCost exception: ".$e->getMessage());
-        }
-        return false;
     }
 
     /**

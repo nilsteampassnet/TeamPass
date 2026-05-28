@@ -54,7 +54,6 @@
 | owasp/csrf-protector-php | v1.0.2 | Apache-2.0 | ✅ Compatible |
 | paragonie/constant_time_encoding | v3.1.3 | MIT | ✅ Compatible |
 | paragonie/random_compat | v9.99.100 | MIT | ✅ Compatible |
-| passwordlib/passwordlib | 1.0.0-alpha2 | MIT | ✅ Compatible |
 | peppeocchi/php-cron-scheduler | v4.0 | MIT | ✅ Compatible |
 | phpmailer/phpmailer | v6.12.0 | LGPL-2.1-only | ✅ Compatible |
 | phpseclib/phpseclib | 3.0.52 | MIT | ✅ Compatible |

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2f7f7588dcbb005b6e0af7801aa0bc7d",
+    "content-hash": "bb20a344849dda37e0151bf198bb5c34",
     "packages": [
         {
             "name": "bjeavons/zxcvbn-php",
@@ -3112,56 +3112,6 @@
                 "source": "https://github.com/paragonie/random_compat"
             },
             "time": "2020-10-15T08:29:30+00:00"
-        },
-        {
-            "name": "passwordlib/passwordlib",
-            "version": "1.0.0-alpha2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/ircmaxell/PHP-PasswordLib.git",
-                "reference": "4bc7a1c473093c83f54ac1198a9fe4c716784a7b"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/ircmaxell/PHP-PasswordLib/zipball/4bc7a1c473093c83f54ac1198a9fe4c716784a7b",
-                "reference": "4bc7a1c473093c83f54ac1198a9fe4c716784a7b",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.2"
-            },
-            "type": "library",
-            "autoload": {
-                "psr-0": {
-                    "PasswordLib": "lib"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "Anthony Ferrara",
-                    "email": "ircmaxell@ircmaxell.com",
-                    "homepage": "http://blog.ircmaxell.com"
-                }
-            ],
-            "description": "A Password Hashing Library",
-            "homepage": "https://github.com/ircmaxell/PHP-PasswordLib",
-            "keywords": [
-                "crypt",
-                "hash",
-                "hashing",
-                "password",
-                "random",
-                "salt"
-            ],
-            "support": {
-                "issues": "https://github.com/ircmaxell/PHP-PasswordLib/issues",
-                "source": "https://github.com/ircmaxell/PHP-PasswordLib/tree/1.0.0-alpha2"
-            },
-            "time": "2012-04-14T14:09:48+00:00"
         },
         {
             "name": "peppeocchi/php-cron-scheduler",

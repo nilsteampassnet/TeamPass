@@ -9,7 +9,7 @@ The key size used is 256 bits.
 
 ## User credentials
 
-User credentails are stored encrypted in the database. The encryption is performed using Blowfish algorithm through [PHPPasswordLib library](https://github.com/ircmaxell/PHP-PasswordLib).
+User credentials are stored hashed in the database using [Symfony PasswordHasher](https://symfony.com/doc/current/security/passwords.html) with the `auto` algorithm (bcrypt / argon2 depending on the PHP build). Legacy bcrypt hashes produced by earlier TeamPass versions are transparently upgraded to the current scheme on first login.
 
 ## Data encryption
 

@@ -207,7 +207,7 @@ $rows = DB::query(
         CASE
             WHEN u.pw LIKE "$2y$10$%" THEN 1
             ELSE 0
-        END AS pw_passwordlib
+        END AS pw_legacy_bcrypt
     '.$baseQuery.'
     LEFT JOIN (
         SELECT user_id,
@@ -305,7 +305,7 @@ foreach ($rows as $record) {
                     '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
                     ''
                 ).
-                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['pw_passwordlib'] === 1) ? '<i class=\"fa-solid fa-person-walking-luggage infotip ml-1\" style=\"color:Tomato\" title=\"Old password encryption. Shall login to initialize.\"></i>' : '');
+                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['pw_legacy_bcrypt'] === 1) ? '<i class=\"fa-solid fa-person-walking-luggage infotip ml-1\" style=\"color:Tomato\" title=\"Old password encryption. Shall login to initialize.\"></i>' : '');
         }
 
         // Inactive users management icon (yellow card)
