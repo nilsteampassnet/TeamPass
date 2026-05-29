@@ -654,13 +654,6 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
     );
 
     public static $prefixesPsr0 = array (
-        'P' => 
-        array (
-            'PasswordLib' => 
-            array (
-                0 => __DIR__ . '/..' . '/passwordlib/passwordlib/lib',
-            ),
-        ),
         'G' => 
         array (
             'Goodby\\CSV' => 
@@ -3098,47 +3091,6 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'ParagonIE\\ConstantTime\\Encoding' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Encoding.php',
         'ParagonIE\\ConstantTime\\Hex' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/Hex.php',
         'ParagonIE\\ConstantTime\\RFC4648' => __DIR__ . '/..' . '/paragonie/constant_time_encoding/src/RFC4648.php',
-        'PasswordLib\\Core\\AbstractFactory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/AbstractFactory.php',
-        'PasswordLib\\Core\\AutoLoader' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/AutoLoader.php',
-        'PasswordLib\\Core\\BaseConverter' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/BaseConverter.php',
-        'PasswordLib\\Core\\BigMath' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/BigMath.php',
-        'PasswordLib\\Core\\BigMath\\BCMath' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/BigMath/BCMath.php',
-        'PasswordLib\\Core\\BigMath\\GMP' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/BigMath/GMP.php',
-        'PasswordLib\\Core\\BigMath\\PHPMath' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/BigMath/PHPMath.php',
-        'PasswordLib\\Core\\Enum' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/Enum.php',
-        'PasswordLib\\Core\\Strength' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Core/Strength.php',
-        'PasswordLib\\Hash\\Hash' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Hash/Hash.php',
-        'PasswordLib\\Key\\Derivation\\AbstractDerivation' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Derivation/AbstractDerivation.php',
-        'PasswordLib\\Key\\Derivation\\PBKDF' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Derivation/PBKDF.php',
-        'PasswordLib\\Key\\Derivation\\PBKDF\\PBKDF2' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Derivation/PBKDF/PBKDF2.php',
-        'PasswordLib\\Key\\Factory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Key/Factory.php',
-        'PasswordLib\\PasswordLib' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/PasswordLib.php',
-        'PasswordLib\\Password\\Factory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Factory.php',
-        'PasswordLib\\Password\\Implementation\\APR1' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/APR1.php',
-        'PasswordLib\\Password\\Implementation\\Blowfish' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Blowfish.php',
-        'PasswordLib\\Password\\Implementation\\Crypt' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Crypt.php',
-        'PasswordLib\\Password\\Implementation\\Drupal' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Drupal.php',
-        'PasswordLib\\Password\\Implementation\\Hash' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Hash.php',
-        'PasswordLib\\Password\\Implementation\\Joomla' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/Joomla.php',
-        'PasswordLib\\Password\\Implementation\\MD5' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/MD5.php',
-        'PasswordLib\\Password\\Implementation\\PBKDF' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PBKDF.php',
-        'PasswordLib\\Password\\Implementation\\PHPASS' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PHPASS.php',
-        'PasswordLib\\Password\\Implementation\\PHPBB' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/PHPBB.php',
-        'PasswordLib\\Password\\Implementation\\SHA256' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/SHA256.php',
-        'PasswordLib\\Password\\Implementation\\SHA512' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Implementation/SHA512.php',
-        'PasswordLib\\Password\\Password' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Password/Password.php',
-        'PasswordLib\\Random\\AbstractMixer' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/AbstractMixer.php',
-        'PasswordLib\\Random\\Factory' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Factory.php',
-        'PasswordLib\\Random\\Generator' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Generator.php',
-        'PasswordLib\\Random\\Mixer' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Mixer.php',
-        'PasswordLib\\Random\\Mixer\\Hash' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Mixer/Hash.php',
-        'PasswordLib\\Random\\Source' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source.php',
-        'PasswordLib\\Random\\Source\\CAPICOM' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/CAPICOM.php',
-        'PasswordLib\\Random\\Source\\MTRand' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/MTRand.php',
-        'PasswordLib\\Random\\Source\\MicroTime' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/MicroTime.php',
-        'PasswordLib\\Random\\Source\\Rand' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/Rand.php',
-        'PasswordLib\\Random\\Source\\URandom' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/URandom.php',
-        'PasswordLib\\Random\\Source\\UniqID' => __DIR__ . '/..' . '/passwordlib/passwordlib/lib/PasswordLib/Random/Source/UniqID.php',
         'Pdo\\Dblib' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/Pdo/Dblib.php',
         'Pdo\\Firebird' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/Pdo/Firebird.php',
         'Pdo\\Mysql' => __DIR__ . '/..' . '/symfony/polyfill-php84/Resources/stubs/Pdo/Mysql.php',

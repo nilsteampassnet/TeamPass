@@ -484,15 +484,6 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'passwordlib/passwordlib' => array(
-            'pretty_version' => '1.0.0-alpha2',
-            'version' => '1.0.0.0-alpha2',
-            'reference' => '4bc7a1c473093c83f54ac1198a9fe4c716784a7b',
-            'type' => 'library',
-            'install_path' => __DIR__ . '/../passwordlib/passwordlib',
-            'aliases' => array(),
-            'dev_requirement' => false,
-        ),
         'peppeocchi/php-cron-scheduler' => array(
             'pretty_version' => 'v4.0',
             'version' => '4.0.0.0',
