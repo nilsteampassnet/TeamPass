@@ -57,7 +57,7 @@ Credentials must be in the body — query string is rejected (400).
 
 - Algorithm: HS256
 - Signing key: `api_jwt_secret` in `teampass_misc` (256-bit hex, lazy-generated on first use — **distinct from DB password**)
-- Expiry: `api_token_duration` seconds (configurable in Settings → API)
+- Expiry: `api_token_duration` **minutes** (configurable in Settings → API, default 60). The server computes `exp = now + duration * 60`. The claim is carried in the JWT payload as the raw number so clients can compute `token_expiry = issue_time + api_token_duration * 60 * 1000` ms.
 - Key claims: `id`, `username`, `exp`, `key_tempo`, `is_admin`, `is_manager`, `allowed_to_create`, `allowed_to_read`, `allowed_to_update`, `allowed_to_delete`, `folders_list`
 
 **Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in `teampass_api`. The JWT carries only `key_tempo` (a reference). A stolen JWT alone cannot decrypt the private key.
@@ -235,7 +235,7 @@ Returns browser extension connection settings.
 | 200 | Success |
 | 204 | Empty result (no folders accessible) |
 | 400 | Missing or invalid parameters |
-| 401 | Missing or invalid JWT |
+| 401 | `"Missing Authorization header"` — no bearer token received (check webserver vhost passes Authorization on GET). `"Invalid or expired token"` — token present but rejected (bad signature, expired, malformed). Match on HTTP 401 status rather than the body string. |
 | 403 | Permission denied (folder read-only, admin required, CRUD rights missing) |
 | 404 | Resource not found |
 | 405 | HTTP method not supported for this endpoint |

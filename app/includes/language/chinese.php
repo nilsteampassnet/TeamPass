@@ -856,7 +856,7 @@ return array(
     'icon' => '图标',
     'icon_on_selection' => '选中的图标',
     'fontawesome_icon_tip' => '您可以在Font Awesome网站的Solid、Free分类中选择一个图标代码。若留空，则使用默认图标。',
-    'settings_api_token_duration' => 'JWT令牌过期延迟(秒)',
+    'settings_api_token_duration' => 'JWT令牌过期延迟(分)',
     'settings_api_token_duration_tip' => '延迟期间生成的JWT令牌保持有效。延迟结束后，需向API发送授权请求。',
     'show_encryption_code_to_admin' => '这是用户本次登录所需的加密密码。您已要求查看该密码，请将其复制并通过安全方式分享。密码如下',
     'generate_new_otp' => '生成新的OTP',

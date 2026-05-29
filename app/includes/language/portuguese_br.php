@@ -856,7 +856,7 @@ return array(
     'icon' => 'Ícone',
     'icon_on_selection' => 'Ícone na seleção',
     'fontawesome_icon_tip' => 'Você pode especificar um código de ícone Font Awesome disponível em Free and Solid icons (em inglês). Deixe em branco para usar o ícone padrão.',
-    'settings_api_token_duration' => 'Delay de expiração de token JWT (em segundos)',
+    'settings_api_token_duration' => 'Delay de expiração de token JWT (em minutos)',
     'settings_api_token_duration_tip' => 'Delay durante o qual o token JWT gerado é válido. Após esse tempo, é requisitado o envio de uma requisição POST de autorização para a API.',
     'show_encryption_code_to_admin' => 'Esse é o código de criptografia que o usuário precisará para acessar o Teampass. Você solicitou vê-lo. Por favor, copie e compartilhe o código através de um meio seguro. O código é',
     'generate_new_otp' => 'Gerar novo OTP',

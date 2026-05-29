@@ -154,23 +154,27 @@ function verifyAuth(): string
     include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
-    if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
-        return json_encode(
-            [
-                'error' => false,
-                'error_message' => '',
-                'error_header' => '',
-            ]
-        );
-    } else {
-        return json_encode(
-            [
-                'error' => true,
-                'error_message' => 'Access denied',
-                'error_header' => 'HTTP/1.1 401 Unauthorized',
-            ]
-        );
+    if (empty($bearer_token) === true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Missing Authorization header',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
     }
+
+    if (is_jwt_valid($bearer_token) !== true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Invalid or expired token',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
+    }
+
+    return json_encode([
+        'error' => false,
+        'error_message' => '',
+        'error_header' => '',
+    ]);
 }
 
 
@@ -184,24 +188,20 @@ function getDataFromToken(): string
     include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
-    if (empty($bearer_token) === false) {
-        return json_encode(
-            [
-                'data' => get_bearer_data($bearer_token),
-                'error' => false,
-                'error_message' => '',
-                'error_header' => '',
-            ]
-        );
-    } else {
-        return json_encode(
-            [
-                'error' => true,
-                'error_message' => 'Access denied',
-                'error_header' => 'HTTP/1.1 401 Unauthorized',
-            ]
-        );
+    if (empty($bearer_token) === true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Missing Authorization header',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
     }
+
+    return json_encode([
+        'data' => get_bearer_data($bearer_token),
+        'error' => false,
+        'error_message' => '',
+        'error_header' => '',
+    ]);
 }
 
 
