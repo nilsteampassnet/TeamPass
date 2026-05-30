@@ -292,7 +292,7 @@ $post_data = filter_input(
 
         while (!is_dir($currentPath)) {
             $parentPath = dirname($currentPath);
-            if ($parentPath === $currentPath || $parentPath === '.' || $parentPath === '') {
+            if ($parentPath === $currentPath || $parentPath === '.') {
                 return '';
             }
 

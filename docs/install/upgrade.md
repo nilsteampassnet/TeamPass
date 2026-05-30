@@ -100,6 +100,7 @@ php migrate_3.2.x.php
 | `--check`            | Inspect prerequisites and show what will be migrated, without making any change |
 | `--dry-run`          | Simulate every step in detail without making any change  |
 | `--web-user=USER`    | Web server user for permission setup (default: `www-data`) |
+| `--web-group=GROUP`  | Web server group for permission setup (default: primary group of `--web-user`). Useful on systems where the user and group names differ (e.g. openSUSE: `wwwrun` / `www`) |
 | `--no-color`         | Disable ANSI colour output                               |
 
 > **Tip:** Run `--check` first for a quick pre-flight summary, then `--dry-run` for a
@@ -112,7 +113,7 @@ php migrate_3.2.x.php
 3. Moves `upload/` → `storage/upload/`
 4. Moves `backups/` → `storage/backups/`
 5. Copies user avatars to `public/assets/avatars/`
-6. Adjusts file ownership and permissions for `www-data`
+6. Adjusts file ownership and permissions for the web server user/group
 
 > **Tip:** Run with `--dry-run` first to preview all operations, then run again without the flag to apply them.
 
