@@ -6,7 +6,7 @@ The easiest way to install Teampass is to install a LAMP stack dedicated to the 
 
 This document highlights a basic setup. You can refer to many other existing tutorials to install Apache, MariaDB (or MySQL) and PHP.
 
-> :bulb: **Note:** Teampass requires **PHP 8.1** or later. The `master` branch targets the most recent stable PHP version.
+> :bulb: **Note:** Teampass requires **PHP 8.2** or later. The `master` branch targets the most recent stable PHP version.
 
 ---
 
@@ -228,9 +228,7 @@ WEB_USER=www-data
 chmod 0755 app/ public/
 chown -R root:root app/ public/
 
-# Configuration file: writable by the web server (written during install/upgrade)
-chown ${WEB_USER}:${WEB_USER} app/config/settings.php
-chmod 0640 app/config/settings.php
+# Configuration directory: writable by the web server (settings.php is created by the installer)
 chown ${WEB_USER}:${WEB_USER} app/config/
 chmod 0750 app/config/
 
@@ -242,7 +240,7 @@ chmod 0750 app/includes/libraries/csrfp/log/
 
 # Runtime storage: writable by the web server
 chown -R ${WEB_USER}:${WEB_USER} storage/
-chmod 0750 storage/ storage/files/ storage/upload/ storage/backups/
+chmod 0750 storage/ storage/files/ storage/upload/ storage/backups/ storage/logs/
 
 # Avatars (optional — only if avatar upload is enabled)
 chmod 0750 public/assets/avatars/

@@ -235,7 +235,6 @@ switch ($inputData['type']) {
         if (is_array($dataReceived) === true && count($dataReceived) > 0) {
             // Prepare variables
             $post_anyone_can_modify = filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-            $post_complexity_level = filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
             $post_description = $antiXss->xss_clean(strval($dataReceived['description']));
             $post_diffusion_list = filter_var_array(
                 $dataReceived['diffusion_list'],
@@ -257,7 +256,13 @@ switch ($inputData['type']) {
             $post_folder_is_personal = filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['label'] = filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_login = filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_password = htmlspecialchars_decode($dataReceived['pw']);
+            $post_password = teampassDecodeTransportSecret(
+                isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '',
+                isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
+            );
+            // Compute complexity server-side from plaintext — single source of truth with the API path
+            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -876,14 +881,24 @@ switch ($inputData['type']) {
         $itemInfos = array();
         $inputData['label'] = isset($dataReceived['label']) && is_string($dataReceived['label']) ? filter_var($dataReceived['label'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_url = isset($dataReceived['url'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL) : '';
-        $post_password = $original_pw = isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? htmlspecialchars_decode($dataReceived['pw']) : '';
+        $post_password = $original_pw = teampassDecodeTransportSecret(
+            isset($dataReceived['pw']) && is_string($dataReceived['pw']) ? $dataReceived['pw'] : '',
+            isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
+        );
         $post_login = isset($dataReceived['login']) && is_string($dataReceived['login']) ? filter_var(htmlspecialchars_decode($dataReceived['login']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_tags = isset($dataReceived['tags'])=== true ? htmlspecialchars($dataReceived['tags']) : '';
         $post_email = isset($dataReceived['email'])=== true ? filter_var(htmlspecialchars_decode($dataReceived['email']), FILTER_SANITIZE_EMAIL) : '';
         $post_template_id = (int) filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
         $post_anyone_can_modify = (int) filter_var($dataReceived['anyone_can_modify'], FILTER_SANITIZE_NUMBER_INT);
-        $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+        // Compute complexity server-side from plaintext — single source of truth with the API path
+        // When password is unchanged (empty), fall back to the client-sent value for the folder minimum check
+        if (empty($post_password) === false) {
+            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+        } else {
+            $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
+        }
         $inputData['folderId'] = (int) filter_var($dataReceived['folder'], FILTER_SANITIZE_NUMBER_INT);
         $post_folder_is_personal = (int) filter_var($dataReceived['folder_is_personal'], FILTER_SANITIZE_NUMBER_INT);
         $post_restricted_to = filter_var_array(
@@ -1043,6 +1058,9 @@ switch ($inputData['type']) {
             'at_creation',
             $inputData['itemId']
         );
+        $originalFolderId = (int) ($dataItem['id_tree'] ?? $inputData['folderId']);
+        $targetFolderId = (int) $inputData['folderId'];
+        $editionLockForSave = getItemEditionLockSaveStatus((int) $inputData['itemId'], (int) $session->get('user-id'));
 
         // Always check what rights user has on requested folder
         $checkRights = getCurrentAccessRights(
@@ -1071,6 +1089,17 @@ switch ($inputData['type']) {
                 array(
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_item_currently_being_updated'),
+                    'delay' => $editionLockForSave['delay'] ?? null,
                 ),
                 'encode'
             );
@@ -1167,13 +1196,14 @@ switch ($inputData['type']) {
                 // No share key found
                 $pw = '';
             } else {
-                $pw = base64_decode(doDataDecryption(
+                $pw = teampassDecryptPasswordValue(
                     $data['pw'],
                     decryptUserObjectKey(
                         $userKey['share_key'],
                         $session->get('user-private_key')
-                    )
-                ));
+                    ),
+                    (int) ($data['pw_len'] ?? 0)
+                );
             }
 
             if ($post_password !== $pw) {
@@ -2134,19 +2164,30 @@ switch ($inputData['type']) {
             // Remove the edition lock after a successful save
             DB::delete(
                 prefixTable('items_edition'),
-                'item_id = %i AND user_id = %i',
-                $inputData['itemId'],
-                $session->get('user-id')
+                'item_id = %i',
+                $inputData['itemId']
             );
 
-            // Notify other users via WebSocket that this item is now free
+            // Notify other users via WebSocket that this item is now free.
+            // If the item has been moved while editing, notify both folders so
+            // stale lock badges are cleared for users still subscribed to the
+            // original folder.
             emitEditionLockEvent(
                 'stopped',
                 (int) $inputData['itemId'],
-                (int) $inputData['folderId'],
+                $originalFolderId,
                 $session->get('user-login') ?? '',
                 (int) $session->get('user-id')
             );
+            if ($targetFolderId !== $originalFolderId) {
+                emitEditionLockEvent(
+                    'stopped',
+                    (int) $inputData['itemId'],
+                    $targetFolderId,
+                    $session->get('user-login') ?? '',
+                    (int) $session->get('user-id')
+                );
+            }
 
             // Notifiy changes to the users
             notifyChangesToSubscribers($inputData['itemId'], $inputData['label'], $arrayOfChanges, $SETTINGS);
@@ -2306,17 +2347,16 @@ switch ($inputData['type']) {
 
             // Decrypt / Encrypt the password with automatic v1→v3 migration
             $cryptedStuff = doDataEncryption(
-                base64_decode(
-                    doDataDecryption(
-                        $originalRecord['pw'],
-                        decryptUserObjectKeyWithMigration(
-                            $userKey['share_key'],
-                            $session->get('user-private_key'),
-                            $session->get('user-public_key'),
-                            intval($userKey['increment_id']),
-                            'sharekeys_items'
-                        )
-                    )
+                teampassDecryptPasswordValue(
+                    $originalRecord['pw'],
+                    decryptUserObjectKeyWithMigration(
+                        $userKey['share_key'],
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_items'
+                    ),
+                    (int) ($originalRecord['pw_len'] ?? 0)
                 )
             );
             // reaffect pw
@@ -2802,9 +2842,11 @@ switch ($inputData['type']) {
             $inputData['id']
         );
 
+        $pwIsEmptyNormal = false;
+        $passwordForMetrics = '';
+
         if (empty($userKeys) || empty($dataItem['pw'])) {
             // No share key found
-            $pwIsEmptyNormally = false;
             // Is this a personal and defuse password?
             if (intval($dataItem['perso']) === 1 && substr($dataItem['pw'], 0, 3) === 'def') {
                 // Yes, then ask for decryption with old personal salt key
@@ -2838,10 +2880,12 @@ switch ($inputData['type']) {
             }
 
             if ($validKeyFound) {
-                $pw = doDataDecryption(
+                $passwordForMetrics = teampassDecryptPasswordValue(
                     $dataItem['pw'],
-                    $decryptedObject
+                    $decryptedObject,
+                    (int) ($dataItem['pw_len'] ?? 0)
                 );
+                $pw = $passwordForMetrics === '' ? '' : base64_encode($passwordForMetrics);
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
             } elseif (isset($userKey) && $userKey['share_key'] !== '') {
@@ -2883,13 +2927,23 @@ switch ($inputData['type']) {
             // Allow show details
             $arrData['show_details'] = 1;
 
-            // Display menu icon for deleting if user is allowed
-            if (
-                intval($dataItem['id_user']) === (int) $session->get('user-id')
+            // Compute role-based edit and delete rights — same logic as getCurrentAccessRights().
+            // NE/NDNE folders: edit=false → user_can_modify=0; ND/NDNE folders: delete=false.
+            [$roleBasedEdit, $roleBasedDelete] = getRoleBasedAccess($session, (int) $dataItem['id_tree']);
+            if (in_array((int) $dataItem['id_tree'], $session->get('user-read_only_folders') ?? [])) {
+                $roleBasedEdit   = false;
+                $roleBasedDelete = false;
+            }
+
+            $isOwnerOrPrivileged = intval($dataItem['id_user']) === (int) $session->get('user-id')
                 || (int) $session->get('user-admin') === 1
-                || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1)
-                || intval($dataItem['anyone_can_modify']) === 1
-                || in_array($dataItem['id_tree'], $session->get('system-list_folders_editable_by_role')) === true
+                || ((int) $session->get('user-manager') === 1 && (int) $SETTINGS['manager_edit'] === 1);
+
+            if (
+                $isOwnerOrPrivileged
+                || (intval($dataItem['anyone_can_modify']) === 1
+                    && !in_array((int) $dataItem['id_tree'], $session->get('user-read_only_folders') ?? []))
+                || $roleBasedEdit === true
                 || in_array($session->get('user-id'), $restrictedTo) === true
                 //|| count($restrictedTo) === 0
                 || (int) $post_folder_access_level === 30
@@ -2901,6 +2955,19 @@ switch ($inputData['type']) {
                 $arrData['user_can_modify'] = 0;
                 $user_is_allowed_to_modify = false;
             }
+
+            // Delete rights: owner/admin/manager always can delete; otherwise role-based.
+            $arrData['user_can_delete'] = ($isOwnerOrPrivileged
+                || $roleBasedDelete === true
+                || in_array($session->get('user-id'), $restrictedTo) === true
+            ) ? 1 : 0;
+
+            // Explicit read-only folder flag — used by the frontend to gate the Edit button.
+            // Based solely on user-read_only_folders (same list checked by getCurrentAccessRights()).
+            $arrData['is_read_only_folder'] = in_array(
+                (int) $dataItem['id_tree'],
+                $session->get('user-read_only_folders') ?? []
+            ) || (int) $session->get('user-read_only') === 1;
 
             $arrData['corruption_notice'] = teampassCorruptedItemsBuildNotice(
                 $lang,
@@ -2928,13 +2995,14 @@ switch ($inputData['type']) {
                 }
             }
             // Check if any KB is linked to this item
-            if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) {
+            if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) {
                 $tmp = array();
                 $rows = DB::query(
                     'SELECT k.label, k.id
                     FROM ' . prefixTable('kb_items') . ' as i
                     INNER JOIN ' . prefixTable('kb') . ' as k ON (i.kb_id=k.id)
                     WHERE i.item_id = %i
+                        AND k.deleted_at IS NULL
                     ORDER BY k.label ASC',
                     $inputData['id']
                 );
@@ -2959,14 +3027,19 @@ switch ($inputData['type']) {
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
-            $arrData['pw_length'] = strlen($pw);
-            // Password security badge: OWASP ASVS aligned policy (min length 12, min complexity score 70)
-            if (strlen($pw) === 0) {
+            $arrData['pw_length'] = strlen($passwordForMetrics);
+            // Password security badge: OWASP ASVS aligned policy (min length 12, max TeamPass complexity level)
+            if (strlen($passwordForMetrics) === 0) {
                 $arrData['pw_is_secure'] = null; // empty password → no badge
             } else {
-                $arrData['pw_is_secure'] = strlen($pw) >= 12 && intval($dataItem['complexity_level']) >= 70;
+                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= TP_PW_STRENGTH_5;
             }
-            $arrData['pw_decrypt_info'] = empty($pw) === true && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
+
+            // HIBP cached status (no API call here — async check is triggered by the JS)
+            $arrData['hibp_status']     = (int) ($dataItem['hibp_status'] ?? 0);
+            $arrData['hibp_count']      = (int) ($dataItem['hibp_count'] ?? 0);
+            $arrData['hibp_checked_at'] = (string) ($dataItem['hibp_checked_at'] ?? '');
+            $arrData['pw_decrypt_info'] = $passwordForMetrics === '' && $pwIsEmptyNormal === false ? 'error_no_sharekey_yet' : '';
             $arrData['email'] = empty($dataItem['email']) === true ? '' : $dataItem['email'];
             $arrData['url'] = empty($dataItem['url']) === true ? '' : $dataItem['url'];
             $arrData['folder'] = $dataItem['id_tree'];
@@ -3323,6 +3396,16 @@ switch ($inputData['type']) {
             }
         }
 
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // prepare return array
         $returnArray = [
             'show_details' => 0,
@@ -3387,6 +3470,14 @@ switch ($inputData['type']) {
             );
         // Get all expected data about this ITEM
         } else {
+            // Per-item restriction (restricted_to / roles) blocks access even for folder members.
+            // Mirror the step-1 (show_details_item) behaviour: return empty details.
+            if ($restrictionActive === true) {
+                $returnArray['show_details'] = 0;
+                echo (string) prepareExchangedData($returnArray, 'encode');
+                break;
+            }
+
             // generate 2d key
             $session->set('user-key_tmp', bin2hex(GenerateCryptKey(16, false, true, true, false, true)));
 
@@ -3469,32 +3560,29 @@ switch ($inputData['type']) {
                         'title' => $record['title'],
                     )
                 );
-                $rows2 = DB::query(
-                    'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname, ur.role_id AS fonction_id
+            }
+
+            // Batch-load all users for all folder roles in a single query instead of one per role.
+            if (!empty($listOptionsForRoles)) {
+                $roleIds = array_column($listOptionsForRoles, 'id');
+                $allRoleUsers = DB::query(
+                    'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
                     FROM ' . prefixTable('users') . ' AS u
                     INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                    WHERE ur.role_id = %i AND ur.source = %s',
-                    $record['role_id'],
+                    WHERE ur.role_id IN %ls AND ur.source = %s',
+                    $roleIds,
                     'manual'
                 );
-
-                foreach ($rows2 as $record2) {
-                    foreach (explode(';', $record2['fonction_id']) as $role) {
-                        if (
-                            array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
-                            && $role === $record['role_id']
-                        ) {
-                            array_push(
-                                $listOptionsForUsers,
-                                array(
-                                    'id' => intval($record2['id']),
-                                    'login' => $record2['login'],
-                                    'name' => strval($record2['name']) . ' ' . strval($record2['lastname']),
-                                    'email' => $record2['email'],
-                                )
-                            );
-                        }
-                    }
+                foreach ($allRoleUsers as $user) {
+                    array_push(
+                        $listOptionsForUsers,
+                        array(
+                            'id' => intval($user['id']),
+                            'login' => $user['login'],
+                            'name' => strval($user['name']) . ' ' . strval($user['lastname']),
+                            'email' => $user['email'],
+                        )
+                    );
                 }
             }
 
@@ -3767,6 +3855,16 @@ switch ($inputData['type']) {
                     'error' => true,
                     'message' => $lang->get('error_not_allowed_to'),
                 ),
+                'encode'
+            );
+            break;
+        }
+
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
                 'encode'
             );
             break;
@@ -4152,14 +4250,17 @@ switch ($inputData['type']) {
                 );
                 break;
             } else {
-                $counter = intval(DB::queryFirstField(
+                $counter = (int) DB::queryFirstField(
                     'SELECT COUNT(*)
                     FROM ' . prefixTable('items') . '
-                    WHERE inactif = %i AND id_tree = %i',
+                    WHERE inactif = %i AND id_tree = %i AND deleted_at IS NULL',
                     0,
                     $inputData['id']
-                ));
+                );
+                // Store counter_full here to avoid a second query later
+                $counter_full = $counter;
                 $uniqueLoadData['counter'] = $counter;
+                $uniqueLoadData['counter_full'] = $counter_full;
             }
 
             // Get folder complexity
@@ -4260,6 +4361,8 @@ switch ($inputData['type']) {
             }
 
             $idManaged = '';
+            $itemsToMarkPerso = [];
+            $currentUserId = (string) $session->get('user-id');
 
             // --- Batch fetch data for all items to avoid N+1 queries ---
             $allItemIds = array_column($rows, 'id');
@@ -4285,11 +4388,13 @@ switch ($inputData['type']) {
                     }
                 }
 
-                // Batch: get all role restrictions for these items
+                // Batch: get all role restrictions for these items.
+                // INNER JOIN with roles_title filters out orphaned entries from deleted roles.
                 $roleRestrictions = DB::query(
-                    'SELECT item_id, role_id
-                    FROM ' . prefixTable('restriction_to_roles') . '
-                    WHERE item_id IN %ls',
+                    'SELECT r.item_id, r.role_id
+                    FROM ' . prefixTable('restriction_to_roles') . ' AS r
+                    INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
+                    WHERE r.item_id IN %ls',
                     $allItemIds
                 );
                 $userRolesArray = $session->get('user-roles_array');
@@ -4300,26 +4405,23 @@ switch ($inputData['type']) {
                     }
                 }
 
-                // Batch: get expiration dates (most recent between creation and last pw modification)
+                // Batch: get the most recent relevant date per item (creation or last pw change)
                 $logRows = DB::query(
-                    'SELECT id_item, date
+                    'SELECT id_item, MAX(date) AS date
                     FROM ' . prefixTable('log_items') . '
                     WHERE id_item IN %ls
                     AND (
                         action = %s
                         OR (action = %s AND raison = %s)
                     )
-                    ORDER BY date DESC',
+                    GROUP BY id_item',
                     $allItemIds,
                     'at_creation',
                     'at_modification',
                     'at_pw'
                 );
                 foreach ($logRows as $logRow) {
-                    // Keep only the most recent date per item
-                    if (!isset($batchExpirationDates[$logRow['id_item']])) {
-                        $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
-                    }
+                    $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
                 }
             }
 
@@ -4328,31 +4430,13 @@ switch ($inputData['type']) {
                 if (empty($idManaged) === true || $idManaged !== $record['id']) {
                     // Fix a bug on Personal Item creation - field `perso` must be set to `1`
                     if (intval($record['perso']) !== 1 && intval($folder_is_personal) === 1) {
-                        DB::update(
-                            prefixTable('items'),
-                            array(
-                                'perso' => 1,
-                                'updated_at' => time(),
-                            ),
-                            'id=%i',
-                            $record['id']
-                        );
+                        $itemsToMarkPerso[] = $record['id'];
                         $record['perso'] = 1;
                     }
 
-                    // Does this item has restriction to groups of users?
-                    // Use INNER JOIN to exclude orphaned entries from deleted roles
-                    $item_is_restricted_to_role = false;
-                    DB::queryFirstRow(
-                        'SELECT r.role_id
-                        FROM ' . prefixTable('restriction_to_roles') . ' AS r
-                        INNER JOIN ' . prefixTable('roles_title') . ' AS t ON t.id = r.role_id
-                        WHERE r.item_id = %i',
-                        $record['id']
-                    );
-                    if (DB::count() > 0) {
-                        $item_is_restricted_to_role = true;
-                    }
+                    // Does this item have a restriction to groups of users?
+                    // Use batch pre-fetched data (already INNER JOIN'd with roles_title to exclude orphaned roles).
+                    $item_is_restricted_to_role = isset($batchRestrictedToRoles[$record['id']]);
 
                     // Has this item a restriction to Groups of Users (batch pre-fetched)
                     $user_is_included_in_role = isset($batchUserIncludedInRole[$record['id']]);
@@ -4360,7 +4444,7 @@ switch ($inputData['type']) {
                     // Is user in restricted list of users
                     if (empty($record['restricted_to']) === false) {
                         if (
-                            in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
+                            in_array($currentUserId, explode(';', $record['restricted_to'])) === true
                             || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
                                 && (int) $SETTINGS['manager_edit'] === 1)
                         ) {
@@ -4464,6 +4548,7 @@ switch ($inputData['type']) {
                         intval($record['anyone_can_modify']) === 1
                         && intval($record['perso']) !== 1
                         && (int) $session->get('user-read_only') === 0
+                        && !in_array((int) $record['tree_id'], $session->get('user-read_only_folders') ?? [])
                     ) {
                         // Case 3 - Has this item the setting "anyone can modify" set to true?
                         // Allow all rights
@@ -4575,21 +4660,20 @@ switch ($inputData['type']) {
                 $idManaged = $record['id'];
             }
 
+            // Batch update `perso` flag — avoids one UPDATE per item inside the loop
+            if (!empty($itemsToMarkPerso)) {
+                DB::query(
+                    'UPDATE ' . prefixTable('items') . ' SET perso=1, updated_at=%i WHERE id IN %ls',
+                    time(),
+                    $itemsToMarkPerso
+                );
+            }
+
             $rights = recupDroitCreationSansComplexite((int) $inputData['id']);
         }
 
-        // count
-        if ((int) $start === 0) {
-            DB::query(
-                'SELECT i.id
-                FROM ' . prefixTable('items') . ' as i
-                INNER JOIN ' . prefixTable('nested_tree') . ' as n ON (i.id_tree = n.id)
-                WHERE %l',
-                $where
-            );
-            $counter_full = DB::count();
-            $uniqueLoadData['counter_full'] = $counter_full;
-        }
+        // counter_full is already set: on first load from the COUNT query above,
+        // on subsequent loads from uniqueLoadData (line ~4210).
 
         // Check list to be continued status
         if ($post_nb_items_to_display_once !== 'max' && ($post_nb_items_to_display_once + $start) < $counter_full) {
@@ -4641,7 +4725,7 @@ switch ($inputData['type']) {
 
         // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, s.share_key AS share_key, s.increment_id AS sharekey_id,
+            'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
                     i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -4709,7 +4793,7 @@ switch ($inputData['type']) {
         // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
-            $pw = doDataDecryption(
+            $passwordPlain = teampassDecryptPasswordValue(
                 $dataItem['pw'],
                 decryptUserObjectKeyWithMigration(
                     $dataItem['share_key'],
@@ -4717,8 +4801,10 @@ switch ($inputData['type']) {
                     $session->get('user-public_key'),
                     intval($dataItem['sharekey_id']),
                     'sharekeys_items'
-                )
+                ),
+                (int) ($dataItem['pw_len'] ?? 0)
             );
+            $pw = $passwordPlain === '' ? '' : base64_encode($passwordPlain);
         }
 
         $returnValues = array(
@@ -4874,35 +4960,32 @@ switch ($inputData['type']) {
                     'title' => $record['title'],
                 )
             );
-            $rows2 = DB::query(
-                'SELECT u.id, u.login, u.email, u.name, u.lastname,
-                GROUP_CONCAT(DISTINCT ur.role_id ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+        }
+
+        // Batch-load all users for all folder roles in a single query instead of one per role.
+        if (!empty($listOptionsForRoles)) {
+            $roleIds = array_column($listOptionsForRoles, 'id');
+            $allRoleUsers = DB::query(
+                'SELECT DISTINCT u.id, u.login, u.email, u.name, u.lastname
                 FROM ' . prefixTable('users') . ' AS u
                 INNER JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-                WHERE u.admin = 0 AND ur.source = %s
-                GROUP BY u.id, u.login, u.email, u.name, u.lastname',
+                WHERE u.admin = 0 AND ur.role_id IN %ls AND ur.source = %s',
+                $roleIds,
                 'manual'
             );
-            foreach ($rows2 as $record2) {
-                foreach (explode(';', $record2['fonction_id']) as $role) {
-                    if (
-                        array_search($record2['id'], array_column($listOptionsForUsers, 'id')) === false
-                        && $role === $record['role_id']
-                    ) {
-                        array_push(
-                            $listOptionsForUsers,
-                            array(
-                                'id' => $record2['id'],
-                                'login' => $record2['login'],
-                                'name' => strval($record2['name']) . ' ' . strval($record2['lastname']),
-                                'email' => $record2['email'],
-                            )
-                        );
-                    }
-                }
+            foreach ($allRoleUsers as $user) {
+                array_push(
+                    $listOptionsForUsers,
+                    array(
+                        'id' => $user['id'],
+                        'login' => $user['login'],
+                        'name' => strval($user['name']) . ' ' . strval($user['lastname']),
+                        'email' => $user['email'],
+                    )
+                );
             }
         }
-        
+
         // Get access level for this folder
         $accessLevel = 0;
         if ($folder_is_personal === 0) {
@@ -5168,6 +5251,12 @@ switch ($inputData['type']) {
         );
         $action = (int) filter_var($dataReceived['action'], FILTER_SANITIZE_NUMBER_INT);
         $itemId = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted($itemId, $SETTINGS);
+        if ($granted !== true) {
+            exit;
+        }
 
         if ($action === 0) {
             // Add to favorites
@@ -6107,6 +6196,16 @@ switch ($inputData['type']) {
                 ""
             );
         } elseif ($inputData['cat'] === 'share_this_item') {
+            // Verify the current user can access this item's folder before sharing its details.
+            $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+            if ($granted !== true) {
+                echo (string) prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
+
             $dataItem = DB::queryFirstRow(
                 'SELECT label,id_tree
                 FROM ' . prefixTable('items') . '
@@ -6247,6 +6346,14 @@ switch ($inputData['type']) {
             echo '[ { "error" : "key_not_conform" } ]';
             break;
         }
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
+        if ($granted !== true) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
+
         // Do
         DB::delete(
             prefixTable('items_edition'),
@@ -6307,7 +6414,7 @@ switch ($inputData['type']) {
         // Decrypt the pwd
         // Should we log a password change?
         $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, i.pw
+            'SELECT s.share_key, i.pw, i.pw_len
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6318,13 +6425,14 @@ switch ($inputData['type']) {
             // No share key found
             $pw = '';
         } else {
-            $pw = base64_decode(doDataDecryption(
+            $pw = teampassDecryptPasswordValue(
                 $itemQ['pw'],
                 decryptUserObjectKey(
                     $itemQ['share_key'],
                     $session->get('user-private_key')
-                )
-            ));
+                ),
+                (int) ($itemQ['pw_len'] ?? 0)
+            );
         }
 
         // Encrypt it with DEFUSE using the generated code as key
@@ -6391,6 +6499,19 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
+
+        // Verify the current user owns this OTV link and can access the underlying item.
+        $otvRow = DB::queryFirstRow(
+            'SELECT item_id, originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
+            $dataReceived['otv_id']
+        );
+        if (DB::count() === 0
+            || (int) $otvRow['originator'] !== (int) $session->get('user-id')
+            || accessToItemIsGranted((int) $otvRow['item_id'], $SETTINGS) !== true
+        ) {
+            echo '[ { "error" : "not_allowed" } ]';
+            break;
+        }
 
         // get parameters from original link
         $url = $dataReceived['original_link'];
@@ -6811,7 +6932,17 @@ switch ($inputData['type']) {
             );
             break;
         }
-        
+
+        // Verify the current user can access the folder this item belongs to.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // get item info
         $dataItem = DB::queryFirstRow(
             'SELECT *
@@ -6835,10 +6966,12 @@ switch ($inputData['type']) {
             '"at_shown","at_password_copied", "at_shown", "at_password_shown", "at_password_shown_edit_form"'
         );
         foreach ($rows as $record) {
-            if (empty($record['raison']) === true) {
-                $reason[0] = '';
-            } else {
-                $reason = array_map('trim', explode(':', $record['raison']));
+            $parsedReason = parseItemLogReasonSource(isset($record['raison']) === true ? (string) $record['raison'] : null);
+            $record['raison'] = $parsedReason['reason'];
+            $isApiSource = $parsedReason['is_api'];
+            $reason = [''];
+            if (empty($record['raison']) === false) {
+                $reason = array_map('trim', explode(':', (string) $record['raison']));
             }
             
             // imported via API
@@ -6918,8 +7051,8 @@ switch ($inputData['type']) {
                     $detail = $reason[0];
                 }
             } else {
-                $detail = $lang->get($record['action']);
-                $action = '';
+                $action = $lang->get($record['action']);
+                $detail = '';
             }
 
             array_push(
@@ -6931,6 +7064,7 @@ switch ($inputData['type']) {
                     'date' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], intval($record['date'])),
                     'action' => $action,
                     'detail' => $detail,
+                    'is_api' => $isApiSource,
                 )
             );
         }
@@ -6972,13 +7106,26 @@ switch ($inputData['type']) {
 
         // prepare variables
         $label = htmlspecialchars_decode($data_received['label'], ENT_QUOTES);
-        $pwd = htmlspecialchars_decode($data_received['password']);
+        $pwd = teampassDecodeTransportSecret(
+            isset($data_received['password']) && is_string($data_received['password']) ? $data_received['password'] : '',
+            isset($data_received['password_is_b64']) && (int) $data_received['password_is_b64'] === 1
+        );
         $login = htmlspecialchars_decode($data_received['login'], ENT_QUOTES);
         $email = htmlspecialchars_decode($data_received['email']);
         $url = htmlspecialchars_decode($data_received['url']);
         $folder = htmlspecialchars_decode($data_received['folder_id']);
         $comment = htmlspecialchars_decode($data_received['comment']);
         $item_id = htmlspecialchars_decode($data_received['item_id']);
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $item_id, $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
 
         if (empty($pwd)) {
             $cryptedStuff['encrypted'] = '';
@@ -7072,6 +7219,16 @@ switch ($inputData['type']) {
         //$post_email_body = filter_var($dataReceived['email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $inputData['itemId'] = (int) filter_var($dataReceived['id'], FILTER_SANITIZE_NUMBER_INT);
 
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // Send email
         $dataItem = DB::queryFirstRow(
             'SELECT label, id_tree
@@ -7126,6 +7283,16 @@ switch ($inputData['type']) {
         // prepare variables
         $post_notification_status = (int) filter_var($dataReceived['notification_status'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        // Verify the current user can access this item's folder.
+        $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
+        if ($granted !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => 'key_not_conform', 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
 
         DB::query(
             'SELECT *
@@ -7196,6 +7363,28 @@ switch ($inputData['type']) {
 
         // prepare variables
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
+
+        // For existing items, enforce edit permission before deleting pending files
+        if ($inputData['itemId'] > 0) {
+            $itemRowDelete = DB::queryFirstRow(
+                'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $inputData['itemId']
+            );
+            if (DB::count() > 0) {
+                $deleteAccessRights = getCurrentAccessRights(
+                    (int) $session->get('user-id'),
+                    $inputData['itemId'],
+                    (int) $itemRowDelete['id_tree']
+                );
+                if ($deleteAccessRights['edit'] !== true) {
+                    echo (string) prepareExchangedData(
+                        array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                        'encode'
+                    );
+                    break;
+                }
+            }
+        }
 
         // Delete non confirmed files for this item
         // And related logs
@@ -7276,6 +7465,31 @@ switch ($inputData['type']) {
         // prepare variables
         $inputData['itemId'] = (int) filter_var($dataReceived['item_id'], FILTER_SANITIZE_NUMBER_INT);
 
+        // Enforce edit permission before confirming attachments
+        $itemRow = DB::queryFirstRow(
+            'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+            $inputData['itemId']
+        );
+        if (DB::count() === 0) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+        $confirmAccessRights = getCurrentAccessRights(
+            (int) $session->get('user-id'),
+            $inputData['itemId'],
+            (int) $itemRow['id_tree']
+        );
+        if ($confirmAccessRights['edit'] !== true) {
+            echo (string) prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                'encode'
+            );
+            break;
+        }
+
         // Confirm attachments
         $rows = DB::query(
             'SELECT id, file AS filename
@@ -7284,14 +7498,11 @@ switch ($inputData['type']) {
             $inputData['itemId'],
             0
         );
-        foreach ($rows as $file) {
-            DB::update(
-                prefixTable('files'),
-                array(
-                    'confirmed' => 1,
-                ),
-                'id_item = %i',
-                $inputData['itemId']
+        $fileIdsToConfirm = array_column($rows, 'id');
+        if (!empty($fileIdsToConfirm)) {
+            DB::query(
+                'UPDATE ' . prefixTable('files') . ' SET confirmed=1 WHERE id IN %ls',
+                $fileIdsToConfirm
             );
         }
 
@@ -7346,9 +7557,9 @@ switch ($inputData['type']) {
             }
         }
 
-        // Check rights
+        // Check rights — always use the current session user's id, never the client-supplied one.
         $data = getCurrentAccessRights(
-            (int) filter_var($dataReceived['userId'], FILTER_SANITIZE_NUMBER_INT),
+            (int) $session->get('user-id'),
             $checkItemId,
             $checkTreeId,
             (string) filter_var($dataReceived['action'], FILTER_SANITIZE_SPECIAL_CHARS),
@@ -7489,6 +7700,129 @@ switch ($inputData['type']) {
             );
 
             break;
+
+        /*
+        * CASE
+        * Check a password against HaveIBeenPwned Pwned Passwords API.
+        * Uses k-anonymity: only 5 chars of SHA-1 hash are transmitted.
+        * Updates hibp_status/count/checked_at in teampass_items.
+        */
+        case 'check_hibp_password':
+            // Validate session key
+            if ($inputData['key'] !== $session->get('key')) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => $lang->get('key_is_not_correct')],
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature must be enabled by admin
+            if (!isset($SETTINGS['hibp_enabled']) || (int) $SETTINGS['hibp_enabled'] !== 1) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'status' => 'disabled'],
+                    'encode'
+                );
+                break;
+            }
+
+            $hibpItemId = (int) filter_var($inputData['id'], FILTER_SANITIZE_NUMBER_INT);
+            if ($hibpItemId <= 0) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => 'invalid_item_id'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Load item and verify user has access via sharekey
+            $hibpItem = DB::queryFirstRow(
+                'SELECT pw, hibp_status, hibp_checked_at
+                FROM ' . prefixTable('items') . '
+                WHERE id = %i',
+                $hibpItemId
+            );
+            if ($hibpItem === null) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Get the user's share key for this item
+            $hibpUserKeys = DB::query(
+                'SELECT share_key
+                FROM ' . prefixTable('sharekeys_items') . '
+                WHERE user_id = %i AND object_id = %i',
+                $session->get('user-id'),
+                $hibpItemId
+            );
+
+            if (empty($hibpUserKeys) || empty($hibpItem['pw'])) {
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Decrypt the object key then the password
+            $hibpPw = '';
+            foreach ($hibpUserKeys as $hibpKey) {
+                $hibpObjectKey = decryptUserObjectKey($hibpKey['share_key'], $session->get('user-private_key'));
+                if (!empty($hibpObjectKey)) {
+                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey));
+                    break;
+                }
+            }
+
+            if ($hibpPw === '') {
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            // Call HIBP API (silent on network failure)
+            $hibpResult = checkPasswordWithHIBP($hibpPw);
+
+            if (isset($hibpResult['error'])) {
+                // Network unreachable or API error — do not update DB, return error silently
+                echo (string) prepareExchangedData(
+                    ['error' => false, 'status' => 'error'],
+                    'encode'
+                );
+                break;
+            }
+
+            $hibpNewStatus = $hibpResult['pwned'] === true ? 2 : 1;
+            $hibpCount     = (int) $hibpResult['count'];
+            $hibpNow       = (string) time();
+
+            DB::update(
+                prefixTable('items'),
+                [
+                    'hibp_status'     => $hibpNewStatus,
+                    'hibp_count'      => $hibpCount,
+                    'hibp_checked_at' => $hibpNow,
+                ],
+                'id = %i',
+                $hibpItemId
+            );
+
+            echo (string) prepareExchangedData(
+                [
+                    'error'      => false,
+                    'status'     => $hibpResult['pwned'] === true ? 'pwned' : 'safe',
+                    'count'      => $hibpCount,
+                    'checked_at' => $hibpNow,
+                ],
+                'encode'
+            );
+
+            break;
 }
 
 // Build the QUERY in case of GET
@@ -7581,28 +7915,31 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
 {
     $session = SessionManager::getSession();
 
-    // Check if the item is locked and whether the current user can edit it
-    $editionLock = isItemLocked($itemId, $session, $userId, $action);
+    // All permission checks come FIRST so that the edition lock is never
+    // created for a user who will ultimately be denied edit access.
 
     // Check if user is allowed restriction list of users
-    // If the item is restricted to specific users, check if the current user is in that list
     if (getItemRestrictedUsersList($itemId, $userId) === false) {
         return getAccessResponse(false, false, false, false);
     }
-    
+
     // Check if the item is being processed by another user
     if (isProcessOnGoing($itemId)) {
         return getAccessResponse(false, true, false, false);
     }
-    
+
     // Check if the folder is in the user's read-only list
     if (in_array($treeId, $session->get('user-read_only_folders'))) {
         return getAccessResponse(false, true, false, false);
     }
-    
+
     // Check if the folder is in the user's allowed folders list defined by admin
     if (in_array($treeId, $session->get('user-allowed_folders_by_definition'))) {
-        return getAccessResponse(false, true, true, true, [], true);
+        // Edition locks are only touched when the user actually enters edit mode.
+        $editionLock = $action === 'edit'
+            ? isItemLocked($itemId, $session, $userId, $action)
+            : ['status' => false];
+        return getAccessResponse(false, true, true, true, $editionLock, true);
     }
 
     // Retrieve user's visible folders from the cache_tree table
@@ -7611,16 +7948,18 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     // Check if the folder is personal to the user
     foreach ($visibleFolders as $folder) {
         if ($folder['id'] == $treeId && (int) $folder['perso'] === 1) {
-            return getAccessResponse(false, true, true, true, [], true);
+            $editionLock = $action === 'edit'
+                ? isItemLocked($itemId, $session, $userId, $action)
+                : ['status' => false];
+            return getAccessResponse(false, true, true, true, $editionLock, true);
         }
     }
-    
+
     // Determine the user's access rights based on their roles for this folder
     [$edit, $delete, $create] = getRoleBasedAccess($session, $treeId);
 
     // Is this folder in the list of visible folders?
     if (!in_array($treeId, array_column($visibleFolders, 'id'))) {
-        // If the folder is not visible to the user, they cannot edit or delete items in it
         return getAccessResponse(false, false, false, false);
     }
 
@@ -7628,6 +7967,12 @@ function getCurrentAccessRights(int $userId, int $itemId, int $treeId, string $a
     if (LOG_TO_SERVER === true) {
         error_log("TEAMPASS - Folder: $treeId - User: $userId - edit: $edit - delete: $delete - create: $create");
     }
+
+    // Only create/check the edition lock when the user actually enters edit mode.
+    // If edit=false or the action is read-only, no lock is acquired or refreshed.
+    $editionLock = ($edit && $action === 'edit')
+        ? isItemLocked($itemId, $session, $userId, $action)
+        : ['status' => false];
 
     return getAccessResponse(false, true, $edit, $delete, $editionLock, $create);
 }
@@ -7689,6 +8034,95 @@ function getItemRestrictedUsersList(int $itemId, int $userId): bool
 }
 
 /**
+ * Returns the edition lock heartbeat expiry delay in seconds.
+ *
+ * Uses the EDITION_LOCK_HEARTBEAT_TIMEOUT constant when defined; defaults to 300 s.
+ *
+ * @return int Expiry delay in seconds (always > 0)
+ */
+function getEditionLockHeartbeatTimeout(): int
+{
+    return defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+        ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+        : 300;
+}
+
+/**
+ * Returns the most recent edition lock row for an item, or null if none exists.
+ *
+ * @param int $itemId Item ID to look up
+ * @return array{timestamp: int, user_id: int, increment_id: int}|null
+ */
+function getLatestItemEditionLock(int $itemId): ?array
+{
+    $lock = DB::queryFirstRow(
+        'SELECT timestamp, user_id, increment_id
+         FROM ' . prefixTable('items_edition') . '
+         WHERE item_id = %i
+         ORDER BY increment_id DESC',
+        $itemId
+    );
+
+    return $lock;
+}
+
+/**
+ * Determines whether the given user is allowed to save an item based on the edition lock state.
+ *
+ * Returns ['allowed' => true] when the user holds an active lock.
+ * Returns ['allowed' => false, 'reason' => string] otherwise, with an optional 'delay' key
+ * (seconds remaining) when the item is locked by another user.
+ *
+ * Possible reasons: 'invalid', 'missing', 'locked_by_other_user', 'missing_active_lock'.
+ *
+ * @param int $itemId Item ID
+ * @param int $userId Current user ID
+ * @return array{allowed: bool, reason?: string, delay?: int}
+ */
+function getItemEditionLockSaveStatus(int $itemId, int $userId): array
+{
+    if ($itemId <= 0 || $userId <= 0) {
+        return ['allowed' => false, 'reason' => 'invalid'];
+    }
+
+    $locks = DB::query(
+        'SELECT timestamp, user_id, increment_id
+         FROM ' . prefixTable('items_edition') . '
+         WHERE item_id = %i
+         ORDER BY increment_id DESC',
+        $itemId
+    );
+    if (count($locks) === 0) {
+        return ['allowed' => false, 'reason' => 'missing'];
+    }
+
+    $now = time();
+    $timeout = getEditionLockHeartbeatTimeout();
+    $hasOwnActiveLock = false;
+
+    foreach ($locks as $lock) {
+        $elapsed = abs($now - (int) $lock['timestamp']);
+        if ($elapsed > $timeout) {
+            continue;
+        }
+
+        if ((int) $lock['user_id'] !== $userId) {
+            return [
+                'allowed' => false,
+                'reason' => 'locked_by_other_user',
+                'delay' => max(0, $timeout - $elapsed),
+            ];
+        }
+
+        $hasOwnActiveLock = true;
+    }
+
+    return $hasOwnActiveLock === true
+        ? ['allowed' => true]
+        : ['allowed' => false, 'reason' => 'missing_active_lock'];
+}
+
+/**
  * Checks if the item is locked by another user or if there is an ongoing encryption process.
  * If the item is locked, the function determines if the lock has expired or not.
  * 
@@ -7709,16 +8143,10 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
     }
 
     $now = time();
-    $editionLocks = DB::query(
-        'SELECT timestamp, user_id, increment_id
-         FROM ' . prefixTable('items_edition') . '
-         WHERE item_id = %i
-         ORDER BY increment_id DESC',
-        $itemId
-    );
+    $lastLock = getLatestItemEditionLock($itemId);
 
     // Check if there are any locks for this item
-    if (count($editionLocks) === 0) {
+    if ($lastLock === null) {
         // If no locks exist and the action is 'edit', create a new lock
         if ($actionType === 'edit') {
             createEditionLock($itemId, $userId, $now);
@@ -7732,17 +8160,17 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
         return ['status' => false];
     }
 
-    // Check if the last lock is older than the defined period
-    $lastLock = $editionLocks[0];
-
-    // If the lock is for the current user, update the timestamp
+    // If the lock is for the current user, update the timestamp only while
+    // entering edit mode. Read-only access checks must never keep a lock alive.
     if (intval($lastLock['user_id']) === $userId) {
-        DB::update(
-            prefixTable('items_edition'),
-            ['timestamp' => $now],
-            'increment_id = %i',
-            $lastLock['increment_id']
-        );
+        if ($actionType === 'edit') {
+            DB::update(
+                prefixTable('items_edition'),
+                ['timestamp' => $now],
+                'increment_id = %i',
+                $lastLock['increment_id']
+            );
+        }
         return [
             'status' => false,
         ];
@@ -7751,9 +8179,7 @@ function isItemLocked(int $itemId, $session, int $userId, string $actionType = '
     // Use heartbeat-based timeout: lock expires only if no heartbeat renewal
     // was received within EDITION_LOCK_HEARTBEAT_TIMEOUT (default 5 minutes).
     // The client sends a WebSocket renew_item_lock every 60s while editing.
-    $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
-        ? EDITION_LOCK_HEARTBEAT_TIMEOUT
-        : 300;
+    $heartbeatTimeout = getEditionLockHeartbeatTimeout();
 
     // Calculate the elapsed time since the last lock refresh (heartbeat or creation)
     $elapsed = abs($now - intval($lastLock['timestamp']));

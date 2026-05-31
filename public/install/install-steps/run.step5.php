@@ -150,9 +150,13 @@ class DatabaseInstaller
         try {
             if (method_exists($this, $this->inputData['action'])) {
                 // Dynamically call the method corresponding to the action
-                call_user_func([$this, $this->inputData['action']]);
+                $result = call_user_func([$this, $this->inputData['action']]);
+                // Propagate failure returned by the method
+                if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+                    return $result;
+                }
             } else {
-                throw new Exception('Action not recognized: ' . $this->inputData);
+                throw new Exception('Action not recognized: ' . $this->inputData['action']);
             }
 
             return [
@@ -356,7 +360,7 @@ class DatabaseInstaller
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id),
                 KEY `encryption_version` (`encryption_version`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -373,7 +377,7 @@ class DatabaseInstaller
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id),
                 KEY `encryption_version` (`encryption_version`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -390,7 +394,7 @@ class DatabaseInstaller
                 PRIMARY KEY (`increment_id`),
                 UNIQUE KEY idx_unique_object_user (object_id, user_id),
                 KEY `encryption_version` (`encryption_version`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -425,9 +429,13 @@ class DatabaseInstaller
             `created_at` varchar(30) NULL,
             `updated_at` varchar(30) NULL,
             `deleted_at` varchar(30) NULL,
+            `hibp_status` tinyint(1) NOT NULL DEFAULT '0',
+            `hibp_count` int NOT NULL DEFAULT '0',
+            `hibp_checked_at` varchar(30) NULL DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `restricted_inactif_idx` (`restricted_to`,`inactif`),
-            INDEX items_perso_id_idx (`perso`, `id`)
+            INDEX items_perso_id_idx (`perso`, `id`),
+            INDEX idx_items_tree_inactif_deleted (`id_tree`, `inactif`, `deleted_at`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
@@ -446,7 +454,8 @@ class DatabaseInstaller
             `old_value` MEDIUMTEXT NULL DEFAULT NULL,
             `encryption_type` VARCHAR(20) NOT NULL DEFAULT 'not_set',
             PRIMARY KEY (`increment_id`),
-            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`)
+            INDEX log_items_item_action_user_idx (`id_item`, `action`, `id_user`),
+            INDEX idx_log_items_item_action_raison (`id_item`, `action`(30), `raison`(10))
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     
@@ -503,12 +512,12 @@ class DatabaseInstaller
             array('admin', 'duplicate_item', '0'),
             array('admin', 'number_of_used_pw', '3'),
             array('admin', 'manager_edit', '1'),
-            array('admin', 'cpassman_dir', $this->installConfig['teampassAbsolutePath']),
+            array('admin', 'cpassman_dir', TEAMPASS_ROOT),
             array('admin', 'cpassman_url', $this->installConfig['teampassUrl']),
             array('admin', 'favicon', rtrim($this->installConfig['teampassUrl'], '/') . '/favicon.ico'),
-            array('admin', 'path_to_upload_folder', rtrim($this->installConfig['teampassAbsolutePath'], '/') . '/upload'),
-            array('admin', 'path_to_files_folder', rtrim($this->installConfig['teampassAbsolutePath'], '/') . '/files'),
-            array('admin', 'url_to_files_folder', rtrim($this->installConfig['teampassUrl'], '/') . '/files'),
+            array('admin', 'path_to_upload_folder', TEAMPASS_ROOT . '/storage/upload'),
+            array('admin', 'path_to_files_folder', TEAMPASS_ROOT . '/storage/files'),
+            array('admin', 'url_to_files_folder', rtrim($this->installConfig['teampassUrl'], '/') . '/storage/files'),
             array('admin', 'activate_expiration', '0'),
             array('admin', 'pw_life_duration', '0'),
             array('admin', 'maintenance_mode', '1'),
@@ -535,6 +544,8 @@ class DatabaseInstaller
             array('admin', 'enable_user_can_create_folders', '0'),
             array('admin', 'insert_manual_entry_item_history', '0'),
             array('admin', 'enable_kb', '0'),
+            array('admin', 'hibp_enabled', '0'),
+            array('admin', 'hibp_check_interval_days', '7'),
             array('admin', 'enable_email_notification_on_item_shown', '0'),
             array('admin', 'enable_email_notification_on_user_pw_change', '0'),
             array('admin', 'custom_logo', ''),
@@ -584,7 +595,7 @@ class DatabaseInstaller
             array('admin', 'default_session_expiration_time', '60'),
             array('admin', 'duo', '0'),
             array('admin', 'enable_server_password_change', '0'),
-            array('admin', 'bck_script_path', $this->installConfig['teampassAbsolutePath'] . '/backups'),
+            array('admin', 'bck_script_path', TEAMPASS_ROOT . '/backups'),
             array('admin', 'bck_script_filename', 'bck_teampass', '1'),
             array('admin', 'syslog_enable', '0'),
             array('admin', 'syslog_host', 'localhost'),
@@ -602,6 +613,7 @@ class DatabaseInstaller
             array('admin', 'personal_saltkey_security_level', '50'),
             array('admin', 'ldap_new_user_is_administrated_by', '0'),
             array('admin', 'disable_show_forgot_pwd_link', '0'),
+            array('admin', 'enable_local_password_recovery', '1'),
             array('admin', 'offline_key_level', '0'),
             array('admin', 'enable_http_request_login', '0'),
             array('admin', 'ldap_and_local_authentication', '0'),
@@ -635,6 +647,7 @@ class DatabaseInstaller
             array('admin', 'ldap_password', '', '1'),
             array('admin', 'ldap_username', ''),
             array('admin', 'api_token_duration', '60'),
+            array('admin', 'api_cors_origins', ''),
             array('timestamp', 'last_folder_change', ''),
             array('admin', 'enable_tasks_manager', '1'),
             array('admin', 'task_maximum_run_time', '300'),
@@ -955,7 +968,7 @@ class DatabaseInstaller
             `tag` varchar(30) NOT NULL,
             `item_id` int(12) NOT NULL,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -972,7 +985,7 @@ class DatabaseInstaller
             `field_1` varchar(250) DEFAULT NULL,
             PRIMARY KEY (`id`),
             KEY `idx_log_api_user_connection` (qui, type(20), label(30), date DESC)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -991,7 +1004,8 @@ class DatabaseInstaller
             `status` varchar(50) NOT NULL DEFAULT '0',
             `content` longblob DEFAULT NULL,
             `confirmed` INT(1) NOT NULL DEFAULT '0',
-            PRIMARY KEY (`id`)
+            PRIMARY KEY (`id`),
+            INDEX idx_files_item_confirmed (`id_item`, `confirmed`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }
@@ -1015,7 +1029,7 @@ class DatabaseInstaller
             `renewal_period` tinyint(4) NOT NULL DEFAULT '0',
             `timestamp` varchar(50) DEFAULT NULL,
             `url` text NULL DEFAULT NULL,
-            `encryption_type` VARCHAR(50) DEFAULT NULL DEFAULT '0',
+            `encryption_type` VARCHAR(50) NULL DEFAULT NULL,
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -1036,15 +1050,14 @@ class DatabaseInstaller
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
-        // Vérifier si le rôle par défaut existe
+        // Check if the Default role already exists (check by title, not id — id is auto-increment)
         $tmp = DB::queryFirstField(
-            "SELECT COUNT(*) 
-            FROM " . $this->inputData['tablePrefix'] . "roles_title 
-            WHERE id = 0"
+            "SELECT COUNT(*)
+            FROM " . $this->inputData['tablePrefix'] . "roles_title
+            WHERE title = 'Default'"
         );
 
         if (intval($tmp) === 0) {
-            // Insérer le rôle par défaut
             DB::insert($this->inputData['tablePrefix'] . 'roles_title', [
                 'id'             => null,
                 'title'          => 'Default',
@@ -1081,6 +1094,8 @@ class DatabaseInstaller
             `description` text NOT NULL,
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
+            `allow_comments` tinyint(1) NOT null DEFAULT '0',
+            `deleted_at` datetime NULL DEFAULT NULL,
             PRIMARY KEY (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -1094,7 +1109,7 @@ class DatabaseInstaller
             `id` int(12) NOT null AUTO_INCREMENT,
             `category` varchar(50) NOT NULL,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1107,7 +1122,26 @@ class DatabaseInstaller
             `kb_id` int(12) NOT NULL,
             `item_id` int(12) NOT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+        );
+    }
+
+    // Create table kb_comments
+    private function kb_comments()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'kb_comments` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `content` text NOT NULL,
+            `author_id` int(12) NOT NULL,
+            `created_at` int(12) NOT NULL DEFAULT 0,
+            `updated_at` int(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`id`),
+            KEY `idx_kb_id` (`kb_id`),
+            KEY `idx_author_id` (`author_id`),
+            KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1119,8 +1153,9 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `role_id` int(12) NOT NULL,
             `item_id` int(12) NOT NULL,
-            PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            PRIMARY KEY (`increment_id`),
+            INDEX idx_restriction_item_id (`item_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1136,7 +1171,7 @@ class DatabaseInstaller
             `flag` VARCHAR(50) NOT NULL,
             `code_poeditor` VARCHAR(30) NOT NULL,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
 
         // add lanaguages
@@ -1186,7 +1221,7 @@ class DatabaseInstaller
             `receivers` TEXT NOT null ,
             `status` VARCHAR(30) NOT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1200,7 +1235,7 @@ class DatabaseInstaller
             `del_type` tinyint(1) NOT NULL,
             `del_value` varchar(35) NOT NULL,
             PRIMARY KEY (`item_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1215,7 +1250,7 @@ class DatabaseInstaller
             `timestamp` varchar(50) NOT NULL,
             KEY `item_id_idx` (`item_id`),
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1267,7 +1302,7 @@ class DatabaseInstaller
             `id_category` int(12) NOT NULL,
             `id_folder` int(12) NOT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1291,6 +1326,7 @@ class DatabaseInstaller
             `encrypted_private_key` TEXT NULL,
             `session_key_salt` VARCHAR(64) NULL,
             `session_key` varchar(64) NULL,
+            `session_aes_key` VARCHAR(64) NULL,
             PRIMARY KEY (`increment_id`),
             KEY `USER` (`user_id`),
             KEY `idx_api_timestamp` (`timestamp`)
@@ -1376,7 +1412,7 @@ class DatabaseInstaller
             `creation_timestamp` varchar(50) NOT NULL,
             `end_timestamp` varchar(50) DEFAULT NULL,
             PRIMARY KEY (`id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 
@@ -1411,7 +1447,7 @@ class DatabaseInstaller
             `item_id` int(12) NOT NULL,
             `category_id` int(12) NOT NULL,
             PRIMARY KEY (`increment_id`)
-            ) CHARSET=utf8;'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
 

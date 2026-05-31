@@ -692,7 +692,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     || (isset($_GET['step']) && $_GET['step'] == 5)
     && $_SESSION['user_granted'] === '1'
 ) {
-    //ETAPE 5
+    //STEP 5
     echo '
         <h4>Finalization</h4>
         <div>
@@ -722,7 +722,8 @@ if (!isset($_GET['step']) && !isset($post_step)) {
     || (isset($_GET['step']) && $_GET['step'] == 6)
     && $_SESSION['user_granted'] === '1'
 ) {
-    //ETAPE 5
+    // STEP 6
+    $homeUrl = ((isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php';
     echo '
         <h4>Upgrade is now completed</h4>
         <div class="callout callout-info mt-4">
@@ -732,12 +733,78 @@ if (!isset($_GET['step']) && !isset($post_step)) {
         </div>
         <div class="alert alert-primary mt-4">
             <i class="far fa-lightbulb text-warning mr-2 fa-lg"></i>It is recommended to clean the cache of your Web Browser before trying to log in.
+        </div>
+        <div class="alert alert-warning mt-4">
+            <i class="fas fa-trash-alt mr-2"></i>Clicking the button below will delete the <code>install</code> directory for security purposes and the page will refresh.
         </div>';
 
     echo '
         <div class="mt-5">
-        <a href="#" class="btn btn-primary" onclick="javascript:window.location.href=\'', (isset($_SERVER['HTTPS']) && ($_SERVER['HTTPS'] == 'on' || $_SERVER['HTTPS'] == 1) || isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https') ? 'https' : 'http', '://'.$_SERVER['HTTP_HOST'].substr($_SERVER['PHP_SELF'], 0, strrpos($_SERVER['PHP_SELF'], '/') - 8).'/index.php\';"><b>Open TeamPass</b></a>
-        </div>';
+        <a href="#" class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect(\'../index.php\'); return false;"><b>Continue</b></a>
+        </div>
+        <script>
+        function cleanupAndRedirect(url) {
+            const btn = document.getElementById(\'btn_go_home\');
+            btn.disabled = true;
+            btn.innerHTML = \'<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...\';
+
+            function showCleanupError(installDir) {
+                // Prevent duplicate blocks on repeated clicks
+                if (document.getElementById(\'cleanup-error-alert\')) {
+                    return;
+                }
+                btn.style.display = \'none\';
+
+                const alertBox = document.createElement(\'div\');
+                alertBox.id = \'cleanup-error-alert\';
+                alertBox.className = \'alert alert-info mt-3\';
+
+                const title = document.createElement(\'strong\');
+                title.className = \'d-block mb-2\';
+                title.textContent = \'The install directory could not be removed automatically.\';
+                alertBox.appendChild(title);
+
+                const msg = document.createElement(\'p\');
+                msg.className = \'mb-2\';
+                msg.textContent = \'This is usually a file ownership issue (the directory is not owned by the web server user). \' +
+                    \'Please remove it manually before exposing your TeamPass instance:\';
+                alertBox.appendChild(msg);
+
+                if (installDir) {
+                    const pre = document.createElement(\'pre\');
+                    pre.className = \'bg-light p-2 mb-3\';
+                    pre.textContent = \'sudo rm -rf \' + installDir;
+                    alertBox.appendChild(pre);
+                }
+
+                const continueBtn = document.createElement(\'button\');
+                continueBtn.type = \'button\';
+                continueBtn.className = \'btn btn-primary btn-sm\';
+                continueBtn.textContent = \'Continue to login\';
+                continueBtn.addEventListener(\'click\', function() { window.location.href = url; });
+                alertBox.appendChild(continueBtn);
+
+                btn.closest(\'div\').insertAdjacentElement(\'afterend\', alertBox);
+            }
+
+            fetch(\'cleanup_install.php\', {
+                method: \'POST\',
+                headers: {\'Content-Type\': \'application/x-www-form-urlencoded\'},
+                body: \'action=cleanup\'
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === \'ok\') {
+                    window.location.href = url;
+                } else {
+                    showCleanupError(data.install_dir || \'\');
+                }
+            })
+            .catch(function() {
+                window.location.href = url;
+            });
+        }
+        </script>';
 }
 
 echo '
@@ -747,14 +814,14 @@ if (!isset($post_step)) {
     echo '
             <input type="button" id="but_launch" data-step="step0" class="btn btn-primary" value="START">
             <input type="button" id="but_next" data-target="1" style="" class="btn btn-primary" value="NEXT" disabled="disabled">';
-} elseif (intVal($post_step) === 3 && $conversion_utf8 === false && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === false && ($_SESSION['user_granted'] ?? null) === '1') {
     echo '
             <input type="button" id="but_next" target_id="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT">';
-} elseif (intVal($post_step) === 3 && $conversion_utf8 === true && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 3 && $conversion_utf8 === true && ($_SESSION['user_granted'] ?? null) === '1') {
     echo '
             <input type="button" id="but_launch" data-step="step'.$post_step.'" class="btn btn-primary" value="START">
             <input type="button" id="but_next" data-target="'.(intval($post_step) + 1).'" class="btn btn-primary" value="NEXT" disabled="disabled">';
-} elseif (intVal($post_step) === 6 && $_SESSION['user_granted'] === '1') {
+} elseif (intVal($post_step) === 6 && ($_SESSION['user_granted'] ?? null) === '1') {
     // Nothong to do
 } else {
     echo '

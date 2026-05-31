@@ -155,9 +155,13 @@ class teampassInstaller
         try {
             if (method_exists($this, $this->inputData['action'])) {
                 // Dynamically call the method corresponding to the action
-                call_user_func([$this, $this->inputData['action']]);
+                $result = call_user_func([$this, $this->inputData['action']]);
+                // Propagate failure returned by the method
+                if (is_array($result) && isset($result['success']) && $result['success'] === false) {
+                    return $result;
+                }
             } else {
-                throw new Exception('Action not recognized: ' . $this->inputData);
+                throw new Exception('Action not recognized: ' . $this->inputData['action']);
             }
 
             return [
@@ -228,8 +232,9 @@ class teampassInstaller
                 ];
             }
 
-            // Get absolute path to teampass
+            // public/ dir (absolute_path from form) and project root
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
+            $rootPath = TEAMPASS_ROOT;
             if (!is_dir($absolutePath)) {
                 return [
                     'success' => false,
@@ -240,15 +245,16 @@ class teampassInstaller
             // Folders and permissions to apply.
             // 0750: owner=rwx, group=rx, world=none — web server user can traverse and read.
             // 0640: owner=rw, group=r, world=none — web server user can read, never execute.
+            // In TeamPass 3.2, files/upload live under storage/ (outside public/)
             $directories = [
-                $absolutePath              => ['dir' => 0750, 'file' => 0640],
-                $absolutePath . '/files'   => ['dir' => 0750, 'file' => 0640],
-                $absolutePath . '/upload'  => ['dir' => 0750, 'file' => 0640],
+                $absolutePath                      => ['dir' => 0750, 'file' => 0640],
+                $rootPath . '/storage/files'       => ['dir' => 0750, 'file' => 0640],
+                $rootPath . '/storage/upload'      => ['dir' => 0750, 'file' => 0640],
             ];
 
             // Apply permissions
             foreach ($directories as $path => $permissions) {
-                $result = recursiveChmodForInstall($path, $permissions['dir'], $permissions['file']);
+                $result = recursiveChmodForInstall($path, $permissions['file'], $permissions['dir']);
                 if (!$result) {
                     return [
                         'success' => false,
@@ -279,9 +285,8 @@ class teampassInstaller
     function csrf(): array
     {
         try {
-            // Get absolute path to teampass
-            $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            $configPath = $absolutePath . '/app/includes/libraries/csrfp/libs/';
+            // csrfp lives under app/ which is at project root, not inside public/
+            $configPath = TEAMPASS_ROOT . '/app/includes/libraries/csrfp/libs/';
             $csrfpFileSample = $configPath . 'csrfp.config.sample.php';
             $csrfpFile = $configPath . 'csrfp.config.php';
 
@@ -373,20 +378,20 @@ class teampassInstaller
     function settingsFile(): array
     {
         include_once(__DIR__ . '/../tp.functions.php');
-        
+
         try {
-            // Get expected paths
-            $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            // TEAMPASS_SECRETS is now fixed as TEAMPASS_ROOT/secrets (defined in app/config/include.php)
+            // TEAMPASS_ROOT is defined at the top of this file (project root, parent of public/)
+            $rootPath = TEAMPASS_ROOT;
+            // TEAMPASS_SECRETS is auto-derived in app/config/include.php as TEAMPASS_ROOT/secrets
             $TEAMPASS_SECRETS = TEAMPASS_SECRETS;
-            $settingsFile = $absolutePath . '/app/config/settings.php';
+            $settingsFile = $rootPath . '/app/config/settings.php';
             $backupFile = $settingsFile . '.' . date('Y_m_d_His') . '.bak';
-    
+
             // Check if the settings file directory is writable
-            if (!is_writable($absolutePath . '/app/config')) {
+            if (!is_writable($rootPath . '/app/config')) {
                 return [
                     'success' => false,
-                    'message' => "The settings file directory is not writable. Check permissions for: " . $absolutePath . '/app/config',
+                    'message' => "The settings file directory is not writable. Check permissions for: " . $rootPath . '/app/config',
                 ];
             }
     
@@ -444,25 +449,23 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 }
 ';
     
-            // Write the settings file
-            if (file_put_contents($settingsFile, utf8_encode($settingsContent)) === false) {
+            // Write the settings file (utf8_encode removed: deprecated in PHP 8.2, removed in PHP 8.4)
+            if (file_put_contents($settingsFile, $settingsContent) === false) {
                 return [
                     'success' => false,
                     'message' => "Failed to write settings.php. Check file permissions.",
                 ];
             }
 
-            // Initialize background tasks trigger file
-            // This file is used to notify running handlers of new urgent tasks
-            $triggerFile = $absolutePath . '/files/teampass_background_tasks.trigger';
+            // Initialize background tasks trigger file (in storage/files/ — outside public/)
+            $triggerFile = $rootPath . '/storage/files/teampass_background_tasks.trigger';
             if (!file_exists($triggerFile)) {
                 @file_put_contents($triggerFile, (string) time());
                 @chmod($triggerFile, 0640); // owner=rw, group=r, world=none
             }
 
             // Initialize background tasks lock file
-            // This file is used to notify running handlers of new urgent tasks
-            $lockFile = $absolutePath . '/files/teampass_background_tasks.lock';
+            $lockFile = $rootPath . '/storage/files/teampass_background_tasks.lock';
             if (!file_exists($lockFile)) {
                 @file_put_contents($lockFile, (string) time());
                 @chmod($lockFile, 0640); // owner=rw, group=r, world=none
@@ -567,8 +570,9 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ];
             }
 
-            // Get absolute path to teampass
+            // public/ dir (for existence check) and project root (for scheduler path)
             $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
+            $rootPath = TEAMPASS_ROOT;
             if (!is_dir($absolutePath)) {
                 return [
                     'success' => false,
@@ -596,7 +600,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ->setDayOfMonth('*')
                 ->setMonths('*')
                 ->setDayOfWeek('*')
-                ->setTaskCommandLine($phpLocation['path'] . ' ' . $absolutePath . '/app/sources/scheduler.php')
+                ->setTaskCommandLine($phpLocation['path'] . ' ' . $rootPath . '/app/sources/scheduler.php')
                 ->setComments('Teampass scheduler');
 
             // Ajouter et enregistrer la tâche dans le crontab
@@ -631,7 +635,7 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
 
             // Save the installation status
             DB::query(
-                "INSERT INTO " . $this->inputData['tablePrefix'] . "misc 
+                "INSERT IGNORE INTO " . $this->inputData['tablePrefix'] . "misc 
                     (`type`, `intitule`, `valeur`) VALUES 
                     ('install', 'clear_install_folder', 'true');"
             );

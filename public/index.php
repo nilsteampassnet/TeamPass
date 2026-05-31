@@ -74,9 +74,9 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
     // This should never happen, but in case it does
     // this means if headers are sent, redirect will fallback to JS
     if (headers_sent()) {
-        echo '<script language="javascript" type="text/javascript">document.location.replace("install/install.php");</script>';
+        echo '<script type="text/javascript">document.location.replace("/install/install.php");</script>';
     } else {
-        header('Location: install/install.php');
+        header('Location: /install/install.php');
     }
     // Now either way, we should stop processing further
     exit;
@@ -85,12 +85,12 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
 // initialise CSRFGuard library
 require_once TEAMPASS_APP . '/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();
-// Override the jsUrl to use the current host and the correct js/ subdirectory.
-// The config file is gitignored (site-specific), so the jsUrl may be stale.
-csrfProtector::$config['jsUrl'] =
-    (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http')
-    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost')
-    . '/app/includes/libraries/csrfp/js/csrfprotector.js';
+// Override the jsUrl to use the public asset path.
+$scriptBasePath = rtrim(str_replace('\\', '/', dirname((string) ($_SERVER['SCRIPT_NAME'] ?? '/index.php'))), '/');
+if ($scriptBasePath === '.' || $scriptBasePath === '/') {
+    $scriptBasePath = '';
+}
+csrfProtector::$config['jsUrl'] = $scriptBasePath . '/assets/lib/csrfp/csrfprotector.js';
 
 // Load functions
 require_once TEAMPASS_APP . '/config/include.php';
@@ -539,7 +539,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
     // KB menu
-    if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1) {
+    if (isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 && (int) $session_user_admin === 0) {
         echo '
                     <li class="nav-item">
                         <a href="#" data-name="kb" class="nav-link', $get['page'] === 'kb' ? ' active' : '', '">
@@ -1357,7 +1357,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <link rel="stylesheet" href="./plugins/toggles/css/toggles-modern.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" />
             <script src="./plugins/toggles/toggles.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>" type="text/javascript"></script>
         <?php
-        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
+        } elseif (in_array($get['page'], ['search', 'folders', 'users', 'roles', 'kb', 'utilities.deletion', 'utilities.logs', 'utilities.database', 'utilities.health', 'utilities.renewal', 'tasks', 'statistics']) === true) {
             ?>
             <!-- DataTables -->
             <link rel="stylesheet" src="./plugins/datatables/css/jquery.dataTables.min.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
@@ -1418,7 +1418,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
         window.TeamPassWebSocketEnabled = true;
         window.TeamPassWebSocketDebug = <?php echo (isset($SETTINGS['debug_mode']) && $SETTINGS['debug_mode'] === '1') ? 'true' : 'false'; ?>;
         window.TeamPassWebSocketToken = <?php echo $wsToken ? json_encode($wsToken) : 'null'; ?>;
-        window.TeamPassWebSocketUrl = 'ws://<?php echo $wsHost . ':' . $wsPort; ?>';
+        window.TeamPassWebSocketUrl = <?php
+            $wsIsLoopback = in_array($wsHost, ['127.0.0.1', 'localhost', '::1'], true);
+            echo json_encode($wsIsLoopback ? '/ws' : 'ws://' . $wsHost . ':' . $wsPort);
+        ?>;
+
         window.TeamPassWsLang = {
             realtime_connection_lost: <?php echo json_encode($lang->get('ws_realtime_connection_lost')); ?>,
             reconnecting: <?php echo json_encode($lang->get('ws_reconnecting')); ?>,

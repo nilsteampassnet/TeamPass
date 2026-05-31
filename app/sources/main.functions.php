@@ -1214,8 +1214,9 @@ function prepareExchangedData($data, string $type, ?string $key = null)
                 $key
             );
         } else {
-            // Double html encoding received
-            $data = html_entity_decode(html_entity_decode(/** @scrutinizer ignore-type */$data)); // @codeCoverageIgnore Is always a string (not an array)
+            // Recover the JSON envelope without decoding literal entities inside
+            // field values such as "&lt;".
+            $data = teampassDecodeJsonPayload((string) $data);
         }
 
         // Check if $data is not empty before json_decode
@@ -1398,6 +1399,47 @@ function send_syslog($message, $host, $port, $component = 'teampass'): void
 }
 
 /**
+ * Extract internal source markers from an item log reason.
+ *
+ * @param string|null $reason Reason stored in log_items.raison.
+ *
+ * @return array{reason: string, is_api: bool}
+ */
+function parseItemLogReasonSource(?string $reason): array
+{
+    $sourceMarker = 'tp_src=api';
+    $reason = $reason === null ? '' : trim($reason);
+
+    if ($reason === '') {
+        return [
+            'reason' => '',
+            'is_api' => false,
+        ];
+    }
+
+    $isApi = false;
+    $displayParts = [];
+    $parts = array_map('trim', explode('|', $reason));
+    foreach ($parts as $part) {
+        if ($part === '') {
+            continue;
+        }
+
+        if ($part === $sourceMarker) {
+            $isApi = true;
+            continue;
+        }
+
+        $displayParts[] = $part;
+    }
+
+    return [
+        'reason' => implode(' | ', $displayParts),
+        'is_api' => $isApi,
+    ];
+}
+
+/**
  * Permits to log events into DB
  *
  * @param array  $SETTINGS Teampass settings
@@ -1569,7 +1611,7 @@ function logItems(
     }
 
     // Timestamp the last change
-    if (in_array($action, ['at_creation', 'at_modifiation', 'at_delete', 'at_import'], true)) {
+    if (in_array($action, ['at_creation', 'at_modification', 'at_delete', 'at_import'], true)) {
         try {
             DB::update(
                 prefixTable('misc'),
@@ -1587,13 +1629,10 @@ function logItems(
     }
 
     // Prepare reason for syslog: remove internal source marker if present
-    $raisonForSyslog = $raison;
-    if ($isApiContext && $raisonForSyslog !== null) {
-        $raisonForSyslog = preg_replace('/\s*\|\s*tp_src=api\s*$/', '', (string) $raisonForSyslog);
-        $raisonForSyslog = trim((string) $raisonForSyslog);
-        if ($raisonForSyslog === '') {
-            $raisonForSyslog = null;
-        }
+    $raisonForSyslog = $raison === null ? null : (string) $raison;
+    if ($isApiContext) {
+        $parsedReason = parseItemLogReasonSource($raisonForSyslog);
+        $raisonForSyslog = $parsedReason['reason'] === '' ? null : $parsedReason['reason'];
     }
 
     // SYSLOG
@@ -3568,6 +3607,99 @@ function doDataDecryption(string $data, string $key): string
 }
 
 /**
+ * Normalize legacy passwords that were historically entity-encoded before
+ * encryption. We only decode when the decoded length matches the stored
+ * pw_len, which avoids altering legitimate new passwords such as "&lt;".
+ */
+function teampassNormalizeLegacyPassword(string $password, ?int $storedLength = null): string
+{
+    if ($password === '' || $storedLength === null || $storedLength < 0 || strpos($password, '&') === false) {
+        return $password;
+    }
+
+    $decodedPassword = html_entity_decode($password, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedPassword === $password || strlen($password) === $storedLength) {
+        return $password;
+    }
+
+    return strlen($decodedPassword) === $storedLength ? $decodedPassword : $password;
+}
+
+/**
+ * Decode an HTML-encoded JSON payload conservatively.
+ *
+ * We first try the raw payload, then one HTML entity decode, then a second
+ * decode only if JSON is still invalid. This preserves literal values such as
+ * "&lt;" inside JSON strings while still supporting request payloads that were
+ * HTML-escaped before reaching PHP.
+ */
+function teampassDecodeJsonPayload(string $data): string
+{
+    if ($data === '') {
+        return '';
+    }
+
+    $candidates = [$data];
+
+    $decodedOnce = html_entity_decode($data, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    if ($decodedOnce !== $data) {
+        $candidates[] = $decodedOnce;
+
+        $decodedTwice = html_entity_decode($decodedOnce, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        if ($decodedTwice !== $decodedOnce) {
+            $candidates[] = $decodedTwice;
+        }
+    }
+
+    foreach ($candidates as $candidate) {
+        json_decode($candidate, true);
+        if (json_last_error() === JSON_ERROR_NONE) {
+            return $candidate;
+        }
+    }
+
+    return end($candidates) ?: $data;
+}
+
+/**
+ * Decode a secret transported as base64 when the caller explicitly marks it
+ * as such.
+ *
+ * This keeps passwords stable even when client/server exchange encryption is
+ * disabled and the surrounding request payload passes through legacy request
+ * sanitization layers.
+ */
+function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = false): string
+{
+    if ($value === '' || $isBase64Encoded !== true) {
+        return $value;
+    }
+
+    $decodedValue = base64_decode($value, true);
+
+    return $decodedValue === false ? $value : $decodedValue;
+}
+
+/**
+ * Decrypt an item password and normalize legacy entity-encoded values when
+ * pw_len proves that the decoded form is the original one.
+ */
+function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null): string
+{
+    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey);
+    if ($decryptedB64 === '') {
+        return '';
+    }
+
+    $password = base64_decode($decryptedB64, true);
+    if ($password === false) {
+        return '';
+    }
+
+    return teampassNormalizeLegacyPassword($password, $storedLength);
+}
+
+/**
  * Encrypts using RSA a string using a public key.
  *
  * @param string $key       Key to be encrypted
@@ -3871,7 +4003,6 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     $cipher->setPassword(base64_decode($key));
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
-    $cipher->disablePadding();
     // Get file content
     $safeFilePath = realpath($filePath . '/' . TP_FILE_PREFIX . $safeFileName);
     if ($safeFilePath !== false && file_exists($safeFilePath)) {
@@ -4575,9 +4706,9 @@ function defineComplexity() : void
  *
  * @param array     $data
  * @param array     $filters
- * @return array|string
+ * @return array
  */
-function dataSanitizer(array $data, array $filters): array|string
+function dataSanitizer(array $data, array $filters): array
 {
     // Load Sanitizer library
     $sanitizer = new Sanitizer($data, $filters);
@@ -5062,6 +5193,7 @@ function upgradeRequired(): bool
  * @param string $recovery_public_key
  * @param string $recovery_private_key
  * @param bool $userHasToEncryptPersonalItemsAfter
+ * @param string $finalSpecialAfterGeneration
  * @return string
  */
 function handleUserKeys(
@@ -5077,7 +5209,8 @@ function handleUserKeys(
     bool $user_self_change = false,
     string $recovery_public_key = '',
     string $recovery_private_key = '',
-    bool $userHasToEncryptPersonalItemsAfter = false
+    bool $userHasToEncryptPersonalItemsAfter = false,
+    string $finalSpecialAfterGeneration = ''
 ): string
 {
     $session = SessionManager::getSession();
@@ -5248,6 +5381,7 @@ function handleUserKeys(
                 'email_body' => $emailBody,
                 'user_self_change' => $user_self_change === true ? 1 : 0,
                 'userHasToEncryptPersonalItemsAfter' => $userHasToEncryptPersonalItemsAfter === true ? 1 : 0,
+                'final_special_after_generation' => $finalSpecialAfterGeneration,
             ]),
         )
     );
@@ -6127,8 +6261,39 @@ function userHasAccessToFile(int $userId, int $fileId): bool
 }
 
 /**
+ * Check if a user has edit permission on a given item.
+ *
+ * @param integer $userId
+ * @param integer $itemId
+ * @return boolean
+ */
+function userCanEditItem(int $userId, int $itemId): bool
+{
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $itemId
+    );
+    if (DB::count() === 0) {
+        return false;
+    }
+
+    // items.queries.php has top-level init code (echo, switch) for its own entry-point context.
+    // Buffer its output to avoid corrupting the upload response.
+    ob_start();
+    include_once __DIR__ . '/items.queries.php';
+    ob_end_clean();
+    $access = getCurrentAccessRights(
+        $userId,
+        $itemId,
+        (int) $item['id_tree'],
+        'edit'
+    );
+    return $access['edit'] === true;
+}
+
+/**
  * Check if a user has access to a backup file
- * 
+ *
  * @param integer $userId
  * @param string $file
  * @param string $key
@@ -8313,4 +8478,53 @@ function teampassCorruptedItemsBuildNotice(
         'severity' => 'warning',
         'message' => '',
     ];
+}
+
+/**
+ * Check if a password appears in known data breaches via HIBP Pwned Passwords API.
+ * Uses k-anonymity: only the first 5 chars of the SHA-1 hash are sent to HIBP.
+ *
+ * @param string $password Plaintext password to check
+ * @return array{pwned: bool, count: int}|array{error: true}
+ */
+function checkPasswordWithHIBP(string $password): array
+{
+    if ($password === '') {
+        return ['error' => true];
+    }
+
+    $sha1   = strtoupper(sha1($password));
+    $prefix = substr($sha1, 0, 5);
+    $suffix = substr($sha1, 5);
+
+    $ch = curl_init('https://api.pwnedpasswords.com/range/' . $prefix);
+    if ($ch === false) {
+        return ['error' => true];
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 3,
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_USERAGENT      => 'TeamPass-HIBP/1.0',
+        CURLOPT_HTTPHEADER     => ['Add-Padding: true'],
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($response === false || $httpCode !== 200) {
+        return ['error' => true];
+    }
+
+    foreach (explode("\n", (string) $response) as $line) {
+        $parts = explode(':', trim($line));
+        if (count($parts) === 2 && strtoupper($parts[0]) === $suffix) {
+            return ['pwned' => true, 'count' => (int) $parts[1]];
+        }
+    }
+
+    return ['pwned' => false, 'count' => 0];
 }

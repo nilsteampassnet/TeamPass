@@ -203,11 +203,7 @@ if (isset($start) && $iTotal > 0 && (int) $start >= $iTotal) {
 $rows = DB::query(
     'SELECT u.*,
         agg_roles.fonction_id,
-        agg_roles.roles_from_ad_groups,
-        CASE
-            WHEN u.pw LIKE "$2y$10$%" THEN 1
-            ELSE 0
-        END AS pw_passwordlib
+        agg_roles.roles_from_ad_groups
     '.$baseQuery.'
     LEFT JOIN (
         SELECT user_id,
@@ -305,7 +301,7 @@ foreach ($rows as $record) {
                     '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
                     ''
                 ).
-                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['pw_passwordlib'] === 1) ? '<i class=\"fa-solid fa-person-walking-luggage infotip ml-1\" style=\"color:Tomato\" title=\"Old password encryption. Shall login to initialize.\"></i>' : '');
+                '';
         }
 
         // Inactive users management icon (yellow card)

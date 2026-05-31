@@ -101,6 +101,7 @@ $getData = dataSanitizer(
         'key' => $request->query->get('key'),
         'key_tmp' => $request->query->get('key_tmp'),
         'pathIsFiles' => $request->query->get('pathIsFiles'),
+        'pathIsOnthefly' => $request->query->get('pathIsOnthefly'),
     ],
     [
         'filename' => 'trim|escape',
@@ -110,6 +111,7 @@ $getData = dataSanitizer(
         'key' => 'trim|escape',
         'key_tmp' => 'trim|escape',
         'pathIsFiles' => 'trim|escape',
+        'pathIsOnthefly' => 'trim|escape',
     ]
 );
 
@@ -166,15 +168,81 @@ function validateSecurePath($basePath, $filename) {
     return file_exists($filepath) && is_file($filepath) && is_readable($filepath) ? $filepath : false;
 }
 
+/**
+ * Returns the default directory for on-the-fly backups (storage/onthefly).
+ * Duplicated from backups.queries.php because downloadFile.php is a standalone
+ * script with its own include chain.
+ */
+function tpDownloadGetOntheflyBackupDefaultDir(): string
+{
+    return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : TEAMPASS_ROOT . '/storage/onthefly';
+}
+
+/**
+ * Checks that the current session matches the given key pair and that the
+ * session user is an administrator. The $userId parameter is taken from the
+ * session by the caller, so it is authoritative.
+ */
+function tpUserCanDownloadBackupFromSession(int $userId, string $key, string $keyTmp): bool
+{
+    $session = SessionManager::getSession();
+
+    if ($session->get('key') !== $key || (string) $session->get('user-key_tmp') !== $keyTmp) {
+        return false;
+    }
+
+    $user = DB::queryFirstRow(
+        'SELECT admin
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $userId
+    );
+
+    return DB::count() > 0 && is_array($user) && (int) ($user['admin'] ?? 0) === 1;
+}
+
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);
 $get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
 $get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
+$get_pathIsOnthefly = (string) $antiXss->xss_clean($getData['pathIsOnthefly']);
 $get_action = (string) $antiXss->xss_clean($getData['action']);
 $get_file = (string) $antiXss->xss_clean($getData['file']);
 $get_key = (string) $antiXss->xss_clean($getData['key']);
 $get_key_tmp = (string) $antiXss->xss_clean($getData['key_tmp']);
 
-// Branch 1: Files from files folder (pathIsFiles = 1)
+// Branch 1: On-the-fly backups from storage/onthefly (pathIsOnthefly = 1)
+if ((int) $get_pathIsOnthefly === 1) {
+    $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
+    $get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
+
+    if (empty($get_filename)) {
+        sendError('ERROR_Invalid_filename');
+    }
+
+    if ($get_action !== 'backup') {
+        sendError('ERROR_Not_allowed');
+    }
+
+    $filepath = validateSecurePath(tpDownloadGetOntheflyBackupDefaultDir(), $get_filename);
+    if (!$filepath) {
+        sendError('ERROR_File_not_found');
+    }
+
+    if (!tpUserCanDownloadBackupFromSession((int) $session->get('user-id'), $get_key, $get_key_tmp)) {
+        sendError('ERROR_Not_allowed');
+    }
+
+    setDownloadHeaders($get_filename, filesize($filepath));
+
+    if (ob_get_level()) {
+        ob_end_clean();
+    }
+
+    readfile($filepath);
+    exit;
+}
+
+// Branch 2: Files from files folder (pathIsFiles = 1)
 if (null !== $get_pathIsFiles && (int) $get_pathIsFiles === 1) {
 
     // Clean filename
@@ -241,6 +309,10 @@ else {
     $fileContent = '';
 
     if ($isEncrypted) {
+        // Verify user still has access even when a sharekey exists (access may have been revoked)
+        if (!userHasAccessToFile((int) $session->get('user-id'), $get_fileid)) {
+            sendError('ERROR_Not_allowed');
+        }
         // Decrypt the file with automatic v1→v3 migration
         $fileContent = decryptFile(
             $file_info['file'],
@@ -265,8 +337,12 @@ else {
         if (DB::count() === 0) {
             sendError('ERROR_No_file_found');
         }
+        // Authorization check: unencrypted files have no implicit protection
+        if (!userHasAccessToFile((int) $session->get('user-id'), $get_fileid)) {
+            sendError('ERROR_Not_allowed');
+        }
     }
-    
+
     // Prepare filename for download
     $filename = str_replace('b64:', '', $file_info['name']);
     $filename = basename($filename, '.' . $file_info['extension']);
@@ -293,20 +369,45 @@ else {
     if (!$filePath || !is_readable($filePath) || strpos($filePath, $uploadFolderPath) !== 0) {
         sendError('ERROR_No_file_found');
     }
-    
+
+    // decryptFile() returns ['error' => true, ...] when the source file is missing or unreadable.
+    if ($isEncrypted && is_array($fileContent) && isset($fileContent['error']) && $fileContent['error'] === true) {
+        sendError('ERROR_No_file_found');
+    }
+
+    // Ciphertext on disk is block-padded; decrypted plaintext is shorter. Content-Length must
+    // match the response body, not filesize of the stored ciphertext (fixes e.g. HTTP/2 on zip).
+    $decryptedBinary = null;
+    if ($isEncrypted && is_string($fileContent) && $fileContent !== '') {
+        $decryptedBinary = base64_decode($fileContent, true);
+        if ($decryptedBinary === false) {
+            sendError('ERROR_No_file_found');
+        }
+    }
+
+    if ($decryptedBinary !== null) {
+        $contentLength = strlen($decryptedBinary);
+    } else {
+        $rawSize = filesize($filePath);
+        if ($rawSize === false) {
+            sendError('ERROR_No_file_found');
+        }
+        $contentLength = (int) $rawSize;
+    }
+
     // Set headers and serve file
-    setDownloadHeaders($filename, filesize($filePath));
-    
+    setDownloadHeaders($filename, $contentLength);
+
     if (ob_get_level()) {
         ob_end_clean();
     }
-    
-    if (empty($fileContent)) {
-        // Serve file directly from disk
-        readfile($filePath);
-    } elseif (is_string($fileContent)) {
+
+    if ($decryptedBinary !== null) {
         // Serve decrypted content
-        echo base64_decode($fileContent);
+        echo $decryptedBinary;
+    } elseif (!$isEncrypted) {
+        // Serve unencrypted file directly from disk
+        readfile($filePath);
     } else {
         sendError('ERROR_No_file_found');
     }

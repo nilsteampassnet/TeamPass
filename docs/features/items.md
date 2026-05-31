@@ -29,7 +29,7 @@ Clicking a row expands it to reveal the full item details without leaving the li
 |-------|-------------|
 | **Label** | Name of the item — the only required field |
 | **Login** | Username or account identifier |
-| **Password** | The credential. Use the generator icon to create a random password that meets the folder's complexity requirements |
+| **Password** | The credential. Use the generator icon to produce a random password that meets the folder's complexity requirements (see [Password generator](#password-generator)) |
 | **URL** | Address of the associated service |
 | **Description** | Free-text notes; supports basic formatting |
 | **Tags** | Comma-separated keywords for filtering |
@@ -133,6 +133,34 @@ In the item detail view, attached files appear as download links in the **Attach
 ### Limits
 
 The maximum file size is defined by the administrator in **Settings**. Exceeding it will show an error at upload time.
+
+---
+
+## Password generator
+
+The password generator is accessible via the wand icon next to the **Password** field in the create / edit form. It produces a password that satisfies both the user's selected options and the minimum complexity required by the containing folder.
+
+### Complexity-aware generation
+
+Each folder can have a minimum complexity level set by an administrator. The generator enforces these minimums automatically — if the folder requires uppercase letters and digits, the generator will include them even if the user did not select those options.
+
+| Complexity level | Minimum requirements |
+|-----------------|----------------------|
+| **None** (0) | No constraint — any character set, length ≥ 4 |
+| **Low** (20) | Lowercase + digits, length ≥ 8 |
+| **Medium** (38) | Lower + upper + digits, length ≥ 12 |
+| **High** (48) | Lower + upper + digits, length ≥ 16 |
+| **Very high** (60) | Lower + upper + digits + symbols, length ≥ 16 |
+
+The requested length can be increased to meet the folder minimum, and is capped at the application-wide **Password maximum length** setting.
+
+### BIP39 mnemonic passphrase
+
+The generator also offers a **mnemonic passphrase** mode that builds a passphrase from a BIP39 wordlist. Passphrases are easier to remember and can still be long enough to meet most complexity requirements.
+
+Wordlists are available in the following languages: English, French, Spanish, Italian, Czech, Portuguese, Japanese, and Chinese. The interface language is used automatically; all others fall back to English.
+
+> 💡 Mnemonic passphrases do not include symbols or digits by default. If the folder's minimum complexity requires them, switch to the standard generator mode.
 
 ---
 

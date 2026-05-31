@@ -68,36 +68,59 @@ class BaseController
         }
 
         $parts = array_values(array_filter(explode('/', $uriPath)));
+        // Transparently strip /api/v1/ (or any /vN/) prefix — treated as v1 implicitly
+        if (!empty($parts) && preg_match('/^v\d+$/', $parts[0]) === 1) {
+            array_shift($parts);
+        }
         return $this->sanitizeUrl($parts);
     }
 
     /**
      * Get querystring params.
-     * 
+     *
      * @return array|string
      */
     public function getQueryStringParams()
     {
         $request = symfonyRequest::createFromGlobals();
-        
-        // Priority 1: JSON body
+
+        // Priority 1: JSON body — returned as-is (no HTML escaping; passwords must not be mangled)
         if ($request->getContentTypeFormat() === 'json') {
             return $request->toArray();
         }
-        
-        // Priority 2: POST form data
+
+        // Priority 2: POST form data — trim only, no HTML escaping
         if ($request->getMethod() === 'POST' && $request->request->count() > 0) {
-            return $this->sanitizeUrl($request->request->all());
+            return $this->trimParams($request->request->all());
         }
-        
-        // Priority 3: Query string
+
+        // Priority 3: Query string — trim only, no HTML escaping
         $queryString = $request->getQueryString();
         if (!empty($queryString)) {
             parse_str(html_entity_decode($queryString), $query);
-            return $this->sanitizeUrl($query);
+            return $this->trimParams($query);
         }
-        
+
         return [];
+    }
+
+    /**
+     * Recursively trim string values in an array (no HTML escaping).
+     *
+     * @param array $params
+     * @return array
+     */
+    private function trimParams(array $params): array
+    {
+        return array_map(function ($v) {
+            if (is_string($v)) {
+                return trim($v);
+            }
+            if (is_array($v)) {
+                return $this->trimParams($v);
+            }
+            return $v;
+        }, $params);
     }
 
     /**

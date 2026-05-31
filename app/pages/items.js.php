@@ -87,6 +87,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 
 <script type="text/javascript">
+    window.TeamPassCurrentUserId = <?php echo (int) $session->get('user-id'); ?>;
+
     // BIP-39 wordlist for the passphrase generator (language: <?php echo htmlspecialchars($session->get('user-language') ?? 'english', ENT_QUOTES, 'UTF-8'); ?>)
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
 
@@ -129,6 +131,70 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         loadingToast = '',
         showCorruptedItemsInList = <?php echo ((int) ($session->get('user-admin') ?? 0) !== 1 && isset($SETTINGS['show_corrupted_items_in_list']) === true && (int) $SETTINGS['show_corrupted_items_in_list'] === 1) ? 'true' : 'false'; ?>;
 
+    var tpFolderProgress = (function () {
+        var _timer = null, _wrap = null, _bar = null;
+        function _els() {
+            if (!_wrap) _wrap = document.getElementById('tp-folder-progress-wrap');
+            if (!_bar)  _bar  = document.getElementById('tp-folder-progress-bar');
+        }
+        function start() {
+            _els(); if (!_wrap) return;
+            if (_timer) { clearTimeout(_timer); _timer = null; }
+            _bar.classList.remove('tp-progress-done');
+            _bar.style.transition = 'none';
+            _bar.style.width = '0%';
+            _wrap.classList.add('tp-progress-active');
+            _bar.offsetWidth; // force reflow to reset transition
+            _bar.style.transition = '';
+            _bar.style.width = '15%';
+        }
+        function update(pct) {
+            _els(); if (!_wrap) return;
+            _bar.style.width = Math.min(Math.max(pct, 5), 95) + '%';
+        }
+        function done() {
+            _els(); if (!_wrap) return;
+            _bar.style.width = '100%';
+            _timer = setTimeout(function () {
+                _bar.classList.add('tp-progress-done');
+                _timer = setTimeout(function () {
+                    _wrap.classList.remove('tp-progress-active');
+                    _bar.style.width = '0%';
+                    _bar.classList.remove('tp-progress-done');
+                    _timer = null;
+                }, 400);
+            }, 50);
+        }
+        return { start: start, update: update, done: done };
+    }());
+
+    /**
+     * Copy text to clipboard with fallback for non-HTTPS contexts.
+     * @param {string} text
+     * @returns {Promise<void>}
+     */
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            return navigator.clipboard.writeText(text)
+        }
+        return new Promise(function(resolve, reject) {
+            try {
+                const ta = document.createElement('textarea')
+                ta.value = text
+                ta.style.position = 'fixed'
+                ta.style.opacity = '0'
+                document.body.appendChild(ta)
+                ta.focus()
+                ta.select()
+                document.execCommand('copy')
+                document.body.removeChild(ta)
+                resolve()
+            } catch (e) {
+                reject(e)
+            }
+        })
+    }
+
     /**
      * Start edition lock heartbeat via AJAX.
      * Sends a renew_lock request every 60 seconds to keep the lock alive.
@@ -166,9 +232,31 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     }
 
+    function clearLocalEditionLock(itemId) {
+        itemId = parseInt(itemId, 10)
+        if (!itemId) return
+
+        if (window.tpLockedItems) {
+            delete window.tpLockedItems[itemId]
+        }
+        if (typeof window.tpWsRemoveEditionLock === 'function') {
+            window.tpWsRemoveEditionLock(itemId)
+        }
+        if (typeof window.tpWsRemoveEditionLockDetail === 'function') {
+            window.tpWsRemoveEditionLockDetail(itemId)
+        }
+    }
+
+    function stopConsultationPresence(itemId) {
+        if (typeof window.tpWsStopItemView === 'function') {
+            window.tpWsStopItemView(itemId)
+        }
+    }
+
     // Clean up edition lock on page unload (tab close, navigation away)
     $(window).on('beforeunload', function() {
         stopEditionLockHeartbeat()
+        stopConsultationPresence()
     })
 
     // Manage memory
@@ -178,18 +266,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             lastItemSeen: false,
             itemsListFolderId: false,
             highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
+            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
+            hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
+            hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
         }
     );
+    // browserSession('init') skips keys when the store already exists (initialized by load.js.php),
+    // so force-inject HIBP settings via store.update to guarantee they are always present.
+    store.update('teampassApplication', function(app) {
+        app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
+        app.hibpIntervalDays = parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
+    })
 
     if (debugJavascript === true) {
         console.log('User information')
         console.log(store.get('teampassUser'))
     }
-
-    // Show loader
-    toastr.remove();
-    toastr.info('<?php echo $lang->get('loading_data'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
     // Build tree
     $('#jstree').jstree({
@@ -392,7 +484,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 itemsListFolderId: parseInt(queryDict['group']),
                 selectedItem: parseInt(queryDict['id']),
                 highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
+                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
+                hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
+                hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
             }
         );
         store.update(
@@ -835,6 +929,32 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Remove validated class
             $('#form-item').removeClass('was-validated');
 
+            // Release any active edition lock before creating a new item.
+            // The user may have been editing another item (heartbeat running + lock in DB).
+            // Mirrors what the "Back" button does when leaving edit mode.
+            const previousItemId = store.get('teampassItem').id;
+            if (previousItemId && parseInt(previousItemId) > 0) {
+                stopConsultationPresence(previousItemId);
+                stopEditionLockHeartbeat();
+                $.post(
+                    'sources/items.queries.php', {
+                        type: 'handle_item_edition_lock',
+                        data: prepareExchangedData(
+                            JSON.stringify({'item_id': previousItemId, 'action': 'release_lock'}),
+                            'encode',
+                            '<?php echo $session->get('key'); ?>'
+                        ),
+                        key: '<?php echo $session->get('key'); ?>'
+                    }
+                );
+            }
+
+            // Reset item ID to 0 so getPrivilegesOnItem doesn't create a spurious
+            // edition lock on the previously-viewed item (isItemLocked short-circuits on 0)
+            store.update('teampassItem', function(teampassItem) {
+                teampassItem.id = 0;
+            });
+
             // Get some info
             $.when(
                 getPrivilegesOnItem(store.get('teampassApplication').itemsListFolderId, 0)
@@ -979,48 +1099,30 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
 
-            // Launch both requests in parallel: privileges check and password fetch
-            const _pwdPromise = getItemPassword(
-                'at_password_shown_edit_form',
-                'item_id',
-                store.get('teampassItem').id
-            );
-            $.when(
-                getPrivilegesOnItem(item_tree_id, 1, 'item_edit_current_folder'),
-                _pwdPromise
-            ).then(function(retData, _pwdResult) {
-                const _prefetchedPassword = Array.isArray(_pwdResult) ? _pwdResult[0] : _pwdResult;
+            // Check privileges first — do not show form or fetch password until confirmed.
+            getPrivilegesOnItem(item_tree_id, 1, 'item_edit_current_folder').then(function(retData) {
+                // getPrivilegesOnItem() already showed a toastr for denied access —
+                // just clean up and bail out without duplicating the message.
                 if (retData.error === true) {
-                    toastr.remove();
-                    toastr.error(
-                        retData.message,
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-
                     requestRunning = false;
-
-                    // Finished
                     return false;
                 }
 
-                // Is user allowed
-                if (store.get('teampassItem').item_rights < 20) {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('error_not_allowed_to'); ?>',
-                        '', {
-                            timeOut: 5000,
-                            progressBar: true
-                        }
-                    );
-                    return false;
-                }
-
-                // Store current view
+                // Permission confirmed — now show the form
+                stopConsultationPresence(store.get('teampassItem').id);
                 savePreviousView();
+                // Fields are already populated by Details('show') — only clear password
+                resetEditFormSkeleton(false);
+
+                // Fetch password now that we know the user is allowed
+                const _pwdPromise = getItemPassword(
+                    'at_password_shown_edit_form',
+                    'item_id',
+                    store.get('teampassItem').id
+                );
+                _pwdPromise.then(function(item_pwd) {
+                    loadPasswordIntoEditForm(Promise.resolve(item_pwd), store.get('teampassItem').id);
+                });
 
                 // Store not a new item
                 store.update(
@@ -1033,12 +1135,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // Remove validated class
                 $('#form-item').removeClass('was-validated');
 
-                // Now manage edition using the folder resolved by backend.
                 showItemEditForm(
                     retData.folderId !== undefined && retData.folderId !== ''
                         ? parseInt(retData.folderId, 10)
                         : item_tree_id,
-                    _prefetchedPassword
+                    null,
+                    true  // skipPassword — wired up independently above
                 );
             });
 
@@ -1061,17 +1163,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 return false;
             }
             
-            // Store current view
-            savePreviousView('.form-item-copy');
-
             if (store.get('teampassItem').user_can_modify === 1) {
-                // Show copy form
-                $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-                $('.form-item-copy, .item-details-card-menu').removeClass('hidden');
-                // Prepare some data in the form
+                // Prepare form data then open modal
                 $('#form-item-copy-new-label').val($('#form-item-label').val());
                 $('#form-item-copy-destination').val($('#form-item-folder').val()).change();
                 toastr.remove();
+                $('#modal-item-copy').modal('show');
             } else {
                 toastr.remove();
                 toastr.error(
@@ -1102,9 +1199,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-delete');
-
             $.when(
                 checkAccess(store.get('teampassItem').id, store.get('teampassItem').folderId, <?php echo $session->get('user-id'); ?>, 'delete')
             ).then(function(retData) {
@@ -1127,9 +1221,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 if (debugJavascript === true) console.info('SHOW DELETE ITEM');
                 if (store.get('teampassItem').user_can_modify === 1) {
-                    // Show delete form
-                    $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-                    $('.form-item-delete, .item-details-card-menu').removeClass('hidden');
+                    $('#modal-item-delete').modal('show');
                 } else {
                     toastr.remove();
                     toastr.error(
@@ -1149,12 +1241,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW SHARE ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-share');
-
-            // Show share form
-            $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-            $('.form-item-share').removeClass('hidden');
+            // Open share modal
+            $('#modal-item-share').modal('show');
 
             //
             // > END <
@@ -1163,13 +1251,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW NOTIFY ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-notify');
-
-            $('#form-item-notify-checkbox').iCheck('uncheck');
-            // Show notify form
-            $('.form-item, #folders-tree-card, .form-item-action').addClass('hidden');
-            $('.form-item-notify, .item-details-card-menu').removeClass('hidden');
+            // Set checkbox to reflect the current notification status (read from store, not DOM)
+            if (store.get('teampassItem').notificationStatus === true) {
+                $('#form-item-notify-checkbox').iCheck('check');
+            } else {
+                $('#form-item-notify-checkbox').iCheck('uncheck');
+            }
+            // Open notify modal
+            $('#modal-item-notify').modal('show');
 
             //
             // > END <
@@ -1178,19 +1267,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (debugJavascript === true) console.info('SHOW OTV ITEM');
             toastr.remove();
 
-            // Store current view
-            savePreviousView('.form-item-otv');
-
-
             // Generate link
             $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
             $('#form-item-otv-views').val('1');
             prepareOneTimeView();
 
             $('#form-item-otv-link').val('');
-            // Show notify form
-            $('#folders-tree-card').addClass('hidden');
-            $('.form-item-otv, .item-details-card-menu').removeClass('hidden');
+            // Open OTV modal
+            $('#modal-item-otv').modal('show');
 
             //
             // > END <
@@ -1240,7 +1324,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             //
         } else if ($(this).data('item-action') === 'link') {
             // Add link to clipboard.
-            navigator.clipboard.writeText("<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id);
+            const itemLink = "<?php echo $SETTINGS['cpassman_url'];?>/index.php?page=items&group="+store.get('teampassItem').folderId+"&id="+store.get('teampassItem').id
+            copyToClipboard(itemLink)
 
             // Display message.
             toastr.remove();
@@ -1509,7 +1594,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $(store.get('teampassUser').previousView).removeClass('hidden');
             $(store.get('teampassUser').currentView).addClass('hidden');
         }
-        $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+        // Only hide navigation buttons when no item details panel is open
+        if ($('#items-details-container').hasClass('hidden')) {
+            $('.but-prev-item, .but-next-item').addClass('hidden').text('');
+        }
     });
 
 
@@ -1732,7 +1820,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     $('#form-item-notify-perform').click(function() {
         var form = $('#form-item-notify');
-
+        var $btn = $(this);
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
 
         var data = {
             'notification_status': $('#form-item-notify-checkbox').is(':checked') === true ? 1 : 0,
@@ -1751,6 +1840,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 if (data.error !== false) {
                     // Show error
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('confirm'); ?>');
                     toastr.remove();
                     toastr.error(
                         data.message,
@@ -1760,8 +1850,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         }
                     );
                 } else {
+                    const newNotifStatus = $('#form-item-notify-checkbox').is(':checked') === true;
+
+                    // Update store so checkbox is correct if modal is reopened
+                    store.update('teampassItem', function(teampassItem) {
+                        teampassItem.notificationStatus = newNotifStatus;
+                    });
+
                     // Change the icon for Notification
-                    if ($('#form-item-notify-checkbox').is(':checked') === true) {
+                    if (newNotifStatus) {
                         $('#card-item-misc-notification')
                             .html('<span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span>');
                     } else {
@@ -1769,9 +1866,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             .html('<span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span>');
                     }
 
-                    // Show/hide forms
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-notify').addClass('hidden');
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('confirm'); ?>');
+                    // Close notify modal
+                    $('#modal-item-notify').modal('hide');
 
                     $('.infotip').tooltip();
 
@@ -1782,9 +1879,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             timeOut: 1000
                         }
                     );
-
-                    // Clear
-                    $('#form-item-notify-checkbox').iCheck('uncheck');
                 }
             }
         );
@@ -1831,8 +1925,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         { timeOut: 5000 }
                     );
                 } else {
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-share').addClass('hidden');
+                    // Close share modal
+                    $('#modal-item-share').modal('hide');
 
                     // Inform user
                     toastrUpdate(loadingToast, 'info',
@@ -1852,6 +1946,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * DELETE - recycle item
      */
     $('#form-item-delete-perform').click(function() {
+        $(this).prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
         goDeleteItem(
             store.get('teampassItem').id,
             store.get('teampassItem').item_key !== undefined ? store.get('teampassItem').item_key : '',
@@ -1907,7 +2002,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>', 'items.queries.php', 'delete_item');
 
                 if (typeof data !== 'undefined' && data.error !== true) {
-                    $('.form-item-action, .item-details-card-menu').addClass('hidden');
+                    $('#modal-item-delete').modal('hide');
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
@@ -1923,6 +2018,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     requestRunning = false;
                 } else {
                     // ERROR
+                    $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
                         data.message,
                         { timeOut: 5000 }
@@ -1980,6 +2076,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * COPY - perform copy item
      */
     $('#form-item-copy-perform').click(function() {
+        var $btn = $(this);
+
         // Do check
         if ($('#form-item-copy-new-label').val() === '') {
             toastr.remove();
@@ -1993,6 +2091,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             return false;
         }
 
+        $btn.prop('disabled', true).html('<i class="fa-solid fa-circle-notch fa-spin mr-1"></i>');
+
         // Show cog
         toastr.remove();
         loadingToast = toastr.info('<?php echo $lang->get('item_copying'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
@@ -2001,15 +2101,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         userDidAChange = false;
         userUploadedFile = false;
 
+        var sourceItemId = store.get('teampassItem').id;
         var data = {
-            'item_id': store.get('teampassItem').id,
+            'item_id': sourceItemId,
             'source_id': selectedFolderId,
             'dest_id': $('#form-item-copy-destination').val(),
             'new_label': DOMPurify.sanitize($('#form-item-copy-new-label').val()),
         }
-        
-        console.log("COPY ITEM data:");
-        console.log(data);
 
         // Launch action
         $.post(
@@ -2023,6 +2121,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
 
                 if (typeof data !== 'undefined' && data.error !== true) {
+                    // Release any edition lock held on the source item
+                    stopEditionLockHeartbeat();
+                    $.post('sources/items.queries.php', {
+                        type: 'handle_item_edition_lock',
+                        data: prepareExchangedData(JSON.stringify({
+                            'item_id': sourceItemId,
+                            'action': 'release_lock',
+                        }), 'encode', '<?php echo $session->get('key'); ?>'),
+                        key: '<?php echo $session->get('key'); ?>'
+                    });
+
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
                         '<?php echo $lang->get('success'); ?>',
@@ -2045,11 +2154,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         true
                     );
 
-                    // Close
-                    $('#folders-tree-card').removeClass('hidden');
-                    $('.form-item-copy').addClass('hidden');
+                    // Close modal
+                    $('#modal-item-copy').modal('hide');
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                 } else {
                     // ERROR
+                    $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
                         data.message,
                         { timeOut: 5000 }
@@ -2193,7 +2303,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             'label': DOMPurify.sanitize($('#form-item-suggestion-label').val()),
             'login': DOMPurify.sanitize($('#form-item-suggestion-login').val()),
             // IMPORTANT: Do NOT sanitize passwords - they must be stored exactly as entered (fix 3.1.5.10)
-            'password': $('#form-item-suggestion-password').val(),
+            'password': encodeTransportSecret($('#form-item-suggestion-password').val()),
+            'password_is_b64': 1,
             'email': DOMPurify.sanitize($('#form-item-suggestion-email').val()),
             'url': DOMPurify.sanitize($('#form-item-suggestion-url').val()),
             'description': DOMPurify.sanitize($('#form-item-suggestion-description').summernote('code'), {USE_PROFILES: {html: true}}),
@@ -2586,6 +2697,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 closeItemDetailsCard();
             });
         } else {
+            stopConsultationPresence(store.get('teampassItem').id);
             if (store.get('teampassUser').previousView === '.item-details-card' &&
                 $('.item-details-card').hasClass('hidden') === false
             ) {
@@ -2717,12 +2829,85 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
 
     /**
+     * Reset the item detail panel to skeleton state before loading a new item.
+     * Clears previous item data and removes any dynamic extra elements.
+     */
+    function resetItemDetailSkeleton() {
+        // Skeleton placeholders for main fields
+        $('#card-item-label').html('<span class="skeleton-line skeleton-title"></span>');
+        $('#card-item-pwd').html('<span class="skeleton-line skeleton-md"></span>');
+        $('#card-item-login').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-email').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-url-text').html('<span class="skeleton-line skeleton-lg"></span>');
+        $('#card-item-restrictedto').html('<span class="skeleton-line skeleton-md"></span>');
+        $('#card-item-tags').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-kbs').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-opt_code').html('<span class="skeleton-line skeleton-sm"></span>');
+        $('#card-item-opt_code_error').html('');
+        $('#card-item-description').html('<span class="skeleton-line skeleton-xl"></span>');
+        // Remove dynamic elements inserted by the previous item
+        $('#items-details-container .delete-after-usage').remove();
+        $('#items-details-container .edition-lock-detail-badge').remove();
+        $('#card-item-corrupted-warning').addClass('hidden').html('');
+        $('#card-item-misc').html(
+            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
+            '<span class="skeleton-line skeleton-sm d-inline-block mr-3" style="width:22px;"></span>' +
+            '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
+        );
+        $('#item-hibp-badge').addClass('hidden');
+        $('#card-item-pwd-security-badge').addClass('hidden');
+    }
+
+    /**
+     * Reset the edit form to skeleton state before async data arrives.
+     * Shows the form immediately with shimmer placeholders.
+     *
+     * @param {boolean} clearFields  true  = Chemin 1 (pencil from list): fields not yet loaded,
+     *                                       replace them with skeleton bars.
+     *                               false = Chemin 2 (Edit button from detail view): fields are
+     *                                       already populated by Details('show'), keep them as-is.
+     */
+    function resetEditFormSkeleton(clearFields) {
+        if (clearFields) {
+            // Title placeholder in card header
+            $('#form-item-title').html('<span class="skeleton-line skeleton-title"></span>');
+            // Skeleton shimmer on main input fields
+            $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                .val('').addClass('skeleton-input');
+            // Description: show a tall skeleton block while editor initialises
+            $('#form-item-description').html(
+                '<div class="skeleton-block" style="height:80px;"></div>'
+            );
+        }
+        // Always clear password field and show its dedicated spinner
+        $('#form-item-password').val('').attr('placeholder', '');
+        $('#form-item-password-loader').removeClass('hidden');
+        // Reset form-level state
+        userDidAChange = false;
+        $('#form-item').removeClass('was-validated');
+        // Show the form immediately (same show/hide logic as showItemEditForm)
+        $('.form-item, #form-item-attachments-zone').removeClass('hidden');
+        $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+            .addClass('hidden');
+        $('#but_back_top_left, #but_back_top_right').addClass('hidden');
+    }
+
+    /**
      * Click on button with class but-navigate-item
      */
     $(document)
         .on('click', '.but-navigate-item', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            resetItemDetailSkeleton();
+
+            // Show target item label immediately (known from list, no need to wait for AJAX)
+            const targetId = $(this).hasClass('but-prev-item')
+                ? $(this).attr('data-prev-item-id')
+                : $(this).attr('data-next-item-id')
+            const navRowLabel = unescape($('#list-item-row_' + targetId).data('label') || '')
+            if (navRowLabel) {
+                $('#card-item-label').text(navRowLabel)
+            }
 
             if (clipboardOTPCode) {
                 clipboardOTPCode.destroy();
@@ -2730,6 +2915,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Refresh password visibility
             resetPasswordDisplay();
+            stopConsultationPresence(store.get('teampassItem').id);
 
             // Load item info
             Details(
@@ -2748,7 +2934,48 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     $(document)
         .on('click', '.list-item-clicktoshow', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            stopConsultationPresence(store.get('teampassItem').id);
+            // Highlight the selected row persistently
+            $('#teampass_items_list tr').removeClass('item-selected')
+            $(this).closest('tr').addClass('item-selected')
+            resetItemDetailSkeleton();
+
+            // Show breadcrumb skeleton while folder path loads (search results only)
+            if ($(this).closest('tr').data('is-search-result') == 1) {
+                $('#form-folder-path').html('<li class="breadcrumb-item"><span class="skeleton-line skeleton-md"></span></li>');
+            }
+
+            // Show item label immediately (known from the list row, no need to wait for AJAX)
+            const rowLabel = unescape($(this).closest('tr').data('label') || '')
+            if (rowLabel) {
+                $('#card-item-label').text(rowLabel)
+            }
+
+            // Apply full layout switch immediately so skeleton is visible in the right position
+            $('.item-details-card').removeClass('hidden');
+            $('.form-item').addClass('hidden');
+            if (store.get('teampassUser').split_view_mode === 1) {
+                $('#folders-tree-card').removeClass('hidden');
+                $('#folder-tree-container').removeClass('hidden col-md-5').addClass('col-md-3');
+                $('#items-list-container').removeClass('hidden col-md-7').addClass('col-md-4');
+                $('#items-details-container').removeClass('hidden col-md-12').addClass('col-md-5');
+                if ($('body').hasClass('sidebar-collapse') === false) {
+                    $('a[data-widget="pushmenu"]').click();
+                }
+            } else {
+                $('#folder-tree-container').removeClass('col-md-3').addClass('col-md-5 hidden');
+                $('#items-list-container').removeClass('col-md-4').addClass('col-md-7 hidden');
+                $('#items-details-container').removeClass('col-md-5').addClass('col-md-12');
+            }
+            const $detailPanel = $('#items-details-container')
+            const wasHidden = $detailPanel.hasClass('hidden')
+            $detailPanel.removeClass('hidden')
+            if (wasHidden) {
+                // Trigger slide-in animation only when the panel first appears
+                $detailPanel.removeClass('tp-panel-appearing')
+                void $detailPanel[0].offsetWidth // force reflow to restart animation
+                $detailPanel.addClass('tp-panel-appearing')
+            }
 
             // show top back buttons
             $('#but_back_top_left, #but_back_top_right').removeClass('hidden');
@@ -2758,15 +2985,24 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         })
         .on('click', '.list-item-clicktoedit', function() {
             toastr.remove();
-            loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
+            stopConsultationPresence(store.get('teampassItem').id);
+            // Capture previous view before the skeleton hides/shows panels
+            savePreviousView();
+            // Fields not yet loaded — show skeleton bars on all inputs
+            resetEditFormSkeleton(true);
+
+            // Pre-fill title immediately from list row data so the user knows
+            // which item is being edited — AJAX response will overwrite it.
+            const rowLabel = unescape($(this).closest('tr').data('label') || '')
+            if (rowLabel) {
+                $('#form-item-title').text(rowLabel)
+                $('#form-item-label').val(rowLabel).removeClass('skeleton-input')
+            }
 
             if (debugJavascript === true) console.log('EDIT ME');
             // Set type of action
             $('#form-item-button-save').data('action', 'update_item');
 
-            // Hide top back buttons
-            $('#but_back_top_left, #but_back_top_right').addClass('hidden');
-            
             // Load item info
             Details($(this).closest('tr'), 'edit');
         })
@@ -3122,6 +3358,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         return generatedPassword === null || typeof generatedPassword === 'undefined' ? '' : String(generatedPassword);
     }
 
+    function encodeTransportSecret(secretValue) {
+        const normalizedSecret = secretValue === null || typeof secretValue === 'undefined'
+            ? ''
+            : String(secretValue);
+
+        return btoa(unescape(encodeURIComponent(normalizedSecret)));
+    }
+
     function syncItemPasswordComplexity(passwordValue = null) {
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
@@ -3216,6 +3460,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     var resize = <?php echo json_encode($resize); ?>;
     let toastrElement;
     let fileId;
+    let globalUploadToast = null;
+    let filesUploadedCount = 0;
 
     var uploader_attachments = new plupload.Uploader({
         runtimes: 'html5,flash,silverlight,html4',
@@ -3235,10 +3481,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         init: {
             BeforeUpload: function(up, file) {
                 fileId = file.id;
-                toastr.remove();         
-                loadingToast = toastrElement = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <span id="plupload-progress" class="mr-2 ml-2 strong">0%</span><i class="fas fa-cloud-arrow-up fa-bounce fa-2x"></i>', '', { timeOut: 0 });
-                // Show file name
-                $('#upload-file_' + file.id).html('<i class="fa-solid fa-file fa-sm mr-2"></i>' + htmlEncode(file.name) + '<span id="fileStatus_'+file.id+'"><i class="fa-solid fa-circle-notch fa-spin  ml-2"></i></span>');
+
+                // Create the global toastr once for the whole upload batch
+                if (globalUploadToast === null) {
+                    filesUploadedCount = 0;
+                    toastr.remove();
+                    globalUploadToast = toastrElement = toastr.info(
+                        '<?php echo $lang->get('loading_item'); ?> ... ' +
+                        '(<span id="upload-global-counter">0/' + up.files.length + '</span>) ' +
+                        '<i class="fas fa-cloud-arrow-up fa-bounce fa-2x ml-2"></i>',
+                        '', { timeOut: 0 }
+                    );
+                }
+
+                // Show individual file with its own progress percentage
+                $('#upload-file_' + file.id).html(
+                    '<i class="fa-solid fa-file fa-sm mr-2"></i>' +
+                    htmlEncode(file.name) +
+                    ' <span id="filePercent_' + file.id + '" class="text-muted small mr-1">0%</span>' +
+                    '<span id="fileStatus_' + file.id + '"><i class="fa-solid fa-circle-notch fa-spin ml-2"></i></span>'
+                );
 
                 // Get random number
                 if (store.get('teampassApplication').uploadedFileId === '') {
@@ -3264,12 +3526,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 });
             },
             UploadProgress: function(up, file) {
-                // Update only the percentage inside the Toastr message
-                $('#plupload-progress').text(file.percent + '%');
+                // Update the per-file percentage in the upload list
+                $('#filePercent_' + file.id).text(file.percent + '%');
             },
             UploadComplete: function(up, files) {
-                // Inform user
+                // Remove the global toastr once all files are done
                 toastr.remove();
+                globalUploadToast = null;
+                filesUploadedCount = 0;
             },
             Error: function(up, args) {
                 console.log("ERROR arguments:");
@@ -3279,10 +3543,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     });
 
     uploader_attachments.bind('FileUploaded', function(up, file) {
-        $('#fileStatus_'+file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+        filesUploadedCount++;
+        $('#filePercent_' + file.id).text('100%');
+        $('#fileStatus_' + file.id).html('<i class="fa-solid fa-circle-check text-success ml-2 fa-1x"></i>');
+        $('#upload-global-counter').text(filesUploadedCount + '/' + up.files.length);
         userUploadedFile = true;
         userDidAChange = true;
-        toastr.remove();
+        // Do not remove the global toastr here — UploadComplete handles it
     });
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
@@ -3304,6 +3571,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Arrêter l'upload des chunks
             up.stop();
             errorMessage += ' - Upload stopped.';
+            globalUploadToast = null;
+            filesUploadedCount = 0;
 
             // Affiche l'erreur dans l'interface utilisateur
             toastr.error(
@@ -3634,7 +3903,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     'id': store.get('teampassItem').id,
                     'label': purifyRes.arrFields['label'],
                     'login': purifyRes.arrFields['login'],
-                    'pw': $('#form-item-password').val(),
+                    'pw': encodeTransportSecret($('#form-item-password').val()),
+                    'pw_is_b64': 1,
                     'restricted_to': restriction,
                     'restricted_to_roles': restrictionRole,
                     'tags': purifyRes.arrFields['tags'],
@@ -3702,6 +3972,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         } else {
                             // Stop edition lock heartbeat on successful save
                             stopEditionLockHeartbeat()
+                            clearLocalEditionLock(store.get('teampassItem').id)
 
                             // Refresh tree
                             if ($('#form-item-button-save').data('action') === 'update_item') {
@@ -3748,23 +4019,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 $('#folder-tree-container, #items-list-container').addClass('hidden');
                                 $('#folders-tree-card').removeClass('hidden');
 
-                                // Show item container immediately with loading spinner
-                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                // Show read form immediately with skeleton placeholders
+                                resetItemDetailSkeleton();
+                                $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                                 $('#items-details-container')
                                     .removeClass('col-md-5 hidden')
-                                    .addClass('col-md-12')
-                                    .prepend(
-                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
-                                            '<div class="text-center text-muted">' +
-                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
-                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
-                                            '</div>' +
-                                        '</div>'
-                                    );
+                                    .addClass('col-md-12');
 
-                                // Show loading toast
+                                // Clear loading toast
                                 toastr.clear(loadingToast);
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Reload item details
                                 // When an encryption task exists, prefer the WebSocket refresh path
@@ -3821,24 +4084,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 $('#folder-tree-container, #items-list-container').addClass('hidden');
                                 $('#folders-tree-card').removeClass('hidden');
 
-                                // Show item container immediately with loading spinner
-                                // (spinner is removed by Details() via .delete-after-usage at line 5093)
-                                $('.item-details-card, #item-details-card-categories').addClass('hidden');
+                                // Show read form immediately with skeleton placeholders
+                                resetItemDetailSkeleton();
+                                $('.item-details-card, #item-details-card-categories').removeClass('hidden');
                                 $('#items-details-container')
                                     .removeClass('col-md-5 hidden')
-                                    .addClass('col-md-12')
-                                    .prepend(
-                                        '<div class="delete-after-usage d-flex justify-content-center align-items-center" style="min-height:300px;">' +
-                                            '<div class="text-center text-muted">' +
-                                                '<i class="fa-solid fa-circle-notch fa-spin fa-3x mb-3"></i>' +
-                                                '<p><?php echo $lang->get('loading_item'); ?></p>' +
-                                            '</div>' +
-                                        '</div>'
-                                    );
+                                    .addClass('col-md-12');
 
-                                // Show loading toast
+                                // Clear loading toast
                                 toastr.clear(loadingToast);
-                                loadingToast = toastr.info('<?php echo $lang->get('loading_item'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>', '', { timeOut: 0 });
 
                                 // Load item details
                                 // When an encryption task exists, prefer the WebSocket refresh path
@@ -4000,8 +4254,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
-    function showItemEditForm(selectedFolderId, prefetchedPassword) {
+    function showItemEditForm(selectedFolderId, prefetchedPassword, skipPassword = false) {
         if (debugJavascript === true) console.info('SHOW EDIT ITEM ' + selectedFolderId);
+        stopConsultationPresence(store.get('teampassItem').id);
         // Reset item
         store.update(
             'teampassItem',
@@ -4020,6 +4275,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
             );
         } else {
+            // Remove skeleton state set by resetEditFormSkeleton() (chemin 2: edit from detail view)
+            $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                .removeClass('skeleton-input');
+
             // Set selected folder id.
             // getPrivilegesOnItem already called get_complixity_level and populated
             // the store with fresh visibility/complexity — read from it directly.
@@ -4069,11 +4328,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             toastr.remove();
 
             // Show loading state in password field and apply password asynchronously.
-            // Pass the pre-fetched promise when available (parallel fetch), or null to start fresh.
-            const _prefetchedPromise = (prefetchedPassword !== undefined && prefetchedPassword !== null)
-                ? Promise.resolve(prefetchedPassword)
-                : null;
-            loadPasswordIntoEditForm(_prefetchedPromise, store.get('teampassItem').id);
+            // skipPassword = true when the caller already wired up loadPasswordIntoEditForm
+            // independently (Chemin 2 decoupled path) to avoid a redundant fetch.
+            if (!skipPassword) {
+                const _prefetchedPromise = (prefetchedPassword !== undefined && prefetchedPassword !== null)
+                    ? Promise.resolve(prefetchedPassword)
+                    : null;
+                loadPasswordIntoEditForm(_prefetchedPromise, store.get('teampassItem').id);
+            }
         }
         //});
     }
@@ -4102,6 +4364,34 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $('#id_label, #id_desc, #id_pw, #id_login, #id_email, #id_url, #id_files, #id_restricted_to ,#id_tags, #id_kbs, .fields_div, .fields, #item_extra_info').html('');
             $('#button_quick_login_copy, #button_quick_pw_copy').addClass('hidden');
             $('#teampass_items_list').html('');
+
+            // Hide subfolder list during search
+            $('#table_teampass_subfolders_list').addClass('hidden');
+            // Update items table header to reflect search mode
+            $('#table_teampass_items_list thead th').html(
+                '<i class="fa-solid fa-search mr-1"></i><?php echo $lang->get('search_results'); ?>'
+                + ' : <em class="text-muted" id="search-criteria-label"></em>'
+                + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                + '<button type="button" class="btn btn-sm btn-link float-right p-0 text-muted" id="search-results-close" title="<?php echo $lang->get('close'); ?>">'
+                + '<i class="fa-solid fa-times"></i>'
+                + '</button>'
+            );
+            $('#search-criteria-label').text(criteria);
+
+            // Close button restores the previous folder view
+            $('#search-results-close').off('click').on('click', function() {
+                const currentFolder = store.get('teampassApplication').selectedFolder;
+                if (currentFolder !== undefined && currentFolder !== '') {
+                    ListerItems(currentFolder, '', 0);
+                } else {
+                    $('#table_teampass_items_list thead th').html(
+                        '<i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?>'
+                        + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                    );
+                    $('#table_teampass_subfolders_list').toggleClass('hidden', store.get('teampassUser').show_subfolders !== 1);
+                    $('#teampass_items_list').html('');
+                }
+            });
 
             // Continu the list of results
             finishingItemsFind(
@@ -4345,13 +4635,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         // Manage case where no folders
         if (folders === '' || folders === undefined) {
             $('#teampass_subfolders_list').html('<tr><td colspan="2" class="text-center text-muted"><?php echo $lang->get('no_folder_selected');?></td></tr>');
+            $('#count-subfolders-badge').text('');
             return false;
         }
-        
+
         // Use requestAnimationFrame to avoid blocking UI
         requestAnimationFrame(() => {
             const directChildren = folders.filter(folder => folder.parent_id === parentId);
-            
+
             // Build all HTML at once (better performance)
             const html = directChildren.map(folder => `
                 <tr data-tree-id="${folder.id}" class="pointer open-folder">
@@ -4361,9 +4652,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     </td>
                 </tr>
             `).join('');
-            
+
             // Inject all at once (single reflow)
             $('#teampass_subfolders_list').html(html);
+            $('#count-subfolders-badge').text(directChildren.length);
         });
     }
 
@@ -4472,13 +4764,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 // do NOT call toastr.remove() so we don't wipe out the loading toastr of the new folder.
                 if (action === 'update') {
                     if (parseInt(folders) === store.get('teampassApplication').selectedFolder) {
-                        toastr.remove();
-                        toastr.info(
-                            '<?php echo $lang->get('data_refreshed'); ?>',
-                            '', {
-                                timeOut: 1000
-                            }
-                        );
+                        tpFolderProgress.done();
                     }
                     // else: stale response for a folder the user already left — do nothing
                 } else {
@@ -4577,11 +4863,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
         requestRunning = true;
         // Inform user
-        if (showToastr === true) {
-            toastr.remove();
-            toastr.info(
-                '<?php echo $lang->get('opening_folder'); ?><i class="fa-solid fa-circle-notch fa-spin ml-2"></i>'
-            );
+        if (start === 0) {
+            tpFolderProgress.start();
         }
 
         // case where we should stop listing the items
@@ -4666,7 +4949,24 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             query_in_progress = groupe_id;
             if (start == 0) {
                 //clean form
-                $('#teampass_items_list, #items_folder_path').html('');
+                $('#items_folder_path').html('');
+                // Restore normal items header when entering folder view
+                $('#table_teampass_items_list thead th').html(
+                    '<i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?>'
+                    + '<span class="badge badge-secondary ml-2" id="count-items-badge"></span>'
+                );
+                $('#count-items-badge').text('');
+                // Show skeleton rows while items load so the list is never blank
+                let skeletonRows = ''
+                for (let i = 0; i < 8; i++) {
+                    skeletonRows +=
+                        '<tr class="tp-skeleton-row"><td class="list-item-description px-3 py-2">' +
+                        '<span class="skeleton-line skeleton-sm mr-2"></span>' +
+                        '<span class="skeleton-line skeleton-lg"></span>' +
+                        '<span class="d-block mt-1"><span class="skeleton-line skeleton-md"></span></span>' +
+                        '</td></tr>'
+                }
+                $('#teampass_items_list').html(skeletonRows)
             }
 
             store.update(
@@ -4725,6 +5025,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     requestRunning = false;
                     startedItemsListQuery = false;
 
+                    // Remove skeleton placeholder rows — the real content (or error) is now available
+                    $('#teampass_items_list .tp-skeleton-row').remove()
+
                     // manage not allowed
                     if (data.error === true) {
                         toastr.remove();
@@ -4777,10 +5080,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 teampassApplication.queryUniqueLoad = data.uniqueLoadData;
                             }
                         );
-                        if ($('#items_loading_progress').length == 0) {
-                            $('#items_list_loader').after('<span id="items_loading_progress">' + Math.round(data.next_start * 100 / data.counter_full, 0) + '%</span>');
-                        } else {
-                            $('#items_loading_progress').html(Math.round(data.next_start * 100 / data.counter_full, 0) + '%');
+                        if (data.counter_full > 0) {
+                            tpFolderProgress.update(
+                                Math.round(data.next_start * 100 / data.counter_full)
+                            );
                         }
                     }
                     //-----
@@ -4835,6 +5138,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         // show items
                         sList(data.html_json);
 
+                        // Sync the jstree badge for this read-only folder
+                        if (data.counter_full !== undefined) {
+                            $('#count-items-badge').text(data.counter_full);
+                            const $badge = $('#itcount_' + groupe_id)
+                            if ($badge.length > 0) {
+                                $badge.text(data.counter_full)
+                            } else {
+                                const $link = $('#fld_' + groupe_id)
+                                if ($link.length > 0) {
+                                    $link.append(
+                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
+                                    )
+                                }
+                            }
+                        }
+
                         if (call_to_be_continued === true) {
                             //set next start for query
                             store.update(
@@ -4870,6 +5189,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                         // show items
                         sList(data.html_json);
+                        if (data.counter_full !== undefined) {
+                            $('#count-items-badge').text(data.counter_full);
+                            // Sync the jstree badge for the current folder (covers read-only folders
+                            // whose badge may be absent from the server-side cached tree HTML)
+                            const $badge = $('#itcount_' + groupe_id)
+                            if ($badge.length > 0) {
+                                $badge.text(data.counter_full)
+                            } else {
+                                const $link = $('#fld_' + groupe_id)
+                                if ($link.length > 0) {
+                                    $link.append(
+                                        '<span class="badge badge-pill badge-light ml-2 items_count" id="itcount_' + groupe_id + '">' + data.counter_full + '</span>'
+                                    )
+                                }
+                            }
+                        }
 
                         // Prepare next iteration if needed
                         if (call_to_be_continued === true) {
@@ -4973,7 +5308,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
                 
                 // Prepare anyone can modify icon
-                if ((value.anyone_can_modify === 1 || value.open_edit === 1)) {
+                if (value.open_edit === 1) {
                     icon_all_can_modify = '<span class="fa-stack fa-clickable pointer infotip list-item-clicktoedit mr-2" title="<?php echo $lang->get('edit'); ?>"><i class="fa-solid fa-circle fa-stack-2x"></i><i class="fa-solid fa-pen fa-stack-1x fa-inverse"></i></span>';
                 }
 
@@ -5049,7 +5384,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 $('#teampass_items_list').append(
-                    '<tr class="list-item-row' + corruption_row_class + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '">' +
+                    '<tr class="list-item-row' + corruption_row_class + (value.canMove === 1 ? ' is-draggable' : '') + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' bg-yellow' : '') + '" id="list-item-row_' + value.item_id + '" data-item-key="' + value.item_key + '" data-item-edition="' + value.open_edit + '" data-item-id="' + value.item_id + '" data-item-sk="' + value.sk + '" data-item-expired="' + value.expired + '" data-item-rights="' + value.rights + '" data-item-display="' + value.display + '" data-item-open-edit="' + value.open_edit + '" data-item-tree-id="' + value.tree_id + '" data-is-search-result="' + value.is_result_of_search + '" data-label="' + escape(value.label) + '" data-item-folder="' + escape(value.folder !== undefined ? value.folder : '') + '">' +
                     '<td class="list-item-description px-3 py-0 align-middle d-flex">' +
                     '<span class="icon-container">' +
                     // Show user a grippy bar to move item
@@ -5115,6 +5450,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         if (window.tpLockedItems && typeof window.tpWsShowEditionLock === 'function') {
             Object.keys(window.tpLockedItems).forEach(function(itemId) {
                 window.tpWsShowEditionLock(parseInt(itemId), window.tpLockedItems[itemId])
+            })
+        }
+        if (window.tpViewingItems && typeof window.tpWsSetItemViewers === 'function') {
+            Object.keys(window.tpViewingItems).forEach(function(itemId) {
+                window.tpWsSetItemViewers(parseInt(itemId), window.tpViewingItems[itemId])
             })
         }
     }
@@ -5254,7 +5594,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     // Copy the password to the clipboard
-                    await navigator.clipboard.writeText(password);
+                    await copyToClipboard(password);
 
                     // User notifications
                     const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -5310,7 +5650,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     // Copy text to clipboard
-                    await navigator.clipboard.writeText(loginText);
+                    await copyToClipboard(loginText);
 
                     // Send notification to user
                     toastr.info(
@@ -5382,6 +5722,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item-description').summernote('destroy');
         $('#form-item-suggestion-description').summernote('destroy');
 
+        // Reset badge and action buttons immediately so state from the previous item
+        // doesn't bleed through while the new item's data is loading.
+        if (actionType === 'show') {
+            $('#card-item-readonly-badge').addClass('hidden');
+            $('[data-item-action="edit"], [data-item-action="delete"]').removeClass('hidden');
+        }
+
         // Init
         var hasItemAccess = false;
         if (hotlink === false) {
@@ -5395,6 +5742,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             var itemOpenEdit = parseInt($(itemDefinition).data('item-open-edit')) || 0;
             var itemReload = parseInt($(itemDefinition).data('item-reload')) || 0;
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
+            var itemFolder = unescape($(itemDefinition).data('item-folder') || '');
         } else {
             var itemId = itemDefinition || '';
             var itemKey = itemDefinition || '';
@@ -5406,6 +5754,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             var itemOpenEdit = 0;
             var itemReload = 0;
             var itemRights = parseInt($(itemDefinition).data('item-rights')) || 10;
+            var itemFolder = '';
         }
 
         // check if user still has access
@@ -5451,6 +5800,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             
             // Start edition lock heartbeat when editing is allowed
             if (actionType === 'edit' && retData.edition_locked !== true) {
+                stopConsultationPresence(itemId)
                 startEditionLockHeartbeat(itemId)
             }
 
@@ -5467,14 +5817,51 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         progressBar: true
                     }
                 );
+                // Restore previous view if skeleton was shown prematurely for an edit
+                if (actionType === 'edit') {
+                    $('.form-item, #form-item-attachments-zone').addClass('hidden');
+                    const prevView = store.get('teampassUser').previousView;
+                    if (prevView) {
+                        $(prevView).removeClass('hidden');
+                    }
+                }
                 // Finished
                 requestRunning = false;
                 return false;
             }
 
-            // Store current view
-            savePreviousView();
-            
+            // Apply badge and action-button visibility for the 'show' view using the
+            // authoritative check_current_access_rights result — no need to wait for
+            // the show_details_item response.
+            if (actionType === 'show') {
+                const canEdit   = retData.edit   === true
+                const canDelete = retData.delete  === true
+
+                // Badge visible whenever at least one right is missing.
+                if (!canEdit || !canDelete) {
+                    $('#card-item-readonly-badge').removeClass('hidden');
+                } else {
+                    $('#card-item-readonly-badge').addClass('hidden');
+                }
+
+                if (!canEdit) {
+                    $('[data-item-action="edit"]').addClass('hidden');
+                } else {
+                    $('[data-item-action="edit"]').removeClass('hidden');
+                }
+
+                if (!canDelete) {
+                    $('[data-item-action="delete"]').addClass('hidden');
+                } else {
+                    $('[data-item-action="delete"]').removeClass('hidden');
+                }
+            }
+
+            // Store current view — for 'edit' it was already captured before the skeleton was shown
+            if (actionType !== 'edit') {
+                savePreviousView();
+            }
+
             if (debugJavascript === true) console.log("Request is running: " + requestRunning)
 
             // Store status query running
@@ -5516,6 +5903,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // do
             $('#card-item-password-history-button').addClass('hidden');
+
+            // For edit: pre-update store so parallel getPrivilegesOnItem uses the correct item ID,
+            // then start it immediately in parallel with show_details_item.
+            if (actionType === 'edit' && itemId) {
+                store.update('teampassItem', function(teampassItem) {
+                    teampassItem.id = parseInt(itemId);
+                    teampassItem.tree_id = parseInt(itemTreeId);
+                });
+            }
+            const _editPrivilegesPromise = (actionType === 'edit')
+                ? getPrivilegesOnItem(itemTreeId, 1, 'item_edit_current_folder')
+                : null;
+            // OPT-C: prefetch password in parallel with show_details_item (no dependency)
+            const _editPasswordPromise = (actionType === 'edit')
+                ? getItemPassword('at_password_shown_edit_form', 'item_id', itemId)
+                : null;
 
             // Prepare data to be sent
             var data = {
@@ -5729,7 +6132,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             teampassItem.edit_item_salt_key = data.edit_item_salt_key,
                             teampassItem.id_restricted_to = data.id_restricted_to,
                             teampassItem.id_restricted_to_roles = data.id_restricted_to_roles,
-                            teampassItem.item_rights = itemRights
+                            teampassItem.item_rights = itemRights,
+                            teampassItem.notificationStatus = data.notification_status === true
                         }
                     );
 
@@ -5804,16 +6208,48 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // an other tab or window)
                     $('#items-details-container').data('id', data.id);
 
-                    // Prepare card
+                    // Remove skeleton state set by resetEditFormSkeleton() before populating fields
+                    if (actionType === 'edit') {
+                        $('#form-item-label, #form-item-login, #form-item-email, #form-item-url')
+                            .removeClass('skeleton-input');
+                    }
+
                     const itemIcon = (data.fa_icon !== "") ? '<i class="'+data.fa_icon+' mr-1"></i>' : '';
                     $('#card-item-label, #form-item-title').html(itemIcon + data.label);
 
-                    // Remove any stale edition lock badge from a previously viewed item
-                    $('#items-details-container').find('.edition-lock-detail-badge').remove();
+                    // Populate breadcrumb with folder path when item comes from a search result
+                    if (itemFolder !== '') {
+                        var breadcrumbHtml = '';
+                        itemFolder.split(' » ').forEach(function(part) {
+                            breadcrumbHtml += '<li class="breadcrumb-item">' + $('<span>').text(part).html() + '</li>';
+                        });
+                        $('#form-folder-path').html(breadcrumbHtml);
+                    }
+
+                    // HIBP badge — show cached status and trigger async re-check if needed
+                    const hibpApp = store.get('teampassApplication') || {}
+                    if (hibpApp.hibpEnabled === 1) {
+                        _showHibpBadge(data.hibp_status, data.hibp_count)
+                        const hibpAge = data.hibp_checked_at ? (Date.now() / 1000) - parseInt(data.hibp_checked_at) : Infinity
+                        const hibpInterval = (hibpApp.hibpIntervalDays || 7) * 86400
+                        if (data.hibp_status === 0 || hibpAge > hibpInterval) {
+                            _triggerHibpCheck(data.id)
+                        }
+                    }
+
+                    // Remove any stale real-time badges from a previously viewed item
+                    $('#items-details-container').find('.edition-lock-detail-badge, .item-view-detail-badge').remove();
                     // If this item is already being edited by another user, show the lock badge
                     if (window.tpLockedItems && window.tpLockedItems[data.id] &&
                         typeof window.tpWsShowEditionLockDetail === 'function') {
                         window.tpWsShowEditionLockDetail(data.id, window.tpLockedItems[data.id]);
+                    }
+                    if (window.tpViewingItems && window.tpViewingItems[data.id] &&
+                        typeof window.tpWsSetItemViewers === 'function') {
+                        window.tpWsSetItemViewers(data.id, window.tpViewingItems[data.id]);
+                    }
+                    if (actionType === 'show' && typeof window.tpWsStartItemView === 'function') {
+                        window.tpWsStartItemView(data.id, data.folder);
                     }
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
                     $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));
@@ -5830,12 +6266,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $pwBadge
                             .removeClass('hidden badge-danger')
                             .addClass('badge-success')
-                            .html('<i class="fa-solid fa-shield-halved mr-1"></i><?php echo $lang->get('secure'); ?>')
+                            .html('<i class="fa-solid fa-shield mr-1 infotip" title="<?php echo $lang->get('secure'); ?>"></i>')
                     } else if (data.pw_is_secure === false) {
                         $pwBadge
                             .removeClass('hidden badge-success')
                             .addClass('badge-danger')
-                            .html('<i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('not_secure'); ?>')
+                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
                     } else {
                         $pwBadge.addClass('hidden').removeClass('badge-success badge-danger')
                     }
@@ -5857,10 +6293,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     syncItemPasswordComplexity('');
 
-                    // For the direct-edit path (pencil from list), load the actual item
-                    // password asynchronously — same loading state as showItemEditForm().
+                    // For the direct-edit path (pencil from list), wire the pre-fetched
+                    // password promise — it has been in-flight since checkAccess returned.
                     if (actionType === 'edit') {
-                        loadPasswordIntoEditForm(null, itemId);
+                        loadPasswordIntoEditForm(_editPasswordPromise, itemId);
                     }
 
                     $('#form-item-label').focus();
@@ -5942,11 +6378,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         $('#card-item-tags').html(html_tags);
                     }
 
-                    $(data.links_to_kbs).each(function(index, value) {
+                    $(data.links_to_kbs || []).each(function(index, value) {
                         html_kbs += '<a class="badge badge-primary pointer tip mr-2" href="<?php echo $SETTINGS['cpassman_url']; ?>/index.php?page=kb&id=' + value['id'] + '"><i class="fa-solid fa-map-pin fa-sm"></i>&nbsp;' + value['label'] + '</a>';
 
                     });
-                    if (html_kbs === '') {
+                    if ($('#card-item-kbs').length === 0) {
+                        // Knowledge Base is disabled or not available for this user.
+                    } else if (html_kbs === '') {
                         $('#card-item-kbs').html('<?php echo $lang->get('none'); ?>');
                     } else {
                         $('#card-item-kbs').html(html_kbs);
@@ -6121,24 +6559,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }	
                                 if (!textToCopy) throw new Error('empty');
 
-                                // Try modern API, fallback to execCommand
-                                const fallbackCopy = () => {
-                                    const ta = document.createElement('textarea');
-                                    ta.value = textToCopy;
-                                    ta.setAttribute('readonly', '');
-                                    ta.style.position = 'absolute';
-                                    ta.style.left = '-9999px';
-                                    document.body.appendChild(ta);
-                                    ta.select();
-                                    document.execCommand('copy');
-                                    document.body.removeChild(ta);
-                                };
-                    
-                                if (navigator.clipboard && navigator.clipboard.writeText) {
-                                    await navigator.clipboard.writeText(textToCopy);
-                                } else {
-                                    fallbackCopy();
-                                }
+                                // Copy to clipboard
+                                await copyToClipboard(textToCopy);
 
                                 // Success toast
                                 toastr.remove();
@@ -6197,7 +6619,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }
 
                                 // Copy to clipboard
-                                await navigator.clipboard.writeText(password);
+                                await copyToClipboard(password);
 
                                 // Notification for the user
                                 const clipboardDuration = parseInt(store.get('teampassSettings').clipboard_life_duration) || 0;
@@ -6311,8 +6733,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) !== 2) {
-                        // continue loading data
-                        showDetailsStep2(itemId, actionType);
+                        // continue loading data — pass pre-fetched promises to avoid scope issues
+                        showDetailsStep2(itemId, actionType, _editPrivilegesPromise, _editPasswordPromise);
+                        // OPT-A: load history in parallel with showDetailsStep2 (only needs itemId)
+                        if (actionType === 'show') {
+                            loadItemHistory(store.get('teampassItem').id);
+                        }
                     } else if (parseInt(data.show_details) === 1 && parseInt(data.show_detail_option) === 2) {
                         $('#item_details_nok').addClass('hidden');
                         $('#item_details_ok').addClass('hidden');
@@ -6350,12 +6776,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             .removeClass('hidden');
                     }
 
-                    // Inform user
-                    //toastr.remove();
-                    toastrUpdate(loadingToast, 'success',
-                        '<?php echo $lang->get('done'); ?>',
-                        { timeOut: 1000 }
-                    );
+                    // Dismiss loading indicator once item is visible
+                    toastr.remove();
 
                     return true;
                 }
@@ -6367,7 +6789,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     /*
      * Loading Item details step 2
      */
-    function showDetailsStep2(id, actionType) {
+    function showDetailsStep2(id, actionType, editPrivilegesPromise = null, editPasswordPromise = null) {
         requestRunning = true;
         $.post(
             'sources/items.queries.php', {
@@ -6438,9 +6860,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                             htmlFull += '<div class="col-6 edit-attachment-div"><div class="info-box bg-secondary-gradient">' +
                                 '<span class="info-box-icon bg-info"><i class="' + value.icon + '"></i></span>' +
-                                '<div class="info-box-content"><span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
-                                '<span class="info-box-text">' + downloadIcon +'</span>' +
-                                '<span class="info-box-text"><i class="fa-solid fa-trash pointer delete-file" data-file-id="' + value.id + '"></i></span></div>' +
+                                '<div class="info-box-content">' +
+                                '<span class="info-box-text">' + filename + '.' + value.extension + '</span>' +
+                                '<span class="info-box-text">' +
+                                '<a class="text-info infotip mr-3" href="sources/downloadFile.php?name=' + encodeURI(value.filename) + '&key=<?php echo $session->get('key'); ?>&key_tmp=' + value.key + '&fileid=' + value.id + '" title="<?php echo $lang->get('download'); ?>">' +
+                                '<i class="fa-solid fa-file-download"></i></a>' +
+                                '<i class="fa-solid fa-trash pointer delete-file infotip text-danger" data-file-id="' + value.id + '" title="<?php echo $lang->get('delete'); ?>"></i>' +
+                                '</span></div>' +
                                 '</div></div>';
 
                             if (counter === 2) {
@@ -6504,15 +6930,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                 $('.infotip').tooltip();
 
-                // Now load History
-                if (actionType === 'show') {
-                    loadItemHistory(store.get('teampassItem').id);
-                } else if (actionType === 'edit') {
-                    const currentItemFolderId = parseInt(data.folder, 10) || parseInt(store.get('teampassItem').tree_id, 10) || 0;
-
-                    $.when(
-                        getPrivilegesOnItem(currentItemFolderId, 1, 'item_edit_current_folder')
-                    ).then(function(retData) {
+                // For edit mode, apply privileges (already fetched in parallel with show_details_item).
+                // show_details_item has now hydrated the store, so restriction selection is correct.
+                if (actionType === 'edit') {
+                    $.when(editPrivilegesPromise).then(function(retData) {
                         if (debugJavascript === true) {
                             console.log('getPrivilegesOnItem 3');
                             console.log(retData);
@@ -6536,12 +6957,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 $('#form-item-folder').val(String(retData.folderId));
                             }
 
-                            // Retrieve the password and synchronize the complexity meter
-                            getItemPassword(
-                                'at_password_shown_edit_form',
-                                'item_id',
-                                id
-                            ).then(item_pwd => {
+                            // Re-apply restriction selection: getPrivilegesOnItem may have run before
+                            // show_details_item updated the store, so enforce correct values now.
+                            const _restrictedUsers = store.get('teampassItem').id_restricted_to;
+                            const _restrictedRoles  = store.get('teampassItem').id_restricted_to_roles;
+                            const _selectedValues = [];
+                            if (Array.isArray(_restrictedUsers)) {
+                                _restrictedUsers.forEach(function(uid) { if (uid) _selectedValues.push(String(uid)); });
+                            } else if (_restrictedUsers) {
+                                String(_restrictedUsers).split(';').forEach(function(uid) { if (uid) _selectedValues.push(uid); });
+                            }
+                            if (Array.isArray(_restrictedRoles)) {
+                                _restrictedRoles.forEach(function(rid) { if (rid) _selectedValues.push('role_' + rid); });
+                            } else if (_restrictedRoles) {
+                                String(_restrictedRoles).split(';').forEach(function(rid) { if (rid) _selectedValues.push('role_' + rid); });
+                            }
+                            $('#form-item-restrictedto').val(_selectedValues).trigger('change');
+
+                            // Re-sync complexity meter after privileges are confirmed;
+                            // reuse the pre-fetched promise — no second network request.
+                            $.when(editPasswordPromise).then(function(item_pwd) {
                                 if (item_pwd || item_pwd === '') {
                                     syncItemPasswordComplexity(item_pwd);
                                 }
@@ -6667,7 +7102,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                 }
 
                                 // Copy to clipboard
-                                await navigator.clipboard.writeText(otpCode);
+                                await copyToClipboard(otpCode);
 
                                 // Send success notification
                                 toastr.info(
@@ -6706,6 +7141,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         if (data.error === false) {
                             $('#card-item-opt_code').html('<?php echo $lang->get('none'); ?>');
                         } else {
+                            $('#card-item-opt_code').html('');
                             $('#card-item-opt_code_error').html('<span class="text-warning pointer infotip" title="<?php echo $lang->get('error_otp_secret'); ?>"><i class="fa-solid fa-triangle-exclamation mr-1"></i><?php echo $lang->get('error'); ?></span>');
                             $('.infotip').tooltip();
                         }
@@ -7035,8 +7471,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         nbHistoryEvents = 0,
                         previousPasswords = '<h6 class="mb-3"><?php echo $lang->get('next_passwords_were_valid_until_date'); ?></h6>';
                     $.each(data.history, function(i, value) {
+                        const sourceBadge = value.is_api === true ? '<span class="badge badge-info ml-2 align-middle">API</span>' : ''
                         html += '<div class="direct-chat-msg"><div class="direct-chat-info clearfix">' +
-                            '<span class="direct-chat-name float-left">' + value.name + '</span>' +
+                            '<span class="direct-chat-name float-left">' + value.name + sourceBadge + '</span>' +
                             '<span class="direct-chat-timestamp float-right">' + value.date + '</span>' +
                             '</div>' +
                             '<img class="direct-chat-img" src="' + value.avatar + '" alt="Message User Image">' +
@@ -7144,7 +7581,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
 
                             // Copy to clipboard
-                            await navigator.clipboard.writeText(urlOtv);
+                            await copyToClipboard(urlOtv);
 
                             // Send success notification
                             toastr.info(
@@ -7174,6 +7611,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Handle update OTV button
     $(document).on('click', '#form-item-otv-update', function() {
+        var $btn = $(this);
+        $btn.addClass('disabled').html('<i class="fa-solid fa-circle-notch fa-spin"></i><br>');
+
         var data = {
             "otv_id": $('#form-item-otv-link').data('otv-id'),
             "days": $('#form-item-otv-days').val(),
@@ -7190,6 +7630,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             },
             function(data) {
                 data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                $btn.removeClass('disabled').html('<i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>');
                 // Display new url
                 if (data.new_url !== undefined) {
                     $('#form-item-otv-link').val(data.new_url);
@@ -7204,7 +7645,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
 
                             // Copy to clipboard
-                            await navigator.clipboard.writeText(urlOtv);
+                            await copyToClipboard(urlOtv);
 
                             // Send success notification
                             toastr.info(
@@ -7281,9 +7722,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: retData.message });
+                    return;
                 }
 
                 // if edition and retData.edition_locked === true then show message
@@ -7298,11 +7740,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     );
                     // Track this item so WebSocket can notify when it becomes available
                     window.tpBlockedEditItemId = parseInt(store.get('teampassItem').id);
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: '<?php echo $lang->get('error_item_currently_being_updated'); ?>' });
+                    return;
                 }
-                
+
                 // Is the user allowed?
                 // edit===0 means new item creation: check create right (NDNE allows it, R does not).
                 // edit===1 means editing an existing item: check edit right instead.
@@ -7318,9 +7761,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             progressBar: true
                         }
                     );
-                    // Finished
+                    // Finished — resolve with error so callers' .then() always fires
                     requestRunning = false;
-                    return false;
+                    resolve({ error: true, message: '<?php echo $lang->get('error_not_allowed_to'); ?>' });
+                    return;
                 }
                 $.post(
                     "sources/items.queries.php", {
@@ -7689,8 +8133,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      */
     function searchItemsWithTags(criteria) {
         if (criteria !== '') {
-            $('#folders-tree-card, .columns-position').removeClass('hidden');
-            $('.form-item-action, .form-item, .form-folder-action').addClass('hidden');
+            closeItemDetailsCard();
 
             $('#find_items').val(criteria);
 
@@ -8054,4 +8497,50 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             );
         });
     });
+
+    // -------------------------------------------------------
+    // HIBP (HaveIBeenPwned) helpers
+    // -------------------------------------------------------
+
+    /**
+     * Render the HIBP badge next to the item title.
+     * status: 0=unknown, 1=safe, 2=pwned
+     */
+    function _showHibpBadge(status, count) {
+        let html = ''
+        if (status === 2) {
+            html = '<span class="badge badge-warning"><i class="fas fa-unlock-keyhole mr-1 infotip" title="' + '<?php echo addslashes($lang->get('hibp_pwned')); ?>'.replace('%s', count) + '"></i></span>';
+            $('#item-hibp-badge')
+                .html(html)
+                .removeClass('hidden');
+            return;
+        }
+        
+        $('#item-hibp-badge').html(html).addClass('hidden');        
+    }
+
+    /**
+     * Trigger an async HIBP password check for the given item.
+     * Updates the badge on success; silent on network error.
+     */
+    function _triggerHibpCheck(itemId) {
+        $.post(
+            'sources/items.queries.php',
+            {
+                type: 'check_hibp_password',
+                id: itemId,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(resp) {
+                try {
+                    const data = prepareExchangedData(resp, 'decode', '<?php echo $session->get('key'); ?>')
+                    if (!data.error && data.status !== 'error' && data.status !== 'disabled') {
+                        _showHibpBadge(data.status === 'pwned' ? 2 : 1, data.count || 0)
+                    }
+                } catch (e) {
+                    // Silent failure — no badge update on error
+                }
+            }
+        )
+    }
 </script>

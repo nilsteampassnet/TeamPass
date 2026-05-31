@@ -23,30 +23,60 @@
  * @see       https://www.teampass.net
  */
 
-// Determine the protocol used
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
-
-// Validate and filter the host
-$host = filter_var($_SERVER['HTTP_HOST'], FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME);
-
-// Allocate the correct CORS header
-if ($host !== false) {
-    header("Access-Control-Allow-Origin: $protocol$host");
-} else {
-    header("Access-Control-Allow-Origin: 'null'");
-}
-header("Content-Type: application/json; charset=UTF-8");
-header("Access-Control-Allow-Methods: POST, GET");
-header("Access-Control-Max-Age: 3600");
-header("Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With");
-header("X-Content-Type-Options: nosniff");
-header("X-Frame-Options: DENY");
-header("Referrer-Policy: no-referrer");
 require __DIR__ . "/inc/bootstrap.php";
 
 if (!isset($SETTINGS) || is_array($SETTINGS) === false) {
     $configManager = new \TeampassClasses\ConfigManager\ConfigManager();
     $SETTINGS = $configManager->getAllSettings();
+}
+
+// CORS — behaviour depends on api_cors_origins setting:
+//   empty (default) → allow all origins (Access-Control-Allow-Origin: *)
+//   populated       → restrict to the listed origins only
+$requestOrigin = (string) ($_SERVER['HTTP_ORIGIN'] ?? '');
+$corsOriginsRaw = trim((string) ($SETTINGS['api_cors_origins'] ?? ''));
+
+if ($corsOriginsRaw === '') {
+    // No restriction configured — open to all origins (JWT is the auth layer)
+    header('Access-Control-Allow-Origin: *');
+} else {
+    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+    $sameHostOrigin = $protocol . (string) ($_SERVER['HTTP_HOST'] ?? 'localhost');
+
+    $allowedOrigins = [$sameHostOrigin];
+    foreach (explode(',', $corsOriginsRaw) as $corsOrigin) {
+        $corsOrigin = trim($corsOrigin);
+        if ($corsOrigin !== '') {
+            $allowedOrigins[] = $corsOrigin;
+        }
+    }
+
+    if ($requestOrigin !== '' && in_array($requestOrigin, $allowedOrigins, true)) {
+        header('Access-Control-Allow-Origin: ' . $requestOrigin);
+        header('Vary: Origin');
+    } elseif ($requestOrigin === '') {
+        header('Access-Control-Allow-Origin: ' . $sameHostOrigin);
+    }
+    // Origin not in whitelist → no header → browser blocks the request
+}
+
+header('Content-Type: application/json; charset=UTF-8');
+header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE');
+header('Access-Control-Max-Age: 3600');
+header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('Referrer-Policy: no-referrer');
+header('X-Api-Version: 1');
+if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    header('Strict-Transport-Security: max-age=31536000; includeSubDomains');
+}
+header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'");
+
+// Handle CORS preflight — browsers send OPTIONS before PUT/DELETE cross-origin requests
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
 }
 
 $apiLanguage = 'english';
@@ -179,6 +209,24 @@ if (isset($uri[0]) && $uri[0] === 'authorize') {
         }
     }
 
+    $userId = (int) ($userData['data']['id'] ?? 0);
+    if ($userId > 0) {
+        $folderAccessModel = new FolderAccessModel();
+        $currentFolders = $folderAccessModel->normalizeFolderIds($userData['data']['folders_list'] ?? '');
+        $filteredFolders = $folderAccessModel->filterFoldersForUser($currentFolders, $userId);
+
+        if ($filteredFolders !== $currentFolders) {
+            DB::update(
+                prefixTable('cache_tree'),
+                ['folders' => json_encode($filteredFolders), 'timestamp' => time(), 'invalidated_at' => 0],
+                'user_id = %i',
+                $userId
+            );
+        }
+
+        $userData['data']['folders_list'] = implode(',', $filteredFolders);
+    }
+
 
 
     // define the position of controller in $uri
@@ -197,7 +245,7 @@ if (isset($uri[0]) && $uri[0] === 'authorize') {
         require API_ROOT_PATH . "/Controller/Api/UserController.php";
         $objFeedController = new UserController();
         $strMethodName = (string) $action . 'Action';
-        $objFeedController->{$strMethodName}();
+        $objFeedController->{$strMethodName}($userData['data']);
 
     // action related to ITEM
     } elseif ($controller === 'item') {

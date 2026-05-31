@@ -1,5 +1,17 @@
 # Changelog
 
+### 4.1.43 (2026-04-22)
+
+- 10-50% better performance
+- add "addNaughtyJavascriptPatterns()"
+- add "setKeepPreAndCodeTagContent()" to preserve content inside "pre" and "code" tags
+- fix regression when sanitizing text inside "pre" / "code" tags
+- fix false-positives for valid "href" / "src" URLs and plain text such as "system (...)", "behavior:", "< abc" and "< 35kg"
+- improve detection of obfuscated style / attribute payloads and JSON-escaped HTML attributes
+- keep valid base64 payloads ending with "==" and avoid blank output if "preg_replace()" returns "null"
+- update "portable-utf8" to "~6.1.0"
+- improve CI / test compatibility (incl. PHP 8.5 + PHPUnit 12)
+
 ### 4.1.42 (2023-07-03)
 
 - add more js events e.g. "onbeforetoggle"

@@ -29,6 +29,13 @@ class ConnectionManager
      */
     private array $folderSubscriptions = [];
 
+    /**
+     * Item consultation presence by connection resource ID.
+     *
+     * @var array<int, array{folder_id: int, item_id: int, user_id: int, user_login: string}>
+     */
+    private array $itemViews = [];
+
     public function __construct()
     {
         $this->connections = new SplObjectStorage();
@@ -59,6 +66,7 @@ class ConnectionManager
     public function removeConnection(ConnectionInterface $conn): void
     {
         $this->connections->detach($conn);
+        $this->clearItemViewsForConnection($conn);
 
         // Get user ID from connection metadata
         $userId = $conn->userData['user_id'] ?? null;
@@ -189,6 +197,174 @@ class ConnectionManager
     public function getFolderSubscribers(int $folderId): array
     {
         return $this->folderSubscriptions[$folderId] ?? [];
+    }
+
+    /**
+     * Mark a connection as viewing an item in read-only mode.
+     *
+     * @return array<int, array{folder_id: int, item_id: int}> Presence targets whose viewer list changed
+     */
+    public function startItemView(ConnectionInterface $conn, int $folderId, int $itemId): array
+    {
+        $resourceId = (int) $conn->resourceId;
+        $affected = [];
+        $existing = $this->itemViews[$resourceId] ?? null;
+
+        if ($existing !== null
+            && (int) $existing['folder_id'] === $folderId
+            && (int) $existing['item_id'] === $itemId
+        ) {
+            return [];
+        }
+
+        if ($existing !== null) {
+            $affected[] = [
+                'folder_id' => (int) $existing['folder_id'],
+                'item_id' => (int) $existing['item_id'],
+            ];
+        }
+
+        $this->itemViews[$resourceId] = [
+            'folder_id' => $folderId,
+            'item_id' => $itemId,
+            'user_id' => (int) ($conn->userData['user_id'] ?? 0),
+            'user_login' => (string) ($conn->userData['user_login'] ?? ''),
+        ];
+
+        $affected[] = [
+            'folder_id' => $folderId,
+            'item_id' => $itemId,
+        ];
+
+        return $this->uniqueItemViewTargets($affected);
+    }
+
+    /**
+     * Stop read-only item viewing for a connection.
+     *
+     * @return array<int, array{folder_id: int, item_id: int}> Presence targets whose viewer list changed
+     */
+    public function stopItemView(ConnectionInterface $conn, ?int $folderId = null, ?int $itemId = null): array
+    {
+        $resourceId = (int) $conn->resourceId;
+        $existing = $this->itemViews[$resourceId] ?? null;
+
+        if ($existing === null) {
+            return [];
+        }
+
+        if ($folderId !== null && (int) $existing['folder_id'] !== $folderId) {
+            return [];
+        }
+
+        if ($itemId !== null && (int) $existing['item_id'] !== $itemId) {
+            return [];
+        }
+
+        unset($this->itemViews[$resourceId]);
+
+        return [[
+            'folder_id' => (int) $existing['folder_id'],
+            'item_id' => (int) $existing['item_id'],
+        ]];
+    }
+
+    /**
+     * Clear all read-only item views for a connection.
+     *
+     * @return array<int, array{folder_id: int, item_id: int}> Presence targets whose viewer list changed
+     */
+    public function clearItemViewsForConnection(ConnectionInterface $conn): array
+    {
+        return $this->stopItemView($conn);
+    }
+
+    /**
+     * Get unique users currently viewing an item.
+     *
+     * @return array<int, array{user_id: int, user_login: string}>
+     */
+    public function getItemViewers(int $folderId, int $itemId): array
+    {
+        $viewers = [];
+
+        foreach ($this->itemViews as $view) {
+            if ((int) $view['folder_id'] !== $folderId || (int) $view['item_id'] !== $itemId) {
+                continue;
+            }
+
+            $userId = (int) $view['user_id'];
+            if ($userId <= 0) {
+                continue;
+            }
+
+            $viewers[$userId] = [
+                'user_id' => $userId,
+                'user_login' => (string) $view['user_login'],
+            ];
+        }
+
+        return array_values($viewers);
+    }
+
+    /**
+     * Get the item consultation presence state for a folder.
+     *
+     * @return array<int, array{item_id: int, viewers: array<int, array{user_id: int, user_login: string}>}>
+     */
+    public function getItemViewersForFolder(int $folderId): array
+    {
+        $items = [];
+
+        foreach ($this->itemViews as $view) {
+            if ((int) $view['folder_id'] !== $folderId) {
+                continue;
+            }
+
+            $itemId = (int) $view['item_id'];
+            $userId = (int) $view['user_id'];
+            if ($itemId <= 0 || $userId <= 0) {
+                continue;
+            }
+
+            if (!isset($items[$itemId])) {
+                $items[$itemId] = [
+                    'item_id' => $itemId,
+                    'viewers' => [],
+                ];
+            }
+
+            $items[$itemId]['viewers'][$userId] = [
+                'user_id' => $userId,
+                'user_login' => (string) $view['user_login'],
+            ];
+        }
+
+        foreach ($items as &$item) {
+            $item['viewers'] = array_values($item['viewers']);
+        }
+        unset($item);
+
+        return array_values($items);
+    }
+
+    /**
+     * @param array<int, array{folder_id: int, item_id: int}> $targets
+     * @return array<int, array{folder_id: int, item_id: int}>
+     */
+    private function uniqueItemViewTargets(array $targets): array
+    {
+        $unique = [];
+
+        foreach ($targets as $target) {
+            $key = (int) $target['folder_id'] . ':' . (int) $target['item_id'];
+            $unique[$key] = [
+                'folder_id' => (int) $target['folder_id'],
+                'item_id' => (int) $target['item_id'],
+            ];
+        }
+
+        return array_values($unique);
     }
 
     /**
@@ -340,5 +516,26 @@ class ConnectionManager
             $ids[] = $conn->resourceId;
         }
         return $ids;
+    }
+
+    /**
+     * Broadcast the current read-only consultation viewer list for one item to all folder subscribers.
+     *
+     * @param int $folderId Folder the item belongs to
+     * @param int $itemId   Item whose viewer list changed
+     */
+    public function broadcastItemViewersChanged(int $folderId, int $itemId): void
+    {
+        $this->broadcastToFolder($folderId, [
+            'type' => 'event',
+            'event' => 'item_viewers_changed',
+            'data' => [
+                'item_id' => $itemId,
+                'folder_id' => $folderId,
+                'viewers' => $this->getItemViewers($folderId, $itemId),
+                'server_timestamp' => time(),
+            ],
+            'timestamp' => time(),
+        ]);
     }
 }

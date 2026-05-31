@@ -210,6 +210,174 @@ $post_data = filter_input(
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 
+    /**
+     * Returns the default directory for scheduled backups (storage/backups).
+     */
+    function tpGetScheduledBackupDefaultDir(): string
+    {
+        return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
+    }
+
+    /**
+     * Returns the default directory for on-the-fly backups (storage/onthefly).
+     * Note: an equivalent helper exists in downloadFile.php and utilities.queries.php
+     * because each is a standalone script with its own include chain.
+     */
+    function tpGetOntheflyBackupDefaultDir(): string
+    {
+        return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/onthefly' : __DIR__ . '/../../storage/onthefly';
+    }
+
+    /**
+     * Returns the resolved real path for the on-the-fly backup directory,
+     * optionally creating it if it does not exist.
+     */
+    function tpGetOntheflyBackupDir(bool $create = false): string
+    {
+        $dir = tpGetOntheflyBackupDefaultDir();
+        if ($create === true && !is_dir($dir)) {
+            @mkdir($dir, 0750, true);
+        }
+
+        $dirReal = realpath($dir);
+
+        return $dirReal !== false ? $dirReal : rtrim($dir, '/\\');
+    }
+
+    /**
+     * Normalizes a path string for cross-platform comparison:
+     * converts backslashes to forward slashes, strips trailing slashes,
+     * and lowercases on Windows.
+     */
+    function tpNormalizePathForCompare(string $path): string
+    {
+        $normalized = rtrim(str_replace('\\', '/', $path), '/');
+
+        return DIRECTORY_SEPARATOR === '\\' ? strtolower($normalized) : $normalized;
+    }
+
+    /**
+     * Returns true if $path is equal to or a direct child of $baseDir,
+     * after resolving $baseDir with realpath() to prevent symlink bypass.
+     */
+    function tpIsResolvedPathInsideDirectory(string $path, string $baseDir): bool
+    {
+        $baseReal = realpath($baseDir);
+        if ($path === '' || $baseReal === false) {
+            return false;
+        }
+
+        $pathNormalized = tpNormalizePathForCompare($path);
+        $baseNormalized = tpNormalizePathForCompare($baseReal);
+
+        return $pathNormalized === $baseNormalized || str_starts_with($pathNormalized, $baseNormalized . '/');
+    }
+
+    /**
+     * Resolves the real path that would result from creating $path,
+     * by walking up to the deepest existing ancestor and appending
+     * the missing components. Uses realpath() on the existing portion
+     * to neutralize symlinks and ".." segments.
+     * Returns '' if no existing ancestor can be found.
+     */
+    function tpResolveDirectoryCreationPath(string $path): string
+    {
+        $path = rtrim($path, '/\\');
+        if ($path === '') {
+            return '';
+        }
+
+        $missingParts = [];
+        $currentPath = $path;
+
+        while (!is_dir($currentPath)) {
+            $parentPath = dirname($currentPath);
+            if ($parentPath === $currentPath || $parentPath === '.') {
+                return '';
+            }
+
+            $missingParts[] = basename($currentPath);
+            $currentPath = $parentPath;
+        }
+
+        $currentRealPath = realpath($currentPath);
+        if ($currentRealPath === false) {
+            return '';
+        }
+
+        while ($missingParts !== []) {
+            $currentRealPath .= DIRECTORY_SEPARATOR . array_pop($missingParts);
+        }
+
+        return $currentRealPath;
+    }
+
+    /**
+     * Resolves and validates the scheduled backup output directory.
+     * Falls back to the default storage/backups path when $requestedDir is empty.
+     * Creates missing allowed base directories before validation.
+     * Returns ['success' => true, 'path' => <real path>] on success,
+     * or ['success' => false, 'path' => ''] when the path falls outside all allowed bases.
+     *
+     * @param string[] $allowedBaseDirs
+     * @return array{success: bool, path: string}
+     */
+    function tpResolveScheduledBackupOutputDir(string $requestedDir, array $allowedBaseDirs): array
+    {
+        $outputDir = trim($requestedDir);
+        if ($outputDir === '') {
+            $outputDir = tpGetScheduledBackupDefaultDir();
+        }
+
+        if ($outputDir === '') {
+            return ['success' => false, 'path' => ''];
+        }
+
+        foreach ($allowedBaseDirs as $allowedBaseDir) {
+            if (trim($allowedBaseDir) === '') {
+                continue;
+            }
+
+            if (!is_dir($allowedBaseDir)) {
+                $mkdirBaseResult = @mkdir($allowedBaseDir, 0750, true);
+                if ($mkdirBaseResult === false && !is_dir($allowedBaseDir)) {
+                    continue;
+                }
+            }
+        }
+
+        $resolvedOutputDir = tpResolveDirectoryCreationPath($outputDir);
+        if ($resolvedOutputDir === '') {
+            return ['success' => false, 'path' => ''];
+        }
+
+        $isAllowed = false;
+        foreach ($allowedBaseDirs as $allowedBaseDir) {
+            if (tpIsResolvedPathInsideDirectory($resolvedOutputDir, $allowedBaseDir) === true) {
+                $isAllowed = true;
+                break;
+            }
+        }
+
+        if ($isAllowed === false) {
+            return ['success' => false, 'path' => ''];
+        }
+
+        if (!is_dir($outputDir)) {
+            $mkdirResult = @mkdir($outputDir, 0750, true);
+            if ($mkdirResult === false && !is_dir($outputDir)) {
+                return ['success' => false, 'path' => ''];
+            }
+        }
+
+        $dirReal = realpath($outputDir);
+        if ($dirReal === false || !is_dir($dirReal)) {
+            return ['success' => false, 'path' => ''];
+        }
+
+        return ['success' => true, 'path' => $dirReal];
+    }
+
 // ---------------------------------------------------------------------
 // Restore compatibility helpers
 // ---------------------------------------------------------------------
@@ -281,7 +449,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         }
 
         $bn = basename($val);
-        $baseDir = rtrim((string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files')), '/');
+        $baseDir = rtrim((string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files')), '/');
         $targetPath = $baseDir . '/' . $bn;
 
         if (function_exists('tpParseSchemaLevelFromBackupFilename')) {
@@ -306,10 +474,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             ];
         }
 
-        $baseDir = rtrim((string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files')), '/');
+        $baseDir = rtrim(tpGetOntheflyBackupDir(false), '/');
         if ($serverScope === 'scheduled') {
-            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
+            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
             $baseDir = rtrim($dir, '/');
         }
         $targetPath = $baseDir . '/' . $bn;
@@ -455,8 +622,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 exit;
             }
 
-            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
+            $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
             $fp = rtrim($dir, '/') . '/' . $get_file;
 
             $dirReal = realpath($dir);
@@ -554,7 +720,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 break;
             }
 
-            $backupResult = tpCreateDatabaseBackup($SETTINGS, $encryptionKey);
+            $backupResult = tpCreateDatabaseBackup(
+                $SETTINGS,
+                $encryptionKey,
+                ['output_dir' => tpGetOntheflyBackupDir(true)]
+            );
 
             if ($backupResult['success'] !== true) {
                 echo prepareExchangedData(
@@ -600,7 +770,7 @@ try {
                     'message' => '',
                     'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
                         '&action=backup&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
-                        $session->get('user-key_tmp') . '&pathIsFiles=1',
+                        $session->get('user-key_tmp') . '&pathIsOnthefly=1',
                 ),
                 'encode'
             );
@@ -768,22 +938,21 @@ try {
             if ($retentionDays < 1) $retentionDays = 1;
             if ($retentionDays > 3650) $retentionDays = 3650;
 
-            // Output dir: default to <files>/backups
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $defaultDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
+            // Output dir: default to storage/backups; legacy subfolders of files/ remain allowed.
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $resolveOutputDir = tpResolveScheduledBackupOutputDir(
+                (string) ($dataReceived['output_dir'] ?? ''),
+                [
+                    tpGetScheduledBackupDefaultDir(),
+                    $baseFilesDir,
+                ]
+            );
 
-            $outputDir = trim((string)($dataReceived['output_dir'] ?? ''));
-            if ($outputDir === '') $outputDir = $defaultDir;
-
-            // Safety: prevent path traversal / outside files folder
-            @mkdir($outputDir, 0750, true);
-            $baseReal = realpath($baseFilesDir) ?: $baseFilesDir;
-            $dirReal = realpath($outputDir);
-
-            if ($dirReal === false || strpos($dirReal, $baseReal) !== 0) {
-                echo prepareExchangedData(['error' => true, 'message' => 'Invalid output directory'], 'encode');
+            if ($resolveOutputDir['success'] === false) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
                 break;
             }
+            $dirReal = $resolveOutputDir['path'];
 
             tpUpsertSettingsValue('bck_scheduled_enabled', (string)$enabled);
             tpUpsertSettingsValue('bck_scheduled_frequency', $frequency);
@@ -808,17 +977,16 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
-            @mkdir($dir, 0750, true);
-            // Build a relative path from files/ root (output_dir can be a subfolder)
-            $filesRoot = realpath($baseFilesDir);
-            $dirReal = realpath($dir);
-            $relDir = '';
-            if ($filesRoot !== false && $dirReal !== false && strpos($dirReal, $filesRoot) === 0) {
-                $relDir = trim(str_replace($filesRoot, '', $dirReal), DIRECTORY_SEPARATOR);
-                $relDir = str_replace(DIRECTORY_SEPARATOR, '/', $relDir);
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
+
+            // Validate the retrieved path before creating it (defensive check against direct DB edits).
+            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+            $resolvedListDir = tpResolveScheduledBackupOutputDir($dir, [tpGetScheduledBackupDefaultDir(), $baseFilesDir]);
+            if ($resolvedListDir['success'] === false) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
+                break;
             }
+            $dir = $resolvedListDir['path'];
 
             // Ensure we have a temporary key for downloadFile.php
             $keyTmp = (string) $session->get('user-key_tmp');
@@ -864,8 +1032,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
             $fp = rtrim($dir, '/') . '/' . $file;
 
             /**
@@ -930,8 +1097,7 @@ try {
             }
 
             $now = time();
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups');
+            $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
             @mkdir($dir, 0750, true);
 
             // avoid duplicates
@@ -965,7 +1131,7 @@ try {
             break;
 
         case 'onthefly_delete_backup':
-            // Delete an on-the-fly backup file stored in <files> directory
+            // Delete an on-the-fly backup file stored in storage/onthefly.
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     array(
@@ -1005,8 +1171,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = rtrim($baseFilesDir, '/');
+            $dir = rtrim(tpGetOntheflyBackupDir(false), '/');
             $fullPath = $dir . '/' . $bn;
 
             if (file_exists($fullPath) === false) {
@@ -1104,8 +1269,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = rtrim($baseFilesDir, '/');
+            $dir = rtrim(tpGetOntheflyBackupDir(false), '/');
             $fullPath = $dir . '/' . $bn;
 
             if (is_file($fullPath) === false) {
@@ -1153,8 +1317,8 @@ try {
 
 
         case 'onthefly_check_upload_filename':
-            // Pre-check before uploading a restore SQL file to <files>.
-            // We refuse uploading a file if its ORIGINAL name already exists in <files>,
+            // Pre-check before uploading a restore SQL file.
+            // We refuse uploading a file if its ORIGINAL name already exists in storage/onthefly,
             // to avoid duplicates and accidental metadata removal edge cases.
             if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
@@ -1187,8 +1351,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = rtrim($baseFilesDir, '/');
+            $dir = rtrim(tpGetOntheflyBackupDir(false), '/');
             $fullPath = $dir . '/' . $filename;
 
             $exists = is_file($fullPath);
@@ -1206,8 +1369,8 @@ try {
 
         case 'bck_meta_orphans_status':
             // Return the count of orphan *.meta.json files in:
-            // - <files> (on-the-fly)
-            // - <files>/backups (scheduled)
+            // - storage/onthefly (on-the-fly)
+            // - storage/backups (scheduled)
             if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     [
@@ -1219,8 +1382,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $filesDir = rtrim($baseFilesDir, '/');
+            $filesDir = rtrim(tpGetOntheflyBackupDir(false), '/');
             $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
             $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
@@ -1238,7 +1400,7 @@ try {
             break;
 
         case 'bck_meta_orphans_purge':
-            // Purge orphan *.meta.json files in <files> and <files>/backups (scheduled)
+            // Purge orphan *.meta.json files in storage/onthefly and storage/backups.
             if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     [
@@ -1250,8 +1412,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string) (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $filesDir = rtrim($baseFilesDir, '/');
+            $filesDir = rtrim(tpGetOntheflyBackupDir(false), '/');
             $scheduledDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 
             $orphFiles = function_exists('tpListOrphanBackupMetaFiles') ? tpListOrphanBackupMetaFiles($filesDir) : [];
@@ -1271,7 +1432,7 @@ try {
             break;
 
         case 'onthefly_list_backups':
-            // List on-the-fly backup files stored directly in <files> directory (not in /backups for scheduled)
+            // List on-the-fly backup files stored in storage/onthefly.
             if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     array(
@@ -1283,8 +1444,7 @@ try {
                 break;
             }
 
-            $baseFilesDir = (string)(string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $dir = rtrim($baseFilesDir, '/');
+            $dir = rtrim(tpGetOntheflyBackupDir(false), '/');
 
             $files = array();
             $paths = glob($dir . '/*.sql');
@@ -1320,7 +1480,7 @@ try {
                         '&action=backup&file=' . urlencode($bn) .
                         '&type=sql&key=' . $session->get('key') .
                         '&key_tmp=' . $session->get('user-key_tmp') .
-                        '&pathIsFiles=1',
+                        '&pathIsOnthefly=1',
                 );
             }
 
@@ -1557,7 +1717,7 @@ try {
 						}
 					}
 
-					$scriptRel = $isWindows ? 'scripts\\restore.php' : 'scripts/restore.php';
+					$scriptRel = $isWindows ? 'app\\scripts\\restore.php' : 'app/scripts/restore.php';
 					$filePathForCmd = $isWindows ? str_replace('/', '\\', $resolvedPath) : $resolvedPath;
 					$rootForCmd = $isWindows ? str_replace('/', '\\', rtrim($tpRoot, '/\\')) : rtrim($tpRoot, '/');
 
@@ -1590,7 +1750,7 @@ try {
 						'command' => $cmdForce,
 					];
 					if (!$isWindows && $webUser !== '') {
-						$cmdNoSudo = 'php scripts/restore.php'
+						$cmdNoSudo = 'php ' . $scriptRel
 							. ' --file ' . escapeshellarg($resolvedPath)
 							. ' --auth-token ' . escapeshellarg($token);
 						$cmdNoSudoCd = 'cd ' . escapeshellarg($rootForCmd) . ' && ' . $cmdNoSudo;

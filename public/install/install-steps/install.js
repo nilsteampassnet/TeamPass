@@ -44,6 +44,14 @@ $(function() {
         store.remove('TeamPassInstallation');
     }
 
+    // Disable Continue whenever absolute_path is changed — user must re-run Start
+    $('#absolute_path').on('input', function() {
+        if ($('#installStep').val() === '1') {
+            $('#button_next').prop('disabled', true)
+            $('#button_start').prop('disabled', false)
+        }
+    })
+
     // Next button clicked
     $("#button_next").on('click', function(event) {
         event.preventDefault();
@@ -257,6 +265,7 @@ function performStep5() {
         { id: 'check18', action: 'kb' },
         { id: 'check19', action: 'kb_categories' },
         { id: 'check20', action: 'kb_items' },
+        { id: 'check61', action: 'kb_comments' },
         { id: 'check21', action: 'ldap_groups_roles' },
         { id: 'check22', action: 'languages' },
         { id: 'check23', action: 'log_items' },
@@ -446,8 +455,7 @@ function performStep3() {
             dbPort: $('#db_port').val(),
             tablePrefix: $('#tbl_prefix').val(),
             teampassAbsolutePath: store.get('TeamPassInstallation').teampassAbsolutePath,
-            teampassUrl: store.get('TeamPassInstallation').teampassUrl,
-            teampassSecurePath: store.get('TeamPassInstallation').teampassSecurePath
+            teampassUrl: store.get('TeamPassInstallation').teampassUrl
         },
         success: function(response) {
             if (typeof response === 'string') {
@@ -496,14 +504,18 @@ function performStep3() {
  * 
  */
 function performStep2() {
+    // teampassAbsolutePath ends with /public/ — derive the project root by stripping that suffix
+    const publicPath = store.get('TeamPassInstallation').teampassAbsolutePath
+    const rootPath = publicPath.replace(/public\/$/, '')
+
     // List of checks to perform
     const checks = [
-        { id: 'check2', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/config/' },
-        { id: 'check3', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/avatars/', optional: true },
-        { id: 'check4', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/libraries/csrfp/libs/' },
-        { id: 'check6', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'includes/libraries/csrfp/log/' },
-        { id: 'check7', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'files/' },
-        { id: 'check8', type: 'directory', path: store.get('TeamPassInstallation').teampassAbsolutePath+'upload/', optional: true },
+        { id: 'check2', type: 'directory', path: rootPath+'app/config/' },
+        { id: 'check3', type: 'directory', path: publicPath+'assets/avatars/', optional: true },
+        { id: 'check4', type: 'directory', path: rootPath+'app/includes/libraries/csrfp/libs/' },
+        { id: 'check6', type: 'directory', path: rootPath+'app/includes/libraries/csrfp/log/' },
+        { id: 'check7', type: 'directory', path: rootPath+'storage/files/' },
+        { id: 'check8', type: 'directory', path: rootPath+'storage/upload/', optional: true },
         { id: 'check9', type: 'extension', name: 'mbstring' },
         { id: 'check10', type: 'extension', name: 'openssl' },
         { id: 'check11', type: 'extension', name: 'bcmath' },
@@ -600,6 +612,14 @@ function performStep2() {
 function performStep1() {
     show_loader('warning', '<i class="fa fa-spinner fa-spin"></i> Please wait...');
 
+    // Validate that absolute_path ends with /public
+    const absolutePathVal = $('#absolute_path').val().trim().replace(/\/$/, '')
+    if (!/\/public$/i.test(absolutePathVal)) {
+        show_loader('error', '<i class="fa-regular fa-circle-xmark"></i> The absolute path must end with <code>/public</code> (e.g. /var/www/html/teampass/public).')
+        $('#button_next').prop('disabled', true)
+        return
+    }
+
     $.ajax({
         type: 'POST',
         url: './install-steps/run.step1.php',
@@ -607,9 +627,8 @@ function performStep1() {
             'X-CSRF-Token': $('meta[name="csrf-token"]').attr('content')
         },
         data: {
-            absolutePath: $('#absolute_path').val(),
+            absolutePath: absolutePathVal,
             urlPath: $('#url_path').val(),
-            TEAMPASS_SECRETS: $('#secure_path').val(),
         },
         success: function(response) {
             if (typeof response === 'string') {
@@ -628,9 +647,11 @@ function performStep1() {
                         const ensureTrailingSlash = (path) => {
                             return path.endsWith('/') ? path : path + '/';
                         };
-                        TeamPassInstallation.teampassAbsolutePath = ensureTrailingSlash($('#absolute_path').val()),
+                        // Derive the secure path: replace trailing /public with /secrets
+                        const securePath = absolutePathVal.replace(/\/public$/i, '/secrets');
+                        TeamPassInstallation.teampassAbsolutePath = ensureTrailingSlash(absolutePathVal),
                         TeamPassInstallation.teampassUrl = ensureTrailingSlash($('#url_path').val()),
-                        TeamPassInstallation.teampassSecurePath = ensureTrailingSlash($('#secure_path').val())
+                        TeamPassInstallation.teampassSecurePath = ensureTrailingSlash(securePath)
                     }
                 )
 
@@ -754,4 +775,65 @@ function updateProgressBar(currentStep, totalSteps) {
     progressBar.style.width = percentage + '%';  // Width of the bar
     progressBar.setAttribute('aria-valuenow', percentage);  // Update accessibility
     progressBar.textContent = percentage + '%';  // Displayed text
+}
+function cleanupAndRedirect(url) {
+    const btn = document.getElementById('btn_go_home');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Cleaning up...';
+
+    function showCleanupError(installDir) {
+        // Prevent duplicate blocks on repeated clicks
+        if (document.getElementById('cleanup-error-alert')) {
+            return;
+        }
+        btn.style.display = 'none';
+
+        const alertBox = document.createElement('div');
+        alertBox.id = 'cleanup-error-alert';
+        alertBox.className = 'alert alert-info mt-3';
+
+        const title = document.createElement('strong');
+        title.className = 'd-block mb-2';
+        title.textContent = 'The install directory could not be removed automatically.';
+        alertBox.appendChild(title);
+
+        const msg = document.createElement('p');
+        msg.className = 'mb-2';
+        msg.textContent = 'This is usually a file ownership issue (the directory is not owned by the web server user). ' +
+            'Please remove it manually before exposing your TeamPass instance:';
+        alertBox.appendChild(msg);
+
+        if (installDir) {
+            const pre = document.createElement('pre');
+            pre.className = 'bg-light p-2 mb-3';
+            pre.textContent = 'sudo rm -rf ' + installDir;
+            alertBox.appendChild(pre);
+        }
+
+        const continueBtn = document.createElement('button');
+        continueBtn.type = 'button';
+        continueBtn.className = 'btn btn-primary btn-sm';
+        continueBtn.textContent = 'Continue to login';
+        continueBtn.addEventListener('click', function() { window.location.href = url; });
+        alertBox.appendChild(continueBtn);
+
+        btn.closest('div').insertAdjacentElement('afterend', alertBox);
+    }
+
+    fetch('cleanup_install.php', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'action=cleanup'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+        if (data.status === 'ok') {
+            window.location.href = url;
+        } else {
+            showCleanupError(data.install_dir || '');
+        }
+    })
+    .catch(function() {
+        window.location.href = url;
+    });
 }

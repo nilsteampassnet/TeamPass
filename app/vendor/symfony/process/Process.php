@@ -336,6 +336,10 @@ class Process implements \IteratorAggregate
 
         $envPairs = [];
         foreach ($env as $k => $v) {
+            if (!\is_scalar($v ?? '') && !$v instanceof \Stringable) {
+                continue;
+            }
+
             if (false !== $v && !\in_array($k = (string) $k, ['', 'argc', 'argv', 'ARGC', 'ARGV'], true) && !str_contains($k, '=') && !str_contains($k, "\0")) {
                 $envPairs[] = $k.'='.$v;
             }
@@ -1261,7 +1265,7 @@ class Process implements \IteratorAggregate
     protected function buildCallback(?callable $callback = null): \Closure
     {
         if ($this->outputDisabled) {
-            return fn ($type, $data): bool => null !== $callback && $callback($type, $data);
+            return static fn ($type, $data): bool => null !== $callback && $callback($type, $data);
         }
 
         $out = self::OUT;
@@ -1499,7 +1503,7 @@ class Process implements \IteratorAggregate
                     [^"%!^]*+
                 )++
             ) | [^"]*+ )"/x',
-            function ($m) use (&$env, $uid) {
+            static function ($m) use (&$env, $uid) {
                 static $varCount = 0;
                 static $varCache = [];
                 if (!isset($m[1])) {

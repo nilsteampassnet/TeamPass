@@ -570,14 +570,19 @@ if ((int) $session_user_admin === 1) {
         </div>
     </div>
 
-    <!-- COPY ITEM FORM -->
-    <div class="row hidden form-item-copy form-item-action">
-        <div class="col-12">
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-copy mr-2"></i><?php echo $lang->get('copy_item'); ?></h5>
+    <!-- COPY ITEM MODAL -->
+    <div class="modal fade" id="modal-item-copy" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-copy mr-2"></i><?php echo $lang->get('copy_item'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="form-group">
                         <label><?php echo $lang->get('new_label'); ?></label>
                         <input type="text" class="form-control form-item-control" id="form-item-copy-new-label">
@@ -587,76 +592,89 @@ if ((int) $session_user_admin === 1) {
                         <select class="form-control form-item-control select2" style="width:100%;" id="form-item-copy-destination"></select>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-copy-perform"><?php echo $lang->get('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-copy-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
         </div>
     </div>
 
 
-    <!-- DELETE ITEM FORM -->
-    <div class="row hidden form-item-delete form-item-action">
-        <div class="col-12">
-
-            <div class="card card-warning">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete_item'); ?></h5>
+    <!-- DELETE ITEM MODAL -->
+    <div class="modal fade" id="modal-item-delete" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-trash mr-2"></i><?php echo $lang->get('delete_item'); ?>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="alert alert-info alert-dismissible">
-                        <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('warning'); ?></h5>
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <h5><i class="icon fa fa-exclamation-triangle mr-2"></i><?php echo $lang->get('warning'); ?></h5>
                         <?php echo $lang->get('delete_item_message'); ?>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-warning" id="form-item-delete-perform"><?php echo $lang->get('perform'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="form-item-delete-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
 
-    <!-- SHARE ITEM FORM -->
-    <div class="row hidden form-item-share form-item-action">
-        <div class="col-12">
-            <form id="form-item-share" class="needs-validation" novalidate onsubmit="return false;">
-                <div class="card card-primary">
-                    <div class="card-header">
-                        <h5><i class="fa-solid fa-share-alt mr-2"></i><?php echo $lang->get('share_item'); ?></h5>
-                    </div>
-                    <div class="card-body">
+    <!-- SHARE ITEM MODAL -->
+    <div class="modal fade" id="modal-item-share" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-share-alt mr-2"></i><?php echo $lang->get('share_item'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="form-item-share" class="needs-validation" novalidate onsubmit="return false;">
                         <div class="callout callout-info">
                             <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                             <p><?php echo $lang->get('share_item_message'); ?></p>
                         </div>
                         <div class="form-group">
                             <label for="form-item-share-email"><?php echo $lang->get('email_address'); ?></label>
-                            <input type="email" class="form-control clear-me-val" id="form-item-share-email" placeholder="<?php echo $lang->get('enter_email'); ?>" required>
+                            <input type="email" class="form-control clear-me-val" id="form-item-share-email"
+                                   placeholder="<?php echo $lang->get('enter_email'); ?>" required>
                         </div>
-                    </div>
-                    <div class="card-footer">
-                        <button type="submit" class="btn btn-primary" id="form-item-share-perform"><?php echo $lang->get('perform'); ?></button>
-                        <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
-                    </div>
+                    </form>
                 </div>
-            </form>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-share-perform"><?php echo $lang->get('perform'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                </div>
+            </div>
         </div>
     </div>
 
 
-    <!-- NOTIFY ITEM FORM -->
-    <div class="row hidden form-item-notify form-item-action">
-        <div class="col-12">
-
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-solid fa-bullhorn mr-2"></i><?php echo $lang->get('notification'); ?></h5>
+    <!-- NOTIFY ITEM MODAL -->
+    <div class="modal fade" id="modal-item-notify" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-solid fa-bullhorn mr-2"></i><?php echo $lang->get('notification'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                         <p><?php echo $lang->get('notification_message'); ?></p>
@@ -665,34 +683,37 @@ if ((int) $session_user_admin === 1) {
                         <input type="checkbox" class="form-check-input form-item-control flat-blue" id="form-item-notify-checkbox"><label for="form-item-notify-checkbox" class="ml-3"><?php echo $lang->get('notify_on_change'); ?></label>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary" id="form-item-notify-perform"><?php echo $lang->get('confirm'); ?></button>
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('cancel'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="form-item-notify-perform"><?php echo $lang->get('confirm'); ?></button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
 
-    <!-- OTV ITEM FORM -->
-    <div class="row hidden form-item-otv form-item-action">
-        <div class="col-12">
-
-            <div class="card card-primary">
-                <div class="card-header">
-                    <h5><i class="fa-brands fa-slideshare mr-2"></i><?php echo $lang->get('one_time_view'); ?></h5>
+    <!-- OTV ITEM MODAL -->
+    <div class="modal fade" id="modal-item-otv" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title">
+                        <i class="fa-brands fa-slideshare mr-2"></i><?php echo $lang->get('one_time_view'); ?>
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <div class="card-body">
+                <div class="modal-body">
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                         <p><?php
                             echo str_replace(
-        ['##otv_expiration_period##', '. '],
-        ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
-        $lang->get('otv_message')
-    );
-                            ?></p>
+                                ['##otv_expiration_period##', '. '],
+                                ['<span class="text-bold text-primary">' . $SETTINGS['otv_expiration_period'] . '</span>', '<br>'],
+                                $lang->get('otv_message')
+                            );
+                        ?></p>
                     </div>
 
                     <div class="form-group">
@@ -740,11 +761,10 @@ if ((int) $session_user_admin === 1) {
                         </div>
                     </div>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-default float-right but-back"><?php echo $lang->get('close'); ?></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('close'); ?></button>
                 </div>
             </div>
-
         </div>
     </div>
 
@@ -960,11 +980,12 @@ if ((int) $session_user_admin === 1) {
     <div class="row h-25" id="folders-tree-card">
         <div id="folder-tree-container" class="col-md-5 column-left">
             <div class="card card-info card-outline">
-                <div class="card-header">
-                    <div class="row justify-content-end">
+                <div class="card-header align-items-center py-2">
+                    <div class="row">
                         <div class="col-6">
-                            <h3 class="card-title"><i class="fa-regular fa-folder-open mr-2">
+                            <h3 class="card-title mb-0 mt-2"><i class="fa-regular fa-folder-open mr-2 text-info">
                                 </i><span class=""><?php echo $lang->get('folders'); ?></span>
+                            </h3>
                         </div>
                         <div class="col-6">
                             <div class="btn-group float-right">
@@ -1058,15 +1079,20 @@ if ((int) $session_user_admin === 1) {
                     <!-- /.card-tools -->
                 </div>
                 <!-- /.card-header -->
+                <div id="tp-folder-progress-wrap"><div id="tp-folder-progress-bar"></div></div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-sm table-hover table-striped hidden" id="table_teampass_subfolders_list" style="width:100%;">
+                            <thead><tr><th><i class="fa-solid fa-folder mr-1"></i><?php echo $lang->get('sub-folders'); ?><span class="badge badge-secondary ml-2" id="count-subfolders-badge"></span></th></tr></thead>
                             <tbody id="teampass_subfolders_list">
-                                <tr><td colspan="100%" class="text-center"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-lg"></span></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-md"></span></td></tr>
+                                <tr class="tp-skeleton-row"><td><span class="skeleton-line mr-2" style="width:14px;height:14px;border-radius:3px;"></span><span class="skeleton-line skeleton-sm"></span></td></tr>
                             </tbody>
                         </table>
 
                         <table class="table table-truncated table-hover table-striped" id="table_teampass_items_list" style="width:100%;">
+                            <thead><tr><th><i class="fa-solid fa-key mr-1"></i><?php echo $lang->get('items'); ?><span class="badge badge-secondary ml-2" id="count-items-badge"></span></th></tr></thead>
                             <tbody id="teampass_items_list"></tbody>
                         </table>
                         <!-- /.table -->
@@ -1101,7 +1127,6 @@ if ((int) $session_user_admin === 1) {
             </div>
         </div>
 
-        
         <div id="items-details-container" class="col-md-5 overflow-auto hidden">
             <!-- ITEM DETAILS -->
             <div class="row item-details-card item-details-card-menu">
@@ -1113,7 +1138,10 @@ if ((int) $session_user_admin === 1) {
                                     <i class="fa-solid fa-arrow-left"></i>
                                 </button>
                             </span>
-                            <h3 class="d-inline align-middle" id="card-item-label"></h3>
+                            <h3 class="d-inline align-middle" id="card-item-label"><span class="skeleton-line skeleton-title"></span></h3>
+                            <span id="card-item-readonly-badge" class="badge badge-warning ml-2 hidden" title="<?php echo $lang->get('read_only'); ?>">
+                                <i class="fa-solid fa-lock mr-1"></i><small><?php echo $lang->get('read_only'); ?></small>
+                            </span>
                             <div class="card-tools">
                                 <button type="button" class="btn btn-secondary btn-sm but-back-to-list mt-2">
                                     <i class="fa-solid fa-times"></i>
@@ -1191,6 +1219,7 @@ if ((int) $session_user_admin === 1) {
                             <ul class="list-group list-group-unbordered mb-3">
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('pw'); ?></b>
+                                    <span id="item-hibp-badge" class="ml-2 d-inline-block align-middle hidden"></span>
                                     <span id="card-item-pwd-security-badge" class="badge ml-2 hidden"></span>
                                     <button type="button" class="float-right btn btn-secondary btn-sm btn-copy-clipboard" id="card-item-pwd-button">
                                         <i class="fa-regular fa-copy"></i>
@@ -1201,7 +1230,7 @@ if ((int) $session_user_admin === 1) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm mr-1" id="card-item-pwd-toggle-button">
                                         <i class="fa-regular fa-eye pwd-toggle-icon"></i>
                                     </button>
-                                    <span id="card-item-pwd" class="float-right pointer mr-2"></span>
+                                    <span id="card-item-pwd" class="float-right pointer mr-2"><span class="skeleton-line skeleton-md"></span></span>
                                     <input id="hidden-item-pwd" type="hidden">
                                 </li>
                                 <li class="list-group-item">
@@ -1209,14 +1238,14 @@ if ((int) $session_user_admin === 1) {
                                     <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-login" id="card-item-login-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <span id="card-item-login" class="float-right"></span>
+                                    <span id="card-item-login" class="float-right"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('email'); ?></b>
                                     <button type="button" class="float-right btn btn-secondary btn-sm ml-1 btn-copy-clipboard-clear" data-clipboard-target="card-item-email" id="card-item-email-btn">
                                         <i class="fa-regular fa-copy"></i>
                                     </button>
-                                    <span id="card-item-email" class="float-right ml-1"></span>
+                                    <span id="card-item-email" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('url'); ?></b>
@@ -1226,7 +1255,7 @@ if ((int) $session_user_admin === 1) {
                                     <a id="card-item-url" class="float-right ml-1 btn btn-secondary btn-sm" href="#" target="_blank">
                                         <i class="fa-solid fa-arrow-up-right-from-square"></i>
                                     </a>
-                                    <span id="card-item-url-text" class="float-right ml-1"></span>
+                                    <span id="card-item-url-text" class="float-right ml-1"><span class="skeleton-line skeleton-lg"></span></span>
                                 </li>
                             </ul>
                             <div id="card-item-corrupted-warning" class="alert mt-3 mb-0 hidden"></div>
@@ -1239,21 +1268,21 @@ if ((int) $session_user_admin === 1) {
                             <ul class="list-group list-group-unbordered mb-3">
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('restricted_to'); ?></b>
-                                    <a id="card-item-restrictedto" class="float-right ml-1"></a>
+                                    <a id="card-item-restrictedto" class="float-right ml-1"><span class="skeleton-line skeleton-md"></span></a>
                                 </li>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('tags'); ?></b>
-                                    <a id="card-item-tags" class="float-right ml-1"></a>
+                                    <a id="card-item-tags" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
                                 </li>
-                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1) : ?>
+                                <?php if (isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 && (int) $session->get('user-admin') !== 1) : ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('kb_menu'); ?></b>
-                                    <span id="card-item-kbs" class="float-right ml-1"></span>
+                                    <span id="card-item-kbs" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></span>
                                 </li>
                                 <?php endif; ?>
                                 <li class="list-group-item">
                                     <b><?php echo $lang->get('otp_code'); ?></b>
-                                    <a id="card-item-opt_code" class="float-right ml-1"></a>
+                                    <a id="card-item-opt_code" class="float-right ml-1"><span class="skeleton-line skeleton-sm"></span></a>
                                     <span id="card-item-opt_code_error" class="float-right"></span>
                                 </li>
                                 <li class="list-group-item" id="card-item-misc">
@@ -1266,7 +1295,7 @@ if ((int) $session_user_admin === 1) {
 
             <div class="row item-details-card">
                 <div class="col-12">
-                    <div class="callout callout-info visible" id="card-item-description">No description</div>
+                    <div class="callout callout-info visible" id="card-item-description"><span class="skeleton-line skeleton-xl"></span></div>
                 </div>
             </div>
 

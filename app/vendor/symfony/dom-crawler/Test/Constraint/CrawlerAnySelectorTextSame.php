@@ -16,13 +16,10 @@ use Symfony\Component\DomCrawler\Crawler;
 
 final class CrawlerAnySelectorTextSame extends Constraint
 {
-    private string $selector;
-    private string $expectedText;
-
-    public function __construct(string $selector, string $expectedText)
-    {
-        $this->selector = $selector;
-        $this->expectedText = $expectedText;
+    public function __construct(
+        private string $selector,
+        private string $expectedText,
+    ) {
     }
 
     public function toString(): string
@@ -41,7 +38,7 @@ final class CrawlerAnySelectorTextSame extends Constraint
             return false;
         }
 
-        $nodes = $other->each(fn (Crawler $node) => trim($node->text(null, true)));
+        $nodes = $other->each(static fn (Crawler $node) => trim($node->text(null, true)));
 
         return \in_array($this->expectedText, $nodes, true);
     }

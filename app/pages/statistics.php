@@ -104,19 +104,7 @@ if (isset($SETTINGS['send_statistics_items'])) {
 <!-- /.content-header -->
 
 
-<style>
-    /* Prevent Chart.js doughnut charts from growing when canvases are rendered inside tabs */
-    .tp-ops-doughnut-wrap {
-        position: relative;
-        height: 220px;
-        max-height: 220px;
-    }
-    .tp-ops-doughnut-wrap canvas {
-        width: 100% !important;
-        height: 220px !important;
-        max-height: 220px;
-    }
-</style>
+<link rel="stylesheet" href="./assets/css/statistics.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
 
 
 <!-- Main content -->

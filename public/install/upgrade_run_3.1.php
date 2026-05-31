@@ -635,10 +635,9 @@ if (intval($tmp) === 0) {
     // Get encryption key
     $secureFilePath = rtrim(TEAMPASS_SECRETS, '/') . '/' . SECUREFILE;
     if (!file_exists($secureFilePath) || !is_readable($secureFilePath)) {
-        return [
-            'success' => false,
-            'message' => "Encryption key file not found or not readable: " . $secureFilePath,
-        ];
+        echo '[{"finish":"1", "msg":"", "error":"Encryption key file not found or not readable: ' . addslashes($secureFilePath) . '"}]';
+        mysqli_close($db_link);
+        exit();
     }
     $encryptionKey = file_get_contents($secureFilePath);
 

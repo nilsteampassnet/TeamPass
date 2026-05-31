@@ -1,0 +1,69 @@
+/* Progress bar: no transition so bar stays in sync with counter */
+#roles-load-progress .progress-bar { transition: none; }
+
+#role-edit-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 390px;
+    height: 100vh;
+    background: #fff;
+    color: #212529;
+    border-left: 3px solid #ffc107;
+    box-shadow: -4px 0 20px rgba(0,0,0,.15);
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform .25s cubic-bezier(.4,0,.2,1);
+    overflow: hidden;
+}
+#role-edit-sidebar.open { transform: translateX(0); }
+#role-edit-sidebar .sidebar-header { background: #fffbf0; border-bottom: 1px solid #fde8a0; flex-shrink: 0; }
+#role-edit-sidebar .p-3:nth-child(2) { overflow-y: auto; flex: 1; }
+#role-edit-sidebar .sidebar-footer { flex-shrink: 0; background: #f8f9fa; border-top-color: #dee2e6 !important; }
+#role-edit-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.25);
+    z-index: 1049;
+}
+#table-role-details tbody tr.editing-active { background-color: #fffbf0 !important; }
+
+/* iCheck elements inside sidebar: flex layout so label and widget align */
+#role-edit-sidebar .form-check {
+    display: flex;
+    align-items: center;
+    padding-left: 0;
+    gap: 0.5rem;
+}
+#role-edit-sidebar .form-check .icheckbox_flat-orange,
+#role-edit-sidebar .form-check .iradio_flat-orange { flex-shrink: 0; }
+#role-edit-sidebar .form-check label { margin-bottom: 0; }
+
+/* Dark mode overrides */
+.dark-mode #role-edit-sidebar {
+    background: #343a40;
+    color: #fff;
+    border-left-color: #f39c12;
+    box-shadow: -4px 0 20px rgba(0,0,0,.4);
+}
+.dark-mode #role-edit-sidebar .sidebar-header {
+    background: #3a3f47;
+    border-bottom-color: #4c5158 !important;
+}
+.dark-mode #role-edit-sidebar .sidebar-footer {
+    background: #2d3238;
+    border-top-color: #4c5158 !important;
+}
+.dark-mode #role-edit-sidebar label { color: #ced4da; }
+.dark-mode #role-edit-sidebar .btn-outline-secondary {
+    color: #adb5bd;
+    border-color: #6c757d;
+}
+.dark-mode #role-edit-sidebar .btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+.dark-mode #table-role-details tbody tr.editing-active { background-color: #3d3a28 !important; }

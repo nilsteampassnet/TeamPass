@@ -31,7 +31,7 @@ class PhpFileParser
     {
         $extraTypes = self::getExtraTypes();
 
-        if (!function_exists('php_strip_whitespace')) {
+        if (!\function_exists('php_strip_whitespace')) {
             throw new RuntimeException('Classmap generation relies on the php_strip_whitespace function, but it has been disabled by the disable_functions directive.');
         }
 
@@ -55,7 +55,7 @@ class PhpFileParser
                 $message .= PHP_EOL . 'The following message may be helpful:' . PHP_EOL . $error['message'];
             }
 
-            throw new RuntimeException(sprintf($message, $path));
+            throw new RuntimeException(\sprintf($message, $path));
         }
 
         // return early if there is no chance of matching anything in this file
@@ -64,7 +64,7 @@ class PhpFileParser
             return [];
         }
 
-        $p = new PhpFileCleaner($contents, count($matches[0]));
+        $p = new PhpFileCleaner($contents, \count($matches[0]));
         $contents = $p->clean();
         unset($p);
 
@@ -78,12 +78,12 @@ class PhpFileParser
         $classes = [];
         $namespace = '';
 
-        for ($i = 0, $len = count($matches['type']); $i < $len; ++$i) {
+        for ($i = 0, $len = \count($matches['type']); $i < $len; ++$i) {
             if (isset($matches['ns'][$i]) && $matches['ns'][$i] !== '') {
                 $namespace = str_replace([' ', "\t", "\r", "\n"], '', (string) $matches['nsname'][$i]) . '\\';
             } else {
                 $name = $matches['name'][$i];
-                assert(is_string($name));
+                \assert(\is_string($name));
                 // skip anon classes extending/implementing
                 if ($name === 'extends') {
                     continue;
@@ -126,7 +126,7 @@ class PhpFileParser
         if (null === $extraTypes) {
             $extraTypes = '';
             $extraTypesArray = [];
-            if (PHP_VERSION_ID >= 80100 || (defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.3', '>='))) {
+            if (PHP_VERSION_ID >= 80100 || (\defined('HHVM_VERSION') && version_compare(HHVM_VERSION, '3.3', '>='))) {
                 $extraTypes .= '|enum';
                 $extraTypesArray = ['enum'];
             }

@@ -78,13 +78,6 @@ git pull
 > `includes/config/`, `includes/avatars/`) are listed in `.gitignore`.
 > If you have any doubt, use Option A instead.
 
-#### Install Composer dependencies
-
-```bash
-cd /path/to/teampass
-composer install --no-dev --optimize-autoloader
-```
-
 ---
 
 ### Step 3 — Run the filesystem migration script (3.2.0 only)
@@ -107,6 +100,7 @@ php migrate_3.2.x.php
 | `--check`            | Inspect prerequisites and show what will be migrated, without making any change |
 | `--dry-run`          | Simulate every step in detail without making any change  |
 | `--web-user=USER`    | Web server user for permission setup (default: `www-data`) |
+| `--web-group=GROUP`  | Web server group for permission setup (default: primary group of `--web-user`). Useful on systems where the user and group names differ (e.g. openSUSE: `wwwrun` / `www`) |
 | `--no-color`         | Disable ANSI colour output                               |
 
 > **Tip:** Run `--check` first for a quick pre-flight summary, then `--dry-run` for a
@@ -119,7 +113,7 @@ php migrate_3.2.x.php
 3. Moves `upload/` → `storage/upload/`
 4. Moves `backups/` → `storage/backups/`
 5. Copies user avatars to `public/assets/avatars/`
-6. Adjusts file ownership and permissions for `www-data`
+6. Adjusts file ownership and permissions for the web server user/group
 
 > **Tip:** Run with `--dry-run` first to preview all operations, then run again without the flag to apply them.
 
@@ -134,6 +128,31 @@ Once the script completes successfully, refresh the upgrade page and proceed to 
 * Browse to `https://<your_teampass_instance>/install/upgrade.php`
 * Authenticate with your **Administrator** account
 * Follow all wizard steps
+
+---
+
+### Step 4b — Restart WebSocket daemon (if WebSocket is enabled)
+
+> Skip this step if the WebSocket feature is disabled in your instance
+> (Admin → Settings → WebSocket → `websocket_enabled = 0`).
+
+Any upgrade that modifies files under `app/websocket/src/` requires a daemon restart.
+Without it, the running process continues to use the old code and silently ignores new
+client actions (e.g., `start_item_view`).
+
+```bash
+sudo systemctl restart teampass-websocket.service
+```
+
+Check that the service restarted cleanly:
+
+```bash
+sudo systemctl status teampass-websocket.service
+```
+
+**Hard browser refresh recommended** if the application version number is unchanged between
+releases, because `teampass-websocket-init.js` is cached using the version as a query string.
+Use `Ctrl + Shift + R` (or `Cmd + Shift + R` on macOS) to bypass the cache.
 
 ---
 

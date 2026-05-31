@@ -344,7 +344,7 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
 
                                                 <div class="mb-3">
                                                     <label class="form-label" for="scheduled-output-dir"><?php echo $lang->get('bck_scheduled_output_dir'); ?></label>
-                                                    <input class="form-control" type="text" id="scheduled-output-dir" placeholder="/path/to/files/backups">
+                                                    <input class="form-control" type="text" id="scheduled-output-dir" placeholder="<?php echo htmlspecialchars(defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : 'storage/backups'); ?>">
                                                     <small class="form-text text-muted mt-4">
                                                         <?php echo $lang->get('bck_scheduled_output_dir_help'); ?>
                                                     </small>
@@ -553,11 +553,7 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
 
 
 
-<style>
-/* Fun restore progress: a little cat that moves along the progress bar */
-.tp-restore-progress-track { position: relative; overflow: visible; }
-.tp-restore-progress-cat { position: absolute; top: -18px; left: 2%; transform: translateX(-50%); font-size: 18px; }
-</style>
+<link rel="stylesheet" href="./assets/css/backups.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
 
 <!-- Strict mode: Connected users modal -->
 <div class="modal fade" id="tp-connected-users-modal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">

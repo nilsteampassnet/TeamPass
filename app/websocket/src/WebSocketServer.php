@@ -276,6 +276,12 @@ class WebSocketServer implements MessageComponentInterface
             }
         }
 
+        // Clear volatile consultation presence held by this browser tab.
+        $affectedViews = $this->connections->clearItemViewsForConnection($conn);
+        foreach ($affectedViews as $target) {
+            $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+        }
+
         // Clean up
         $this->connections->removeConnection($conn);
         $this->rateLimiter->cleanup($conn);

@@ -1,0 +1,11 @@
+/* Prevent Chart.js doughnut charts from growing when canvases are rendered inside tabs */
+.tp-ops-doughnut-wrap {
+    position: relative;
+    height: 220px;
+    max-height: 220px;
+}
+.tp-ops-doughnut-wrap canvas {
+    width: 100% !important;
+    height: 220px !important;
+    max-height: 220px;
+}

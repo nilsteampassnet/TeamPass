@@ -48,6 +48,16 @@ class ItemModel
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
     {
+        // Fetch user's public key once for migration-aware decryption
+        $userPublicKey = '';
+        $userKeyRow = DB::queryFirstRow(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if ($userKeyRow !== null) {
+            $userPublicKey = (string) $userKeyRow['public_key'];
+        }
+
         // Get items
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
@@ -68,7 +78,7 @@ class ItemModel
         $ret = [];
         foreach ($rows as $row) {
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $userId,
@@ -80,22 +90,25 @@ class ItemModel
                 continue;
             }
 
-            // Get password
+            // Get password (migration-aware: upgrades phpseclib v1 sharekeys to v3 on access)
             $pwd = '';
             try {
                 $pwd = base64_decode(
                     (string) doDataDecryption(
                         $row['pw'],
-                        decryptUserObjectKey(
+                        decryptUserObjectKeyWithMigration(
                             $userKey['share_key'],
-                            $userPrivateKey
+                            $userPrivateKey,
+                            $userPublicKey,
+                            (int) $userKey['increment_id'],
+                            'sharekeys_items'
                         )
                     )
                 );
             } catch (Exception $e) {
-                // Password is not encrypted
-                // deepcode ignore ServerLeak: No important data
-                echo "ERROR";
+                error_log('[API] ItemModel::getItems decryption error for item ' . $row['id'] . ': ' . $e->getMessage());
+                // Skip this item — decryption failed (e.g. legacy sharekey not yet migrated)
+                continue;
             }
             
 
@@ -197,7 +210,8 @@ class ItemModel
             $itemInfos = $this->getFolderSettings($folderId);
 
             // Step 5: Ensure the password meets folder complexity requirements
-            $this->checkPasswordComplexity($password, array_merge($itemInfos, ['folderId' => $folderId]));
+            // Capture the score to reuse it — avoids running zxcvbn a second time on the ciphertext
+            $complexityLevel = $this->checkPasswordComplexity($password, array_merge($itemInfos, ['folderId' => $folderId]));
 
             // Step 6: Check for duplicates in the system
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
@@ -213,10 +227,13 @@ class ItemModel
             }
 
             // Step 8: Insert the new item into the database
-            $newID = $this->insertNewItem($data, $password, $itemInfos);
+            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel);
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $data, $SETTINGS);
+
+            // Notify WebSocket subscribers so other users viewing this folder see the new item
+            emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
 
             // Success response
             return [
@@ -325,10 +342,7 @@ class ItemModel
             'totp' => 'trim|escape',
         ];
 
-        $inputData = dataSanitizer($data, $filters);
-        if (is_string($inputData)) {
-            throw new Exception('Data is not valid');
-        }
+        dataSanitizer($data, $filters);
     }
 
     /**
@@ -357,11 +371,21 @@ class ItemModel
     private function getFolderSettings(int $folderId) : array
     {
         $dataFolderSettings = DB::queryFirstRow(
-            'SELECT bloquer_creation, bloquer_modification, personal_folder
-            FROM ' . prefixTable('nested_tree') . ' 
-            WHERE id = %i',
+            'SELECT nt.bloquer_creation, nt.bloquer_modification,
+            CASE WHEN COUNT(personal_root.id) > 0 THEN 1 ELSE nt.personal_folder END AS personal_folder
+            FROM ' . prefixTable('nested_tree') . ' AS nt
+            LEFT JOIN ' . prefixTable('nested_tree') . ' AS personal_root
+                ON personal_root.personal_folder = 1
+                AND nt.nleft >= personal_root.nleft
+                AND nt.nright <= personal_root.nright
+            WHERE nt.id = %i
+            GROUP BY nt.id, nt.bloquer_creation, nt.bloquer_modification, nt.personal_folder',
             $folderId
         );
+
+        if ($dataFolderSettings === false || $dataFolderSettings === null) {
+            return ['personal_folder' => 0, 'no_complex_check_on_modification' => 0, 'no_complex_check_on_creation' => 0];
+        }
 
         return [
             'personal_folder' => $dataFolderSettings['personal_folder'],
@@ -373,11 +397,13 @@ class ItemModel
     /**
      * Validates that the password meets the complexity requirements of the folder.
      * Throws an exception if the password is too weak.
-     * @param string $password - The password to check
+     * Returns the computed complexity level so the caller can reuse it without a second zxcvbn pass.
+     * @param string $password - The plaintext password to check
      * @param array $itemInfos - Folder settings including password complexity requirements
+     * @return int - The computed complexity level (one of TP_PW_STRENGTH_*)
      * @throws Exception - If the password complexity is insufficient
      */
-    private function checkPasswordComplexity(string $password, array $itemInfos) : void
+    private function checkPasswordComplexity(string $password, array $itemInfos) : int
     {
         // Check existence first
         if (isset($itemInfos['folderId']) === false) {
@@ -391,7 +417,7 @@ class ItemModel
         if ($folderId <= 0) {
             throw new Exception('Invalid folder ID for complexity check');
         }
-        
+
         $folderComplexity = DB::queryFirstRow(
             'SELECT valeur
             FROM ' . prefixTable('misc') . '
@@ -409,6 +435,8 @@ class ItemModel
         if ($passwordStrengthScore < $requested_folder_complexity && (int) $itemInfos['no_complex_check_on_creation'] === 0) {
             throw new Exception('Password strength is too low');
         }
+
+        return $passwordStrengthScore;
     }
 
     /**
@@ -456,9 +484,10 @@ class ItemModel
      * @param array $data - The item data to insert
      * @param string $password - The encrypted password
      * @param array $itemInfos - Folder-specific settings
+     * @param int $complexityLevel - Complexity level computed from the plaintext password by checkPasswordComplexity()
      * @return int - Returns the ID of the newly created item
      */
-    private function insertNewItem(array $data, string $password, array $itemInfos) : int
+    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel) : int
     {
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
 
@@ -478,7 +507,7 @@ class ItemModel
                 'restricted_to' => '',
                 'perso' => $itemInfos['personal_folder'],
                 'anyone_can_modify' => $data['anyoneCanModify'],
-                'complexity_level' => $this->getPasswordComplexityLevel($password),
+                'complexity_level' => $complexityLevel,
                 'encryption_type' => 'teampass_aes',
                 'fa_icon' => $data['icon'],
                 'item_key' => uniqidReal(50),
@@ -490,7 +519,7 @@ class ItemModel
         $newItemId = DB::insertId();
 
         // Handle TOTP if provided
-        if (empty($data['totp']) === true) {
+        if (empty($data['totp']) === false) {
             $encryptedSecret = cryption(
                 $data['totp'],
                 '',
@@ -510,18 +539,6 @@ class ItemModel
         }
 
         return $newItemId;
-    }
-
-    /**
-     * Determines the complexity level of a password based on its strength score.
-     * @param string $password - The encrypted password for which complexity is being evaluated
-     * @return int - Returns the complexity level (0 for weak, higher numbers for stronger passwords)
-     */
-    private function getPasswordComplexityLevel(string $password) : int
-    {
-        $zxcvbn = new Zxcvbn();
-        $passwordStrength = $zxcvbn->passwordStrength($password);
-        return convertPasswordStrength($passwordStrength['score']);
     }
 
     /**
@@ -655,9 +672,17 @@ class ItemModel
             // Handle folder_id change
             if (isset($params['folder_id'])) {
                 $newFolderId = (int) $params['folder_id'];
+                $folderAccessModel = new FolderAccessModel();
 
-                // Check if user has access to the new folder
-                if (!in_array((string) $newFolderId, $userData['folders_list'], true)) {
+                if ($folderAccessModel->canUseFolder($userData, (int) $currentItem['id_tree']) === false) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied to the source folder',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                if ($folderAccessModel->canUseFolder($userData, $newFolderId) === false) {
                     return [
                         'error' => true,
                         'error_message' => 'Access denied to the target folder',
@@ -665,7 +690,17 @@ class ItemModel
                     ];
                 }
 
+                if ($folderAccessModel->isFolderReadOnlyForUser($newFolderId, (int) $userData['id'])) {
+                    return [
+                        'error' => true,
+                        'error_message' => 'Access denied: target folder is read-only',
+                        'error_header' => 'HTTP/1.1 403 Forbidden',
+                    ];
+                }
+
+                $targetItemInfos = $this->getFolderSettings($newFolderId);
                 $updateData['id_tree'] = $newFolderId;
+                $updateData['perso'] = (int) $targetItemInfos['personal_folder'];
             }
 
             // Generate favicon URL if URL is provided and favicon_url is empty
@@ -711,15 +746,15 @@ class ItemModel
                 // Get folder settings
                 $itemInfos = $this->getFolderSettings((int) $folderId);
 
-                // Check password complexity
-                $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
+                // Check password complexity — capture score to avoid re-running zxcvbn on the ciphertext
+                $complexityLevel = $this->checkPasswordComplexity($newPassword, array_merge($itemInfos, ['folderId' => $folderId]));
 
                 // Encrypt password
                 $cryptedData = $this->encryptPassword($newPassword);
                 $passwordKey = $cryptedData['passwordKey'];
                 $updateData['pw'] = $cryptedData['encrypted'];
                 $updateData['pw_len'] = strlen($newPassword);
-                $updateData['complexity_level'] = $this->getPasswordComplexityLevel($newPassword);
+                $updateData['complexity_level'] = $complexityLevel;
             }
             
             // Update the item

@@ -112,135 +112,7 @@ $zones = timezone_list();
 </div>
 <!-- /.content-header -->
 
-<style>
-    #settings-navigation-card .card-body {
-        overflow-x: hidden;
-    }
-    #settings-navigation-card #settings-nav-tab {
-        align-items: stretch;
-    }
-    #settings-navigation-card #settings-nav-tab .nav-link {
-        min-width: 0;
-        width: 100%;
-        max-width: 100%;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    #settings-navigation-card {
-        top: 1rem;
-    }
-    #settings-tab-content .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: .75rem;
-    }
-    #settings-tab-content .card-header .card-title {
-        margin: 0;
-        flex: 1 1 auto;
-        display: flex;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: .5rem;
-    }
-    #settings-tab-content .card-header .card-tools {
-        margin: 0;
-        float: none;
-        flex: 0 0 auto;
-        display: flex;
-        align-items: center;
-        align-self: center;
-        height: 100%;
-    }
-    .tp-section-favorites-tools {
-        display: flex;
-        align-items: center;
-        align-self: center;
-        height: 100%;
-        margin: 0 !important;
-    }
-    .tp-section-favorites-tools .btn-group {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        height: auto;
-    }
-    .tp-section-favorites-tools .btn.btn-tool.dropdown-toggle {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        align-self: center;
-        min-width: 2rem;
-        height: 2rem;
-        padding: 0 .5rem;
-        line-height: 1;
-        margin: 0;
-        border: 1px solid rgba(255, 255, 255, .55);
-        border-radius: .3rem;
-        background-color: rgba(255, 255, 255, .97);
-        color: #5f6b77;
-        box-shadow: 0 .125rem .25rem rgba(0, 0, 0, .10);
-        transition: background-color .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease, transform .15s ease;
-        transform: translateY(0);
-    }
-    .tp-section-favorites-tools .btn.btn-tool.dropdown-toggle:hover,
-    .tp-section-favorites-tools .btn.btn-tool.dropdown-toggle:focus,
-    .tp-section-favorites-tools .show > .btn.btn-tool.dropdown-toggle {
-        background-color: #ffffff;
-        border-color: rgba(255, 255, 255, .75);
-        color: #495057;
-        box-shadow: 0 .25rem .6rem rgba(0, 0, 0, .18);
-    }
-    .tp-section-favorites-tools .btn.btn-tool.dropdown-toggle .fa-star {
-        color: #d48a12;
-        font-size: .85rem;
-    }
-    .tp-section-favorites-menu {
-        min-width: 300px;
-        max-width: 360px;
-        max-height: 360px;
-        overflow-y: auto;
-        padding: .25rem 0;
-        border: 1px solid rgba(0, 0, 0, .12);
-        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
-        background-color: #ffffff;
-    }
-    .tp-favorite-menu-item {
-        display: flex;
-        align-items: flex-start;
-        gap: .65rem;
-        white-space: normal;
-        color: inherit;
-    }
-    .tp-favorite-menu-item i {
-        width: 1rem;
-        margin-top: .15rem;
-        text-align: center;
-        flex: 0 0 1rem;
-    }
-    .tp-favorite-menu-item .tp-favorite-menu-label {
-        flex: 1 1 auto;
-        line-height: 1.3;
-        min-width: 0;
-    }
-    .option.tp-option-is-favorite {
-        border-left: 3px solid #f0ad4e;
-        padding-left: .5rem;
-    }
-    .tp-favorite-highlight {
-        animation: tpFavoriteHighlight 2.2s ease;
-    }
-    @keyframes tpFavoriteHighlight {
-        0% { background-color: rgba(255, 193, 7, .35); }
-        100% { background-color: transparent; }
-    }
-    #settings-favorites-list .tp-favorite-actions {
-        display: flex;
-        gap: .5rem;
-        align-items: center;
-    }
-</style>
+<link rel="stylesheet" href="./assets/css/options.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
 
 
 <!-- Main content -->
@@ -611,6 +483,30 @@ $zones = timezone_list();
                             </div>
                             <div class='col-2'>
                                 <input type='number' min='1' step='1' class='form-control form-control-sm' id='bruteforce_lock_duration' value='<?php echo htmlspecialchars($SETTINGS['bruteforce_lock_duration'] ?? '10'); ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="hibp haveibeenpwned password breach security compromised">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_hibp_enabled'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_hibp_enabled_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='hibp_enabled' data-toggle-on='<?php echo isset($SETTINGS['hibp_enabled']) && (int) $SETTINGS['hibp_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='hibp_enabled_input' value='<?php echo isset($SETTINGS['hibp_enabled']) && (int) $SETTINGS['hibp_enabled'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="hibp haveibeenpwned password breach interval days">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_hibp_interval_days'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_hibp_interval_days_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' max='365' class='form-control form-control-sm' id='hibp_check_interval_days' value='<?php echo isset($SETTINGS['hibp_check_interval_days']) ? htmlspecialchars((string) $SETTINGS['hibp_check_interval_days']) : '7'; ?>'>
                             </div>
                         </div>
 
@@ -1296,15 +1192,6 @@ $zones = timezone_list();
                             </div>
                             <div class='col-2'>
                                 <div class='toggle toggle-modern' id='enable_favourites' data-toggle-on='<?php echo isset($SETTINGS['enable_favourites']) === true && (int) $SETTINGS['enable_favourites'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_favourites_input' value='<?php echo isset($SETTINGS['enable_favourites']) && (int) $SETTINGS['enable_favourites'] === 1 ? 1 : 0; ?>' />
-                            </div>
-                        </div>
-
-                        <div class='row mb-2 option' data-keywords="knowledge base kb">
-                            <div class='col-10'>
-                                <?php echo $lang->get('enable_kb'); ?>
-                            </div>
-                            <div class='col-2'>
-                                <div class='toggle toggle-modern' id='enable_kb' data-toggle-on='<?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_kb_input' value='<?php echo isset($SETTINGS['enable_kb']) && (int) $SETTINGS['enable_kb'] === 1 ? 1 : 0; ?>' />
                             </div>
                         </div>
 

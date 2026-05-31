@@ -80,14 +80,58 @@ Before users can install and use the browser extension, administrators must conf
 1. **Navigate to API Settings**:
    - Log in to Teampass as an administrator
    - Go to **Settings → API**
+
+2. **Configure the JWT token duration** (main API tab):
+   - Set the token lifetime in seconds (default: 60 s)
+
+3. **Configure CORS origins** (main API tab — field "Allowed CORS origins"):
+
+   This setting controls which browsers and extensions are allowed to call the TeamPass API.
+
+   > **What is CORS?**
+   > When a browser extension (or any web page) calls an external server, the browser checks whether the server explicitly authorises that origin. If not, the browser silently blocks the response — even though the request reached the server. This is a browser-enforced security mechanism; it does not apply to mobile apps or Postman/curl.
+
+   **Two operating modes:**
+
+   | Field value | Behaviour |
+   |---|---|
+   | **Empty** (recommended) | All origins are accepted (`Access-Control-Allow-Origin: *`). The JWT token remains the only authentication layer. Suitable for the vast majority of installations. |
+   | **Comma-separated list of origins** | Only the listed origins are accepted. All other browser clients are blocked at the CORS layer. Use only if you need to lock down access to specific, known browser clients. |
+
+   **If you leave the field empty**, any browser, extension, or web app can send API requests — they still require a valid JWT to get any data, so this is safe.
+
+   **If you fill in the field**, you must list the exact origin of each client, for example:
+   ```
+   chrome-extension://cnlomomlocpdfojipnpkhhndpdbcolfn, moz-extension://12345678-abcd-1234-abcd-1234567890ab
+   ```
+
+   > ⚠️ Origins are case-sensitive and must not have a trailing slash.
+
+4. **Find your extension's origin (if you use the restricted mode)**:
+
+   **Google Chrome / Microsoft Edge:**
+   1. Open `chrome://extensions/` (or `edge://extensions/`)
+   2. Enable **Developer mode** (toggle in the top-right corner)
+   3. Locate the Teampass extension — its **ID** appears below the name (e.g., `cnlomomlocpdfojipnpkhhndpdbcolfn`)
+   4. The origin to enter is: `chrome-extension://<ID>`
+
+   **Mozilla Firefox:**
+   1. Open `about:debugging#/runtime/this-firefox`
+   2. Locate the Teampass extension
+   3. The **Internal UUID** appears in the extension details (e.g., `12345678-abcd-1234-abcd-1234567890ab`)
+   4. The origin to enter is: `moz-extension://<UUID>`
+
+   > **Note for Firefox:** the internal UUID changes when the extension is reinstalled or when the Firefox profile is reset. If users report the extension suddenly failing, verify the UUID has not changed.
+
+5. **Navigate to the "Browser extension" tab**:
    - Click on the **"Browser extension"** tab
 
-2. **Configure FQDN** (Fully Qualified Domain Name):
+6. **Configure FQDN** (Fully Qualified Domain Name):
    - This is the unique address of your TeamPass server (e.g., `mypasswords.com` or `localhost/TeamPass`)
    - The FQDN allows the extension to identify the license owner
    - Enter your server's FQDN in the corresponding field
 
-3. **Generate Browser Extension Key**:
+7. **Generate Browser Extension Key**:
    - Click the **generate** button (🔄) to create a new extension key
    - This key acts as a unique and private authentication token
    - It ensures that only valid users are authorized to query your FQDN license
@@ -101,10 +145,16 @@ Before users can install and use the browser extension, administrators must conf
 - If you suspect your connection has been compromised, generate a new key immediately
 - Generating a new key will instantly reset all extensions' access
 - After generating a new key, update the license server by contacting: nils@teampass.net
+- The **JWT token** (not CORS) is the primary security boundary of the API. CORS only prevents other websites from making API calls through a user's browser session.
 
 #### Interface Description
 
-The "Browser extension" tab provides:
+The main **API** tab provides:
+- **API enable/disable toggle**: Enable or disable API access globally
+- **JWT token duration**: Lifetime of authentication tokens in seconds
+- **Allowed CORS origins**: Comma-separated list of authorised browser origins (leave empty to allow all)
+
+The **"Browser extension"** tab provides:
 - **FQDN field**: Display and configure your server's fully qualified domain name
 - **Extension Key field**: Display the current key (disabled for editing)
 - **Copy button**: Quickly copy the key to clipboard

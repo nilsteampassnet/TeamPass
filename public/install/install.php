@@ -194,6 +194,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 							<div class="card-body">
 								<div class="form-group">
 									<label>Absolute path to TeamPass folder</label>
+									<small class="form-text text-muted d-block mb-1">
+										This must be the absolute path to the TeamPass <code>public/</code> directory (e.g. <code>/var/www/html/teampass/public</code>).
+									</small>
 									<input type="text" class="form-control required" data-label="Absolute path" name="absolute_path" id="absolute_path" class="ui-widget" value="<?php echo $serverPath;?>">
 								</div>
 								<div class="form-group mt-3">
@@ -201,11 +204,13 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 									<input type="text" class="form-control required" data-label="Url" name="url_path" id="url_path" class="ui-widget" value="<?php echo $serverUrl;?>">
 								</div>
 								<div class="form-group mt-3">
-									<label>Absolute path to secure path</label><br>
-									<small class="form-text text-muted">
-										For security reasons, the secure path shall be defined outside the WWW folder of your server (example: /var/teampass/). It will host an encryption key used for several Teampass features.
-									</small>
-									<input type="text" class="form-control required" data-label="Secure path" name="secure_path" id="secure_path" class="ui-widget" value="">
+									<label>Secure path <span class="badge badge-secondary">auto-configured</span></label>
+									<div class="alert alert-info py-2 px-3 mb-0 mt-1">
+										<i class="fa-solid fa-lock fa-sm"></i>&nbsp;
+										The secure path is automatically set to the <code>secrets/</code> directory at the root of your TeamPass installation:
+										<br><code><?php echo htmlspecialchars(TEAMPASS_SECRETS); ?></code>
+										<br><small>This directory stores the encryption key file and must remain outside the web-accessible <code>public/</code> folder.</small>
+									</div>
 								</div>
 							</div>
 						</div>
@@ -238,7 +243,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 											<div>
 												<code>/app/config/</code> <span class="badge badge-secondary">required — install/upgrade</span>
 												<div class="text-muted small">Stores <code>settings.php</code> (encrypted database credentials). Must be writable during installation and upgrades only.</div>
-												<div id="check2-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/config</code></div>
+												<div id="check2-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 app/config</code></div>
 											</div>
 										</div>
 									</li>
@@ -246,9 +251,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check3" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/assets/avatars/</code> <span class="badge badge-light border">optional</span>
+												<code>/public/assets/avatars/</code> <span class="badge badge-light border">optional</span>
 												<div class="text-muted small">Stores user avatar images. Only required if users upload a profile picture.</div>
-												<div id="check3-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/avatars</code></div>
+												<div id="check3-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 /public/assets/avatars</code></div>
 											</div>
 										</div>
 									</li>
@@ -256,9 +261,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check4" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required — install/upgrade</span>
+												<code>/app/includes/libraries/csrfp/libs/</code> <span class="badge badge-secondary">required — install/upgrade</span>
 												<div class="text-muted small">Stores <code>csrfp.config.php</code> (CSRF protection token). Written once during installation.</div>
-												<div id="check4-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/libraries/csrfp/libs</code></div>
+												<div id="check4-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 /app/includes/libraries/csrfp/libs/</code></div>
 											</div>
 										</div>
 									</li>
@@ -266,9 +271,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check6" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required — runtime</span>
+												<code>/app/includes/libraries/csrfp/log/</code> <span class="badge badge-secondary">required — runtime</span>
 												<div class="text-muted small">Receives CSRF protection audit log entries during normal operation.</div>
-												<div id="check6-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/includes/libraries/csrfp/log</code></div>
+												<div id="check6-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 /app/includes/libraries/csrfp/log</code></div>
 											</div>
 										</div>
 									</li>
@@ -276,9 +281,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check7" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/files/</code> <span class="badge badge-secondary">required — runtime</span>
+												<code>/storage/files/</code> <span class="badge badge-secondary">required — runtime</span>
 												<div class="text-muted small">Stores background task trigger and lock files, exported backups, and restore logs.</div>
-												<div id="check7-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/files</code></div>
+												<div id="check7-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 /storage/files</code></div>
 											</div>
 										</div>
 									</li>
@@ -286,9 +291,9 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										<div class="d-flex align-items-start">
 											<span id="check8" style="min-width:20px" class="mr-2 mt-1"></span>
 											<div>
-												<code>/upload/</code> <span class="badge badge-light border">optional</span>
+												<code>/storage/upload/</code> <span class="badge badge-light border">optional</span>
 												<div class="text-muted small">Stores encrypted file attachments uploaded by users. Only required if the file attachment feature is enabled.</div>
-												<div id="check8-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 &lt;teampass&gt;/upload</code></div>
+												<div id="check8-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench mr-1"></i>Fix: <code>chmod 0750 /storage/upload</code></div>
 											</div>
 										</div>
 									</li>
@@ -496,18 +501,18 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 										</div>
 									</div>
 									
-									<div class="alert alert-light mt-2">
-										<i><i class="fa-solid fa-circle-exclamation"></i> Please note that first page may be longer to load. Install files and folders will be deleted for security purpose.
-										<br>
-										In case warning "Install folder has to be removed!" is shown while login, this operation has failed and requires to be done manually.</i>
+									<div class="alert alert-warning mt-2">
+										<i><i class="fa-solid fa-circle-exclamation"></i> For security purposes, the <code>install</code> directory will be deleted when you click the button below and the page will refresh.</i>
 									</div>
-									
+
 									<div class="alert alert-info mt-3">
 										For news, help and information, please visit <a href="https://teampass.net" target="_blank">TeamPass website</a>.
 									</div>
-									
+
 									<div class="d-grid gap-2 col-6 mx-auto mt-5">
-										<a class="btn btn-primary" href="../index.php"><i class="fa-solid fa-up-right-from-square"></i> Move to Teampass home page</a>
+										<button class="btn btn-primary" id="btn_go_home" onclick="cleanupAndRedirect('../index.php')">
+											<i class="fa-solid fa-up-right-from-square"></i> Continue
+										</button>
 									</div>
 
 								</div>
@@ -546,7 +551,7 @@ $csrf_token = $superGlobal->get('csrf_token', 'SESSION');
 
 <script type="text/javascript" src="../plugins/jquery/jquery.min.js"></script>
 <script type="text/javascript" src="../plugins/jqueryUI/jquery-ui.min.js"></script>
-<script type="text/javascript" src="../includes/js/CreateRandomString.js"></script>
+<script type="text/javascript" src="../assets/js/CreateRandomString.js"></script>
 <script type="text/javascript" src="js/aes.min.js"></script>
 <script type="text/javascript" src="../plugins/alertifyjs/alertify.min.js"></script>
 <script type="text/javascript" src="../plugins/popper/umd/popper.min.js"></script>

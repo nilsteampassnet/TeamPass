@@ -16,14 +16,12 @@ use Symfony\Component\DomCrawler\Crawler;
 
 final class CrawlerAnySelectorTextContains extends Constraint
 {
-    private string $selector;
-    private string $expectedText;
     private bool $hasNode = false;
 
-    public function __construct(string $selector, string $expectedText)
-    {
-        $this->selector = $selector;
-        $this->expectedText = $expectedText;
+    public function __construct(
+        private string $selector,
+        private string $expectedText,
+    ) {
     }
 
     public function toString(): string
@@ -50,10 +48,8 @@ final class CrawlerAnySelectorTextContains extends Constraint
 
         $this->hasNode = true;
 
-        $nodes = $other->each(fn (Crawler $node) => $node->text(null, true));
-        $matches = array_filter($nodes, function (string $node): bool {
-            return str_contains($node, $this->expectedText);
-        });
+        $nodes = $other->each(static fn (Crawler $node) => $node->text(null, true));
+        $matches = array_filter($nodes, fn (string $node): bool => str_contains($node, $this->expectedText));
 
         return 0 < \count($matches);
     }

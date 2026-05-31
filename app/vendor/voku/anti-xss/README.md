@@ -33,6 +33,17 @@ accounted for roughly 84% of all security vulnerabilities documented by Symantec
 
 6) TEST THIS TOOL -> [Zed Attack Proxy (ZAP)](https://github.com/zaproxy/zaproxy)
 
+### Disable automatic encoding changes
+
+This package depends on `voku/portable-utf8`, which sets `default_charset` to `UTF-8` via `ini_set()` during autoloading.
+
+If you need to prevent this behavior, define the following constant **before** loading the Composer autoloader:
+
+```php
+define('PORTABLE_UTF8__DISABLE_AUTO_ENCODING', true);
+require_once __DIR__ . '/vendor/autoload.php';
+```
+
 ### Install via "composer require"
 ```shell
 composer require voku/anti-xss
@@ -154,18 +165,24 @@ composer install
 </td><td><a href="#addneverallowedoneventsafterwardsstring-strings-this">addNeverAllowedOnEventsAfterwards</a>
 </td><td><a href="#addneverallowedregexstring-strings-this">addNeverAllowedRegex</a>
 </td><td><a href="#addneverallowedstrafterwardsstring-strings-this">addNeverAllowedStrAfterwards</a>
-</td></tr><tr><td><a href="#isxssfound-boolnull">isXssFound</a>
+</td></tr><tr><td><a href="#addnaughtyjavascriptpatterns-strings-this">addNaughtyJavascriptPatterns</a>
+</td><td><a href="#isxssfound-boolnull">isXssFound</a>
 </td><td><a href="#removedonotclosehtmltagsstring-strings-this">removeDoNotCloseHtmlTags</a>
 </td><td><a href="#removeevilattributesstring-strings-this">removeEvilAttributes</a>
-</td><td><a href="#removeevilhtmltagsstring-strings-this">removeEvilHtmlTags</a>
-</td></tr><tr><td><a href="#removeneverallowedcallstringsstring-strings-this">removeNeverAllowedCallStrings</a>
+</td></tr><tr><td><a href="#removeevilhtmltagsstring-strings-this">removeEvilHtmlTags</a>
+</td><td><a href="#removeneverallowedcallstringsstring-strings-this">removeNeverAllowedCallStrings</a>
 </td><td><a href="#removeneverallowedjscallbackregexstring-strings-this">removeNeverAllowedJsCallbackRegex</a>
 </td><td><a href="#removeneverallowedoneventsafterwardsstring-strings-this">removeNeverAllowedOnEventsAfterwards</a>
-</td><td><a href="#removeneverallowedregexstring-strings-this">removeNeverAllowedRegex</a>
-</td></tr><tr><td><a href="#removeneverallowedstrafterwardsstring-strings-this">removeNeverAllowedStrAfterwards</a>
+</td></tr><tr><td><a href="#removeneverallowedregexstring-strings-this">removeNeverAllowedRegex</a>
+</td><td><a href="#removeneverallowedstrafterwardsstring-strings-this">removeNeverAllowedStrAfterwards</a>
+</td><td><a href="#setkeeppreandcodetagcontentbool-bool-this">setKeepPreAndCodeTagContent</a>
 </td><td><a href="#setreplacementstring-string-this">setReplacement</a>
 </td><td><a href="#setstripe4bytecharsbool-bool-this">setStripe4byteChars</a>
-</td><td><a href="#xss_cleanstringstring-str-stringstring">xss_clean</a>
+</td></tr><tr><td><a href="#xss_cleanstringstring-str-stringstring">xss_clean</a>
+</td><td>
+</td><td>
+</td><td>
+</td><td>
 </td></tr></table>
 
 ## addDoNotCloseHtmlTags(string[] $strings): $this
@@ -255,6 +272,18 @@ Add some strings to the "_never_allowed_regex"-array.
 ## addNeverAllowedStrAfterwards(string[] $strings): $this
 <a href="#voku-php-readme-class-methods">↑</a>
 Add some strings to the "_never_allowed_str_afterwards"-array.
+
+**Parameters:**
+- `string[] $strings`
+
+**Return:**
+- `$this`
+
+--------
+
+## addNaughtyJavascriptPatterns(string[] $strings): $this
+<a href="#voku-php-readme-class-methods">↑</a>
+Add some strings to the "_naughty_javascript_patterns"-array.
 
 **Parameters:**
 - `string[] $strings`
@@ -418,6 +447,23 @@ Set the replacement-string for not allowed strings.
 
 **Parameters:**
 - `string $string`
+
+**Return:**
+- `$this`
+
+--------
+
+## setKeepPreAndCodeTagContent(bool $bool): $this
+<a href="#voku-php-readme-class-methods">↑</a>
+Set the option to preserve content inside "pre" and "code" tags.
+
+<p>
+<br />
+WARNING: Enable this only if you explicitly want literal code-like text in "pre" / "code" blocks to remain untouched.
+</p>
+
+**Parameters:**
+- `bool $bool`
 
 **Return:**
 - `$this`

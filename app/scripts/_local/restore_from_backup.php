@@ -9,7 +9,7 @@
  *   4. REPORT – Summary
  *
  * Usage:
- *   php scripts/restore_from_backup.php [--dry-run] [--help]
+ *   php app/scripts/_local/restore_from_backup.php [--dry-run] [--help]
  *
  * @file      restore_from_backup.php
  * @author    Nils Laumaillé (nils@teampass.net)
@@ -23,10 +23,10 @@ if (php_sapi_name() !== 'cli') {
     die("This script must be run from the command line.\n");
 }
 
-$rootPath = dirname(__DIR__);
+$rootPath = dirname(__DIR__, 3);
 require_once $rootPath . '/app/config/settings.php';
 require_once $rootPath . '/app/config/include.php';
-require_once $rootPath . '/sources/main.functions.php';
+require_once $rootPath . '/app/sources/main.functions.php';
 loadClasses('DB');
 
 // ─── CLI Helpers ────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ if (isset($opts['help'])) {
 ═══════════════════════════════════════════════════════════
 
 Usage:
-  php scripts/restore_from_backup.php [options]
+  php app/scripts/_local/restore_from_backup.php [options]
 
 Options:
   --dry-run           Simulate only, no database changes

@@ -3876,16 +3876,33 @@ break;
                 break;
             }
             
-            // Restore user
+            // Restore user and give the account a fresh inactivity baseline.
+            $now = time();
             DB::update(
                 prefixTable('users'),
                 array(
                     'login' => $originalLogin,
                     'deleted_at' => null,
                     'disabled' => 0,
+                    'last_connexion' => $now,
+                    'timestamp' => $now,
+                    'updated_at' => $now,
+                    'inactivity_warned_at' => null,
+                    'inactivity_action_at' => null,
+                    'inactivity_action' => null,
+                    'inactivity_no_email' => 0,
                 ),
                 'id = %i',
                 $userId
+            );
+
+            logEvents(
+                $SETTINGS,
+                'user_mngt',
+                'at_restored',
+                (string) $session->get('user-id'),
+                $session->get('user-login'),
+                (string) $userId
             );
             
             echo prepareExchangedData(

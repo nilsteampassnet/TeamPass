@@ -34,26 +34,19 @@ class ItemController extends BaseController
      * Get user's private key from database
      *
      * Retrieves the user's private key by decrypting it from the database.
-     * The private key is stored ENCRYPTED in the database and is decrypted
-     * using the session_key from the JWT token.
+     * The AES key used for decryption (session_aes_key) is stored server-side in
+     * teampass_api and is never transmitted in the JWT.
      *
-     * @param array $userData User data from JWT token (must include id, key_tempo, and session_key)
+     * @param array $userData User data from JWT token (must include id and key_tempo)
      * @return string|null Decrypted private key or null if not found/invalid session
      */
     private function getUserPrivateKey(array $userData): ?string
     {
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
 
-        // Verify session_key exists in JWT payload
-        if (!isset($userData['session_key']) || empty($userData['session_key'])) {
-            error_log('getUserPrivateKey: Missing session_key in JWT token for user ID ' . $userData['id']);
-            return null;
-        }
-
         $userKeys = get_user_keys(
             (int) $userData['id'],
-            (string) $userData['key_tempo'],
-            (string) $userData['session_key'] // Session key from JWT for decryption
+            (string) $userData['key_tempo']
         );
 
         if ($userKeys === null) {
@@ -86,6 +79,9 @@ class ItemController extends BaseController
             } else {
                 $userData['folders_list'] = [];
             }
+            $folderAccessModel = new FolderAccessModel();
+            // folders_list is already filtered by index.php — normalize to int[] only
+            $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
             // SQL where clause with folders list
             if (isset($arrQueryStringParams['folders']) === true) {
@@ -105,6 +101,7 @@ class ItemController extends BaseController
                         json_encode(['error' => 'Folders are mandatory']),
                         ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
                     );
+                    return;
                 }
             } else {
                 // Send error
@@ -112,13 +109,13 @@ class ItemController extends BaseController
                     json_encode(['error' => 'Folders are mandatory']),
                     ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
                 );
+                return;
             }
 
-            // SQL LIMIT
-            $intLimit = 0;
-            if (isset($arrQueryStringParams['limit']) === true) {
-                $intLimit = $arrQueryStringParams['limit'];
-            }
+            // SQL LIMIT (hard cap at 500 to prevent resource exhaustion)
+            $intLimit = isset($arrQueryStringParams['limit'])
+                ? min(max(0, (int) $arrQueryStringParams['limit']), 500)
+                : 0;
 
             // send query
             try {
@@ -174,12 +171,20 @@ class ItemController extends BaseController
             && isset($arrQueryStringParams['tags']) === true
             && isset($arrQueryStringParams['anyone_can_modify']) === true
         ) {
-            //
-            if (in_array($arrQueryStringParams['folder_id'], $userData['folders_list']) === false && $userData['user_can_create_root_folder'] === 0) {
+            $folderAccessModel = new FolderAccessModel();
+            $folderId = (int) $arrQueryStringParams['folder_id'];
+
+            if ($folderAccessModel->canUseFolder($userData, $folderId, true) === false) {
                 return [
                     'error' => true,
                     'strErrorDesc' => 'User is not allowed in this folder',
                     'strErrorHeader' => 'HTTP/1.1 401 Unauthorized',
+                ];
+            } elseif ($folderAccessModel->isFolderReadOnlyForUser($folderId, (int) ($userData['id'] ?? 0))) {
+                return [
+                    'error' => true,
+                    'strErrorDesc' => 'Access denied: folder is read-only',
+                    'strErrorHeader' => 'HTTP/1.1 403 Forbidden',
                 ];
             } else if (empty($arrQueryStringParams['label']) === true) {
                 return [
@@ -225,6 +230,9 @@ class ItemController extends BaseController
                 } else {
                     $userData['folders_list'] = [];
                 }
+                $folderAccessModel = new FolderAccessModel();
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
                 // get parameters
                 $arrQueryStringParams = $this->getQueryStringParams();
@@ -252,7 +260,7 @@ class ItemController extends BaseController
                             'icon' => (string) ($arrQueryStringParams['icon'] ?? ''),
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
-                            'totp' => (string) ($userData['totp'] ?? ''),
+                            'totp' => (string) ($arrQueryStringParams['totp'] ?? ''),
                         ];
 
                         // launch
@@ -264,9 +272,8 @@ class ItemController extends BaseController
                     }
                 
                 } else {
-                    // Gérer le cas où les paramètres ne sont pas un tableau
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {
@@ -306,14 +313,18 @@ class ItemController extends BaseController
         $sqlLimit = 0;
         $responseData = '';
         $strErrorHeader = '';
-        // Sanitize folder/item IDs from JWT claims as strict integers before SQL interpolation
-        $safeFolders = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['folders_list'])))) ?: '0';
+        // Sanitize folder/item IDs — already filtered by index.php, normalize to strict integers
+        $folderAccessModel = new FolderAccessModel();
+        $safeFolders = implode(
+            ',',
+            $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
+        ) ?: '0';
         $sql_constraint = ' AND (i.id_tree IN (' . $safeFolders . ')';
         if (!empty($userData['restricted_items_list'])) {
             $safeRestricted = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['restricted_items_list'])))) ?: '0';
             $sql_constraint .= ' OR i.id IN (' . $safeRestricted . ')';
         }
-        $sql_constraint .= ')';
+        $sql_constraint .= ')' . $folderAccessModel->getItemFolderSqlConstraint('i.id_tree', (int) $userData['id']);
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
@@ -327,15 +338,25 @@ class ItemController extends BaseController
             } else if (isset($arrQueryStringParams['label']) === true) {
                 // build sql where clause by LABEL
                 $isLikeLabel = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
-                $escapedLabel = $isLikeLabel
-                    ? DB::escape('%' . $arrQueryStringParams['label'] . '%')
-                    : DB::escape($arrQueryStringParams['label']);
+                if ($isLikeLabel) {
+                    $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['label']);
+                    $escapedLabel = DB::escape('%' . $likeVal . '%');
+                } else {
+                    $escapedLabel = DB::escape($arrQueryStringParams['label']);
+                }
                 $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE ' : '= ') . $escapedLabel . $sql_constraint;
-                $sqlLimit = isset($arrQueryStringParams['limit']) === true && (int) $arrQueryStringParams['limit'] > 0 ? $arrQueryStringParams['limit'] : 50;   // let's limit to 50 by default
+                $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
+                    ? min((int) $arrQueryStringParams['limit'], 500)
+                    : 50;
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
                 $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
-                $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                if ($isLikeDesc) {
+                    $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['description']);
+                    $escapedDesc = DB::escape('%' . $likeVal . '%');
+                } else {
+                    $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                }
                 $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE ' : '= ') . $escapedDesc . $sql_constraint;
             } else {
                 // Send error
@@ -343,6 +364,7 @@ class ItemController extends BaseController
                     json_encode(['error' => 'Item id, label or description is mandatory']),
                     ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
                 );
+                return;
             }
 
             // send query
@@ -416,17 +438,22 @@ class ItemController extends BaseController
                 $userData['folders_list'] = [];
             }*/
 
-            // Build SQL constraint for accessible folders — sanitize JWT claims as strict integers
-            $safeFoldersFbu = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['folders_list'])))) ?: '0';
+            // Build SQL constraint for accessible folders — already filtered by index.php, normalize to strict integers
+            $folderAccessModel = new FolderAccessModel();
+            $safeFoldersFbu = implode(
+                ',',
+                $folderAccessModel->normalizeFolderIds($userData['folders_list'] ?? '')
+            ) ?: '0';
             $sql_constraint = ' AND (i.id_tree IN (' . $safeFoldersFbu . ')';
             if (!empty($userData['restricted_items_list'])) {
                 $safeRestrictedFbu = implode(',', array_filter(array_map('intval', explode(',', (string) $userData['restricted_items_list'])))) ?: '0';
                 $sql_constraint .= ' OR i.id IN (' . $safeRestrictedFbu . ')';
             }
-            $sql_constraint .= ')';
+            $sql_constraint .= ')' . $folderAccessModel->getItemFolderSqlConstraint('i.id_tree', (int) $userData['id']);
 
-            // Decode URL if needed
+            // Decode URL and escape LIKE metacharacters to prevent wildcard injection
             $searchUrl = urldecode($arrQueryStringParams['url']);
+            $likeUrl = str_replace(['%', '_'], ['\\%', '\\_'], $searchUrl);
 
             try {
                 // Get user's private key from database
@@ -444,7 +471,7 @@ class ItemController extends BaseController
                         WHERE i.url LIKE %s" . $sql_constraint . "
                             AND i.deleted_at IS NULL
                         ORDER BY i.label ASC",
-                        "%".$searchUrl."%"
+                        "%" . $likeUrl . "%"
                     );
 
                     // Fetch all sharekeys for matched items in a single query (avoids N+1)
@@ -557,15 +584,12 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Item not found';
                     $strErrorHeader = 'HTTP/1.1 404 Not Found';
                 } else {
-                    // Check if user has access to the folder
-                    $userFolders = !empty($userData['folders_list']) ? explode(',', $userData['folders_list']) : [];
-                    $hasAccess = in_array((string) $itemInfo['id_tree'], $userFolders, true);
-
-                    // Also check restricted items if applicable
-                    if (!$hasAccess && !empty($userData['restricted_items_list'])) {
-                        $restrictedItems = explode(',', $userData['restricted_items_list']);
-                        $hasAccess = in_array((string) $itemId, $restrictedItems, true);
-                    }
+                    $folderAccessModel = new FolderAccessModel();
+                    $hasAccess = $folderAccessModel->canAccessItemInFolder(
+                        $userData,
+                        (int) $itemInfo['id_tree'],
+                        $itemId
+                    );
 
                     if (!$hasAccess) {
                         $strErrorDesc = 'Access denied to this item';
@@ -701,7 +725,7 @@ class ItemController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = $responseData = '';
 
-        if (strtoupper($requestMethod) === 'PUT' || strtoupper($requestMethod) === 'POST') {
+        if (strtoupper($requestMethod) === 'PUT') {
             // Check if user is allowed to update items
             if ((int) $userData['allowed_to_update'] !== 1) {
                 $strErrorDesc = 'User is not allowed to update items';
@@ -713,6 +737,9 @@ class ItemController extends BaseController
                 } else {
                     $userData['folders_list'] = [];
                 }
+                $folderAccessModel = new FolderAccessModel();
+                // folders_list is already filtered by index.php — normalize to int[] only
+                $userData['folders_list'] = $folderAccessModel->normalizeFolderIds($userData['folders_list']);
 
                 // Get parameters
                 $arrQueryStringParams = $this->getQueryStringParams();
@@ -737,17 +764,17 @@ class ItemController extends BaseController
                                 $strErrorDesc = 'Item not found';
                                 $strErrorHeader = 'HTTP/1.1 404 Not Found';
                             } else {
-                                // Check if user has access to the folder
-                                $hasAccess = in_array((string) $itemInfo['id_tree'], $userData['folders_list'], true);
-
-                                // Also check restricted items if applicable
-                                if (!$hasAccess && !empty($userData['restricted_items_list'])) {
-                                    $restrictedItems = explode(',', $userData['restricted_items_list']);
-                                    $hasAccess = in_array((string) $itemId, $restrictedItems, true);
-                                }
+                                $hasAccess = $folderAccessModel->canAccessItemInFolder(
+                                    $userData,
+                                    (int) $itemInfo['id_tree'],
+                                    $itemId
+                                );
 
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
+                                    $strErrorDesc = 'Access denied: folder is read-only';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
@@ -790,13 +817,14 @@ class ItemController extends BaseController
                                 }
                             }
                         } catch (Error $e) {
-                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            error_log('[API] ItemController error: ' . $e->getMessage());
+                            $strErrorDesc = 'An internal error occurred. Please contact support.';
                             $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                         }
                     }
                 } else {
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {
@@ -862,18 +890,18 @@ class ItemController extends BaseController
                                 $strErrorDesc = 'Item not found';
                                 $strErrorHeader = 'HTTP/1.1 404 Not Found';
                             } else {
-                                // Check if user has access to the folder
-                                $userFolders = explode(',', $userData['folders_list']);
-                                $hasAccess = in_array((string) $itemInfo['id_tree'], $userFolders, true);
-
-                                // Also check restricted items if applicable
-                                if (!$hasAccess && !empty($userData['restricted_items_list'])) {
-                                    $restrictedItems = explode(',', $userData['restricted_items_list']);
-                                    $hasAccess = in_array((string) $itemId, $restrictedItems, true);
-                                }
+                                $folderAccessModel = new FolderAccessModel();
+                                $hasAccess = $folderAccessModel->canAccessItemInFolder(
+                                    $userData,
+                                    (int) $itemInfo['id_tree'],
+                                    $itemId
+                                );
 
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
+                                    $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
+                                    $strErrorDesc = 'Access denied: folder is read-only';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // delete the item
@@ -892,13 +920,14 @@ class ItemController extends BaseController
                                 }
                             }
                         } catch (Error $e) {
-                            $strErrorDesc = $e->getMessage() . '. Something went wrong! Please contact support.';
+                            error_log('[API] ItemController error: ' . $e->getMessage());
+                            $strErrorDesc = 'An internal error occurred. Please contact support.';
                             $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                         }
                     }
                 } else {
                     $strErrorDesc = 'Data not consistent';
-                    $strErrorHeader = 'HTTP/1.1 400 Bad Request - Expected array, received ' . gettype($arrQueryStringParams);
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                 }
             }
         } else {

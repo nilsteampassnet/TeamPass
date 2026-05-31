@@ -35,7 +35,7 @@ class MiscController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
 
-        if (strtoupper($requestMethod) === 'POST') {
+        if (in_array(strtoupper($requestMethod), ['GET', 'POST'], true)) {
             require API_ROOT_PATH . "/Model/MiscModel.php";
             $miscModel = new MiscModel();
             $extensionSettings = $miscModel->getBrowserExtensionSettings();
@@ -47,8 +47,8 @@ class MiscController extends BaseController
             }
 
         } else {
-            $strErrorDesc = 'Method '.$requestMethod.' not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
         }
 
         // send output

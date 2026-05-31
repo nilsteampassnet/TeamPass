@@ -48,6 +48,7 @@ require API_ROOT_PATH . "/Controller/Api/BaseController.php";
 require API_ROOT_PATH . "/Model/UserModel.php";
 require API_ROOT_PATH . "/Model/ItemModel.php";
 require API_ROOT_PATH . "/Model/FolderModel.php";
+require API_ROOT_PATH . "/Model/FolderAccessModel.php";
 
 /**
  * Launch expected action for ITEM
@@ -61,13 +62,13 @@ function itemAction(array $actions, array $userData): void
     // Check if user has rights to perform the action
     if (checkUSerCRUDRights($userData, $actions[0]) === false) {
         errorHdl(
-            'HTTP/1.1 404 Not Found',
-            json_encode(['error' => 'API requested action is not allowed for this user'])
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'Access denied: insufficient permissions for this action'])
         );
         return;
     }
     // Perform the action
-    require API_ROOT_PATH . "/Controller/Api/ItemController.php";    
+    require API_ROOT_PATH . "/Controller/Api/ItemController.php";
     $objFeedController = new ItemController();
     $strMethodName = $actions[0] . 'Action';
     $objFeedController->{$strMethodName}($userData);
@@ -85,8 +86,8 @@ function folderAction(array $actions, array $userData): void
     // Check if user has rights to perform the action
     if (checkUSerCRUDRights($userData, $actions[0]) === false) {
         errorHdl(
-            'HTTP/1.1 404 Not Found',
-            json_encode(['error' => 'API requested action is not allowed for this user'])
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'Access denied: insufficient permissions for this action'])
         );
         return;
     }
@@ -136,7 +137,7 @@ function apiIsEnabled(): string
             [
                 'error' => true,
                 'error_message' => 'API usage is not allowed',
-                'error_header' => 'HTTP/1.1 404 Not Found',
+                'error_header' => 'HTTP/1.1 503 Service Unavailable',
             ]
         );
     }
@@ -153,23 +154,27 @@ function verifyAuth(): string
     include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
-    if (empty($bearer_token) === false && is_jwt_valid($bearer_token) === true) {
-        return json_encode(
-            [
-                'error' => false,
-                'error_message' => '',
-                'error_header' => '',
-            ]
-        );
-    } else {
-        return json_encode(
-            [
-                'error' => true,
-                'error_message' => 'Access denied',
-                'error_header' => 'HTTP/1.1 404 Not Found',
-            ]
-        );
+    if (empty($bearer_token) === true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Missing Authorization header',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
     }
+
+    if (is_jwt_valid($bearer_token) !== true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Invalid or expired token',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
+    }
+
+    return json_encode([
+        'error' => false,
+        'error_message' => '',
+        'error_header' => '',
+    ]);
 }
 
 
@@ -183,24 +188,20 @@ function getDataFromToken(): string
     include_once API_ROOT_PATH . '/inc/jwt_utils.php';
     $bearer_token = get_bearer_token();
 
-    if (empty($bearer_token) === false) {
-        return json_encode(
-            [
-                'data' => get_bearer_data($bearer_token),
-                'error' => false,
-                'error_message' => '',
-                'error_header' => '',
-            ]
-        );
-    } else {
-        return json_encode(
-            [
-                'error' => true,
-                'error_message' => 'Access denied2',
-                'error_header' => 'HTTP/1.1 404 Not Found',
-            ]
-        );
+    if (empty($bearer_token) === true) {
+        return json_encode([
+            'error' => true,
+            'error_message' => 'Missing Authorization header',
+            'error_header' => 'HTTP/1.1 401 Unauthorized',
+        ]);
     }
+
+    return json_encode([
+        'data' => get_bearer_data($bearer_token),
+        'error' => false,
+        'error_message' => '',
+        'error_header' => '',
+    ]);
 }
 
 

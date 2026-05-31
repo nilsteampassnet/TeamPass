@@ -27,8 +27,8 @@
  */
 
 define('TP_VERSION', '3.2.0');
-define("UPGRADE_MIN_DATE", "1776494991");
-define('TP_VERSION_MINOR', '0');
+define("UPGRADE_MIN_DATE", "1779861411");
+define('TP_VERSION_MINOR', '1');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -45,7 +45,7 @@ define('WIP', (bool) getenv('TEAMPASS_DEBUG'));
 define('UPGRADE_SEND_EMAILS', true);
 define('KEY_LENGTH', 16);
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
-define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 600);  // Lock expires after 5 minutes without heartbeat renewal
+define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 300);  // Lock expires after 5 minutes without heartbeat renewal
 define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
@@ -94,7 +94,7 @@ define('TP_PW_STRENGTH_2', 20);
 define('TP_PW_STRENGTH_3', 38);
 define('TP_PW_STRENGTH_4', 48);
 define('TP_PW_STRENGTH_5', 60);
-define('MIN_PHP_VERSION', '8.1');
+define('MIN_PHP_VERSION', '8.2');
 define('MIN_MYSQL_VERSION', '8.0.13');
 define('MIN_MARIADB_VERSION', '10.2.1');
 

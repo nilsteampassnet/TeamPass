@@ -50,3 +50,26 @@ On top of screen, an orange box will show you the process progress. Once finishe
    ![1](../_media/tp3_keys_3.png)
 
 > 💡 During this process, you can change page and even leave Teampass.
+
+---
+
+## Local password recovery
+
+> This feature must be enabled by an administrator (`enable_local_password_recovery` setting).
+
+Local password recovery allows a user to regain access to their account through the **Forgot password** link on the login page, without contacting an administrator.
+
+### How it works
+
+When a user sets or changes their login password, Teampass derives a recovery key from that password using PBKDF2. If the user later forgets their password, the recovery flow uses this derivation to reconstruct the private key and restore access.
+
+> 🔔 Local password recovery is only available if the user's private key was successfully derived when the password was last set. If the key was never derived (e.g. for accounts created before this feature was enabled), the recovery link may not be available.
+
+### Enabling local password recovery (admin)
+
+1. Go to **Admin → Settings → Security**.
+2. Enable **Enable local password recovery**.
+3. Optionally adjust the **PBKDF2 iterations** setting (higher values increase key derivation cost; default is suitable for most deployments).
+4. Click **Save**.
+
+Once enabled, the **Forgot password?** link is shown on the login page for standard accounts. LDAP and OAuth2 accounts are excluded — password changes for those accounts must go through the identity provider.

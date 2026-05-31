@@ -1,11 +1,11 @@
 # Includes directory — disable directory listing.
-# Only logout.php and language/*.txt files should be accessible via HTTP.
+# Only logout.php, login.oauth2.php and language/*.txt files should be accessible via HTTP.
 Options -Indexes
 
-# Block direct PHP execution except logout.php
+# Block direct PHP execution except the whitelisted browser-redirect entry points
 <FilesMatch "\.php$">
     Require all denied
 </FilesMatch>
-<FilesMatch "^logout\.php$">
+<FilesMatch "^(logout|login\.oauth2)\.php$">
     Require all granted
 </FilesMatch>

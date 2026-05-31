@@ -176,7 +176,7 @@ if (null !== $post_type) {
                             ) {
                                 // Run query
                                 $dataItem = DB::queryFirstRow(
-                                    'SELECT i.pw AS pw, s.share_key AS share_key
+                                    'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
@@ -189,13 +189,14 @@ if (null !== $post_type) {
                                     // No share key found OR item has no password
                                     $pw = '';
                                 } else {
-                                    $pw = base64_decode(doDataDecryption(
+                                    $pw = teampassDecryptPasswordValue(
                                         $dataItem['pw'],
                                         decryptUserObjectKey(
                                             $dataItem['share_key'],
                                             $session->get('user-private_key')
-                                        )
-                                    ));
+                                        ),
+                                        (int) ($dataItem['pw_len'] ?? 0)
+                                    );
                                 }
 
                                 // get KBs
@@ -402,7 +403,7 @@ if (null !== $post_type) {
                         } else {
                             // Run query
                             $dataItem = DB::queryFirstRow(
-                                'SELECT i.pw AS pw, s.share_key AS share_key
+                                'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
@@ -415,13 +416,14 @@ if (null !== $post_type) {
                                 // No share key found OR password is empty
                                 $pw = '';
                             } else {
-                                $pw = base64_decode(doDataDecryption(
+                                $pw = teampassDecryptPasswordValue(
                                     $dataItem['pw'],
                                     decryptUserObjectKey(
                                         $dataItem['share_key'],
                                         $session->get('user-private_key')
-                                    )
-                                ));
+                                    ),
+                                    (int) ($dataItem['pw_len'] ?? 0)
+                                );
                             }
 
                             // get KBs
