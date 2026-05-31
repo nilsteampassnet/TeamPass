@@ -299,6 +299,16 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_cors_origins', '')"
 );
 
+// Add LDAP login group restriction settings
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_dn', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_mode', 'group')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

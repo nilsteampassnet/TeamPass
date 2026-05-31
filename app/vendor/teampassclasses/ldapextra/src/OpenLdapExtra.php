@@ -270,6 +270,33 @@ class OpenLdapExtra extends BaseGroup
     }
 
     /**
+     * Check whether a user is a member of a specific LDAP group using the user's memberOf attribute.
+     * This is the user-centric alternative to isUserInAllowedGroup(). On OpenLDAP this attribute
+     * is only present when the memberof overlay is enabled; otherwise use group-centric mode instead.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param array $userEntry LDAP user entry array that must contain the 'memberof' key
+     * @return bool True if the user's memberof list contains $groupDn, or if $groupDn is empty
+     */
+    public function isUserInAllowedGroupByMemberOf(string $groupDn, array $userEntry): bool
+    {
+        if (trim($groupDn) === '') {
+            return true;
+        }
+        $memberOf = $userEntry['memberof'] ?? [];
+        if (empty($memberOf)) {
+            error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
+            return false;
+        }
+        foreach ($memberOf as $key => $dn) {
+            if ($key !== 'count' && strcasecmp((string) $dn, $groupDn) === 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check whether a user is a member of a specific LDAP group identified by its full DN.
      * Uses a scope=base LDAP read so the group can reside outside the configured users base DN.
      *

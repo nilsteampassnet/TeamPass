@@ -660,6 +660,8 @@ class DatabaseInstaller
             array('admin', 'items_ops_job_frequency', '1'),
             array('admin', 'enable_refresh_task_last_execution', '1'),
             array('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames'),
+            array('admin', 'ldap_allowed_login_group_dn', ''),
+            array('admin', 'ldap_allowed_login_group_mode', 'group'),
             array('admin', 'pwd_default_length', '14'),
             array('admin', 'tasks_log_retention_delay', '30'),
             array('admin', 'oauth2_enabled', '0'),

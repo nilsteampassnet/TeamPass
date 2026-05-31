@@ -2221,5 +2221,9 @@ return array(
     'settings_api_cors_origins_tip' => 'Laissez vide pour autoriser toutes les origines (recommandé pour la plupart des configurations — le jeton JWT constitue la véritable protection). Saisissez une liste d’origines séparées par des virgules pour restreindre l’accès à des sources spécifiques uniquement, par exemple : chrome-extension://abc123, moz-extension://xyz789.',
     'bck_scheduled_output_dir_invalid' => 'Dossier de sauvegarde invalide. Utilisez le dossier storage/backups de TeamPass ou un dossier situé dans le dossier Fichiers configuré.',
     'item_viewed_by' => 'Consulté par',
+    'settings_ldap_allowed_login_group_mode' => 'Mode de vérification de l’appartenance au groupe',
+    'settings_ldap_allowed_login_group_mode_tip' => 'Méthode utilisée pour vérifier qu’un utilisateur appartient au groupe autorisé. "Centré sur le groupe" lit directement l’entrée du groupe et fonctionne même si le groupe est en dehors du DN de base des utilisateurs (recommandé pour OpenLDAP / groupOfUniqueNames). "Attribut memberOf de l’utilisateur" lit l’attribut memberOf de l’utilisateur (Active Directory uniquement).',
+    'settings_ldap_allowed_login_group_mode_group' => 'Centré sur le groupe (lire les membres du groupe)',
+    'settings_ldap_allowed_login_group_mode_user' => 'Attribut memberOf de l’utilisateur (Active Directory)',
 
 );

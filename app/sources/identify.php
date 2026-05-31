@@ -1587,17 +1587,29 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
         // Check if login is restricted to a specific LDAP group
         $allowedGroupDn = trim($SETTINGS['ldap_allowed_login_group_dn'] ?? '');
         if ($allowedGroupDn !== '') {
+            $groupMode = $SETTINGS['ldap_allowed_login_group_mode'] ?? 'group';
             $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
             $userDnForCheck = $ldapHandler['type'] === 'ActiveDirectory'
                 ? (string) ($userADInfos[$dnAttribute][0] ?? $userADInfos['dn'] ?? '')
                 : (string) ($userADInfos['dn'] ?? '');
 
-            if (!$ldapHandler['handler']->isUserInAllowedGroup(
-                $allowedGroupDn,
-                $userDnForCheck,
-                $username,
-                $ldapHandler['connection']
-            )) {
+            if ($groupMode === 'user') {
+                // User-centric: check the user's own memberOf attribute (AD-native, no extra query)
+                $isMember = $ldapHandler['handler']->isUserInAllowedGroupByMemberOf(
+                    $allowedGroupDn,
+                    $userADInfos
+                );
+            } else {
+                // Group-centric (default): scope=base read on the group entry — works outside base DN
+                $isMember = $ldapHandler['handler']->isUserInAllowedGroup(
+                    $allowedGroupDn,
+                    $userDnForCheck,
+                    $username,
+                    $ldapHandler['connection']
+                );
+            }
+
+            if (!$isMember) {
                 return [
                     'error'   => true,
                     'message' => $lang->get('ldap_not_in_allowed_group'),
@@ -1678,11 +1690,13 @@ function authenticateUser(string $username, string $passwordClear, array $ldapHa
         $dnAttribute = $SETTINGS['ldap_user_dn_attribute'] ?? 'distinguishedname';
 
         // Define attributes to retrieve from LDAP
-        // These are needed for user creation and authentication
+        // These are needed for user creation and authentication.
+        // 'memberof' is included so the group-mode=user check can inspect it without a second query.
         $ldapAttributes = [
             'dn', 'mail', 'givenname', 'sn', 'cn', 'displayname',
             'samaccountname', 'userprincipalname', 'uid',
             'shadowexpire', 'accountexpires', 'useraccountcontrol',
+            'memberof',
             $userAttribute,
             $dnAttribute
         ];

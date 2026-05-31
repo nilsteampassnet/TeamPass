@@ -2222,5 +2222,9 @@ Path: %s',
     'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
     'bck_scheduled_output_dir_invalid' => 'Invalid output directory. Use TeamPass storage/backups folder or a folder inside the configured files folder.',
     'item_viewed_by' => 'Viewed by',
+    'settings_ldap_allowed_login_group_mode' => 'Group membership check mode',
+    'settings_ldap_allowed_login_group_mode_tip' => 'How to verify that a user belongs to the allowed group. "Group-centric" reads the group entry directly and works even if the group is outside the users base DN (recommended for OpenLDAP / groupOfUniqueNames). "User memberOf" reads the user’s memberOf attribute (Active Directory only).',
+    'settings_ldap_allowed_login_group_mode_group' => 'Group-centric (read group members)',
+    'settings_ldap_allowed_login_group_mode_user' => 'User memberOf (Active Directory)',
 
 );
