@@ -2213,7 +2213,7 @@ return array(
     'settings_hibp_interval_days' => 'Intervalle de re-vérification (jours)',
     'settings_hibp_interval_days_tip' => 'Nombre de jours avant qu’un mot de passe soit re-vérifié contre HaveIBeenPwned. Par défaut : 7.',
     'settings_ldap_allowed_login_group_dn' => 'Restreindre la connexion au groupe LDAP (DN)',
-    'settings_ldap_allowed_login_group_dn_tip' => 'DN complet du groupe LDAP dont les membres sont autorisés à se connecter. Laisser vide pour aucune restriction. Le groupe peut être en dehors du DN de base des utilisateurs. Exemple : cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
+    'settings_ldap_allowed_login_group_dn_tip' => 'DN complet du groupe LDAP dont les membres sont autorisés à se connecter. Laisser vide pour aucune restriction. Le groupe peut être en dehors du DN de base des utilisateurs. Exemple : cn=teampass,ou=any,ou=any1,o=any2,c=any3',
     'ldap_not_in_allowed_group' => 'Accès refusé : votre compte n’est pas dans le groupe LDAP requis.',
     'sub-folders' => 'Sous-répertoires',
     'search_results' => 'Résultats de recherche',

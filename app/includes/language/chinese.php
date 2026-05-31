@@ -2213,7 +2213,7 @@ return array(
     'settings_hibp_interval_days' => '复查间隔（天）',
     'settings_hibp_interval_days_tip' => '在HaveIBeenPwned上重新核对密码前的天数。默认值：7。',
     'settings_ldap_allowed_login_group_dn' => '将登录限制为LDAP组(DN)',
-    'settings_ldap_allowed_login_group_dn_tip' => '允许其成员登录的LDAP组的完整DN。若不设限制，请留空。该组可以位于用户base DN之外。示例：cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
+    'settings_ldap_allowed_login_group_dn_tip' => '允许其成员登录的LDAP组的完整DN。若不设限制，请留空。该组可以位于用户base DN之外。示例：cn=teampass,ou=any,ou=any1,o=any2,c=any3',
     'ldap_not_in_allowed_group' => '访问被拒绝：您的账户未加入所需的LDAP组。',
     'sub-folders' => '子文件夹',
     'search_results' => '搜索结果',
