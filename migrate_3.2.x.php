@@ -7,12 +7,14 @@
  * layout to the new 3.2.x layout (app/ / public/ / storage/).
  *
  * Usage:
- *   php migrate_3.2.x.php [--check] [--dry-run] [--web-user=www-data] [--no-color]
+ *   php migrate_3.2.x.php [--check] [--dry-run] [--web-user=www-data] [--web-group=GROUP] [--no-color]
  *
  * Options:
  *   --check            Inspect what the script will find/migrate and exit (no changes)
  *   --dry-run          Show what would be done without making any change
  *   --web-user=USER    Web server user for permission setup (default: www-data)
+ *   --web-group=GROUP  Web server group for permission setup (default: primary group of --web-user)
+ *                      Useful on systems where user and group names differ (e.g. openSUSE: wwwrun / www)
  *   --no-color         Disable ANSI color output
  *
  * @author  TeamPass
@@ -35,10 +37,11 @@ if (PHP_SAPI !== 'cli') {
 
 // Parse arguments
 $opts = parseArgs($argv);
-$DRY_RUN   = $opts['dry-run']  ?? false;
-$CHECK     = $opts['check']    ?? false;
-$WEB_USER  = $opts['web-user'] ?? 'www-data';
-$NO_COLOR  = $opts['no-color'] ?? false;
+$DRY_RUN   = $opts['dry-run']   ?? false;
+$CHECK     = $opts['check']     ?? false;
+$WEB_USER  = $opts['web-user']  ?? 'www-data';
+$WEB_GROUP = isset($opts['web-group']) ? (string) $opts['web-group'] : null;
+$NO_COLOR  = $opts['no-color']  ?? false;
 
 // ── Colour helpers ─────────────────────────────────────────────────────────────
 
@@ -886,7 +889,7 @@ function chownRecursive(string $path, int $uid, int $gid): bool
 
 function setPermissions(string $root): void
 {
-    global $DRY_RUN, $WEB_USER;
+    global $DRY_RUN, $WEB_USER, $WEB_GROUP;
 
     // Resolve web user to UID/GID so we can call posix_chown() directly.
     $pwEntry = function_exists('posix_getpwnam') ? posix_getpwnam($WEB_USER) : false;
@@ -897,6 +900,31 @@ function setPermissions(string $root): void
     } else {
         $uid = (int) $pwEntry['uid'];
         $gid = (int) $pwEntry['gid'];
+    }
+
+    // Override the group if --web-group was passed explicitly.
+    if ($WEB_GROUP !== null && $uid !== -1) {
+        $grEntry = function_exists('posix_getgrnam') ? posix_getgrnam($WEB_GROUP) : false;
+        if ($grEntry === false) {
+            warn("Cannot resolve group '$WEB_GROUP' via posix_getgrnam — chown steps skipped");
+            $uid = -1;
+            $gid = -1;
+        } else {
+            $gid = (int) $grEntry['gid'];
+        }
+    }
+
+    // Build the display label that reflects the actual user:group pair used.
+    if ($uid === -1) {
+        $ownerLabel = "{$WEB_USER}:" . ($WEB_GROUP ?? '?');
+    } elseif ($WEB_GROUP !== null) {
+        $ownerLabel = "{$WEB_USER}:{$WEB_GROUP}";
+    } else {
+        // Recover the real group name so openSUSE users see "wwwrun:www" not "wwwrun:wwwrun".
+        $resolvedGroup = (function_exists('posix_getgrgid') && $gid !== -1)
+            ? (posix_getgrgid($gid)['name'] ?? $WEB_USER)
+            : $WEB_USER;
+        $ownerLabel = "{$WEB_USER}:{$resolvedGroup}";
     }
 
     // ── Storage dirs and public/assets/avatars ────────────────────────────────
@@ -919,7 +947,7 @@ function setPermissions(string $root): void
         if ($DRY_RUN) {
             dry("Would chmod 0750 $relPath/");
             if ($uid !== -1) {
-                dry("Would chown -R {$WEB_USER}:{$WEB_USER} $relPath/");
+                dry("Would chown -R {$ownerLabel} $relPath/");
             }
             continue;
         }
@@ -934,7 +962,7 @@ function setPermissions(string $root): void
             if (!chownRecursive($dir, $uid, $gid)) {
                 warn("Could not chown {$WEB_USER}: $relPath/ — set manually if needed");
             } else {
-                ok("chown -R {$WEB_USER}:{$WEB_USER}: $relPath/");
+                ok("chown -R {$ownerLabel}: $relPath/");
             }
         }
     }
@@ -947,7 +975,7 @@ function setPermissions(string $root): void
         if ($DRY_RUN) {
             dry("Would chmod 0600 all files in secrets/");
             if ($uid !== -1) {
-                dry("Would chown -R {$WEB_USER}:{$WEB_USER} secrets/");
+                dry("Would chown -R {$ownerLabel} secrets/");
             }
             dry("Would chmod 0700 secrets/");
         } else {
@@ -967,7 +995,7 @@ function setPermissions(string $root): void
                 if (!chownRecursive($secretsDir, $uid, $gid)) {
                     warn("Could not chown {$WEB_USER}: secrets/ — set manually if needed");
                 } else {
-                    ok("chown -R {$WEB_USER}:{$WEB_USER}: secrets/");
+                    ok("chown -R {$ownerLabel}: secrets/");
                 }
             }
 
@@ -996,7 +1024,7 @@ function setPermissions(string $root): void
         $relPath = str_replace($root . '/', '', $dir);
         if ($DRY_RUN) {
             if ($uid !== -1) {
-                dry("Would chown {$WEB_USER}:{$WEB_USER} $relPath/");
+                dry("Would chown {$ownerLabel} $relPath/");
             }
             dry("Would chmod 0750 $relPath/");
             continue;
@@ -1006,7 +1034,7 @@ function setPermissions(string $root): void
             if (!function_exists('posix_chown') || !posix_chown($dir, $uid, $gid)) {
                 warn("Could not chown {$WEB_USER}: $relPath/ — set manually if needed");
             } else {
-                ok("chown {$WEB_USER}:{$WEB_USER}: $relPath/");
+                ok("chown {$ownerLabel}: $relPath/");
             }
         }
 
@@ -1022,7 +1050,7 @@ function setPermissions(string $root): void
     if (is_file($settingsFile)) {
         if ($DRY_RUN) {
             if ($uid !== -1) {
-                dry("Would chown {$WEB_USER}:{$WEB_USER} app/config/settings.php");
+                dry("Would chown {$ownerLabel} app/config/settings.php");
             }
             dry("Would chmod 0640 app/config/settings.php");
         } else {
@@ -1030,7 +1058,7 @@ function setPermissions(string $root): void
                 if (!function_exists('posix_chown') || !posix_chown($settingsFile, $uid, $gid)) {
                     warn("Could not chown {$WEB_USER}: app/config/settings.php — set manually if needed");
                 } else {
-                    ok("chown {$WEB_USER}:{$WEB_USER}: app/config/settings.php");
+                    ok("chown {$ownerLabel}: app/config/settings.php");
                 }
             }
             if (!chmod($settingsFile, 0640)) {

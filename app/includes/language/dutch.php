@@ -856,7 +856,7 @@ return array(
     'icon' => 'Pictogram',
     'icon_on_selection' => 'Pictogram bij selectie',
     'fontawesome_icon_tip' => 'U kunt een Font Awesome pictogramcode opgeven. Laat leeg voor standaard',
-    'settings_api_token_duration' => 'JWT token vervaltijd (in seconden)',
+    'settings_api_token_duration' => 'JWT token vervaltijd (in minuten)',
     'settings_api_token_duration_tip' => 'Vertraging gedurende welke het gegenereerde JWT token geldig is',
     'show_encryption_code_to_admin' => 'Dit is de versleutelde code die de gebruiker nodig heeft. Code is',
     'generate_new_otp' => 'Genereer nieuwe OTP',

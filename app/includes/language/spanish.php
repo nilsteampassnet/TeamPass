@@ -856,7 +856,7 @@ return array(
     'icon' => 'Icono',
     'icon_on_selection' => 'Icono en selección',
     'fontawesome_icon_tip' => 'Puede especificar un código de icono Font Awesome seleccionado en iconos Free y Solid. Deje vacío para el icono por defecto.',
-    'settings_api_token_duration' => 'Retardo de expiración del token JWT (en segundos)',
+    'settings_api_token_duration' => 'Retardo de expiración del token JWT (en minutos)',
     'settings_api_token_duration_tip' => 'Retardo durante el cual el token JWT generado es válido. Después de este retardo, se requiere enviar una solicitud de autorización a la API.',
     'show_encryption_code_to_admin' => 'Este es el código cifrado que el usuario necesitará en este inicio de sesión. Ha solicitado verlo, por favor cópielo y compártalo de forma segura. El código es',
     'generate_new_otp' => 'Generar nuevo OTP',

@@ -856,7 +856,7 @@ return array(
     'icon' => 'Icona',
     'icon_on_selection' => 'Icona sulla selezione',
     'fontawesome_icon_tip' => 'Puoi specificare un codice icona Font Awesome selezionato in <a href="https://fontawesome.com/v5.15/icons?d=gallery&p=2&s=solid&m=free" target="_blank">Icone libere e solide</a>. Lascia vuoto per l’icona predefinita.',
-    'settings_api_token_duration' => 'Ritardo scadenza token JWT (in secondi)',
+    'settings_api_token_duration' => 'Ritardo scadenza token JWT (in minuti)',
     'settings_api_token_duration_tip' => 'Ritardo durante il quale il token JWT generato è valido. Dopo questo ritardo, viene richiesto di inviare una richiesta di autorizzazione all’API.',
     'show_encryption_code_to_admin' => 'Questo è il codice cifrato di cui l’utente avrà bisogno per questo accesso. Hai chiesto di vederlo, copialo e condividilo in modo sicuro. Il codice è',
     'generate_new_otp' => 'Genera nuova OTP',

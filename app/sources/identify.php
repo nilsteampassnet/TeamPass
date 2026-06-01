@@ -2435,7 +2435,6 @@ function checkCredentials($passwordClear, $userInfo): array
                 prefixTable('users'),
                 [
                     'pw' => $newHash,
-                    'needs_password_migration' => 0,  // 0 = migration completed
                     'private_key' => $newUserPrivateKey,
                 ],
                 'id = %i',

@@ -856,7 +856,7 @@ return array(
     'icon' => 'Ikon',
     'icon_on_selection' => 'Ikon kiválasztáskor',
     'fontawesome_icon_tip' => 'Megadhat egy Font Awesome ikon kódot, amelyet a Free és Solid ikonokból választott. Hagyja üresen az alapértelmezett ikonhoz.',
-    'settings_api_token_duration' => 'JWT token lejárati időtartam (másodpercekben)',
+    'settings_api_token_duration' => 'JWT token lejárati időtartam (jegyzőkönyv)',
     'settings_api_token_duration_tip' => 'Időtartam, amely alatt a generált JWT token érvényes. Ezen időtartam után szükséges egy authorize kérés küldése az API-hoz.',
     'show_encryption_code_to_admin' => 'Ez a titkosított kód, amelyre a felhasználónak szüksége lesz ennél a bejelentkezésnél. Ön kérte annak megtekintését, kérjük másolja és ossza meg biztonságos módon. A kód:',
     'generate_new_otp' => 'Új OTP generálása',

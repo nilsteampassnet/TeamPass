@@ -369,7 +369,10 @@ class AuthModel
 		$payload = [
             'username' => $login,
             'id' => $id,
-            'exp' => (time() + (int) $SETTINGS['api_token_duration']),
+            // api_token_duration is in minutes (contract with the browser extension).
+            // Clamp to [1, 1440] minutes so a zero/missing value never produces an
+            // instantly-expired token, and tokens are capped at 24 hours.
+            'exp' => (time() + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60),
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,

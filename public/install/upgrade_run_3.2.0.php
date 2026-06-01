@@ -306,6 +306,21 @@ mysqli_query(
      ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
 );
 
+// Drop obsolete password migration tracking column (added in 3.1.5, no longer read by app)
+$columnNeedsPwMigrationExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $pre . "users'
+     AND COLUMN_NAME = 'needs_password_migration'"
+));
+if (!empty($columnNeedsPwMigrationExists[0])) {
+    mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "users` DROP COLUMN `needs_password_migration`"
+    );
+}
+
 // Close connection
 mysqli_close($db_link);
 
