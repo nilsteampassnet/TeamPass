@@ -787,6 +787,7 @@ return array(
     'profile' => 'Profile',
     'language' => 'Language',
     'upload_new_avatar' => 'Select profile image file',
+    'avatar_upload_hint' => 'Recommended: square image, ideally 256 x 256 px and under 1 MB. Accepted formats: PNG, JPG or JPEG, 4 MB maximum.',
     'settings' => 'Settings',
     'created_items' => 'Created items',
     'modification_performed' => 'Modification performed',
