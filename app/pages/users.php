@@ -449,8 +449,11 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                 <!-- form start -->
                 <form role="form" id="form-user">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-6">
+                        <div class="row align-items-start">
+                            <div class="col-lg-2 col-md-3 text-center hidden" id="form-user-avatar-wrapper">
+                                <img src="./assets/images/photo.jpg" alt="" class="img-circle elevation-1 mb-2" id="form-user-avatar-img" style="width:76px;height:76px;object-fit:cover;">
+                            </div>
+                            <div class="col-lg-6 user-form-main-col">
                                 <div class="form-group">
                                     <label for="form-name"><?php echo $lang->get('name'); ?></label>
                                     <input type="text" class="form-control clear-me required track-change purify" id="form-name" data-field="name" tabindex="1">
@@ -462,7 +465,7 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                                 </div>
                             </div>
                             
-                            <div class="col-lg-6">
+                            <div class="col-lg-6 user-form-main-col">
                                 <div class="form-group">
                                     <label for="form-lastname"><?php echo $lang->get('lastname'); ?></label>
                                     <input type="text" class="form-control clear-me required track-change purify" id="form-lastname" data-field="lastname" tabindex="2">
