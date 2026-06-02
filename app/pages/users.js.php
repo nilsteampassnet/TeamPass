@@ -107,9 +107,27 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $('.btn-no-click')
         .click(function(e) {
             e.preventDefault();
-        });
+    });
 
     var loadingToast = null;
+
+    function setFormUserAvatar(avatarUrl) {
+        const hasCustomAvatar = typeof avatarUrl === 'string' && avatarUrl !== '';
+
+        if (hasCustomAvatar === true) {
+            $('#form-user-avatar-img').attr('src', avatarUrl);
+            $('#form-user-avatar-wrapper').removeClass('hidden');
+            $('.user-form-main-col')
+                .removeClass('col-lg-6')
+                .addClass('col-lg-5');
+        } else {
+            $('#form-user-avatar-img').attr('src', './assets/images/photo.jpg');
+            $('#form-user-avatar-wrapper').addClass('hidden');
+            $('.user-form-main-col')
+                .removeClass('col-lg-5')
+                .addClass('col-lg-6');
+        }
+    }
 
     //Launch the datatables pluggin
     var oTable = $('#table-users').DataTable({
@@ -811,6 +829,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if ($(this).data('action') === 'new') {
             // ADD NEW USER
             $('#group-create-special-folder, .not-for-admin').removeClass('hidden');
+            setFormUserAvatar('');
 
             // HIDE FROM FORM ELEMENTS ONLY FOR ADMIN
             if (parseInt(store.get('teampassUser').user_admin) === 1) {
@@ -880,6 +899,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
             // What type of form? Edit or new user
             var userID = $(this).data('id');
+            setFormUserAvatar('');
             store.update(
                 'teampassApplication',
                 function(teampassApplication) {
@@ -911,6 +931,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         $('#form-create-root-folder').iCheck(data.can_create_root_folder === 1 ? 'check' : 'uncheck');
                         $('#form-create-personal-folder').iCheck(data.personal_folder === 1 ? 'check' : 'uncheck');
                         $('#form-create-mfa-enabled').iCheck(data.mfa_enabled === 1 ? 'check' : 'uncheck');
+                        setFormUserAvatar(data.avatar_url || '');
 
                         // Case of user locked
                         if (data.disabled === 1) {
