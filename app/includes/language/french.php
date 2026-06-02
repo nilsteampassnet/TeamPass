@@ -856,7 +856,7 @@ return array(
     'icon' => 'Icone',
     'icon_on_selection' => 'Icone sur sélection',
     'fontawesome_icon_tip' => 'Sélectionner un code d’icône de la librarie Font Awesome sélectionné dans Free et Solid. Laisser vide pour utiliser les icônes par défaut.',
-    'settings_api_token_duration' => 'Délai d’expiration du jeton JWT (en secondes)',
+    'settings_api_token_duration' => 'Délai d’expiration du jeton JWT (en minutes)',
     'settings_api_token_duration_tip' => 'Délai pendant lequel le jeton JWT généré est valide. Passé ce délai, il est demandé de poster une demande d’autorisation à l’API.',
     'show_encryption_code_to_admin' => 'Il s’agit du code crypté dont l’utilisateur aura besoin lors de cette connexion. Vous avez demandé à le voir, veuillez le copier et le partager de manière sécurisée. Le code est',
     'generate_new_otp' => 'Générer un nouveau code de cryptage temporaire',

@@ -856,7 +856,7 @@ return array(
     'icon' => 'Pictogramă',
     'icon_on_selection' => 'Pictogramă la selecție',
     'fontawesome_icon_tip' => 'Puteți specifica un cod de pictogramă Font Awesome selectat în pictograme gratuite și solide. Lăsați gol pentru pictograma implicită.',
-    'settings_api_token_duration' => 'Întârziere expirare token JWT (în secunde)',
+    'settings_api_token_duration' => 'Întârziere expirare token JWT (în minute)',
     'settings_api_token_duration_tip' => 'Întârziere în care tokenul JWT generat este valid. După această întârziere, este solicitat să postați o cerere de autorizare la API.',
     'show_encryption_code_to_admin' => 'Acesta este codul criptat de care utilizatorul va avea nevoie la această autentificare. Ați cerut să îl vedeți, vă rugăm copiați-l și partajați-l într-un mod sigur. Codul este',
     'generate_new_otp' => 'Generează OTP nou',

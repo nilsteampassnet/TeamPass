@@ -856,7 +856,7 @@ return array(
     'icon' => 'Simge',
     'icon_on_selection' => 'Seçimde simge',
     'fontawesome_icon_tip' => 'You can specify a Font Awesome icon code selected in Free and Solid icons. Leave empty for default icon.',
-    'settings_api_token_duration' => 'JWT token sona erme gecikmesi (saniye)',
+    'settings_api_token_duration' => 'JWT token sona erme gecikmesi (dakika)',
     'settings_api_token_duration_tip' => 'Oluşturulan JWT token’ın geçerli olduğu gecikme. Bu gecikmeden sonra, API’ye bir yetkilendirme isteği göndermek istenir.',
     'show_encryption_code_to_admin' => 'This is the encrypted code the user will need on this logon. You have asked to see it, please copy it and share in a secure way. Code is',
     'generate_new_otp' => 'Yeni OTP oluştur',

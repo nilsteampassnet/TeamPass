@@ -856,7 +856,7 @@ return array(
     'icon' => 'Symbol',
     'icon_on_selection' => 'Icon bei Auswahl',
     'fontawesome_icon_tip' => 'Sie können einen Font Awesome-Symbolcode angeben, der unter Freie und Solid-Symbole ausgewählt wurde. Für das Standardsymbol leer lassen.',
-    'settings_api_token_duration' => 'Verzögerung des Ablaufs des JWT-Tokens (in Sekunden)',
+    'settings_api_token_duration' => 'Verzögerung des Ablaufs des JWT-Tokens (in Minuten)',
     'settings_api_token_duration_tip' => 'Verzögerung, während der das generierte JWT-Token gültig ist. Nach dieser Verzögerung wird eine Autorisierungsanfrage an die API gestellt.',
     'show_encryption_code_to_admin' => 'Dies ist der verschlüsselte Code, den der Benutzer bei dieser Anmeldung benötigt. Sie haben darum gebeten, ihn zu sehen. Bitte kopieren Sie ihn und geben Sie ihn auf sichere Weise weiter. Der Code lautet',
     'generate_new_otp' => 'OTP neu erzeugen',

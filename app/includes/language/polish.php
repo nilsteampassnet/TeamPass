@@ -856,7 +856,7 @@ return array(
     'icon' => 'Ikona',
     'icon_on_selection' => 'Ikona gdy zaznaczono',
     'fontawesome_icon_tip' => 'Możesz ustawić ikonę z Font Awesome. Zostaw puste, aby użyć domyślnej ikony.',
-    'settings_api_token_duration' => 'Opóźnienie wygaśnięcia tokena JWT (w sekundach)',
+    'settings_api_token_duration' => 'Opóźnienie wygaśnięcia tokena JWT (w protokół)',
     'settings_api_token_duration_tip' => 'Czas, podczas którego wygenerowany token JWT jest ważny. Po tym czasie należy wysłać żądanie autoryzacji do API.',
     'show_encryption_code_to_admin' => 'To jest zaszyfrowany kod, którego użytkownik będzie potrzebował podczas tego logowania. Poprosiłeś o jego obejrzenie, skopiuj go i udostępnij w bezpieczny sposób. Kod to',
     'generate_new_otp' => 'Wygeneruj nowy kod OTP',

@@ -856,7 +856,7 @@ return array(
     'icon' => 'Biểu tượng',
     'icon_on_selection' => 'Biểu tượng khi chọn',
     'fontawesome_icon_tip' => 'Bạn có thể chỉ định mã biểu tượng Font Awesome được chọn trong biểu tượng Miễn phí và Solid. Để trống cho biểu tượng mặc định.',
-    'settings_api_token_duration' => 'Thời gian hết hạn token JWT (tính bằng giây)',
+    'settings_api_token_duration' => 'Thời gian hết hạn token JWT (tính นาที)',
     'settings_api_token_duration_tip' => 'Thời gian mà token JWT được tạo có hiệu lực. Sau thời gian này, cần gửi yêu cầu authorize đến API.',
     'show_encryption_code_to_admin' => 'Đây là mã được mã hóa mà người dùng sẽ cần khi đăng nhập. Bạn đã yêu cầu xem nó, vui lòng sao chép và chia sẻ theo cách an toàn. Mã là',
     'generate_new_otp' => 'Tạo OTP mới',

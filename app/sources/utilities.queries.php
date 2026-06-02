@@ -2431,25 +2431,23 @@ function tpGetOpcacheInfo(): array
     if (function_exists('opcache_get_configuration') === true) {
         $cfg = @opcache_get_configuration();
         if (is_array($cfg) === true) {
-            $directives = $cfg['directives'] ?? array();
-            if (is_array($directives) === true) {
-                // Keep only a small subset
-                $wanted = array(
-                    'opcache.enable',
-                    'opcache.enable_cli',
-                    'opcache.memory_consumption',
-                    'opcache.interned_strings_buffer',
-                    'opcache.max_accelerated_files',
-                    'opcache.revalidate_freq',
-                    'opcache.validate_timestamps',
-                    'opcache.save_comments',
-                    'opcache.jit',
-                    'opcache.jit_buffer_size',
-                );
-                foreach ($wanted as $w) {
-                    if (isset($directives[$w]) === true) {
-                        $out['configuration'][$w] = $directives[$w];
-                    }
+            $directives = $cfg['directives'];
+            // Keep only a small subset
+            $wanted = array(
+                'opcache.enable',
+                'opcache.enable_cli',
+                'opcache.memory_consumption',
+                'opcache.interned_strings_buffer',
+                'opcache.max_accelerated_files',
+                'opcache.revalidate_freq',
+                'opcache.validate_timestamps',
+                'opcache.save_comments',
+                'opcache.jit',
+                'opcache.jit_buffer_size',
+            );
+            foreach ($wanted as $w) {
+                if (isset($directives[$w]) === true) {
+                    $out['configuration'][$w] = $directives[$w];
                 }
             }
         }

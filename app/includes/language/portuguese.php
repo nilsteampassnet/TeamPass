@@ -856,7 +856,7 @@ return array(
     'icon' => 'Ícone',
     'icon_on_selection' => 'Ícone na seleção',
     'fontawesome_icon_tip' => 'Pode especificar um código de ícone Font Awesome selecionado em ícones Free e Solid. Deixe vazio para ícone padrão.',
-    'settings_api_token_duration' => 'Prazo de expiração do token JWT (em segundos)',
+    'settings_api_token_duration' => 'Prazo de expiração do token JWT (em minutos)',
     'settings_api_token_duration_tip' => 'Prazo durante o qual o token JWT gerado é válido. Após este prazo, é solicitado fazer um pedido de autorização à API.',
     'show_encryption_code_to_admin' => 'Este é o código encriptado que o utilizador precisará neste início de sessão. Pediu para vê-lo, por favor copie-o e partilhe de forma segura. O código é',
     'generate_new_otp' => 'Gerar novo OTP',

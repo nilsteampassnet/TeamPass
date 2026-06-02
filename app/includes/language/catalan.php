@@ -856,7 +856,7 @@ return array(
     'icon' => 'Icona',
     'icon_on_selection' => 'Icona a la selecció',
     'fontawesome_icon_tip' => 'Podeu especificar un codi de Font Awesome de tipus de lletra seleccionat en icones lliures i sòlides. Deixeu buit per a la icona per defecte.',
-    'settings_api_token_duration' => 'Retard de caducitat de JWT Token (en segons)',
+    'settings_api_token_duration' => 'Retard de caducitat de JWT Token (en minutos)',
     'settings_api_token_duration_tip' => 'El retard durant el cas generat el testimoni JWT és vàlid. Després d’aquest retard, es demana que publiqui una sol·licitud d’autorització a l’API.',
     'show_encryption_code_to_admin' => 'Aquest és el codi xifrat que l’usuari necessitarà en aquest inici de sessió. Heu demanat veure-ho, copieu-lo i compartiu-lo de manera segura. El codi és',
     'generate_new_otp' => 'Generar nous OTP',
