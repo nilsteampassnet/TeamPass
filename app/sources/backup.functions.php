@@ -35,8 +35,174 @@ declare(strict_types=1);
  * (manual UI + scheduled/background tasks).
  */
 
+function tpBackupGetScheduledDefaultDir(): string
+{
+    return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
+}
+
+function tpBackupGetConfiguredFilesDir(array $SETTINGS): string
+{
+    return (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
+}
+
+function tpBackupNormalizePathForCompare(string $path): string
+{
+    $normalized = rtrim(str_replace('\\', '/', $path), '/');
+
+    return DIRECTORY_SEPARATOR === '\\' ? strtolower($normalized) : $normalized;
+}
+
+function tpBackupIsResolvedPathInsideDirectory(string $path, string $baseDir): bool
+{
+    $baseReal = realpath($baseDir);
+    if ($path === '' || $baseReal === false) {
+        return false;
+    }
+
+    $pathNormalized = tpBackupNormalizePathForCompare($path);
+    $baseNormalized = tpBackupNormalizePathForCompare($baseReal);
+
+    return $pathNormalized === $baseNormalized || str_starts_with($pathNormalized, $baseNormalized . '/');
+}
+
+function tpBackupMapLegacyScheduledOutputDir(string $requestedDir, array $SETTINGS = []): string
+{
+    $requestedDir = trim($requestedDir);
+    if ($requestedDir === '') {
+        return '';
+    }
+
+    $root = (string) ($SETTINGS['cpassman_dir'] ?? '');
+    if ($root === '' && defined('TEAMPASS_ROOT')) {
+        $root = (string) TEAMPASS_ROOT;
+    }
+    if ($root === '') {
+        $root = (string) realpath(__DIR__ . '/../..');
+    }
+    if ($root === '') {
+        return $requestedDir;
+    }
+
+    $requestedNormalized = tpBackupNormalizePathForCompare($requestedDir);
+    $legacyBases = [
+        rtrim($root, '/\\') . '/files',
+        rtrim($root, '/\\') . '/backups',
+    ];
+
+    foreach ($legacyBases as $legacyBase) {
+        $legacyNormalized = tpBackupNormalizePathForCompare($legacyBase);
+        if ($requestedNormalized === $legacyNormalized || str_starts_with($requestedNormalized, $legacyNormalized . '/')) {
+            return tpBackupGetScheduledDefaultDir();
+        }
+    }
+
+    return $requestedDir;
+}
+
+function tpBackupResolveDirectoryCreationPath(string $path): string
+{
+    $path = rtrim($path, '/\\');
+    if ($path === '') {
+        return '';
+    }
+
+    $missingParts = [];
+    $currentPath = $path;
+
+    while (!is_dir($currentPath)) {
+        $parentPath = dirname($currentPath);
+        if ($parentPath === $currentPath || $parentPath === '.') {
+            return '';
+        }
+
+        $missingParts[] = basename($currentPath);
+        $currentPath = $parentPath;
+    }
+
+    $currentRealPath = realpath($currentPath);
+    if ($currentRealPath === false) {
+        return '';
+    }
+
+    while ($missingParts !== []) {
+        $currentRealPath .= DIRECTORY_SEPARATOR . array_pop($missingParts);
+    }
+
+    return $currentRealPath;
+}
+
 /**
- * Create a Teampass database backup file (optionally encrypted) in files folder.
+ * Resolve and validate a scheduled backup output directory.
+ *
+ * Allowed bases are the documented storage/backups directory and the configured
+ * files folder kept for legacy compatibility.
+ *
+ * @param array<int, string>|null $allowedBaseDirs
+ * @return array{success: bool, path: string}
+ */
+function tpBackupResolveScheduledOutputDir(string $requestedDir, array $SETTINGS = [], ?array $allowedBaseDirs = null): array
+{
+    $outputDir = trim($requestedDir);
+    if ($outputDir === '') {
+        $outputDir = tpBackupGetScheduledDefaultDir();
+    } else {
+        $outputDir = tpBackupMapLegacyScheduledOutputDir($outputDir, $SETTINGS);
+    }
+
+    if ($allowedBaseDirs === null) {
+        $allowedBaseDirs = [
+            tpBackupGetScheduledDefaultDir(),
+            tpBackupGetConfiguredFilesDir($SETTINGS),
+        ];
+    }
+
+    foreach ($allowedBaseDirs as $allowedBaseDir) {
+        if (trim((string) $allowedBaseDir) === '') {
+            continue;
+        }
+
+        if (!is_dir($allowedBaseDir)) {
+            $mkdirBaseResult = @mkdir($allowedBaseDir, 0750, true);
+            if ($mkdirBaseResult === false && !is_dir($allowedBaseDir)) {
+                continue;
+            }
+        }
+    }
+
+    $resolvedOutputDir = tpBackupResolveDirectoryCreationPath($outputDir);
+    if ($resolvedOutputDir === '') {
+        return ['success' => false, 'path' => ''];
+    }
+
+    $isAllowed = false;
+    foreach ($allowedBaseDirs as $allowedBaseDir) {
+        if (tpBackupIsResolvedPathInsideDirectory($resolvedOutputDir, (string) $allowedBaseDir) === true) {
+            $isAllowed = true;
+            break;
+        }
+    }
+
+    if ($isAllowed === false) {
+        return ['success' => false, 'path' => ''];
+    }
+
+    if (!is_dir($outputDir)) {
+        $mkdirResult = @mkdir($outputDir, 0750, true);
+        if ($mkdirResult === false && !is_dir($outputDir)) {
+            return ['success' => false, 'path' => ''];
+        }
+    }
+
+    $dirReal = realpath($outputDir);
+    if ($dirReal === false || !is_dir($dirReal)) {
+        return ['success' => false, 'path' => ''];
+    }
+
+    return ['success' => true, 'path' => $dirReal];
+}
+
+/**
+ * Create a Teampass database backup file (optionally encrypted) in the requested output directory.
  *
  * @param array  $SETTINGS      Teampass settings array (must include path_to_files_folder)
  * @param string $encryptionKey Encryption key (Defuse). If empty => no encryption
