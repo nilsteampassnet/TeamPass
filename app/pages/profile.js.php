@@ -105,7 +105,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         runtimes: 'gears,html5,flash,silverlight,browserplus',
         browse_button: 'profile-avatar-file',
         container: 'profile-avatar-file-container',
-        max_file_size: '4mb',
+        max_file_size: '10mb',
         chunk_size: '1mb',
         unique_names: true,
         dragdrop: true,
@@ -119,7 +119,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         resize: {
             width: '256',
             height: '256',
-            quality: '90'
+            quality: '85'
         },
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
         flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
