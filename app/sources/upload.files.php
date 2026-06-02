@@ -178,13 +178,12 @@ $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
-$avatarMaxFileSizeInBytes = 4 * 1024 * 1024;
+$avatarMaxFileSizeInBytes = 10 * 1024 * 1024;
 $avatarAllowedMimeTypes = [
     'image/png' => 'png',
     'image/jpeg' => 'jpg',
 ];
 $avatarAllowedExtensions = ['png', 'jpg', 'jpeg'];
-$avatarDetectedExtension = '';
 
 if (null !== $post_timezone) {
     date_default_timezone_set($post_timezone);
@@ -212,7 +211,7 @@ if ($file) {
     }
 
     if ($post_type_upload === 'upload_profile_photo' && $file_size > $avatarMaxFileSizeInBytes) {
-        echo handleUploadError('Avatar exceeds the maximum allowed size of 4 MB.');
+        echo handleUploadError('Avatar exceeds the maximum allowed size of 10 MB.');
         return false;
     }
     
@@ -252,17 +251,18 @@ if ($file) {
     }
 
     if ($post_type_upload === 'upload_profile_photo') {
-        if (in_array($ext, $avatarAllowedExtensions, true) === false) {
+        if ($ext !== '' && in_array($ext, $avatarAllowedExtensions, true) === false) {
             echo handleUploadError('Invalid avatar file extension. Allowed formats are PNG, JPG and JPEG.');
             return false;
         }
 
-        $avatarMimeType = (string) mime_content_type($file->getPathname());
-        if (isset($avatarAllowedMimeTypes[$avatarMimeType]) === false) {
-            echo handleUploadError('Invalid avatar file type. Allowed formats are PNG, JPG and JPEG.');
-            return false;
+        if ((int) $chunks < 2) {
+            $avatarMimeType = (string) mime_content_type($file->getPathname());
+            if (isset($avatarAllowedMimeTypes[$avatarMimeType]) === false) {
+                echo handleUploadError('Invalid avatar file type. Allowed formats are PNG, JPG and JPEG.');
+                return false;
+            }
         }
-        $avatarDetectedExtension = $avatarAllowedMimeTypes[$avatarMimeType];
     }
 
     // Validate against a list of allowed extensions
@@ -527,28 +527,45 @@ if (
     null !== ($post_type_upload)
     && $post_type_upload === 'upload_profile_photo'
 ) {
-    $ext = $avatarDetectedExtension;
-    if ($ext === '') {
-        echo handleUploadError('Invalid avatar file type.');
+    $avatarSourceSize = filesize($filePath);
+    if ($avatarSourceSize === false || $avatarSourceSize > $avatarMaxFileSizeInBytes) {
+        fileDelete($filePath, $SETTINGS);
+        echo handleUploadError('Avatar exceeds the maximum allowed size of 10 MB.');
         return false;
     }
 
-    // rename the file
-    rename(
+    $avatarImage = resizeAvatarImage(
         $filePath,
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext
+        $targetDir . DIRECTORY_SEPARATOR . $newFileName,
+        256,
+        85
     );
+
+    if (is_array($avatarImage) === false) {
+        fileDelete($filePath, $SETTINGS);
+        echo empty($avatarImage) === false ? handleUploadError((string) $avatarImage) : handleUploadError('Avatar processing failed.');
+        return false;
+    }
+
+    $ext = $avatarImage['extension'];
+    $avatarFilePath = $avatarImage['path'];
+    $avatarFileName = $newFileName . '.' . $ext;
+    $avatarThumbFileName = $newFileName . '_thumb' . '.' . $ext;
+
+    // Remove uploaded source after server-side avatar normalization.
+    fileDelete($filePath, $SETTINGS);
 
     // make thumbnail
     $ret = makeThumbnail(
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '.' . $ext,
-        $targetDir . DIRECTORY_SEPARATOR . $newFileName . '_thumb' . '.' . $ext,
+        $avatarFilePath,
+        $targetDir . DIRECTORY_SEPARATOR . $avatarThumbFileName,
         40
     );
 
-    if (empty($ret) === false) {
+    if ($ret === false || empty($ret) === false) {
+        fileDelete($avatarFilePath, $SETTINGS);
         // deepcode ignore XSS: $ret contains only an error message without any information, or false if error during thumbnail creation
-        echo $ret;
+        echo $ret === false ? handleUploadError('Avatar thumbnail processing failed.') : handleUploadError((string) $ret);
     
         exit();
     }
@@ -561,14 +578,14 @@ if (
     // store in DB the new avatar
     DB::query(
         'UPDATE ' . prefixTable('users') . "
-        SET avatar='" . $newFileName . '.' . $ext . "', avatar_thumb='" . $newFileName . '_thumb' . '.' . $ext . "'
+        SET avatar='" . $avatarFileName . "', avatar_thumb='" . $avatarThumbFileName . "'
         WHERE id=%i",
         $session->get('user-id')
     );
 
     // store in session
-    $session->set('user-avatar', $newFileName . '.' . $ext);
-    $session->set('user-avatar_thumb', $newFileName . '_thumb' . '.' . $ext);
+    $session->set('user-avatar', $avatarFileName);
+    $session->set('user-avatar_thumb', $avatarThumbFileName);
 
     // return info
     echo prepareExchangedData(
