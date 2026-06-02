@@ -307,7 +307,7 @@ return array(
     'profile' => 'Profil',
     'language' => 'Langue',
     'upload_new_avatar' => 'Sélectionner un avatar',
-    'avatar_upload_hint' => 'Image carrée recommandée, idéalement 256 × 256 px et moins de 1 Mo. Formats acceptés : PNG, JPG ou JPEG, 4 Mo maximum.',
+    'avatar_upload_hint' => 'Image carrée recommandée. Formats acceptés : PNG, JPG ou JPEG, 10 Mo maximum. TeamPass redimensionnera automatiquement l’avatar.',
     'settings' => 'Paramètres',
     'created_items' => 'Objets créés',
     'modification_performed' => 'Modifications réalisées',
