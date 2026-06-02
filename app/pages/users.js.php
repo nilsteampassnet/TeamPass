@@ -117,15 +117,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         if (hasCustomAvatar === true) {
             $('#form-user-avatar-img').attr('src', avatarUrl);
             $('#form-user-avatar-wrapper').removeClass('hidden');
-            $('.user-form-main-col')
-                .removeClass('col-lg-6')
-                .addClass('col-lg-5');
         } else {
             $('#form-user-avatar-img').attr('src', './assets/images/photo.jpg');
             $('#form-user-avatar-wrapper').addClass('hidden');
-            $('.user-form-main-col')
-                .removeClass('col-lg-5')
-                .addClass('col-lg-6');
         }
     }
 
