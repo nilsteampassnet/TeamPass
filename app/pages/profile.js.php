@@ -105,7 +105,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         runtimes: 'gears,html5,flash,silverlight,browserplus',
         browse_button: 'profile-avatar-file',
         container: 'profile-avatar-file-container',
-        max_file_size: '2mb',
+        max_file_size: '4mb',
         chunk_size: '1mb',
         unique_names: true,
         dragdrop: true,
@@ -113,12 +113,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         multi_selection: false,
         max_file_count: 1,
         filters: [{
-            title: 'PNG files',
-            extensions: 'png'
+            title: 'Image files',
+            extensions: 'png,jpg,jpeg'
         }],
         resize: {
-            width: '90',
-            height: '90',
+            width: '256',
+            height: '256',
             quality: '90'
         },
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
@@ -148,7 +148,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         up.setOption('multipart_params', {
                             PHPSESSID: '<?php echo $session->get('key'); ?>',
                             type_upload: "upload_profile_photo",
-                            user_token: data[0].token
+                            user_upload_token: data[0].token
                         });
 
                         up.start();
@@ -168,7 +168,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // update form
                 toastr.remove();
                 if (myData.error === false) {
-                    $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
+                    $('#profile-user-avatar').attr('src', 'assets/avatars/' + myData.filename);
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
                     toastr.error(
