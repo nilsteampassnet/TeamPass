@@ -1688,42 +1688,92 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
 
-    // Get all subscribers' emails as an array
-    $emails = DB::queryFirstColumn(
-        'SELECT u.email
+    $subscribers = DB::query(
+        'SELECT u.email, u.name, u.lastname, u.login
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
-        WHERE n.item_id = %i AND n.user_id != %i',
+        WHERE n.item_id = %i
+        AND n.user_id != %i
+        AND u.email IS NOT NULL
+        AND u.email != %s',
         $item_id,
-        $globalsUserId
+        $globalsUserId,
+        ''
     );
 
-    if (DB::count() > 0) {
-        // Prepare path
-        $path = geItemReadablePath($item_id, '', $SETTINGS);
+    if (DB::count() === 0) {
+        return;
+    }
 
-        // Get list of changes
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $item_id
+    );
+    $folderId = (int) ($item['id_tree'] ?? 0);
+    $folderName = geItemReadablePath($folderId, '', $SETTINGS);
+    $baseUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
+    $itemUrl = $baseUrl . '/index.php?page=items&group=' . $folderId . '&id=' . $item_id;
+
+    $htmlChanges = '';
+    if (count($changes) > 0) {
         $htmlChanges = '<ul>';
         foreach ($changes as $change) {
-            $htmlChanges .= '<li>' . $change . '</li>';
+            $htmlChanges .= '<li>' . htmlspecialchars((string) $change, ENT_QUOTES, 'UTF-8') . '</li>';
         }
         $htmlChanges .= '</ul>';
+    }
 
-        // send email
-        DB::insert(
-            prefixTable('emails'),
-            [
-                'timestamp' => time(),
-                'subject' => $lang->get('email_subject_item_updated'),
-                'body' => str_replace(
-                    ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
-                    [$label, $path, (string) $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
-                    $lang->get('email_body_item_updated')
-                ),
-                'receivers' => implode(',', $emails),
-                'status' => '',
-            ]
+    $body = html_entity_decode((string) $lang->get('email_body_item_updated'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $body = str_replace(
+        ['#item_label#', '#folder_name#', '#item_id#', '#item_category#', '#url#', '#name#', '#lastname#', '#changes#'],
+        [
+            htmlspecialchars($label, ENT_QUOTES, 'UTF-8'),
+            $folderName,
+            (string) $item_id,
+            (string) $folderId,
+            htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars((string) $globalsName, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars((string) $globalsLastname, ENT_QUOTES, 'UTF-8'),
+            $htmlChanges,
+        ],
+        $body
+    );
+    $body = str_replace('<br >', '<br>', $body);
+
+    $normalizedBody = preg_replace_callback(
+        '/<a\b[^>]*>(.*?)<\/a>/is',
+        static function (array $matches) use ($itemUrl): string {
+            return '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">' . $matches[1] . '</a>';
+        },
+        $body
+    );
+    if ($normalizedBody !== null) {
+        $body = $normalizedBody;
+    }
+
+    $emailQueued = false;
+    foreach ($subscribers as $subscriber) {
+        $email = trim((string) ($subscriber['email'] ?? ''));
+        if ($email === '') {
+            continue;
+        }
+
+        $receiverName = trim((string) ($subscriber['name'] ?? '') . ' ' . (string) ($subscriber['lastname'] ?? ''));
+        if ($receiverName === '') {
+            $receiverName = (string) ($subscriber['login'] ?? '');
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_item_updated'),
+            $body,
+            $email,
+            $receiverName
         );
+        $emailQueued = true;
+    }
+
+    if ($emailQueued === true) {
+        triggerBackgroundHandler();
     }
 }
 
