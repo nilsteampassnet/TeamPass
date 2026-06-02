@@ -102,6 +102,9 @@ if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_S
 
 // Prepare POST variables
 $post_user_token = $request->request->filter('user_upload_token', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+if ($post_user_token === null) {
+    $post_user_token = $request->request->filter('user_token', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+}
 $post_type_upload = $request->request->filter('type_upload', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $post_timezone = $request->request->filter('timezone', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 $chunk = $request->request->filter('chunk', 0, FILTER_SANITIZE_NUMBER_INT);
@@ -175,6 +178,13 @@ $cleanupTargetDir = true; // Remove old files
 $maxFileAge = 5 * 3600; // Temp file age in seconds
 $MAX_FILENAME_LENGTH = 260;
 $max_file_size_in_bytes = 2147483647; //2Go
+$avatarMaxFileSizeInBytes = 4 * 1024 * 1024;
+$avatarAllowedMimeTypes = [
+    'image/png' => 'png',
+    'image/jpeg' => 'jpg',
+];
+$avatarAllowedExtensions = ['png', 'jpg', 'jpeg'];
+$avatarDetectedExtension = '';
 
 if (null !== $post_timezone) {
     date_default_timezone_set($post_timezone);
@@ -198,6 +208,11 @@ if ($file) {
 
     if ($file_size === false || $file_size > $max_file_size_in_bytes) {
         echo handleUploadError('File exceeds the maximum allowed size');
+        return false;
+    }
+
+    if ($post_type_upload === 'upload_profile_photo' && $file_size > $avatarMaxFileSizeInBytes) {
+        echo handleUploadError('Avatar exceeds the maximum allowed size of 4 MB.');
         return false;
     }
     
@@ -236,6 +251,20 @@ if ($file) {
         return false;
     }
 
+    if ($post_type_upload === 'upload_profile_photo') {
+        if (in_array($ext, $avatarAllowedExtensions, true) === false) {
+            echo handleUploadError('Invalid avatar file extension. Allowed formats are PNG, JPG and JPEG.');
+            return false;
+        }
+
+        $avatarMimeType = (string) mime_content_type($file->getPathname());
+        if (isset($avatarAllowedMimeTypes[$avatarMimeType]) === false) {
+            echo handleUploadError('Invalid avatar file type. Allowed formats are PNG, JPG and JPEG.');
+            return false;
+        }
+        $avatarDetectedExtension = $avatarAllowedMimeTypes[$avatarMimeType];
+    }
+
     // Validate against a list of allowed extensions
     $allowed_extensions = explode(
         ',',
@@ -262,8 +291,8 @@ if ($file) {
 }
 
 // is destination folder writable
-if (is_writable($SETTINGS['path_to_files_folder']) === false) {
-    echo handleUploadError('Not enough permissions on folder ' . $SETTINGS['path_to_files_folder'] . '.');
+if ($targetDir === false || is_writable($targetDir) === false) {
+    echo handleUploadError('Not enough permissions on folder ' . (is_string($targetDir) === true ? $targetDir : 'target upload directory') . '.');
     return false;
 }
 
@@ -498,8 +527,11 @@ if (
     null !== ($post_type_upload)
     && $post_type_upload === 'upload_profile_photo'
 ) {
-    // PNG is the only supported extension
-    $ext = "png";
+    $ext = $avatarDetectedExtension;
+    if ($ext === '') {
+        echo handleUploadError('Invalid avatar file type.');
+        return false;
+    }
 
     // rename the file
     rename(
