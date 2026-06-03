@@ -1286,7 +1286,9 @@ function resizeAvatarImage(string $src, string $destWithoutExtension, int $maxDi
         imagealphablending($virtual_image, false);
         imagesavealpha($virtual_image, true);
         $transparent = imagecolorallocatealpha($virtual_image, 0, 0, 0, 127);
-        imagefill($virtual_image, 0, 0, $transparent);
+        if ($transparent !== false) {
+            imagefill($virtual_image, 0, 0, $transparent);
+        }
     }
 
     if (imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height) === false) {
@@ -1363,10 +1365,16 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
         imagealphablending($virtual_image, false);
         imagesavealpha($virtual_image, true);
         $transparent = imagecolorallocatealpha($virtual_image, 0, 0, 0, 127);
-        imagefill($virtual_image, 0, 0, $transparent);
+        if ($transparent !== false) {
+            imagefill($virtual_image, 0, 0, $transparent);
+        }
     }
     /* copy source image at a resized size */
-    imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
+    if (imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height) === false) {
+        imagedestroy($source_image);
+        imagedestroy($virtual_image);
+        return false;
+    }
     /* create the physical thumbnail image to its destination */
     if ($thumbnailType === 'png') {
         imagepng($virtual_image, $dest);
@@ -1823,7 +1831,6 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $folderId = (int) ($item['id_tree'] ?? 0);
     $folderName = geItemReadablePath($folderId, '', $SETTINGS);
     $baseUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
-    $itemUrl = $baseUrl . '/index.php?page=items&group=' . $folderId . '&id=' . $item_id;
 
     $htmlChanges = '';
     if (count($changes) > 0) {
@@ -1850,17 +1857,6 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
         $body
     );
     $body = str_replace('<br >', '<br>', $body);
-
-    $normalizedBody = preg_replace_callback(
-        '/<a\b[^>]*>(.*?)<\/a>/is',
-        static function (array $matches) use ($itemUrl): string {
-            return '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">' . $matches[1] . '</a>';
-        },
-        $body
-    );
-    if ($normalizedBody !== null) {
-        $body = $normalizedBody;
-    }
 
     $emailQueued = false;
     foreach ($subscribers as $subscriber) {
