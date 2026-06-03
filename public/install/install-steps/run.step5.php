@@ -267,7 +267,7 @@ class DatabaseInstaller
     {
         DB::query(
             "CREATE TABLE IF NOT EXISTS " . $this->inputData['tablePrefix'] . "notification (
-                `increment_id` int(12) NOT NULL,
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                 `item_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 PRIMARY KEY (`increment_id`)
