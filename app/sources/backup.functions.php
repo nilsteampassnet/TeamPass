@@ -35,16 +35,36 @@ declare(strict_types=1);
  * (manual UI + scheduled/background tasks).
  */
 
+/**
+ * Return the default scheduled backup output directory (storage/backups).
+ *
+ * @return string Absolute path without trailing slash.
+ */
 function tpBackupGetScheduledDefaultDir(): string
 {
     return defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
 }
 
+/**
+ * Return the configured files folder from settings (storage/files fallback).
+ *
+ * @param array<string, mixed> $SETTINGS Teampass settings array.
+ * @return string Absolute path without trailing slash.
+ */
 function tpBackupGetConfiguredFilesDir(array $SETTINGS): string
 {
     return (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
 }
 
+/**
+ * Normalize a path for cross-platform string comparison.
+ *
+ * Converts backslashes to forward slashes, strips trailing slashes, and
+ * lowercases the result on Windows (case-insensitive filesystem).
+ *
+ * @param string $path Raw path to normalize.
+ * @return string Normalized path string.
+ */
 function tpBackupNormalizePathForCompare(string $path): string
 {
     $normalized = rtrim(str_replace('\\', '/', $path), '/');
@@ -52,6 +72,13 @@ function tpBackupNormalizePathForCompare(string $path): string
     return DIRECTORY_SEPARATOR === '\\' ? strtolower($normalized) : $normalized;
 }
 
+/**
+ * Check whether a resolved (realpath'd) path is equal to or inside a base directory.
+ *
+ * @param string $path    Fully resolved path to test.
+ * @param string $baseDir Base directory to check against (realpath is applied internally).
+ * @return bool True if $path equals $baseDir or is a descendant of it.
+ */
 function tpBackupIsResolvedPathInsideDirectory(string $path, string $baseDir): bool
 {
     $baseReal = realpath($baseDir);
@@ -65,6 +92,17 @@ function tpBackupIsResolvedPathInsideDirectory(string $path, string $baseDir): b
     return $pathNormalized === $baseNormalized || str_starts_with($pathNormalized, $baseNormalized . '/');
 }
 
+/**
+ * Remap a legacy root-level backup directory to the current storage/backups default.
+ *
+ * Paths pointing to the old {root}/files or {root}/backups locations (3.1.x era) are
+ * transparently redirected to the 3.2 storage/backups directory. Any other value is
+ * returned unchanged.
+ *
+ * @param string               $requestedDir Directory as stored in settings.
+ * @param array<string, mixed> $SETTINGS     Teampass settings array (used to resolve cpassman_dir).
+ * @return string Remapped directory path, or the original value if no remapping applies.
+ */
 function tpBackupMapLegacyScheduledOutputDir(string $requestedDir, array $SETTINGS = []): string
 {
     $requestedDir = trim($requestedDir);
@@ -99,6 +137,20 @@ function tpBackupMapLegacyScheduledOutputDir(string $requestedDir, array $SETTIN
     return $requestedDir;
 }
 
+/**
+ * Compute the fully resolved path for a directory that may not yet exist.
+ *
+ * Walks up from $path to the nearest existing ancestor, applies realpath() on
+ * that ancestor, then appends the missing path segments back. The result is a
+ * canonical absolute path suitable for safe comparison or mkdir() without
+ * following symlinks in non-existent segments.
+ *
+ * Returns an empty string if the path cannot be resolved (e.g. no existing
+ * ancestor found, or realpath() fails).
+ *
+ * @param string $path Target directory path (may not yet exist).
+ * @return string Resolved absolute path, or '' on failure.
+ */
 function tpBackupResolveDirectoryCreationPath(string $path): string
 {
     $path = rtrim($path, '/\\');

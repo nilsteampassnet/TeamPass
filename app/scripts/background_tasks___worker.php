@@ -218,13 +218,9 @@ class TaskWorker {
 
         // Retention purge (scheduled backups only)
         $backupSource = (string)($taskData['source'] ?? '');
-        $backupDir = (string)($taskData['output_dir'] ?? '');   // from task arguments (reliable)
-        if ($backupDir === '') {
-            $backupDir = (string) $targetDir;
-        }
-
-        // keep for debug/trace
-        $this->taskData['output_dir'] = $backupDir;
+        // Use the resolved directory actually used to write the backup, so retention
+        // purge targets the same location ($this->taskData['output_dir'] set above).
+        $backupDir = $targetDir;
 
         if ($backupSource === 'scheduler') {
             $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
