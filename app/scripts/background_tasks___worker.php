@@ -103,6 +103,9 @@ class TaskWorker {
                 case 'database_backup':
                     $this->handleDatabaseBackup($this->taskData);
                     break;
+                case 'externalized_backup':
+                    $this->handleExternalizedBackup($this->taskData);
+                    break;
                 case 'inactive_users_housekeeping':
                     $this->handleInactiveUsersHousekeeping();
                     break;
@@ -156,46 +159,26 @@ class TaskWorker {
 
         // Auto-disconnect connected users before running a scheduled backup.
         // Exclude the user who enqueued the task (manual run), if provided.
-        try {
-            if (function_exists('loadClasses') && !class_exists('DB')) {
-                loadClasses('DB');
-            }
-            $excludeUserId = (int) ($taskData['initiator_user_id'] ?? 0);
-            $now = time();
+        $this->disconnectConnectedUsersBeforeBackup((int) ($taskData['initiator_user_id'] ?? 0));
 
-            if ($excludeUserId > 0) {
-                $connectedUsers = DB::query(
-                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-                    $now,
-                    $excludeUserId
-                );
-            } else {
-                $connectedUsers = DB::query(
-                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
-                    $now
-                );
-            }
-
-            foreach ($connectedUsers as $u) {
-                DB::update(
-                    prefixTable('users'),
-                    [
-                        'key_tempo' => '',
-                        'timestamp' => '',
-                        'session_end' => '',
-                    ],
-                    'id = %i',
-                    intval($u['id'])
-                );
-            }
-        } catch (Throwable) {
-            // Best effort only - do not block backups if disconnection cannot be done
+        $includeDocuments = ((int)($taskData['include_documents'] ?? $this->getMiscSetting('bck_scheduled_include_documents', '0')) === 1);
+        $backupFormat = tpBackupNormalizeRequestedFormat((string)($taskData['backup_format'] ?? $this->getMiscSetting('bck_scheduled_format', 'sql')));
+        if ($includeDocuments === true) {
+            $backupFormat = tpBackupGetPackageExtension();
         }
-
-        $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
-            'output_dir' => $targetDir,
-            'filename_prefix' => 'scheduled-',
-        ]);
+        if ($backupFormat === tpBackupGetPackageExtension()) {
+            $res = tpCreateBackupPackage($this->settings, $encryptionKey, [
+                'output_dir' => $targetDir,
+                'filename_prefix' => 'scheduled-',
+                'source' => 'scheduled',
+                'include_documents' => $includeDocuments,
+            ]);
+        } else {
+            $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
+                'output_dir' => $targetDir,
+                'filename_prefix' => 'scheduled-',
+            ]);
+        }
 
         if ($res['success'] !== true) {
             throw new Exception($res['message']);
@@ -204,7 +187,7 @@ class TaskWorker {
 
         // Best effort: write metadata sidecar next to the backup file
         try {
-            if (!empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+            if ($backupFormat !== tpBackupGetPackageExtension() && !empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
                 tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'scheduled']);
             }
         } catch (Throwable) {
@@ -215,6 +198,8 @@ class TaskWorker {
         $this->taskData['backup_file'] = $res['filename'];
         $this->taskData['backup_size_bytes'] = (int)$res['size_bytes'];
         $this->taskData['backup_encrypted'] = (bool)$res['encrypted'];
+        $this->taskData['backup_format'] = $backupFormat;
+        $this->taskData['include_documents'] = $includeDocuments;
 
         // Retention purge (scheduled backups only)
         $backupSource = (string)($taskData['source'] ?? '');
@@ -253,6 +238,183 @@ class TaskWorker {
                 'database_backup: created ' . ($this->taskData['backup_file'] ?? '') . ' (' . $this->taskData['backup_size_bytes'] . ' bytes)',
                 'INFO'
             );
+        }
+    }
+
+
+    /**
+     * Perform a manual externalized backup into a validated destination.
+     */
+    private function handleExternalizedBackup(array $taskData): void
+    {
+        require_once __DIR__ . '/../sources/backup.functions.php';
+
+        $this->upsertMiscSetting('bck_externalized_last_run_at', (string)time());
+        $this->updateExternalizedState('running', 'Externalized backup started');
+
+        $destinationType = !empty($taskData['destination_type']) && is_string($taskData['destination_type'])
+            ? (string) $taskData['destination_type']
+            : (string) $this->getMiscSetting('bck_externalized_destination_type', 'local_directory');
+        $destinationType = tpBackupResolveExternalizedDestinationType($destinationType);
+
+        $requestedTargetDir = !empty($taskData['output_dir']) && is_string($taskData['output_dir'])
+            ? (string) $taskData['output_dir']
+            : (string) $this->getMiscSetting('bck_externalized_target_dir', '');
+        $maxAttempts = max(1, min(5, (int)($taskData['retry_attempts'] ?? $this->getMiscSetting('bck_externalized_retry_attempts', '3'))));
+        $retryDelaySeconds = max(0, min(60, (int)($taskData['retry_delay_seconds'] ?? $this->getMiscSetting('bck_externalized_retry_delay_seconds', '5'))));
+        $this->taskData['destination_type'] = $destinationType;
+        $this->taskData['retry_attempts'] = $maxAttempts;
+
+        // Use the resolved clear backup key and self-heal empty values on impacted instances.
+        $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($this->settings, true);
+        $encryptionKey = !empty($resolvedBackupScriptPasskey['success'])
+            ? (string) $resolvedBackupScriptPasskey['clear_key']
+            : '';
+        if ($encryptionKey === '') {
+            throw new Exception('Missing encryption key (bck_script_passkey).');
+        }
+
+        $this->disconnectConnectedUsersBeforeBackup((int) ($taskData['initiator_user_id'] ?? 0));
+
+        $includeDocuments = ((int)($taskData['include_documents'] ?? $this->getMiscSetting('bck_externalized_include_documents', '0')) === 1);
+        $backupFormat = tpBackupNormalizeRequestedFormat((string)($taskData['backup_format'] ?? $this->getMiscSetting('bck_externalized_format', tpBackupGetPackageExtension())));
+        if ($includeDocuments === true) {
+            $backupFormat = tpBackupGetPackageExtension();
+        }
+
+        $res = [];
+        $targetDir = '';
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $this->taskData['retry_attempt'] = $attempt;
+            $this->updateExternalizedState('running', 'Externalized backup attempt ' . $attempt . '/' . $maxAttempts);
+
+            try {
+                $resolvedTargetDir = tpBackupResolveExternalizedDestination($destinationType, $requestedTargetDir, $this->settings);
+                if ($resolvedTargetDir['success'] === false) {
+                    throw new Exception('Invalid externalized backup destination: ' . (string)($resolvedTargetDir['reason'] ?? 'unknown'));
+                }
+
+                $targetDir = (string) $resolvedTargetDir['path'];
+                $this->taskData['output_dir'] = $targetDir;
+
+                if ($backupFormat === tpBackupGetPackageExtension()) {
+                    $res = tpCreateBackupPackage($this->settings, $encryptionKey, [
+                        'output_dir' => $targetDir,
+                        'filename_prefix' => 'externalized-',
+                        'source' => 'externalized',
+                        'include_documents' => $includeDocuments,
+                    ]);
+                } else {
+                    $res = tpCreateDatabaseBackup($this->settings, $encryptionKey, [
+                        'output_dir' => $targetDir,
+                        'filename_prefix' => 'externalized-',
+                    ]);
+                }
+
+                if (($res['success'] ?? false) !== true) {
+                    throw new Exception((string)($res['message'] ?? 'Externalized backup failed'));
+                }
+
+                break;
+            } catch (Throwable $e) {
+                if (LOG_TASKS === true) {
+                    $this->logger->log(
+                        'externalized_backup: attempt ' . $attempt . '/' . $maxAttempts . ' failed: ' . $e->getMessage(),
+                        'ERROR'
+                    );
+                }
+
+                if ($attempt >= $maxAttempts) {
+                    throw new Exception(
+                        'Externalized backup failed after ' . $maxAttempts . ' attempt(s): ' . $e->getMessage(),
+                        0,
+                        $e
+                    );
+                }
+
+                $this->updateExternalizedState('running', 'Externalized backup retry scheduled after failure: ' . $e->getMessage());
+                if ($retryDelaySeconds > 0) {
+                    sleep($retryDelaySeconds);
+                }
+            }
+        }
+
+        if (($res['success'] ?? false) !== true || $targetDir === '') {
+            throw new Exception('Externalized backup failed.');
+        }
+
+        try {
+            if ($backupFormat !== tpBackupGetPackageExtension() && !empty($res['filepath']) && function_exists('tpWriteBackupMetadata')) {
+                tpWriteBackupMetadata((string) $res['filepath'], '', '', ['source' => 'externalized']);
+            }
+        } catch (Throwable) {
+            // do not block backups if metadata cannot be written
+        }
+
+        $this->taskData['backup_file'] = (string) $res['filename'];
+        $this->taskData['backup_size_bytes'] = (int) $res['size_bytes'];
+        $this->taskData['backup_encrypted'] = (bool) $res['encrypted'];
+        $this->taskData['backup_format'] = $backupFormat;
+        $this->taskData['include_documents'] = $includeDocuments;
+
+        $retentionDays = max(1, (int) $this->getMiscSetting('bck_externalized_retention_days', '30'));
+        $retentionCount = max(1, (int) $this->getMiscSetting('bck_externalized_retention_count', '10'));
+        $deleted = $this->purgeOldExternalizedBackups($targetDir, $retentionDays, $retentionCount);
+
+        $this->upsertMiscSetting('bck_externalized_last_purge_at', (string)time());
+        $this->upsertMiscSetting('bck_externalized_last_purge_deleted', (string)$deleted);
+        $this->upsertMiscSetting('bck_externalized_last_file', (string) $res['filename']);
+        $this->upsertMiscSetting('bck_externalized_last_size_bytes', (string) ((int) $res['size_bytes']));
+
+        $message = 'Externalized backup created: ' . (string) $res['filename'];
+        $this->updateExternalizedState('completed', $message);
+
+        if (LOG_TASKS === true) {
+            $this->logger->log(
+                'externalized_backup: created ' . (string) $res['filename'] . ' (' . (int) $res['size_bytes'] . ' bytes)',
+                'INFO'
+            );
+        }
+    }
+
+    /**
+     * Auto-disconnect connected users before backup operations.
+     */
+    private function disconnectConnectedUsersBeforeBackup(int $excludeUserId = 0): void
+    {
+        try {
+            if (function_exists('loadClasses') && !class_exists('DB')) {
+                loadClasses('DB');
+            }
+            $now = time();
+
+            if ($excludeUserId > 0) {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+                    $now,
+                    $excludeUserId
+                );
+            } else {
+                $connectedUsers = DB::query(
+                    'SELECT id FROM ' . prefixTable('users') . ' WHERE session_end >= %i',
+                    $now
+                );
+            }
+
+            foreach ($connectedUsers as $u) {
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'key_tempo' => '',
+                        'timestamp' => '',
+                        'session_end' => '',
+                    ],
+                    'id = %i',
+                    intval($u['id'])
+                );
+            }
+        } catch (Throwable) {
+            // Best effort only - do not block backups if disconnection cannot be done
         }
     }
 
@@ -525,6 +687,15 @@ class TaskWorker {
         $this->upsertMiscSetting('bck_scheduled_last_completed_at', (string)time());
     }
 
+    private function updateExternalizedState(string $status, string $message): void
+    {
+        $this->upsertMiscSetting('bck_externalized_last_status', $status);
+        $this->upsertMiscSetting('bck_externalized_last_message', mb_substr($message, 0, 500));
+        if (in_array($status, ['completed', 'failed'], true)) {
+            $this->upsertMiscSetting('bck_externalized_last_completed_at', (string)time());
+        }
+    }
+
     private function formatBytes(int $bytes): string
     {
         if ($bytes < 1024) {
@@ -663,7 +834,11 @@ class TaskWorker {
         $cutoff = time() - ($retentionDays * 86400);
         $deleted = 0;
 
-        foreach (glob(rtrim($dir, '/') . '/scheduled-*.sql') as $file) {
+        $paths = array_merge(
+            glob(rtrim($dir, '/') . '/scheduled-*.sql') ?: [],
+            glob(rtrim($dir, '/') . '/scheduled-*.' . tpBackupGetPackageExtension()) ?: []
+        );
+        foreach ($paths as $file) {
             if (!is_file($file)) {
                 continue;
             }
@@ -674,7 +849,65 @@ class TaskWorker {
                     $deleted++;
                     // Also remove metadata sidecar if present
                     @unlink($file . '.meta.json');
-}
+                }
+            }
+        }
+
+        return $deleted;
+    }
+
+    private function purgeOldExternalizedBackups(string $dir, int $retentionDays, int $retentionCount): int
+    {
+        if (!is_dir($dir)) {
+            return 0;
+        }
+
+        $deleted = 0;
+        $base = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
+        $paths = array_values(array_unique(array_merge(
+            glob($base . 'externalized-*.sql') ?: [],
+            glob($base . 'externalized-*.' . tpBackupGetPackageExtension()) ?: []
+        )));
+
+        if ($retentionDays > 0) {
+            $cutoff = time() - ($retentionDays * 86400);
+            foreach ($paths as $idx => $file) {
+                if (!is_file($file)) {
+                    unset($paths[$idx]);
+                    continue;
+                }
+
+                $mtime = @filemtime($file);
+                if ($mtime !== false && $mtime < $cutoff) {
+                    if (@unlink($file)) {
+                        $deleted++;
+                        @unlink($file . '.meta.json');
+                    }
+                    unset($paths[$idx]);
+                }
+            }
+        }
+
+        $remaining = [];
+        foreach ($paths as $file) {
+            if (!is_file($file)) {
+                continue;
+            }
+            $remaining[] = [
+                'path' => $file,
+                'mtime' => (int) (@filemtime($file) ?: 0),
+            ];
+        }
+
+        usort($remaining, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+        if ($retentionCount > 0 && count($remaining) > $retentionCount) {
+            foreach (array_slice($remaining, $retentionCount) as $entry) {
+                $file = (string) $entry['path'];
+                if (@unlink($file)) {
+                    $deleted++;
+                    @unlink($file . '.meta.json');
+                }
             }
         }
 
@@ -742,12 +975,22 @@ class TaskWorker {
             ]);
         }
 
-        if ($this->processType === 'database_backup') {
-            return (string) json_encode([
+        if ($this->processType === 'database_backup' || $this->processType === 'externalized_backup') {
+            $payload = [
                 'file'       => $this->taskData['backup_file'] ?? '',
                 'size_bytes' => $this->taskData['backup_size_bytes'] ?? 0,
                 'encrypted'  => $this->taskData['backup_encrypted'] ?? false,
-            ]);
+                'format'     => $this->taskData['backup_format'] ?? '',
+                'include_documents' => $this->taskData['include_documents'] ?? false,
+            ];
+
+            if ($this->processType === 'externalized_backup') {
+                $payload['destination_type'] = $this->taskData['destination_type'] ?? '';
+                $payload['retry_attempt'] = $this->taskData['retry_attempt'] ?? 1;
+                $payload['retry_attempts'] = $this->taskData['retry_attempts'] ?? 1;
+            }
+
+            return (string) json_encode($payload);
         }
 
         return '';
@@ -843,14 +1086,31 @@ class TaskWorker {
             }
         }
 
-    // Purge retention even on failure (safe: only scheduled-*.sql)
+        if ($this->processType === 'externalized_backup') {
+            try {
+                $this->updateExternalizedState('failed', $e->getMessage());
+            } catch (Throwable) {
+                // best effort only
+            }
+        }
+
+        // Purge retention even on failure (safe: only files matching the task source prefix)
         $backupDir = (string)($this->taskData['output_dir'] ?? '');
         if ($backupDir !== '' && is_dir($backupDir)) {
-        $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
-        $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
+            if ($this->processType === 'database_backup' && (string)($this->taskData['source'] ?? '') === 'scheduler') {
+                $days = (int)$this->getMiscSetting('bck_scheduled_retention_days', '30');
+                $deleted = $this->purgeOldScheduledBackups($backupDir, $days);
 
-        $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
-        $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+                $this->upsertMiscSetting('bck_scheduled_last_purge_at', (string)time());
+                $this->upsertMiscSetting('bck_scheduled_last_purge_deleted', (string)$deleted);
+            } elseif ($this->processType === 'externalized_backup') {
+                $days = max(1, (int)$this->getMiscSetting('bck_externalized_retention_days', '30'));
+                $count = max(1, (int)$this->getMiscSetting('bck_externalized_retention_count', '10'));
+                $deleted = $this->purgeOldExternalizedBackups($backupDir, $days, $count);
+
+                $this->upsertMiscSetting('bck_externalized_last_purge_at', (string)time());
+                $this->upsertMiscSetting('bck_externalized_last_purge_deleted', (string)$deleted);
+            }
         }
     }
 
