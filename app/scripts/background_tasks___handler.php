@@ -32,6 +32,7 @@ use Symfony\Component\Process\Process;
 use TeampassClasses\ConfigManager\ConfigManager;
 
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__ . '/../sources/backup.functions.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class BackgroundTasksHandler {
@@ -112,10 +113,20 @@ class BackgroundTasksHandler {
 
         $now = time();
 
-        // Output dir
-        $outputDir = (string)$this->getSettingValue('bck_scheduled_output_dir', '');
-        if ($outputDir === '') {
-            $outputDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
+        // Output dir: default to storage/backups; legacy subfolders of files/ remain allowed.
+        $outputDirSetting = (string)$this->getSettingValue('bck_scheduled_output_dir', '');
+        $resolvedOutputDir = tpBackupResolveScheduledOutputDir($outputDirSetting, $this->settings);
+        if ($resolvedOutputDir['success'] === false) {
+            $this->upsertSettingValue('bck_scheduled_last_status', 'failed');
+            $this->upsertSettingValue('bck_scheduled_last_message', 'Invalid output directory');
+            if (LOG_TASKS === true) {
+                $this->logger->log('backup scheduler: invalid output directory: ' . $outputDirSetting, 'ERROR');
+            }
+            return;
+        }
+
+        $outputDir = $resolvedOutputDir['path'];
+        if ($outputDirSetting !== $outputDir) {
             $this->upsertSettingValue('bck_scheduled_output_dir', $outputDir);
         }
 

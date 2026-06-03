@@ -312,72 +312,6 @@ $post_data = filter_input(
         return $currentRealPath;
     }
 
-    /**
-     * Resolves and validates the scheduled backup output directory.
-     * Falls back to the default storage/backups path when $requestedDir is empty.
-     * Creates missing allowed base directories before validation.
-     * Returns ['success' => true, 'path' => <real path>] on success,
-     * or ['success' => false, 'path' => ''] when the path falls outside all allowed bases.
-     *
-     * @param string[] $allowedBaseDirs
-     * @return array{success: bool, path: string}
-     */
-    function tpResolveScheduledBackupOutputDir(string $requestedDir, array $allowedBaseDirs): array
-    {
-        $outputDir = trim($requestedDir);
-        if ($outputDir === '') {
-            $outputDir = tpGetScheduledBackupDefaultDir();
-        }
-
-        if ($outputDir === '') {
-            return ['success' => false, 'path' => ''];
-        }
-
-        foreach ($allowedBaseDirs as $allowedBaseDir) {
-            if (trim($allowedBaseDir) === '') {
-                continue;
-            }
-
-            if (!is_dir($allowedBaseDir)) {
-                $mkdirBaseResult = @mkdir($allowedBaseDir, 0750, true);
-                if ($mkdirBaseResult === false && !is_dir($allowedBaseDir)) {
-                    continue;
-                }
-            }
-        }
-
-        $resolvedOutputDir = tpResolveDirectoryCreationPath($outputDir);
-        if ($resolvedOutputDir === '') {
-            return ['success' => false, 'path' => ''];
-        }
-
-        $isAllowed = false;
-        foreach ($allowedBaseDirs as $allowedBaseDir) {
-            if (tpIsResolvedPathInsideDirectory($resolvedOutputDir, $allowedBaseDir) === true) {
-                $isAllowed = true;
-                break;
-            }
-        }
-
-        if ($isAllowed === false) {
-            return ['success' => false, 'path' => ''];
-        }
-
-        if (!is_dir($outputDir)) {
-            $mkdirResult = @mkdir($outputDir, 0750, true);
-            if ($mkdirResult === false && !is_dir($outputDir)) {
-                return ['success' => false, 'path' => ''];
-            }
-        }
-
-        $dirReal = realpath($outputDir);
-        if ($dirReal === false || !is_dir($dirReal)) {
-            return ['success' => false, 'path' => ''];
-        }
-
-        return ['success' => true, 'path' => $dirReal];
-    }
-
 // ---------------------------------------------------------------------
 // Restore compatibility helpers
 // ---------------------------------------------------------------------
@@ -477,7 +411,21 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         $baseDir = rtrim(tpGetOntheflyBackupDir(false), '/');
         if ($serverScope === 'scheduled') {
             $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
-            $baseDir = rtrim($dir, '/');
+            $resolvedDir = tpBackupResolveScheduledOutputDir($dir, $SETTINGS);
+            if ($resolvedDir['success'] === false) {
+                return [
+                    'is_compatible' => false,
+                    'reason' => 'INVALID_BACKUP_DIRECTORY',
+                    'mode' => $mode,
+                    'warnings' => $warnings,
+                    'backup_schema_level' => '',
+                    'expected_schema_level' => $expectedSchema,
+                    'backup_tp_files_version' => null,
+                    'expected_tp_files_version' => $expectedVersion,
+                    'resolved_path' => '',
+                ];
+            }
+            $baseDir = rtrim($resolvedDir['path'], '/\\');
         }
         $targetPath = $baseDir . '/' . $bn;
 
@@ -623,6 +571,12 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             }
 
             $dir = (string) tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
+            $resolvedDir = tpBackupResolveScheduledOutputDir($dir, $SETTINGS);
+            if ($resolvedDir['success'] === false) {
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+            $dir = $resolvedDir['path'];
             $fp = rtrim($dir, '/') . '/' . $get_file;
 
             $dirReal = realpath($dir);
@@ -785,6 +739,13 @@ try {
                 break;
             }
 
+            $scheduledOutputDir = (string) tpGetSettingsValue('bck_scheduled_output_dir', '');
+            $resolvedScheduledOutputDir = tpBackupResolveScheduledOutputDir($scheduledOutputDir, $SETTINGS);
+            if ($resolvedScheduledOutputDir['success'] === true && $scheduledOutputDir !== $resolvedScheduledOutputDir['path']) {
+                $scheduledOutputDir = $resolvedScheduledOutputDir['path'];
+                tpUpsertSettingsValue('bck_scheduled_output_dir', $scheduledOutputDir);
+            }
+
             echo prepareExchangedData([
                 'error' => false,
                 'settings' => [
@@ -793,7 +754,7 @@ try {
                     'time' => (string) tpGetSettingsValue('bck_scheduled_time', '02:00'),
                     'dow' => (int) tpGetSettingsValue('bck_scheduled_dow', '1'),
                     'dom' => (int) tpGetSettingsValue('bck_scheduled_dom', '1'),
-                    'output_dir' => (string) tpGetSettingsValue('bck_scheduled_output_dir', ''),
+                    'output_dir' => $scheduledOutputDir,
                     'retention_days' => (int) tpGetSettingsValue('bck_scheduled_retention_days', '30'),
 
                     'next_run_at' => (int) tpGetSettingsValue('bck_scheduled_next_run_at', '0'),
@@ -939,14 +900,7 @@ try {
             if ($retentionDays > 3650) $retentionDays = 3650;
 
             // Output dir: default to storage/backups; legacy subfolders of files/ remain allowed.
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $resolveOutputDir = tpResolveScheduledBackupOutputDir(
-                (string) ($dataReceived['output_dir'] ?? ''),
-                [
-                    tpGetScheduledBackupDefaultDir(),
-                    $baseFilesDir,
-                ]
-            );
+            $resolveOutputDir = tpBackupResolveScheduledOutputDir((string) ($dataReceived['output_dir'] ?? ''), $SETTINGS);
 
             if ($resolveOutputDir['success'] === false) {
                 echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
@@ -980,8 +934,7 @@ try {
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
 
             // Validate the retrieved path before creating it (defensive check against direct DB edits).
-            $baseFilesDir = (string) ($SETTINGS['path_to_files_folder'] ?? (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/files' : __DIR__ . '/../../storage/files'));
-            $resolvedListDir = tpResolveScheduledBackupOutputDir($dir, [tpGetScheduledBackupDefaultDir(), $baseFilesDir]);
+            $resolvedListDir = tpBackupResolveScheduledOutputDir($dir, $SETTINGS);
             if ($resolvedListDir['success'] === false) {
                 echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
                 break;
@@ -1033,6 +986,12 @@ try {
             }
 
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
+            $resolvedDeleteDir = tpBackupResolveScheduledOutputDir($dir, $SETTINGS);
+            if ($resolvedDeleteDir['success'] === false) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
+                break;
+            }
+            $dir = $resolvedDeleteDir['path'];
             $fp = rtrim($dir, '/') . '/' . $file;
 
             /**
@@ -1098,7 +1057,13 @@ try {
 
             $now = time();
             $dir = (string)tpGetSettingsValue('bck_scheduled_output_dir', tpGetScheduledBackupDefaultDir());
-            @mkdir($dir, 0750, true);
+            $resolvedRunDir = tpBackupResolveScheduledOutputDir($dir, $SETTINGS);
+            if ($resolvedRunDir['success'] === false) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_scheduled_output_dir_invalid')], 'encode');
+                break;
+            }
+            $dir = $resolvedRunDir['path'];
+            tpUpsertSettingsValue('bck_scheduled_output_dir', $dir);
 
             // avoid duplicates
             $pending = (int)DB::queryFirstField(
