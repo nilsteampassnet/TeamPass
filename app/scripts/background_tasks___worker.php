@@ -124,27 +124,23 @@ class TaskWorker {
     }
 
     /**
-     * Perform a scheduled database backup (encrypted) into files/backups.
+     * Perform a scheduled database backup (encrypted) into storage/backups by default.
      */
     private function handleDatabaseBackup(array $taskData): void
     {
         require_once __DIR__ . '/../sources/backup.functions.php';
 
-        // Default target dir: storage/backups/
-        $targetDir = defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/backups' : __DIR__ . '/../../storage/backups';
-
-        // Allow override via task arguments (optional)
-        if (!empty($taskData['output_dir']) && is_string($taskData['output_dir'])) {
-            $targetDir = rtrim($taskData['output_dir'], '/');
+        $requestedTargetDir = !empty($taskData['output_dir']) && is_string($taskData['output_dir'])
+            ? (string) $taskData['output_dir']
+            : '';
+        $resolvedTargetDir = tpBackupResolveScheduledOutputDir($requestedTargetDir, $this->settings);
+        if ($resolvedTargetDir['success'] === false) {
+            throw new Exception('Invalid backup target dir: ' . $requestedTargetDir);
         }
 
-        if (!is_dir($targetDir)) {
-            // mkdir can fail if the directory was created concurrently; the second is_dir check handles that race
-            $mkdirResult = mkdir($targetDir, 0750, true);
-            if ($mkdirResult === false && !is_dir($targetDir)) {
-                throw new Exception('Cannot create backup target dir: ' . $targetDir);
-            }
-        }
+        $targetDir = $resolvedTargetDir['path'];
+        $this->taskData['output_dir'] = $targetDir;
+
         if (!is_writable($targetDir)) {
             throw new Exception('Backup target dir is not writable: ' . $targetDir);
         }
