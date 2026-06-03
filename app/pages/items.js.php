@@ -203,7 +203,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
         $('#item-action-notify-icon')
             .removeClass('fa-regular fa-solid fa-bell fa-bell-slash text-success text-warning')
-            .addClass(enabled === true ? 'fa-solid fa-bell text-success' : 'fa-regular fa-bell');
+            .addClass(enabled === true ? 'fa-solid fa-bell text-success' : 'fa-regular fa-bell-slash text-warning');
 
         if ($('#card-item-misc-notification').length > 0) {
             $('#card-item-misc-notification').html(itemNotificationIconHtml(enabled));

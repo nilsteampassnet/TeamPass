@@ -1712,7 +1712,6 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $folderId = (int) ($item['id_tree'] ?? 0);
     $folderName = geItemReadablePath($folderId, '', $SETTINGS);
     $baseUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
-    $itemUrl = $baseUrl . '/index.php?page=items&group=' . $folderId . '&id=' . $item_id;
 
     $htmlChanges = '';
     if (count($changes) > 0) {
@@ -1739,17 +1738,6 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
         $body
     );
     $body = str_replace('<br >', '<br>', $body);
-
-    $normalizedBody = preg_replace_callback(
-        '/<a\b[^>]*>(.*?)<\/a>/is',
-        static function (array $matches) use ($itemUrl): string {
-            return '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">' . $matches[1] . '</a>';
-        },
-        $body
-    );
-    if ($normalizedBody !== null) {
-        $body = $normalizedBody;
-    }
 
     $emailQueued = false;
     foreach ($subscribers as $subscriber) {
