@@ -210,6 +210,35 @@ $post_data = filter_input(
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 
+    function tpExternalizedDestinationErrorMessage(Language $lang, string $reason): string
+    {
+        $map = [
+            'EMPTY' => 'bck_externalized_destination_empty',
+            'TOO_LONG' => 'bck_externalized_destination_too_long',
+            'NOT_ABSOLUTE' => 'bck_externalized_destination_not_absolute',
+            'NOT_FOUND' => 'bck_externalized_destination_not_found',
+            'NOT_WRITABLE' => 'bck_externalized_destination_not_writable',
+            'INSIDE_TEAMPASS' => 'bck_externalized_destination_inside_teampass',
+            'UNSUPPORTED_TYPE' => 'bck_externalized_destination_type_unsupported',
+        ];
+
+        return (string) $lang->get($map[$reason] ?? 'bck_externalized_destination_invalid');
+    }
+
+    function tpRecoveryForgetSessionPackage($session): void
+    {
+        $current = $session->get('recovery-package-download');
+        if (is_array($current) === true && !empty($current['path']) && is_scalar($current['path'])) {
+            tpRecoverySafeDeletePackage((string) $current['path']);
+        }
+
+        if (method_exists($session, 'remove') === true) {
+            $session->remove('recovery-package-download');
+        } else {
+            $session->set('recovery-package-download', null);
+        }
+    }
+
     /**
      * Returns the default directory for scheduled backups (storage/backups).
      */
@@ -459,8 +488,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         // Upload restore has no meta => version cannot be verified by design
         $warnings[] = 'VERSION_NOT_VERIFIED';
     } elseif ($serverFile !== '') {
-        $bn = basename($serverFile);
-        if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
+        $bn = basename(str_replace('\\', '/', $serverFile));
+        $extension = strtolower((string) pathinfo($bn, PATHINFO_EXTENSION));
+        if ($bn === '' || tpBackupFileExtensionIsSupported($extension) === false) {
             return [
                 'is_compatible' => false,
                 'reason' => 'INVALID_FILENAME',
@@ -492,8 +522,67 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 ];
             }
             $baseDir = rtrim($resolvedDir['path'], '/\\');
+        } elseif ($serverScope === 'externalized') {
+            if (strpos($bn, 'externalized-') !== 0) {
+                return [
+                    'is_compatible' => false,
+                    'reason' => 'INVALID_FILENAME',
+                    'mode' => $mode,
+                    'warnings' => $warnings,
+                    'backup_schema_level' => '',
+                    'expected_schema_level' => $expectedSchema,
+                    'backup_tp_files_version' => null,
+                    'expected_tp_files_version' => $expectedVersion,
+                    'resolved_path' => '',
+                ];
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory'));
+            $dir = (string) tpGetSettingsValue('bck_externalized_target_dir', '');
+            $resolvedDir = tpBackupResolveExternalizedDestination($destinationType, $dir, $SETTINGS);
+            if ($resolvedDir['success'] === false) {
+                return [
+                    'is_compatible' => false,
+                    'reason' => 'INVALID_BACKUP_DIRECTORY',
+                    'mode' => $mode,
+                    'warnings' => $warnings,
+                    'backup_schema_level' => '',
+                    'expected_schema_level' => $expectedSchema,
+                    'backup_tp_files_version' => null,
+                    'expected_tp_files_version' => $expectedVersion,
+                    'resolved_path' => '',
+                ];
+            }
+
+            $baseDir = rtrim((string) $resolvedDir['path'], '/\\');
         }
         $targetPath = $baseDir . '/' . $bn;
+        $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($targetPath) : [];
+        if (is_array($meta['warnings'] ?? null)) {
+            $warnings = array_merge($warnings, array_map('strval', $meta['warnings']));
+        }
+        if (is_array($meta['documents'] ?? null) && is_array($meta['documents']['warnings'] ?? null)) {
+            $warnings = array_merge($warnings, array_map('strval', $meta['documents']['warnings']));
+        }
+        $warnings = array_values(array_unique(array_filter($warnings)));
+
+        $isPackage = tpBackupIsPackageFilename($bn);
+        if ($isPackage === true) {
+            $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : '';
+            if (in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === false) {
+                return [
+                    'is_compatible' => false,
+                    'reason' => 'PACKAGE_TYPE_UNSUPPORTED',
+                    'mode' => $mode,
+                    'warnings' => $warnings,
+                    'backup_schema_level' => '',
+                    'expected_schema_level' => $expectedSchema,
+                    'backup_tp_files_version' => null,
+                    'expected_tp_files_version' => $expectedVersion,
+                    'resolved_path' => $targetPath,
+                ];
+            }
+        }
 
         if (function_exists('tpGetBackupTpFilesVersionFromMeta')) {
             $v = (string) tpGetBackupTpFilesVersionFromMeta($targetPath);
@@ -623,14 +712,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             $get_file = filter_input(INPUT_GET, 'file', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $get_file = basename((string) $get_file);
 
-            // Safety check: only .sql files allowed
+            // Safety check: only known backup files allowed
             $extension = (string) pathinfo($get_file, PATHINFO_EXTENSION);
-            if (strtolower($extension) !== 'sql') {
+            if (tpBackupFileExtensionIsSupported($extension) === false) {
                 header('HTTP/1.1 400 Bad Request');
                 exit;
             }
 
-            // Safety check: only scheduled-*.sql files allowed
+            // Safety check: only scheduled backup files allowed
             if ($get_file === '' || strpos($get_file, 'scheduled-') !== 0) {
                 header('HTTP/1.1 400 Bad Request');
                 exit;
@@ -692,6 +781,155 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             readfile($fpReal);
             exit;
 
+        case 'externalized_download_backup':
+            // Download an externalized backup file (encrypted) from the configured destination.
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            $get_key_tmp = filter_input(INPUT_GET, 'key_tmp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if (empty($get_key_tmp) === true || $get_key_tmp !== (string) $session->get('user-key_tmp')) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            $get_file = filter_input(INPUT_GET, 'file', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $get_file = basename(str_replace('\\', '/', (string) $get_file));
+
+            $extension = (string) pathinfo($get_file, PATHINFO_EXTENSION);
+            if ($get_file === '' || strpos($get_file, 'externalized-') !== 0 || tpBackupFileExtensionIsSupported($extension) === false) {
+                header('HTTP/1.1 400 Bad Request');
+                exit;
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory'));
+            $dir = (string) tpGetSettingsValue('bck_externalized_target_dir', '');
+            $resolvedDir = tpBackupResolveExternalizedDestination($destinationType, $dir, $SETTINGS);
+            if ($resolvedDir['success'] === false) {
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+            $dir = $resolvedDir['path'];
+            $fp = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $get_file;
+
+            $dirReal = realpath($dir);
+            $fpReal = realpath($fp);
+
+            if ($dirReal === false || $fpReal === false || tpBackupIsResolvedPathInsideDirectory($fpReal, $dirReal) === false || is_file($fpReal) === false) {
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+
+            if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
+                set_time_limit(0);
+            }
+
+            $size = 0;
+            if (file_exists($fpReal) && is_readable($fpReal)) {
+                $size = (int) filesize($fpReal);
+            }
+
+            if (function_exists('ob_get_level')) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+            }
+
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . $get_file . '"');
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: private, must-revalidate');
+            header('Pragma: public');
+            if ($size > 0) {
+                header('Content-Length: ' . $size);
+            }
+
+            readfile($fpReal);
+            exit;
+
+        case 'recovery_package_download':
+            // Download a one-time manual recovery package, then remove it from temp storage.
+            if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            $get_key_tmp = filter_input(INPUT_GET, 'key_tmp', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            if (empty($get_key_tmp) === true || $get_key_tmp !== (string) $session->get('user-key_tmp')) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            $get_token = filter_input(INPUT_GET, 'token', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $download = $session->get('recovery-package-download');
+            if (is_array($download) === false || empty($download['token']) || empty($download['path']) || empty($download['filename'])) {
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+
+            if ($get_token === null || hash_equals((string) $download['token'], (string) $get_token) === false) {
+                header('HTTP/1.1 403 Forbidden');
+                exit;
+            }
+
+            if ((int) ($download['expires_at'] ?? 0) < time()) {
+                tpRecoveryForgetSessionPackage($session);
+                header('HTTP/1.1 410 Gone');
+                exit;
+            }
+
+            $fpReal = realpath((string) $download['path']);
+            if ($fpReal === false || tpRecoveryPackagePathIsSafe($fpReal) === false) {
+                tpRecoveryForgetSessionPackage($session);
+                header('HTTP/1.1 404 Not Found');
+                exit;
+            }
+
+            $filename = basename((string) $download['filename']);
+            if (
+                $filename === ''
+                || strtolower((string) pathinfo($filename, PATHINFO_EXTENSION)) !== tpRecoveryGetPackageExtension()
+                || str_starts_with($filename, 'recovery-') === false
+            ) {
+                tpRecoveryForgetSessionPackage($session);
+                header('HTTP/1.1 400 Bad Request');
+                exit;
+            }
+
+            if (function_exists('set_time_limit') && !ini_get('safe_mode')) {
+                set_time_limit(0);
+            }
+
+            $size = is_readable($fpReal) ? (int) filesize($fpReal) : 0;
+
+            if (function_exists('ob_get_level')) {
+                while (ob_get_level() > 0) {
+                    ob_end_clean();
+                }
+            }
+
+            header('Content-Description: File Transfer');
+            header('Content-Type: application/octet-stream');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Transfer-Encoding: binary');
+            header('Expires: 0');
+            header('Cache-Control: private, must-revalidate');
+            header('Pragma: public');
+            if ($size > 0) {
+                header('Content-Length: ' . $size);
+            }
+
+            if (function_exists('ignore_user_abort')) {
+                ignore_user_abort(true);
+            }
+
+            readfile($fpReal);
+            tpRecoveryForgetSessionPackage($session);
+            exit;
+
         //CASE adding a new function
         case 'onthefly_backup':
             // Check KEY
@@ -723,6 +961,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         
             // Prepare variables
             $encryptionKey = filter_var($dataReceived['encryptionKey'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $includeDocuments = (int)($dataReceived['include_documents'] ?? 0) === 1;
+            $backupFormat = tpBackupNormalizeRequestedFormat((string) ($dataReceived['backup_format'] ?? $dataReceived['format'] ?? 'sql'));
+            if ($includeDocuments === true) {
+                $backupFormat = tpBackupGetPackageExtension();
+            }
 
             // Optional comment (stored in <backup>.meta.json)
             $comment = isset($dataReceived['comment']) ? (string) $dataReceived['comment'] : '';
@@ -740,11 +983,24 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 break;
             }
 
-            $backupResult = tpCreateDatabaseBackup(
-                $SETTINGS,
-                $encryptionKey,
-                ['output_dir' => tpGetOntheflyBackupDir(true)]
-            );
+            if ($backupFormat === tpBackupGetPackageExtension()) {
+                $backupResult = tpCreateBackupPackage(
+                    $SETTINGS,
+                    $encryptionKey,
+                    [
+                        'output_dir' => tpGetOntheflyBackupDir(true),
+                        'source' => 'onthefly',
+                        'comment' => $comment,
+                        'include_documents' => $includeDocuments,
+                    ]
+                );
+            } else {
+                $backupResult = tpCreateDatabaseBackup(
+                    $SETTINGS,
+                    $encryptionKey,
+                    ['output_dir' => tpGetOntheflyBackupDir(true)]
+                );
+            }
 
             if ($backupResult['success'] !== true) {
                 echo prepareExchangedData(
@@ -758,18 +1014,18 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
             }
 
             $filename = $backupResult['filename'];
-// Write metadata sidecar (<backup>.meta.json) for fast listings / migration safety
-try {
-    if (function_exists('tpWriteBackupMetadata') && !empty($backupResult['filepath'])) {
-        $extraMeta = ['source' => 'onthefly'];
-        if ($comment !== '') {
-            $extraMeta['comment'] = $comment;
-        }
-        tpWriteBackupMetadata((string)$backupResult['filepath'], '', '', $extraMeta);
-    }
-} catch (Throwable $ignored) {
-    // best effort
-}
+            // Write metadata sidecar (<backup>.meta.json) for fast listings / migration safety
+            try {
+                if ($backupFormat !== tpBackupGetPackageExtension() && function_exists('tpWriteBackupMetadata') && !empty($backupResult['filepath'])) {
+                    $extraMeta = ['source' => 'onthefly'];
+                    if ($comment !== '') {
+                        $extraMeta['comment'] = $comment;
+                    }
+                    tpWriteBackupMetadata((string)$backupResult['filepath'], '', '', $extraMeta);
+                }
+            } catch (Throwable $ignored) {
+                // best effort
+            }
         
             // Generate 2d key
             $session->set('user-key_tmp', GenerateCryptKey(16, false, true, true, false, true));
@@ -789,8 +1045,9 @@ try {
                     'error' => false,
                     'message' => '',
                     'download' => 'sources/downloadFile.php?name=' . urlencode($filename) .
-                        '&action=backup&file=' . $filename . '&type=sql&key=' . $session->get('key') . '&key_tmp=' .
+                        '&action=backup&file=' . urlencode($filename) . '&type=' . tpBackupGetDownloadTypeForFilename($filename) . '&key=' . $session->get('key') . '&key_tmp=' .
                         $session->get('user-key_tmp') . '&pathIsOnthefly=1',
+                    'backup_format' => $backupFormat,
                 ),
                 'encode'
             );
@@ -822,6 +1079,8 @@ try {
                     'dom' => (int) tpGetSettingsValue('bck_scheduled_dom', '1'),
                     'output_dir' => $scheduledOutputDir,
                     'retention_days' => (int) tpGetSettingsValue('bck_scheduled_retention_days', '30'),
+                    'backup_format' => tpBackupNormalizeRequestedFormat((string) tpGetSettingsValue('bck_scheduled_format', 'sql')),
+                    'include_documents' => (int) tpGetSettingsValue('bck_scheduled_include_documents', '0'),
 
                     'next_run_at' => (int) tpGetSettingsValue('bck_scheduled_next_run_at', '0'),
                     'last_run_at' => (int) tpGetSettingsValue('bck_scheduled_last_run_at', '0'),
@@ -882,6 +1141,510 @@ try {
                     'label' => $label,
                     'tooltip' => $tooltip,
                     'path' => $dirReal,
+                ],
+                'encode'
+            );
+            break;
+
+        case 'externalized_get_settings':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'settings' => [
+                        'enabled' => (int) tpGetSettingsValue('bck_externalized_enabled', '0'),
+                        'destination_type' => tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory')),
+                        'target_dir' => (string) tpGetSettingsValue('bck_externalized_target_dir', ''),
+                        'backup_format' => tpBackupNormalizeRequestedFormat((string) tpGetSettingsValue('bck_externalized_format', tpBackupGetPackageExtension())),
+                        'include_documents' => (int) tpGetSettingsValue('bck_externalized_include_documents', '0'),
+                        'retention_days' => (int) tpGetSettingsValue('bck_externalized_retention_days', '30'),
+                        'retention_count' => (int) tpGetSettingsValue('bck_externalized_retention_count', '10'),
+                        'retry_attempts' => (int) tpGetSettingsValue('bck_externalized_retry_attempts', '3'),
+                        'retry_delay_seconds' => (int) tpGetSettingsValue('bck_externalized_retry_delay_seconds', '5'),
+                        'last_test_at' => (int) tpGetSettingsValue('bck_externalized_last_test_at', '0'),
+                        'last_run_at' => (int) tpGetSettingsValue('bck_externalized_last_run_at', '0'),
+                        'last_completed_at' => (int) tpGetSettingsValue('bck_externalized_last_completed_at', '0'),
+                        'last_status' => (string) tpGetSettingsValue('bck_externalized_last_status', ''),
+                        'last_message' => (string) tpGetSettingsValue('bck_externalized_last_message', ''),
+                        'last_file' => (string) tpGetSettingsValue('bck_externalized_last_file', ''),
+                        'last_size_bytes' => (int) tpGetSettingsValue('bck_externalized_last_size_bytes', '0'),
+                        'last_purge_at' => (int) tpGetSettingsValue('bck_externalized_last_purge_at', '0'),
+                        'last_purge_deleted' => (int) tpGetSettingsValue('bck_externalized_last_purge_deleted', '0'),
+                    ],
+                ],
+                'encode'
+            );
+            break;
+
+        case 'externalized_save_settings':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $enabled = ((int)($dataReceived['enabled'] ?? 0) === 1) ? 1 : 0;
+            $destinationType = tpBackupNormalizeExternalizedDestinationType((string)($dataReceived['destination_type'] ?? 'local_directory'));
+            if (tpBackupExternalizedDestinationTypeIsSupported($destinationType) === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => tpExternalizedDestinationErrorMessage($lang, 'UNSUPPORTED_TYPE'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $targetDir = trim(str_replace("\0", '', (string)($dataReceived['target_dir'] ?? '')));
+            if (strlen($targetDir) > 1024) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => tpExternalizedDestinationErrorMessage($lang, 'TOO_LONG'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $includeDocuments = ((int)($dataReceived['include_documents'] ?? 0) === 1) ? 1 : 0;
+            $backupFormat = tpBackupNormalizeRequestedFormat((string)($dataReceived['backup_format'] ?? tpBackupGetPackageExtension()));
+            if ($includeDocuments === 1) {
+                $backupFormat = tpBackupGetPackageExtension();
+            }
+            $retentionDays = (int)($dataReceived['retention_days'] ?? 30);
+            if ($retentionDays < 1) {
+                $retentionDays = 1;
+            }
+            if ($retentionDays > 3650) {
+                $retentionDays = 3650;
+            }
+            $retentionCount = (int)($dataReceived['retention_count'] ?? 10);
+            if ($retentionCount < 1) {
+                $retentionCount = 1;
+            }
+            if ($retentionCount > 999) {
+                $retentionCount = 999;
+            }
+            $retryAttempts = (int)($dataReceived['retry_attempts'] ?? 3);
+            if ($retryAttempts < 1) {
+                $retryAttempts = 1;
+            }
+            if ($retryAttempts > 5) {
+                $retryAttempts = 5;
+            }
+            $retryDelaySeconds = (int)($dataReceived['retry_delay_seconds'] ?? 5);
+            if ($retryDelaySeconds < 0) {
+                $retryDelaySeconds = 0;
+            }
+            if ($retryDelaySeconds > 60) {
+                $retryDelaySeconds = 60;
+            }
+
+            if ($enabled === 1) {
+                $resolvedTarget = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+                if ($resolvedTarget['success'] === false) {
+                    echo prepareExchangedData(
+                        [
+                            'error' => true,
+                            'message' => tpExternalizedDestinationErrorMessage($lang, (string) $resolvedTarget['reason']),
+                        ],
+                        'encode'
+                    );
+                    break;
+                }
+                $targetDir = (string) $resolvedTarget['path'];
+            }
+
+            tpUpsertSettingsValue('bck_externalized_enabled', (string)$enabled);
+            tpUpsertSettingsValue('bck_externalized_destination_type', $destinationType);
+            tpUpsertSettingsValue('bck_externalized_target_dir', $targetDir);
+            tpUpsertSettingsValue('bck_externalized_format', $backupFormat);
+            tpUpsertSettingsValue('bck_externalized_include_documents', (string)$includeDocuments);
+            tpUpsertSettingsValue('bck_externalized_retention_days', (string)$retentionDays);
+            tpUpsertSettingsValue('bck_externalized_retention_count', (string)$retentionCount);
+            tpUpsertSettingsValue('bck_externalized_retry_attempts', (string)$retryAttempts);
+            tpUpsertSettingsValue('bck_externalized_retry_delay_seconds', (string)$retryDelaySeconds);
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'message' => $lang->get('bck_externalized_settings_saved'),
+                    'settings' => [
+                        'enabled' => $enabled,
+                        'destination_type' => $destinationType,
+                        'target_dir' => $targetDir,
+                        'backup_format' => $backupFormat,
+                        'include_documents' => $includeDocuments,
+                        'retention_days' => $retentionDays,
+                        'retention_count' => $retentionCount,
+                        'retry_attempts' => $retryAttempts,
+                        'retry_delay_seconds' => $retryDelaySeconds,
+                    ],
+                ],
+                'encode'
+            );
+            break;
+
+        case 'externalized_test_destination':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string)($dataReceived['destination_type'] ?? tpGetSettingsValue('bck_externalized_destination_type', 'local_directory')));
+            $targetDir = trim(str_replace("\0", '', (string)($dataReceived['target_dir'] ?? tpGetSettingsValue('bck_externalized_target_dir', ''))));
+            $resolvedTarget = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+            $now = time();
+
+            if ($resolvedTarget['success'] === false) {
+                $message = tpExternalizedDestinationErrorMessage($lang, (string) $resolvedTarget['reason']);
+                tpUpsertSettingsValue('bck_externalized_last_test_at', (string)$now);
+                tpUpsertSettingsValue('bck_externalized_last_status', 'failed');
+                tpUpsertSettingsValue('bck_externalized_last_message', $message);
+
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $message,
+                        'last_test_at' => $now,
+                        'last_status' => 'failed',
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $message = (string) $lang->get('bck_externalized_test_ok');
+            tpUpsertSettingsValue('bck_externalized_last_test_at', (string)$now);
+            tpUpsertSettingsValue('bck_externalized_last_status', 'ok');
+            tpUpsertSettingsValue('bck_externalized_last_message', $message);
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'message' => $message,
+                    'path' => (string) $resolvedTarget['path'],
+                    'last_test_at' => $now,
+                    'last_status' => 'ok',
+                ],
+                'encode'
+            );
+            break;
+
+        case 'externalized_run_now':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Not allowed'], 'encode');
+                break;
+            }
+
+            if ((int) tpGetSettingsValue('bck_externalized_enabled', '0') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_externalized_disabled')], 'encode');
+                break;
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory'));
+            $targetDir = (string) tpGetSettingsValue('bck_externalized_target_dir', '');
+            $resolvedTarget = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+            if ($resolvedTarget['success'] === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => tpExternalizedDestinationErrorMessage($lang, (string) $resolvedTarget['reason']),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $targetDir = (string) $resolvedTarget['path'];
+            tpUpsertSettingsValue('bck_externalized_target_dir', $targetDir);
+
+            $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($SETTINGS, true);
+            $instanceKey = !empty($resolvedBackupScriptPasskey['success'])
+                ? (string) $resolvedBackupScriptPasskey['clear_key']
+                : '';
+            if ($instanceKey === '') {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_externalized_missing_instance_key')], 'encode');
+                break;
+            }
+
+            $pending = (int)DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+                 WHERE process_type=%s AND is_in_progress IN (0,1)
+                   AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+                'externalized_backup'
+            );
+            if ($pending > 0) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('bck_externalized_task_already_pending')], 'encode');
+                break;
+            }
+
+            $now = time();
+            $backupFormat = tpBackupNormalizeRequestedFormat((string) tpGetSettingsValue('bck_externalized_format', tpBackupGetPackageExtension()));
+            $includeDocuments = ((int) tpGetSettingsValue('bck_externalized_include_documents', '0') === 1) ? 1 : 0;
+            if ($includeDocuments === 1) {
+                $backupFormat = tpBackupGetPackageExtension();
+            }
+            $retryAttempts = max(1, min(5, (int) tpGetSettingsValue('bck_externalized_retry_attempts', '3')));
+            $retryDelaySeconds = max(0, min(60, (int) tpGetSettingsValue('bck_externalized_retry_delay_seconds', '5')));
+            DB::insert(
+                prefixTable('background_tasks'),
+                [
+                    'created_at' => (string)$now,
+                    'process_type' => 'externalized_backup',
+                    'arguments' => json_encode(
+                        [
+                            'output_dir' => $targetDir,
+                            'destination_type' => $destinationType,
+                            'source' => 'externalized',
+                            'initiator_user_id' => (int) $session->get('user-id'),
+                            'backup_format' => $backupFormat,
+                            'include_documents' => $includeDocuments,
+                            'retry_attempts' => $retryAttempts,
+                            'retry_delay_seconds' => $retryDelaySeconds,
+                        ],
+                        JSON_UNESCAPED_SLASHES
+                    ),
+                    'is_in_progress' => 0,
+                    'status' => 'new',
+                ]
+            );
+
+            tpUpsertSettingsValue('bck_externalized_last_run_at', (string)$now);
+            tpUpsertSettingsValue('bck_externalized_last_status', 'queued');
+            tpUpsertSettingsValue('bck_externalized_last_message', (string) $lang->get('bck_externalized_task_queued'));
+
+            if (function_exists('triggerBackgroundHandler')) {
+                triggerBackgroundHandler();
+            }
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'message' => $lang->get('bck_externalized_task_queued'),
+                    'last_run_at' => $now,
+                ],
+                'encode'
+            );
+            break;
+
+        case 'externalized_list_backups':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory'));
+            $dir = (string) tpGetSettingsValue('bck_externalized_target_dir', '');
+            $resolvedListDir = tpBackupResolveExternalizedDestination($destinationType, $dir, $SETTINGS);
+            if ($resolvedListDir['success'] === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => tpExternalizedDestinationErrorMessage($lang, (string) $resolvedListDir['reason']),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $dir = (string) $resolvedListDir['path'];
+
+            $keyTmp = (string) $session->get('user-key_tmp');
+            if ($keyTmp === '') {
+                $keyTmp = GenerateCryptKey(16, false, true, true, false, true);
+                $session->set('user-key_tmp', $keyTmp);
+            }
+
+            $files = [];
+            $globDir = rtrim(str_replace('\\', '/', $dir), '/');
+            $paths = array_merge(
+                glob($globDir . '/externalized-*.sql') ?: [],
+                glob($globDir . '/externalized-*.' . tpBackupGetPackageExtension()) ?: []
+            );
+
+            foreach ($paths as $fp) {
+                $bn = basename($fp);
+                $extension = (string) pathinfo($bn, PATHINFO_EXTENSION);
+                if ($bn === '' || strpos($bn, 'externalized-') !== 0 || tpBackupFileExtensionIsSupported($extension) === false) {
+                    continue;
+                }
+
+                $fpReal = realpath($fp);
+                if ($fpReal === false || tpBackupIsResolvedPathInsideDirectory($fpReal, $dir) === false || is_file($fpReal) === false) {
+                    continue;
+                }
+
+                $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fpReal) : [];
+                $isPackage = tpBackupIsPackageFilename($bn);
+                $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
+                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+                $files[] = [
+                    'name' => $bn,
+                    'size_bytes' => (int)@filesize($fpReal),
+                    'mtime' => (int)@filemtime($fpReal),
+                    'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fpReal)) !== '') ? $v : null) : null),
+                    'backup_format' => $isPackage ? tpBackupGetPackageFormatId() : 'sql',
+                    'backup_format_version' => $isPackage ? (int) ($meta['backup_format_version'] ?? tpBackupGetPackageFormatVersion()) : null,
+                    'backup_type' => $backupType !== '' ? $backupType : 'unknown',
+                    'restore_supported' => $restoreSupported,
+                    'download' => 'sources/backups.queries.php?type=externalized_download_backup&file=' . urlencode($bn)
+                        . '&key=' . urlencode((string) $session->get('key'))
+                        . '&key_tmp=' . urlencode($keyTmp),
+                ];
+            }
+
+            usort($files, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+            echo prepareExchangedData(['error' => false, 'dir' => $dir, 'files' => $files], 'encode');
+            break;
+
+        case 'externalized_delete_backup':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $file = basename(str_replace('\\', '/', (string)($dataReceived['file'] ?? '')));
+            $extension = (string) pathinfo($file, PATHINFO_EXTENSION);
+            if ($file === '' || strpos($file, 'externalized-') !== 0 || tpBackupFileExtensionIsSupported($extension) === false) {
+                echo prepareExchangedData(['error' => true, 'message' => 'Invalid filename'], 'encode');
+                break;
+            }
+
+            $destinationType = tpBackupResolveExternalizedDestinationType((string) tpGetSettingsValue('bck_externalized_destination_type', 'local_directory'));
+            $dir = (string) tpGetSettingsValue('bck_externalized_target_dir', '');
+            $resolvedDeleteDir = tpBackupResolveExternalizedDestination($destinationType, $dir, $SETTINGS);
+            if ($resolvedDeleteDir['success'] === false) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => tpExternalizedDestinationErrorMessage($lang, (string) $resolvedDeleteDir['reason']),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $dir = (string) $resolvedDeleteDir['path'];
+            $fp = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . $file;
+            $fpReal = realpath($fp);
+            if ($fpReal === false || tpBackupIsResolvedPathInsideDirectory($fpReal, $dir) === false || is_file($fpReal) === false) {
+                echo prepareExchangedData(['error' => false], 'encode');
+                break;
+            }
+
+            if (is_writable($fpReal) === false) {
+                $errorMessage = "File is not writable, cannot delete: " . $fpReal;
+                if (WIP === true) {
+                    error_log("TeamPass - " . $errorMessage);
+                }
+                echo prepareExchangedData(['error' => true, 'message' => $errorMessage], 'encode');
+                break;
+            }
+
+            if (unlink($fpReal) === false) {
+                $errorMessage = "Failed to delete file: " . $fpReal;
+                if (WIP === true) {
+                    error_log("TeamPass - " . $errorMessage);
+                }
+                echo prepareExchangedData(['error' => true, 'message' => $errorMessage], 'encode');
+                break;
+            }
+
+            $metaPath = tpGetBackupMetadataPath($fpReal);
+            if (file_exists($metaPath) === true) {
+                @unlink($metaPath);
+            }
+
+            echo prepareExchangedData(['error' => false], 'encode');
+            break;
+
+        case 'recovery_package_create':
+            if ($post_key !== $session->get('key') || (int)$session->get('user-admin') !== 1) {
+                echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            $dataReceived = prepareExchangedData($post_data, 'decode');
+            if (!is_array($dataReceived)) {
+                $dataReceived = [];
+            }
+
+            $passphrase = str_replace("\0", '', (string) ($dataReceived['passphrase'] ?? ''));
+            $passphraseLength = function_exists('mb_strlen') ? (int) mb_strlen($passphrase) : (int) strlen($passphrase);
+            if ($passphraseLength < 12) {
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('bck_recovery_package_passphrase_too_short'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            tpRecoveryForgetSessionPackage($session);
+            $package = tpCreateRecoveryPackage($SETTINGS, $passphrase, ['output_dir' => (string) sys_get_temp_dir()]);
+            if (empty($package['success']) || empty($package['filepath']) || empty($package['filename'])) {
+                $details = !empty($package['message']) ? ' ' . tpSafeUtf8String((string) $package['message']) : '';
+                echo prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('bck_recovery_package_create_failed') . $details,
+                    ],
+                    'encode'
+                );
+                break;
+            }
+
+            $keyTmp = (string) $session->get('user-key_tmp');
+            if ($keyTmp === '') {
+                $keyTmp = GenerateCryptKey(16, false, true, true, false, true);
+                $session->set('user-key_tmp', $keyTmp);
+            }
+
+            $downloadToken = GenerateCryptKey(32, false, true, true, false, true);
+            $expiresAt = time() + 600;
+            $session->set(
+                'recovery-package-download',
+                [
+                    'token' => $downloadToken,
+                    'path' => (string) $package['filepath'],
+                    'filename' => (string) $package['filename'],
+                    'expires_at' => $expiresAt,
+                    'size_bytes' => (int) ($package['size_bytes'] ?? 0),
+                ]
+            );
+
+            echo prepareExchangedData(
+                [
+                    'error' => false,
+                    'message' => $lang->get('bck_recovery_package_created'),
+                    'filename' => (string) $package['filename'],
+                    'size_bytes' => (int) ($package['size_bytes'] ?? 0),
+                    'expires_at' => $expiresAt,
+                    'warnings' => is_array($package['warnings'] ?? null) ? $package['warnings'] : [],
+                    'download' => 'sources/backups.queries.php?type=recovery_package_download'
+                        . '&token=' . urlencode($downloadToken)
+                        . '&key=' . urlencode((string) $session->get('key'))
+                        . '&key_tmp=' . urlencode($keyTmp),
                 ],
                 'encode'
             );
@@ -964,6 +1727,11 @@ try {
             $retentionDays = (int)($dataReceived['retention_days'] ?? 30);
             if ($retentionDays < 1) $retentionDays = 1;
             if ($retentionDays > 3650) $retentionDays = 3650;
+            $includeDocuments = ((int)($dataReceived['include_documents'] ?? 0) === 1) ? 1 : 0;
+            $backupFormat = tpBackupNormalizeRequestedFormat((string)($dataReceived['backup_format'] ?? tpGetSettingsValue('bck_scheduled_format', 'sql')));
+            if ($includeDocuments === 1) {
+                $backupFormat = tpBackupGetPackageExtension();
+            }
 
             // Output dir: default to storage/backups; legacy subfolders of files/ remain allowed.
             $resolveOutputDir = tpBackupResolveScheduledOutputDir((string) ($dataReceived['output_dir'] ?? ''), $SETTINGS);
@@ -981,6 +1749,8 @@ try {
             tpUpsertSettingsValue('bck_scheduled_dom', (string)$dom);
             tpUpsertSettingsValue('bck_scheduled_output_dir', $dirReal);
             tpUpsertSettingsValue('bck_scheduled_retention_days', (string)$retentionDays);
+            tpUpsertSettingsValue('bck_scheduled_format', $backupFormat);
+            tpUpsertSettingsValue('bck_scheduled_include_documents', (string)$includeDocuments);
             tpUpsertSettingsValue('bck_scheduled_email_report_enabled', (string)$emailReportEnabled);
             tpUpsertSettingsValue('bck_scheduled_email_report_only_failures', (string)$emailReportOnlyFailures);
 
@@ -1016,13 +1786,25 @@ try {
 
 
             $files = [];
-            foreach (glob(rtrim($dir, '/') . '/scheduled-*.sql') ?: [] as $fp) {
+            $paths = array_merge(
+                glob(rtrim($dir, '/') . '/scheduled-*.sql') ?: [],
+                glob(rtrim($dir, '/') . '/scheduled-*.' . tpBackupGetPackageExtension()) ?: []
+            );
+            foreach ($paths as $fp) {
                 $bn = basename($fp);
+                $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : [];
+                $isPackage = tpBackupIsPackageFilename($bn);
+                $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
+                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
                 $files[] = [
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
                     'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
+                    'backup_format' => $isPackage ? tpBackupGetPackageFormatId() : 'sql',
+                    'backup_format_version' => $isPackage ? (int) ($meta['backup_format_version'] ?? tpBackupGetPackageFormatVersion()) : null,
+                    'backup_type' => $backupType !== '' ? $backupType : 'unknown',
+                    'restore_supported' => $restoreSupported,
                     'download' => 'sources/backups.queries.php?type=scheduled_download_backup&file=' . urlencode($bn)
                         . '&key=' . urlencode((string) $session->get('key'))
                         . '&key_tmp=' . urlencode($keyTmp),
@@ -1046,7 +1828,8 @@ try {
             $file = (string)($dataReceived['file'] ?? '');
             $file = basename($file);
 
-            if ($file === '' || strpos($file, 'scheduled-') !== 0 || !str_ends_with($file, '.sql')) {
+            $extension = (string) pathinfo($file, PATHINFO_EXTENSION);
+            if ($file === '' || strpos($file, 'scheduled-') !== 0 || tpBackupFileExtensionIsSupported($extension) === false) {
                 echo prepareExchangedData(['error' => true, 'message' => 'Invalid filename'], 'encode');
                 break;
             }
@@ -1130,6 +1913,11 @@ try {
             }
             $dir = $resolvedRunDir['path'];
             tpUpsertSettingsValue('bck_scheduled_output_dir', $dir);
+            $backupFormat = tpBackupNormalizeRequestedFormat((string) tpGetSettingsValue('bck_scheduled_format', 'sql'));
+            $includeDocuments = ((int) tpGetSettingsValue('bck_scheduled_include_documents', '0') === 1) ? 1 : 0;
+            if ($includeDocuments === 1) {
+                $backupFormat = tpBackupGetPackageExtension();
+            }
 
             // avoid duplicates
             $pending = (int)DB::queryFirstField(
@@ -1148,7 +1936,7 @@ try {
                 [
                     'created_at' => (string)$now,
                     'process_type' => 'database_backup',
-                    'arguments' => json_encode(['output_dir' => $dir, 'source' => 'scheduler', 'initiator_user_id' => (int) $session->get('user-id')], JSON_UNESCAPED_SLASHES),
+                    'arguments' => json_encode(['output_dir' => $dir, 'source' => 'scheduler', 'initiator_user_id' => (int) $session->get('user-id'), 'backup_format' => $backupFormat, 'include_documents' => $includeDocuments], JSON_UNESCAPED_SLASHES),
                     'is_in_progress' => 0,
                     'status' => 'new',
                 ]
@@ -1179,7 +1967,8 @@ try {
             $bn = basename($fileToDelete);
 
             // Safety checks
-            if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
+            $extension = (string) pathinfo($bn, PATHINFO_EXTENSION);
+            if ($bn === '' || tpBackupFileExtensionIsSupported($extension) === false) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1263,7 +2052,8 @@ try {
             $bn = basename($file);
 
             // Safety checks
-            if ($bn === '' || strtolower(pathinfo($bn, PATHINFO_EXTENSION)) !== 'sql') {
+            $extension = (string) pathinfo($bn, PATHINFO_EXTENSION);
+            if ($bn === '' || tpBackupFileExtensionIsSupported($extension) === false) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -1478,10 +2268,10 @@ try {
             $dir = rtrim(tpGetOntheflyBackupDir(false), '/');
 
             $files = array();
-            $paths = glob($dir . '/*.sql');
-            if ($paths === false) {
-                $paths = array();
-            }
+            $paths = array_merge(
+                glob($dir . '/*.sql') ?: array(),
+                glob($dir . '/*.' . tpBackupGetPackageExtension()) ?: array()
+            );
 
             // Ensure we have a temporary key for downloadFile.php
             $keyTmp = (string) $session->get('user-key_tmp');
@@ -1501,15 +2291,24 @@ try {
                     continue;
                 }
 
+                $meta = function_exists('tpReadBackupMetadata') ? tpReadBackupMetadata($fp) : array();
+                $isPackage = tpBackupIsPackageFilename($bn);
+                $backupType = is_scalar($meta['backup_type'] ?? null) ? (string) $meta['backup_type'] : ($isPackage ? '' : 'database_only');
+                $restoreSupported = $isPackage === false || in_array($backupType, ['database_only', 'db_only', 'db_documents', 'database_documents'], true) === true;
+
                 $files[] = array(
                     'name' => $bn,
                     'size_bytes' => (int)@filesize($fp),
                     'mtime' => (int)@filemtime($fp),
                     'tp_files_version' => (function_exists('tpGetBackupTpFilesVersionFromMeta') ? ((($v = (string)tpGetBackupTpFilesVersionFromMeta($fp)) !== '') ? $v : null) : null),
                     'comment' => (function_exists('tpGetBackupCommentFromMeta') ? ((($c = (string)tpGetBackupCommentFromMeta($fp)) !== '') ? $c : null) : null),
+                    'backup_format' => $isPackage ? tpBackupGetPackageFormatId() : 'sql',
+                    'backup_format_version' => $isPackage ? (int) ($meta['backup_format_version'] ?? tpBackupGetPackageFormatVersion()) : null,
+                    'backup_type' => $backupType !== '' ? $backupType : 'unknown',
+                    'restore_supported' => $restoreSupported,
                     'download' => 'sources/downloadFile.php?name=' . urlencode($bn) .
                         '&action=backup&file=' . urlencode($bn) .
-                        '&type=sql&key=' . $session->get('key') .
+                        '&type=' . tpBackupGetDownloadTypeForFilename($bn) . '&key=' . $session->get('key') .
                         '&key_tmp=' . $session->get('user-key_tmp') .
                         '&pathIsOnthefly=1',
                 );
@@ -1589,6 +2388,13 @@ try {
                     // Compatibility check
                     $chk = tpCheckRestoreCompatibility($SETTINGS, $serverScope, $serverFile, $operationId);
                     if (!empty($chk['is_compatible']) === false) {
+                        $compatMessage = $lang->get('bck_restore_incompatible_version_body');
+                        if ((string) $chk['reason'] === 'PACKAGE_DOCUMENTS_RESTORE_NOT_SUPPORTED') {
+                            $compatMessage = $lang->get('bck_restore_tpbackup_documents_not_supported');
+                        } elseif ((string) $chk['reason'] === 'PACKAGE_TYPE_UNSUPPORTED') {
+                            $compatMessage = $lang->get('bck_restore_tpbackup_invalid');
+                        }
+
                         echo prepareExchangedData(
                             [
                                 'error' => true,
@@ -1600,7 +2406,7 @@ try {
                                 'expected_schema_level' => (string) $chk['expected_schema_level'],
                                 'backup_tp_files_version' => $chk['backup_tp_files_version'],
                                 'expected_tp_files_version' => (string) $chk['expected_tp_files_version'],
-                                'message' => $lang->get('bck_restore_incompatible_version_body'),
+                                'message' => $compatMessage,
                             ],
                             'encode'
                         );
@@ -1624,10 +2430,10 @@ try {
                     $keysToTry = [];
 
                     // Build candidate keys depending on restore source
-                    // - scheduled: uses the instance key candidates + optional override key
+                    // - scheduled/externalized: uses the instance key candidates + optional override key
                     // - on-the-fly: uses the key provided by the UI
                     // - upload (serverScope empty): can be either, so also try archived instance key candidates
-                    if ($serverScope === 'scheduled') {
+                    if (in_array($serverScope, ['scheduled', 'externalized'], true) === true) {
                         if ($overrideKey !== '') {
                             $keysToTry[] = $overrideKey;
                         }
@@ -1674,23 +2480,93 @@ try {
                         $tmpRand = uniqid('', true);
                     }
 
-                    $tmpDecryptedSql = rtrim((string) sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR
-                        . 'defuse_temp_restore_' . (int) ($session->get('user-id') ?? 0) . '_' . time() . '_' . $tmpRand . '.sql';
+                    $tmpDecryptedSql = function_exists('tpBackupRestoreTempPath')
+                        ? tpBackupRestoreTempPath('sql')
+                        : (
+                            rtrim((string) sys_get_temp_dir(), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR
+                            . 'defuse_temp_restore_' . (int) ($session->get('user-id') ?? 0) . '_' . time() . '_' . $tmpRand . '.sql'
+                        );
 
-                    // Try to decrypt with the available keys
-                    $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
-                    @unlink($tmpDecryptedSql);
-
-                    if (empty($decRet['success'])) {
+                    if ($tmpDecryptedSql === '') {
                         echo prepareExchangedData(
                             [
                                 'error' => true,
-                                'error_code' => 'DECRYPT_FAILED',
-                                'message' => (string) $decRet['message'],
+                                'error_code' => 'TEMP_FILE_FAILED',
+                                'message' => $lang->get('server_answer_error'),
                             ],
                             'encode'
                         );
                         break;
+                    }
+
+                    if (tpBackupIsPackageFilename($resolvedPath) === true) {
+                        $packageRet = tpBackupPreparePackageSqlForRestore($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS, true, true);
+                        @unlink($tmpDecryptedSql);
+
+                        if (empty($packageRet['success'])) {
+                            if (!empty($packageRet['decrypted_package_path']) && is_string($packageRet['decrypted_package_path'])) {
+                                @unlink($packageRet['decrypted_package_path']);
+                            }
+                            $packageErrorCode = (string) ($packageRet['error_code'] ?? 'TPBACKUP_INVALID');
+                            $message = $lang->get('bck_restore_tpbackup_invalid');
+                            if ($packageErrorCode === 'DECRYPT_FAILED') {
+                                $message = (string) ($packageRet['message'] ?? $lang->get('bck_restore_key_invalid'));
+                            } elseif ($packageErrorCode === 'PACKAGE_DOCUMENTS_RESTORE_NOT_SUPPORTED') {
+                                $message = $lang->get('bck_restore_tpbackup_documents_not_supported');
+                            } elseif ($packageErrorCode === 'ZIP_EXTENSION_MISSING') {
+                                $message = $lang->get('bck_restore_tpbackup_zip_missing');
+                            }
+
+                            echo prepareExchangedData(
+                                [
+                                    'error' => true,
+                                    'error_code' => $packageErrorCode === 'DECRYPT_FAILED' ? 'DECRYPT_FAILED' : 'TPBACKUP_INVALID',
+                                    'package_error_code' => $packageErrorCode,
+                                    'message' => $message,
+                                ],
+                                'encode'
+                            );
+                            break;
+                        }
+
+                        $tmpPackageZipForDryRun = (string) ($packageRet['decrypted_package_path'] ?? '');
+                        $packageManifestForDryRun = is_array($packageRet['manifest'] ?? null) ? $packageRet['manifest'] : [];
+                        if ($tmpPackageZipForDryRun !== '') {
+                            $documents = is_array($packageManifestForDryRun['documents'] ?? null) ? $packageManifestForDryRun['documents'] : [];
+                            if (($documents['included'] ?? false) === true) {
+                                $docDryRun = tpBackupRestorePackageDocumentsFromZip($tmpPackageZipForDryRun, $packageManifestForDryRun, $SETTINGS, true, true);
+                                if (empty($docDryRun['success'])) {
+                                    @unlink($tmpPackageZipForDryRun);
+                                    echo prepareExchangedData(
+                                        [
+                                            'error' => true,
+                                            'error_code' => 'TPBACKUP_INVALID',
+                                            'package_error_code' => (string) ($docDryRun['error_code'] ?? 'DOCUMENT_RESTORE_FAILED'),
+                                            'message' => $lang->get('bck_restore_tpbackup_documents_preflight_failed'),
+                                        ],
+                                        'encode'
+                                    );
+                                    break;
+                                }
+                            }
+                            @unlink($tmpPackageZipForDryRun);
+                        }
+                    } else {
+                        // Try to decrypt with the available keys
+                        $decRet = tpDefuseDecryptWithCandidates($resolvedPath, $tmpDecryptedSql, $keysToTry, $SETTINGS);
+                        @unlink($tmpDecryptedSql);
+
+                        if (empty($decRet['success'])) {
+                            echo prepareExchangedData(
+                                [
+                                    'error' => true,
+                                    'error_code' => 'DECRYPT_FAILED',
+                                    'message' => (string) $decRet['message'],
+                                ],
+                                'encode'
+                            );
+                            break;
+                        }
                     }
 
 // Create authorization token in DB (teampass_misc)
