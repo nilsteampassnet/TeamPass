@@ -1231,6 +1231,91 @@ function prepareExchangedData($data, string $type, ?string $key = null)
 
 
 /**
+ * Resize and optimize an uploaded avatar image.
+ *
+ * @param string $src Source image
+ * @param string $destWithoutExtension Destination path without extension
+ * @param int $maxDimension Maximum width or height
+ * @param int $jpegQuality JPEG output quality
+ *
+ * @return array|string|bool
+ */
+function resizeAvatarImage(string $src, string $destWithoutExtension, int $maxDimension = 256, int $jpegQuality = 85)
+{
+    if (is_file($src) === false) {
+        return 'Error: Source image not found.';
+    }
+
+    $imageInfo = getimagesize($src);
+    if ($imageInfo === false || empty($imageInfo[0]) === true || empty($imageInfo[1]) === true) {
+        return 'Error: Not a valid image file.';
+    }
+
+    $mimeType = (string) mime_content_type($src);
+    $outputExtension = 'jpg';
+    switch ($mimeType) {
+        case 'image/png':
+            $source_image = imagecreatefrompng($src);
+            $outputExtension = 'png';
+            break;
+        case 'image/jpeg':
+            $source_image = imagecreatefromjpeg($src);
+            $outputExtension = 'jpg';
+            break;
+        default:
+            return 'Error: Unsupported image format. Allowed formats are PNG, JPG and JPEG. Detected type is ' . $mimeType;
+    }
+
+    if ($source_image === false) {
+        return 'Error: Not a valid image file. Detected type is ' . $mimeType;
+    }
+
+    $width = (int) $imageInfo[0];
+    $height = (int) $imageInfo[1];
+    $ratio = min($maxDimension / $width, $maxDimension / $height, 1);
+    $targetWidth = max(1, (int) floor($width * $ratio));
+    $targetHeight = max(1, (int) floor($height * $ratio));
+
+    $virtual_image = imagecreatetruecolor($targetWidth, $targetHeight);
+    if ($virtual_image === false) {
+        imagedestroy($source_image);
+        return false;
+    }
+
+    if ($outputExtension === 'png') {
+        imagealphablending($virtual_image, false);
+        imagesavealpha($virtual_image, true);
+        $transparent = imagecolorallocatealpha($virtual_image, 0, 0, 0, 127);
+        imagefill($virtual_image, 0, 0, $transparent);
+    }
+
+    if (imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $targetWidth, $targetHeight, $width, $height) === false) {
+        imagedestroy($source_image);
+        imagedestroy($virtual_image);
+        return false;
+    }
+
+    $dest = $destWithoutExtension . '.' . $outputExtension;
+    if ($outputExtension === 'png') {
+        $saved = imagepng($virtual_image, $dest, 8);
+    } else {
+        $saved = imagejpeg($virtual_image, $dest, $jpegQuality);
+    }
+
+    imagedestroy($source_image);
+    imagedestroy($virtual_image);
+
+    if ($saved === false) {
+        return false;
+    }
+
+    return [
+        'path' => $dest,
+        'extension' => $outputExtension,
+    ];
+}
+
+/**
  * Create a thumbnail.
  *
  * @param string  $src           Source
@@ -1241,14 +1326,27 @@ function prepareExchangedData($data, string $type, ?string $key = null)
  */
 function makeThumbnail(string $src, string $dest, int $desired_width)
 {
-    /* read the source image */
-    if (is_file($src) === true && mime_content_type($src) === 'image/png') {
-        $source_image = imagecreatefrompng($src);
-        if ($source_image === false) {
-            return "Error: Not a valid PNG file! It's type is ".mime_content_type($src);
-        }
-    } else {
-        return "Error: Not a valid PNG file! It's type is ".mime_content_type($src);
+    if (is_file($src) === false) {
+        return 'Error: Source image not found.';
+    }
+
+    $mimeType = (string) mime_content_type($src);
+    $thumbnailType = 'jpeg';
+    switch ($mimeType) {
+        case 'image/png':
+            $source_image = imagecreatefrompng($src);
+            $thumbnailType = 'png';
+            break;
+        case 'image/jpeg':
+            $source_image = imagecreatefromjpeg($src);
+            $thumbnailType = 'jpeg';
+            break;
+        default:
+            return 'Error: Unsupported image format. Allowed formats are PNG, JPG and JPEG. Detected type is ' . $mimeType;
+    }
+
+    if ($source_image === false) {
+        return 'Error: Not a valid image file. Detected type is ' . $mimeType;
     }
 
     // Get height and width
@@ -1261,10 +1359,23 @@ function makeThumbnail(string $src, string $dest, int $desired_width)
     if ($virtual_image === false) {
         return false;
     }
+    if ($thumbnailType === 'png') {
+        imagealphablending($virtual_image, false);
+        imagesavealpha($virtual_image, true);
+        $transparent = imagecolorallocatealpha($virtual_image, 0, 0, 0, 127);
+        imagefill($virtual_image, 0, 0, $transparent);
+    }
     /* copy source image at a resized size */
     imagecopyresampled($virtual_image, $source_image, 0, 0, 0, 0, $desired_width, $desired_height, $width, $height);
     /* create the physical thumbnail image to its destination */
-    imagejpeg($virtual_image, $dest);
+    if ($thumbnailType === 'png') {
+        imagepng($virtual_image, $dest);
+    } else {
+        imagejpeg($virtual_image, $dest, 90);
+    }
+
+    imagedestroy($source_image);
+    imagedestroy($virtual_image);
 }
 
 /**
@@ -1688,42 +1799,92 @@ function notifyChangesToSubscribers(int $item_id, string $label, array $changes,
     $globalsLastname = $session->get('user-lastname');
     $globalsName = $session->get('user-name');
 
-    // Get all subscribers' emails as an array
-    $emails = DB::queryFirstColumn(
-        'SELECT u.email
+    $subscribers = DB::query(
+        'SELECT u.email, u.name, u.lastname, u.login
         FROM ' . prefixTable('notification') . ' AS n
         INNER JOIN ' . prefixTable('users') . ' AS u ON (n.user_id = u.id)
-        WHERE n.item_id = %i AND n.user_id != %i',
+        WHERE n.item_id = %i
+        AND n.user_id != %i
+        AND u.email IS NOT NULL
+        AND u.email != %s',
         $item_id,
-        $globalsUserId
+        $globalsUserId,
+        ''
     );
 
-    if (DB::count() > 0) {
-        // Prepare path
-        $path = geItemReadablePath($item_id, '', $SETTINGS);
+    if (DB::count() === 0) {
+        return;
+    }
 
-        // Get list of changes
+    $item = DB::queryFirstRow(
+        'SELECT id_tree FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $item_id
+    );
+    $folderId = (int) ($item['id_tree'] ?? 0);
+    $folderName = geItemReadablePath($folderId, '', $SETTINGS);
+    $baseUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
+    $itemUrl = $baseUrl . '/index.php?page=items&group=' . $folderId . '&id=' . $item_id;
+
+    $htmlChanges = '';
+    if (count($changes) > 0) {
         $htmlChanges = '<ul>';
         foreach ($changes as $change) {
-            $htmlChanges .= '<li>' . $change . '</li>';
+            $htmlChanges .= '<li>' . htmlspecialchars((string) $change, ENT_QUOTES, 'UTF-8') . '</li>';
         }
         $htmlChanges .= '</ul>';
+    }
 
-        // send email
-        DB::insert(
-            prefixTable('emails'),
-            [
-                'timestamp' => time(),
-                'subject' => $lang->get('email_subject_item_updated'),
-                'body' => str_replace(
-                    ['#item_label#', '#folder_name#', '#item_id#', '#url#', '#name#', '#lastname#', '#changes#'],
-                    [$label, $path, (string) $item_id, $SETTINGS['cpassman_url'], $globalsName, $globalsLastname, $htmlChanges],
-                    $lang->get('email_body_item_updated')
-                ),
-                'receivers' => implode(',', $emails),
-                'status' => '',
-            ]
+    $body = html_entity_decode((string) $lang->get('email_body_item_updated'), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $body = str_replace(
+        ['#item_label#', '#folder_name#', '#item_id#', '#item_category#', '#url#', '#name#', '#lastname#', '#changes#'],
+        [
+            htmlspecialchars($label, ENT_QUOTES, 'UTF-8'),
+            $folderName,
+            (string) $item_id,
+            (string) $folderId,
+            htmlspecialchars($baseUrl, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars((string) $globalsName, ENT_QUOTES, 'UTF-8'),
+            htmlspecialchars((string) $globalsLastname, ENT_QUOTES, 'UTF-8'),
+            $htmlChanges,
+        ],
+        $body
+    );
+    $body = str_replace('<br >', '<br>', $body);
+
+    $normalizedBody = preg_replace_callback(
+        '/<a\b[^>]*>(.*?)<\/a>/is',
+        static function (array $matches) use ($itemUrl): string {
+            return '<a href="' . htmlspecialchars($itemUrl, ENT_QUOTES, 'UTF-8') . '">' . $matches[1] . '</a>';
+        },
+        $body
+    );
+    if ($normalizedBody !== null) {
+        $body = $normalizedBody;
+    }
+
+    $emailQueued = false;
+    foreach ($subscribers as $subscriber) {
+        $email = trim((string) ($subscriber['email'] ?? ''));
+        if ($email === '') {
+            continue;
+        }
+
+        $receiverName = trim((string) ($subscriber['name'] ?? '') . ' ' . (string) ($subscriber['lastname'] ?? ''));
+        if ($receiverName === '') {
+            $receiverName = (string) ($subscriber['login'] ?? '');
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_item_updated'),
+            $body,
+            $email,
+            $receiverName
         );
+        $emailQueued = true;
+    }
+
+    if ($emailQueued === true) {
+        triggerBackgroundHandler();
     }
 }
 
