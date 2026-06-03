@@ -91,6 +91,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // BIP-39 wordlist for the passphrase generator (language: <?php echo htmlspecialchars($session->get('user-language') ?? 'english', ENT_QUOTES, 'UTF-8'); ?>)
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
+    const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
+    const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
 
     // Minimum word count and extra suffix requirements per folder complexity level
     const TP_PASSPHRASE_RULES = {
@@ -167,6 +169,48 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
         return { start: start, update: update, done: done };
     }());
+
+    function tpEscapeHtmlAttribute(value) {
+        return String(value).replace(/[&<>"']/g, function(char) {
+            return {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            }[char];
+        });
+    }
+
+    function itemNotificationIconHtml(isEnabled) {
+        const title = tpEscapeHtmlAttribute(isEnabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED);
+
+        if (isEnabled === true) {
+            return '<span class="fa-solid fa-bell infotip text-success" title="' + title + '"></span>';
+        }
+
+        return '<span class="fa-regular fa-bell-slash infotip text-warning" title="' + title + '"></span>';
+    }
+
+    function updateItemNotificationStatusVisual(isEnabled) {
+        const enabled = isEnabled === true;
+        const title = enabled === true ? TP_NOTIFICATION_ENGAGED : TP_NOTIFICATION_NOT_ENGAGED;
+
+        $('#item-action-notify')
+            .toggleClass('text-success', enabled)
+            .toggleClass('text-navy', enabled === false)
+            .attr('title', title);
+
+        $('#item-action-notify-icon')
+            .removeClass('fa-regular fa-solid fa-bell fa-bell-slash text-success text-warning')
+            .addClass(enabled === true ? 'fa-solid fa-bell text-success' : 'fa-regular fa-bell');
+
+        if ($('#card-item-misc-notification').length > 0) {
+            $('#card-item-misc-notification').html(itemNotificationIconHtml(enabled));
+        }
+
+        $('.infotip').tooltip();
+    }
 
     /**
      * Copy text to clipboard with fallback for non-HTTPS contexts.
@@ -1858,13 +1902,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     });
 
                     // Change the icon for Notification
-                    if (newNotifStatus) {
-                        $('#card-item-misc-notification')
-                            .html('<span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span>');
-                    } else {
-                        $('#card-item-misc-notification')
-                            .html('<span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span>');
-                    }
+                    updateItemNotificationStatusVisual(newNotifStatus);
 
                     $btn.prop('disabled', false).html('<?php echo $lang->get('confirm'); ?>');
                     // Close notify modal
@@ -6696,13 +6734,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
 
                     // Show Notification engaged
-                    if (data.notification_status === true) {
-                        $('#card-item-misc')
-                            .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell infotip text-success" title="<?php echo $lang->get('notification_engaged'); ?>"></span></span>');
-                    } else {
-                        $('#card-item-misc')
-                            .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"><span class="fa-regular fa-bell-slash infotip text-warning" title="<?php echo $lang->get('notification_not_engaged'); ?>"></span></span>');
-                    }
+                    $('#card-item-misc')
+                        .append('<span class="mr-4 icon-badge" id="card-item-misc-notification"></span>');
+                    updateItemNotificationStatusVisual(data.notification_status === true);
 
                     // Prepare counter
                     $('#card-item-misc')
