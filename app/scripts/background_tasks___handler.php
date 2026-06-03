@@ -159,6 +159,11 @@ class BackgroundTasksHandler {
         }
 
         // Enqueue task
+        $backupFormat = tpBackupNormalizeRequestedFormat((string)$this->getSettingValue('bck_scheduled_format', 'sql'));
+        $includeDocuments = ((int)$this->getSettingValue('bck_scheduled_include_documents', '0') === 1) ? 1 : 0;
+        if ($includeDocuments === 1) {
+            $backupFormat = tpBackupGetPackageExtension();
+        }
         DB::insert(
             prefixTable('background_tasks'),
             [
@@ -168,6 +173,8 @@ class BackgroundTasksHandler {
                     [
                         'output_dir' => $outputDir,
                         'source' => 'scheduler',
+                        'backup_format' => $backupFormat,
+                        'include_documents' => $includeDocuments,
                     ],
                     JSON_UNESCAPED_SLASHES
                 ),
@@ -783,6 +790,20 @@ class BackgroundTasksHandler {
             $taskId
         );
         if (LOG_TASKS === true) $this->logger->log('Task ' . $taskId . ' failed: ' . $message, 'ERROR');
+
+        try {
+            $processType = (string) DB::queryFirstField(
+                'SELECT process_type FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+                $taskId
+            );
+            if ($processType === 'externalized_backup') {
+                $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+                $this->upsertSettingValue('bck_externalized_last_message', mb_substr($message, 0, 500));
+                $this->upsertSettingValue('bck_externalized_last_completed_at', (string)time());
+            }
+        } catch (Throwable) {
+            // best effort only
+        }
     }
 
     /**
@@ -829,6 +850,7 @@ class BackgroundTasksHandler {
             'phpseclibv3_migration',       // iterates all sharekeys for a user
             'migrate_user_personal_items', // modifies personal item sharekeys
             'database_backup',             // disconnects users, heavy I/O
+            'externalized_backup',         // disconnects users, heavy I/O
         ], true);
     }
 
