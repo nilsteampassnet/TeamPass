@@ -83,6 +83,48 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Ensure item notification subscriptions can be inserted on upgraded instances.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'notification` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `item_id` INT(12) NOT NULL,
+        `user_id` INT(12) NOT NULL,
+        PRIMARY KEY (`increment_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating notification table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$notificationIncrementColumnResult = mysqli_query(
+    $db_link,
+    "SHOW COLUMNS FROM `" . $pre . "notification` LIKE 'increment_id'"
+);
+if ($notificationIncrementColumnResult === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error reading notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+$notificationIncrementColumn = mysqli_fetch_assoc($notificationIncrementColumnResult);
+if (
+    $notificationIncrementColumn !== null
+    && $notificationIncrementColumn !== false
+    && stripos((string) ($notificationIncrementColumn['Extra'] ?? ''), 'auto_increment') === false
+) {
+    $res = mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "notification` MODIFY `increment_id` INT(12) NOT NULL AUTO_INCREMENT"
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error updating notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Add server-side AES key column to teampass_api (session_aes_key is no longer stored in JWT)
 $res = addColumnIfNotExist(
     $pre . 'api',

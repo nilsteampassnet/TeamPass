@@ -1175,7 +1175,7 @@ if ((int) $session_user_admin === 1) {
                                             <a class="text-navy tp-action ml-3" href="#" data-item-action="share"><i class="fa-regular fa-share-square mr-1"></i><small><?php echo $lang->get('share'); ?></small></a>
                                         </li>
                                         <li class="nav-item">
-                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="notify"><i class="fa-regular fa-bell mr-1"></i><small><?php echo $lang->get('notify'); ?></small></a>
+                                            <a class="text-navy tp-action ml-3" href="#" data-item-action="notify" id="item-action-notify"><i class="fa-regular fa-bell mr-1" id="item-action-notify-icon"></i><small><?php echo $lang->get('notify'); ?></small></a>
                                         </li>
                                         <?php
                                         if (
