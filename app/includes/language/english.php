@@ -787,6 +787,7 @@ return array(
     'profile' => 'Profile',
     'language' => 'Language',
     'upload_new_avatar' => 'Select profile image file',
+    'avatar_upload_hint' => 'Recommended: square image. Accepted formats: PNG, JPG or JPEG, 10 MB maximum. TeamPass will resize the avatar automatically.',
     'settings' => 'Settings',
     'created_items' => 'Created items',
     'modification_performed' => 'Modification performed',
