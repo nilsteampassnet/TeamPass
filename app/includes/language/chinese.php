@@ -2213,7 +2213,7 @@ return array(
     'settings_hibp_interval_days' => '复查间隔（天）',
     'settings_hibp_interval_days_tip' => '在HaveIBeenPwned上重新核对密码前的天数。默认值：7。',
     'settings_ldap_allowed_login_group_dn' => '将登录限制为LDAP组(DN)',
-    'settings_ldap_allowed_login_group_dn_tip' => '允许其成员登录的LDAP组的完整DN。若不设限制，请留空。该组可以位于用户base DN之外。示例：cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de',
+    'settings_ldap_allowed_login_group_dn_tip' => '允许其成员登录的LDAP组的完整DN。若不设限制，请留空。该组可以位于用户base DN之外。示例：cn=teampass,ou=any,ou=any1,o=any2,c=any3',
     'ldap_not_in_allowed_group' => '访问被拒绝：您的账户未加入所需的LDAP组。',
     'sub-folders' => '子文件夹',
     'search_results' => '搜索结果',
@@ -2221,5 +2221,10 @@ return array(
     'settings_api_cors_origins_tip' => 'Leave empty to allow all origins (recommended for most setups — the JWT token is the real protection). Fill in a comma-separated list of origins to restrict access to specific sources only, e.g. chrome-extension://abc123, moz-extension://xyz789.',
     'bck_scheduled_output_dir_invalid' => 'Invalid output directory. Use TeamPass storage/backups folder or a folder inside the configured files folder.',
     'item_viewed_by' => 'Viewed by',
+    'settings_ldap_allowed_login_group_mode' => 'Group membership check mode',
+    'settings_ldap_allowed_login_group_mode_tip' => 'How to verify that a user belongs to the allowed group. "Group-centric" reads the group entry directly and works even if the group is outside the users base DN (recommended for OpenLDAP / groupOfUniqueNames). "User memberOf" reads the user’s memberOf attribute (Active Directory only).',
+    'settings_ldap_allowed_login_group_mode_group' => 'Group-centric (read group members)',
+    'settings_ldap_allowed_login_group_mode_user' => 'User memberOf (Active Directory)',
+    'avatar_upload_hint' => 'Recommended: square image. Accepted formats: PNG, JPG or JPEG, 10 MB maximum. TeamPass will resize the avatar automatically.',
 
 );

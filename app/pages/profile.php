@@ -468,6 +468,7 @@ foreach ($session->get('user-roles_array') as $role) {
                                             </div>
                                             <div class="col-sm-8">
                                                 <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
+                                                    <div class="text-muted small text-right mb-2"><?php echo $lang->get('avatar_upload_hint'); ?></div>
                                                     <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
                                                 <?php 
                                                 }
@@ -533,4 +534,3 @@ foreach ($session->get('user-roles_array') as $role) {
     <!-- /.container-fluid -->
 </div>
 <!-- /.content -->
-
