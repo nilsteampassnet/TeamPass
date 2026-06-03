@@ -83,6 +83,48 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Ensure item notification subscriptions can be inserted on upgraded instances.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'notification` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `item_id` INT(12) NOT NULL,
+        `user_id` INT(12) NOT NULL,
+        PRIMARY KEY (`increment_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating notification table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$notificationIncrementColumnResult = mysqli_query(
+    $db_link,
+    "SHOW COLUMNS FROM `" . $pre . "notification` LIKE 'increment_id'"
+);
+if ($notificationIncrementColumnResult === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error reading notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+$notificationIncrementColumn = mysqli_fetch_assoc($notificationIncrementColumnResult);
+if (
+    $notificationIncrementColumn !== null
+    && $notificationIncrementColumn !== false
+    && stripos((string) ($notificationIncrementColumn['Extra'] ?? ''), 'auto_increment') === false
+) {
+    $res = mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "notification` MODIFY `increment_id` INT(12) NOT NULL AUTO_INCREMENT"
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error updating notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Add server-side AES key column to teampass_api (session_aes_key is no longer stored in JWT)
 $res = addColumnIfNotExist(
     $pre . 'api',
@@ -271,7 +313,7 @@ checkIndexExist(
 // if they still point to the old root-level locations ({root}/upload and {root}/files).
 $row = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_dir'"));
 if ($row && !empty($row['valeur'])) {
-    $cpassmanDir = rtrim((string) $row['valeur'], '/');
+    $cpassmanDir = rtrim((string) $row['valeur'], '/\\');
 
     $rowUpload = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_upload_folder'"));
     if ($rowUpload && strpos((string) $rowUpload['valeur'], '/storage/upload') === false) {
@@ -281,6 +323,29 @@ if ($row && !empty($row['valeur'])) {
     $rowFiles = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_files_folder'"));
     if ($rowFiles && strpos((string) $rowFiles['valeur'], '/storage/files') === false) {
         mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($cpassmanDir . '/storage/files') . "' WHERE type='admin' AND intitule='path_to_files_folder'");
+    }
+
+    // Scheduled backups now default to storage/backups. Migrate only empty or
+    // known legacy root-level backup/files locations; explicit storage/files
+    // locations remain accepted by the runtime as legacy-compatible paths.
+    $newScheduledBackupDir = $cpassmanDir . '/storage/backups';
+    $legacyFilesDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/files'), '/');
+    $legacyBackupsDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/backups'), '/');
+    $rowScheduled = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='bck_scheduled_output_dir'"));
+    if ($rowScheduled === null || $rowScheduled === false) {
+        mysqli_query($db_link, "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'bck_scheduled_output_dir', '" . addslashes($newScheduledBackupDir) . "')");
+    } else {
+        $scheduledDir = trim((string) ($rowScheduled['valeur'] ?? ''));
+        $scheduledDirNormalized = rtrim(str_replace('\\', '/', $scheduledDir), '/');
+        $isLegacyScheduledDir = $scheduledDir === ''
+            || $scheduledDirNormalized === $legacyFilesDir
+            || strpos($scheduledDirNormalized, $legacyFilesDir . '/') === 0
+            || $scheduledDirNormalized === $legacyBackupsDir
+            || strpos($scheduledDirNormalized, $legacyBackupsDir . '/') === 0;
+
+        if ($isLegacyScheduledDir === true) {
+            mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($newScheduledBackupDir) . "' WHERE type='admin' AND intitule='bck_scheduled_output_dir'");
+        }
     }
 
     $rowUrl = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='url_to_files_folder'"));
