@@ -1018,6 +1018,11 @@ if (null !== $post_type) {
                 $arrData['admin'] = (int) $rowUser['admin'];
                 $arrData['password'] = $password_do_not_change;
                 $arrData['mfa_enabled'] = (int) $rowUser['mfa_enabled'];
+                $avatarFile = basename(trim((string) ($rowUser['avatar'] ?? '')));
+                $avatarPath = TEAMPASS_ROOT . '/public/assets/avatars/' . $avatarFile;
+                $arrData['avatar_url'] = $avatarFile !== '' && is_file($avatarPath) === true
+                    ? rtrim((string) $SETTINGS['cpassman_url'], '/') . '/assets/avatars/' . rawurlencode($avatarFile)
+                    : '';
 
                 echo prepareExchangedData(
                     $arrData,
