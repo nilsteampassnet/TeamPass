@@ -90,6 +90,7 @@ class BackgroundTasksHandler {
         try {
             $this->cleanupStaleTasks();
             $this->handleScheduledDatabaseBackup();
+            $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
@@ -192,6 +193,178 @@ class BackgroundTasksHandler {
         $this->upsertSettingValue('bck_scheduled_next_run_at', (string)$newNext);
 
         if (LOG_TASKS === true) $this->logger->log('backup scheduler: enqueued database_backup, next_run_at=' . $newNext, 'INFO');
+    }
+
+    /**
+     * Scheduler: enqueue an externalized_backup task when due.
+     */
+    private function handleScheduledExternalizedBackup(): void
+    {
+        $enabled = (int)$this->getSettingValue('bck_externalized_enabled', '0');
+        $scheduleEnabled = (int)$this->getSettingValue('bck_externalized_schedule_enabled', '0');
+        $runAfterScheduled = (int)$this->getSettingValue('bck_externalized_run_after_scheduled', '0');
+        if ($runAfterScheduled === 1 && $scheduleEnabled === 1) {
+            $this->upsertSettingValue('bck_externalized_schedule_enabled', '0');
+            $this->upsertSettingValue('bck_externalized_next_run_at', '0');
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: disabled autonomous schedule because run-after-scheduled is enabled', 'INFO');
+            }
+            return;
+        }
+        if ($enabled !== 1 || $scheduleEnabled !== 1) {
+            return;
+        }
+
+        $destinationType = tpBackupResolveExternalizedDestinationType((string)$this->getSettingValue('bck_externalized_destination_type', 'local_directory'));
+        if (tpBackupExternalizedDestinationTypeSupportsFileOperations($destinationType) === false) {
+            $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+            $this->upsertSettingValue('bck_externalized_last_message', 'Externalized destination type is not available for scheduled execution');
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: unsupported destination type: ' . $destinationType, 'ERROR');
+            }
+            return;
+        }
+
+        $now = time();
+        $nextRunAt = (int)$this->getSettingValue('bck_externalized_next_run_at', '0');
+        if ($nextRunAt <= 0) {
+            $nextRunAt = $this->computeNextExternalizedBackupRunAt($now);
+            $this->upsertSettingValue('bck_externalized_next_run_at', (string)$nextRunAt);
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler initialized next_run_at=' . $nextRunAt, 'INFO');
+            }
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = intval(DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'externalized_backup'
+        ));
+
+        if ($pending > 0) {
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: an externalized_backup task is already pending/running', 'INFO');
+            }
+            return;
+        }
+
+        $targetDirSetting = trim(str_replace("\0", '', (string)$this->getSettingValue('bck_externalized_target_dir', '')));
+        if ($destinationType === 'sftp') {
+            $targetDir = tpBackupNormalizeExternalizedSftpRemotePath($targetDirSetting);
+            $validation = tpBackupValidateExternalizedSftpConfig([
+                'host' => (string)$this->getSettingValue('bck_externalized_sftp_host', ''),
+                'port' => (int)$this->getSettingValue('bck_externalized_sftp_port', '22'),
+                'username' => (string)$this->getSettingValue('bck_externalized_sftp_username', ''),
+                'auth_type' => (string)$this->getSettingValue('bck_externalized_sftp_auth_type', 'password'),
+                'password_available' => (string)$this->getSettingValue('bck_externalized_sftp_password', '') !== '',
+                'private_key_available' => (string)$this->getSettingValue('bck_externalized_sftp_private_key', '') !== '',
+                'remote_path' => $targetDir,
+            ]);
+        } elseif ($destinationType === 'webdav') {
+            $targetDir = tpBackupNormalizeExternalizedWebdavRemotePath($targetDirSetting);
+            $validation = tpBackupValidateExternalizedWebdavConfig([
+                'url' => (string)$this->getSettingValue('bck_externalized_webdav_url', ''),
+                'username' => (string)$this->getSettingValue('bck_externalized_webdav_username', ''),
+                'password_available' => (string)$this->getSettingValue('bck_externalized_webdav_password', '') !== '',
+                'remote_path' => $targetDir,
+            ]);
+        } elseif ($destinationType === 's3') {
+            $validation = tpBackupValidateExternalizedS3Config([
+                'endpoint' => (string)$this->getSettingValue('bck_externalized_s3_endpoint', ''),
+                'region' => (string)$this->getSettingValue('bck_externalized_s3_region', 'us-east-1'),
+                'bucket' => (string)$this->getSettingValue('bck_externalized_s3_bucket', ''),
+                'access_key' => (string)$this->getSettingValue('bck_externalized_s3_access_key', ''),
+                'secret_key_available' => (string)$this->getSettingValue('bck_externalized_s3_secret_key', '') !== '',
+                'path_style' => ((int)$this->getSettingValue('bck_externalized_s3_path_style', '1') === 1) ? 1 : 0,
+                'prefix' => $targetDirSetting,
+            ]);
+            $targetDir = (string)($validation['path'] ?? '');
+        } else {
+            $resolvedTarget = tpBackupResolveExternalizedDestination($destinationType, $targetDirSetting, $this->settings);
+            $validation = [
+                'success' => (bool)($resolvedTarget['success'] ?? false),
+                'path' => (string)($resolvedTarget['path'] ?? ''),
+                'reason' => (string)($resolvedTarget['reason'] ?? ''),
+            ];
+            $targetDir = (string)$validation['path'];
+        }
+
+        $emptyTargetAllowed = $destinationType === 's3';
+        if (($validation['success'] ?? false) !== true || ($targetDir === '' && $emptyTargetAllowed === false)) {
+            $reason = (string)($validation['reason'] ?? 'unknown');
+            $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+            $this->upsertSettingValue('bck_externalized_last_message', 'Invalid externalized backup destination: ' . $reason);
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: invalid destination: ' . $reason, 'ERROR');
+            }
+            return;
+        }
+
+        if ($targetDirSetting !== $targetDir) {
+            $this->upsertSettingValue('bck_externalized_target_dir', $targetDir);
+        }
+
+        $resolvedBackupScriptPasskey = tpResolveBackupScriptPasskey($this->settings, true);
+        $instanceKey = !empty($resolvedBackupScriptPasskey['success'])
+            ? (string) $resolvedBackupScriptPasskey['clear_key']
+            : '';
+        if ($instanceKey === '') {
+            $this->upsertSettingValue('bck_externalized_last_status', 'failed');
+            $this->upsertSettingValue('bck_externalized_last_message', 'Missing backup instance key');
+            if (LOG_TASKS === true) {
+                $this->logger->log('externalized scheduler: missing backup instance key', 'ERROR');
+            }
+            return;
+        }
+
+        $backupFormat = tpBackupNormalizeRequestedFormat((string)$this->getSettingValue('bck_externalized_format', tpBackupGetPackageExtension()));
+        $includeDocuments = ((int)$this->getSettingValue('bck_externalized_include_documents', '0') === 1) ? 1 : 0;
+        if ($includeDocuments === 1) {
+            $backupFormat = tpBackupGetPackageExtension();
+        }
+        $retryAttempts = max(1, min(5, (int)$this->getSettingValue('bck_externalized_retry_attempts', '3')));
+        $retryDelaySeconds = max(0, min(60, (int)$this->getSettingValue('bck_externalized_retry_delay_seconds', '5')));
+
+        DB::insert(
+            prefixTable('background_tasks'),
+            [
+                'created_at' => (string)$now,
+                'process_type' => 'externalized_backup',
+                'arguments' => json_encode(
+                    [
+                        'output_dir' => $targetDir,
+                        'destination_type' => $destinationType,
+                        'source' => 'externalized_scheduler',
+                        'backup_format' => $backupFormat,
+                        'include_documents' => $includeDocuments,
+                        'retry_attempts' => $retryAttempts,
+                        'retry_delay_seconds' => $retryDelaySeconds,
+                    ],
+                    JSON_UNESCAPED_SLASHES
+                ),
+                'is_in_progress' => 0,
+                'status' => 'new',
+            ]
+        );
+
+        $this->upsertSettingValue('bck_externalized_last_run_at', (string)$now);
+        $this->upsertSettingValue('bck_externalized_last_status', 'queued');
+        $this->upsertSettingValue('bck_externalized_last_message', 'Task enqueued by externalized scheduler');
+
+        $newNext = $this->computeNextExternalizedBackupRunAt($now + 60);
+        $this->upsertSettingValue('bck_externalized_next_run_at', (string)$newNext);
+
+        if (LOG_TASKS === true) {
+            $this->logger->log('externalized scheduler: enqueued externalized_backup, next_run_at=' . $newNext, 'INFO');
+        }
     }
 
     /**
@@ -303,6 +476,22 @@ class BackgroundTasksHandler {
      */
     private function computeNextBackupRunAt(int $fromTs): int
     {
+        return $this->computeNextConfiguredRunAt($fromTs, 'bck_scheduled');
+    }
+
+    /**
+     * Compute next run timestamp for externalized scheduled backups.
+     */
+    private function computeNextExternalizedBackupRunAt(int $fromTs): int
+    {
+        return $this->computeNextConfiguredRunAt($fromTs, 'bck_externalized_schedule');
+    }
+
+    /**
+     * Compute next run timestamp from settings named <prefix>_frequency/time/dow/dom.
+     */
+    private function computeNextConfiguredRunAt(int $fromTs, string $settingPrefix): int
+    {
         $tzName = $this->getTeampassTimezoneName();
         try {
             $tz = new DateTimeZone($tzName);
@@ -310,8 +499,11 @@ class BackgroundTasksHandler {
             $tz = new DateTimeZone('UTC');
         }
 
-        $freq = (string)$this->getSettingValue('bck_scheduled_frequency', 'daily');
-        $timeStr = (string)$this->getSettingValue('bck_scheduled_time', '02:00');
+        $freq = (string)$this->getSettingValue($settingPrefix . '_frequency', 'daily');
+        if (in_array($freq, ['daily', 'weekly', 'monthly'], true) === false) {
+            $freq = 'daily';
+        }
+        $timeStr = (string)$this->getSettingValue($settingPrefix . '_time', '02:00');
 
         if (!preg_match('/^\d{2}:\d{2}$/', $timeStr)) {
             $timeStr = '02:00';
@@ -322,7 +514,7 @@ class BackgroundTasksHandler {
         $candidate = $now->setTime($hh, $mm, 0);
 
         if ($freq === 'weekly') {
-            $targetDow = (int)$this->getSettingValue('bck_scheduled_dow', '1'); // ISO 1..7
+            $targetDow = (int)$this->getSettingValue($settingPrefix . '_dow', '1'); // ISO 1..7
             if ($targetDow < 1 || $targetDow > 7) $targetDow = 1;
 
             $currentDow = (int)$candidate->format('N');
@@ -333,7 +525,7 @@ class BackgroundTasksHandler {
             $candidate = $candidate->modify('+' . $delta . ' days');
 
         } elseif ($freq === 'monthly') {
-            $dom = (int)$this->getSettingValue('bck_scheduled_dom', '1');
+            $dom = (int)$this->getSettingValue($settingPrefix . '_dom', '1');
             if ($dom < 1) $dom = 1;
             if ($dom > 31) $dom = 31;
 
@@ -539,7 +731,13 @@ class BackgroundTasksHandler {
 
             // 4. Nothing running and nothing to launch → done
             if (empty($this->pool)) {
-                if (!$launchingEnabled || $this->countPendingTasks() === 0) {
+                $pendingTasks = $this->countPendingTasks();
+                if (!$launchingEnabled && $pendingTasks > 0 && $this->checkAndConsumeTrigger()) {
+                    $startTime = time();
+                    $launchingEnabled = true;
+                    continue;
+                }
+                if (!$launchingEnabled || $pendingTasks === 0) {
                     break;
                 }
             }
