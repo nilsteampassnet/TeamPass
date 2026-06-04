@@ -107,6 +107,12 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 **Rule: always call the high-level helpers** (`emitItemEvent`, `emitFolderEvent`, etc.) after any write on items/folders in `sources/*.queries.php`. Never insert into `teampass_websocket_events` directly.
 
+## PHP-FPM
+
+> Full architecture details: @.claude/docs/architecture-php-fpm.md
+
+**Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
