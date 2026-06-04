@@ -107,6 +107,9 @@ if (null !== $post_type) {
         'get_generate_keys_progress',
         'user_profile_update',
         'save_user_change',
+        'generate_extension_token',
+        'list_extension_tokens',
+        'revoke_extension_token',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -195,6 +198,132 @@ if (null !== $post_type) {
     }
 
     switch ($post_type) {
+        /*
+         * BROWSER EXTENSION TOKENS (Personal Access Tokens for OAuth2/SSO users)
+         *
+         * Reserved for OAuth2 users and gated by the admin toggle oauth2_api_enabled.
+         * The cleartext private key (held in session while the user is authenticated in
+         * the web UI) is re-wrapped under a key derived from the freshly generated token,
+         * so the API can later unwrap it without the user's password. Only the token hash
+         * is persisted; the token itself is returned exactly once.
+         */
+        case 'generate_extension_token':
+        case 'list_extension_tokens':
+        case 'revoke_extension_token':
+            // Feature gate: API enabled + OAuth2-for-API enabled + current user is OAuth2.
+            if ((int) ($SETTINGS['api'] ?? 0) !== 1
+                || (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) !== 1
+                || $session->get('user-auth_type') !== 'oauth2'
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userId = (int) $session->get('user-id');
+
+            if ($post_type === 'generate_extension_token') {
+                // The cleartext private key must be available in the current session.
+                $privateKeyClear = (string) $session->get('user-private_key');
+                if ($privateKeyClear === '' || $privateKeyClear === 'none') {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_no_user_keys'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                require_once __DIR__ . '/../api/inc/encryption_utils.php';
+
+                $label = trim((string) filter_var($dataReceived['label'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+                $label = $label !== '' ? mb_substr($label, 0, 255) : null;
+
+                $tokenPlain = bin2hex(random_bytes(32));
+                $salt       = bin2hex(random_bytes(16));
+                $wrapKey    = hash_hkdf('sha256', $tokenPlain, 32, 'teampass-extension-token-v1', (string) hex2bin($salt));
+                $wrapped    = encrypt_with_session_key($privateKeyClear, $wrapKey);
+
+                if ($wrapped === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                DB::insert(prefixTable('api_tokens'), [
+                    'user_id'             => $userId,
+                    'token_hash'          => hash('sha256', $tokenPlain),
+                    'wrapped_private_key' => $wrapped,
+                    'salt'                => $salt,
+                    'label'               => $label,
+                    'created_at'          => time(),
+                    'expires_at'          => null,
+                ]);
+                $newId = (int) DB::insertId();
+
+                logEvents($SETTINGS, 'user_mngt', 'at_extension_token_generated', (string) $userId, (string) $session->get('user-login'), (string) $newId);
+
+                // Token returned ONCE; only its sha256 hash is persisted.
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'token' => $tokenPlain,
+                        'id' => $newId,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if ($post_type === 'revoke_extension_token') {
+                $tokenId = (int) ($dataReceived['id'] ?? 0);
+                if ($tokenId > 0) {
+                    DB::delete(prefixTable('api_tokens'), 'id = %i AND user_id = %i', $tokenId, $userId);
+                    logEvents($SETTINGS, 'user_mngt', 'at_extension_token_revoked', (string) $userId, (string) $session->get('user-login'), (string) $tokenId);
+                }
+                echo prepareExchangedData(array('error' => false), 'encode');
+                break;
+            }
+
+            // list_extension_tokens — never returns the token value itself.
+            $tokensList = DB::query(
+                'SELECT id, label, created_at, expires_at, last_used_at
+                 FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i ORDER BY created_at DESC',
+                $userId
+            );
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'tokens' => $tokensList,
+                ),
+                'encode'
+            );
+            break;
+
         /*
          * ADD NEW USER
          */

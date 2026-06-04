@@ -703,4 +703,123 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     });
 
+    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+        && $session->get('user-auth_type') === 'oauth2') : ?>
+    /**
+     * Browser extension tokens (Personal Access Tokens) for OAuth2 users.
+     */
+    var extensionTokenKey = '<?php echo $session->get('key'); ?>';
+
+    function renderExtensionTokens(tokens) {
+        var list = $('#extension-tokens-list');
+        if (list.length === 0) {
+            return;
+        }
+        if (!tokens || tokens.length === 0) {
+            list.html('<span class="text-muted"><?php echo $lang->get('extension_token_none'); ?></span>');
+            return;
+        }
+        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        tokens.forEach(function(token) {
+            var created = new Date(token.created_at * 1000).toLocaleString();
+            var lastUsed = token.last_used_at ? new Date(token.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
+            // Label is escaped to prevent XSS (also sanitized server-side on insert).
+            var label = token.label ? $('<span>').text(token.label).html() : '<i class="text-muted">&mdash;</i>';
+            html += '<tr>'
+                + '<td>' + label + '</td>'
+                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed + '</td>'
+                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-extension-token" data-id="' + parseInt(token.id, 10) + '" title="<?php echo $lang->get('extension_token_revoke'); ?>"><i class="fa-solid fa-trash"></i></button></td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        list.html(html);
+    }
+
+    function loadExtensionTokens() {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'list_extension_tokens',
+                data: prepareExchangedData(JSON.stringify({}), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', extensionTokenKey);
+                if (data.error === false) {
+                    renderExtensionTokens(data.tokens);
+                }
+            }
+        );
+    }
+
+    if ($('#extension-tokens-block').length > 0) {
+        loadExtensionTokens();
+    }
+
+    $(document).on('click', '#generate-extension-token', function() {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'generate_extension_token',
+                data: prepareExchangedData(JSON.stringify({ label: '' }), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(response) {
+                response = prepareExchangedData(response, 'decode', extensionTokenKey);
+                if (response.error === false) {
+                    $('#extension-token-value').val(response.token);
+                    $('#extension-token-modal').modal('show');
+                    loadExtensionTokens();
+                } else {
+                    toastr.remove();
+                    toastr.error(response.message, '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    });
+                }
+            }
+        );
+    });
+
+    $(document).on('click', '.revoke-extension-token', function() {
+        if (window.confirm('<?php echo $lang->get('extension_token_revoke_confirm'); ?>') === false) {
+            return;
+        }
+        var tokenId = parseInt($(this).data('id'), 10);
+        $.post(
+            'sources/users.queries.php', {
+                type: 'revoke_extension_token',
+                data: prepareExchangedData(JSON.stringify({ id: tokenId }), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(response) {
+                response = prepareExchangedData(response, 'decode', extensionTokenKey);
+                if (response.error === false) {
+                    loadExtensionTokens();
+                    toastr.remove();
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                        timeOut: 1500
+                    });
+                }
+            }
+        );
+    });
+
+    document.getElementById('copy-extension-token').addEventListener('click', function() {
+        const tokenValue = document.getElementById('extension-token-value').value;
+        navigator.clipboard.writeText(tokenValue).then(function() {
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        }, function(err) {
+            // nothing
+        });
+    });
+    <?php endif; ?>
+
 </script>

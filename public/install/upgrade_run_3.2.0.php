@@ -385,6 +385,35 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_mode', 'group')"
 );
 
+// Add the api_tokens table used by Personal Access Tokens (OAuth2/SSO API access).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_tokens` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `user_id` int(12) NOT NULL,
+        `token_hash` varchar(64) NOT NULL,
+        `wrapped_private_key` text NOT NULL,
+        `salt` varchar(64) NOT NULL,
+        `label` varchar(255) NULL DEFAULT NULL,
+        `created_at` int(12) NOT NULL,
+        `expires_at` int(12) NULL DEFAULT NULL,
+        `last_used_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `token_hash` (`token_hash`),
+        KEY `user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_tokens table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add OAuth2-for-API toggle (disabled by default; admin opt-in for SSO users API access).
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_api_enabled', '0')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

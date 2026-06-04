@@ -96,7 +96,83 @@ class AuthController extends BaseController
             );
         } else {
             $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
+                json_encode(['error' => $strErrorDesc]),
+                ['Content-Type: application/json', $strErrorHeader]
+            );
+        }
+    }
+
+    /**
+     * Token-based authorization for OAuth2/SSO users (Personal Access Token).
+     *
+     * POST only. Credentials must be provided in the request body, never the query
+     * string. Body params: login + token. Returns the same JWT as the password path.
+     */
+    public function authorizeTokenAction()
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
+
+        if (strtoupper($requestMethod) === 'POST') {
+            // Security: prevent credentials from being passed via query string.
+            $queryString = $request->getQueryString();
+            if (!empty($queryString)) {
+                parse_str(html_entity_decode($queryString), $queryParams);
+                $sensitiveParams = ['login', 'token'];
+                foreach ($sensitiveParams as $param) {
+                    if (isset($queryParams[$param])) {
+                        $strErrorDesc = 'Credentials must be sent in request body (application/x-www-form-urlencoded or application/json), not in URL';
+                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                        break;
+                    }
+                }
+            }
+
+            // Proceed only if no security violation detected
+            if (empty($strErrorDesc)) {
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                // Validate required parameters are present
+                if (empty($arrQueryStringParams['login']) || empty($arrQueryStringParams['token'])) {
+                    $strErrorDesc = 'Missing required parameters: login and token must be provided in request body';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                } else {
+                    require API_ROOT_PATH . "/Model/AuthModel.php";
+                    try {
+                        $authModel = new AuthModel();
+                        $arrUser = $authModel->getUserAuthByToken(
+                            $arrQueryStringParams['login'],
+                            $arrQueryStringParams['token']
+                        );
+                        if (array_key_exists("token", $arrUser)) {
+                            $responseData = json_encode($arrUser);
+                        } else {
+                            $strErrorDesc = $arrUser['error'] . " (" . $arrUser['info'] . ")";
+                            $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                        }
+                    } catch (Error $e) {
+                        error_log('[API] AuthController::authorizeTokenAction error: ' . $e->getMessage());
+                        $strErrorDesc = 'An internal error occurred. Please contact support.';
+                        $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                    }
+                }
+            }
+
+        } else {
+            $strErrorDesc = 'Method '.$requestMethod.' not supported';
+            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendOutput(
+                json_encode(['error' => $strErrorDesc]),
                 ['Content-Type: application/json', $strErrorHeader]
             );
         }
