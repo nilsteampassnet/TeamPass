@@ -682,9 +682,11 @@ class BackgroundTasksHandler {
         );
 
         // Build command
+        // Prefer the resolved CLI binary (handles FPM/override); fall back to PHP_BINARY.
+        $phpBinary = function_exists('getPHPBinary') ? getPHPBinary() : PHP_BINARY;
         $cmd = sprintf(
             '%s %s %d %s %s',
-            escapeshellarg(PHP_BINARY),
+            escapeshellarg($phpBinary),
             escapeshellarg(__DIR__ . '/background_tasks___worker.php'),
             (int) $task['increment_id'],
             escapeshellarg((string) $task['process_type']),

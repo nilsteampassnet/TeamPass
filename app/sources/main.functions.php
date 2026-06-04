@@ -5931,10 +5931,56 @@ function deleteProcessAndRelatedTasks(int $processId)
  */
 function getPHPBinary(): string
 {
-    // Get PHP binary path
+    // 1. Admin override (highest priority).
+    //    Useful under PHP-FPM where auto-detection may resolve to the php-fpm
+    //    binary (non-interactive) instead of a usable CLI binary.
+    if (class_exists('TeampassClasses\ConfigManager\ConfigManager') === true) {
+        $configManager = new ConfigManager();
+        $override = (string) ($configManager->getSetting('cli_php_binary_path') ?? '');
+        if ($override !== '' && is_executable($override) === true) {
+            return $override;
+        }
+    }
+
+    // 2. Symfony auto-detection (path only, no arguments).
     $phpBinaryFinder = new PhpExecutableFinder();
-    $phpBinaryPath = $phpBinaryFinder->find();
-    return $phpBinaryPath === false ? 'false' : $phpBinaryPath;
+    $found = $phpBinaryFinder->find(false);
+
+    // 3. If running under PHP-FPM, if nothing was found, or if the detected
+    //    binary is a php-fpm binary, derive a CLI binary candidate list.
+    $foundIsFpm = is_string($found) === true && stripos($found, 'fpm') !== false;
+    if ($found === false || $foundIsFpm === true || PHP_SAPI === 'fpm-fcgi') {
+        $candidates = [];
+        if (is_string($found) === true && $found !== '') {
+            // /usr/sbin/php-fpm8.2 -> /usr/sbin/php8.2 ; /usr/bin/php8.2-fpm -> /usr/bin/php8.2
+            $derived = preg_replace('/php-?fpm/i', 'php', $found);
+            if (is_string($derived) === true) {
+                $candidates[] = $derived;
+            }
+        }
+        $version = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+        $candidates[] = PHP_BINDIR . '/php';
+        $candidates[] = PHP_BINDIR . '/php' . $version;
+        $candidates[] = '/usr/bin/php';
+        $candidates[] = '/usr/bin/php' . $version;
+        $candidates[] = '/usr/local/bin/php';
+        $candidates[] = '/usr/local/bin/php' . $version;
+
+        foreach ($candidates as $candidate) {
+            if (stripos($candidate, 'fpm') === false
+                && is_executable($candidate) === true
+            ) {
+                return $candidate;
+            }
+        }
+    }
+
+    // 4. Final fallback: the detected CLI binary if usable, otherwise 'php' from PATH.
+    //    Never return the literal string 'false'.
+    if (is_string($found) === true && $found !== '' && $foundIsFpm === false) {
+        return $found;
+    }
+    return 'php';
 }
 
 
