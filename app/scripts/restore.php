@@ -211,13 +211,16 @@ $now = time();
 $status = strval($payload['status'] ?? '');
 $expiresAt = intval($payload['expires_at'] ?? 0);
 $payloadFilePath = strval($payload['file']['path'] ?? '');
+$restoreStage = is_array($payload['restore_stage'] ?? null) ? (array) $payload['restore_stage'] : [];
 
 if ($status !== 'pending') {
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is not pending (status=' . $status . ').');
     exit(31);
 }
 
 if ($expiresAt > 0 && $expiresAt < $now) {
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is expired.');
     exit(32);
 }
@@ -476,6 +479,7 @@ if ($tmpSql === '') {
     $payload['finished_at'] = time();
     $payload['error'] = 'temp_file_failed';
     tpRestoreAuthorizationUpdatePayload($authId, $payload);
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     exit(40);
 }
 
@@ -489,6 +493,7 @@ if (tpBackupIsPackageFilename($file) === true) {
         $payload['finished_at'] = time();
         $payload['error'] = $errorCode;
         tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
         exit($errorCode === 'DECRYPT_FAILED' ? 41 : 43);
     }
 
@@ -504,6 +509,7 @@ if (tpBackupIsPackageFilename($file) === true) {
         $payload['finished_at'] = time();
         $payload['error'] = 'decrypt_failed';
         tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
         exit(41);
     }
 
@@ -526,6 +532,7 @@ if ($handle === false) {
         @unlink($tmpPackageZip);
     }
     $log('ERROR', 'Unable to open decrypted SQL file.');
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     exit(42);
 }
 
@@ -710,6 +717,7 @@ try {
     if ($tmpPackageZip !== '') {
         @unlink($tmpPackageZip);
     }
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
 
     // Re-force maintenance mode ON at the end (dump may have restored it to 0).
     try {
