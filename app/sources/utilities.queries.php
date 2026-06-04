@@ -3935,10 +3935,19 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
             ),
         );
     } else {
+        // PHP/TeamPass limits are consistent. Remind that the front web server
+        // (nginx client_max_body_size / Apache LimitRequestBody) must allow at
+        // least as much, otherwise large uploads are rejected with HTTP 413
+        // before PHP ever sees the request. The web-server config is not readable
+        // from PHP, so this stays informational.
         $checks[] = array(
-            'status' => 'success',
+            'status' => 'info',
             'title' => $lang->get('health_check_upload_limits'),
-            'text' => $lang->get('health_status_ok'),
+            'text' => sprintf(
+                $lang->get('health_check_upload_limits_websrv'),
+                (string) ($phpIni['ini']['upload_max_filesize'] ?? ''),
+                (string) ($phpIni['ini']['post_max_size'] ?? '')
+            ),
         );
     }
 
