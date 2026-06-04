@@ -7630,6 +7630,41 @@ function triggerBackgroundHandler(): void
 }
 
 /**
+ * Flush the HTTP response to the client and free the PHP-FPM worker early.
+ *
+ * Under PHP-FPM, fastcgi_finish_request() sends the buffered response to the
+ * client and ends the request, while the script keeps running for any trailing
+ * work (PHP shutdown, session write, cleanup). The worker is returned to the
+ * pool sooner, lowering perceived latency on hot paths.
+ *
+ * It is a no-op under Apache mod_php (the function does not exist) and when the
+ * 'enable_fastcgi_finish_request' admin setting is disabled.
+ *
+ * IMPORTANT: call this only AFTER the full response has been echoed — any output
+ * produced after the call is not delivered to the client.
+ *
+ * @return bool True if the response was flushed, false otherwise.
+ */
+function tpFinishRequestEarly(): bool
+{
+    if (function_exists('fastcgi_finish_request') === false) {
+        return false;
+    }
+
+    // Honor the admin toggle (enabled by default when the setting is absent).
+    if (class_exists('TeampassClasses\ConfigManager\ConfigManager') === true) {
+        $configManager = new ConfigManager();
+        $enabled = $configManager->getSetting('enable_fastcgi_finish_request');
+        if ($enabled !== null && (int) $enabled !== 1) {
+            return false;
+        }
+    }
+
+    fastcgi_finish_request();
+    return true;
+}
+
+/**
  * Emit a WebSocket event for real-time notifications
  *
  * This function inserts an event into the websocket_events table,
