@@ -2,6 +2,33 @@
 
 declare(strict_types=1);
 
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      BackupPackageFunctionsTest.php
+ * @author    Teampass Community
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/backup.functions.php';
@@ -28,6 +55,92 @@ class BackupPackageFunctionsTest extends TestCase
         $this->assertTrue(tpBackupPathLooksAbsolute('\\\\server\\share\\teampass'));
         $this->assertFalse(tpBackupPathLooksAbsolute('storage/backups'));
         $this->assertFalse(tpBackupPathLooksAbsolute(''));
+    }
+
+    public function testExternalizedBackupFilenameGuard(): void
+    {
+        $this->assertTrue(tpBackupExternalizedBackupFilenameIsAllowed('externalized-20260604.sql'));
+        $this->assertTrue(tpBackupExternalizedBackupFilenameIsAllowed('externalized-20260604.tpbackup'));
+        $this->assertFalse(tpBackupExternalizedBackupFilenameIsAllowed('scheduled-20260604.sql'));
+        $this->assertFalse(tpBackupExternalizedBackupFilenameIsAllowed('../externalized-20260604.sql'));
+        $this->assertFalse(tpBackupExternalizedBackupFilenameIsAllowed('externalized-20260604.zip'));
+    }
+
+    public function testSftpDestinationIsSupportedForFileOperations(): void
+    {
+        $this->assertTrue(tpBackupExternalizedDestinationTypeIsSupported('sftp'));
+        $this->assertTrue(tpBackupExternalizedDestinationTypeSupportsFileOperations('sftp'));
+        $this->assertTrue(tpBackupExternalizedDestinationTypeSupportsFileOperations('local_directory'));
+        $this->assertFalse(tpBackupExternalizedDestinationTypeSupportsFileOperations('unknown'));
+    }
+
+    public function testSftpRemotePathNormalization(): void
+    {
+        $this->assertSame('/backups/teampass', tpBackupNormalizeExternalizedSftpRemotePath('/backups//teampass/'));
+        $this->assertSame('', tpBackupNormalizeExternalizedSftpRemotePath('relative/path'));
+        $this->assertSame('', tpBackupNormalizeExternalizedSftpRemotePath('/backups/../secret'));
+    }
+
+    public function testSftpRemoteFilePathKeepsBackupsInsideRemoteDirectory(): void
+    {
+        $this->assertSame(
+            '/backups/teampass/externalized-20260604.sql',
+            tpBackupExternalizedSftpRemoteFilePath('/backups/teampass/', 'externalized-20260604.sql')
+        );
+        $this->assertSame(
+            '/backups/teampass/externalized-20260604.tpbackup',
+            tpBackupExternalizedSftpRemoteFilePath('/backups/teampass', '../externalized-20260604.tpbackup')
+        );
+        $this->assertSame('', tpBackupExternalizedSftpRemoteFilePath('/backups/teampass', 'scheduled-20260604.sql'));
+        $this->assertSame('', tpBackupExternalizedSftpRemoteFilePath('relative/path', 'externalized-20260604.sql'));
+    }
+
+    public function testExternalizedLocalProviderListsAndDeletesBackups(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'tp_ext_provider_' . bin2hex(random_bytes(4));
+        $this->assertTrue(mkdir($dir));
+
+        $first = $dir . DIRECTORY_SEPARATOR . 'externalized-first.sql';
+        $second = $dir . DIRECTORY_SEPARATOR . 'externalized-second.tpbackup';
+        $ignored = $dir . DIRECTORY_SEPARATOR . 'scheduled-ignored.sql';
+        file_put_contents($first, 'sql');
+        file_put_contents($second, 'tpbackup');
+        file_put_contents($ignored, 'ignored');
+        file_put_contents(tpGetBackupMetadataPath($first), '{}');
+
+        try {
+            $listed = tpBackupListExternalizedBackups('local_directory', $dir);
+            $this->assertTrue($listed['success']);
+            $this->assertSame(realpath($dir), $listed['path']);
+            $this->assertCount(2, $listed['files']);
+            $names = array_column($listed['files'], 'name');
+            sort($names);
+            $this->assertSame(
+                ['externalized-first.sql', 'externalized-second.tpbackup'],
+                $names
+            );
+
+            $staged = tpBackupStageExternalizedBackupForRestore('local_directory', $dir, 'externalized-second.tpbackup');
+            $this->assertTrue($staged['success']);
+            $this->assertFalse($staged['cleanup_required']);
+            $this->assertSame(realpath($second), $staged['path']);
+
+            $deleted = tpBackupDeleteExternalizedBackup('local_directory', $dir, 'externalized-first.sql');
+            $this->assertTrue($deleted['success']);
+            $this->assertTrue($deleted['deleted']);
+            $this->assertFileDoesNotExist($first);
+            $this->assertFileDoesNotExist(tpGetBackupMetadataPath($first));
+            $this->assertFileExists($ignored);
+        } finally {
+            foreach (glob($dir . DIRECTORY_SEPARATOR . '*') ?: [] as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            if (is_dir($dir)) {
+                rmdir($dir);
+            }
+        }
     }
 
     public function testPackageEntryPathNormalizesSafeRelativePaths(): void
