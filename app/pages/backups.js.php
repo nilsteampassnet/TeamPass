@@ -2268,6 +2268,8 @@ var tpScheduled = {
 };
 
 var tpExternalized = {
+  operationsSupported: true,
+
   showAlert: function(type, msg) {
     var $a = $('#externalized-alert');
     if (!$a.length) return;
@@ -2337,21 +2339,135 @@ var tpExternalized = {
     }
   },
 
+  toggleDestinationUI: function() {
+    var destinationType = ($('#externalized-destination-type').val() || 'local_directory').toString();
+    var isSftp = destinationType === 'sftp';
+    var isWebdav = destinationType === 'webdav';
+    var isS3 = destinationType === 's3';
+    $('#externalized-sftp-fields').toggle(isSftp);
+    $('#externalized-webdav-fields').toggle(isWebdav);
+    $('#externalized-s3-fields').toggle(isS3);
+
+    var $target = $('#externalized-target-dir');
+    var localPlaceholder = $target.data('local-placeholder') || '';
+    var sftpPlaceholder = $target.data('sftp-placeholder') || '';
+    var webdavPlaceholder = $target.data('webdav-placeholder') || '';
+    var s3Placeholder = $target.data('s3-placeholder') || '';
+    var localHelp = $('#externalized-target-dir-help').data('local-help') || '';
+    var sftpHelp = $('#externalized-target-dir-help').data('sftp-help') || '';
+    var webdavHelp = $('#externalized-target-dir-help').data('webdav-help') || '';
+    var s3Help = $('#externalized-target-dir-help').data('s3-help') || '';
+
+    if (isSftp) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_sftp_remote_path')); ?>');
+      $target.attr('placeholder', sftpPlaceholder);
+      $('#externalized-target-dir-help').text(sftpHelp);
+    } else if (isWebdav) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_webdav_remote_path')); ?>');
+      $target.attr('placeholder', webdavPlaceholder);
+      $('#externalized-target-dir-help').text(webdavHelp);
+    } else if (isS3) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_s3_prefix')); ?>');
+      $target.attr('placeholder', s3Placeholder);
+      $('#externalized-target-dir-help').text(s3Help);
+    } else {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_target_dir')); ?>');
+      $target.attr('placeholder', localPlaceholder);
+      $('#externalized-target-dir-help').text(localHelp);
+    }
+
+    tpExternalized.toggleSftpAuthUI();
+    tpExternalized.updateRunAvailability();
+  },
+
+  toggleSftpAuthUI: function() {
+    var authType = ($('#externalized-sftp-auth-type').val() || 'password').toString();
+    $('.externalized-sftp-password-fields').toggle(authType !== 'private_key');
+    $('.externalized-sftp-private-key-fields').toggle(authType === 'private_key');
+  },
+
+  toggleScheduleUI: function() {
+    var enabled = tpScheduled.isTruthy($('#externalized-schedule-enabled_input').val());
+    var frequency = ($('#externalized-schedule-frequency').val() || 'daily').toString();
+    $('#externalized-schedule-fields').toggleClass('d-none', !enabled);
+    $('#externalized-schedule-weekly-wrap').toggleClass('d-none', !enabled || frequency !== 'weekly');
+    $('#externalized-schedule-monthly-wrap').toggleClass('d-none', !enabled || frequency !== 'monthly');
+  },
+
+  enforceTriggerMode: function(changedToggleId) {
+    var runAfterScheduled = tpScheduled.isTruthy($('#externalized-run-after-scheduled_input').val());
+    var scheduleEnabled = tpScheduled.isTruthy($('#externalized-schedule-enabled_input').val());
+
+    if (runAfterScheduled && scheduleEnabled) {
+      if (changedToggleId === 'externalized-schedule-enabled') {
+        tpScheduled.applyToggleState('externalized-run-after-scheduled', false);
+      } else {
+        tpScheduled.applyToggleState('externalized-schedule-enabled', false);
+      }
+      tpExternalized.showAlert('info', '<?php echo addslashes($lang->get('bck_externalized_trigger_mode_exclusive_notice')); ?>');
+    }
+
+    tpExternalized.toggleScheduleUI();
+  },
+
+  updateRunAvailability: function() {
+    var enabled = tpScheduled.isTruthy($('#externalized-enabled_input').val());
+    var supported = tpExternalized.operationsSupported !== false;
+    $('#externalized-run-btn').prop('disabled', !enabled || !supported);
+  },
+
   applySettings: function(s) {
     s = s || {};
+    if (s.timezone) {
+      tpScheduled.tz = s.timezone;
+    }
+    tpExternalized.operationsSupported = s.operations_supported !== false;
     tpScheduled.applyToggleState('externalized-enabled', parseInt(s.enabled || 0, 10) === 1);
+    var runAfterScheduled = parseInt(s.run_after_scheduled || 0, 10) === 1;
+    var scheduleEnabled = parseInt(s.schedule_enabled || 0, 10) === 1;
+    if (runAfterScheduled && scheduleEnabled) {
+      scheduleEnabled = false;
+    }
+    tpScheduled.applyToggleState('externalized-run-after-scheduled', runAfterScheduled);
+    tpScheduled.applyToggleState('externalized-schedule-enabled', scheduleEnabled);
+    $('#externalized-schedule-frequency').val(s.schedule_frequency || 'daily');
+    $('#externalized-schedule-time').val(s.schedule_time || '02:00');
+    $('#externalized-schedule-dow').val(String(s.schedule_dow || 1));
+    $('#externalized-schedule-dom').val(String(s.schedule_dom || 1));
+    tpExternalized.enforceTriggerMode();
     $('#externalized-destination-type').val(s.destination_type || 'local_directory');
     $('#externalized-target-dir').val(s.target_dir || '');
+    var sftp = s.sftp || {};
+    $('#externalized-sftp-host').val(sftp.host || '');
+    $('#externalized-sftp-port').val(String(sftp.port || 22));
+    $('#externalized-sftp-username').val(sftp.username || '');
+    $('#externalized-sftp-auth-type').val(sftp.auth_type || 'password');
+    $('#externalized-sftp-password').val('');
+    $('#externalized-sftp-private-key').val('');
+    $('#externalized-sftp-private-key-passphrase').val('');
+    var webdav = s.webdav || {};
+    $('#externalized-webdav-url').val(webdav.url || '');
+    $('#externalized-webdav-username').val(webdav.username || '');
+    $('#externalized-webdav-password').val('');
+    var s3 = s.s3 || {};
+    $('#externalized-s3-endpoint').val(s3.endpoint || '');
+    $('#externalized-s3-region').val(s3.region || 'us-east-1');
+    $('#externalized-s3-bucket').val(s3.bucket || '');
+    $('#externalized-s3-access-key').val(s3.access_key || '');
+    $('#externalized-s3-secret-key').val('');
+    $('#externalized-s3-path-style').val(String(typeof s3.path_style === 'undefined' ? 1 : s3.path_style));
     $('#externalized-format').val(s.backup_format || 'tpbackup');
     tpScheduled.applyToggleState('externalized-include-documents', parseInt(s.include_documents || 0, 10) === 1);
     tpExternalized.toggleDocumentsUI();
+    tpExternalized.toggleDestinationUI();
     $('#externalized-retention-days').val(String(s.retention_days || 30));
     $('#externalized-retention-count').val(String(s.retention_count || 10));
     $('#externalized-retry-attempts').val(String(s.retry_attempts || 3));
     $('#externalized-retry-delay-seconds').val(String(s.retry_delay_seconds || 5));
-    $('#externalized-run-btn').prop('disabled', parseInt(s.enabled || 0, 10) !== 1);
+    tpExternalized.updateRunAvailability();
 
     $('#externalized-last-test').text(tpScheduled.fmtTs(s.last_test_at));
+    $('#externalized-next-run').text(tpScheduled.fmtTs(s.next_run_at));
     $('#externalized-last-run').text(tpScheduled.fmtTs(s.last_run_at));
     $('#externalized-last-completed').text(tpScheduled.fmtTs(s.last_completed_at));
     $('#externalized-last-status').text(s.last_status || '-');
@@ -2368,8 +2484,30 @@ var tpExternalized = {
   payload: function() {
     return {
       enabled: tpScheduled.norm01($('#externalized-enabled_input').val()),
+      run_after_scheduled: tpScheduled.norm01($('#externalized-run-after-scheduled_input').val()),
+      schedule_enabled: tpScheduled.isTruthy($('#externalized-run-after-scheduled_input').val()) ? '0' : tpScheduled.norm01($('#externalized-schedule-enabled_input').val()),
+      schedule_frequency: $('#externalized-schedule-frequency').val() || 'daily',
+      schedule_time: $('#externalized-schedule-time').val() || '02:00',
+      schedule_dow: parseInt($('#externalized-schedule-dow').val(), 10) || 1,
+      schedule_dom: parseInt($('#externalized-schedule-dom').val(), 10) || 1,
       destination_type: $('#externalized-destination-type').val() || 'local_directory',
       target_dir: $('#externalized-target-dir').val() || '',
+      sftp_host: $('#externalized-sftp-host').val() || '',
+      sftp_port: parseInt($('#externalized-sftp-port').val(), 10) || 22,
+      sftp_username: $('#externalized-sftp-username').val() || '',
+      sftp_auth_type: $('#externalized-sftp-auth-type').val() || 'password',
+      sftp_password: $('#externalized-sftp-password').val() || '',
+      sftp_private_key: $('#externalized-sftp-private-key').val() || '',
+      sftp_private_key_passphrase: $('#externalized-sftp-private-key-passphrase').val() || '',
+      webdav_url: $('#externalized-webdav-url').val() || '',
+      webdav_username: $('#externalized-webdav-username').val() || '',
+      webdav_password: $('#externalized-webdav-password').val() || '',
+      s3_endpoint: $('#externalized-s3-endpoint').val() || '',
+      s3_region: $('#externalized-s3-region').val() || 'us-east-1',
+      s3_bucket: $('#externalized-s3-bucket').val() || '',
+      s3_access_key: $('#externalized-s3-access-key').val() || '',
+      s3_secret_key: $('#externalized-s3-secret-key').val() || '',
+      s3_path_style: parseInt($('#externalized-s3-path-style').val(), 10) || 0,
       backup_format: $('#externalized-format').val() || 'tpbackup',
       include_documents: tpScheduled.norm01($('#externalized-include-documents_input').val()),
       retention_days: parseInt($('#externalized-retention-days').val(), 10),
@@ -2413,10 +2551,7 @@ var tpExternalized = {
     tpExternalized.hideAlert();
     tpExternalized.ajax(
       'externalized_test_destination',
-      {
-        destination_type: $('#externalized-destination-type').val() || 'local_directory',
-        target_dir: $('#externalized-target-dir').val() || ''
-      },
+      tpExternalized.payload(),
       function(r) {
         if (!r || r.error) {
           tpExternalized.showAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('server_answer_error')); ?>');
@@ -2816,9 +2951,26 @@ var tpExternalized = {
       tpExternalized.refreshAll();
     });
 
-    tpScheduled.bindToggleFix('externalized-enabled');
+    tpScheduled.bindToggleFix('externalized-enabled', function() {
+      tpExternalized.updateRunAvailability();
+    });
+    tpScheduled.bindToggleFix('externalized-run-after-scheduled', function() {
+      tpExternalized.enforceTriggerMode('externalized-run-after-scheduled');
+    });
+    tpScheduled.bindToggleFix('externalized-schedule-enabled', function() {
+      tpExternalized.enforceTriggerMode('externalized-schedule-enabled');
+    });
     tpScheduled.bindToggleFix('externalized-include-documents', function() {
       tpExternalized.toggleDocumentsUI();
+    });
+    $('#externalized-schedule-frequency').on('change', function() {
+      tpExternalized.toggleScheduleUI();
+    });
+    $('#externalized-destination-type').on('change', function() {
+      tpExternalized.toggleDestinationUI();
+    });
+    $('#externalized-sftp-auth-type').on('change', function() {
+      tpExternalized.toggleSftpAuthUI();
     });
     $('#externalized-format').on('change', function() {
       tpExternalized.toggleDocumentsUI();
