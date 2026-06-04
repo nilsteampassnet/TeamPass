@@ -386,6 +386,36 @@ catch (Exception $e) {
                                         </div>
                                     </div>
 
+                                    <div class='row mb-3 option'>
+                                        <div class='col-12'>
+                                            <h4 class='mt-2'><i class="fa-solid fa-gauge-high mr-2"></i><?php echo $lang->get('performance_php_fpm'); ?></h4>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-9'>
+                                        <h5><i class="fa-solid fa-terminal mr-2"></i><?php echo $lang->get('cli_php_binary_path'); ?></h5>
+                                            <small class='form-text text-muted'>
+                                                <?php echo $lang->get('cli_php_binary_path_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-3'>
+                                            <input type='text' class='form-control form-control-sm' id='cli_php_binary_path' placeholder='/usr/bin/php' value='<?php echo isset($SETTINGS['cli_php_binary_path']) === true ? htmlspecialchars((string) $SETTINGS['cli_php_binary_path'], ENT_QUOTES) : ''; ?>'>
+                                        </div>
+                                    </div>
+
+                                    <div class='row mb-3 option'>
+                                        <div class='col-10'>
+                                        <h5><i class="fa-solid fa-bolt mr-2"></i><?php echo $lang->get('enable_fastcgi_finish_request'); ?></h5>
+                                            <small class='form-text text-muted'>
+                                                <?php echo $lang->get('enable_fastcgi_finish_request_tip'); ?>
+                                            </small>
+                                        </div>
+                                        <div class='col-2'>
+                                            <div class='toggle toggle-modern' id='enable_fastcgi_finish_request' data-toggle-on='<?php echo (isset($SETTINGS['enable_fastcgi_finish_request']) === false || (int) $SETTINGS['enable_fastcgi_finish_request'] === 1) ? 'true' : 'false'; ?>'></div><input type='hidden' id='enable_fastcgi_finish_request_input' value='<?php echo (isset($SETTINGS['enable_fastcgi_finish_request']) === false || (int) $SETTINGS['enable_fastcgi_finish_request'] === 1) ? 1 : 0; ?>' />
+                                        </div>
+                                    </div>
+
                                 </div>
                             </div>
 

@@ -364,6 +364,17 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_cors_origins', '')"
 );
 
+// Add PHP-FPM performance settings: CLI binary override (empty = auto-detect)
+// and fastcgi_finish_request flush toggle (enabled by default, no-op under mod_php)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'cli_php_binary_path', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_fastcgi_finish_request', '1')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
