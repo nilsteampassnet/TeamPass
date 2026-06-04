@@ -664,6 +664,17 @@ function tpRecoveryBuildSettingsSummary(array $SETTINGS): array
         'bck_externalized_include_documents',
         'bck_externalized_retry_attempts',
         'bck_externalized_retry_delay_seconds',
+        'bck_externalized_sftp_host',
+        'bck_externalized_sftp_port',
+        'bck_externalized_sftp_username',
+        'bck_externalized_sftp_auth_type',
+        'bck_externalized_webdav_url',
+        'bck_externalized_webdav_username',
+        'bck_externalized_s3_endpoint',
+        'bck_externalized_s3_region',
+        'bck_externalized_s3_bucket',
+        'bck_externalized_s3_access_key',
+        'bck_externalized_s3_path_style',
         'bck_scheduled_output_dir',
         'bck_scheduled_format',
         'bck_scheduled_include_documents',
@@ -953,7 +964,7 @@ function tpBackupPathLooksAbsolute(string $path): bool
  */
 function tpBackupGetSupportedExternalizedDestinationTypes(): array
 {
-    return ['local_directory'];
+    return ['local_directory', 'sftp', 'webdav', 's3'];
 }
 
 function tpBackupNormalizeExternalizedDestinationType(string $destinationType): string
@@ -980,6 +991,19 @@ function tpBackupResolveExternalizedDestinationType(string $destinationType): st
     return 'local_directory';
 }
 
+function tpBackupExternalizedDestinationTypeSupportsFileOperations(string $destinationType): bool
+{
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+
+    return in_array($destinationType, ['local_directory', 'sftp', 'webdav', 's3'], true) === true
+        && tpBackupExternalizedDestinationTypeIsSupported($destinationType) === true;
+}
+
+function tpBackupExternalizedDestinationTypeIsRemote(string $destinationType): bool
+{
+    return in_array(tpBackupNormalizeExternalizedDestinationType($destinationType), ['sftp', 'webdav', 's3'], true) === true;
+}
+
 /**
  * Resolve and validate an externalized destination.
  *
@@ -1002,7 +1026,7 @@ function tpBackupResolveExternalizedDestination(string $destinationType, string 
         return $resolved;
     }
 
-    return ['success' => false, 'path' => '', 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType];
+    return ['success' => false, 'path' => '', 'reason' => 'UNSUPPORTED_OPERATION', 'destination_type' => $destinationType];
 }
 
 /**
@@ -1064,6 +1088,2330 @@ function tpBackupResolveExternalizedLocalDestinationDir(string $requestedDir, ar
     }
 
     return ['success' => true, 'path' => $real, 'reason' => ''];
+}
+
+function tpBackupNormalizeExternalizedSftpRemotePath(string $remotePath): string
+{
+    $remotePath = trim(str_replace("\0", '', str_replace('\\', '/', $remotePath)));
+    if ($remotePath === '') {
+        return '';
+    }
+
+    $remotePath = preg_replace('#/+#', '/', $remotePath) ?? $remotePath;
+    if (str_starts_with($remotePath, '/') === false) {
+        return '';
+    }
+
+    $parts = [];
+    foreach (explode('/', $remotePath) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+        if ($part === '..' || str_contains($part, ':')) {
+            return '';
+        }
+        $parts[] = $part;
+    }
+
+    return '/' . implode('/', $parts);
+}
+
+/**
+ * @return array{success: bool, reason: string, path: string}
+ */
+function tpBackupValidateExternalizedSftpConfig(array $config): array
+{
+    $host = trim(str_replace("\0", '', (string)($config['host'] ?? '')));
+    if ($host === '') {
+        return ['success' => false, 'reason' => 'SFTP_MISSING_HOST', 'path' => ''];
+    }
+
+    $port = (int)($config['port'] ?? 22);
+    if ($port < 1 || $port > 65535) {
+        return ['success' => false, 'reason' => 'SFTP_INVALID_PORT', 'path' => ''];
+    }
+
+    $username = trim(str_replace("\0", '', (string)($config['username'] ?? '')));
+    if ($username === '') {
+        return ['success' => false, 'reason' => 'SFTP_MISSING_USERNAME', 'path' => ''];
+    }
+
+    $remotePath = tpBackupNormalizeExternalizedSftpRemotePath((string)($config['remote_path'] ?? ''));
+    if ($remotePath === '') {
+        return ['success' => false, 'reason' => 'SFTP_REMOTE_PATH_INVALID', 'path' => ''];
+    }
+
+    $authType = ((string)($config['auth_type'] ?? 'password') === 'private_key') ? 'private_key' : 'password';
+    if ($authType === 'private_key') {
+        $privateKeyAvailable = trim((string)($config['private_key'] ?? '')) !== '' || !empty($config['private_key_available']);
+        if ($privateKeyAvailable === false) {
+            return ['success' => false, 'reason' => 'SFTP_MISSING_PRIVATE_KEY', 'path' => $remotePath];
+        }
+    } else {
+        $passwordAvailable = (string)($config['password'] ?? '') !== '' || !empty($config['password_available']);
+        if ($passwordAvailable === false) {
+            return ['success' => false, 'reason' => 'SFTP_MISSING_PASSWORD', 'path' => $remotePath];
+        }
+    }
+
+    return ['success' => true, 'reason' => '', 'path' => $remotePath];
+}
+
+/**
+ * Test an externalized destination without exposing secrets to callers.
+ *
+ * @return array{success: bool, path: string, reason: string, destination_type: string}
+ */
+function tpBackupTestExternalizedDestination(string $destinationType, string $targetDir, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+    if (tpBackupExternalizedDestinationTypeIsSupported($destinationType) === false) {
+        return ['success' => false, 'path' => '', 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType];
+    }
+
+    if ($destinationType === 'local_directory') {
+        $resolved = tpBackupResolveExternalizedLocalDestinationDir($targetDir, $SETTINGS);
+        $resolved['destination_type'] = $destinationType;
+
+        return $resolved;
+    }
+
+    if ($destinationType === 'sftp') {
+        $sftpConfig['remote_path'] = $targetDir;
+
+        return tpBackupTestExternalizedSftpDestination($sftpConfig);
+    }
+
+    if ($destinationType === 'webdav') {
+        $sftpConfig['remote_path'] = $targetDir;
+
+        return tpBackupTestExternalizedWebdavDestination($sftpConfig);
+    }
+
+    if ($destinationType === 's3') {
+        $sftpConfig['prefix'] = $targetDir;
+
+        return tpBackupTestExternalizedS3Destination($sftpConfig);
+    }
+
+    return ['success' => false, 'path' => '', 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType];
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string}
+ */
+function tpBackupTestExternalizedSftpDestination(array $config): array
+{
+    $connection = tpBackupOpenExternalizedSftpConnection($config);
+    if ($connection['success'] === false) {
+        return [
+            'success' => false,
+            'path' => (string) $connection['path'],
+            'reason' => (string) $connection['reason'],
+            'destination_type' => 'sftp',
+        ];
+    }
+
+    $remotePath = (string) $connection['path'];
+    $sftp = $connection['client'];
+    try {
+        $testPath = rtrim($remotePath, '/') . '/.teampass-sftp-test-' . bin2hex(random_bytes(6)) . '.tmp';
+        $written = $sftp->put($testPath, 'teampass', \phpseclib3\Net\SFTP::SOURCE_STRING);
+        if ($written !== true) {
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_NOT_WRITABLE', 'destination_type' => 'sftp'];
+        }
+
+        $sftp->delete($testPath);
+
+        return ['success' => true, 'path' => $remotePath, 'reason' => '', 'destination_type' => 'sftp'];
+    } catch (Throwable) {
+        return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_CONNECTION_FAILED', 'destination_type' => 'sftp'];
+    }
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string, client?: object}
+ */
+function tpBackupOpenExternalizedSftpConnection(array $config): array
+{
+    $validated = tpBackupValidateExternalizedSftpConfig($config);
+    if ($validated['success'] === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => (string) $validated['reason'], 'destination_type' => 'sftp'];
+    }
+
+    if (class_exists('\\phpseclib3\\Net\\SFTP') === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => 'SFTP_LIBRARY_MISSING', 'destination_type' => 'sftp'];
+    }
+
+    $host = trim(str_replace("\0", '', (string)($config['host'] ?? '')));
+    $port = (int)($config['port'] ?? 22);
+    $username = trim(str_replace("\0", '', (string)($config['username'] ?? '')));
+    $authType = ((string)($config['auth_type'] ?? 'password') === 'private_key') ? 'private_key' : 'password';
+    $remotePath = (string) $validated['path'];
+
+    try {
+        $sftp = new \phpseclib3\Net\SFTP($host, $port, 15);
+        if ($authType === 'private_key') {
+            if (class_exists('\\phpseclib3\\Crypt\\PublicKeyLoader') === false) {
+                return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_LIBRARY_MISSING', 'destination_type' => 'sftp'];
+            }
+
+            $passphrase = (string)($config['private_key_passphrase'] ?? '');
+            $privateKey = \phpseclib3\Crypt\PublicKeyLoader::loadPrivateKey(
+                (string)($config['private_key'] ?? ''),
+                $passphrase !== '' ? $passphrase : false
+            );
+            $loggedIn = $sftp->login($username, $privateKey);
+        } else {
+            $loggedIn = $sftp->login($username, (string)($config['password'] ?? ''));
+        }
+
+        if ($loggedIn !== true) {
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_AUTH_FAILED', 'destination_type' => 'sftp'];
+        }
+
+        if ($sftp->is_dir($remotePath) !== true) {
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_PATH_NOT_FOUND', 'destination_type' => 'sftp'];
+        }
+
+        return ['success' => true, 'path' => $remotePath, 'reason' => '', 'destination_type' => 'sftp', 'client' => $sftp];
+    } catch (Throwable) {
+        return ['success' => false, 'path' => $remotePath, 'reason' => 'SFTP_CONNECTION_FAILED', 'destination_type' => 'sftp'];
+    }
+}
+
+function tpBackupExternalizedSftpRemoteFilePath(string $remoteDir, string $filename): string
+{
+    $filename = basename(str_replace('\\', '/', $filename));
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return '';
+    }
+
+    $remoteDir = tpBackupNormalizeExternalizedSftpRemotePath($remoteDir);
+    if ($remoteDir === '') {
+        return '';
+    }
+
+    return rtrim($remoteDir, '/') . '/' . $filename;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function tpBackupReadExternalizedSftpMetadata($sftp, string $remoteFilePath): array
+{
+    try {
+        $payload = $sftp->get($remoteFilePath . '.meta.json');
+        if (is_string($payload) === false || $payload === '') {
+            return [];
+        }
+
+        $data = json_decode($payload, true);
+        return is_array($data) === true ? $data : [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+function tpBackupNormalizeExternalizedWebdavRemotePath(string $remotePath): string
+{
+    $remotePath = trim(str_replace("\0", '', str_replace('\\', '/', $remotePath)));
+    if ($remotePath === '') {
+        return '';
+    }
+
+    $remotePath = preg_replace('#/+#', '/', $remotePath) ?? $remotePath;
+    if (str_starts_with($remotePath, '/') === false) {
+        return '';
+    }
+
+    $parts = [];
+    foreach (explode('/', $remotePath) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+        if ($part === '..' || str_contains($part, '?') || str_contains($part, '#')) {
+            return '';
+        }
+        $parts[] = $part;
+    }
+
+    return '/' . implode('/', $parts);
+}
+
+/**
+ * @return array{success: bool, reason: string, path: string}
+ */
+function tpBackupValidateExternalizedWebdavConfig(array $config): array
+{
+    $baseUrl = trim(str_replace("\0", '', (string) ($config['url'] ?? '')));
+    if ($baseUrl === '') {
+        return ['success' => false, 'reason' => 'WEBDAV_MISSING_URL', 'path' => ''];
+    }
+
+    if (strlen($baseUrl) > 2048 || filter_var($baseUrl, FILTER_VALIDATE_URL) === false) {
+        return ['success' => false, 'reason' => 'WEBDAV_URL_INVALID', 'path' => ''];
+    }
+
+    $parts = parse_url($baseUrl);
+    $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+    if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+        return ['success' => false, 'reason' => 'WEBDAV_URL_INVALID', 'path' => ''];
+    }
+
+    $username = trim(str_replace("\0", '', (string) ($config['username'] ?? '')));
+    if ($username === '') {
+        return ['success' => false, 'reason' => 'WEBDAV_MISSING_USERNAME', 'path' => ''];
+    }
+
+    $passwordAvailable = (string) ($config['password'] ?? '') !== '' || !empty($config['password_available']);
+    if ($passwordAvailable === false) {
+        return ['success' => false, 'reason' => 'WEBDAV_MISSING_PASSWORD', 'path' => ''];
+    }
+
+    $remotePath = tpBackupNormalizeExternalizedWebdavRemotePath((string) ($config['remote_path'] ?? ''));
+    if ($remotePath === '') {
+        return ['success' => false, 'reason' => 'WEBDAV_REMOTE_PATH_INVALID', 'path' => ''];
+    }
+
+    return ['success' => true, 'reason' => '', 'path' => $remotePath];
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string, client?: object, config?: array<string, mixed>}
+ */
+function tpBackupOpenExternalizedWebdavConnection(array $config): array
+{
+    $validated = tpBackupValidateExternalizedWebdavConfig($config);
+    if ($validated['success'] === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => (string) $validated['reason'], 'destination_type' => 'webdav'];
+    }
+
+    if (class_exists('\\GuzzleHttp\\Client') === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => 'WEBDAV_LIBRARY_MISSING', 'destination_type' => 'webdav'];
+    }
+
+    try {
+        $client = new \GuzzleHttp\Client([
+            'timeout' => 30,
+            'connect_timeout' => 15,
+            'http_errors' => false,
+        ]);
+    } catch (Throwable) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => 'WEBDAV_CONNECTION_FAILED', 'destination_type' => 'webdav'];
+    }
+
+    $cleanConfig = [
+        'url' => rtrim(trim((string) ($config['url'] ?? '')), '/'),
+        'username' => trim(str_replace("\0", '', (string) ($config['username'] ?? ''))),
+        'password' => (string) ($config['password'] ?? ''),
+        'remote_path' => (string) $validated['path'],
+    ];
+
+    return [
+        'success' => true,
+        'path' => (string) $validated['path'],
+        'reason' => '',
+        'destination_type' => 'webdav',
+        'client' => $client,
+        'config' => $cleanConfig,
+    ];
+}
+
+function tpBackupExternalizedWebdavRemoteFilePath(string $remoteDir, string $filename): string
+{
+    $filename = basename(str_replace('\\', '/', $filename));
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return '';
+    }
+
+    $remoteDir = tpBackupNormalizeExternalizedWebdavRemotePath($remoteDir);
+    if ($remoteDir === '') {
+        return '';
+    }
+
+    return rtrim($remoteDir, '/') . '/' . $filename;
+}
+
+function tpBackupBuildExternalizedWebdavUrl(string $baseUrl, string $remotePath): string
+{
+    $baseUrl = rtrim(trim($baseUrl), '/');
+    $remotePath = tpBackupNormalizeExternalizedWebdavRemotePath($remotePath);
+    if ($baseUrl === '' || $remotePath === '') {
+        return '';
+    }
+
+    $segments = array_filter(explode('/', trim($remotePath, '/')), static function (string $part): bool {
+        return $part !== '';
+    });
+
+    if (empty($segments) === true) {
+        return $baseUrl . '/';
+    }
+
+    return $baseUrl . '/' . implode('/', array_map('rawurlencode', $segments));
+}
+
+function tpBackupExternalizedWebdavRequest($client, array $config, string $method, string $remotePath, array $options = [])
+{
+    $url = tpBackupBuildExternalizedWebdavUrl((string) ($config['url'] ?? ''), $remotePath);
+    if ($url === '') {
+        throw new RuntimeException('Invalid WebDAV URL.');
+    }
+
+    $requestOptions = array_replace_recursive([
+        'http_errors' => false,
+        'timeout' => 30,
+        'connect_timeout' => 15,
+        'headers' => [
+            'User-Agent' => 'TeamPass-Backup-WebDAV',
+        ],
+    ], $options);
+
+    $username = (string) ($config['username'] ?? '');
+    if ($username !== '') {
+        $requestOptions['auth'] = [$username, (string) ($config['password'] ?? '')];
+    }
+
+    return $client->request($method, $url, $requestOptions);
+}
+
+function tpBackupExternalizedWebdavReasonFromStatus(int $status, string $fallback): string
+{
+    if ($status === 401 || $status === 403) {
+        return 'WEBDAV_AUTH_FAILED';
+    }
+
+    if ($status === 404 || $status === 409) {
+        return 'WEBDAV_PATH_NOT_FOUND';
+    }
+
+    return $fallback;
+}
+
+/**
+ * @return array<int, array{name: string, path: string, size_bytes: int, mtime: int, is_dir: bool}>
+ */
+function tpBackupParseExternalizedWebdavPropfind(string $payload): array
+{
+    if (trim($payload) === '') {
+        return [];
+    }
+
+    $previous = libxml_use_internal_errors(true);
+    try {
+        $xml = simplexml_load_string($payload, 'SimpleXMLElement', LIBXML_NONET);
+        if ($xml === false) {
+            return [];
+        }
+
+        $xml->registerXPathNamespace('d', 'DAV:');
+        $responses = $xml->xpath('//d:response') ?: [];
+        $items = [];
+
+        foreach ($responses as $response) {
+            $response->registerXPathNamespace('d', 'DAV:');
+            $hrefNodes = $response->xpath('./d:href') ?: [];
+            if (empty($hrefNodes) === true) {
+                continue;
+            }
+
+            $href = (string) $hrefNodes[0];
+            $path = parse_url($href, PHP_URL_PATH);
+            $decodedPath = rawurldecode((string) ($path !== null && $path !== false ? $path : $href));
+            $name = basename(str_replace('\\', '/', $decodedPath));
+            if ($name === '' || $name === '.' || $name === '..') {
+                continue;
+            }
+
+            $propNodes = $response->xpath('./d:propstat/d:prop') ?: [];
+            $sizeBytes = 0;
+            $mtime = 0;
+            $isDir = false;
+            foreach ($propNodes as $prop) {
+                $dav = $prop->children('DAV:');
+                if (isset($dav->getcontentlength)) {
+                    $sizeBytes = (int) $dav->getcontentlength;
+                }
+                if (isset($dav->getlastmodified)) {
+                    $parsedMtime = strtotime((string) $dav->getlastmodified);
+                    $mtime = $parsedMtime !== false ? (int) $parsedMtime : $mtime;
+                }
+                if (isset($dav->resourcetype)) {
+                    $collections = $dav->resourcetype->children('DAV:');
+                    if (isset($collections->collection)) {
+                        $isDir = true;
+                    }
+                }
+            }
+
+            $items[] = [
+                'name' => $name,
+                'path' => $decodedPath,
+                'size_bytes' => $sizeBytes,
+                'mtime' => $mtime,
+                'is_dir' => $isDir,
+            ];
+        }
+
+        return $items;
+    } finally {
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+    }
+}
+
+/**
+ * @return array<int, array{name: string, path: string, size_bytes: int, mtime: int, is_dir: bool}>
+ */
+function tpBackupExternalizedWebdavPropfind($client, array $config, string $remotePath, int $depth): array
+{
+    $response = tpBackupExternalizedWebdavRequest(
+        $client,
+        $config,
+        'PROPFIND',
+        $remotePath,
+        [
+            'headers' => [
+                'Depth' => (string) $depth,
+                'Content-Type' => 'application/xml; charset=utf-8',
+            ],
+            'body' => '<?xml version="1.0" encoding="utf-8" ?><d:propfind xmlns:d="DAV:"><d:prop><d:resourcetype/><d:getcontentlength/><d:getlastmodified/></d:prop></d:propfind>',
+        ]
+    );
+
+    $status = (int) $response->getStatusCode();
+    if ($status !== 207 && $status !== 200) {
+        throw new RuntimeException(tpBackupExternalizedWebdavReasonFromStatus($status, 'WEBDAV_CONNECTION_FAILED'));
+    }
+
+    return tpBackupParseExternalizedWebdavPropfind((string) $response->getBody());
+}
+
+/**
+ * @return array{name: string, path: string, size_bytes: int, mtime: int, is_dir: bool}|null
+ */
+function tpBackupExternalizedWebdavStat($client, array $config, string $remoteFilePath): ?array
+{
+    $items = tpBackupExternalizedWebdavPropfind($client, $config, $remoteFilePath, 0);
+    $filename = basename(str_replace('\\', '/', $remoteFilePath));
+    foreach ($items as $item) {
+        if ((string) $item['name'] === $filename) {
+            return $item;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function tpBackupReadExternalizedWebdavMetadata($client, array $config, string $remoteFilePath): array
+{
+    try {
+        $response = tpBackupExternalizedWebdavRequest($client, $config, 'GET', $remoteFilePath . '.meta.json');
+        $status = (int) $response->getStatusCode();
+        if ($status < 200 || $status >= 300) {
+            return [];
+        }
+
+        $payload = (string) $response->getBody();
+        if (trim($payload) === '') {
+            return [];
+        }
+
+        $data = json_decode($payload, true);
+        return is_array($data) === true ? $data : [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string}
+ */
+function tpBackupTestExternalizedWebdavDestination(array $config): array
+{
+    $connection = tpBackupOpenExternalizedWebdavConnection($config);
+    if ($connection['success'] === false) {
+        return [
+            'success' => false,
+            'path' => (string) $connection['path'],
+            'reason' => (string) $connection['reason'],
+            'destination_type' => 'webdav',
+        ];
+    }
+
+    $remotePath = (string) $connection['path'];
+    $client = $connection['client'];
+    $webdavConfig = (array) $connection['config'];
+    try {
+        $items = tpBackupExternalizedWebdavPropfind($client, $webdavConfig, $remotePath, 0);
+        $directoryFound = false;
+        foreach ($items as $item) {
+            if (!empty($item['is_dir'])) {
+                $directoryFound = true;
+                break;
+            }
+        }
+        if ($directoryFound === false) {
+            return ['success' => false, 'path' => $remotePath, 'reason' => 'WEBDAV_PATH_NOT_FOUND', 'destination_type' => 'webdav'];
+        }
+
+        $testFile = rtrim($remotePath, '/') . '/.teampass-webdav-test-' . bin2hex(random_bytes(6)) . '.tmp';
+        $put = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'PUT', $testFile, ['body' => 'teampass']);
+        $putStatus = (int) $put->getStatusCode();
+        if ($putStatus < 200 || $putStatus >= 300) {
+            return ['success' => false, 'path' => $remotePath, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($putStatus, 'WEBDAV_NOT_WRITABLE'), 'destination_type' => 'webdav'];
+        }
+
+        tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'DELETE', $testFile);
+
+        return ['success' => true, 'path' => $remotePath, 'reason' => '', 'destination_type' => 'webdav'];
+    } catch (Throwable $e) {
+        $reason = in_array($e->getMessage(), ['WEBDAV_AUTH_FAILED', 'WEBDAV_PATH_NOT_FOUND', 'WEBDAV_CONNECTION_FAILED'], true) === true
+            ? $e->getMessage()
+            : 'WEBDAV_CONNECTION_FAILED';
+
+        return ['success' => false, 'path' => $remotePath, 'reason' => $reason, 'destination_type' => 'webdav'];
+    }
+}
+
+function tpBackupNormalizeExternalizedS3Prefix(string $prefix): string
+{
+    $prefix = trim(str_replace("\0", '', str_replace('\\', '/', $prefix)));
+    if ($prefix === '') {
+        return '';
+    }
+
+    $prefix = preg_replace('#/+#', '/', $prefix) ?? $prefix;
+    $prefix = trim($prefix, '/');
+    if ($prefix === '') {
+        return '';
+    }
+
+    $parts = [];
+    foreach (explode('/', $prefix) as $part) {
+        if ($part === '' || $part === '.') {
+            continue;
+        }
+        if ($part === '..' || str_contains($part, '?') || str_contains($part, '#')) {
+            return '';
+        }
+        $parts[] = $part;
+    }
+
+    return implode('/', $parts);
+}
+
+/**
+ * @return array{success: bool, reason: string, path: string}
+ */
+function tpBackupValidateExternalizedS3Config(array $config): array
+{
+    $region = strtolower(trim(str_replace("\0", '', (string) ($config['region'] ?? 'us-east-1'))));
+    if ($region === '') {
+        $region = 'us-east-1';
+    }
+    if (preg_match('/^[a-z0-9][a-z0-9-]{0,62}$/', $region) !== 1) {
+        return ['success' => false, 'reason' => 'S3_REGION_INVALID', 'path' => ''];
+    }
+
+    $endpoint = trim(str_replace("\0", '', (string) ($config['endpoint'] ?? '')));
+    if ($endpoint !== '') {
+        if (strlen($endpoint) > 2048 || filter_var($endpoint, FILTER_VALIDATE_URL) === false) {
+            return ['success' => false, 'reason' => 'S3_ENDPOINT_INVALID', 'path' => ''];
+        }
+
+        $parts = parse_url($endpoint);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        if (($scheme !== 'http' && $scheme !== 'https') || empty($parts['host'])) {
+            return ['success' => false, 'reason' => 'S3_ENDPOINT_INVALID', 'path' => ''];
+        }
+    }
+
+    $bucket = trim(str_replace("\0", '', (string) ($config['bucket'] ?? '')));
+    if ($bucket === '') {
+        return ['success' => false, 'reason' => 'S3_MISSING_BUCKET', 'path' => ''];
+    }
+    if (strlen($bucket) > 255 || str_contains($bucket, '/') || str_contains($bucket, '\\')) {
+        return ['success' => false, 'reason' => 'S3_BUCKET_INVALID', 'path' => ''];
+    }
+
+    $accessKey = trim(str_replace("\0", '', (string) ($config['access_key'] ?? '')));
+    if ($accessKey === '') {
+        return ['success' => false, 'reason' => 'S3_MISSING_ACCESS_KEY', 'path' => ''];
+    }
+
+    $secretAvailable = (string) ($config['secret_key'] ?? '') !== '' || !empty($config['secret_key_available']);
+    if ($secretAvailable === false) {
+        return ['success' => false, 'reason' => 'S3_MISSING_SECRET_KEY', 'path' => ''];
+    }
+
+    $prefix = tpBackupNormalizeExternalizedS3Prefix((string) ($config['prefix'] ?? $config['remote_path'] ?? ''));
+    if ((string) ($config['prefix'] ?? $config['remote_path'] ?? '') !== '' && $prefix === '') {
+        return ['success' => false, 'reason' => 'S3_PREFIX_INVALID', 'path' => ''];
+    }
+
+    return ['success' => true, 'reason' => '', 'path' => $prefix];
+}
+
+function tpBackupExternalizedS3DefaultEndpoint(string $region): string
+{
+    return $region === 'us-east-1'
+        ? 'https://s3.amazonaws.com'
+        : 'https://s3.' . $region . '.amazonaws.com';
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string, config?: array<string, mixed>}
+ */
+function tpBackupOpenExternalizedS3Connection(array $config): array
+{
+    $validated = tpBackupValidateExternalizedS3Config($config);
+    if ($validated['success'] === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => (string) $validated['reason'], 'destination_type' => 's3'];
+    }
+
+    if (function_exists('curl_init') === false) {
+        return ['success' => false, 'path' => (string) $validated['path'], 'reason' => 'S3_CURL_MISSING', 'destination_type' => 's3'];
+    }
+
+    $region = strtolower(trim((string) ($config['region'] ?? 'us-east-1')));
+    if ($region === '') {
+        $region = 'us-east-1';
+    }
+
+    $endpoint = trim((string) ($config['endpoint'] ?? ''));
+    if ($endpoint === '') {
+        $endpoint = tpBackupExternalizedS3DefaultEndpoint($region);
+    }
+
+    $cleanConfig = [
+        'endpoint' => rtrim($endpoint, '/'),
+        'region' => $region,
+        'bucket' => trim(str_replace("\0", '', (string) ($config['bucket'] ?? ''))),
+        'access_key' => trim(str_replace("\0", '', (string) ($config['access_key'] ?? ''))),
+        'secret_key' => (string) ($config['secret_key'] ?? ''),
+        'path_style' => ((int) ($config['path_style'] ?? 1) === 1),
+        'prefix' => (string) $validated['path'],
+    ];
+
+    return [
+        'success' => true,
+        'path' => (string) $validated['path'],
+        'reason' => '',
+        'destination_type' => 's3',
+        'config' => $cleanConfig,
+    ];
+}
+
+function tpBackupExternalizedS3ObjectKey(string $prefix, string $filename): string
+{
+    $filename = basename(str_replace('\\', '/', $filename));
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return '';
+    }
+
+    $prefix = tpBackupNormalizeExternalizedS3Prefix($prefix);
+    return $prefix === '' ? $filename : $prefix . '/' . $filename;
+}
+
+function tpBackupExternalizedS3EncodePath(string $path): string
+{
+    $path = trim(str_replace('\\', '/', $path), '/');
+    if ($path === '') {
+        return '';
+    }
+
+    return implode('/', array_map('rawurlencode', explode('/', $path)));
+}
+
+function tpBackupExternalizedS3CanonicalQuery(array $query): string
+{
+    ksort($query);
+    $parts = [];
+    foreach ($query as $key => $value) {
+        if ($value === null) {
+            continue;
+        }
+        $parts[] = rawurlencode((string) $key) . '=' . rawurlencode((string) $value);
+    }
+
+    return implode('&', $parts);
+}
+
+/**
+ * @return array{url: string, host: string, canonical_uri: string, canonical_query: string}
+ */
+function tpBackupExternalizedS3BuildRequestTarget(array $config, string $key, array $query): array
+{
+    $endpoint = rtrim((string) ($config['endpoint'] ?? ''), '/');
+    $parts = parse_url($endpoint);
+    $scheme = strtolower((string) ($parts['scheme'] ?? 'https'));
+    $host = (string) ($parts['host'] ?? '');
+    $port = isset($parts['port']) ? ':' . (int) $parts['port'] : '';
+    $basePath = trim((string) ($parts['path'] ?? ''), '/');
+    $bucket = (string) ($config['bucket'] ?? '');
+    $pathStyle = !empty($config['path_style']);
+    $encodedKey = tpBackupExternalizedS3EncodePath($key);
+
+    if ($pathStyle === true) {
+        $canonicalUri = '/' . ($basePath !== '' ? $basePath . '/' : '') . rawurlencode($bucket);
+        $canonicalUri .= $encodedKey !== '' ? '/' . $encodedKey : '/';
+        $requestHost = $host . $port;
+    } else {
+        $canonicalUri = '/' . ($basePath !== '' ? $basePath . '/' : '');
+        $canonicalUri .= $encodedKey !== '' ? $encodedKey : '';
+        if ($canonicalUri === '') {
+            $canonicalUri = '/';
+        }
+        $requestHost = $bucket . '.' . $host . $port;
+    }
+
+    $canonicalUri = preg_replace('#/+#', '/', $canonicalUri) ?? $canonicalUri;
+    if ($canonicalUri === '') {
+        $canonicalUri = '/';
+    }
+
+    $canonicalQuery = tpBackupExternalizedS3CanonicalQuery($query);
+    $url = $scheme . '://' . $requestHost . $canonicalUri;
+    if ($canonicalQuery !== '') {
+        $url .= '?' . $canonicalQuery;
+    }
+
+    return [
+        'url' => $url,
+        'host' => $requestHost,
+        'canonical_uri' => $canonicalUri,
+        'canonical_query' => $canonicalQuery,
+    ];
+}
+
+function tpBackupExternalizedS3SigningKey(string $secretKey, string $dateStamp, string $region): string
+{
+    $kDate = hash_hmac('sha256', $dateStamp, 'AWS4' . $secretKey, true);
+    $kRegion = hash_hmac('sha256', $region, $kDate, true);
+    $kService = hash_hmac('sha256', 's3', $kRegion, true);
+
+    return hash_hmac('sha256', 'aws4_request', $kService, true);
+}
+
+/**
+ * @return array{status: int, body: string, error: string, headers: array<string, string>}
+ */
+function tpBackupExternalizedS3Request(array $config, string $method, string $key = '', array $options = []): array
+{
+    $method = strtoupper($method);
+    $query = is_array($options['query'] ?? null) ? (array) $options['query'] : [];
+    $target = tpBackupExternalizedS3BuildRequestTarget($config, $key, $query);
+    $dateStamp = gmdate('Ymd');
+    $amzDate = gmdate('Ymd\THis\Z');
+    $sourceFile = isset($options['source_file']) && is_scalar($options['source_file']) ? (string) $options['source_file'] : '';
+    $body = array_key_exists('body', $options) ? (string) $options['body'] : '';
+
+    if ($sourceFile !== '') {
+        $payloadHash = is_file($sourceFile) ? (string) hash_file('sha256', $sourceFile) : '';
+        if ($payloadHash === '') {
+            return ['status' => 0, 'body' => '', 'error' => 'source_file_unavailable', 'headers' => []];
+        }
+    } elseif (array_key_exists('body', $options) === true) {
+        $payloadHash = hash('sha256', $body);
+    } else {
+        $payloadHash = hash('sha256', '');
+    }
+
+    $headersToSign = [
+        'host' => $target['host'],
+        'x-amz-content-sha256' => $payloadHash,
+        'x-amz-date' => $amzDate,
+    ];
+    ksort($headersToSign);
+
+    $canonicalHeaders = '';
+    foreach ($headersToSign as $headerName => $headerValue) {
+        $canonicalHeaders .= strtolower($headerName) . ':' . trim((string) preg_replace('/\s+/', ' ', (string) $headerValue)) . "\n";
+    }
+    $signedHeaders = implode(';', array_keys($headersToSign));
+
+    $canonicalRequest = implode("\n", [
+        $method,
+        $target['canonical_uri'],
+        $target['canonical_query'],
+        $canonicalHeaders,
+        $signedHeaders,
+        $payloadHash,
+    ]);
+
+    $credentialScope = $dateStamp . '/' . (string) $config['region'] . '/s3/aws4_request';
+    $stringToSign = implode("\n", [
+        'AWS4-HMAC-SHA256',
+        $amzDate,
+        $credentialScope,
+        hash('sha256', $canonicalRequest),
+    ]);
+    $signature = hash_hmac(
+        'sha256',
+        $stringToSign,
+        tpBackupExternalizedS3SigningKey((string) $config['secret_key'], $dateStamp, (string) $config['region'])
+    );
+    $authorization = 'AWS4-HMAC-SHA256 Credential=' . (string) $config['access_key'] . '/' . $credentialScope
+        . ', SignedHeaders=' . $signedHeaders . ', Signature=' . $signature;
+
+    $curlHeaders = [
+        'Host: ' . $target['host'],
+        'x-amz-content-sha256: ' . $payloadHash,
+        'x-amz-date: ' . $amzDate,
+        'Authorization: ' . $authorization,
+    ];
+    if (isset($options['content_type']) && is_scalar($options['content_type'])) {
+        $curlHeaders[] = 'Content-Type: ' . (string) $options['content_type'];
+    }
+
+    $responseHeaders = [];
+    $ch = curl_init($target['url']);
+    if ($ch === false) {
+        return ['status' => 0, 'body' => '', 'error' => 'curl_init_failed', 'headers' => []];
+    }
+
+    $fileHandle = null;
+    $sinkHandle = null;
+    try {
+        curl_setopt_array($ch, [
+            CURLOPT_CUSTOMREQUEST => $method,
+            CURLOPT_HTTPHEADER => $curlHeaders,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_HEADER => false,
+            CURLOPT_CONNECTTIMEOUT => 15,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_FAILONERROR => false,
+            CURLOPT_HEADERFUNCTION => static function ($curl, string $headerLine) use (&$responseHeaders): int {
+                $length = strlen($headerLine);
+                $parts = explode(':', $headerLine, 2);
+                if (count($parts) === 2) {
+                    $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+                }
+
+                return $length;
+            },
+        ]);
+
+        if ($method === 'HEAD') {
+            curl_setopt($ch, CURLOPT_NOBODY, true);
+        } elseif ($sourceFile !== '') {
+            $fileHandle = fopen($sourceFile, 'rb');
+            if ($fileHandle === false) {
+                return ['status' => 0, 'body' => '', 'error' => 'source_file_unavailable', 'headers' => []];
+            }
+            curl_setopt($ch, CURLOPT_UPLOAD, true);
+            curl_setopt($ch, CURLOPT_INFILE, $fileHandle);
+            curl_setopt($ch, CURLOPT_INFILESIZE, (int) (@filesize($sourceFile) ?: 0));
+        } elseif (array_key_exists('body', $options) === true) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+        }
+
+        $sink = isset($options['sink']) && is_scalar($options['sink']) ? (string) $options['sink'] : '';
+        if ($sink !== '') {
+            $sinkHandle = fopen($sink, 'wb');
+            if ($sinkHandle === false) {
+                return ['status' => 0, 'body' => '', 'error' => 'sink_unavailable', 'headers' => []];
+            }
+            curl_setopt($ch, CURLOPT_FILE, $sinkHandle);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+        }
+
+        $bodyResponse = curl_exec($ch);
+        $error = $bodyResponse === false ? curl_error($ch) : '';
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
+        return [
+            'status' => $status,
+            'body' => is_string($bodyResponse) ? $bodyResponse : '',
+            'error' => $error,
+            'headers' => $responseHeaders,
+        ];
+    } finally {
+        if (is_resource($fileHandle) === true) {
+            fclose($fileHandle);
+        }
+        if (is_resource($sinkHandle) === true) {
+            fclose($sinkHandle);
+        }
+        curl_close($ch);
+    }
+}
+
+function tpBackupExternalizedS3ReasonFromStatus(int $status, string $fallback): string
+{
+    if ($status === 401 || $status === 403) {
+        return 'S3_AUTH_FAILED';
+    }
+
+    if ($status === 404) {
+        return 'S3_NOT_FOUND';
+    }
+
+    return $fallback;
+}
+
+/**
+ * @return array{objects: array<int, array{key: string, size_bytes: int, mtime: int}>, truncated: bool, next_token: string}
+ */
+function tpBackupParseExternalizedS3ListObjects(string $payload): array
+{
+    $result = ['objects' => [], 'truncated' => false, 'next_token' => ''];
+    if (trim($payload) === '') {
+        return $result;
+    }
+
+    $previous = libxml_use_internal_errors(true);
+    try {
+        $xml = simplexml_load_string($payload, 'SimpleXMLElement', LIBXML_NONET);
+        if ($xml === false) {
+            return $result;
+        }
+
+        foreach ($xml->Contents as $content) {
+            $key = (string) $content->Key;
+            if ($key === '') {
+                continue;
+            }
+            $mtime = strtotime((string) $content->LastModified);
+            $result['objects'][] = [
+                'key' => $key,
+                'size_bytes' => (int) $content->Size,
+                'mtime' => $mtime !== false ? (int) $mtime : 0,
+            ];
+        }
+
+        $result['truncated'] = strtolower((string) $xml->IsTruncated) === 'true';
+        $result['next_token'] = (string) $xml->NextContinuationToken;
+
+        return $result;
+    } finally {
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+    }
+}
+
+/**
+ * @return array<int, array{key: string, size_bytes: int, mtime: int}>
+ */
+function tpBackupExternalizedS3ListObjects(array $config, string $prefix): array
+{
+    $objects = [];
+    $token = '';
+    for ($page = 0; $page < 100; $page++) {
+        $query = [
+            'list-type' => '2',
+            'max-keys' => '1000',
+        ];
+        if ($prefix !== '') {
+            $query['prefix'] = $prefix;
+        }
+        if ($token !== '') {
+            $query['continuation-token'] = $token;
+        }
+
+        $response = tpBackupExternalizedS3Request($config, 'GET', '', ['query' => $query]);
+        $status = (int) $response['status'];
+        if ($status < 200 || $status >= 300) {
+            throw new RuntimeException(tpBackupExternalizedS3ReasonFromStatus($status, 'S3_LIST_FAILED'));
+        }
+
+        $parsed = tpBackupParseExternalizedS3ListObjects((string) $response['body']);
+        foreach ($parsed['objects'] as $object) {
+            $objects[] = $object;
+        }
+
+        if ($parsed['truncated'] !== true || (string) $parsed['next_token'] === '') {
+            break;
+        }
+        $token = (string) $parsed['next_token'];
+    }
+
+    return $objects;
+}
+
+/**
+ * @return array{key: string, size_bytes: int, mtime: int}|null
+ */
+function tpBackupExternalizedS3Stat(array $config, string $key): ?array
+{
+    $objects = tpBackupExternalizedS3ListObjects($config, $key);
+    foreach ($objects as $object) {
+        if ((string) $object['key'] === $key) {
+            return $object;
+        }
+    }
+
+    return null;
+}
+
+/**
+ * @return array<string, mixed>
+ */
+function tpBackupReadExternalizedS3Metadata(array $config, string $key): array
+{
+    try {
+        $response = tpBackupExternalizedS3Request($config, 'GET', $key . '.meta.json');
+        $status = (int) $response['status'];
+        if ($status < 200 || $status >= 300) {
+            return [];
+        }
+
+        $data = json_decode((string) $response['body'], true);
+        return is_array($data) === true ? $data : [];
+    } catch (Throwable) {
+        return [];
+    }
+}
+
+/**
+ * @return array{success: bool, path: string, reason: string, destination_type: string}
+ */
+function tpBackupTestExternalizedS3Destination(array $config): array
+{
+    $connection = tpBackupOpenExternalizedS3Connection($config);
+    if ($connection['success'] === false) {
+        return [
+            'success' => false,
+            'path' => (string) $connection['path'],
+            'reason' => (string) $connection['reason'],
+            'destination_type' => 's3',
+        ];
+    }
+
+    $s3Config = (array) $connection['config'];
+    $prefix = (string) $connection['path'];
+    try {
+        tpBackupExternalizedS3ListObjects($s3Config, $prefix);
+        $testName = '.teampass-s3-test-' . bin2hex(random_bytes(6)) . '.tmp';
+        $testKey = $prefix === '' ? $testName : $prefix . '/' . $testName;
+        $put = tpBackupExternalizedS3Request($s3Config, 'PUT', $testKey, ['body' => 'teampass', 'content_type' => 'application/octet-stream']);
+        $putStatus = (int) $put['status'];
+        if ($putStatus < 200 || $putStatus >= 300) {
+            return ['success' => false, 'path' => $prefix, 'reason' => tpBackupExternalizedS3ReasonFromStatus($putStatus, 'S3_NOT_WRITABLE'), 'destination_type' => 's3'];
+        }
+
+        tpBackupExternalizedS3Request($s3Config, 'DELETE', $testKey);
+
+        return ['success' => true, 'path' => $prefix, 'reason' => '', 'destination_type' => 's3'];
+    } catch (Throwable $e) {
+        $reason = in_array($e->getMessage(), ['S3_AUTH_FAILED', 'S3_NOT_FOUND', 'S3_LIST_FAILED'], true) === true
+            ? $e->getMessage()
+            : 'S3_CONNECTION_FAILED';
+
+        return ['success' => false, 'path' => $prefix, 'reason' => $reason, 'destination_type' => 's3'];
+    }
+}
+
+/**
+ * Upload a locally generated backup and its optional sidecar to the destination.
+ *
+ * @return array{success: bool, reason: string, destination_type: string, path: string, filename: string, size_bytes: int}
+ */
+function tpBackupUploadExternalizedBackup(string $destinationType, string $targetDir, string $localFilePath, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+    $filename = basename(str_replace('\\', '/', $localFilePath));
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false || is_file($localFilePath) === false) {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    if ($destinationType === 'local_directory') {
+        $resolved = tpBackupResolveExternalizedBackupFile($destinationType, $targetDir, $filename, $SETTINGS);
+        if ($resolved['success'] === false) {
+            return ['success' => false, 'reason' => (string) $resolved['reason'], 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => $destinationType, 'path' => (string) $resolved['path'], 'filename' => $filename, 'size_bytes' => (int) $resolved['size_bytes']];
+    }
+
+    if ($destinationType === 'webdav') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'webdav', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath((string) $connection['path'], $filename);
+        if ($remoteFilePath === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        try {
+            $client = $connection['client'];
+            $webdavConfig = (array) $connection['config'];
+            $resource = fopen($localFilePath, 'rb');
+            if ($resource === false) {
+                return ['success' => false, 'reason' => 'WEBDAV_UPLOAD_FAILED', 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+            }
+
+            try {
+                $uploaded = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'PUT', $remoteFilePath, ['body' => $resource]);
+            } finally {
+                fclose($resource);
+            }
+
+            $uploadStatus = (int) $uploaded->getStatusCode();
+            if ($uploadStatus < 200 || $uploadStatus >= 300) {
+                return ['success' => false, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($uploadStatus, 'WEBDAV_UPLOAD_FAILED'), 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+            }
+
+            $metadataPath = tpGetBackupMetadataPath($localFilePath);
+            if (is_file($metadataPath) === true) {
+                $metaResource = fopen($metadataPath, 'rb');
+                if ($metaResource !== false) {
+                    try {
+                        $metaUploaded = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'PUT', $remoteFilePath . '.meta.json', ['body' => $metaResource]);
+                    } finally {
+                        fclose($metaResource);
+                    }
+                    $metaStatus = (int) $metaUploaded->getStatusCode();
+                    if ($metaStatus < 200 || $metaStatus >= 300) {
+                        return ['success' => false, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($metaStatus, 'WEBDAV_UPLOAD_FAILED'), 'destination_type' => 'webdav', 'path' => $remoteFilePath . '.meta.json', 'filename' => $filename, 'size_bytes' => 0];
+                    }
+                }
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localFilePath) ?: 0)];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'WEBDAV_UPLOAD_FAILED', 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType === 's3') {
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 's3', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $s3Config = (array) $connection['config'];
+        $objectKey = tpBackupExternalizedS3ObjectKey((string) $connection['path'], $filename);
+        if ($objectKey === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        try {
+            $uploaded = tpBackupExternalizedS3Request($s3Config, 'PUT', $objectKey, ['source_file' => $localFilePath, 'content_type' => 'application/octet-stream']);
+            $uploadStatus = (int) $uploaded['status'];
+            if ($uploadStatus < 200 || $uploadStatus >= 300) {
+                return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($uploadStatus, 'S3_UPLOAD_FAILED'), 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => 0];
+            }
+
+            $metadataPath = tpGetBackupMetadataPath($localFilePath);
+            if (is_file($metadataPath) === true) {
+                $metaUploaded = tpBackupExternalizedS3Request($s3Config, 'PUT', $objectKey . '.meta.json', ['source_file' => $metadataPath, 'content_type' => 'application/json']);
+                $metaStatus = (int) $metaUploaded['status'];
+                if ($metaStatus < 200 || $metaStatus >= 300) {
+                    return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($metaStatus, 'S3_UPLOAD_FAILED'), 'destination_type' => 's3', 'path' => $objectKey . '.meta.json', 'filename' => $filename, 'size_bytes' => 0];
+                }
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localFilePath) ?: 0)];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'S3_UPLOAD_FAILED', 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType !== 'sftp') {
+        return ['success' => false, 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    $sftpConfig['remote_path'] = $targetDir;
+    $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+    if ($connection['success'] === false) {
+        return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'sftp', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath((string) $connection['path'], $filename);
+    if ($remoteFilePath === '') {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    try {
+        $sftp = $connection['client'];
+        $uploaded = $sftp->put($remoteFilePath, $localFilePath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
+        if ($uploaded !== true) {
+            return ['success' => false, 'reason' => 'SFTP_UPLOAD_FAILED', 'destination_type' => 'sftp', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $metadataPath = tpGetBackupMetadataPath($localFilePath);
+        if (is_file($metadataPath) === true) {
+            $metaUploaded = $sftp->put($remoteFilePath . '.meta.json', $metadataPath, \phpseclib3\Net\SFTP::SOURCE_LOCAL_FILE);
+            if ($metaUploaded !== true) {
+                return ['success' => false, 'reason' => 'SFTP_UPLOAD_FAILED', 'destination_type' => 'sftp', 'path' => $remoteFilePath . '.meta.json', 'filename' => $filename, 'size_bytes' => 0];
+            }
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => 'sftp', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localFilePath) ?: 0)];
+    } catch (Throwable) {
+        return ['success' => false, 'reason' => 'SFTP_UPLOAD_FAILED', 'destination_type' => 'sftp', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+    }
+}
+
+function tpBackupExternalizedBackupFilenameIsAllowed(string $filename): bool
+{
+    $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
+    if ($filename === '' || basename($filename) !== $filename) {
+        return false;
+    }
+
+    $extension = (string) pathinfo($filename, PATHINFO_EXTENSION);
+
+    return strpos($filename, 'externalized-') === 0
+        && tpBackupFileExtensionIsSupported($extension) === true;
+}
+
+/**
+ * Resolve one backup file from the configured externalized destination.
+ *
+ * @return array{success: bool, reason: string, destination_type: string, root_path: string, path: string, filename: string, size_bytes: int, mtime: int, metadata?: array<string, mixed>, remote?: bool}
+ */
+function tpBackupResolveExternalizedBackupFile(string $destinationType, string $targetDir, string $filename, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return [
+            'success' => false,
+            'reason' => 'INVALID_FILENAME',
+            'destination_type' => $destinationType,
+            'root_path' => '',
+            'path' => '',
+            'filename' => $filename,
+            'size_bytes' => 0,
+            'mtime' => 0,
+        ];
+    }
+
+    if ($destinationType === 'sftp') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 'sftp',
+                'root_path' => (string) $connection['path'],
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        $rootPath = (string) $connection['path'];
+        $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath($rootPath, $filename);
+        if ($remoteFilePath === '') {
+            return [
+                'success' => false,
+                'reason' => 'INVALID_FILENAME',
+                'destination_type' => 'sftp',
+                'root_path' => $rootPath,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        try {
+            $sftp = $connection['client'];
+            $stat = $sftp->stat($remoteFilePath);
+            $directoryType = defined('NET_SFTP_TYPE_DIRECTORY') ? constant('NET_SFTP_TYPE_DIRECTORY') : 2;
+            if (is_array($stat) === false || (isset($stat['type']) && (int) $stat['type'] === (int) $directoryType)) {
+                return [
+                    'success' => false,
+                    'reason' => 'NOT_FOUND',
+                    'destination_type' => 'sftp',
+                    'root_path' => $rootPath,
+                    'path' => '',
+                    'filename' => $filename,
+                    'size_bytes' => 0,
+                    'mtime' => 0,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 'sftp',
+                'root_path' => $rootPath,
+                'path' => $remoteFilePath,
+                'filename' => $filename,
+                'size_bytes' => (int) ($stat['size'] ?? 0),
+                'mtime' => (int) ($stat['mtime'] ?? 0),
+                'metadata' => tpBackupReadExternalizedSftpMetadata($sftp, $remoteFilePath),
+                'remote' => true,
+            ];
+        } catch (Throwable) {
+            return [
+                'success' => false,
+                'reason' => 'SFTP_CONNECTION_FAILED',
+                'destination_type' => 'sftp',
+                'root_path' => $rootPath,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+    }
+
+    if ($destinationType === 'webdav') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 'webdav',
+                'root_path' => (string) $connection['path'],
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        $rootPath = (string) $connection['path'];
+        $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath($rootPath, $filename);
+        if ($remoteFilePath === '') {
+            return [
+                'success' => false,
+                'reason' => 'INVALID_FILENAME',
+                'destination_type' => 'webdav',
+                'root_path' => $rootPath,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        try {
+            $client = $connection['client'];
+            $webdavConfig = (array) $connection['config'];
+            $stat = tpBackupExternalizedWebdavStat($client, $webdavConfig, $remoteFilePath);
+            if ($stat === null || !empty($stat['is_dir'])) {
+                return [
+                    'success' => false,
+                    'reason' => 'NOT_FOUND',
+                    'destination_type' => 'webdav',
+                    'root_path' => $rootPath,
+                    'path' => '',
+                    'filename' => $filename,
+                    'size_bytes' => 0,
+                    'mtime' => 0,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 'webdav',
+                'root_path' => $rootPath,
+                'path' => $remoteFilePath,
+                'filename' => $filename,
+                'size_bytes' => (int) ($stat['size_bytes'] ?? 0),
+                'mtime' => (int) ($stat['mtime'] ?? 0),
+                'metadata' => tpBackupReadExternalizedWebdavMetadata($client, $webdavConfig, $remoteFilePath),
+                'remote' => true,
+            ];
+        } catch (Throwable $e) {
+            $reason = in_array($e->getMessage(), ['WEBDAV_AUTH_FAILED', 'WEBDAV_PATH_NOT_FOUND', 'WEBDAV_CONNECTION_FAILED'], true) === true
+                ? $e->getMessage()
+                : 'WEBDAV_CONNECTION_FAILED';
+
+            return [
+                'success' => false,
+                'reason' => $reason,
+                'destination_type' => 'webdav',
+                'root_path' => $rootPath,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+    }
+
+    if ($destinationType === 's3') {
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 's3',
+                'root_path' => (string) $connection['path'],
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        $prefix = (string) $connection['path'];
+        $objectKey = tpBackupExternalizedS3ObjectKey($prefix, $filename);
+        if ($objectKey === '') {
+            return [
+                'success' => false,
+                'reason' => 'INVALID_FILENAME',
+                'destination_type' => 's3',
+                'root_path' => $prefix,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+
+        try {
+            $s3Config = (array) $connection['config'];
+            $stat = tpBackupExternalizedS3Stat($s3Config, $objectKey);
+            if ($stat === null) {
+                return [
+                    'success' => false,
+                    'reason' => 'NOT_FOUND',
+                    'destination_type' => 's3',
+                    'root_path' => $prefix,
+                    'path' => '',
+                    'filename' => $filename,
+                    'size_bytes' => 0,
+                    'mtime' => 0,
+                ];
+            }
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 's3',
+                'root_path' => $prefix,
+                'path' => $objectKey,
+                'filename' => $filename,
+                'size_bytes' => (int) ($stat['size_bytes'] ?? 0),
+                'mtime' => (int) ($stat['mtime'] ?? 0),
+                'metadata' => tpBackupReadExternalizedS3Metadata($s3Config, $objectKey),
+                'remote' => true,
+            ];
+        } catch (Throwable $e) {
+            $reason = in_array($e->getMessage(), ['S3_AUTH_FAILED', 'S3_NOT_FOUND', 'S3_LIST_FAILED'], true) === true
+                ? $e->getMessage()
+                : 'S3_CONNECTION_FAILED';
+
+            return [
+                'success' => false,
+                'reason' => $reason,
+                'destination_type' => 's3',
+                'root_path' => $prefix,
+                'path' => '',
+                'filename' => $filename,
+                'size_bytes' => 0,
+                'mtime' => 0,
+            ];
+        }
+    }
+
+    $resolved = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+    if ($resolved['success'] === false) {
+        return [
+            'success' => false,
+            'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'),
+            'destination_type' => (string) ($resolved['destination_type'] ?? $destinationType),
+            'root_path' => '',
+            'path' => '',
+            'filename' => $filename,
+            'size_bytes' => 0,
+            'mtime' => 0,
+        ];
+    }
+
+    $rootPath = (string) $resolved['path'];
+    $filePath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . $filename;
+    $fileReal = realpath($filePath);
+    if (
+        $fileReal === false
+        || tpBackupIsResolvedPathInsideDirectory($fileReal, $rootPath) === false
+        || is_file($fileReal) === false
+    ) {
+        return [
+            'success' => false,
+            'reason' => 'NOT_FOUND',
+            'destination_type' => (string) $resolved['destination_type'],
+            'root_path' => $rootPath,
+            'path' => '',
+            'filename' => $filename,
+            'size_bytes' => 0,
+            'mtime' => 0,
+        ];
+    }
+
+    return [
+        'success' => true,
+        'reason' => '',
+        'destination_type' => (string) $resolved['destination_type'],
+        'root_path' => $rootPath,
+        'path' => $fileReal,
+        'filename' => $filename,
+        'size_bytes' => (int) (@filesize($fileReal) ?: 0),
+        'mtime' => (int) (@filemtime($fileReal) ?: 0),
+    ];
+}
+
+/**
+ * List externalized backup files through the destination abstraction.
+ *
+ * @return array{success: bool, reason: string, destination_type: string, path: string, files: array<int, array{name: string, path: string, size_bytes: int, mtime: int, metadata?: array<string, mixed>, remote?: bool}>}
+ */
+function tpBackupListExternalizedBackups(string $destinationType, string $targetDir, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+
+    if ($destinationType === 's3') {
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 's3',
+                'path' => (string) $connection['path'],
+                'files' => [],
+            ];
+        }
+
+        $prefix = (string) $connection['path'];
+        try {
+            $s3Config = (array) $connection['config'];
+            $listPrefix = $prefix === '' ? 'externalized-' : $prefix . '/externalized-';
+            $objects = tpBackupExternalizedS3ListObjects($s3Config, $listPrefix);
+            $files = [];
+            foreach ($objects as $object) {
+                $objectKey = (string) ($object['key'] ?? '');
+                $filename = basename(str_replace('\\', '/', $objectKey));
+                if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+                    continue;
+                }
+                if (str_ends_with($objectKey, '.meta.json') === true) {
+                    continue;
+                }
+
+                $files[] = [
+                    'name' => $filename,
+                    'path' => $objectKey,
+                    'size_bytes' => (int) ($object['size_bytes'] ?? 0),
+                    'mtime' => (int) ($object['mtime'] ?? 0),
+                    'metadata' => tpBackupReadExternalizedS3Metadata($s3Config, $objectKey),
+                    'remote' => true,
+                ];
+            }
+
+            usort($files, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 's3',
+                'path' => $prefix,
+                'files' => $files,
+            ];
+        } catch (Throwable $e) {
+            $reason = in_array($e->getMessage(), ['S3_AUTH_FAILED', 'S3_NOT_FOUND', 'S3_LIST_FAILED'], true) === true
+                ? $e->getMessage()
+                : 'S3_CONNECTION_FAILED';
+
+            return [
+                'success' => false,
+                'reason' => $reason,
+                'destination_type' => 's3',
+                'path' => $prefix,
+                'files' => [],
+            ];
+        }
+    }
+
+    if ($destinationType === 'sftp') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 'sftp',
+                'path' => (string) $connection['path'],
+                'files' => [],
+            ];
+        }
+
+        $rootPath = (string) $connection['path'];
+        try {
+            $sftp = $connection['client'];
+            $rawList = $sftp->rawlist($rootPath);
+            if (is_array($rawList) === false) {
+                return [
+                    'success' => false,
+                    'reason' => 'SFTP_PATH_NOT_FOUND',
+                    'destination_type' => 'sftp',
+                    'path' => $rootPath,
+                    'files' => [],
+                ];
+            }
+
+            $directoryType = defined('NET_SFTP_TYPE_DIRECTORY') ? constant('NET_SFTP_TYPE_DIRECTORY') : 2;
+            $files = [];
+            foreach ($rawList as $entryName => $entry) {
+                $filename = is_array($entry) && isset($entry['filename']) && is_scalar($entry['filename'])
+                    ? (string) $entry['filename']
+                    : (string) $entryName;
+                $filename = basename(str_replace('\\', '/', $filename));
+                if ($filename === '.' || $filename === '..' || tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+                    continue;
+                }
+                if (is_array($entry) && isset($entry['type']) && (int) $entry['type'] === (int) $directoryType) {
+                    continue;
+                }
+
+                $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath($rootPath, $filename);
+                if ($remoteFilePath === '') {
+                    continue;
+                }
+
+                $files[] = [
+                    'name' => $filename,
+                    'path' => $remoteFilePath,
+                    'size_bytes' => is_array($entry) ? (int) ($entry['size'] ?? 0) : 0,
+                    'mtime' => is_array($entry) ? (int) ($entry['mtime'] ?? 0) : 0,
+                    'metadata' => tpBackupReadExternalizedSftpMetadata($sftp, $remoteFilePath),
+                    'remote' => true,
+                ];
+            }
+
+            usort($files, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 'sftp',
+                'path' => $rootPath,
+                'files' => $files,
+            ];
+        } catch (Throwable) {
+            return [
+                'success' => false,
+                'reason' => 'SFTP_CONNECTION_FAILED',
+                'destination_type' => 'sftp',
+                'path' => $rootPath,
+                'files' => [],
+            ];
+        }
+    }
+
+    if ($destinationType === 'webdav') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return [
+                'success' => false,
+                'reason' => (string) $connection['reason'],
+                'destination_type' => 'webdav',
+                'path' => (string) $connection['path'],
+                'files' => [],
+            ];
+        }
+
+        $rootPath = (string) $connection['path'];
+        try {
+            $client = $connection['client'];
+            $webdavConfig = (array) $connection['config'];
+            $rawList = tpBackupExternalizedWebdavPropfind($client, $webdavConfig, $rootPath, 1);
+            $files = [];
+            foreach ($rawList as $entry) {
+                $filename = basename(str_replace('\\', '/', (string) ($entry['name'] ?? '')));
+                if ($filename === '' || !empty($entry['is_dir']) || tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+                    continue;
+                }
+
+                $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath($rootPath, $filename);
+                if ($remoteFilePath === '') {
+                    continue;
+                }
+
+                $files[] = [
+                    'name' => $filename,
+                    'path' => $remoteFilePath,
+                    'size_bytes' => (int) ($entry['size_bytes'] ?? 0),
+                    'mtime' => (int) ($entry['mtime'] ?? 0),
+                    'metadata' => tpBackupReadExternalizedWebdavMetadata($client, $webdavConfig, $remoteFilePath),
+                    'remote' => true,
+                ];
+            }
+
+            usort($files, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+            return [
+                'success' => true,
+                'reason' => '',
+                'destination_type' => 'webdav',
+                'path' => $rootPath,
+                'files' => $files,
+            ];
+        } catch (Throwable $e) {
+            $reason = in_array($e->getMessage(), ['WEBDAV_AUTH_FAILED', 'WEBDAV_PATH_NOT_FOUND', 'WEBDAV_CONNECTION_FAILED'], true) === true
+                ? $e->getMessage()
+                : 'WEBDAV_CONNECTION_FAILED';
+
+            return [
+                'success' => false,
+                'reason' => $reason,
+                'destination_type' => 'webdav',
+                'path' => $rootPath,
+                'files' => [],
+            ];
+        }
+    }
+
+    $resolved = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+    if ($resolved['success'] === false) {
+        return [
+            'success' => false,
+            'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'),
+            'destination_type' => (string) ($resolved['destination_type'] ?? $destinationType),
+            'path' => '',
+            'files' => [],
+        ];
+    }
+
+    $rootPath = (string) $resolved['path'];
+    $globDir = rtrim(str_replace('\\', '/', $rootPath), '/');
+    $paths = array_values(array_unique(array_merge(
+        glob($globDir . '/externalized-*.sql') ?: [],
+        glob($globDir . '/externalized-*.' . tpBackupGetPackageExtension()) ?: []
+    )));
+
+    $files = [];
+    foreach ($paths as $filePath) {
+        $filename = basename((string) $filePath);
+        if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+            continue;
+        }
+
+        $fileReal = realpath((string) $filePath);
+        if (
+            $fileReal === false
+            || tpBackupIsResolvedPathInsideDirectory($fileReal, $rootPath) === false
+            || is_file($fileReal) === false
+        ) {
+            continue;
+        }
+
+        $files[] = [
+            'name' => $filename,
+            'path' => $fileReal,
+            'size_bytes' => (int) (@filesize($fileReal) ?: 0),
+            'mtime' => (int) (@filemtime($fileReal) ?: 0),
+        ];
+    }
+
+    usort($files, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+
+    return [
+        'success' => true,
+        'reason' => '',
+        'destination_type' => (string) $resolved['destination_type'],
+        'path' => $rootPath,
+        'files' => $files,
+    ];
+}
+
+/**
+ * Delete an externalized backup file and its metadata sidecar when present.
+ *
+ * @return array{success: bool, reason: string, deleted: bool, path: string}
+ */
+function tpBackupDeleteExternalizedBackup(string $destinationType, string $targetDir, string $filename, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'deleted' => false, 'path' => ''];
+    }
+
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+    if ($destinationType === 'sftp') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'deleted' => false, 'path' => (string) $connection['path']];
+        }
+
+        $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath((string) $connection['path'], $filename);
+        if ($remoteFilePath === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'deleted' => false, 'path' => ''];
+        }
+
+        try {
+            $sftp = $connection['client'];
+            $stat = $sftp->stat($remoteFilePath);
+            $directoryType = defined('NET_SFTP_TYPE_DIRECTORY') ? constant('NET_SFTP_TYPE_DIRECTORY') : 2;
+            if (is_array($stat) === false || (isset($stat['type']) && (int) $stat['type'] === (int) $directoryType)) {
+                return ['success' => true, 'reason' => '', 'deleted' => false, 'path' => ''];
+            }
+
+            if ($sftp->delete($remoteFilePath, false) !== true) {
+                return ['success' => false, 'reason' => 'SFTP_DELETE_FAILED', 'deleted' => false, 'path' => $remoteFilePath];
+            }
+            $sftp->delete($remoteFilePath . '.meta.json', false);
+
+            return ['success' => true, 'reason' => '', 'deleted' => true, 'path' => $remoteFilePath];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'SFTP_DELETE_FAILED', 'deleted' => false, 'path' => $remoteFilePath];
+        }
+    }
+
+    if ($destinationType === 'webdav') {
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'deleted' => false, 'path' => (string) $connection['path']];
+        }
+
+        $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath((string) $connection['path'], $filename);
+        if ($remoteFilePath === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'deleted' => false, 'path' => ''];
+        }
+
+        try {
+            $client = $connection['client'];
+            $webdavConfig = (array) $connection['config'];
+            $stat = tpBackupExternalizedWebdavStat($client, $webdavConfig, $remoteFilePath);
+            if ($stat === null || !empty($stat['is_dir'])) {
+                return ['success' => true, 'reason' => '', 'deleted' => false, 'path' => ''];
+            }
+
+            $deleted = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'DELETE', $remoteFilePath);
+            $deleteStatus = (int) $deleted->getStatusCode();
+            if ($deleteStatus !== 404 && ($deleteStatus < 200 || $deleteStatus >= 300)) {
+                return ['success' => false, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($deleteStatus, 'WEBDAV_DELETE_FAILED'), 'deleted' => false, 'path' => $remoteFilePath];
+            }
+
+            try {
+                tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'DELETE', $remoteFilePath . '.meta.json');
+            } catch (Throwable) {
+                // Sidecar cleanup is best effort; the backup file itself was deleted.
+            }
+
+            return ['success' => true, 'reason' => '', 'deleted' => true, 'path' => $remoteFilePath];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'WEBDAV_DELETE_FAILED', 'deleted' => false, 'path' => $remoteFilePath];
+        }
+    }
+
+    if ($destinationType === 's3') {
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'deleted' => false, 'path' => (string) $connection['path']];
+        }
+
+        $objectKey = tpBackupExternalizedS3ObjectKey((string) $connection['path'], $filename);
+        if ($objectKey === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'deleted' => false, 'path' => ''];
+        }
+
+        try {
+            $s3Config = (array) $connection['config'];
+            $stat = tpBackupExternalizedS3Stat($s3Config, $objectKey);
+            if ($stat === null) {
+                return ['success' => true, 'reason' => '', 'deleted' => false, 'path' => ''];
+            }
+
+            $deleted = tpBackupExternalizedS3Request($s3Config, 'DELETE', $objectKey);
+            $deleteStatus = (int) $deleted['status'];
+            if ($deleteStatus !== 404 && ($deleteStatus < 200 || $deleteStatus >= 300)) {
+                return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($deleteStatus, 'S3_DELETE_FAILED'), 'deleted' => false, 'path' => $objectKey];
+            }
+
+            try {
+                tpBackupExternalizedS3Request($s3Config, 'DELETE', $objectKey . '.meta.json');
+            } catch (Throwable) {
+                // Sidecar cleanup is best effort; the backup object itself was deleted.
+            }
+
+            return ['success' => true, 'reason' => '', 'deleted' => true, 'path' => $objectKey];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'S3_DELETE_FAILED', 'deleted' => false, 'path' => $objectKey];
+        }
+    }
+
+    $resolved = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
+    if ($resolved['success'] === false) {
+        return ['success' => false, 'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'), 'deleted' => false, 'path' => ''];
+    }
+
+    $rootPath = (string) $resolved['path'];
+    $filePath = rtrim($rootPath, '/\\') . DIRECTORY_SEPARATOR . $filename;
+    $fileReal = realpath($filePath);
+    if (
+        $fileReal === false
+        || tpBackupIsResolvedPathInsideDirectory($fileReal, $rootPath) === false
+        || is_file($fileReal) === false
+    ) {
+        return ['success' => true, 'reason' => '', 'deleted' => false, 'path' => ''];
+    }
+
+    if (is_writable($fileReal) === false) {
+        return ['success' => false, 'reason' => 'FILE_NOT_WRITABLE', 'deleted' => false, 'path' => $fileReal];
+    }
+
+    if (@unlink($fileReal) === false) {
+        return ['success' => false, 'reason' => 'DELETE_FAILED', 'deleted' => false, 'path' => $fileReal];
+    }
+
+    $metaPath = tpGetBackupMetadataPath($fileReal);
+    if (file_exists($metaPath) === true) {
+        @unlink($metaPath);
+    }
+
+    return ['success' => true, 'reason' => '', 'deleted' => true, 'path' => $fileReal];
+}
+
+/**
+ * Download an externalized backup file to a local path when the destination is remote.
+ *
+ * Local destinations return the resolved file path directly and ignore $localTargetPath.
+ *
+ * @return array{success: bool, reason: string, destination_type: string, path: string, filename: string, size_bytes: int}
+ */
+function tpBackupDownloadExternalizedBackup(string $destinationType, string $targetDir, string $filename, string $localTargetPath, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    if ($destinationType === 'local_directory') {
+        $resolved = tpBackupResolveExternalizedBackupFile($destinationType, $targetDir, $filename, $SETTINGS);
+        if ($resolved['success'] === false) {
+            return ['success' => false, 'reason' => (string) $resolved['reason'], 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => $destinationType, 'path' => (string) $resolved['path'], 'filename' => $filename, 'size_bytes' => (int) $resolved['size_bytes']];
+    }
+
+    if ($destinationType === 'webdav') {
+        $targetParent = dirname($localTargetPath);
+        if ($localTargetPath === '' || is_dir($targetParent) === false || is_writable($targetParent) === false) {
+            return ['success' => false, 'reason' => 'WEBDAV_DOWNLOAD_FAILED', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'webdav', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath((string) $connection['path'], $filename);
+        if ($remoteFilePath === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        try {
+            $downloaded = tpBackupExternalizedWebdavRequest(
+                $connection['client'],
+                (array) $connection['config'],
+                'GET',
+                $remoteFilePath,
+                ['sink' => $localTargetPath]
+            );
+            $status = (int) $downloaded->getStatusCode();
+            if ($status < 200 || $status >= 300 || is_file($localTargetPath) === false) {
+                return ['success' => false, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($status, 'WEBDAV_DOWNLOAD_FAILED'), 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 'webdav', 'path' => $localTargetPath, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localTargetPath) ?: 0)];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'WEBDAV_DOWNLOAD_FAILED', 'destination_type' => 'webdav', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType === 's3') {
+        $targetParent = dirname($localTargetPath);
+        if ($localTargetPath === '' || is_dir($targetParent) === false || is_writable($targetParent) === false) {
+            return ['success' => false, 'reason' => 'S3_DOWNLOAD_FAILED', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 's3', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        $objectKey = tpBackupExternalizedS3ObjectKey((string) $connection['path'], $filename);
+        if ($objectKey === '') {
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        try {
+            $downloaded = tpBackupExternalizedS3Request((array) $connection['config'], 'GET', $objectKey, ['sink' => $localTargetPath]);
+            $status = (int) $downloaded['status'];
+            if ($status < 200 || $status >= 300 || is_file($localTargetPath) === false) {
+                return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($status, 'S3_DOWNLOAD_FAILED'), 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => 0];
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 's3', 'path' => $localTargetPath, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localTargetPath) ?: 0)];
+        } catch (Throwable) {
+            return ['success' => false, 'reason' => 'S3_DOWNLOAD_FAILED', 'destination_type' => 's3', 'path' => $objectKey, 'filename' => $filename, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType !== 'sftp') {
+        return ['success' => false, 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    $targetParent = dirname($localTargetPath);
+    if ($localTargetPath === '' || is_dir($targetParent) === false || is_writable($targetParent) === false) {
+        return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    $sftpConfig['remote_path'] = $targetDir;
+    $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+    if ($connection['success'] === false) {
+        return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'sftp', 'path' => (string) $connection['path'], 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath((string) $connection['path'], $filename);
+    if ($remoteFilePath === '') {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'size_bytes' => 0];
+    }
+
+    try {
+        $sftp = $connection['client'];
+        if ($sftp->get($remoteFilePath, $localTargetPath) !== true) {
+            return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => 'sftp', 'path' => $localTargetPath, 'filename' => $filename, 'size_bytes' => (int) (@filesize($localTargetPath) ?: 0)];
+    } catch (Throwable) {
+        return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => $remoteFilePath, 'filename' => $filename, 'size_bytes' => 0];
+    }
+}
+
+/**
+ * Stage a backup from an externalized destination so the existing CLI restore
+ * flow can operate on a local file path.
+ *
+ * Local destinations simply resolve the existing file and require no cleanup.
+ * Remote destinations create a temporary directory and may copy sidecar metadata.
+ *
+ * @return array{success: bool, reason: string, destination_type: string, path: string, filename: string, cleanup_required: bool, cleanup_dir: string, source_path: string, size_bytes: int}
+ */
+function tpBackupStageExternalizedBackupForRestore(string $destinationType, string $targetDir, string $filename, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
+    $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
+    if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+    }
+
+    if ($destinationType === 'local_directory') {
+        $resolved = tpBackupResolveExternalizedBackupFile($destinationType, $targetDir, $filename, $SETTINGS);
+        if ($resolved['success'] === false) {
+            return ['success' => false, 'reason' => (string) $resolved['reason'], 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => $destinationType, 'path' => (string) $resolved['path'], 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => (string) $resolved['path'], 'size_bytes' => (int) $resolved['size_bytes']];
+    }
+
+    if ($destinationType === 'webdav') {
+        $cleanupDir = tpBackupCreateTemporaryDirectory((string) sys_get_temp_dir());
+        if ($cleanupDir === '') {
+            return ['success' => false, 'reason' => 'WEBDAV_DOWNLOAD_FAILED', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+        }
+
+        $localPath = $cleanupDir . DIRECTORY_SEPARATOR . $filename;
+        $sftpConfig['remote_path'] = $targetDir;
+        $connection = tpBackupOpenExternalizedWebdavConnection($sftpConfig);
+        if ($connection['success'] === false) {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => (string) $connection['path'], 'size_bytes' => 0];
+        }
+
+        $remoteFilePath = tpBackupExternalizedWebdavRemoteFilePath((string) $connection['path'], $filename);
+        if ($remoteFilePath === '') {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+        }
+
+        try {
+            $client = $connection['client'];
+            $webdavConfig = (array) $connection['config'];
+            $downloaded = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'GET', $remoteFilePath, ['sink' => $localPath]);
+            $status = (int) $downloaded->getStatusCode();
+            if ($status < 200 || $status >= 300 || is_file($localPath) === false) {
+                tpBackupRemoveTemporaryDirectory($cleanupDir);
+                return ['success' => false, 'reason' => tpBackupExternalizedWebdavReasonFromStatus($status, 'WEBDAV_DOWNLOAD_FAILED'), 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $remoteFilePath, 'size_bytes' => 0];
+            }
+
+            $metadataResponse = tpBackupExternalizedWebdavRequest($client, $webdavConfig, 'GET', $remoteFilePath . '.meta.json');
+            $metadataStatus = (int) $metadataResponse->getStatusCode();
+            if ($metadataStatus >= 200 && $metadataStatus < 300) {
+                $metadataPayload = (string) $metadataResponse->getBody();
+                if (trim($metadataPayload) !== '') {
+                    @file_put_contents(tpGetBackupMetadataPath($localPath), $metadataPayload, LOCK_EX);
+                }
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 'webdav', 'path' => $localPath, 'filename' => $filename, 'cleanup_required' => true, 'cleanup_dir' => $cleanupDir, 'source_path' => $remoteFilePath, 'size_bytes' => (int) (@filesize($localPath) ?: 0)];
+        } catch (Throwable) {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => 'WEBDAV_DOWNLOAD_FAILED', 'destination_type' => 'webdav', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $remoteFilePath, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType === 's3') {
+        $cleanupDir = tpBackupCreateTemporaryDirectory((string) sys_get_temp_dir());
+        if ($cleanupDir === '') {
+            return ['success' => false, 'reason' => 'S3_DOWNLOAD_FAILED', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+        }
+
+        $localPath = $cleanupDir . DIRECTORY_SEPARATOR . $filename;
+        $sftpConfig['prefix'] = $targetDir;
+        $connection = tpBackupOpenExternalizedS3Connection($sftpConfig);
+        if ($connection['success'] === false) {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => (string) $connection['path'], 'size_bytes' => 0];
+        }
+
+        $objectKey = tpBackupExternalizedS3ObjectKey((string) $connection['path'], $filename);
+        if ($objectKey === '') {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+        }
+
+        try {
+            $s3Config = (array) $connection['config'];
+            $downloaded = tpBackupExternalizedS3Request($s3Config, 'GET', $objectKey, ['sink' => $localPath]);
+            $status = (int) $downloaded['status'];
+            if ($status < 200 || $status >= 300 || is_file($localPath) === false) {
+                tpBackupRemoveTemporaryDirectory($cleanupDir);
+                return ['success' => false, 'reason' => tpBackupExternalizedS3ReasonFromStatus($status, 'S3_DOWNLOAD_FAILED'), 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $objectKey, 'size_bytes' => 0];
+            }
+
+            $metadataResponse = tpBackupExternalizedS3Request($s3Config, 'GET', $objectKey . '.meta.json');
+            $metadataStatus = (int) $metadataResponse['status'];
+            if ($metadataStatus >= 200 && $metadataStatus < 300) {
+                $metadataPayload = (string) $metadataResponse['body'];
+                if (trim($metadataPayload) !== '') {
+                    @file_put_contents(tpGetBackupMetadataPath($localPath), $metadataPayload, LOCK_EX);
+                }
+            }
+
+            return ['success' => true, 'reason' => '', 'destination_type' => 's3', 'path' => $localPath, 'filename' => $filename, 'cleanup_required' => true, 'cleanup_dir' => $cleanupDir, 'source_path' => $objectKey, 'size_bytes' => (int) (@filesize($localPath) ?: 0)];
+        } catch (Throwable) {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => 'S3_DOWNLOAD_FAILED', 'destination_type' => 's3', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $objectKey, 'size_bytes' => 0];
+        }
+    }
+
+    if ($destinationType !== 'sftp') {
+        return ['success' => false, 'reason' => 'UNSUPPORTED_TYPE', 'destination_type' => $destinationType, 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+    }
+
+    $cleanupDir = tpBackupCreateTemporaryDirectory((string) sys_get_temp_dir());
+    if ($cleanupDir === '') {
+        return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+    }
+
+    $localPath = $cleanupDir . DIRECTORY_SEPARATOR . $filename;
+    $sftpConfig['remote_path'] = $targetDir;
+    $connection = tpBackupOpenExternalizedSftpConnection($sftpConfig);
+    if ($connection['success'] === false) {
+        tpBackupRemoveTemporaryDirectory($cleanupDir);
+        return ['success' => false, 'reason' => (string) $connection['reason'], 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => (string) $connection['path'], 'size_bytes' => 0];
+    }
+
+    $remoteFilePath = tpBackupExternalizedSftpRemoteFilePath((string) $connection['path'], $filename);
+    if ($remoteFilePath === '') {
+        tpBackupRemoveTemporaryDirectory($cleanupDir);
+        return ['success' => false, 'reason' => 'INVALID_FILENAME', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => '', 'size_bytes' => 0];
+    }
+
+    try {
+        $sftp = $connection['client'];
+        if ($sftp->get($remoteFilePath, $localPath) !== true || is_file($localPath) === false) {
+            tpBackupRemoveTemporaryDirectory($cleanupDir);
+            return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $remoteFilePath, 'size_bytes' => 0];
+        }
+
+        $metadataPayload = $sftp->get($remoteFilePath . '.meta.json');
+        if (is_string($metadataPayload) === true && trim($metadataPayload) !== '') {
+            @file_put_contents(tpGetBackupMetadataPath($localPath), $metadataPayload, LOCK_EX);
+        }
+
+        return ['success' => true, 'reason' => '', 'destination_type' => 'sftp', 'path' => $localPath, 'filename' => $filename, 'cleanup_required' => true, 'cleanup_dir' => $cleanupDir, 'source_path' => $remoteFilePath, 'size_bytes' => (int) (@filesize($localPath) ?: 0)];
+    } catch (Throwable) {
+        tpBackupRemoveTemporaryDirectory($cleanupDir);
+        return ['success' => false, 'reason' => 'SFTP_DOWNLOAD_FAILED', 'destination_type' => 'sftp', 'path' => '', 'filename' => $filename, 'cleanup_required' => false, 'cleanup_dir' => '', 'source_path' => $remoteFilePath, 'size_bytes' => 0];
+    }
+}
+
+function tpBackupCleanupExternalizedRestoreStage(array $stage): bool
+{
+    if (empty($stage['cleanup_required']) || empty($stage['cleanup_dir']) || is_scalar($stage['cleanup_dir']) === false) {
+        return true;
+    }
+
+    return tpBackupRemoveTemporaryDirectory((string) $stage['cleanup_dir']);
+}
+
+/**
+ * Apply externalized retention through the destination abstraction.
+ *
+ * @return array{success: bool, reason: string, deleted: int}
+ */
+function tpBackupPurgeExternalizedBackups(string $destinationType, string $targetDir, int $retentionDays, int $retentionCount, array $SETTINGS = [], array $sftpConfig = []): array
+{
+    $listed = tpBackupListExternalizedBackups($destinationType, $targetDir, $SETTINGS, $sftpConfig);
+    if ($listed['success'] === false) {
+        return ['success' => false, 'reason' => (string) $listed['reason'], 'deleted' => 0];
+    }
+
+    $deleted = 0;
+    $remaining = $listed['files'];
+    if ($retentionDays > 0) {
+        $cutoff = time() - ($retentionDays * 86400);
+        foreach ($remaining as $idx => $entry) {
+            if ((int) $entry['mtime'] >= $cutoff) {
+                continue;
+            }
+
+            $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
+            if ($delete['success'] === true && $delete['deleted'] === true) {
+                $deleted++;
+            }
+            unset($remaining[$idx]);
+        }
+    }
+
+    $remaining = array_values($remaining);
+    usort($remaining, static fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+    if ($retentionCount > 0 && count($remaining) > $retentionCount) {
+        foreach (array_slice($remaining, $retentionCount) as $entry) {
+            $delete = tpBackupDeleteExternalizedBackup($destinationType, (string) $listed['path'], (string) $entry['name'], $SETTINGS, $sftpConfig);
+            if ($delete['success'] === true && $delete['deleted'] === true) {
+                $deleted++;
+            }
+        }
+    }
+
+    return ['success' => true, 'reason' => '', 'deleted' => $deleted];
 }
 
 function tpBackupNormalizePackageEntryPath(string $path): string
@@ -1193,6 +3541,69 @@ function tpBackupRemoveTemporaryDirectory(string $path): bool
     }
 
     return @rmdir($real) && $ok;
+}
+
+/**
+ * Purge stale Teampass backup temporary directories.
+ *
+ * This is intentionally limited to directories created by
+ * tpBackupCreateTemporaryDirectory() and never follows arbitrary names.
+ *
+ * @return array{scanned: int, deleted: int, failed: int, skipped_recent: int}
+ */
+function tpBackupPurgeOldTemporaryDirectories(string $baseDir, int $olderThanSeconds = 86400): array
+{
+    $stats = [
+        'scanned' => 0,
+        'deleted' => 0,
+        'failed' => 0,
+        'skipped_recent' => 0,
+    ];
+
+    $baseReal = realpath($baseDir);
+    if ($baseReal === false || is_dir($baseReal) === false) {
+        return $stats;
+    }
+
+    $olderThanSeconds = max(3600, $olderThanSeconds);
+    $entries = scandir($baseReal);
+    if ($entries === false) {
+        return $stats;
+    }
+
+    $cutoff = time() - $olderThanSeconds;
+    foreach ($entries as $entry) {
+        if (str_starts_with($entry, 'tpbackup_tmp_') === false) {
+            continue;
+        }
+
+        $candidate = $baseReal . DIRECTORY_SEPARATOR . $entry;
+        $candidateReal = realpath($candidate);
+        if (
+            $candidateReal === false
+            || is_dir($candidateReal) === false
+            || tpBackupIsResolvedPathInsideDirectory($candidateReal, $baseReal) === false
+        ) {
+            continue;
+        }
+
+        $stats['scanned']++;
+        $mtime = @filemtime($candidateReal);
+        $ctime = @filectime($candidateReal);
+        $lastChanged = max((int) ($mtime ?: 0), (int) ($ctime ?: 0));
+        if ($lastChanged > $cutoff) {
+            $stats['skipped_recent']++;
+            continue;
+        }
+
+        if (tpBackupRemoveTemporaryDirectory($candidateReal) === true) {
+            $stats['deleted']++;
+        } else {
+            $stats['failed']++;
+        }
+    }
+
+    return $stats;
 }
 
 function tpBackupBuildPackageFilename(string $prefix = ''): string
@@ -3158,7 +5569,8 @@ function tpRestoreAuthorizationCreate(
         string $overrideKey,
         array $compat,
         int $ttl,
-        array $SETTINGS
+        array $SETTINGS,
+        array $extraPayload = []
     ): array {
         $ttl = (int) $ttl;
         if ($ttl <= 0) {
@@ -3201,6 +5613,10 @@ function tpRestoreAuthorizationCreate(
             'compat' => $compat,
             'secrets' => [],
         ];
+
+        if (is_array($extraPayload['restore_stage'] ?? null)) {
+            $payload['restore_stage'] = $extraPayload['restore_stage'];
+        }
 
         if ($encryptionKey !== '') {
             $enc = cryption($encryptionKey, '', 'encrypt', $SETTINGS);
