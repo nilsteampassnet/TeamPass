@@ -106,6 +106,7 @@ if (null !== $post_type) {
     $all_users_can_access = [
         'get_generate_keys_progress',
         'user_profile_update',
+        'user_profile_avatar_delete',
         'save_user_change',
     ];
 
@@ -2057,6 +2058,85 @@ if (null !== $post_type) {
                     'treeloadstrategy' => $session->get('user-tree_load_strategy'),
                     'split_view_mode' => $session->get('user-split_view_mode'),
                     'show_subfolders' => $session->get('user-show_subfolders'),
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * DELETE CURRENT USER AVATAR
+         */
+        case 'user_profile_avatar_delete':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (
+                null === $session->get('user-id')
+                || empty($session->get('user-id')) === true
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('no_user'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if ((string) ($SETTINGS['disable_user_edit_profile'] ?? '0') !== '0') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $avatarData = DB::queryFirstRow(
+                'SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id = %i',
+                $session->get('user-id')
+            );
+
+            if (is_array($avatarData) === true) {
+                $avatarDir = TEAMPASS_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'avatars';
+                foreach (['avatar', 'avatar_thumb'] as $avatarColumn) {
+                    $avatarFile = basename(trim((string) ($avatarData[$avatarColumn] ?? '')));
+                    if ($avatarFile !== '') {
+                        fileDelete($avatarDir . DIRECTORY_SEPARATOR . $avatarFile, $SETTINGS);
+                    }
+                }
+            }
+
+            DB::update(
+                prefixTable('users'),
+                [
+                    'avatar' => '',
+                    'avatar_thumb' => '',
+                ],
+                'id = %i',
+                $session->get('user-id')
+            );
+
+            $session->set('user-avatar', '');
+            $session->set('user-avatar_thumb', '');
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => $lang->get('avatar_deleted'),
+                    'avatar_url' => './assets/images/photo.jpg',
                 ),
                 'encode'
             );
