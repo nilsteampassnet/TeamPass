@@ -446,6 +446,8 @@ function tpSafePrepareDecode(resp) {
     var tpBckBackupVersionLabel = "<?php echo addslashes($lang->get('bck_restore_backup_version')); ?>";
     var tpBckExpectedVersionLabel = "<?php echo addslashes($lang->get('bck_restore_expected_version')); ?>";
     var tpBckLegacyNoMeta = "<?php echo addslashes($lang->get('bck_restore_legacy_no_metadata')); ?>";
+    var tpBckTpbackupInvalid = "<?php echo addslashes($lang->get('bck_restore_tpbackup_invalid')); ?>";
+    var tpBckTpbackupDocumentsUnsupported = "<?php echo addslashes($lang->get('bck_restore_tpbackup_documents_not_supported')); ?>";
 
 // ---------------------------------------------------------------------
 // On-the-fly upload safety (prevent duplicates in storage/onthefly)
@@ -512,6 +514,16 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
                 var rs = (r.reason || '');
                 if (rs === 'LEGACY_NO_METADATA' || rs === 'MISSING_VERSION_METADATA') {
                     tpToast('error', tpBckLegacyNoMeta);
+                    return;
+                }
+
+                if (rs === 'PACKAGE_DOCUMENTS_RESTORE_NOT_SUPPORTED') {
+                    tpToast('error', tpBckTpbackupDocumentsUnsupported);
+                    return;
+                }
+
+                if (rs === 'PACKAGE_TYPE_UNSUPPORTED') {
+                    tpToast('error', tpBckTpbackupInvalid);
                     return;
                 }
 
@@ -593,6 +605,10 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
                 warnings.forEach(function(w) {
                     if (w === 'VERSION_NOT_VERIFIED') {
                         msgs.push("<?php echo addslashes($lang->get('bck_restore_cli_warning_version_not_verified')); ?>");
+                    } else if (w === 'DOCUMENTS_NOT_INCLUDED') {
+                        msgs.push("<?php echo addslashes($lang->get('bck_restore_cli_warning_documents_not_included')); ?>");
+                    } else if (w === 'DOCUMENTS_PARTIALLY_INCLUDED') {
+                        msgs.push("<?php echo addslashes($lang->get('bck_restore_cli_warning_documents_partially_included')); ?>");
                     } else {
                         msgs.push(w);
                     }
@@ -1008,6 +1024,31 @@ $(document).on('click', '#onthefly-meta-orphans-btn', function (e) {
             return '';
         }
 
+        function tpBackupHasDocuments(f) {
+            var backupType = (f && f.backup_type ? f.backup_type : '').toString();
+            return backupType === 'db_documents';
+        }
+
+        function tpBackupDocumentsIconHtml(f) {
+            if (!tpBackupHasDocuments(f)) return '';
+            var title = '<?php echo addslashes($lang->get('bck_backup_contains_documents')); ?>';
+            var safeTitle = tpEscapeHtml(title);
+            return '<span class="ml-1 text-info tp-backup-documents-indicator" title="' + safeTitle + '" aria-label="' + safeTitle + '" data-toggle="tooltip"><i class="fas fa-paperclip"></i></span>';
+        }
+
+        function tpAppendBackupDocumentsIcon($target, f) {
+            if (!tpBackupHasDocuments(f) || !$target || $target.length === 0) return;
+            var title = '<?php echo addslashes($lang->get('bck_backup_contains_documents')); ?>';
+            $target.append(
+                $('<span/>')
+                    .addClass('ml-1 text-info tp-backup-documents-indicator')
+                    .attr('title', title)
+                    .attr('aria-label', title)
+                    .attr('data-toggle', 'tooltip')
+                    .append($('<i/>').addClass('fas fa-paperclip'))
+            );
+        }
+
 function tpFmtBytes(bytes) {
             if (bytes === null || bytes === undefined) return '';
             let b = parseInt(bytes, 10);
@@ -1064,15 +1105,16 @@ function tpFmtBytes(bytes) {
                         const dl = (f.download || '');
                         const isSelected = (currentSelected !== '' && currentSelected === name);
                         const fileKey = encodeURIComponent(name);
+                        const canRestore = (f.restore_supported !== false && f.restore_supported !== 0 && f.restore_supported !== '0');
 
                         // Avoid breaking HTML attribute if filename contains quotes
                         const titleName = (name + '').replace(/"/g, '&quot;');
 
-                        html += '<tr title="' + titleName + '" data-file="' + fileKey + '" class="' + (isSelected ? 'table-active' : '') + '">';
+                        html += '<tr title="' + titleName + '" data-file="' + fileKey + '" class="' + (isSelected && canRestore ? 'table-active' : '') + '">';
                         html += '  <td class="text-nowrap">';
                         html += '    <div class="form-check m-0">';
-                        html += '      <input class="form-check-input tp-onthefly-backup-radio" type="radio" name="onthefly-server-backup-radio" id="onthefly-bck-' + idx + '" value="' + titleName + '"' + (isSelected ? ' checked' : '') + '>';
-                        html += '      <label class="form-check-label" for="onthefly-bck-' + idx + '">' + dt + '</label>';
+                        html += '      <input class="form-check-input tp-onthefly-backup-radio" type="radio" name="onthefly-server-backup-radio" id="onthefly-bck-' + idx + '" value="' + titleName + '"' + (isSelected && canRestore ? ' checked' : '') + (canRestore ? '' : ' disabled') + '>';
+                        html += '      <label class="form-check-label" for="onthefly-bck-' + idx + '">' + dt + tpBackupDocumentsIconHtml(f) + '</label>';
                         html += '    </div>';
                         html += '  </td>';
                         html += '  <td>' + sz + '</td>';
@@ -1104,6 +1146,7 @@ function tpFmtBytes(bytes) {
                     });
 
                     $('#onthefly-server-backups-tbody').html(html);
+                    try { $('#onthefly-server-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
                 }
             );
         }
@@ -1151,7 +1194,7 @@ function tpFmtBytes(bytes) {
                 return;
             }
             var radio = $(this).find('.tp-onthefly-backup-radio');
-            if (radio.length) {
+            if (radio.length && radio.prop('disabled') !== true) {
                 radio.prop('checked', true).trigger('change');
             }
         });
@@ -1169,7 +1212,8 @@ function tpFmtBytes(bytes) {
                 // Prepare data
                 var data = {
                     'encryptionKey': simplePurifier($('#onthefly-backup-key').val()),
-                    'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : '')
+                    'comment': ($('#onthefly-backup-comment').length ? $('#onthefly-backup-comment').val() : ''),
+                    'include_documents': $('#onthefly-include-documents').is(':checked') ? 1 : 0
                 };
 
                 //send query
@@ -1190,8 +1234,9 @@ function tpFmtBytes(bytes) {
                             // ERROR
                             tpProgressToast.hide();
                             toastr.remove();
+                            var backupErrorMessage = (data.message || data.error || '').toString();
                             toastr.error(
-                                '<?php echo addslashes($lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'); ?>' + data.error,
+                                '<?php echo addslashes($lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'); ?>' + backupErrorMessage,
                                 '<?php echo addslashes($lang->get('error')); ?>', {
                                     timeOut: 5000,
                                     progressBar: true
@@ -1898,6 +1943,7 @@ var tpScheduled = {
       $('#scheduled-dom').val(String(s.dom || 1));
       $('#scheduled-retention').val(String(s.retention_days || 30));
       $('#scheduled-output-dir').val(s.output_dir || '');
+      tpScheduled.applyToggleState('scheduled-include-documents', parseInt(s.include_documents || 0, 10) === 1);
 
       tpScheduled.toggleFreqUI();
 
@@ -1930,6 +1976,7 @@ var tpScheduled = {
       dom: parseInt($('#scheduled-dom').val(), 10),
       retention_days: parseInt($('#scheduled-retention').val(), 10),
       output_dir: $('#scheduled-output-dir').val(),
+      include_documents: tpScheduled.norm01($('#scheduled-include-documents_input').val()),
       email_report_enabled: tpScheduled.norm01($('#scheduled-email-report-enabled_input').val()),
       email_report_only_failures: tpScheduled.norm01($('#scheduled-email-report-only-failures_input').val())
     };
@@ -1966,6 +2013,7 @@ var tpScheduled = {
         var tr = $('<tr/>');
 
         var fn = (f.name || '');
+        var canRestore = (f.restore_supported !== false && f.restore_supported !== 0 && f.restore_supported !== '0');
         tr.attr('data-file', fn).css('cursor','pointer');
 
         var dtTxt = tpScheduled.fmtTs(f.mtime);
@@ -1978,13 +2026,17 @@ var tpScheduled = {
           .attr('name', 'scheduled_backup_select')
           .addClass('scheduled-backup-radio mr-2')
           .attr('data-file', fn);
+        if (canRestore === false) {
+          $radio.prop('disabled', true);
+        }
 
-        if (selected !== '' && selected === fn) {
+        if (selected !== '' && selected === fn && canRestore === true) {
           $radio.prop('checked', true);
           foundSelected = true;
         }
 
         $dateTd.append($radio).append($('<span/>').text(dtTxt));
+        tpAppendBackupDocumentsIcon($dateTd, f);
         tr.append($dateTd);
 
         tr.append($('<td/>').addClass('text-nowrap').text(tpScheduled.fmtBytes(f.size_bytes)));
@@ -2050,6 +2102,8 @@ var tpScheduled = {
         tr.append($cell);
         $tb.append(tr);
       });
+
+      try { $('#scheduled-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
 
       // If selection no longer exists, clear it
       if (selected !== '' && foundSelected === false) {
@@ -2171,6 +2225,7 @@ var tpScheduled = {
 
     // Ensure toggle hidden inputs stay consistent (some toggle libs don't update them reliably)
     tpScheduled.bindToggleFix('backup-scheduled-enabled');
+    tpScheduled.bindToggleFix('scheduled-include-documents');
     tpScheduled.bindToggleFix('scheduled-email-report-enabled', function() {
         tpScheduled.toggleEmailUI();
     });
@@ -2200,7 +2255,7 @@ var tpScheduled = {
     $(document).on('click', '#scheduled-backups-tbody tr', function(e) {
       if ($(e.target).closest('button,a,input').length) return;
       var $r = $(this).find('.scheduled-backup-radio');
-      if ($r.length) {
+      if ($r.length && $r.prop('disabled') !== true) {
         $r.prop('checked', true).trigger('change');
       }
     });
@@ -2208,6 +2263,783 @@ var tpScheduled = {
 // If scheduled tab is already active (rare), load immediately
     if ($('#scheduled').hasClass('active') || $('#scheduled').hasClass('show')) {
       tpScheduled.refreshAll();
+    }
+  }
+};
+
+var tpExternalized = {
+  operationsSupported: true,
+
+  showAlert: function(type, msg) {
+    var $a = $('#externalized-alert');
+    if (!$a.length) return;
+    $a.removeClass('d-none alert-success alert-danger alert-warning alert-info')
+      .addClass('alert-' + type)
+      .html(msg || '');
+  },
+
+  hideAlert: function() {
+    $('#externalized-alert').addClass('d-none').removeClass('alert-success alert-danger alert-warning alert-info').empty();
+  },
+
+  showRecoveryAlert: function(type, msg) {
+    var $a = $('#recovery-package-alert');
+    if (!$a.length) return;
+    $a.removeClass('d-none alert-success alert-danger alert-warning alert-info')
+      .addClass('alert-' + type)
+      .html(msg || '');
+  },
+
+  hideRecoveryAlert: function() {
+    $('#recovery-package-alert').addClass('d-none').removeClass('alert-success alert-danger alert-warning alert-info').empty();
+  },
+
+  ajax: function(type, data, cb) {
+    $.post(
+      "sources/backups.queries.php",
+      {
+        type: type,
+        data: prepareExchangedData(JSON.stringify(data || {}), "encode", "<?php echo $session->get('key'); ?>"),
+        key: "<?php echo $session->get('key'); ?>"
+      },
+      function(response) {
+        var resp = (response || '').toString();
+        if (resp.trim() === '') {
+          tpExternalized.showAlert('danger', '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+          return;
+        }
+
+        var r = tpSafePrepareDecode(resp);
+        if (r === null) { return; }
+        if (typeof r === 'string') {
+          try { r = $.parseJSON(r); } catch (e) {}
+        }
+        if (typeof cb === 'function') cb(r);
+      }
+    );
+  },
+
+  formatLabel: function(format) {
+    format = (format || '').toString();
+    if (format === 'tpbackup') {
+      return '<?php echo addslashes($lang->get('bck_externalized_format_tpbackup')); ?>';
+    }
+    if (format === 'sql') {
+      return '<?php echo addslashes($lang->get('bck_externalized_format_sql')); ?>';
+    }
+    return format || '-';
+  },
+
+  toggleDocumentsUI: function() {
+    var includeDocuments = tpScheduled.isTruthy($('#externalized-include-documents_input').val());
+    if (includeDocuments) {
+      $('#externalized-format').val('tpbackup').prop('disabled', true);
+    } else {
+      $('#externalized-format').prop('disabled', false);
+    }
+  },
+
+  toggleDestinationUI: function() {
+    var destinationType = ($('#externalized-destination-type').val() || 'local_directory').toString();
+    var isSftp = destinationType === 'sftp';
+    var isWebdav = destinationType === 'webdav';
+    var isS3 = destinationType === 's3';
+    $('#externalized-sftp-fields').toggle(isSftp);
+    $('#externalized-webdav-fields').toggle(isWebdav);
+    $('#externalized-s3-fields').toggle(isS3);
+
+    var $target = $('#externalized-target-dir');
+    var localPlaceholder = $target.data('local-placeholder') || '';
+    var sftpPlaceholder = $target.data('sftp-placeholder') || '';
+    var webdavPlaceholder = $target.data('webdav-placeholder') || '';
+    var s3Placeholder = $target.data('s3-placeholder') || '';
+    var localHelp = $('#externalized-target-dir-help').data('local-help') || '';
+    var sftpHelp = $('#externalized-target-dir-help').data('sftp-help') || '';
+    var webdavHelp = $('#externalized-target-dir-help').data('webdav-help') || '';
+    var s3Help = $('#externalized-target-dir-help').data('s3-help') || '';
+
+    if (isSftp) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_sftp_remote_path')); ?>');
+      $target.attr('placeholder', sftpPlaceholder);
+      $('#externalized-target-dir-help').text(sftpHelp);
+    } else if (isWebdav) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_webdav_remote_path')); ?>');
+      $target.attr('placeholder', webdavPlaceholder);
+      $('#externalized-target-dir-help').text(webdavHelp);
+    } else if (isS3) {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_s3_prefix')); ?>');
+      $target.attr('placeholder', s3Placeholder);
+      $('#externalized-target-dir-help').text(s3Help);
+    } else {
+      $('#externalized-target-dir-label').text('<?php echo addslashes($lang->get('bck_externalized_target_dir')); ?>');
+      $target.attr('placeholder', localPlaceholder);
+      $('#externalized-target-dir-help').text(localHelp);
+    }
+
+    tpExternalized.toggleSftpAuthUI();
+    tpExternalized.updateRunAvailability();
+  },
+
+  toggleSftpAuthUI: function() {
+    var authType = ($('#externalized-sftp-auth-type').val() || 'password').toString();
+    $('.externalized-sftp-password-fields').toggle(authType !== 'private_key');
+    $('.externalized-sftp-private-key-fields').toggle(authType === 'private_key');
+  },
+
+  toggleScheduleUI: function() {
+    var enabled = tpScheduled.isTruthy($('#externalized-schedule-enabled_input').val());
+    var frequency = ($('#externalized-schedule-frequency').val() || 'daily').toString();
+    $('#externalized-schedule-fields').toggleClass('d-none', !enabled);
+    $('#externalized-schedule-weekly-wrap').toggleClass('d-none', !enabled || frequency !== 'weekly');
+    $('#externalized-schedule-monthly-wrap').toggleClass('d-none', !enabled || frequency !== 'monthly');
+  },
+
+  enforceTriggerMode: function(changedToggleId) {
+    var runAfterScheduled = tpScheduled.isTruthy($('#externalized-run-after-scheduled_input').val());
+    var scheduleEnabled = tpScheduled.isTruthy($('#externalized-schedule-enabled_input').val());
+
+    if (runAfterScheduled && scheduleEnabled) {
+      if (changedToggleId === 'externalized-schedule-enabled') {
+        tpScheduled.applyToggleState('externalized-run-after-scheduled', false);
+      } else {
+        tpScheduled.applyToggleState('externalized-schedule-enabled', false);
+      }
+      tpExternalized.showAlert('info', '<?php echo addslashes($lang->get('bck_externalized_trigger_mode_exclusive_notice')); ?>');
+    }
+
+    tpExternalized.toggleScheduleUI();
+  },
+
+  updateRunAvailability: function() {
+    var enabled = tpScheduled.isTruthy($('#externalized-enabled_input').val());
+    var supported = tpExternalized.operationsSupported !== false;
+    $('#externalized-run-btn').prop('disabled', !enabled || !supported);
+  },
+
+  applySettings: function(s) {
+    s = s || {};
+    if (s.timezone) {
+      tpScheduled.tz = s.timezone;
+    }
+    tpExternalized.operationsSupported = s.operations_supported !== false;
+    tpScheduled.applyToggleState('externalized-enabled', parseInt(s.enabled || 0, 10) === 1);
+    var runAfterScheduled = parseInt(s.run_after_scheduled || 0, 10) === 1;
+    var scheduleEnabled = parseInt(s.schedule_enabled || 0, 10) === 1;
+    if (runAfterScheduled && scheduleEnabled) {
+      scheduleEnabled = false;
+    }
+    tpScheduled.applyToggleState('externalized-run-after-scheduled', runAfterScheduled);
+    tpScheduled.applyToggleState('externalized-schedule-enabled', scheduleEnabled);
+    $('#externalized-schedule-frequency').val(s.schedule_frequency || 'daily');
+    $('#externalized-schedule-time').val(s.schedule_time || '02:00');
+    $('#externalized-schedule-dow').val(String(s.schedule_dow || 1));
+    $('#externalized-schedule-dom').val(String(s.schedule_dom || 1));
+    tpExternalized.enforceTriggerMode();
+    $('#externalized-destination-type').val(s.destination_type || 'local_directory');
+    $('#externalized-target-dir').val(s.target_dir || '');
+    var sftp = s.sftp || {};
+    $('#externalized-sftp-host').val(sftp.host || '');
+    $('#externalized-sftp-port').val(String(sftp.port || 22));
+    $('#externalized-sftp-username').val(sftp.username || '');
+    $('#externalized-sftp-auth-type').val(sftp.auth_type || 'password');
+    $('#externalized-sftp-password').val('');
+    $('#externalized-sftp-private-key').val('');
+    $('#externalized-sftp-private-key-passphrase').val('');
+    var webdav = s.webdav || {};
+    $('#externalized-webdav-url').val(webdav.url || '');
+    $('#externalized-webdav-username').val(webdav.username || '');
+    $('#externalized-webdav-password').val('');
+    var s3 = s.s3 || {};
+    $('#externalized-s3-endpoint').val(s3.endpoint || '');
+    $('#externalized-s3-region').val(s3.region || 'us-east-1');
+    $('#externalized-s3-bucket').val(s3.bucket || '');
+    $('#externalized-s3-access-key').val(s3.access_key || '');
+    $('#externalized-s3-secret-key').val('');
+    $('#externalized-s3-path-style').val(String(typeof s3.path_style === 'undefined' ? 1 : s3.path_style));
+    $('#externalized-format').val(s.backup_format || 'tpbackup');
+    tpScheduled.applyToggleState('externalized-include-documents', parseInt(s.include_documents || 0, 10) === 1);
+    tpExternalized.toggleDocumentsUI();
+    tpExternalized.toggleDestinationUI();
+    $('#externalized-retention-days').val(String(s.retention_days || 30));
+    $('#externalized-retention-count').val(String(s.retention_count || 10));
+    $('#externalized-retry-attempts').val(String(s.retry_attempts || 3));
+    $('#externalized-retry-delay-seconds').val(String(s.retry_delay_seconds || 5));
+    tpExternalized.updateRunAvailability();
+
+    $('#externalized-last-test').text(tpScheduled.fmtTs(s.last_test_at));
+    $('#externalized-next-run').text(tpScheduled.fmtTs(s.next_run_at));
+    $('#externalized-last-run').text(tpScheduled.fmtTs(s.last_run_at));
+    $('#externalized-last-completed').text(tpScheduled.fmtTs(s.last_completed_at));
+    $('#externalized-last-status').text(s.last_status || '-');
+    $('#externalized-last-message').text(s.last_message || '-');
+    $('#externalized-last-file').text(s.last_file || '-');
+    var lastSize = parseInt(s.last_size_bytes || 0, 10) || 0;
+    $('#externalized-last-size').text(lastSize > 0 ? tpScheduled.fmtBytes(lastSize) : '-');
+    $('#externalized-last-purge').text(tpScheduled.fmtTs(s.last_purge_at));
+    $('#externalized-last-purge-deleted').text(String(s.last_purge_deleted || 0));
+    $('#externalized-current-format').text(tpExternalized.formatLabel(s.backup_format || 'tpbackup'));
+    $('#externalized-current-destination').text(s.target_dir || '-');
+  },
+
+  payload: function() {
+    return {
+      enabled: tpScheduled.norm01($('#externalized-enabled_input').val()),
+      run_after_scheduled: tpScheduled.norm01($('#externalized-run-after-scheduled_input').val()),
+      schedule_enabled: tpScheduled.isTruthy($('#externalized-run-after-scheduled_input').val()) ? '0' : tpScheduled.norm01($('#externalized-schedule-enabled_input').val()),
+      schedule_frequency: $('#externalized-schedule-frequency').val() || 'daily',
+      schedule_time: $('#externalized-schedule-time').val() || '02:00',
+      schedule_dow: parseInt($('#externalized-schedule-dow').val(), 10) || 1,
+      schedule_dom: parseInt($('#externalized-schedule-dom').val(), 10) || 1,
+      destination_type: $('#externalized-destination-type').val() || 'local_directory',
+      target_dir: $('#externalized-target-dir').val() || '',
+      sftp_host: $('#externalized-sftp-host').val() || '',
+      sftp_port: parseInt($('#externalized-sftp-port').val(), 10) || 22,
+      sftp_username: $('#externalized-sftp-username').val() || '',
+      sftp_auth_type: $('#externalized-sftp-auth-type').val() || 'password',
+      sftp_password: $('#externalized-sftp-password').val() || '',
+      sftp_private_key: $('#externalized-sftp-private-key').val() || '',
+      sftp_private_key_passphrase: $('#externalized-sftp-private-key-passphrase').val() || '',
+      webdav_url: $('#externalized-webdav-url').val() || '',
+      webdav_username: $('#externalized-webdav-username').val() || '',
+      webdav_password: $('#externalized-webdav-password').val() || '',
+      s3_endpoint: $('#externalized-s3-endpoint').val() || '',
+      s3_region: $('#externalized-s3-region').val() || 'us-east-1',
+      s3_bucket: $('#externalized-s3-bucket').val() || '',
+      s3_access_key: $('#externalized-s3-access-key').val() || '',
+      s3_secret_key: $('#externalized-s3-secret-key').val() || '',
+      s3_path_style: parseInt($('#externalized-s3-path-style').val(), 10) || 0,
+      backup_format: $('#externalized-format').val() || 'tpbackup',
+      include_documents: tpScheduled.norm01($('#externalized-include-documents_input').val()),
+      retention_days: parseInt($('#externalized-retention-days').val(), 10),
+      retention_count: parseInt($('#externalized-retention-count').val(), 10),
+      retry_attempts: parseInt($('#externalized-retry-attempts').val(), 10),
+      retry_delay_seconds: parseInt($('#externalized-retry-delay-seconds').val(), 10)
+    };
+  },
+
+  loadSettings: function(cb) {
+    tpExternalized.hideAlert();
+    tpExternalized.ajax('externalized_get_settings', {}, function(r) {
+      if (!r || r.error) {
+        tpExternalized.showAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+        if (typeof cb === 'function') cb(null);
+        return;
+      }
+
+      tpExternalized.applySettings(r.settings || {});
+      if (typeof cb === 'function') cb(r.settings || {});
+    });
+  },
+
+  saveSettings: function() {
+    tpExternalized.hideAlert();
+    tpExternalized.ajax('externalized_save_settings', tpExternalized.payload(), function(r) {
+      if (!r || r.error) {
+        tpExternalized.showAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+        return;
+      }
+
+      var successMessage = r.message || '<?php echo addslashes($lang->get('bck_externalized_settings_saved')); ?>';
+      tpExternalized.loadSettings(function() {
+        tpExternalized.loadFiles();
+        tpExternalized.showAlert('success', successMessage);
+      });
+    });
+  },
+
+  testDestination: function() {
+    tpExternalized.hideAlert();
+    tpExternalized.ajax(
+      'externalized_test_destination',
+      tpExternalized.payload(),
+      function(r) {
+        if (!r || r.error) {
+          tpExternalized.showAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+          if (r) {
+            $('#externalized-last-test').text(tpScheduled.fmtTs(r.last_test_at || 0));
+            $('#externalized-last-status').text(r.last_status || 'failed');
+            $('#externalized-last-message').text((r && r.message) ? r.message : '-');
+          }
+          return;
+        }
+
+        tpExternalized.showAlert('success', r.message || '<?php echo addslashes($lang->get('bck_externalized_test_ok')); ?>');
+        $('#externalized-last-test').text(tpScheduled.fmtTs(r.last_test_at || 0));
+        $('#externalized-last-status').text(r.last_status || 'ok');
+        $('#externalized-last-message').text(r.message || '-');
+        if (r.path) {
+          $('#externalized-target-dir').val(r.path);
+          $('#externalized-current-destination').text(r.path);
+        }
+        tpExternalized.loadFiles();
+      }
+    );
+  },
+
+  createRecoveryPackage: function() {
+    tpExternalized.hideRecoveryAlert();
+
+    var passphrase = ($('#recovery-package-passphrase').val() || '').toString();
+    var passphraseConfirm = ($('#recovery-package-passphrase-confirm').val() || '').toString();
+
+    if (passphrase === '') {
+      tpExternalized.showRecoveryAlert('warning', '<?php echo addslashes($lang->get('bck_recovery_package_passphrase_required')); ?>');
+      return;
+    }
+    if (passphrase.length < 12) {
+      tpExternalized.showRecoveryAlert('warning', '<?php echo addslashes($lang->get('bck_recovery_package_passphrase_too_short')); ?>');
+      return;
+    }
+    if (passphrase !== passphraseConfirm) {
+      tpExternalized.showRecoveryAlert('warning', '<?php echo addslashes($lang->get('bck_recovery_package_passphrase_mismatch')); ?>');
+      return;
+    }
+
+    var $btn = $('#recovery-package-create-btn');
+    var oldHtml = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-circle-notch fa-spin mr-1"></i><?php echo addslashes($lang->get('in_progress')); ?>');
+
+    $.post(
+      "sources/backups.queries.php",
+      {
+        type: "recovery_package_create",
+        data: prepareExchangedData(JSON.stringify({ passphrase: passphrase }), "encode", "<?php echo $session->get('key'); ?>"),
+        key: "<?php echo $session->get('key'); ?>"
+      },
+      function(response) {
+        var r = tpSafePrepareDecode((response || '').toString());
+        if (r === null) { return; }
+        if (typeof r === 'string') {
+          try { r = $.parseJSON(r); } catch (e) {}
+        }
+
+        if (!r || r.error) {
+          tpExternalized.showRecoveryAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('bck_recovery_package_create_failed')); ?>');
+          return;
+        }
+
+        $('#recovery-package-passphrase').val('');
+        $('#recovery-package-passphrase-confirm').val('');
+        tpExternalized.showRecoveryAlert('success', r.message || '<?php echo addslashes($lang->get('bck_recovery_package_created')); ?>');
+        if (r.download) {
+          window.location.href = r.download;
+        }
+      }
+    ).fail(function() {
+      tpExternalized.showRecoveryAlert('danger', '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+    }).always(function() {
+      $btn.prop('disabled', false).html(oldHtml);
+    });
+  },
+
+  loadFiles: function() {
+    var $tb = $('#externalized-backups-tbody');
+    if (!$tb.length) return;
+
+    $tb.empty().append(
+      $('<tr/>').append(
+        $('<td/>')
+          .attr('colspan', 4)
+          .addClass('text-muted')
+          .text('<?php echo addslashes($lang->get('bck_onthefly_loading')); ?>')
+      )
+    );
+
+    tpExternalized.ajax('externalized_list_backups', {}, function(r) {
+      if (!r || r.error) {
+        $tb.empty().append(
+          $('<tr/>').append(
+            $('<td/>')
+              .attr('colspan', 4)
+              .addClass('text-muted')
+              .text('<?php echo addslashes($lang->get('bck_externalized_no_backups_found')); ?>')
+          )
+        );
+        if (r && r.message) {
+          tpExternalized.showAlert('warning', r.message);
+        }
+        return;
+      }
+
+      $tb.empty();
+
+      var selected = ($('#externalized-restore-server-file').val() || '').toString();
+      var foundSelected = false;
+
+      var files = r.files || [];
+      if (files.length === 0) {
+        $tb.append(
+          $('<tr/>').append(
+            $('<td/>')
+              .attr('colspan', 4)
+              .addClass('text-muted')
+              .text('<?php echo addslashes($lang->get('bck_externalized_no_backups_found')); ?>')
+          )
+        );
+        tpExternalized.clearRestoreSelection();
+        return;
+      }
+
+      files.forEach(function(f) {
+        var tr = $('<tr/>');
+        var fn = (f.name || '');
+        var dtTxt = tpScheduled.fmtTs(f.mtime);
+        var canRestore = (f.restore_supported !== false && f.restore_supported !== 0 && f.restore_supported !== '0');
+        tr.attr('data-file', fn).css('cursor', canRestore ? 'pointer' : 'default');
+
+        var $dateTd = $('<td/>').addClass('text-nowrap').attr('title', fn);
+        var $radio = $('<input/>')
+          .attr('type', 'radio')
+          .attr('name', 'externalized_backup_select')
+          .addClass('externalized-backup-radio mr-2')
+          .attr('data-file', fn);
+        if (canRestore === false) {
+          $radio.prop('disabled', true);
+        }
+
+        if (selected !== '' && selected === fn && canRestore === true) {
+          $radio.prop('checked', true);
+          foundSelected = true;
+        }
+
+        $dateTd.append($radio).append($('<span/>').text(dtTxt));
+        tpAppendBackupDocumentsIcon($dateTd, f);
+        tr.append($dateTd);
+        tr.append($('<td/>').addClass('text-nowrap').text(tpScheduled.fmtBytes(f.size_bytes)));
+        tr.append($('<td/>').addClass('text-nowrap').text(tpFmtTpVersion(f.tp_files_version || '')));
+
+        var $cell = $('<td/>').addClass('text-right text-nowrap');
+        var $grp = $('<div/>').addClass('btn-group btn-group-sm').attr('role', 'group');
+
+        if ((f.download || '') !== '') {
+          $grp.append(
+            $('<a/>')
+              .addClass('btn btn-outline-primary')
+              .attr('href', f.download)
+              .attr('download', fn)
+              .attr('title', '<?php echo addslashes($lang->get('bck_onthefly_download')); ?>')
+              .attr('aria-label', '<?php echo addslashes($lang->get('bck_onthefly_download')); ?>')
+              .html('<i class="fas fa-download"></i>')
+          );
+        }
+
+        $grp.append(
+          $('<button/>')
+            .attr('type', 'button')
+            .addClass('btn btn-outline-danger')
+            .attr('title', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
+            .attr('aria-label', '<?php echo addslashes($lang->get('bck_scheduled_delete')); ?>')
+            .html('<i class="fas fa-trash"></i>')
+            .on('click', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              launchConfirmDialog(
+                "<?php echo addslashes($lang->get('del_button')); ?>",
+                "<?php echo addslashes($lang->get('bck_onthefly_confirm_delete')); ?><br><br><b>" + fn + "</b>",
+                function() {
+                  tpExternalized.ajax('externalized_delete_backup', { file: fn }, function(rr) {
+                    if (rr && rr.error) {
+                      tpExternalized.showAlert('danger', rr.message || '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+                      return;
+                    }
+
+                    if (($('#externalized-restore-server-file').val() || '').toString() === fn) {
+                      tpExternalized.clearRestoreSelection();
+                    }
+
+                    tpExternalized.loadFiles();
+                    tpExternalized.loadSettings();
+                  });
+                }
+              );
+            })
+        );
+
+        $cell.append($grp);
+        tr.append($cell);
+        $tb.append(tr);
+      });
+
+      try { $('#externalized-backups-tbody [data-toggle="tooltip"]').tooltip(); } catch (e) {}
+
+      if (selected !== '' && foundSelected === false) {
+        tpExternalized.clearRestoreSelection();
+      }
+    });
+  },
+
+  clearRestoreSelection: function() {
+    $('#externalized-restore-server-file').val('');
+    $('#externalized-restore-override-key').val('');
+    $('#externalized-restore-selected').hide();
+    $('#externalized-restore-selected-name').text('');
+    $('#externalized-restore-start').prop('disabled', true);
+    $('.externalized-backup-radio').prop('checked', false);
+  },
+
+  selectForRestore: function(fileName) {
+    fileName = (fileName || '').toString();
+    if (fileName === '') return;
+
+    $('#externalized-restore-override-key').val('');
+    $('#externalized-restore-server-file').val(fileName);
+    $('#externalized-restore-selected-name').text(fileName);
+    $('#externalized-restore-selected').show();
+    $('#externalized-restore-start').prop('disabled', false);
+    tpToast('info', "<?php echo addslashes($lang->get('bck_onthefly_selected_backup')); ?>" + " : " + fileName);
+  },
+
+  prepareRestore: function(button) {
+    var serverFile = ($('#externalized-restore-server-file').val() || '').toString();
+    if (serverFile === '') {
+      tpToast('error', "<?php echo addslashes($lang->get('bck_onthefly_select_backup_first')); ?>");
+      return;
+    }
+
+    var $btn = $(button || '#externalized-restore-start');
+    if (!$btn.data('tp-confirmed')) {
+      var msg = "<?php echo addslashes($lang->get('bck_confirm_restore_from_backup')); ?>";
+      msg = msg.replace('%s', '<code>' + $('<div/>').text(serverFile).html() + '</code>');
+      tpShowConfirmRestore(msg, function() {
+        $btn.data('tp-confirmed', true);
+        tpExternalized.prepareRestore($btn[0]);
+        $btn.data('tp-confirmed', false);
+      });
+      return;
+    }
+
+    var runPrepare = function(prepPayload) {
+      tpPrepareRestoreCli(
+        prepPayload,
+        function(r) {
+          tpProgressToast.hide();
+          tpShowRestoreCliModal(r.command, r.command_no_cd, r.token_expires_at, r.warnings || [], r.command_variants || []);
+        },
+        function(err) {
+          tpProgressToast.hide();
+          var errCode = err.error_code || '';
+          var errMsg = err.message || "<?php echo addslashes($lang->get('error_unknown')); ?>";
+
+          if (errCode === 'DECRYPT_FAILED') {
+            tpToast('error', "<?php echo addslashes($lang->get('bck_restore_key_invalid')); ?>");
+            tpShowRestoreKeyModal(
+              errMsg,
+              function(newKey) {
+                $('#externalized-restore-override-key').val(newKey);
+                prepPayload.overrideKey = newKey;
+                tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_prepare_in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+                runPrepare(prepPayload);
+              },
+              prepPayload.overrideKey || ''
+            );
+            return;
+          }
+
+          tpToast('error', errMsg);
+        }
+      );
+    };
+
+    var start = function() {
+      tpProgressToast.show('<?php echo addslashes($lang->get('bck_restore_prepare_in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+      runPrepare({
+        serverScope: 'externalized',
+        serverFile: serverFile,
+        encryptionKey: '',
+        overrideKey: ($('#externalized-restore-override-key').val() || '').toString()
+      });
+    };
+
+    tpPreflightRestoreCompatibility({ serverScope: 'externalized', serverFile: serverFile }, function() {
+      if (typeof tpExclusiveUsers !== 'undefined' && tpExclusiveUsers && typeof tpExclusiveUsers.ensure === 'function') {
+        tpExclusiveUsers.ensure(start);
+      } else {
+        start();
+      }
+    });
+  },
+
+  runNow: function() {
+    tpExternalized.hideAlert();
+
+    var startedAt = Math.floor(Date.now() / 1000);
+    tpProgressToast.show('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fas fa-circle-notch fa-spin"></i>');
+
+    tpExternalized.ajax('externalized_run_now', {}, function(r) {
+      if (!r || r.error) {
+        tpProgressToast.hide();
+        tpExternalized.showAlert('danger', (r && r.message) ? r.message : '<?php echo addslashes($lang->get('server_answer_error')); ?>');
+        return;
+      }
+
+      tpExternalized.showAlert('success', r.message || '<?php echo addslashes($lang->get('bck_externalized_task_queued')); ?>');
+      tpExternalized.loadSettings();
+      tpExternalized.startRunNowPoll(startedAt);
+    });
+  },
+
+  _runNowTimer: null,
+  _runNowTries: 0,
+
+  startRunNowPoll: function(startedAt) {
+    tpExternalized.stopRunNowPoll();
+    tpExternalized._runNowTries = 0;
+
+    var maxTries = 120;
+    var intervalMs = 5000;
+
+    function checkOnce() {
+      tpExternalized.loadSettings(function(s) {
+        if (!s) return;
+
+        var st = (s.last_status || '').toString().toLowerCase();
+        var completedAt = parseInt(s.last_completed_at || 0, 10) || 0;
+        var isRunning = (st === 'queued' || st === 'running' || st === 'new' || st === 'in_progress');
+        var isClearlyDone = (!isRunning && st !== '' && st !== '-');
+        var isCompletedAtDone = (completedAt && completedAt >= (parseInt(startedAt || 0, 10) || 0) && !isRunning);
+
+        if (isClearlyDone || isCompletedAtDone) {
+          tpExternalized.stopRunNowPoll();
+          tpProgressToast.hide();
+
+          if (st === 'error' || st === 'failed' || st === 'ko') {
+            tpToast('error', (s.last_message || '<?php echo addslashes($lang->get('bck_externalized_task_failed')); ?>'));
+          } else {
+            tpToast('success', '<?php echo addslashes($lang->get('bck_externalized_task_completed')); ?>', '', { timeOut: 2000 });
+          }
+
+          tpExternalized.loadFiles();
+        }
+      });
+    }
+
+    checkOnce();
+    tpExternalized._runNowTimer = setInterval(function() {
+      tpExternalized._runNowTries++;
+      checkOnce();
+
+      if (tpExternalized._runNowTries >= maxTries) {
+        tpExternalized.stopRunNowPoll();
+        tpProgressToast.hide();
+        tpToast('info', "<?php echo addslashes($lang->get('in_progress')); ?>");
+      }
+    }, intervalMs);
+  },
+
+  stopRunNowPoll: function() {
+    try { if (tpExternalized._runNowTimer) clearInterval(tpExternalized._runNowTimer); } catch (e) {}
+    tpExternalized._runNowTimer = null;
+    tpExternalized._runNowTries = 0;
+  },
+
+  refreshAll: function() {
+    tpExternalized.loadSettings(function(s) {
+      if (s === null) return;
+      tpExternalized.loadFiles();
+      if (typeof tpToast === 'function') {
+        tpToast('success', '<?php echo addslashes($lang->get('refreshed')); ?>', '', { timeOut: 1200 });
+      }
+    });
+  },
+
+  init: function() {
+    if ($('#externalized').length === 0) return;
+
+    $('a[href="#externalized"]').on('shown.bs.tab', function() {
+      tpExternalized.refreshAll();
+    });
+
+    tpScheduled.bindToggleFix('externalized-enabled', function() {
+      tpExternalized.updateRunAvailability();
+    });
+    tpScheduled.bindToggleFix('externalized-run-after-scheduled', function() {
+      tpExternalized.enforceTriggerMode('externalized-run-after-scheduled');
+    });
+    tpScheduled.bindToggleFix('externalized-schedule-enabled', function() {
+      tpExternalized.enforceTriggerMode('externalized-schedule-enabled');
+    });
+    tpScheduled.bindToggleFix('externalized-include-documents', function() {
+      tpExternalized.toggleDocumentsUI();
+    });
+    $('#externalized-schedule-frequency').on('change', function() {
+      tpExternalized.toggleScheduleUI();
+    });
+    $('#externalized-destination-type').on('change', function() {
+      tpExternalized.toggleDestinationUI();
+    });
+    $('#externalized-sftp-auth-type').on('change', function() {
+      tpExternalized.toggleSftpAuthUI();
+    });
+    $('#externalized-format').on('change', function() {
+      tpExternalized.toggleDocumentsUI();
+    });
+    $('#externalized-save-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.saveSettings();
+    });
+    $('#externalized-test-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.testDestination();
+    });
+    $('#externalized-run-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof tpExclusiveUsers !== 'undefined' && tpExclusiveUsers && typeof tpExclusiveUsers.ensure === 'function') {
+        tpExclusiveUsers.ensure(function() {
+          tpExternalized.runNow();
+        });
+      } else {
+        tpExternalized.runNow();
+      }
+    });
+    $('#externalized-refresh-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.refreshAll();
+    });
+    $('#externalized-files-refresh-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.loadFiles();
+    });
+    $(document).on('change', '.externalized-backup-radio', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var fileName = $(this).attr('data-file') || '';
+      if (fileName) tpExternalized.selectForRestore(fileName);
+    });
+    $(document).on('click', '#externalized-backups-tbody tr', function(e) {
+      if ($(e.target).closest('button,a,input').length) return;
+      var $r = $(this).find('.externalized-backup-radio');
+      if ($r.length && $r.prop('disabled') !== true) {
+        $r.prop('checked', true).trigger('change');
+      }
+    });
+    $('#externalized-restore-change-key').on('click', function(e) {
+      e.preventDefault();
+      var current = ($('#externalized-restore-override-key').val() || '').toString();
+      tpShowRestoreKeyModal('', function(newKey) {
+        $('#externalized-restore-override-key').val(newKey);
+        tpToast('success', "<?php echo addslashes($lang->get('done')); ?>", '', { timeOut: 800 });
+      }, current);
+    });
+    $('#externalized-restore-start').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.prepareRestore(this);
+    });
+    $('#recovery-package-create-btn').on('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      tpExternalized.createRecoveryPackage();
+    });
+
+    if ($('#externalized').hasClass('active') || $('#externalized').hasClass('show')) {
+      tpExternalized.refreshAll();
     }
   }
 };
@@ -2451,6 +3283,7 @@ function loadDiskUsage() {
 
 $(document).ready(function () {
     tpScheduled.init();
+    tpExternalized.init();
 
     loadDiskUsage();
     window.tpDiskUsageInterval = setInterval(loadDiskUsage, 60000);
