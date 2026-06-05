@@ -142,8 +142,10 @@ $userInfo = DB::queryFirstRow(
 
 if (empty($userInfo['avatar']) === true) {
     $avatar = './assets/images/photo.jpg';
+    $hasCustomAvatar = false;
 } else {
     $avatar = './assets/avatars/' . strval($userInfo['avatar']);
+    $hasCustomAvatar = true;
 }
 
 // Get Groups name
@@ -467,9 +469,14 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
                                             </div>
                                             <div class="col-sm-8">
-                                                <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
+                                                <?php if ((string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
                                                     <div class="text-muted small text-right mb-2"><?php echo $lang->get('avatar_upload_hint'); ?></div>
-                                                    <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                    <div class="d-flex justify-content-end align-items-center">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mr-2<?php echo $hasCustomAvatar === true ? '' : ' hidden'; ?>" id="profile-avatar-delete" title="<?php echo $lang->get('delete_current_avatar'); ?>" aria-label="<?php echo $lang->get('delete_current_avatar'); ?>" data-toggle="tooltip">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-warning" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                    </div>
                                                 <?php 
                                                 }
                                                 ?>

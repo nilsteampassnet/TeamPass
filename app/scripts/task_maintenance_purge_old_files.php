@@ -32,6 +32,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once __DIR__.'/../sources/main.functions.php';
+require_once __DIR__.'/../sources/backup.functions.php';
 
 // init
 loadClasses('DB');
@@ -111,5 +112,11 @@ function purgeTemporaryFiles(): void
             //Close dir
             closedir($dir);
         }
+    }
+
+    // Purge stale backup/externalized restore staging directories in system temp.
+    // Nominal restore paths clean themselves; this catches interrupted CLI runs.
+    if (function_exists('tpBackupPurgeOldTemporaryDirectories')) {
+        tpBackupPurgeOldTemporaryDirectories((string) sys_get_temp_dir(), 86400);
     }
 }

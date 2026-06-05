@@ -169,6 +169,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 toastr.remove();
                 if (myData.error === false) {
                     $('#profile-user-avatar').attr('src', 'assets/avatars/' + myData.filename);
+                    $('#profile-avatar-delete').removeClass('hidden');
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
                     toastr.error(
@@ -203,6 +204,66 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     uploader_photo.init();
+
+    try { $('#profile-avatar-delete[data-toggle="tooltip"]').tooltip(); } catch (e) {}
+
+    $(document).on('click', '#profile-avatar-delete', function(e) {
+        e.preventDefault();
+
+        launchConfirmDialog(
+            '<?php echo addslashes($lang->get('delete_current_avatar')); ?>',
+            '<?php echo addslashes($lang->get('delete_current_avatar_confirm')); ?>',
+            function() {
+                toastr.remove();
+                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'user_profile_avatar_delete',
+                        data: prepareExchangedData(JSON.stringify({}), 'encode', '<?php echo $session->get('key'); ?>'),
+                        isprofileupdate: true,
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        try {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        } catch (e) {
+                            toastr.remove();
+                            toastr.error(
+                                'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
+                                '',
+                                { closeButton: true }
+                            );
+                            return false;
+                        }
+
+                        toastr.remove();
+                        if (data.error === true) {
+                            toastr.error(
+                                data.message || '<?php echo addslashes($lang->get('avatar_delete_failed')); ?>',
+                                '',
+                                { closeButton: true }
+                            );
+                            return false;
+                        }
+
+                        $('#profile-user-avatar').attr('src', data.avatar_url || './assets/images/photo.jpg');
+                        $('#profile-avatar-delete').addClass('hidden');
+                        toastr.success(
+                            data.message || '<?php echo addslashes($lang->get('avatar_deleted')); ?>',
+                            '',
+                            {
+                                timeOut: 2000,
+                                progressBar: true
+                            }
+                        );
+                    }
+                );
+            },
+            '<?php echo addslashes($lang->get('delete')); ?>'
+        );
+    });
 
 
     // Save user settings

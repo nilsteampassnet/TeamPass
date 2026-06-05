@@ -126,20 +126,28 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                     <div class='card-body'>
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo $lang->get('on_the_fly'); ?></a>
+                                <a class="nav-link active" id="oneshot-tab" data-toggle="tab" href="#oneshot" role="tab" aria-controls="oneshot"><?php echo $lang->get('on_the_fly'); ?></a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled"><?php echo $lang->get('scheduled'); ?></a>
+                                <a class="nav-link" id="scheduled-tab" data-toggle="tab" href="#scheduled" role="tab" aria-controls="scheduled"><?php echo $lang->get('scheduled'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="externalized-tab" data-toggle="tab" href="#externalized" role="tab" aria-controls="externalized"><?php echo $lang->get('bck_externalized_tab'); ?></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="recovery-package-tab" data-toggle="tab" href="#recovery-package" role="tab" aria-controls="recovery-package"><span class="badge badge-danger"><?php echo $lang->get('bck_recovery_package_title'); ?></span></a>
                             </li>
                         </ul>
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="oneshot" role="tabpanel" aria-labelledby="oneshot-tab">
-
-                                <div class="mt-4">
-                                    <div class="callout callout-info">
-                                        <h4><?php echo $lang->get('admin_action_db_backup'); ?></h4>
-                                        <small class="form-text text-muted mt-4">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <i class="fas fa-database mr-2"></i>
+                                        <strong><?php echo $lang->get('admin_action_db_backup'); ?></strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="form-text text-muted mb-4">
                                             <?php echo $lang->get('explanation_for_oneshot_backup'); ?>
                                         </small>
 
@@ -166,6 +174,19 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                                     <small class="form-text text-muted"><?php echo $lang->get('bck_onthefly_comment_help'); ?></small>
                                                 </div>
                                             </div>
+                                            <div class="row mt-2">
+                                                <div class="col-3">
+                                                    <span class="text-bold"><?php echo $lang->get('bck_include_documents'); ?></span>
+                                                </div>
+                                                <div class="col-9">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" id="onthefly-include-documents" value="1">
+                                                        <label class="form-check-label" for="onthefly-include-documents">
+                                                            <?php echo $lang->get('bck_include_documents_help'); ?>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
 
                                             <div class="row mt-3 hidden" id="onthefly-backup-progress"></div>
                                             <div class="row mt-3">
@@ -175,10 +196,13 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                     </div>
                                 </div>
 
-                                <div class="mt-4">
-                                    <div class="callout callout-info">
-                                        <h4><?php echo $lang->get('admin_action_db_restore'); ?></h4>
-                                        <small class="form-text text-muted mt-4">
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <i class="fas fa-upload mr-2"></i>
+                                        <strong><?php echo $lang->get('admin_action_db_restore'); ?></strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="form-text text-muted mb-4">
                                             <?php echo $lang->get('explanation_for_oneshot_restore'); ?>
                                         </small>
 
@@ -220,22 +244,25 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                     </div>
                                 </div>
 
-                                <div class="mt-4" id="onthefly-server-backups-block">
-                                    <div class="callout callout-info">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h4 class="mb-0"><?php echo $lang->get('bck_onthefly_server_backups'); ?></h4>
-                                            <div class="btn-group btn-group-sm" role="group" aria-label="<?php echo $lang->get('bck_onthefly_server_backups'); ?>">
-                                                <button type="button" class="btn btn-sm btn-outline-warning" id="onthefly-meta-orphans-btn" title="<?php echo $lang->get('bck_meta_orphans_btn_title'); ?>" data-toggle="tooltip">
-                                                    <i class="fas fa-exclamation-triangle"></i>
-                                                    <span class="badge badge-danger ml-1 d-none" id="onthefly-meta-orphans-badge">0</span>
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-secondary" id="onthefly-server-backups-refresh" title="<?php echo $lang->get('bck_onthefly_refresh_list'); ?>">
+                                <div class="card mt-3" id="onthefly-server-backups-block">
+                                    <div class="card-header d-flex align-items-center justify-content-between w-100">
+                                        <div class="mr-2">
+                                            <i class="fa-solid fa-rectangle-list mr-2"></i>
+                                            <strong><?php echo $lang->get('bck_onthefly_server_backups'); ?></strong>
+                                        </div>
+                                        <div class="btn-group btn-group-sm ml-auto flex-shrink-0" role="group" aria-label="<?php echo $lang->get('bck_onthefly_server_backups'); ?>">
+                                            <button type="button" class="btn btn-sm btn-outline-warning" id="onthefly-meta-orphans-btn" title="<?php echo $lang->get('bck_meta_orphans_btn_title'); ?>" data-toggle="tooltip">
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                                <span class="badge badge-danger ml-1 d-none" id="onthefly-meta-orphans-badge">0</span>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-secondary" id="onthefly-server-backups-refresh" title="<?php echo $lang->get('bck_onthefly_refresh_list'); ?>">
                                                 <i class="fas fa-sync-alt"></i>
                                             </button>
-                                            </div>
                                         </div>
+                                    </div>
+                                    <div class="card-body">
 
-                                        <div class="table-responsive mt-3">
+                                        <div class="table-responsive">
                                             <table class="table table-sm table-hover mb-1">
                                                 <thead>
                                                     <tr>
@@ -350,6 +377,19 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                                     </small>
                                                 </div>
 
+                                                <div class="row mb-3">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_include_documents'); ?>
+                                                        <small class="form-text text-muted">
+                                                            <?php echo $lang->get('bck_include_documents_help'); ?>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end align-items-start">
+                                                        <div class="toggle toggle-modern" id="scheduled-include-documents" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="scheduled-include-documents_input" value="0">
+                                                    </div>
+                                                </div>
+
                                                 
                                                 <hr class="my-4">
 
@@ -457,6 +497,436 @@ if (!empty($resolvedBackupScriptPasskey['success']) && !empty($resolvedBackupScr
                                                     </div>
                                                 </div>
 
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="externalized" role="tabpanel" aria-labelledby="externalized-tab">
+                                <div class="row">
+                                    <div class="col-12 col-lg-6">
+                                        <div class="card mt-3">
+                                            <div class="card-header">
+                                                <i class="fas fa-upload mr-2"></i>
+                                                <strong><?php echo $lang->get('bck_externalized_title'); ?></strong>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="externalized-alert" class="alert d-none" role="alert"></div>
+
+                                                <div class="row mb-4">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_externalized_enabled'); ?>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end">
+                                                        <div class="toggle toggle-modern" id="externalized-enabled" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="externalized-enabled_input" value="0">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-destination-type"><?php echo $lang->get('bck_externalized_destination_type'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <select class="form-control form-control-sm" id="externalized-destination-type">
+                                                            <option value="local_directory"><?php echo $lang->get('bck_externalized_destination_local_directory'); ?></option>
+                                                            <option value="sftp"><?php echo $lang->get('bck_externalized_destination_sftp'); ?></option>
+                                                            <option value="webdav"><?php echo $lang->get('bck_externalized_destination_webdav'); ?></option>
+                                                            <option value="s3"><?php echo $lang->get('bck_externalized_destination_s3'); ?></option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <label class="form-label" for="externalized-target-dir" id="externalized-target-dir-label"><?php echo $lang->get('bck_externalized_target_dir'); ?></label>
+                                                    <input class="form-control" type="text" id="externalized-target-dir"
+                                                        placeholder="<?php echo $lang->get('bck_externalized_target_dir_placeholder'); ?>"
+                                                        data-local-placeholder="<?php echo $lang->get('bck_externalized_target_dir_placeholder'); ?>"
+                                                        data-sftp-placeholder="<?php echo $lang->get('bck_externalized_sftp_remote_path_placeholder'); ?>"
+                                                        data-webdav-placeholder="<?php echo $lang->get('bck_externalized_webdav_remote_path_placeholder'); ?>"
+                                                        data-s3-placeholder="<?php echo $lang->get('bck_externalized_s3_prefix_placeholder'); ?>">
+                                                    <small class="form-text text-muted mt-2" id="externalized-target-dir-help"
+                                                        data-local-help="<?php echo $lang->get('bck_externalized_target_dir_help'); ?>"
+                                                        data-sftp-help="<?php echo $lang->get('bck_externalized_sftp_remote_path_help'); ?>"
+                                                        data-webdav-help="<?php echo $lang->get('bck_externalized_webdav_remote_path_help'); ?>"
+                                                        data-s3-help="<?php echo $lang->get('bck_externalized_s3_prefix_help'); ?>">
+                                                        <?php echo $lang->get('bck_externalized_target_dir_help'); ?>
+                                                    </small>
+                                                </div>
+
+                                                <div id="externalized-sftp-fields" style="display:none;">
+                                                    <div class="row mb-3">
+                                                        <div class="col-8">
+                                                            <label class="form-label" for="externalized-sftp-host"><?php echo $lang->get('bck_externalized_sftp_host'); ?></label>
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <label class="form-label" for="externalized-sftp-port"><?php echo $lang->get('bck_externalized_sftp_port'); ?></label>
+                                                        </div>
+                                                        <div class="col-8">
+                                                            <input class="form-control" type="text" id="externalized-sftp-host" autocomplete="off">
+                                                        </div>
+                                                        <div class="col-4">
+                                                            <input class="form-control" type="number" min="1" max="65535" id="externalized-sftp-port" value="22">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-sftp-username"><?php echo $lang->get('bck_externalized_sftp_username'); ?></label>
+                                                        <input class="form-control" type="text" id="externalized-sftp-username" autocomplete="off">
+                                                    </div>
+
+                                                    <div class="row mb-3">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-sftp-auth-type"><?php echo $lang->get('bck_externalized_sftp_auth_type'); ?></label>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <select class="form-control form-control-sm" id="externalized-sftp-auth-type">
+                                                                <option value="password"><?php echo $lang->get('bck_externalized_sftp_auth_password'); ?></option>
+                                                                <option value="private_key"><?php echo $lang->get('bck_externalized_sftp_auth_private_key'); ?></option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3 externalized-sftp-password-fields">
+                                                        <label class="form-label" for="externalized-sftp-password"><?php echo $lang->get('bck_externalized_sftp_password'); ?></label>
+                                                        <input class="form-control" type="password" id="externalized-sftp-password" autocomplete="new-password" placeholder="<?php echo $lang->get('bck_externalized_secret_keep_existing'); ?>">
+                                                    </div>
+
+                                                    <div class="mb-3 externalized-sftp-private-key-fields" style="display:none;">
+                                                        <label class="form-label" for="externalized-sftp-private-key"><?php echo $lang->get('bck_externalized_sftp_private_key'); ?></label>
+                                                        <textarea class="form-control" id="externalized-sftp-private-key" rows="4" autocomplete="off" placeholder="<?php echo $lang->get('bck_externalized_secret_keep_existing'); ?>"></textarea>
+                                                    </div>
+
+                                                    <div class="mb-4 externalized-sftp-private-key-fields" style="display:none;">
+                                                        <label class="form-label" for="externalized-sftp-private-key-passphrase"><?php echo $lang->get('bck_externalized_sftp_private_key_passphrase'); ?></label>
+                                                        <input class="form-control" type="password" id="externalized-sftp-private-key-passphrase" autocomplete="new-password" placeholder="<?php echo $lang->get('bck_externalized_secret_keep_existing'); ?>">
+                                                    </div>
+                                                </div>
+
+                                                <div id="externalized-webdav-fields" style="display:none;">
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-webdav-url"><?php echo $lang->get('bck_externalized_webdav_url'); ?></label>
+                                                        <input class="form-control" type="url" id="externalized-webdav-url" autocomplete="off" placeholder="<?php echo $lang->get('bck_externalized_webdav_url_placeholder'); ?>">
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-webdav-username"><?php echo $lang->get('bck_externalized_webdav_username'); ?></label>
+                                                        <input class="form-control" type="text" id="externalized-webdav-username" autocomplete="off">
+                                                    </div>
+
+                                                    <div class="mb-4">
+                                                        <label class="form-label" for="externalized-webdav-password"><?php echo $lang->get('bck_externalized_webdav_password'); ?></label>
+                                                        <input class="form-control" type="password" id="externalized-webdav-password" autocomplete="new-password" placeholder="<?php echo $lang->get('bck_externalized_secret_keep_existing'); ?>">
+                                                    </div>
+                                                </div>
+
+                                                <div id="externalized-s3-fields" style="display:none;">
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-s3-endpoint"><?php echo $lang->get('bck_externalized_s3_endpoint'); ?></label>
+                                                        <input class="form-control" type="url" id="externalized-s3-endpoint" autocomplete="off" placeholder="<?php echo $lang->get('bck_externalized_s3_endpoint_placeholder'); ?>">
+                                                        <small class="form-text text-muted mt-2"><?php echo $lang->get('bck_externalized_s3_endpoint_help'); ?></small>
+                                                    </div>
+
+                                                    <div class="row mb-3">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-s3-region"><?php echo $lang->get('bck_externalized_s3_region'); ?></label>
+                                                            <input class="form-control" type="text" id="externalized-s3-region" autocomplete="off" placeholder="us-east-1">
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-s3-bucket"><?php echo $lang->get('bck_externalized_s3_bucket'); ?></label>
+                                                            <input class="form-control" type="text" id="externalized-s3-bucket" autocomplete="off">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-s3-access-key"><?php echo $lang->get('bck_externalized_s3_access_key'); ?></label>
+                                                        <input class="form-control" type="text" id="externalized-s3-access-key" autocomplete="off">
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label class="form-label" for="externalized-s3-secret-key"><?php echo $lang->get('bck_externalized_s3_secret_key'); ?></label>
+                                                        <input class="form-control" type="password" id="externalized-s3-secret-key" autocomplete="new-password" placeholder="<?php echo $lang->get('bck_externalized_secret_keep_existing'); ?>">
+                                                    </div>
+
+                                                    <div class="row mb-4">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-s3-path-style"><?php echo $lang->get('bck_externalized_s3_path_style'); ?></label>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <select class="form-control form-control-sm" id="externalized-s3-path-style">
+                                                                <option value="1"><?php echo $lang->get('yes'); ?></option>
+                                                                <option value="0"><?php echo $lang->get('no'); ?></option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-format"><?php echo $lang->get('bck_externalized_backup_format'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <select class="form-control form-control-sm" id="externalized-format">
+                                                            <option value="tpbackup"><?php echo $lang->get('bck_externalized_format_tpbackup'); ?></option>
+                                                            <option value="sql"><?php echo $lang->get('bck_externalized_format_sql'); ?></option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_include_documents'); ?>
+                                                        <small class="form-text text-muted">
+                                                            <?php echo $lang->get('bck_include_documents_help'); ?>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end align-items-start">
+                                                        <div class="toggle toggle-modern" id="externalized-include-documents" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="externalized-include-documents_input" value="0">
+                                                    </div>
+                                                </div>
+
+                                                <hr class="my-4">
+
+                                                <div class="row mb-3">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_externalized_run_after_scheduled'); ?>
+                                                        <small class="form-text text-muted">
+                                                            <?php echo $lang->get('bck_externalized_run_after_scheduled_help'); ?>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end align-items-start">
+                                                        <div class="toggle toggle-modern" id="externalized-run-after-scheduled" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="externalized-run-after-scheduled_input" value="0">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-9">
+                                                        <?php echo $lang->get('bck_externalized_schedule_enabled'); ?>
+                                                        <small class="form-text text-muted">
+                                                            <?php echo $lang->get('bck_externalized_schedule_help'); ?>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-3 d-flex justify-content-end align-items-start">
+                                                        <div class="toggle toggle-modern" id="externalized-schedule-enabled" data-toggle-on="false"></div>
+                                                        <input type="hidden" id="externalized-schedule-enabled_input" value="0">
+                                                    </div>
+                                                </div>
+
+                                                <div id="externalized-schedule-fields">
+                                                    <div class="row mb-3">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-schedule-frequency"><?php echo $lang->get('bck_scheduled_frequency'); ?></label>
+                                                        </div>
+                                                        <div class="col-6 d-flex justify-content-end">
+                                                            <select class="form-control form-control-sm" id="externalized-schedule-frequency">
+                                                                <option value="daily"><?php echo $lang->get('bck_frequency_daily'); ?></option>
+                                                                <option value="weekly"><?php echo $lang->get('bck_frequency_weekly'); ?></option>
+                                                                <option value="monthly"><?php echo $lang->get('bck_frequency_monthly'); ?></option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row mb-3">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-schedule-time"><?php echo $lang->get('bck_scheduled_time'); ?></label>
+                                                        </div>
+                                                        <div class="col-6 d-flex justify-content-end">
+                                                            <input class="form-control" type="time" id="externalized-schedule-time" value="02:00">
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row mb-3 d-none" id="externalized-schedule-weekly-wrap">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-schedule-dow"><?php echo $lang->get('bck_scheduled_dow'); ?></label>
+                                                        </div>
+                                                        <div class="col-6 d-flex justify-content-end">
+                                                            <select class="form-control form-control-sm" id="externalized-schedule-dow">
+                                                                <option value="1"><?php echo $lang->get('monday'); ?></option>
+                                                                <option value="2"><?php echo $lang->get('tuesday'); ?></option>
+                                                                <option value="3"><?php echo $lang->get('wednesday'); ?></option>
+                                                                <option value="4"><?php echo $lang->get('thursday'); ?></option>
+                                                                <option value="5"><?php echo $lang->get('friday'); ?></option>
+                                                                <option value="6"><?php echo $lang->get('saturday'); ?></option>
+                                                                <option value="7"><?php echo $lang->get('sunday'); ?></option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row mb-3 d-none" id="externalized-schedule-monthly-wrap">
+                                                        <div class="col-6">
+                                                            <label class="form-label" for="externalized-schedule-dom"><?php echo $lang->get('bck_scheduled_dom'); ?></label>
+                                                        </div>
+                                                        <div class="col-6 d-flex justify-content-end">
+                                                            <input class="form-control" type="number" min="1" max="31" id="externalized-schedule-dom" value="1">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <hr class="my-4">
+
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-retention-days"><?php echo $lang->get('bck_externalized_retention_days'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="1" max="3650" id="externalized-retention-days" value="30">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-4">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-retention-count"><?php echo $lang->get('bck_externalized_retention_count'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="1" max="999" id="externalized-retention-count" value="10">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-3">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-retry-attempts"><?php echo $lang->get('bck_externalized_retry_attempts'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="1" max="5" id="externalized-retry-attempts" value="3">
+                                                    </div>
+                                                </div>
+
+                                                <div class="row mb-4">
+                                                    <div class="col-6">
+                                                        <label class="form-label" for="externalized-retry-delay-seconds"><?php echo $lang->get('bck_externalized_retry_delay_seconds'); ?></label>
+                                                    </div>
+                                                    <div class="col-6 d-flex justify-content-end">
+                                                        <input class="form-control" type="number" min="0" max="60" id="externalized-retry-delay-seconds" value="5">
+                                                    </div>
+                                                </div>
+
+                                                <div class="d-flex gap-2">
+                                                    <button type="button" class="btn btn-primary" id="externalized-save-btn">
+                                                        <i class="fas fa-save mr-1"></i><?php echo $lang->get('bck_scheduled_save'); ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-secondary ml-2" id="externalized-test-btn">
+                                                        <i class="fas fa-check mr-1"></i><?php echo $lang->get('bck_externalized_test_destination'); ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-success ml-2" id="externalized-run-btn" disabled>
+                                                        <i class="fas fa-play mr-1"></i><?php echo $lang->get('bck_externalized_run_now'); ?>
+                                                    </button>
+                                                    <button type="button" class="btn btn-outline-secondary ml-2" id="externalized-refresh-btn">
+                                                        <i class="fas fa-sync-alt mr-1"></i><?php echo $lang->get('bck_scheduled_refresh'); ?>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="card mt-3">
+                                            <div class="card-header">
+                                                <i class="fas fa-eye mr-2"></i>
+                                                <strong><?php echo $lang->get('bck_externalized_status'); ?></strong>
+                                            </div>
+                                            <div class="card-body">
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_test_at'); ?>:</strong> <span id="externalized-last-test">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_scheduled_next_run_at'); ?>:</strong> <span id="externalized-next-run">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_run_at'); ?>:</strong> <span id="externalized-last-run">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_completed_at'); ?>:</strong> <span id="externalized-last-completed">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_scheduled_last_status'); ?>:</strong> <span id="externalized-last-status">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_scheduled_last_message'); ?>:</strong> <span id="externalized-last-message">-</span></div>
+                                                <hr>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_file'); ?>:</strong> <span id="externalized-last-file" class="text-monospace small">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_size'); ?>:</strong> <span id="externalized-last-size">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_purge_at'); ?>:</strong> <span id="externalized-last-purge">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_last_purge_deleted'); ?>:</strong> <span id="externalized-last-purge-deleted">0</span></div>
+                                                <hr>
+                                                <div><strong><?php echo $lang->get('bck_externalized_current_format'); ?>:</strong> <span id="externalized-current-format">-</span></div>
+                                                <div><strong><?php echo $lang->get('bck_externalized_current_destination'); ?>:</strong> <span id="externalized-current-destination" class="text-monospace small">-</span></div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-12 col-lg-6">
+                                        <div class="card mt-3">
+                                            <div class="card-header d-flex align-items-center justify-content-between">
+                                                <div>
+                                                    <i class="fa-solid fa-rectangle-list mr-2"></i>
+                                                    <strong><?php echo $lang->get('bck_externalized_backups_list'); ?></strong>
+                                                </div>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" id="externalized-files-refresh-btn" title="<?php echo $lang->get('bck_scheduled_refresh'); ?>" aria-label="<?php echo $lang->get('bck_scheduled_refresh'); ?>">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm table-striped" id="externalized-backups-table">
+                                                        <thead>
+                                                            <tr>
+                                                                <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_date'); ?></th>
+                                                                <th class="text-nowrap"><?php echo $lang->get('bck_onthefly_col_size'); ?></th>
+                                                                <th class="text-nowrap"><?php echo $lang->get('bck_col_teampass_version'); ?></th>
+                                                                <th class="text-right text-nowrap"><?php echo $lang->get('bck_onthefly_col_action'); ?></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="externalized-backups-tbody"></tbody>
+                                                    </table>
+                                                </div>
+                                                <small class="form-text text-muted">
+                                                    <?php echo $lang->get('bck_externalized_backups_list_help'); ?>
+                                                </small>
+
+                                                <div class="mt-3" id="externalized-restore-block">
+                                                    <input type="hidden" id="externalized-restore-server-file" value="">
+                                                    <input type="hidden" id="externalized-restore-override-key" value="">
+                                                    <div class="alert alert-info py-2 px-3 mb-3" id="externalized-restore-selected" style="display:none;">
+                                                        <i class="fas fa-info-circle"></i>
+                                                        <?php echo sprintf($lang->get('bck_selected_server_backup'), '<b><span id="externalized-restore-selected-name"></span></b>'); ?><br>
+                                                        <?php echo $lang->get('bck_instance_encryption_key'); ?> <b><?php echo $lang->get('bck_instance_key'); ?></b> (<?php echo $lang->get('bck_no_manual_key_required'); ?>)
+                                                        <div class="mt-2">
+                                                            <a href="#" class="small" id="externalized-restore-change-key"><?php echo $lang->get('bck_restore_use_other_key'); ?></a>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="row mt-3">
+                                                        <button type="button" class="btn btn-info ml-1" id="externalized-restore-start" disabled><?php echo $lang->get('prepare_restore'); ?></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="tab-pane fade" id="recovery-package" role="tabpanel" aria-labelledby="recovery-package-tab">
+                                <div class="row">
+                                    <div class="col-12 col-lg-7">
+                                        <div class="card mt-3">
+                                            <div class="card-header">
+                                                <i class="fas fa-key mr-2"></i>
+                                                <strong><?php echo $lang->get('bck_recovery_package_title'); ?></strong>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="recovery-package-alert" class="alert d-none" role="alert"></div>
+                                                <div class="alert alert-warning">
+                                                    <?php echo $lang->get('bck_recovery_package_warning'); ?>
+                                                </div>
+
+                                                <small class="form-text text-muted mb-3">
+                                                    <?php echo $lang->get('bck_recovery_package_help'); ?>
+                                                </small>
+
+                                                <div class="form-group">
+                                                    <label for="recovery-package-passphrase"><?php echo $lang->get('bck_recovery_package_passphrase'); ?></label>
+                                                    <input class="form-control" type="password" id="recovery-package-passphrase" autocomplete="new-password" minlength="12">
+                                                </div>
+
+                                                <div class="form-group">
+                                                    <label for="recovery-package-passphrase-confirm"><?php echo $lang->get('bck_recovery_package_passphrase_confirm'); ?></label>
+                                                    <input class="form-control" type="password" id="recovery-package-passphrase-confirm" autocomplete="new-password" minlength="12">
+                                                </div>
+
+                                                <button type="button" class="btn btn-warning" id="recovery-package-create-btn">
+                                                    <i class="fas fa-download mr-1"></i><?php echo $lang->get('bck_recovery_package_generate'); ?>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
