@@ -114,6 +114,7 @@ var TP_HEALTH_L10N = {
     backup_last_compatible_backup: "<?php echo addslashes($lang->get('health_backup_last_compatible_backup')); ?>",
     backup_type_scheduled: "<?php echo addslashes($lang->get('health_backup_scheduled')); ?>",
     backup_type_onthefly: "<?php echo addslashes($lang->get('health_backup_onthefly')); ?>",
+    backup_type_externalized: "<?php echo addslashes($lang->get('health_backup_externalized')); ?>",
     excluded_label: "<?php echo addslashes($lang->get('health_excluded_label')); ?>",
     excluded_deleted_users: "<?php echo addslashes($lang->get('health_excluded_deleted_users')); ?>",
     excluded_system_accounts: "<?php echo addslashes($lang->get('health_excluded_system_accounts')); ?>",
@@ -688,23 +689,29 @@ function tpRenderBackups(report) {
 
     var scheduled = dirs.scheduled || {};
     var onthefly = dirs.onthefly || {};
+    var externalized = dirs.externalized || {};
 
     var schedStats = scheduled.stats || {};
     var flyStats = onthefly.stats || {};
+    var extStats = externalized.stats || {};
 
     // Indicators
     var sCompat = Number(schedStats.compatible || 0);
     var sTotal = Number(schedStats.total_files || 0);
     var fCompat = Number(flyStats.compatible || 0);
     var fTotal = Number(flyStats.total_files || 0);
+    var eCompat = Number(extStats.compatible || 0);
+    var eTotal = Number(extStats.total_files || 0);
 
     $('#health-backups-scheduled-compatible').text(String(sCompat) + '/' + String(sTotal));
     $('#health-backups-onthefly-compatible').text(String(fCompat) + '/' + String(fTotal));
+    $('#health-backups-externalized-compatible').text(String(eCompat) + '/' + String(eTotal));
     $('#health-backups-anomalies').text(String(Number((b.summary && b.summary.anomalies_total) || 0)));
 
     // Paths
     $('#health-backup-scheduled-path').text(tpEscapeHtml(scheduled.path || ''));
     $('#health-backup-onthefly-path').text(tpEscapeHtml(onthefly.path || ''));
+    $('#health-backup-externalized-path').text(tpEscapeHtml(externalized.path || ''));
 
     // Scheduler card + "last job" indicator
     var sch = b.scheduler || {};
@@ -728,19 +735,26 @@ function tpRenderBackups(report) {
     var $sum = $('#health-backups-dirs-summary');
     $sum.empty();
 
-    function addRow(label, a, b) {
-        $sum.append('<tr><td>' + tpEscapeHtml(label) + '</td><td>' + tpEscapeHtml(a) + '</td><td>' + tpEscapeHtml(b) + '</td></tr>');
+    function addRow(label, a, b, c) {
+        $sum.append(
+            '<tr>' +
+            '<td>' + tpEscapeHtml(label) + '</td>' +
+            '<td>' + tpEscapeHtml(a) + '</td>' +
+            '<td>' + tpEscapeHtml(b) + '</td>' +
+            '<td>' + tpEscapeHtml(c) + '</td>' +
+            '</tr>'
+        );
     }
 
-    addRow(TP_HEALTH_L10N.backup_total_files, Number(schedStats.total_files || 0), Number(flyStats.total_files || 0));
-    addRow(TP_HEALTH_L10N.backup_compatible, Number(schedStats.compatible || 0), Number(flyStats.compatible || 0));
-    addRow(TP_HEALTH_L10N.backup_incompatible, Number(schedStats.incompatible || 0), Number(flyStats.incompatible || 0));
-    addRow(TP_HEALTH_L10N.backup_schema_unknown, Number(schedStats.unknown_schema || 0), Number(flyStats.unknown_schema || 0));
-    addRow(TP_HEALTH_L10N.backup_meta_missing, Number(schedStats.missing_meta || 0), Number(flyStats.missing_meta || 0));
-    addRow(TP_HEALTH_L10N.backup_meta_orphans, Number(schedStats.meta_orphans || 0), Number(flyStats.meta_orphans || 0));
-    addRow(TP_HEALTH_L10N.backup_tp_version_mismatch, Number(schedStats.tp_version_mismatch || 0), Number(flyStats.tp_version_mismatch || 0));
-    addRow(TP_HEALTH_L10N.backup_last_backup, tpEscapeHtml(schedStats.last_backup_at_human || ''), tpEscapeHtml(flyStats.last_backup_at_human || ''));
-    addRow(TP_HEALTH_L10N.backup_last_compatible_backup, tpEscapeHtml(schedStats.last_compatible_backup_at_human || ''), tpEscapeHtml(flyStats.last_compatible_backup_at_human || ''));
+    addRow(TP_HEALTH_L10N.backup_total_files, Number(schedStats.total_files || 0), Number(flyStats.total_files || 0), Number(extStats.total_files || 0));
+    addRow(TP_HEALTH_L10N.backup_compatible, Number(schedStats.compatible || 0), Number(flyStats.compatible || 0), Number(extStats.compatible || 0));
+    addRow(TP_HEALTH_L10N.backup_incompatible, Number(schedStats.incompatible || 0), Number(flyStats.incompatible || 0), Number(extStats.incompatible || 0));
+    addRow(TP_HEALTH_L10N.backup_schema_unknown, Number(schedStats.unknown_schema || 0), Number(flyStats.unknown_schema || 0), Number(extStats.unknown_schema || 0));
+    addRow(TP_HEALTH_L10N.backup_meta_missing, Number(schedStats.missing_meta || 0), Number(flyStats.missing_meta || 0), Number(extStats.missing_meta || 0));
+    addRow(TP_HEALTH_L10N.backup_meta_orphans, Number(schedStats.meta_orphans || 0), Number(flyStats.meta_orphans || 0), Number(extStats.meta_orphans || 0));
+    addRow(TP_HEALTH_L10N.backup_tp_version_mismatch, Number(schedStats.tp_version_mismatch || 0), Number(flyStats.tp_version_mismatch || 0), Number(extStats.tp_version_mismatch || 0));
+    addRow(TP_HEALTH_L10N.backup_last_backup, tpEscapeHtml(schedStats.last_backup_at_human || ''), tpEscapeHtml(flyStats.last_backup_at_human || ''), tpEscapeHtml(extStats.last_backup_at_human || ''));
+    addRow(TP_HEALTH_L10N.backup_last_compatible_backup, tpEscapeHtml(schedStats.last_compatible_backup_at_human || ''), tpEscapeHtml(flyStats.last_compatible_backup_at_human || ''), tpEscapeHtml(extStats.last_compatible_backup_at_human || ''));
 
     // Directories note (expected schema/version)
     var dirNote = '';
@@ -763,6 +777,7 @@ function tpRenderBackups(report) {
     }
     addDirStatusLine(TP_HEALTH_L10N.backup_type_scheduled, scheduled);
     addDirStatusLine(TP_HEALTH_L10N.backup_type_onthefly, onthefly);
+    addDirStatusLine(TP_HEALTH_L10N.backup_type_externalized, externalized);
     $('#health-backups-dirs-status').html(dirsStatusHtml);
 
     // Key backups (latest + latest compatible)
@@ -801,6 +816,7 @@ function tpRenderBackups(report) {
 
     addKeyRow(TP_HEALTH_L10N.backup_type_scheduled, schedStats);
     addKeyRow(TP_HEALTH_L10N.backup_type_onthefly, flyStats);
+    addKeyRow(TP_HEALTH_L10N.backup_type_externalized, extStats);
 
     // Note (overall summary + last backup age)
     var noteHtml = '';
@@ -824,7 +840,10 @@ function tpRenderBackups(report) {
         $hist.append('<tr><td colspan="6" class="text-muted">' + tpEscapeHtml(TP_HEALTH_L10N.no_data) + '</td></tr>');
     } else {
         h.forEach(function(x) {
-            var typeLabel = (x.type || '').toLowerCase() === 'scheduled' ? TP_HEALTH_L10N.backup_type_scheduled : TP_HEALTH_L10N.backup_type_onthefly;
+            var rawType = (x.type || '').toLowerCase();
+            var typeLabel = rawType === 'scheduled'
+                ? TP_HEALTH_L10N.backup_type_scheduled
+                : (rawType === 'externalized' ? TP_HEALTH_L10N.backup_type_externalized : TP_HEALTH_L10N.backup_type_onthefly);
             $hist.append(
                 '<tr>' +
                 '<td>' + tpEscapeHtml(x.mtime_human || '') + '</td>' +
