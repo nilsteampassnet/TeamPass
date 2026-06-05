@@ -487,7 +487,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | `login` | string | ❌ | Login identifier |
 | `email` | string | ❌ | Email address |
 | `url` | string | ❌ | Associated URL |
-| `tags` | string | ❌ | Comma-separated tags |
+| `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
 | `icon` | string | ❌ | FontAwesome icon code |
 
@@ -564,7 +564,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | `login` | string | ❌ | New login identifier |
 | `email` | string | ❌ | New email address |
 | `url` | string | ❌ | New URL |
-| `tags` | string | ❌ | New tags (comma-separated) |
+| `tags` | string | ❌ | New tags, separated by spaces or commas (replaces existing tags). Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
 | `icon` | string | ❌ | New FontAwesome icon code |
 | `folder_id` | integer | ❌ | Move to new folder |

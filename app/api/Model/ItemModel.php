@@ -596,17 +596,27 @@ class ItemModel
 
     /**
      * Splits the tags string into individual tags and inserts them into the database.
+     *
+     * Tags are stored one per row in a varchar(30) column. TeamPass uses whitespace as the
+     * canonical separator (web UI, browser extension); commas are also accepted for robustness
+     * and to round-trip the comma-separated GET response. Each tag is trimmed, lowercased and
+     * capped at 30 characters to avoid silent truncation or strict-mode INSERT failures.
+     *
      * @param int $newID - The ID of the item to associate tags with
-     * @param string $tags - A comma-separated string of tags
+     * @param string $tags - A whitespace- or comma-separated string of tags
      */
     private function addTags(int $newID, string $tags) : void
     {
-        $tagsArray = explode(',', $tags);
+        $tagsArray = preg_split('/[\s,]+/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+        if ($tagsArray === false) {
+            return;
+        }
         foreach ($tagsArray as $tag) {
-            if (!empty($tag)) {
+            $tag = mb_substr(trim($tag), 0, 30);
+            if ($tag !== '') {
                 DB::insert(
                     prefixTable('tags'),
-                    ['item_id' => $newID, 'tag' => strtolower($tag)]
+                    ['item_id' => $newID, 'tag' => mb_strtolower($tag)]
                 );
             }
         }
