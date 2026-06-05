@@ -48,7 +48,7 @@ function tpCliErr(string $msg): void
 
 function tpCliHelp(): void
 {
-    tpCliOut('Usage: php app/scripts/restore.php --file "/path/to/backup.sql" --auth-token "TOKEN" [--force-disconnect]');
+    tpCliOut('Usage: php app/scripts/restore.php --file "/path/to/backup.sql|backup.tpbackup" --auth-token "TOKEN" [--force-disconnect]');
 }
 
 function tpCliIsInteractive(): bool
@@ -211,13 +211,16 @@ $now = time();
 $status = strval($payload['status'] ?? '');
 $expiresAt = intval($payload['expires_at'] ?? 0);
 $payloadFilePath = strval($payload['file']['path'] ?? '');
+$restoreStage = is_array($payload['restore_stage'] ?? null) ? (array) $payload['restore_stage'] : [];
 
 if ($status !== 'pending') {
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is not pending (status=' . $status . ').');
     exit(31);
 }
 
 if ($expiresAt > 0 && $expiresAt < $now) {
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     $log('ERROR', 'Authorization token is expired.');
     exit(32);
 }
@@ -465,20 +468,53 @@ try {
     $tmpRand = uniqid('', true);
 }
 
-$tmpSql = rtrim((string) sys_get_temp_dir(), '/\\') . '/defuse_temp_restore_' . getmypid() . '_' . time() . '_' . $tmpRand . '.sql';
-
-$dec = tpDefuseDecryptWithCandidates($file, $tmpSql, $keysToTry, $SETTINGS);
-if (empty($dec['success'])) {
-    @unlink($tmpSql);
-    $log('ERROR', 'Decrypt failed: ' . (string) $dec['message']);
+$tmpSql = function_exists('tpBackupRestoreTempPath')
+    ? tpBackupRestoreTempPath('sql')
+    : (rtrim((string) sys_get_temp_dir(), '/\\') . '/defuse_temp_restore_' . getmypid() . '_' . time() . '_' . $tmpRand . '.sql');
+$tmpPackageZip = '';
+$packageManifest = [];
+if ($tmpSql === '') {
+    $log('ERROR', 'Unable to create temporary SQL path.');
     $payload['status'] = 'failed';
     $payload['finished_at'] = time();
-    $payload['error'] = 'decrypt_failed';
+    $payload['error'] = 'temp_file_failed';
     tpRestoreAuthorizationUpdatePayload($authId, $payload);
-    exit(41);
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
+    exit(40);
 }
 
-$log('INFO', 'Decrypt OK. Importing SQL...');
+if (tpBackupIsPackageFilename($file) === true) {
+    $packageRestore = tpBackupPreparePackageSqlForRestore($file, $tmpSql, $keysToTry, $SETTINGS, true, true);
+    if (empty($packageRestore['success'])) {
+        @unlink($tmpSql);
+        $errorCode = (string) ($packageRestore['error_code'] ?? 'package_invalid');
+        $log('ERROR', 'Package restore preparation failed: ' . $errorCode . ' - ' . (string) ($packageRestore['message'] ?? ''));
+        $payload['status'] = 'failed';
+        $payload['finished_at'] = time();
+        $payload['error'] = $errorCode;
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        exit($errorCode === 'DECRYPT_FAILED' ? 41 : 43);
+    }
+
+    $tmpPackageZip = (string) ($packageRestore['decrypted_package_path'] ?? '');
+    $packageManifest = is_array($packageRestore['manifest'] ?? null) ? $packageRestore['manifest'] : [];
+    $log('INFO', 'Package decrypt and validation OK. Importing SQL payload...');
+} else {
+    $dec = tpDefuseDecryptWithCandidates($file, $tmpSql, $keysToTry, $SETTINGS);
+    if (empty($dec['success'])) {
+        @unlink($tmpSql);
+        $log('ERROR', 'Decrypt failed: ' . (string) $dec['message']);
+        $payload['status'] = 'failed';
+        $payload['finished_at'] = time();
+        $payload['error'] = 'decrypt_failed';
+        tpRestoreAuthorizationUpdatePayload($authId, $payload);
+        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+        exit(41);
+    }
+
+    $log('INFO', 'Decrypt OK. Importing SQL...');
+}
 
 // Restore SQL (chunked)
 $totalSize = filesize($tmpSql);
@@ -492,7 +528,11 @@ $totalExecuted = 0;
 $handle = fopen($tmpSql, 'r');
 if ($handle === false) {
     @unlink($tmpSql);
+    if ($tmpPackageZip !== '') {
+        @unlink($tmpPackageZip);
+    }
     $log('ERROR', 'Unable to open decrypted SQL file.');
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
     exit(42);
 }
 
@@ -624,6 +664,38 @@ try {
 
     $log('INFO', 'SQL import completed. Total statements executed: ' . $totalExecuted);
 
+    if ($tmpPackageZip !== '' && is_array($packageManifest) === true) {
+        $documents = is_array($packageManifest['documents'] ?? null) ? $packageManifest['documents'] : [];
+        $documentsIncluded = (($documents['included'] ?? false) === true);
+        if ($documentsIncluded === true) {
+            $log('INFO', 'Restoring package documents...');
+            $docRestore = tpBackupRestorePackageDocumentsFromZip($tmpPackageZip, $packageManifest, $SETTINGS, true);
+            if (empty($docRestore['success'])) {
+                $failed = is_array($docRestore['failed'] ?? null) ? $docRestore['failed'] : [];
+                $details = [];
+                foreach (array_slice($failed, 0, 10) as $failure) {
+                    if (is_array($failure) === false) {
+                        continue;
+                    }
+                    $details[] = (string) ($failure['package_path'] ?? '') . ':' . (string) ($failure['error_code'] ?? '');
+                }
+                throw new RuntimeException(
+                    'Document restore failed: '
+                    . (string) ($docRestore['message'] ?? 'unknown')
+                    . (empty($details) ? '' : ' [' . implode(', ', $details) . ']')
+                );
+            }
+
+            $log(
+                'INFO',
+                'Document restore completed. Restored: '
+                . (int) ($docRestore['restored_count'] ?? 0)
+                . ', already present: '
+                . (int) ($docRestore['skipped_existing_count'] ?? 0)
+            );
+        }
+    }
+
     $payload['status'] = 'success';
     $payload['finished_at'] = time();
     tpRestoreAuthorizationUpdatePayload($authId, $payload);
@@ -642,6 +714,10 @@ try {
         fclose($handle);
     }
     @unlink($tmpSql);
+    if ($tmpPackageZip !== '') {
+        @unlink($tmpPackageZip);
+    }
+    tpBackupCleanupExternalizedRestoreStage($restoreStage);
 
     // Re-force maintenance mode ON at the end (dump may have restored it to 0).
     try {
