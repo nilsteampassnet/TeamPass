@@ -740,6 +740,18 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                             <div class="col-lg-3 col-6">
                                 <div class="small-box bg-info">
                                     <div class="inner">
+                                        <h3 id="health-backups-externalized-compatible">0/0</h3>
+                                        <p><?php echo $lang->get('health_backup_externalized_compatible'); ?></p>
+                                    </div>
+                                    <div class="icon">
+                                        <i class="fas fa-upload"></i>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-3 col-6">
+                                <div class="small-box bg-info">
+                                    <div class="inner">
                                         <h3 id="health-backups-last-job">-</h3>
                                         <p><?php echo $lang->get('health_backup_last_job'); ?></p>
                                         <div class="small text-white-50" id="health-backups-last-job-at"></div>
@@ -778,6 +790,10 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                             <span class="text-muted"><?php echo $lang->get('health_backup_onthefly'); ?>:</span>
                                             <code id="health-backup-onthefly-path">-</code>
                                         </div>
+                                        <div class="mb-3">
+                                            <span class="text-muted"><?php echo $lang->get('health_backup_externalized'); ?>:</span>
+                                            <code id="health-backup-externalized-path">-</code>
+                                        </div>
 
                                         <div class="table-responsive">
                                             <table class="table table-sm table-striped">
@@ -786,6 +802,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                                                     <th><?php echo $lang->get('health_backup_metric'); ?></th>
                                                     <th><?php echo $lang->get('health_backup_scheduled'); ?></th>
                                                     <th><?php echo $lang->get('health_backup_onthefly'); ?></th>
+                                                    <th><?php echo $lang->get('health_backup_externalized'); ?></th>
                                                 </tr>
                                                 </thead>
                                                 <tbody id="health-backups-dirs-summary"></tbody>
