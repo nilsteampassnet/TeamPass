@@ -435,7 +435,7 @@ class TaskWorker {
                         }
 
                         if ($resolvedTargetDir['success'] === false) {
-                            throw new Exception('Invalid externalized backup destination: ' . (string)($resolvedTargetDir['reason'] ?? 'unknown'));
+                            throw new Exception('Invalid externalized backup destination: ' . (string) $resolvedTargetDir['reason']);
                         }
 
                         $targetDir = (string) $resolvedTargetDir['path'];
@@ -447,7 +447,7 @@ class TaskWorker {
                     } else {
                         $resolvedTargetDir = tpBackupResolveExternalizedDestination($destinationType, $requestedTargetDir, $this->settings);
                         if ($resolvedTargetDir['success'] === false) {
-                            throw new Exception('Invalid externalized backup destination: ' . (string)($resolvedTargetDir['reason'] ?? 'unknown'));
+                            throw new Exception('Invalid externalized backup destination: ' . (string) $resolvedTargetDir['reason']);
                         }
 
                         $targetDir = (string) $resolvedTargetDir['path'];
@@ -469,8 +469,8 @@ class TaskWorker {
                         ]);
                     }
 
-                    if (($res['success'] ?? false) !== true) {
-                        throw new Exception((string)($res['message'] ?? 'Externalized backup failed'));
+                    if ($res['success'] !== true) {
+                        throw new Exception((string) $res['message']);
                     }
 
                     if (tpBackupExternalizedDestinationTypeIsRemote($destinationType) === true) {
@@ -483,8 +483,8 @@ class TaskWorker {
                         }
 
                         $upload = tpBackupUploadExternalizedBackup($destinationType, $targetDir, (string) $res['filepath'], $this->settings, $destinationConfig);
-                        if (($upload['success'] ?? false) !== true) {
-                            throw new Exception('Externalized backup upload failed: ' . (string)($upload['reason'] ?? 'unknown'));
+                        if ($upload['success'] !== true) {
+                            throw new Exception('Externalized backup upload failed: ' . (string) $upload['reason']);
                         }
 
                         $res['filepath'] = (string) $upload['path'];
@@ -885,6 +885,11 @@ class TaskWorker {
         $this->upsertMiscSetting('bck_scheduled_last_completed_at', (string)time());
     }
 
+    /**
+     * Persist the current externalized backup status and message.
+     *
+     * @return void
+     */
     private function updateExternalizedState(string $status, string $message): void
     {
         $this->upsertMiscSetting('bck_externalized_last_status', $status);
@@ -910,6 +915,11 @@ class TaskWorker {
         return number_format($value, 1, '.', '') . ' ' . $units[$i];
     }
 
+    /**
+     * Escape a value for safe inclusion in an HTML backup report email.
+     *
+     * @return string
+     */
     private function escapeEmailValue(string $value): string
     {
         return htmlspecialchars($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -952,6 +962,12 @@ class TaskWorker {
         return array_merge($context, $overrides);
     }
 
+    /**
+     * Build the HTML block describing the externalized backup step for the report email.
+     *
+     * @param array<string, mixed> $externalizedReport
+     * @return string
+     */
     private function buildExternalizedReportEmailBlock(Language $lang, array $externalizedReport): string
     {
         if (empty($externalizedReport)) {
@@ -1000,6 +1016,13 @@ class TaskWorker {
         );
     }
 
+    /**
+     * Queue the consolidated scheduled (and externalized) backup report email.
+     *
+     * @param array<string, mixed> $externalizedReport
+     * @param array<string, mixed> $scheduledReport
+     * @return void
+     */
     private function queueScheduledBackupReportEmail(string $status, string $message, array $externalizedReport = [], array $scheduledReport = []): void
     {
         $enabled = (int)$this->getMiscSetting('bck_scheduled_email_report_enabled', '0');
@@ -1122,6 +1145,11 @@ class TaskWorker {
         return strval($val);
     }
 
+    /**
+     * Decrypt an externalized destination secret stored in settings; '' when unset or invalid.
+     *
+     * @return string
+     */
     private function decryptExternalizedSecretSetting(string $key): string
     {
         $stored = $this->getMiscSetting($key, '');
@@ -1141,6 +1169,11 @@ class TaskWorker {
         return '';
     }
 
+    /**
+     * Return the stored SFTP destination configuration with its secrets decrypted.
+     *
+     * @return array<string, mixed>
+     */
     private function getExternalizedSftpConfig(): array
     {
         $password = $this->decryptExternalizedSecretSetting('bck_externalized_sftp_password');
@@ -1165,6 +1198,11 @@ class TaskWorker {
         ];
     }
 
+    /**
+     * Return the stored WebDAV destination configuration with its password decrypted.
+     *
+     * @return array<string, mixed>
+     */
     private function getExternalizedWebdavConfig(): array
     {
         $password = $this->decryptExternalizedSecretSetting('bck_externalized_webdav_password');
@@ -1177,6 +1215,11 @@ class TaskWorker {
         ];
     }
 
+    /**
+     * Return the stored S3 destination configuration with its secret key decrypted.
+     *
+     * @return array<string, mixed>
+     */
     private function getExternalizedS3Config(): array
     {
         $secretKey = $this->decryptExternalizedSecretSetting('bck_externalized_s3_secret_key');
@@ -1192,6 +1235,11 @@ class TaskWorker {
         ];
     }
 
+    /**
+     * Return the stored configuration for the given externalized destination type.
+     *
+     * @return array<string, mixed>
+     */
     private function getExternalizedDestinationConfig(string $destinationType): array
     {
         if ($destinationType === 'sftp') {
@@ -1244,16 +1292,22 @@ class TaskWorker {
         return $deleted;
     }
 
+    /**
+     * Apply retention to externalized backups (by age and count); return the number of files deleted.
+     *
+     * @param array<string, mixed> $destinationConfig
+     * @return int
+     */
     private function purgeOldExternalizedBackups(string $dir, int $retentionDays, int $retentionCount, string $destinationType = 'local_directory', array $destinationConfig = []): int
     {
         $purge = tpBackupPurgeExternalizedBackups($destinationType, $dir, $retentionDays, $retentionCount, $this->settings, $destinationConfig);
-        if (($purge['success'] ?? false) === true) {
-            return (int) ($purge['deleted'] ?? 0);
+        if ($purge['success'] === true) {
+            return (int) $purge['deleted'];
         }
 
         if (LOG_TASKS === true) {
             $this->logger->log(
-                'externalized_backup: retention skipped for destination_type=' . $destinationType . ' reason=' . (string) ($purge['reason'] ?? 'unknown'),
+                'externalized_backup: retention skipped for destination_type=' . $destinationType . ' reason=' . (string) $purge['reason'],
                 'WARNING'
             );
         }

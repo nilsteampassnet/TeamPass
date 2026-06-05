@@ -210,6 +210,11 @@ $post_data = filter_input(
         return sprintf('%.1f %s', $bytes, $units[$i]);
     }
 
+    /**
+     * Translate an externalized destination error reason code into a localized message.
+     *
+     * @return string
+     */
     function tpExternalizedDestinationErrorMessage(Language $lang, string $reason): string
     {
         $map = [
@@ -269,6 +274,12 @@ $post_data = filter_input(
         return (string) $lang->get($map[$reason] ?? 'bck_externalized_destination_invalid');
     }
 
+    /**
+     * Decrypt an externalized destination secret stored in settings; '' when unset or invalid.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return string
+     */
     function tpExternalizedDecryptSecretSetting(string $key, array $SETTINGS): string
     {
         $stored = (string) tpGetSettingsValue($key, '');
@@ -288,6 +299,12 @@ $post_data = filter_input(
         return '';
     }
 
+    /**
+     * Encrypt and persist an externalized destination secret. A blank value keeps the stored one.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return void
+     */
     function tpExternalizedEncryptSecretSetting(string $key, string $clearValue, array $SETTINGS): void
     {
         if ($clearValue === '') {
@@ -301,6 +318,12 @@ $post_data = filter_input(
         }
     }
 
+    /**
+     * Return the stored SFTP destination configuration with its secrets decrypted.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetSftpConfig(array $SETTINGS): array
     {
         $password = tpExternalizedDecryptSecretSetting('bck_externalized_sftp_password', $SETTINGS);
@@ -325,6 +348,13 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Merge submitted SFTP settings with stored values; blank secrets keep the stored ones.
+     *
+     * @param array<string, mixed> $dataReceived
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetSftpConfigFromRequest(array $dataReceived, array $SETTINGS): array
     {
         $stored = tpExternalizedGetSftpConfig($SETTINGS);
@@ -362,6 +392,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return SFTP settings that are safe to expose to the UI (no secret values).
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetSftpPublicSettings(array $SETTINGS): array
     {
         $config = tpExternalizedGetSftpConfig($SETTINGS);
@@ -377,6 +413,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return the stored WebDAV destination configuration with its password decrypted.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetWebdavConfig(array $SETTINGS): array
     {
         $password = tpExternalizedDecryptSecretSetting('bck_externalized_webdav_password', $SETTINGS);
@@ -389,6 +431,13 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Merge submitted WebDAV settings with stored values; a blank password keeps the stored one.
+     *
+     * @param array<string, mixed> $dataReceived
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetWebdavConfigFromRequest(array $dataReceived, array $SETTINGS): array
     {
         $stored = tpExternalizedGetWebdavConfig($SETTINGS);
@@ -405,6 +454,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return WebDAV settings that are safe to expose to the UI (no password value).
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetWebdavPublicSettings(array $SETTINGS): array
     {
         $config = tpExternalizedGetWebdavConfig($SETTINGS);
@@ -416,6 +471,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return the stored S3 destination configuration with its secret key decrypted.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetS3Config(array $SETTINGS): array
     {
         $secretKey = tpExternalizedDecryptSecretSetting('bck_externalized_s3_secret_key', $SETTINGS);
@@ -431,6 +492,13 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Merge submitted S3 settings with stored values; a blank secret key keeps the stored one.
+     *
+     * @param array<string, mixed> $dataReceived
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetS3ConfigFromRequest(array $dataReceived, array $SETTINGS): array
     {
         $stored = tpExternalizedGetS3Config($SETTINGS);
@@ -452,6 +520,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return S3 settings that are safe to expose to the UI (no secret key value).
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetS3PublicSettings(array $SETTINGS): array
     {
         $config = tpExternalizedGetS3Config($SETTINGS);
@@ -466,6 +540,12 @@ $post_data = filter_input(
         ];
     }
 
+    /**
+     * Return the stored configuration for the given externalized destination type.
+     *
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetDestinationConfig(string $destinationType, array $SETTINGS): array
     {
         $destinationType = tpBackupResolveExternalizedDestinationType($destinationType);
@@ -482,6 +562,13 @@ $post_data = filter_input(
         return [];
     }
 
+    /**
+     * Merge submitted settings with stored values for the given externalized destination type.
+     *
+     * @param array<string, mixed> $dataReceived
+     * @param array<string, mixed> $SETTINGS
+     * @return array<string, mixed>
+     */
     function tpExternalizedGetDestinationConfigFromRequest(string $destinationType, array $dataReceived, array $SETTINGS): array
     {
         $destinationType = tpBackupResolveExternalizedDestinationType($destinationType);
@@ -498,6 +585,12 @@ $post_data = filter_input(
         return [];
     }
 
+    /**
+     * Clear any pending recovery package reference from the current session.
+     *
+     * @param object $session
+     * @return void
+     */
     function tpRecoveryForgetSessionPackage($session): void
     {
         $current = $session->get('recovery-package-download');
@@ -1291,7 +1384,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'encode'
                 );
                 break;
-            } elseif ($session->get('user-admin') === 0) {
+            } elseif ($session->get('user-admin') !== 1) {
                 echo prepareExchangedData(
                     array(
                         'error' => true,
@@ -2115,7 +2208,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'path' => (string) $package['filepath'],
                     'filename' => (string) $package['filename'],
                     'expires_at' => $expiresAt,
-                    'size_bytes' => (int) ($package['size_bytes'] ?? 0),
+                    'size_bytes' => (int) $package['size_bytes'],
                 ]
             );
 
@@ -2124,7 +2217,7 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     'error' => false,
                     'message' => $lang->get('bck_recovery_package_created'),
                     'filename' => (string) $package['filename'],
-                    'size_bytes' => (int) ($package['size_bytes'] ?? 0),
+                    'size_bytes' => (int) $package['size_bytes'],
                     'expires_at' => $expiresAt,
                     'warnings' => is_array($package['warnings'] ?? null) ? $package['warnings'] : [],
                     'download' => 'sources/backups.queries.php?type=recovery_package_download'
@@ -2873,10 +2966,8 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                     $restoreStage = [];
                     $resolvedOverridePath = '';
                     $cleanupRestoreStage = static function () use (&$restoreStage): void {
-                        if ($restoreStage !== []) {
-                            tpBackupCleanupExternalizedRestoreStage($restoreStage);
-                            $restoreStage = [];
-                        }
+                        tpBackupCleanupExternalizedRestoreStage($restoreStage);
+                        $restoreStage = [];
                     };
 
                     if ($serverScope === 'externalized' && $operationId <= 0 && $serverFile !== '') {
@@ -2889,18 +2980,12 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                                 $SETTINGS,
                                 tpExternalizedGetDestinationConfig($externalizedDestinationType, $SETTINGS)
                             );
-                            if (($stage['success'] ?? false) !== true) {
-                                $fallbackReason = 'SFTP_DOWNLOAD_FAILED';
-                                if ($externalizedDestinationType === 'webdav') {
-                                    $fallbackReason = 'WEBDAV_DOWNLOAD_FAILED';
-                                } elseif ($externalizedDestinationType === 's3') {
-                                    $fallbackReason = 'S3_DOWNLOAD_FAILED';
-                                }
+                            if ($stage['success'] !== true) {
                                 echo prepareExchangedData(
                                     [
                                         'error' => true,
                                         'error_code' => 'REMOTE_STAGE_FAILED',
-                                        'message' => tpExternalizedDestinationErrorMessage($lang, (string) ($stage['reason'] ?? $fallbackReason)),
+                                        'message' => tpExternalizedDestinationErrorMessage($lang, (string) $stage['reason']),
                                     ],
                                     'encode'
                                 );
@@ -2909,14 +2994,14 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
 
                             $restoreStage = [
                                 'cleanup_required' => !empty($stage['cleanup_required']),
-                                'cleanup_dir' => (string) ($stage['cleanup_dir'] ?? ''),
-                                'path' => (string) ($stage['path'] ?? ''),
-                                'filename' => (string) ($stage['filename'] ?? ''),
-                                'destination_type' => (string) ($stage['destination_type'] ?? $externalizedDestinationType),
-                                'source_path' => (string) ($stage['source_path'] ?? ''),
-                                'size_bytes' => (int) ($stage['size_bytes'] ?? 0),
+                                'cleanup_dir' => (string) $stage['cleanup_dir'],
+                                'path' => (string) $stage['path'],
+                                'filename' => (string) $stage['filename'],
+                                'destination_type' => (string) $stage['destination_type'],
+                                'source_path' => (string) $stage['source_path'],
+                                'size_bytes' => (int) $stage['size_bytes'],
                             ];
-                            $resolvedOverridePath = (string) ($stage['path'] ?? '');
+                            $resolvedOverridePath = (string) $stage['path'];
                         }
                     }
 

@@ -664,7 +664,7 @@ try {
 
     $log('INFO', 'SQL import completed. Total statements executed: ' . $totalExecuted);
 
-    if ($tmpPackageZip !== '' && is_array($packageManifest) === true) {
+    if ($tmpPackageZip !== '') {
         $documents = is_array($packageManifest['documents'] ?? null) ? $packageManifest['documents'] : [];
         $documentsIncluded = (($documents['included'] ?? false) === true);
         if ($documentsIncluded === true) {

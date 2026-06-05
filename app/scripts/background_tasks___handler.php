@@ -286,20 +286,20 @@ class BackgroundTasksHandler {
                 'path_style' => ((int)$this->getSettingValue('bck_externalized_s3_path_style', '1') === 1) ? 1 : 0,
                 'prefix' => $targetDirSetting,
             ]);
-            $targetDir = (string)($validation['path'] ?? '');
+            $targetDir = (string) $validation['path'];
         } else {
             $resolvedTarget = tpBackupResolveExternalizedDestination($destinationType, $targetDirSetting, $this->settings);
             $validation = [
-                'success' => (bool)($resolvedTarget['success'] ?? false),
-                'path' => (string)($resolvedTarget['path'] ?? ''),
-                'reason' => (string)($resolvedTarget['reason'] ?? ''),
+                'success' => (bool) $resolvedTarget['success'],
+                'path' => (string) $resolvedTarget['path'],
+                'reason' => (string) $resolvedTarget['reason'],
             ];
             $targetDir = (string)$validation['path'];
         }
 
         $emptyTargetAllowed = $destinationType === 's3';
-        if (($validation['success'] ?? false) !== true || ($targetDir === '' && $emptyTargetAllowed === false)) {
-            $reason = (string)($validation['reason'] ?? 'unknown');
+        if ($validation['success'] !== true || ($targetDir === '' && $emptyTargetAllowed === false)) {
+            $reason = $validation['reason'] !== '' ? $validation['reason'] : 'unknown';
             $this->upsertSettingValue('bck_externalized_last_status', 'failed');
             $this->upsertSettingValue('bck_externalized_last_message', 'Invalid externalized backup destination: ' . $reason);
             if (LOG_TASKS === true) {

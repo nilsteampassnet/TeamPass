@@ -523,26 +523,51 @@ function tpCreateDatabaseBackup(array $SETTINGS, string $encryptionKey = '', arr
 // Unified .tpbackup package helpers
 // -----------------------------------------------------------------------------
 
+/**
+ * Return the internal format identifier for .tpbackup packages.
+ *
+ * @return string
+ */
 function tpBackupGetPackageFormatId(): string
 {
     return 'teampass.tpbackup';
 }
 
+/**
+ * Return the current .tpbackup package format version.
+ *
+ * @return int
+ */
 function tpBackupGetPackageFormatVersion(): int
 {
     return 1;
 }
 
+/**
+ * Return the file extension used for .tpbackup packages (without the dot).
+ *
+ * @return string
+ */
 function tpBackupGetPackageExtension(): string
 {
     return 'tpbackup';
 }
 
+/**
+ * Tell whether a filename refers to a .tpbackup package (case-insensitive).
+ *
+ * @return bool
+ */
 function tpBackupIsPackageFilename(string $filename): bool
 {
     return strtolower((string) pathinfo($filename, PATHINFO_EXTENSION)) === tpBackupGetPackageExtension();
 }
 
+/**
+ * Normalize a requested backup format to 'sql' or 'tpbackup' (defaults to 'sql').
+ *
+ * @return string
+ */
 function tpBackupNormalizeRequestedFormat(string $format): string
 {
     $format = strtolower(trim($format));
@@ -553,31 +578,61 @@ function tpBackupNormalizeRequestedFormat(string $format): string
     return 'sql';
 }
 
+/**
+ * Tell whether the given file extension is a supported backup format.
+ *
+ * @return bool
+ */
 function tpBackupFileExtensionIsSupported(string $extension): bool
 {
     return in_array(strtolower($extension), ['sql', tpBackupGetPackageExtension()], true);
 }
 
+/**
+ * Return the download type ('sql' or 'tpbackup') matching a backup filename.
+ *
+ * @return string
+ */
 function tpBackupGetDownloadTypeForFilename(string $filename): string
 {
     return tpBackupIsPackageFilename($filename) ? tpBackupGetPackageExtension() : 'sql';
 }
 
+/**
+ * Return the internal format identifier for .tprecovery packages.
+ *
+ * @return string
+ */
 function tpRecoveryGetPackageFormatId(): string
 {
     return 'teampass.recovery';
 }
 
+/**
+ * Return the current .tprecovery package format version.
+ *
+ * @return int
+ */
 function tpRecoveryGetPackageFormatVersion(): int
 {
     return 1;
 }
 
+/**
+ * Return the file extension used for .tprecovery packages (without the dot).
+ *
+ * @return string
+ */
 function tpRecoveryGetPackageExtension(): string
 {
     return 'tprecovery';
 }
 
+/**
+ * Build a unique .tprecovery package filename using the given prefix.
+ *
+ * @return string
+ */
 function tpRecoveryBuildPackageFilename(string $prefix = 'recovery-'): string
 {
     if (function_exists('GenerateCryptKey')) {
@@ -593,6 +648,11 @@ function tpRecoveryBuildPackageFilename(string $prefix = 'recovery-'): string
     return $prefix . time() . '-' . $token . '.' . tpRecoveryGetPackageExtension();
 }
 
+/**
+ * Return the absolute path to the TeamPass settings.php file.
+ *
+ * @return string
+ */
 function tpRecoveryGetSettingsFilePath(): string
 {
     if (defined('TEAMPASS_APP')) {
@@ -602,6 +662,11 @@ function tpRecoveryGetSettingsFilePath(): string
     return realpath(__DIR__ . '/../config/settings.php') ?: (__DIR__ . '/../config/settings.php');
 }
 
+/**
+ * Return the absolute path to the SECUREFILE secret file.
+ *
+ * @return string
+ */
 function tpRecoveryGetSecureFilePath(): string
 {
     if (defined('TEAMPASS_SECRETS') === false || defined('SECUREFILE') === false) {
@@ -687,6 +752,11 @@ function tpRecoveryBuildSettingsSummary(array $SETTINGS): array
     return $summary;
 }
 
+/**
+ * Tell whether a recovery package path points to a safe, expected temporary file.
+ *
+ * @return bool
+ */
 function tpRecoveryPackagePathIsSafe(string $path): bool
 {
     $real = realpath($path);
@@ -706,6 +776,11 @@ function tpRecoveryPackagePathIsSafe(string $path): bool
     return tpBackupIsResolvedPathInsideDirectory($real, $tmpReal);
 }
 
+/**
+ * Delete a recovery package file after validating that its path is safe.
+ *
+ * @return bool
+ */
 function tpRecoverySafeDeletePackage(string $path): bool
 {
     if (tpRecoveryPackagePathIsSafe($path) === false) {
@@ -916,7 +991,7 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Encryption failed: ' . (string) ($encryptResult['message'] ?? 'unknown error'),
+                'message' => 'Encryption failed: ' . (string) $encryptResult['message'],
             ];
         }
 
@@ -947,6 +1022,11 @@ function tpCreateRecoveryPackage(array &$SETTINGS, string $passphrase, array $op
     }
 }
 
+/**
+ * Tell whether a path looks absolute on Unix or Windows (including UNC shares).
+ *
+ * @return bool
+ */
 function tpBackupPathLooksAbsolute(string $path): bool
 {
     $normalized = str_replace('\\', '/', trim($path));
@@ -967,11 +1047,21 @@ function tpBackupGetSupportedExternalizedDestinationTypes(): array
     return ['local_directory', 'sftp', 'webdav', 's3'];
 }
 
+/**
+ * Normalize an externalized destination type to a known value.
+ *
+ * @return string
+ */
 function tpBackupNormalizeExternalizedDestinationType(string $destinationType): string
 {
     return strtolower(trim(str_replace("\0", '', $destinationType)));
 }
 
+/**
+ * Tell whether the externalized destination type is supported.
+ *
+ * @return bool
+ */
 function tpBackupExternalizedDestinationTypeIsSupported(string $destinationType): bool
 {
     return in_array(
@@ -981,6 +1071,11 @@ function tpBackupExternalizedDestinationTypeIsSupported(string $destinationType)
     );
 }
 
+/**
+ * Resolve an externalized destination type, falling back to a default when unknown.
+ *
+ * @return string
+ */
 function tpBackupResolveExternalizedDestinationType(string $destinationType): string
 {
     $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
@@ -991,6 +1086,11 @@ function tpBackupResolveExternalizedDestinationType(string $destinationType): st
     return 'local_directory';
 }
 
+/**
+ * Tell whether the destination type supports file operations (list/download/delete).
+ *
+ * @return bool
+ */
 function tpBackupExternalizedDestinationTypeSupportsFileOperations(string $destinationType): bool
 {
     $destinationType = tpBackupNormalizeExternalizedDestinationType($destinationType);
@@ -999,6 +1099,11 @@ function tpBackupExternalizedDestinationTypeSupportsFileOperations(string $desti
         && tpBackupExternalizedDestinationTypeIsSupported($destinationType) === true;
 }
 
+/**
+ * Tell whether the destination type is a remote transport (SFTP, WebDAV or S3).
+ *
+ * @return bool
+ */
 function tpBackupExternalizedDestinationTypeIsRemote(string $destinationType): bool
 {
     return in_array(tpBackupNormalizeExternalizedDestinationType($destinationType), ['sftp', 'webdav', 's3'], true) === true;
@@ -1090,6 +1195,11 @@ function tpBackupResolveExternalizedLocalDestinationDir(string $requestedDir, ar
     return ['success' => true, 'path' => $real, 'reason' => ''];
 }
 
+/**
+ * Normalize an SFTP remote path; return '' when it is not absolute or escapes upward.
+ *
+ * @return string
+ */
 function tpBackupNormalizeExternalizedSftpRemotePath(string $remotePath): string
 {
     $remotePath = trim(str_replace("\0", '', str_replace('\\', '/', $remotePath)));
@@ -1280,6 +1390,11 @@ function tpBackupOpenExternalizedSftpConnection(array $config): array
     }
 }
 
+/**
+ * Build the full SFTP remote path for a backup file inside the remote directory.
+ *
+ * @return string
+ */
 function tpBackupExternalizedSftpRemoteFilePath(string $remoteDir, string $filename): string
 {
     $filename = basename(str_replace('\\', '/', $filename));
@@ -1313,6 +1428,11 @@ function tpBackupReadExternalizedSftpMetadata($sftp, string $remoteFilePath): ar
     }
 }
 
+/**
+ * Normalize a WebDAV remote path; return '' when it is invalid.
+ *
+ * @return string
+ */
 function tpBackupNormalizeExternalizedWebdavRemotePath(string $remotePath): string
 {
     $remotePath = trim(str_replace("\0", '', str_replace('\\', '/', $remotePath)));
@@ -1418,6 +1538,11 @@ function tpBackupOpenExternalizedWebdavConnection(array $config): array
     ];
 }
 
+/**
+ * Build the full WebDAV remote path for a backup file inside the remote directory.
+ *
+ * @return string
+ */
 function tpBackupExternalizedWebdavRemoteFilePath(string $remoteDir, string $filename): string
 {
     $filename = basename(str_replace('\\', '/', $filename));
@@ -1433,6 +1558,11 @@ function tpBackupExternalizedWebdavRemoteFilePath(string $remoteDir, string $fil
     return rtrim($remoteDir, '/') . '/' . $filename;
 }
 
+/**
+ * Build an absolute WebDAV URL from the base URL and a remote path.
+ *
+ * @return string
+ */
 function tpBackupBuildExternalizedWebdavUrl(string $baseUrl, string $remotePath): string
 {
     $baseUrl = rtrim(trim($baseUrl), '/');
@@ -1452,6 +1582,14 @@ function tpBackupBuildExternalizedWebdavUrl(string $baseUrl, string $remotePath)
     return $baseUrl . '/' . implode('/', array_map('rawurlencode', $segments));
 }
 
+/**
+ * Send an authenticated WebDAV request through the given HTTP client.
+ *
+ * @param object $client HTTP client exposing a request() method
+ * @param array<string, mixed> $config
+ * @param array<string, mixed> $options
+ * @return mixed HTTP response object
+ */
 function tpBackupExternalizedWebdavRequest($client, array $config, string $method, string $remotePath, array $options = [])
 {
     $url = tpBackupBuildExternalizedWebdavUrl((string) ($config['url'] ?? ''), $remotePath);
@@ -1476,6 +1614,11 @@ function tpBackupExternalizedWebdavRequest($client, array $config, string $metho
     return $client->request($method, $url, $requestOptions);
 }
 
+/**
+ * Map a WebDAV HTTP status code to a TeamPass error reason code.
+ *
+ * @return string
+ */
 function tpBackupExternalizedWebdavReasonFromStatus(int $status, string $fallback): string
 {
     if ($status === 401 || $status === 403) {
@@ -1678,6 +1821,11 @@ function tpBackupTestExternalizedWebdavDestination(array $config): array
     }
 }
 
+/**
+ * Normalize an S3 object prefix (trim slashes, reject path traversal).
+ *
+ * @return string
+ */
 function tpBackupNormalizeExternalizedS3Prefix(string $prefix): string
 {
     $prefix = trim(str_replace("\0", '', str_replace('\\', '/', $prefix)));
@@ -1757,6 +1905,11 @@ function tpBackupValidateExternalizedS3Config(array $config): array
     return ['success' => true, 'reason' => '', 'path' => $prefix];
 }
 
+/**
+ * Return the default AWS S3 endpoint for the given region.
+ *
+ * @return string
+ */
 function tpBackupExternalizedS3DefaultEndpoint(string $region): string
 {
     return $region === 'us-east-1'
@@ -1807,6 +1960,11 @@ function tpBackupOpenExternalizedS3Connection(array $config): array
     ];
 }
 
+/**
+ * Build the S3 object key for a backup file under the given prefix.
+ *
+ * @return string
+ */
 function tpBackupExternalizedS3ObjectKey(string $prefix, string $filename): string
 {
     $filename = basename(str_replace('\\', '/', $filename));
@@ -1818,6 +1976,11 @@ function tpBackupExternalizedS3ObjectKey(string $prefix, string $filename): stri
     return $prefix === '' ? $filename : $prefix . '/' . $filename;
 }
 
+/**
+ * URL-encode an S3 path segment by segment for canonical requests.
+ *
+ * @return string
+ */
 function tpBackupExternalizedS3EncodePath(string $path): string
 {
     $path = trim(str_replace('\\', '/', $path), '/');
@@ -1828,6 +1991,12 @@ function tpBackupExternalizedS3EncodePath(string $path): string
     return implode('/', array_map('rawurlencode', explode('/', $path)));
 }
 
+/**
+ * Build the canonical query string used for AWS Signature V4.
+ *
+ * @param array<string, string|null> $query
+ * @return string
+ */
 function tpBackupExternalizedS3CanonicalQuery(array $query): string
 {
     ksort($query);
@@ -1864,16 +2033,10 @@ function tpBackupExternalizedS3BuildRequestTarget(array $config, string $key, ar
     } else {
         $canonicalUri = '/' . ($basePath !== '' ? $basePath . '/' : '');
         $canonicalUri .= $encodedKey !== '' ? $encodedKey : '';
-        if ($canonicalUri === '') {
-            $canonicalUri = '/';
-        }
         $requestHost = $bucket . '.' . $host . $port;
     }
 
     $canonicalUri = preg_replace('#/+#', '/', $canonicalUri) ?? $canonicalUri;
-    if ($canonicalUri === '') {
-        $canonicalUri = '/';
-    }
 
     $canonicalQuery = tpBackupExternalizedS3CanonicalQuery($query);
     $url = $scheme . '://' . $requestHost . $canonicalUri;
@@ -1889,6 +2052,11 @@ function tpBackupExternalizedS3BuildRequestTarget(array $config, string $key, ar
     ];
 }
 
+/**
+ * Derive the AWS Signature V4 signing key for the date, region and S3 service.
+ *
+ * @return string
+ */
 function tpBackupExternalizedS3SigningKey(string $secretKey, string $dateStamp, string $region): string
 {
     $kDate = hash_hmac('sha256', $dateStamp, 'AWS4' . $secretKey, true);
@@ -2043,6 +2211,11 @@ function tpBackupExternalizedS3Request(array $config, string $method, string $ke
     }
 }
 
+/**
+ * Map an S3 HTTP status code to a TeamPass error reason code.
+ *
+ * @return string
+ */
 function tpBackupExternalizedS3ReasonFromStatus(int $status, string $fallback): string
 {
     if ($status === 401 || $status === 403) {
@@ -2354,6 +2527,12 @@ function tpBackupUploadExternalizedBackup(string $destinationType, string $targe
     }
 }
 
+/**
+ * Tell whether a filename is a TeamPass externalized backup file.
+ * Used as a guard so retention and delete only ever touch TeamPass backups.
+ *
+ * @return bool
+ */
 function tpBackupExternalizedBackupFilenameIsAllowed(string $filename): bool
 {
     $filename = trim(str_replace("\0", '', str_replace('\\', '/', $filename)));
@@ -2519,8 +2698,8 @@ function tpBackupResolveExternalizedBackupFile(string $destinationType, string $
                 'root_path' => $rootPath,
                 'path' => $remoteFilePath,
                 'filename' => $filename,
-                'size_bytes' => (int) ($stat['size_bytes'] ?? 0),
-                'mtime' => (int) ($stat['mtime'] ?? 0),
+                'size_bytes' => (int) $stat['size_bytes'],
+                'mtime' => (int) $stat['mtime'],
                 'metadata' => tpBackupReadExternalizedWebdavMetadata($client, $webdavConfig, $remoteFilePath),
                 'remote' => true,
             ];
@@ -2596,8 +2775,8 @@ function tpBackupResolveExternalizedBackupFile(string $destinationType, string $
                 'root_path' => $prefix,
                 'path' => $objectKey,
                 'filename' => $filename,
-                'size_bytes' => (int) ($stat['size_bytes'] ?? 0),
-                'mtime' => (int) ($stat['mtime'] ?? 0),
+                'size_bytes' => (int) $stat['size_bytes'],
+                'mtime' => (int) $stat['mtime'],
                 'metadata' => tpBackupReadExternalizedS3Metadata($s3Config, $objectKey),
                 'remote' => true,
             ];
@@ -2623,8 +2802,8 @@ function tpBackupResolveExternalizedBackupFile(string $destinationType, string $
     if ($resolved['success'] === false) {
         return [
             'success' => false,
-            'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'),
-            'destination_type' => (string) ($resolved['destination_type'] ?? $destinationType),
+            'reason' => (string) $resolved['reason'],
+            'destination_type' => (string) $resolved['destination_type'],
             'root_path' => '',
             'path' => '',
             'filename' => $filename,
@@ -2694,7 +2873,7 @@ function tpBackupListExternalizedBackups(string $destinationType, string $target
             $objects = tpBackupExternalizedS3ListObjects($s3Config, $listPrefix);
             $files = [];
             foreach ($objects as $object) {
-                $objectKey = (string) ($object['key'] ?? '');
+                $objectKey = (string) $object['key'];
                 $filename = basename(str_replace('\\', '/', $objectKey));
                 if (tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
                     continue;
@@ -2706,8 +2885,8 @@ function tpBackupListExternalizedBackups(string $destinationType, string $target
                 $files[] = [
                     'name' => $filename,
                     'path' => $objectKey,
-                    'size_bytes' => (int) ($object['size_bytes'] ?? 0),
-                    'mtime' => (int) ($object['mtime'] ?? 0),
+                    'size_bytes' => (int) $object['size_bytes'],
+                    'mtime' => (int) $object['mtime'],
                     'metadata' => tpBackupReadExternalizedS3Metadata($s3Config, $objectKey),
                     'remote' => true,
                 ];
@@ -2833,7 +3012,7 @@ function tpBackupListExternalizedBackups(string $destinationType, string $target
             $rawList = tpBackupExternalizedWebdavPropfind($client, $webdavConfig, $rootPath, 1);
             $files = [];
             foreach ($rawList as $entry) {
-                $filename = basename(str_replace('\\', '/', (string) ($entry['name'] ?? '')));
+                $filename = basename(str_replace('\\', '/', (string) $entry['name']));
                 if ($filename === '' || !empty($entry['is_dir']) || tpBackupExternalizedBackupFilenameIsAllowed($filename) === false) {
                     continue;
                 }
@@ -2846,8 +3025,8 @@ function tpBackupListExternalizedBackups(string $destinationType, string $target
                 $files[] = [
                     'name' => $filename,
                     'path' => $remoteFilePath,
-                    'size_bytes' => (int) ($entry['size_bytes'] ?? 0),
-                    'mtime' => (int) ($entry['mtime'] ?? 0),
+                    'size_bytes' => (int) $entry['size_bytes'],
+                    'mtime' => (int) $entry['mtime'],
                     'metadata' => tpBackupReadExternalizedWebdavMetadata($client, $webdavConfig, $remoteFilePath),
                     'remote' => true,
                 ];
@@ -2881,8 +3060,8 @@ function tpBackupListExternalizedBackups(string $destinationType, string $target
     if ($resolved['success'] === false) {
         return [
             'success' => false,
-            'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'),
-            'destination_type' => (string) ($resolved['destination_type'] ?? $destinationType),
+            'reason' => (string) $resolved['reason'],
+            'destination_type' => (string) $resolved['destination_type'],
             'path' => '',
             'files' => [],
         ];
@@ -3051,7 +3230,7 @@ function tpBackupDeleteExternalizedBackup(string $destinationType, string $targe
 
     $resolved = tpBackupResolveExternalizedDestination($destinationType, $targetDir, $SETTINGS);
     if ($resolved['success'] === false) {
-        return ['success' => false, 'reason' => (string) ($resolved['reason'] ?? 'INVALID_DESTINATION'), 'deleted' => false, 'path' => ''];
+        return ['success' => false, 'reason' => (string) $resolved['reason'], 'deleted' => false, 'path' => ''];
     }
 
     $rootPath = (string) $resolved['path'];
@@ -3362,6 +3541,12 @@ function tpBackupStageExternalizedBackupForRestore(string $destinationType, stri
     }
 }
 
+/**
+ * Remove the temporary staging directory created when preparing a remote restore.
+ *
+ * @param array<string, mixed> $stage
+ * @return bool
+ */
 function tpBackupCleanupExternalizedRestoreStage(array $stage): bool
 {
     if (empty($stage['cleanup_required']) || empty($stage['cleanup_dir']) || is_scalar($stage['cleanup_dir']) === false) {
@@ -3414,6 +3599,11 @@ function tpBackupPurgeExternalizedBackups(string $destinationType, string $targe
     return ['success' => true, 'reason' => '', 'deleted' => $deleted];
 }
 
+/**
+ * Normalize a package ZIP entry path (forward slashes, no traversal).
+ *
+ * @return string
+ */
 function tpBackupNormalizePackageEntryPath(string $path): string
 {
     $path = trim(str_replace('\\', '/', $path));
@@ -3436,6 +3626,12 @@ function tpBackupNormalizePackageEntryPath(string $path): string
     return implode('/', $parts);
 }
 
+/**
+ * Recursively normalize a value into a JSON-safe structure.
+ *
+ * @param mixed $value
+ * @return mixed
+ */
 function tpBackupNormalizeJsonValue(mixed $value): mixed
 {
     if (!is_array($value)) {
@@ -3453,6 +3649,12 @@ function tpBackupNormalizeJsonValue(mixed $value): mixed
     return $value;
 }
 
+/**
+ * Encode a payload as canonical (key-sorted, escaped) JSON for checksums.
+ *
+ * @param array<mixed> $payload
+ * @return string
+ */
 function tpBackupCanonicalJson(array $payload): string
 {
     $json = json_encode(
@@ -3463,6 +3665,11 @@ function tpBackupCanonicalJson(array $payload): string
     return is_string($json) ? $json : '';
 }
 
+/**
+ * Return the SHA-256 hash of a file, or '' when it cannot be read.
+ *
+ * @return string
+ */
 function tpBackupFileSha256(string $path): string
 {
     if (is_file($path) === false) {
@@ -3473,6 +3680,11 @@ function tpBackupFileSha256(string $path): string
     return is_string($hash) ? $hash : '';
 }
 
+/**
+ * Create a unique temporary backup directory under the base dir; return its path or ''.
+ *
+ * @return string
+ */
 function tpBackupCreateTemporaryDirectory(string $baseDir): string
 {
     if ($baseDir === '' || is_dir($baseDir) === false || is_writable($baseDir) === false) {
@@ -3500,6 +3712,11 @@ function tpBackupCreateTemporaryDirectory(string $baseDir): string
     return '';
 }
 
+/**
+ * Recursively remove a TeamPass temporary backup directory.
+ *
+ * @return bool
+ */
 function tpBackupRemoveTemporaryDirectory(string $path): bool
 {
     $real = realpath($path);
@@ -3509,7 +3726,7 @@ function tpBackupRemoveTemporaryDirectory(string $path): bool
 
     $isInsidePackageTempDir = false;
     $cursor = $real;
-    while ($cursor !== '' && dirname($cursor) !== $cursor) {
+    while (dirname($cursor) !== $cursor) {
         if (str_starts_with(basename($cursor), 'tpbackup_tmp_') === true) {
             $isInsidePackageTempDir = true;
             break;
@@ -3606,6 +3823,11 @@ function tpBackupPurgeOldTemporaryDirectories(string $baseDir, int $olderThanSec
     return $stats;
 }
 
+/**
+ * Build a unique .tpbackup package filename using the given prefix.
+ *
+ * @return string
+ */
 function tpBackupBuildPackageFilename(string $prefix = ''): string
 {
     if (function_exists('GenerateCryptKey')) {
@@ -3684,6 +3906,12 @@ function tpBackupGetDocumentReferenceSummary(): array
     return $summary;
 }
 
+/**
+ * Count the document references declared in a package document summary.
+ *
+ * @param array<string, mixed> $documents
+ * @return int
+ */
 function tpBackupDocumentReferenceCount(array $documents): int
 {
     $count = 0;
@@ -3697,6 +3925,11 @@ function tpBackupDocumentReferenceCount(array $documents): int
     return $count;
 }
 
+/**
+ * Build an empty document summary structure for a package manifest.
+ *
+ * @return array<string, mixed>
+ */
 function tpBackupBuildEmptyDocumentSummary(bool $included = false, string $mode = 'not_requested'): array
 {
     $set = [
@@ -3718,6 +3951,11 @@ function tpBackupBuildEmptyDocumentSummary(bool $included = false, string $mode 
     ];
 }
 
+/**
+ * Return a safe storage basename (allow-listed characters) or '' when invalid.
+ *
+ * @return string
+ */
 function tpBackupSafeStorageBasename(string $filename): string
 {
     $filename = trim(str_replace("\0", '', $filename));
@@ -3738,6 +3976,11 @@ function tpBackupSafeStorageBasename(string $filename): string
     return preg_match('/^[A-Za-z0-9._-]+$/', $basename) === 1 ? $basename : '';
 }
 
+/**
+ * Resolve a filename inside a base directory; return '' on traversal or when outside.
+ *
+ * @return string
+ */
 function tpBackupResolveFileInBase(string $baseDir, string $filename): string
 {
     $basename = tpBackupSafeStorageBasename($filename);
@@ -3759,6 +4002,13 @@ function tpBackupResolveFileInBase(string $baseDir, string $filename): string
     return tpBackupIsResolvedPathInsideDirectory($real, $baseReal) === true ? $real : '';
 }
 
+/**
+ * Add a single document entry to the in-progress backup document catalog.
+ *
+ * @param array<string, mixed> $catalog
+ * @param array<string, mixed> $manifestData
+ * @return void
+ */
 function tpBackupAddDocumentEntryToCatalog(
     array &$catalog,
     string $setName,
@@ -3794,6 +4044,12 @@ function tpBackupAddDocumentEntryToCatalog(
     );
 }
 
+/**
+ * Build the catalog of documents (item attachments, KB files, avatars) to add to a package.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpBackupBuildDocumentCatalog(array $SETTINGS, bool $includeDocuments): array
 {
     $catalog = [
@@ -3984,6 +4240,12 @@ function tpBackupBuildDocumentCatalog(array $SETTINGS, bool $includeDocuments): 
     return $catalog;
 }
 
+/**
+ * Build the public, non-sensitive .meta.json sidecar data for a package.
+ *
+ * @param array<string, mixed> $manifest
+ * @return array<string, mixed>
+ */
 function tpBackupBuildPackagePublicMetadata(array $manifest, string $packagePath, string $manifestJson, string $comment = ''): array
 {
     $teampass = is_array($manifest['teampass'] ?? null) ? $manifest['teampass'] : [];
@@ -4111,7 +4373,7 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
                 'filepath' => '',
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => (string) ($dbBackup['message'] ?? 'Database backup creation failed.'),
+                'message' => (string) $dbBackup['message'],
             ];
         }
 
@@ -4237,7 +4499,7 @@ function tpCreateBackupPackage(array $SETTINGS, string $encryptionKey, array $op
                 'filepath' => $filepath,
                 'encrypted' => false,
                 'size_bytes' => 0,
-                'message' => 'Encryption failed: ' . (string) ($encryptResult['message'] ?? 'unknown error'),
+                'message' => 'Encryption failed: ' . (string) $encryptResult['message'],
             ];
         }
 
@@ -4845,6 +5107,11 @@ function tpDefuseDecryptWithCandidates(
         return ['success' => false, 'message' => ($lastMsg !== '' ? $lastMsg : 'Unable to decrypt')];
 }
 
+/**
+ * Return a unique temporary file path for restore operations; '' on failure.
+ *
+ * @return string
+ */
 function tpBackupRestoreTempPath(string $extension): string
 {
         $extension = trim($extension, ". \t\n\r\0\x0B");
@@ -4869,6 +5136,12 @@ function tpBackupRestoreTempPath(string $extension): string
         return '';
 }
 
+/**
+ * Return the SHA-256 hash of a ZIP entry's contents.
+ *
+ * @param \ZipArchive $zip
+ * @return string
+ */
 function tpBackupZipEntrySha256($zip, string $entryPath): string
 {
         $entryPath = tpBackupNormalizePackageEntryPath($entryPath);
@@ -4897,6 +5170,12 @@ function tpBackupZipEntrySha256($zip, string $entryPath): string
         return hash_final($ctx);
 }
 
+/**
+ * Extract a single ZIP entry to a destination file.
+ *
+ * @param \ZipArchive $zip
+ * @return array<string, mixed>
+ */
 function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile): array
 {
         $entryPath = tpBackupNormalizePackageEntryPath($entryPath);
@@ -4939,6 +5218,12 @@ function tpBackupExtractZipEntryToFile($zip, string $entryPath, string $destFile
         return ['success' => true, 'message' => ''];
 }
 
+/**
+ * Validate a decrypted .tpbackup ZIP and extract its SQL dump.
+ * Checks the manifest, format version, backup type and database/document checksums.
+ *
+ * @return array<string, mixed>
+ */
 function tpBackupValidatePackageZipAndExtractSql(
     string $zipPath,
     string $sqlDestFile,
@@ -5061,6 +5346,13 @@ function tpBackupValidatePackageZipAndExtractSql(
         }
 }
 
+/**
+ * Decrypt a .tpbackup package and prepare its SQL dump for restore.
+ *
+ * @param array<int, string> $candidateKeys
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpBackupPreparePackageSqlForRestore(
     string $packagePath,
     string $sqlDestFile,
@@ -5081,7 +5373,7 @@ function tpBackupPreparePackageSqlForRestore(
             return [
                 'success' => false,
                 'error_code' => 'DECRYPT_FAILED',
-                'message' => (string) ($dec['message'] ?? 'Unable to decrypt package.'),
+                'message' => (string) $dec['message'],
             ];
         }
 
@@ -5104,6 +5396,13 @@ function tpBackupPreparePackageSqlForRestore(
         }
 }
 
+/**
+ * Resolve the on-disk target path for a package document entry during restore.
+ *
+ * @param array<string, mixed> $entry
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = [], bool $createMissingDirs = true): array
 {
         $kind = is_scalar($entry['kind'] ?? null) ? (string) $entry['kind'] : '';
@@ -5176,6 +5475,13 @@ function tpBackupResolveDocumentRestoreTarget(array $entry, array $SETTINGS = []
         ];
 }
 
+/**
+ * Restore the document files contained in a .tpbackup package.
+ *
+ * @param array<string, mixed> $manifest
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpBackupRestorePackageDocumentsFromZip(
     string $zipPath,
     array $manifest,

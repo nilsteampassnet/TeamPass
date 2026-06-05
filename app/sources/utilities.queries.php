@@ -3694,6 +3694,12 @@ function tpListBackupFiles(string $dir, string $prefix, int $limit = 10, array $
 }
 
 
+/**
+ * Return externalized backup files for the health view, using the remote provider when available.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<mixed>
+ */
 function tpListExternalizedBackupFilesForHealth(string $destinationType, string $targetDir, array $SETTINGS, int $limit = 10): array
 {
     $destinationType = function_exists('tpBackupResolveExternalizedDestinationType') === true
@@ -3711,27 +3717,23 @@ function tpListExternalizedBackupFilesForHealth(string $destinationType, string 
     $destinationConfig = tpHealthGetExternalizedDestinationConfig($destinationType, $SETTINGS);
 
     $listed = tpBackupListExternalizedBackups($destinationType, $targetDir, $SETTINGS, $destinationConfig);
-    if (($listed['success'] ?? false) !== true) {
+    if ($listed['success'] !== true) {
         return array(
-            'error' => (string) ($listed['reason'] ?? 'destination_unavailable'),
+            'error' => $listed['reason'] !== '' ? $listed['reason'] : 'destination_unavailable',
             'destination_type' => $destinationType,
-            'path' => (string) ($listed['path'] ?? $targetDir),
+            'path' => $listed['path'] !== '' ? $listed['path'] : $targetDir,
         );
     }
 
     $items = array();
-    foreach (($listed['files'] ?? array()) as $entry) {
-        if (is_array($entry) === false) {
-            continue;
-        }
-
-        $name = isset($entry['name']) && is_scalar($entry['name']) ? (string) $entry['name'] : '';
+    foreach ($listed['files'] as $entry) {
+        $name = $entry['name'];
         if ($name === '') {
             continue;
         }
 
         $meta = is_array($entry['metadata'] ?? null) ? (array) $entry['metadata'] : array();
-        $path = isset($entry['path']) && is_scalar($entry['path']) ? (string) $entry['path'] : '';
+        $path = $entry['path'];
         if (empty($meta) === true && ($entry['remote'] ?? false) !== true && $path !== '' && function_exists('tpReadBackupMetadata') === true) {
             $meta = tpReadBackupMetadata($path);
         }
@@ -3747,8 +3749,8 @@ function tpListExternalizedBackupFilesForHealth(string $destinationType, string 
         }
 
         $comment = isset($meta['comment']) && is_scalar($meta['comment']) ? trim((string) $meta['comment']) : '';
-        $mtime = (int) ($entry['mtime'] ?? 0);
-        $sizeBytes = (int) ($entry['size_bytes'] ?? 0);
+        $mtime = $entry['mtime'];
+        $sizeBytes = $entry['size_bytes'];
 
         $items[] = array(
             'name' => $name,
@@ -3764,7 +3766,7 @@ function tpListExternalizedBackupFilesForHealth(string $destinationType, string 
     }
 
     usort($items, static function (array $a, array $b): int {
-        return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
+        return $b['mtime'] <=> $a['mtime'];
     });
 
     if ($limit <= 0) {
@@ -3774,6 +3776,12 @@ function tpListExternalizedBackupFilesForHealth(string $destinationType, string 
     return array_slice($items, 0, $limit);
 }
 
+/**
+ * Return the externalized destination configuration used by the backup health checks.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthGetExternalizedDestinationConfig(string $destinationType, array $SETTINGS): array
 {
     if ($destinationType === 'sftp') {
@@ -3791,6 +3799,12 @@ function tpHealthGetExternalizedDestinationConfig(string $destinationType, array
     return array();
 }
 
+/**
+ * Return the SFTP destination configuration for the health checks (secrets decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthGetExternalizedSftpConfig(array $SETTINGS): array
 {
     $password = tpHealthDecryptSetting('bck_externalized_sftp_password', $SETTINGS);
@@ -3815,6 +3829,12 @@ function tpHealthGetExternalizedSftpConfig(array $SETTINGS): array
     );
 }
 
+/**
+ * Return the WebDAV destination configuration for the health checks (password decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthGetExternalizedWebdavConfig(array $SETTINGS): array
 {
     $password = tpHealthDecryptSetting('bck_externalized_webdav_password', $SETTINGS);
@@ -3827,6 +3847,12 @@ function tpHealthGetExternalizedWebdavConfig(array $SETTINGS): array
     );
 }
 
+/**
+ * Return the S3 destination configuration for the health checks (secret key decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
 function tpHealthGetExternalizedS3Config(array $SETTINGS): array
 {
     $secretKey = tpHealthDecryptSetting('bck_externalized_s3_secret_key', $SETTINGS);
@@ -3842,6 +3868,12 @@ function tpHealthGetExternalizedS3Config(array $SETTINGS): array
     );
 }
 
+/**
+ * Decrypt a stored setting value for the health checks; '' when unset or invalid.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return string
+ */
 function tpHealthDecryptSetting(string $key, array $SETTINGS): string
 {
     $stored = (string) tpHealthGetSettingsValue($key, '');
@@ -3861,6 +3893,11 @@ function tpHealthDecryptSetting(string $key, array $SETTINGS): string
     return '';
 }
 
+/**
+ * List local backup files in a directory, optionally restricted to scheduled backups.
+ *
+ * @return array<mixed>
+ */
 function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10, string $prefix = ''): array
 {
     $dir = trim($dir);
