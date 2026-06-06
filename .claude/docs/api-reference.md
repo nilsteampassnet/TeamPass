@@ -76,7 +76,9 @@ Get item(s) by ID or label.
 
 **Params:** `id` (int) OR `label` (string) OR `description` (string), optional `limit` (default 50, max 500).
 
-**Response:** array of item objects `{ id, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags }`.
+**Response:** array of item objects `{ id, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
+
+**Custom fields:** `fields` is an array of `{ id, title, type, masked, value }` for the item's folder-associated categories. Encrypted values are decrypted via `decryptUserObjectKeyWithMigration()` on `sharekeys_fields` (+ `base64_decode`); empty when no sharekey is available yet. Only present when `item_extra_fields` is enabled. Also returned by `item/inFolders`.
 
 **Permissions:** `allowed_to_read`. Uses folder access constraint — IDOR protection via sharekey (item skipped if no sharekey found for user).
 
@@ -137,7 +139,9 @@ Get all distinct item tags accessible to the user.
 
 Create a new item.
 
-**Body:** `label`, `password`, `folder_id`, optional `description`, `login`, `email`, `url`, `tags`, `totp`.
+**Body:** `label`, `password`, `folder_id`, optional `description`, `login`, `email`, `url`, `tags`, `totp`, `fields`.
+
+**Custom fields:** `fields` = array of `{ id, value }` (field id + value). Encrypt-before-INSERT for encrypted categories; creator sharekey created synchronously, other users via the `new_item` background task. Only fields tied to the folder are stored; empty values ignored. Requires `item_extra_fields`.
 
 **Response 200:** item object with `id`.
 
@@ -149,7 +153,9 @@ Create a new item.
 
 Update an existing item. **Only PUT is accepted** — POST returns 405.
 
-**Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`.
+**Body:** `id` (required), at least one of: `label`, `password`, `description`, `login`, `email`, `url`, `tags`, `anyone_can_modify`, `icon`, `folder_id`, `totp`, `fields`.
+
+**Custom fields:** `fields` = array of `{ id, value }`. Created if absent, updated only when the value changed (current value decrypted for comparison); encrypted fields re-encrypted and sharekeys refreshed synchronously for all eligible users (consistent with the password path). Empty values ignored. Requires `item_extra_fields`.
 
 **Permissions:** `allowed_to_update`. Source folder must not be read-only. If `folder_id` changes (move), **target folder** must also not be read-only for the user.
 

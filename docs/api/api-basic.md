@@ -218,6 +218,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/inFolders?folders=[1,2
 | `id_tree` | integer | Parent folder ID |
 | `folder_label` | string | Parent folder name |
 | `path` | string | Full folder path |
+| `fields` | array | Custom fields: array of `{ id, title, type, masked, value }` (value decrypted; empty when no sharekey is available yet). Present only when the *item extra fields* feature is enabled. |
 
 **Response Codes:**
 
@@ -490,6 +491,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
 | `icon` | string | ❌ | FontAwesome icon code |
+| `fields` | array | ❌ | Custom fields: array of `{ "id": <field_id>, "value": "<text>" }`. Only fields tied to the item's folder are stored; empty values are ignored. Requires the *item extra fields* feature to be enabled. |
 
 **Response (success):**
 ```json
@@ -569,6 +571,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | `icon` | string | ❌ | New FontAwesome icon code |
 | `folder_id` | integer | ❌ | Move to new folder |
 | `totp` | string | ❌ | TOTP/OTP secret |
+| `fields` | array | ❌ | Custom fields to set: array of `{ "id": <field_id>, "value": "<text>" }`. A field is created if absent and updated when its value changes; empty values are ignored. Requires the *item extra fields* feature. |
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
 
