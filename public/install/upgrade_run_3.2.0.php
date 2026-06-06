@@ -331,9 +331,9 @@ if ($row && !empty($row['valeur'])) {
     $newScheduledBackupDir = $cpassmanDir . '/storage/backups';
     $legacyFilesDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/files'), '/');
     $legacyBackupsDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/backups'), '/');
-    $rowScheduled = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='bck_scheduled_output_dir'"));
+    $rowScheduled = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='settings' AND intitule='bck_scheduled_output_dir'"));
     if ($rowScheduled === null || $rowScheduled === false) {
-        mysqli_query($db_link, "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'bck_scheduled_output_dir', '" . addslashes($newScheduledBackupDir) . "')");
+        mysqli_query($db_link, "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('settings', 'bck_scheduled_output_dir', '" . addslashes($newScheduledBackupDir) . "')");
     } else {
         $scheduledDir = trim((string) ($rowScheduled['valeur'] ?? ''));
         $scheduledDirNormalized = rtrim(str_replace('\\', '/', $scheduledDir), '/');
@@ -344,7 +344,7 @@ if ($row && !empty($row['valeur'])) {
             || strpos($scheduledDirNormalized, $legacyBackupsDir . '/') === 0;
 
         if ($isLegacyScheduledDir === true) {
-            mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($newScheduledBackupDir) . "' WHERE type='admin' AND intitule='bck_scheduled_output_dir'");
+            mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($newScheduledBackupDir) . "' WHERE type='settings' AND intitule='bck_scheduled_output_dir'");
         }
     }
 

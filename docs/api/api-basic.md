@@ -10,6 +10,7 @@
    - [Request Structure](#request-structure)
 2. [Authentication](#authentication)
    - [Get JWT Token](#authorize)
+   - [Get JWT Token for OAuth2 users (Personal Access Token)](#authorize-token)
 3. [Items Endpoints](#items-endpoints)
    - [List items in folders](#list-items-folders)
    - [Get item by ID](#get-item-id)
@@ -113,6 +114,63 @@ curl -X POST "https://your-teampass.com/api/index.php/authorize" \
     "apikey": "your-api-key",
     "login": "username",
     "password": "password"
+  }'
+```
+
+---
+
+### Get JWT Token for OAuth2 users (Personal Access Token) {#authorize-token}
+
+> 📋 Returns a JWT token for **OAuth2 (SSO) users**, using a Personal Access Token (PAT) instead of a password + API key.
+
+OAuth2/SSO users have no usable password (their stored credential is a hash of the non-secret identity provider object id), so they cannot use [`authorize`](#authorize). Instead, they generate a **Personal Access Token** from their profile (**Profile → Browser extension tokens → Generate a new token**). The token is displayed **only once** — copy it immediately. The resulting JWT is used exactly like the one from `authorize` (`Authorization: Bearer <jwt>`).
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `authorizeToken` |
+| **Method** | POST |
+| **URL** | `<Teampass URL>/api/index.php/authorizeToken` |
+| **Content-Type** | `application/json` |
+
+> ⚙️ **Prerequisite**: the administrator must enable **Allow OAuth2 users to access the API** (Settings → OAuth2, `oauth2_api_enabled`) **in addition to** the global API setting. When disabled, every request returns `401`.
+
+**Request Body (JSON):**
+```json
+{
+  "login": "teampass-user-login",
+  "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+}
+```
+
+> The `token` must be a 64-character hexadecimal string (`^[a-f0-9]{64}$`). Credentials must be sent in the body — query-string credentials are rejected with `400`.
+
+**Response (success):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Authentication successful, token generated |
+| 400 | Missing parameters or credentials passed in the query string |
+| 401 | Invalid/expired token, unknown login, non-OAuth2 user, or OAuth2 API access disabled (uniform message) |
+| 401 | Account temporarily locked (bruteforce protection) |
+| 503 | Global API disabled in settings |
+| 500 | Server error |
+
+**Restrictions:** only `auth_type = 'oauth2'` users are accepted; local and LDAP users keep using [`authorize`](#authorize). The same bruteforce protection and `tp_src=api` logging apply.
+
+**Example:**
+```bash
+curl -X POST "https://your-teampass.com/api/index.php/authorizeToken" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "login": "username",
+    "token": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
   }'
 ```
 
