@@ -73,8 +73,12 @@ services:
       DB_HOST: db
       DB_PASSWORD: YourSecurePassword
     volumes:
-      - teampass-sk:/var/www/html/sk
-      - teampass-files:/var/www/html/files
+      - teampass-sk:/var/www/html/storage/sk
+      - teampass-files:/var/www/html/storage/files
+      - teampass-upload:/var/www/html/storage/upload
+      # Install state and master key — required to avoid a reinstall on restart
+      - teampass-config:/var/www/html/storage/config
+      - teampass-secrets:/var/www/html/secrets
     depends_on:
       - db
 
@@ -91,6 +95,9 @@ services:
 volumes:
   teampass-sk:
   teampass-files:
+  teampass-upload:
+  teampass-config:
+  teampass-secrets:
   teampass-db:
 ```
 
@@ -126,8 +133,12 @@ services:
       DB_HOST: db
       DB_PASSWORD: YourSecurePassword
     volumes:
-      - teampass-sk:/var/www/html/sk
-      - teampass-files:/var/www/html/files
+      - teampass-sk:/var/www/html/storage/sk
+      - teampass-files:/var/www/html/storage/files
+      - teampass-upload:/var/www/html/storage/upload
+      # Install state and master key — required to avoid a reinstall on restart
+      - teampass-config:/var/www/html/storage/config
+      - teampass-secrets:/var/www/html/secrets
 
   db:
     image: mariadb:11.2
@@ -142,6 +153,9 @@ services:
 volumes:
   teampass-sk:
   teampass-files:
+  teampass-upload:
+  teampass-config:
+  teampass-secrets:
   teampass-db:
   certs:
 ```

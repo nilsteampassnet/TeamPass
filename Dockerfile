@@ -120,6 +120,8 @@ RUN mkdir -p \
     storage/sk \
     storage/files \
     storage/upload \
+    storage/config \
+    secrets \
     app/includes/libraries/csrfp/log \
     /var/lib/nginx/tmp \
     /var/log/supervisor \
@@ -128,12 +130,14 @@ RUN mkdir -p \
         storage/sk \
         storage/files \
         storage/upload \
+        storage/config \
+        secrets \
         app/includes/libraries/csrfp/log \
         /var/lib/nginx \
         /var/log \
         /run/nginx \
-    && chmod 700 storage/sk \
-    && chmod 750 storage/files storage/upload app/includes/libraries/csrfp/log
+    && chmod 700 storage/sk secrets \
+    && chmod 750 storage/files storage/upload storage/config app/includes/libraries/csrfp/log
 
 # Remove unnecessary files for production
 RUN rm -rf \
@@ -163,8 +167,11 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
 # Expose HTTP port
 EXPOSE 80
 
-# Define volumes for persistent data
-VOLUME ["/var/www/html/storage/sk", "/var/www/html/storage/files", "/var/www/html/storage/upload"]
+# Define volumes for persistent data.
+# storage/config holds the install state (settings.php, csrfp.config.php) and
+# secrets holds the Defuse master key: both must persist across container
+# recreation, otherwise TeamPass would try to reinstall itself (issue #5236).
+VOLUME ["/var/www/html/storage/sk", "/var/www/html/storage/files", "/var/www/html/storage/upload", "/var/www/html/storage/config", "/var/www/html/secrets"]
 
 # Set entrypoint and default command
 ENTRYPOINT ["/docker-entrypoint.sh"]

@@ -97,6 +97,10 @@ services:
       - teampass-sk:/var/www/html/storage/sk
       - teampass-files:/var/www/html/storage/files
       - teampass-upload:/var/www/html/storage/upload
+      # Install state (settings.php, csrfp.config.php) and master key — must
+      # persist or TeamPass reinstalls itself on every restart (issue #5236).
+      - teampass-config:/var/www/html/storage/config
+      - teampass-secrets:/var/www/html/secrets
 
     networks:
       - teampass-network
@@ -159,6 +163,10 @@ volumes:
   teampass-files:
     driver: local
   teampass-upload:
+    driver: local
+  teampass-config:
+    driver: local
+  teampass-secrets:
     driver: local
   teampass-db:
     driver: local

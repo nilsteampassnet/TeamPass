@@ -77,6 +77,8 @@ create_directories() {
     mkdir -p /var/www/html/storage/sk
     mkdir -p /var/www/html/storage/files
     mkdir -p /var/www/html/storage/upload
+    mkdir -p /var/www/html/storage/config
+    mkdir -p /var/www/html/secrets
     mkdir -p /var/www/html/app/includes/libraries/csrfp/log
 
     echo -e "${GREEN}✅ Directories created${NC}"
@@ -89,14 +91,79 @@ set_permissions() {
     chown -R nginx:nginx /var/www/html/storage/sk
     chown -R nginx:nginx /var/www/html/storage/files
     chown -R nginx:nginx /var/www/html/storage/upload
+    chown -R nginx:nginx /var/www/html/storage/config
+    chown -R nginx:nginx /var/www/html/secrets
     chown -R nginx:nginx /var/www/html/app/includes/libraries/csrfp/log
 
     chmod 700 /var/www/html/storage/sk
     chmod 750 /var/www/html/storage/files
     chmod 750 /var/www/html/storage/upload
+    chmod 750 /var/www/html/storage/config
+    chmod 700 /var/www/html/secrets
     chmod 750 /var/www/html/app/includes/libraries/csrfp/log
 
     echo -e "${GREEN}✅ Permissions set${NC}"
+}
+
+# Redirect an application config file to a persistent copy through a symlink.
+# $1 = path used by the application, $2 = path on the persistent volume.
+# An existing real file is migrated into the volume once, so already-installed
+# containers keep their configuration on first upgrade to this image.
+link_persistent_file() {
+    app_file="$1"
+    persist_file="$2"
+
+    # Make sure the persistent target directory exists before any move/link.
+    mkdir -p "$(dirname "$persist_file")"
+
+    # Migrate a pre-existing real file into the persistent volume (only once).
+    if [ -f "$app_file" ] && [ ! -L "$app_file" ] && [ ! -f "$persist_file" ]; then
+        mv "$app_file" "$persist_file"
+    fi
+
+    # Point the application path to the persistent copy so that both the
+    # installer (write) and the application (read) use the volume-backed file.
+    if [ ! -L "$app_file" ]; then
+        rm -f "$app_file"
+        ln -s "$persist_file" "$app_file"
+    fi
+
+    chown -h nginx:nginx "$app_file" 2>/dev/null || true
+    [ -f "$persist_file" ] && chown nginx:nginx "$persist_file" 2>/dev/null || true
+}
+
+# Ensure install-time state survives container recreation.
+#
+# In TeamPass 3.2 the installer writes three artifacts that live outside the
+# default data volumes and are therefore lost when the container is recreated
+# (docker compose down && up). Their loss makes TeamPass believe it is not
+# installed and triggers a reinstall on every restart (issue #5236):
+#
+#   - app/config/settings.php                             (DB credentials + install marker)
+#   - app/includes/libraries/csrfp/libs/csrfp.config.php  (CSRF config, fatal if missing)
+#   - secrets/<random>                                    (Defuse master key)
+#
+# settings.php and csrfp.config.php are redirected through symlinks to the
+# persistent config volume (storage/config) so the installer transparently
+# writes to the volume. The secrets directory is mounted as a volume directly
+# (handled in docker-compose / Dockerfile), here we only ensure it exists.
+persist_install_state() {
+    echo -e "${BLUE}🔗 Ensuring install state persistence...${NC}"
+
+    PERSIST_DIR=/var/www/html/storage/config
+    mkdir -p "$PERSIST_DIR"
+
+    link_persistent_file \
+        /var/www/html/app/config/settings.php \
+        "$PERSIST_DIR/settings.php"
+    link_persistent_file \
+        /var/www/html/app/includes/libraries/csrfp/libs/csrfp.config.php \
+        "$PERSIST_DIR/csrfp.config.php"
+
+    chown nginx:nginx "$PERSIST_DIR" 2>/dev/null || true
+    chmod 750 "$PERSIST_DIR" 2>/dev/null || true
+
+    echo -e "${GREEN}✅ Install state persistence ensured${NC}"
 }
 
 # Function to apply dynamic PHP configuration from environment variables.
@@ -219,8 +286,8 @@ manual_install_instructions() {
     echo "   - User: ${DB_USER}"
     echo "   - Password: [Use the password from your .env file]"
     echo ""
-    echo "   Saltkey absolute path:"
-    echo -e "   ${BLUE}/var/www/html/storage/sk${NC}"
+    echo "   The secure (saltkey) path is auto-configured by the installer to:"
+    echo -e "   ${BLUE}/var/www/html/secrets${NC}"
     echo ""
     echo "   After installation, restart the container to remove the install directory:"
     echo -e "   ${BLUE}docker-compose restart teampass${NC}"
@@ -240,6 +307,10 @@ main() {
 
     # Set permissions
     set_permissions
+
+    # Redirect install state (settings.php + csrfp.config.php) to the persistent
+    # volume so the installation survives container recreation (issue #5236).
+    persist_install_state
 
     # Configure PHP-FPM to listen on 127.0.0.1:9000 and run as nginx user
     if [ -f /usr/local/etc/php-fpm.d/www.conf ]; then
