@@ -53,6 +53,34 @@ Credentials must be in the body — query string is rejected (400).
 
 **Anti-bruteforce:** Failed attempts are recorded in `teampass_auth_failures` using the same thresholds as the web interface (`nb_bad_authentication`, `nb_bad_authentication_by_ip`, `bruteforce_lock_duration`). Events are logged in `teampass_log_system` with `tp_src=api`.
 
+### `POST /api/authorizeToken`
+
+Generates a JWT for an **OAuth2 (SSO) user** using a **Personal Access Token (PAT)** instead of a password + API key. Does **not** require an existing JWT.
+
+OAuth2 users have no usable cleartext password (their stored `pw` is a hash of the non-secret Azure object id), so they cannot use `/api/authorize`. The PAT, generated from the web profile, carries a server-stored copy of the user's private key re-wrapped under a key derived from the token — letting the API unwrap it without the password. See `architecture-encryption.md` → "Personal Access Tokens".
+
+**Gate:** requires the admin toggle **`oauth2_api_enabled`** (Settings → OAuth2, default off) **in addition to** the global `api` setting. Disabled → uniform 401 (`OAuth2 API access is disabled`).
+
+**Request body (JSON or form-data):**
+```json
+{ "login": "user", "token": "<64-hex-char extension token>" }
+```
+Credentials must be in the body — query string is rejected (400). The token must match `^[a-f0-9]{64}$`.
+
+**Response 200:** identical shape to `/api/authorize` — `{ "token": "<jwt>" }`. The returned JWT is used exactly the same way (`Authorization: Bearer <jwt>`).
+
+**Error responses:**
+
+| Status | Condition |
+|---|---|
+| 400 | Missing parameters or credentials in query string |
+| 401 | Invalid/expired token, unknown login, non-OAuth2 user, API access disabled (uniform message — no enumeration) |
+| 401 | Account temporarily locked (bruteforce) |
+| 503 | Global API disabled in settings |
+| 500 | Internal error |
+
+**Restrictions:** only `auth_type = 'oauth2'` users are accepted; local/LDAP users are rejected (they keep using `/api/authorize`). Same bruteforce protection and `tp_src=api` logging as the password path. On success, `teampass_api_tokens.last_used_at` is updated.
+
 ### JWT Structure
 
 - Algorithm: HS256
@@ -276,6 +304,7 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 5. **Read-only folders**: enforced in create/update/delete item operations and folder create. An item move to a read-only target folder is also blocked.
 6. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
 7. **Input sanitization**: body and query-string params are trimmed only — no HTML encoding — so passwords containing `<>&"'` are stored correctly. SQL injection is prevented by MeekroDB placeholders throughout.
+8. **Personal Access Tokens (OAuth2)**: `teampass_api_tokens` stores only `sha256(token)` + the private key wrapped under `HKDF-SHA256(token, salt)` (AES-256-GCM). The raw token is never persisted, so a DB dump alone cannot decrypt. The token is 256-bit (bypassing the weak 64-bit `hashUserId(oid)` derivation), revocable per device, optionally time-limited (`expires_at`), and gated by `oauth2_api_enabled`. Generation requires the cleartext private key to be present in the web session — the security gate on issuance. Audit: `extension_token_generated` / `extension_token_revoked` (`user_mngt`), failed token auth as `failed_auth` (`tp_src=api`).
 
 ---
 

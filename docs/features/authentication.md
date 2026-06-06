@@ -168,3 +168,33 @@ Navigate to `OAuth` page from the administration, and provide the expected infor
 It is suggested to perform a test with a fake user.
 
 ![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)
+
+### Allowing OAuth2 users to access the API
+
+By default OAuth2 (SSO) users **cannot** use the REST API or the browser extension. The API
+authenticates a user with their login, password and API key, but an OAuth2 user never sets a
+TeamPass password — so the password-based path cannot work for them.
+
+To enable API access for OAuth2 users, turn on **`Allow OAuth2 users to access the API`** on the
+`OAuth` administration page. This toggle is **disabled by default** and is independent from the
+global API switch on the `API` page: both must be enabled.
+
+Local and LDAP users are not affected — they keep authenticating the API with their password and
+API key.
+
+#### How an OAuth2 user connects the API / browser extension
+
+1. The OAuth2 user logs into the TeamPass web interface as usual (through Entra).
+2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit
+   **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed
+   again).
+3. In the API client / browser extension they authenticate with their **login** and this
+   **token** (no password, no API key). The server returns the same kind of session as the
+   password path.
+4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops
+   working immediately.
+
+Security: the server never stores the token itself — only a hash of it, plus a copy of the user's
+private key re-wrapped with a key derived from the token. A database dump alone therefore cannot
+decrypt anything, and the token can only be created while the user is fully authenticated in the
+web interface.

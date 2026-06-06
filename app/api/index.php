@@ -121,12 +121,12 @@ $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
 // Authorization handler
-if (isset($uri[0]) && $uri[0] === 'authorize') {
+if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken')) {
     // Is API enabled in Teampass settings
     if ($apiStatus['error'] === false) {
         require API_ROOT_PATH . "/Controller/Api/AuthController.php";
         $objFeedController = new AuthController();
-        $strMethodName = $uri[0] . 'Action';
+        $strMethodName = $uri[0] . 'Action';   // authorizeAction | authorizeTokenAction
         $objFeedController->{$strMethodName}();
     } else {
         // Error management

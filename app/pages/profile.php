@@ -330,8 +330,46 @@ foreach ($session->get('user-roles_array') as $role) {
                                         '</a>
                                     </li>';
                                     }
+                                    // Browser extension tokens (Personal Access Tokens) — OAuth2 users only, admin toggle on
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+                                        && $session->get('user-auth_type') === 'oauth2'
+                                    ) {
+                                        echo '
+                                    <li class="list-group-item" id="extension-tokens-block">
+                                        <button class="btn btn-sm btn-primary float-right infotip" id="generate-extension-token" title="' . $lang->get('extension_token_generate') . '"><i class="fa-solid fa-plus pointer"></i></button>
+                                        <b><i class="fa-solid fa-puzzle-piece fa-fw fa-lg mr-2"></i>' . $lang->get('extension_tokens') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('extension_tokens_tip') . '</small>
+                                        <div class="mt-2" id="extension-tokens-list"></div>
+                                    </li>';
+                                    }
                                     ?>
                                 </ul>
+                                <?php
+                                if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                    && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+                                    && $session->get('user-auth_type') === 'oauth2'
+                                ) { ?>
+                                <div class="modal fade" id="extension-token-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"><i class="fa-solid fa-puzzle-piece mr-2"></i><?php echo $lang->get('extension_tokens'); ?></h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="alert alert-warning" role="alert"><i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('extension_token_copy_once'); ?></div>
+                                                <div class="input-group">
+                                                    <input type="text" readonly class="form-control" id="extension-token-value">
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-primary" type="button" id="copy-extension-token" title="<?php echo $lang->get('copy_to_clipboard'); ?>"><i class="fa-regular fa-copy"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php } ?>
                             </div>
 
                             <!-- TIMELINE -->
