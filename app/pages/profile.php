@@ -343,6 +343,24 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="mt-2" id="extension-tokens-list"></div>
                                     </li>';
                                     }
+                                    // Browser extension auto-configuration — when token-based access is
+                                    // available to this user (OAuth2, or all-auth-types toggle on).
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                        && (
+                                            (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
+                                            || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
+                                        )
+                                    ) {
+                                        echo '
+                                    <li class="list-group-item" id="extension-autoconfig-block">
+                                        <b><i class="fa-solid fa-wand-magic-sparkles fa-fw fa-lg mr-2"></i>' . $lang->get('extension_autoconfig_button') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('extension_autoconfig_prompt') . '</small>
+                                        <div class="mt-2">
+                                            <button class="btn btn-sm btn-primary" id="extension-autoconfig-configure"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>' . $lang->get('extension_autoconfig_button') . '</button>
+                                            <button class="btn btn-sm btn-secondary ml-1 hidden" id="extension-autoconfig-download"><i class="fa-solid fa-download mr-1"></i>' . $lang->get('extension_autoconfig_download') . '</button>
+                                        </div>
+                                    </li>';
+                                    }
                                     ?>
                                 </ul>
                                 <?php

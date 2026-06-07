@@ -122,13 +122,15 @@ class AuthModel
     /**
      * Authenticate an API/extension client using a Personal Access Token (PAT).
      *
-     * Reserved for OAuth2/SSO users, who have no usable cleartext password (their stored
+     * Primarily for OAuth2/SSO users, who have no usable cleartext password (their stored
      * pw is a hash of the non-secret Azure object id). The token unwraps a server-stored
      * copy of the user's private key — re-wrapped at generation time under a key derived
      * from the token (HKDF-SHA256) — then the standard JWT is issued.
      *
-     * Gated by the admin setting oauth2_api_enabled. Local and LDAP users are rejected:
-     * they keep using the password + API key path, which is left untouched.
+     * Gated by oauth2_api_enabled (OAuth2 users only) OR extension_token_all_auth_types
+     * (any auth type, powering the browser-extension auto-configuration flow). When neither
+     * toggle is enabled, token authentication is rejected and users keep the password + API
+     * key path, which is left untouched.
      *
      * @param string $login Username
      * @param string $token Extension token (64 hex chars) generated in the web profile
@@ -147,8 +149,11 @@ class AuthModel
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
 
-        // Feature must be explicitly enabled by the administrator (OAuth2 settings page).
-        if ((int) ($SETTINGS['oauth2_api_enabled'] ?? 0) !== 1) {
+        // Feature must be explicitly enabled by the administrator: either OAuth2-for-API
+        // (OAuth2 settings page) or extension tokens for all auth types (API settings page).
+        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
+        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+        if ($oauth2ApiEnabled === false && $tokenAllAuthTypes === false) {
             return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
         }
 
@@ -172,11 +177,12 @@ class AuthModel
 
         $userInfo = getUserCompleteData($inputData['login']);
 
-        // User must exist, have API access enabled and be an OAuth2 user.
+        // User must exist and have API access enabled. The user must be OAuth2, unless
+        // the administrator allows extension tokens for all auth types.
         // Uniform message — prevents user enumeration and auth_type probing.
         if ($userInfo === null
             || (int) $userInfo['api_enabled'] === 0
-            || (string) ($userInfo['auth_type'] ?? '') !== 'oauth2'
+            || ($tokenAllAuthTypes === false && (string) ($userInfo['auth_type'] ?? '') !== 'oauth2')
         ) {
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
             logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');

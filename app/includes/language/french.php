@@ -2391,5 +2391,16 @@ return array(
     'cli_php_binary_path_tip' => 'Chemin absolu vers le binaire PHP CLI utilisé pour exécuter les tâches de fond (ex. /usr/bin/php8.2). Laisser vide pour une détection automatique. À renseigner uniquement si les tâches de fond ne démarrent pas, typiquement sous PHP-FPM où la détection peut pointer vers le binaire php-fpm.',
     'enable_fastcgi_finish_request' => 'Envoyer la réponse avant de déclencher les tâches',
     'enable_fastcgi_finish_request_tip' => 'Sous PHP-FPM, envoie la réponse HTTP au navigateur avant de déclencher les tâches de fond, libérant le worker plus tôt. Sans effet sous Apache mod_php. À désactiver uniquement si un reverse proxy bufferise mal les réponses.',
+    'extension_token_all_auth_types' => 'Autoriser l’auto-configuration de l’extension pour tous les utilisateurs',
+    'extension_token_all_auth_types_tip' => 'Lorsque cette option est activée, tout utilisateur (local, LDAP ou SSO) peut laisser TeamPass configurer automatiquement l’extension de navigateur à l’aide d’un jeton d’accès personnel. Lorsqu’elle est désactivée, seuls les utilisateurs OAuth2/SSO peuvent utiliser l’accès par jeton.',
+    'extension_autoconfig_detected' => 'Extension de navigateur TeamPass détectée',
+    'extension_autoconfig_prompt' => 'Votre extension de navigateur TeamPass n’est pas encore configurée. Voulez-vous la configurer automatiquement maintenant ?',
+    'extension_autoconfig_button' => 'Configurer mon extension',
+    'extension_autoconfig_download' => 'Télécharger le fichier de configuration',
+    'extension_autoconfig_confirm_pending' => 'Veuillez confirmer la configuration dans la fenêtre de l’extension qui vient de s’ouvrir.',
+    'extension_autoconfig_success' => 'Extension configurée avec succès',
+    'extension_autoconfig_failed' => 'Échec de la configuration de l’extension',
+    'extension_autoconfig_not_detected' => 'Aucune extension TeamPass active n’a été détectée dans ce navigateur. Rechargez l’extension et cette page, ou utilisez le bouton de téléchargement pour la configurer manuellement.',
+    'extension_autoconfig_file_warning' => 'Ce fichier contient un jeton d’accès qui permet de déverrouiller votre compte dans l’extension. Importez-le dans les options de l’extension, puis supprimez le fichier. Vous pouvez le révoquer à tout moment depuis votre profil.',
 
 );

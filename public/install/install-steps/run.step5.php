@@ -686,6 +686,7 @@ class DatabaseInstaller
             array('admin', 'oauth2_client_scopes', 'openid,profile,email,User.Read,Group.Read.All'),
             array('admin', 'oauth2_client_appname', 'Login with Azure'),
             array('admin', 'oauth2_api_enabled', '0'),
+            array('admin', 'extension_token_all_auth_types', '0'),
             array('admin', 'show_item_data', '0'),
             array('admin', 'oauth2_tenant_id', '', '1'),
             array('admin', 'limited_search_default', '0'),

@@ -414,6 +414,14 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_api_enabled', '0')"
 );
 
+// Add the "extension token for all auth types" toggle (disabled by default).
+// When enabled, local/LDAP users (not only OAuth2) can mint and use Personal Access
+// Tokens, which powers the browser-extension auto-configuration flow.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'extension_token_all_auth_types', '0')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

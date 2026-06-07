@@ -111,6 +111,7 @@ if (null !== $post_type) {
         'generate_extension_token',
         'list_extension_tokens',
         'revoke_extension_token',
+        'build_extension_autoconfig',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -211,10 +212,14 @@ if (null !== $post_type) {
         case 'generate_extension_token':
         case 'list_extension_tokens':
         case 'revoke_extension_token':
-            // Feature gate: API enabled + OAuth2-for-API enabled + current user is OAuth2.
+            // Feature gate: API enabled, AND either
+            //   - OAuth2-for-API enabled and the current user is OAuth2, OR
+            //   - extension tokens allowed for all auth types (local/LDAP/OAuth2).
+            $extTokenOauth2 = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1
+                && $session->get('user-auth_type') === 'oauth2';
+            $extTokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
             if ((int) ($SETTINGS['api'] ?? 0) !== 1
-                || (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) !== 1
-                || $session->get('user-auth_type') !== 'oauth2'
+                || ($extTokenOauth2 === false && $extTokenAllAuthTypes === false)
             ) {
                 echo prepareExchangedData(
                     array(
@@ -320,6 +325,142 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'tokens' => $tokensList,
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * BUILD BROWSER-EXTENSION AUTO-CONFIGURATION BUNDLE
+         *
+         * Returns a self-contained bundle the browser extension applies to configure
+         * itself: server URL, licence fields and a freshly minted, single-use,
+         * short-lived Personal Access Token. The password is never included — the
+         * extension authenticates in token mode. Same feature gate as the token cases.
+         */
+        case 'build_extension_autoconfig':
+            $extTokenOauth2 = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1
+                && $session->get('user-auth_type') === 'oauth2';
+            $extTokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+            if ((int) ($SETTINGS['api'] ?? 0) !== 1
+                || ($extTokenOauth2 === false && $extTokenAllAuthTypes === false)
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The cleartext private key must be available in the current session.
+            $privateKeyClear = (string) $session->get('user-private_key');
+            if ($privateKeyClear === '' || $privateKeyClear === 'none') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_no_user_keys'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__ . '/../api/inc/encryption_utils.php';
+
+            $userId = (int) $session->get('user-id');
+
+            // Mint a short-lived, single-use PAT wrapping the cleartext private key.
+            $tokenPlain = bin2hex(random_bytes(32));
+            $salt       = bin2hex(random_bytes(16));
+            $wrapKey    = hash_hkdf('sha256', $tokenPlain, 32, 'teampass-extension-token-v1', (string) hex2bin($salt));
+            $wrapped    = encrypt_with_session_key($privateKeyClear, $wrapKey);
+
+            if ($wrapped === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The token is the durable credential the extension reuses for silent
+            // re-auth, so it must not expire (same model as manually generated
+            // tokens). The *bundle* below carries a short staleness window instead.
+            DB::insert(prefixTable('api_tokens'), [
+                'user_id'             => $userId,
+                'token_hash'          => hash('sha256', $tokenPlain),
+                'wrapped_private_key' => $wrapped,
+                'salt'                => $salt,
+                'label'               => 'auto-config ' . date('Y-m-d H:i'),
+                'created_at'          => time(),
+                'expires_at'          => null,
+            ]);
+            $newTokenId = (int) DB::insertId();
+
+            // Soft staleness guard for the bundle/file (not a hard security control —
+            // the bundle is unsigned; revoke the token to truly invalidate it).
+            $bundleExpiresAt = time() + 86400; // 24 hours
+
+            // Derive the server URL and its origin (scheme://host[:port]) from cpassman_url.
+            $teampassUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
+            $extOrigin   = '';
+            $parsedUrl   = parse_url($teampassUrl);
+            if (isset($parsedUrl['scheme'], $parsedUrl['host']) === true) {
+                $extOrigin = $parsedUrl['scheme'] . '://' . $parsedUrl['host']
+                    . (isset($parsedUrl['port']) === true ? ':' . $parsedUrl['port'] : '');
+            }
+
+            $bundle = array(
+                'teampass_autoconfig' => true,
+                'version'             => 1,
+                'issued_at'           => time(),
+                'expires_at'          => $bundleExpiresAt,
+                'server'              => array(
+                    'teampass_url' => $teampassUrl,
+                    'origin'       => $extOrigin,
+                    'fqdn'         => (string) ($SETTINGS['browser_extension_fqdn'] ?? ''),
+                ),
+                'account'             => array(
+                    'username'     => (string) $session->get('user-login'),
+                    'display_name' => (string) $session->get('user-name'),
+                    'auth_mode'    => 'token',
+                ),
+                'credential'          => array(
+                    'auth_mode' => 'token',
+                    'token'     => $tokenPlain,
+                ),
+                'licence'             => array(
+                    'email' => (string) $session->get('user-email'),
+                    'fqdn'  => (string) ($SETTINGS['browser_extension_fqdn'] ?? ''),
+                    'key'   => (string) ($SETTINGS['browser_extension_key'] ?? ''),
+                ),
+                'nonce'               => bin2hex(random_bytes(16)),
+            );
+
+            logEvents($SETTINGS, 'user_mngt', 'at_extension_autoconfig_built', (string) $userId, (string) $session->get('user-login'), (string) $newTokenId);
+
+            echo prepareExchangedData(
+                array(
+                    'error'  => false,
+                    'bundle' => $bundle,
                 ),
                 'encode'
             );

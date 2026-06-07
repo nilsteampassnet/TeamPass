@@ -1576,6 +1576,13 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 // Load links, css and javascripts
 if (isset($SETTINGS['cpassman_dir']) === true) {
     include_once TEAMPASS_APP . '/core/load.js.php';
+    // Browser-extension auto-configuration bridge (authenticated users, API enabled).
+    if ((int) ($SETTINGS['api'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+    ) {
+        include_once TEAMPASS_APP . '/core/extension-autoconfig.js.php';
+    }
     if ($menuAdmin === true) {
         include_once TEAMPASS_APP . '/pages/admin.js.php';
         if ($get['page'] === '2fa') {

@@ -2391,5 +2391,16 @@ return array(
     'cli_php_binary_path_tip' => 'Absolute path to the PHP CLI binary used to run background tasks (e.g. /usr/bin/php8.2). Leave empty for automatic detection. Set this only if background tasks fail to start, typically under PHP-FPM where detection may point to the php-fpm binary.',
     'enable_fastcgi_finish_request' => 'Flush response before triggering tasks',
     'enable_fastcgi_finish_request_tip' => 'Under PHP-FPM, send the HTTP response to the browser before triggering background tasks, freeing the worker earlier. Has no effect under Apache mod_php. Disable only if a reverse proxy buffers responses incorrectly.',
+    'extension_token_all_auth_types' => 'Allow extension auto-configuration for all users',
+    'extension_token_all_auth_types_tip' => 'When enabled, any user (local, LDAP or SSO) can let TeamPass configure the browser extension automatically using a Personal Access Token. When disabled, only OAuth2/SSO users can use token-based access.',
+    'extension_autoconfig_detected' => 'TeamPass browser extension detected',
+    'extension_autoconfig_prompt' => 'Your TeamPass browser extension is not configured yet. Do you want to configure it automatically now?',
+    'extension_autoconfig_button' => 'Configure my extension',
+    'extension_autoconfig_download' => 'Download configuration file',
+    'extension_autoconfig_confirm_pending' => 'Please confirm the configuration in the extension window that just opened.',
+    'extension_autoconfig_success' => 'Extension configured successfully',
+    'extension_autoconfig_failed' => 'Extension configuration failed',
+    'extension_autoconfig_not_detected' => 'No active TeamPass extension was detected in this browser. Reload the extension and this page, or use the download button to configure it manually.',
+    'extension_autoconfig_file_warning' => 'This file contains an access token that can unlock your account in the extension. Import it in the extension Options, then delete the file. You can revoke it anytime from your profile.',
 
 );
