@@ -420,6 +420,18 @@ function getDomainFromSettingsUrl(string $url): string
                                     </div>
                                 </div>
 
+                                <div class='row mt-2 mb-2'>
+                                    <div class='col-7'>
+                                        <?php echo $lang->get('extension_token_all_auth_types'); ?>
+                                        <small class='form-text text-muted'>
+                                            <?php echo $lang->get('extension_token_all_auth_types_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-5'>
+                                        <div class='toggle toggle-modern' id='extension_token_all_auth_types' data-toggle-on='<?php echo isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='extension_token_all_auth_types_input' value='<?php echo isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1 ? '1' : '0'; ?>' />
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 

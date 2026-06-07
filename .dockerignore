@@ -62,6 +62,18 @@ storage/upload/*
 !storage/upload/.gitkeep
 storage/sk/*
 !storage/sk/.gitkeep
+storage/config/*
+!storage/config/.gitkeep
+
+# Install state — generated at runtime and persisted on volumes, never baked
+# into the image (issue #5236). A stray local copy would shadow the runtime
+# symlink or, for the master key, leak a development secret.
+app/config/settings.php
+app/config/settings.php.*
+app/includes/libraries/csrfp/libs/csrfp.config.php
+app/includes/libraries/csrfp/libs/csrfp.config.php.*
+secrets/*
+!secrets/.gitkeep
 
 # Backups
 backups/

@@ -107,11 +107,25 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 **Rule: always call the high-level helpers** (`emitItemEvent`, `emitFolderEvent`, etc.) after any write on items/folders in `sources/*.queries.php`. Never insert into `teampass_websocket_events` directly.
 
+## PHP-FPM
+
+> Full architecture details: @.claude/docs/architecture-php-fpm.md
+
+**Rule: spawn background tasks with `getPHPBinary()`** — it resolves a real PHP CLI binary under FPM (never `php-fpm` / `'false'`). **Rule: `tpFinishRequestEarly()` only after the full response is echoed** — later output is not delivered. Admin settings: `cli_php_binary_path`, `enable_fastcgi_finish_request`.
+
 ## API
 
 > Full reference: @.claude/docs/api-reference.md
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
+
+## Browser Extension Auto-Configuration
+
+> Full architecture details: @.claude/docs/architecture-extension-autoconfig.md
+
+One-click setup of the browser extension from the web app: a same-origin `window.postMessage` bridge detects the extension (content script on `<all_urls>`) and pushes a config bundle; a downloadable JSON file is the fallback. Credentials use token mode (a durable PAT) — **the password is never transmitted**.
+
+**Rule: both PAT gates (issuance in `users.queries.php`, consumption in `AuthModel::getUserAuthByToken`) are relaxed only behind the admin toggle `extension_token_all_auth_types`** (default `0`, Settings → API → Browser extension). Off ⇒ OAuth2-only behaviour preserved. **Rule: the auto-config PAT is durable** (`expires_at = NULL`), not single-use — token mode reuses it for silent re-auth; only the bundle has a 24h staleness window. **Rule: reload the unpacked extension fully after changing `content/`, `background/`, or `confirm/`** — Chrome does not hot-reload them.
 
 ## Security Considerations
 

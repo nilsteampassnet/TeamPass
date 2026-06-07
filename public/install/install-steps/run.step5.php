@@ -267,7 +267,7 @@ class DatabaseInstaller
     {
         DB::query(
             "CREATE TABLE IF NOT EXISTS " . $this->inputData['tablePrefix'] . "notification (
-                `increment_id` int(12) NOT NULL,
+                `increment_id` int(12) NOT NULL AUTO_INCREMENT,
                 `item_id` int(12) NOT NULL,
                 `user_id` int(12) NOT NULL,
                 PRIMARY KEY (`increment_id`)
@@ -673,6 +673,8 @@ class DatabaseInstaller
             array('admin', 'items_ops_job_frequency', '1'),
             array('admin', 'enable_refresh_task_last_execution', '1'),
             array('admin', 'ldap_group_objectclasses_attibute', 'top,groupofuniquenames'),
+            array('admin', 'ldap_allowed_login_group_dn', ''),
+            array('admin', 'ldap_allowed_login_group_mode', 'group'),
             array('admin', 'pwd_default_length', '14'),
             array('admin', 'tasks_log_retention_delay', '30'),
             array('admin', 'oauth2_enabled', '0'),
@@ -683,12 +685,16 @@ class DatabaseInstaller
             array('admin', 'oauth2_client_token', '', '1'),
             array('admin', 'oauth2_client_scopes', 'openid,profile,email,User.Read,Group.Read.All'),
             array('admin', 'oauth2_client_appname', 'Login with Azure'),
+            array('admin', 'oauth2_api_enabled', '0'),
+            array('admin', 'extension_token_all_auth_types', '0'),
             array('admin', 'show_item_data', '0'),
             array('admin', 'oauth2_tenant_id', '', '1'),
             array('admin', 'limited_search_default', '0'),
             array('admin', 'highlight_selected', '0'),
             array('admin', 'highlight_favorites', '0'),
             array('admin', 'tasks_history_delay', '604800'),
+            array('admin', 'cli_php_binary_path', ''),
+            array('admin', 'enable_fastcgi_finish_request', '1'),
             array('admin', 'oauth_new_user_is_administrated_by', '0'),
             array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
             array('admin', 'oauth_self_register_groups', ''),
@@ -1331,6 +1337,27 @@ class DatabaseInstaller
             KEY `USER` (`user_id`),
             KEY `idx_api_timestamp` (`timestamp`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table api_tokens (Personal Access Tokens for SSO/OAuth2 API access)
+    private function api_tokens()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "api_tokens` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `token_hash` varchar(64) NOT NULL,
+            `wrapped_private_key` text NOT NULL,
+            `salt` varchar(64) NOT NULL,
+            `label` varchar(255) NULL DEFAULT NULL,
+            `created_at` int(12) NOT NULL,
+            `expires_at` int(12) NULL DEFAULT NULL,
+            `last_used_at` int(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `token_hash` (`token_hash`),
+            KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
         );
     }
 

@@ -58,6 +58,11 @@ class ItemModel
             $userPublicKey = (string) $userKeyRow['public_key'];
         }
 
+        // Load settings once to know whether custom fields are enabled
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $itemExtraFields = isset($SETTINGS['item_extra_fields']) && (int) $SETTINGS['item_extra_fields'] === 1;
+
         // Get items
         $rows = DB::query(
             "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
@@ -134,6 +139,11 @@ class ItemModel
                 $row['otp_secret'] = $decryptedTotp['string'];
             }
 
+            // Custom fields attached to this item (only if the feature is enabled)
+            $itemFields = $itemExtraFields === true
+                ? $this->getItemCustomFields((int) $row['id'], (int) $row['id_tree'], $userId, $userPrivateKey, $userPublicKey)
+                : [];
+
             array_push(
                 $ret,
                 [
@@ -155,6 +165,7 @@ class ItemModel
                     'favicon_url' => $row['favicon_url'],
                     'tags' => $row['tags'],
                     'anyone_can_modify' => $row['anyone_can_modify'],
+                    'fields' => $itemFields,
                 ]
             );
 
@@ -192,6 +203,7 @@ class ItemModel
             $label = (string) $arrItemParams['label'];
             $password = (string) $arrItemParams['password'];
             $tags = (string) ($arrItemParams['tags'] ?? '');
+            $fields = (isset($arrItemParams['fields']) && is_array($arrItemParams['fields'])) ? $arrItemParams['fields'] : [];
             $userId = (int) $arrItemParams['id'];
             $username = (string) $arrItemParams['username'];
 
@@ -229,8 +241,8 @@ class ItemModel
             // Step 8: Insert the new item into the database
             $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel);
 
-            // Step 9: Handle post-insert tasks (logging, sharing, tagging)
-            $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $data, $SETTINGS);
+            // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
+            $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $fields, $data, $SETTINGS);
 
             // Notify WebSocket subscribers so other users viewing this folder see the new item
             emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
@@ -565,6 +577,7 @@ class ItemModel
         int $userId,
         string $username,
         string $tags,
+        array $fields,
         array $data,
         array $SETTINGS
     ) : void {
@@ -584,32 +597,467 @@ class ItemModel
         // Log the item creation
         logItems($SETTINGS, $newID, $data['label'], $userId, 'at_creation', $username);
 
-        // Create a task if the folder is not personal
-        if ((int) $itemInfos['personal_folder'] === 0) {
-            storeTask('new_item', $userId, 0, $folderId, $newID, $passwordKey, [], []);
-        }
-
         // Add tags to the item
         $this->addTags($newID, $tags);
+
+        // Store custom fields — returns the field object keys for the background task
+        $fieldsForTasks = $this->handleCustomFieldsOnCreate($newID, $folderId, $fields, $userId, $itemInfos, $SETTINGS);
+
+        // Create a task if the folder is not personal (generates pwd/fields sharekeys for the other users)
+        if ((int) $itemInfos['personal_folder'] === 0) {
+            storeTask('new_item', $userId, 0, $folderId, $newID, $passwordKey, $fieldsForTasks, []);
+        }
     }
 
 
     /**
      * Splits the tags string into individual tags and inserts them into the database.
+     *
+     * Tags are stored one per row in a varchar(30) column. TeamPass uses whitespace as the
+     * canonical separator (web UI, browser extension); commas are also accepted for robustness
+     * and to round-trip the comma-separated GET response. Each tag is trimmed, lowercased and
+     * capped at 30 characters to avoid silent truncation or strict-mode INSERT failures.
+     *
      * @param int $newID - The ID of the item to associate tags with
-     * @param string $tags - A comma-separated string of tags
+     * @param string $tags - A whitespace- or comma-separated string of tags
      */
     private function addTags(int $newID, string $tags) : void
     {
-        $tagsArray = explode(',', $tags);
+        $tagsArray = preg_split('/[\s,]+/', $tags, -1, PREG_SPLIT_NO_EMPTY);
+        if ($tagsArray === false) {
+            return;
+        }
         foreach ($tagsArray as $tag) {
-            if (!empty($tag)) {
+            $tag = mb_substr(trim($tag), 0, 30);
+            if ($tag !== '') {
                 DB::insert(
                     prefixTable('tags'),
-                    ['item_id' => $newID, 'tag' => strtolower($tag)]
+                    ['item_id' => $newID, 'tag' => mb_strtolower($tag)]
                 );
             }
         }
+    }
+
+
+    /**
+     * Return the custom field IDs available for a folder.
+     *
+     * A folder is linked to top-level categories (categories_folders); the actual fields are
+     * the child categories (parent_id IN those categories). Used to restrict writes/reads to
+     * the fields that legitimately belong to the item's folder.
+     *
+     * @param int $folderId
+     * @return int[] List of field (category) IDs
+     */
+    private function getFolderFieldIds(int $folderId): array
+    {
+        $catRows = DB::query(
+            'SELECT id_category FROM ' . prefixTable('categories_folders') . ' WHERE id_folder = %i',
+            $folderId
+        );
+        if (DB::count() === 0) {
+            return [];
+        }
+        $arrCatList = array_map('intval', array_column($catRows, 'id_category'));
+
+        $fieldRows = DB::query(
+            'SELECT id FROM ' . prefixTable('categories') . ' WHERE parent_id IN %li',
+            $arrCatList
+        );
+
+        return array_map('intval', array_column($fieldRows, 'id'));
+    }
+
+
+    /**
+     * Read and decrypt the custom fields attached to an item.
+     *
+     * Only fields whose category is associated to the item's folder are returned. Encrypted
+     * fields are decrypted with migration-aware sharekey handling and base64-decoded to return
+     * clean plaintext (same convention as the password path). A field without an available
+     * sharekey returns an empty value rather than leaking ciphertext.
+     *
+     * @param int    $itemId         Item ID
+     * @param int    $folderId       Folder the item belongs to
+     * @param int    $userId         Requesting user ID
+     * @param string $userPrivateKey User private key (already decrypted)
+     * @param string $userPublicKey  User public key
+     *
+     * @return array<int, array{id:int, title:string, type:string, masked:int, value:string}>
+     */
+    private function getItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey): array
+    {
+        // Categories associated to the item's folder
+        $catRows = DB::query(
+            'SELECT id_category FROM ' . prefixTable('categories_folders') . ' WHERE id_folder = %i',
+            $folderId
+        );
+        if (DB::count() === 0) {
+            return [];
+        }
+        $arrCatList = array_map('intval', array_column($catRows, 'id_category'));
+
+        // Field values for this item, restricted to the folder's categories
+        $rows = DB::query(
+            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
+                i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
+                c.title AS title, c.type AS type, c.masked AS masked
+            FROM ' . prefixTable('categories_items') . ' AS i
+            INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
+            WHERE i.item_id = %i AND c.parent_id IN %li',
+            $itemId,
+            $arrCatList
+        );
+
+        $fields = [];
+        foreach ($rows as $row) {
+            $value = '';
+            $isEncrypted = (int) $row['encrypted_data'] === 1 && $row['encryption_type'] !== 'not_set';
+
+            if ($isEncrypted === true) {
+                $userKey = DB::queryFirstRow(
+                    'SELECT share_key, increment_id
+                    FROM ' . prefixTable('sharekeys_fields') . '
+                    WHERE user_id = %i AND object_id = %i',
+                    $userId,
+                    $row['object_id']
+                );
+                // Decrypt only when a sharekey is available; otherwise leave the value empty
+                if (DB::count() > 0) {
+                    try {
+                        $value = (string) base64_decode(
+                            (string) doDataDecryption(
+                                $row['data'],
+                                decryptUserObjectKeyWithMigration(
+                                    $userKey['share_key'],
+                                    $userPrivateKey,
+                                    $userPublicKey,
+                                    (int) $userKey['increment_id'],
+                                    'sharekeys_fields'
+                                )
+                            )
+                        );
+                    } catch (Exception $e) {
+                        error_log('[API] ItemModel::getItemCustomFields decryption error for field ' . $row['field_id'] . ': ' . $e->getMessage());
+                        $value = '';
+                    }
+                }
+            } else {
+                $value = (string) $row['data'];
+            }
+
+            $fields[] = [
+                'id' => (int) $row['field_id'],
+                'title' => (string) $row['title'],
+                'type' => (string) $row['type'],
+                'masked' => (int) $row['masked'],
+                'value' => $value,
+            ];
+        }
+
+        return $fields;
+    }
+
+
+    /**
+     * Insert the provided custom fields for a newly created item.
+     *
+     * Encrypt-before-INSERT for fields flagged as encrypted, create the share keys
+     * synchronously, and collect the field object keys so the caller can pass them to the
+     * background task (other users' keys). Only fields belonging to the item's folder and with
+     * a non-empty value are stored.
+     *
+     * @param int   $newID     New item ID
+     * @param int   $folderId  Folder the item belongs to
+     * @param array $fields    Normalized fields: [ ['id'=>int,'value'=>string], ... ]
+     * @param int   $userId    Creator user ID
+     * @param array $itemInfos Folder settings (incl. personal_folder flag)
+     * @param array $SETTINGS  Global settings
+     *
+     * @return array<int, array{object_id:int, object_key:string}> Field keys for the background task
+     */
+    private function handleCustomFieldsOnCreate(int $newID, int $folderId, array $fields, int $userId, array $itemInfos, array $SETTINGS): array
+    {
+        $fieldsForTasks = [];
+
+        if (
+            empty($fields) === true
+            || isset($SETTINGS['item_extra_fields']) === false
+            || (int) $SETTINGS['item_extra_fields'] !== 1
+        ) {
+            return $fieldsForTasks;
+        }
+
+        // Security: only store fields that legitimately belong to the item's folder
+        $allowedFieldIds = $this->getFolderFieldIds($folderId);
+        if (empty($allowedFieldIds) === true) {
+            return $fieldsForTasks;
+        }
+
+        foreach ($fields as $field) {
+            $fieldId = (int) ($field['id'] ?? 0);
+            $value = (string) ($field['value'] ?? '');
+
+            if ($fieldId <= 0 || $value === '' || in_array($fieldId, $allowedFieldIds, true) === false) {
+                continue;
+            }
+
+            $cat = DB::queryFirstRow(
+                'SELECT encrypted_data FROM ' . prefixTable('categories') . ' WHERE id = %i',
+                $fieldId
+            );
+            if ($cat === null) {
+                continue;
+            }
+
+            if ((int) $cat['encrypted_data'] === 1) {
+                // Encrypt before INSERT so plaintext never lands in DB
+                $cryptedStuff = doDataEncryption($value);
+
+                DB::insert(
+                    prefixTable('categories_items'),
+                    [
+                        'item_id' => $newID,
+                        'field_id' => $fieldId,
+                        'data' => $cryptedStuff['encrypted'],
+                        'data_iv' => '',
+                        'encryption_type' => 'teampass_aes',
+                    ]
+                );
+                $newObjectId = (int) DB::insertId();
+
+                // Create share keys (other users are also covered by the background task)
+                storeUsersShareKey(
+                    'sharekeys_fields',
+                    (int) $itemInfos['personal_folder'],
+                    $newObjectId,
+                    $cryptedStuff['objectKey'],
+                    true,
+                    false,
+                    [],
+                    -1,
+                    $userId
+                );
+
+                $fieldsForTasks[] = [
+                    'object_id' => $newObjectId,
+                    'object_key' => $cryptedStuff['objectKey'],
+                ];
+            } else {
+                DB::insert(
+                    prefixTable('categories_items'),
+                    [
+                        'item_id' => $newID,
+                        'field_id' => $fieldId,
+                        'data' => $value,
+                        'data_iv' => '',
+                        'encryption_type' => 'not_set',
+                    ]
+                );
+            }
+        }
+
+        return $fieldsForTasks;
+    }
+
+
+    /**
+     * Create or update the provided custom fields for an existing item.
+     *
+     * For each field: insert it if absent, otherwise compare against the current (decrypted)
+     * value and update only when it changed. Encrypted fields are re-encrypted and their share
+     * keys refreshed synchronously for all eligible users — consistent with how the API refreshes
+     * the password share keys on update. Empty values are ignored (a field is not cleared).
+     *
+     * @param int    $itemId         Item ID
+     * @param int    $folderId       Effective folder ID (target folder if the item is moved)
+     * @param array  $fields         Normalized fields: [ ['id'=>int,'value'=>string], ... ]
+     * @param array  $userData       User data from JWT token (id, username)
+     * @param string $userPrivateKey User private key (already decrypted)
+     * @param array  $SETTINGS       Global settings
+     *
+     * @return void
+     */
+    private function handleCustomFieldsOnUpdate(int $itemId, int $folderId, array $fields, array $userData, string $userPrivateKey, array $SETTINGS): void
+    {
+        if (
+            empty($fields) === true
+            || isset($SETTINGS['item_extra_fields']) === false
+            || (int) $SETTINGS['item_extra_fields'] !== 1
+        ) {
+            return;
+        }
+
+        $allowedFieldIds = $this->getFolderFieldIds($folderId);
+        if (empty($allowedFieldIds) === true) {
+            return;
+        }
+
+        $userId = (int) $userData['id'];
+        $username = (string) ($userData['username'] ?? '');
+        $personal = (int) $this->getFolderSettings($folderId)['personal_folder'];
+
+        // User public key (needed to decrypt the current encrypted values for comparison)
+        $userPublicKey = '';
+        $userKeyRow = DB::queryFirstRow(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if ($userKeyRow !== null) {
+            $userPublicKey = (string) $userKeyRow['public_key'];
+        }
+
+        foreach ($fields as $field) {
+            $fieldId = (int) ($field['id'] ?? 0);
+            $value = (string) ($field['value'] ?? '');
+
+            if ($fieldId <= 0 || $value === '' || in_array($fieldId, $allowedFieldIds, true) === false) {
+                continue;
+            }
+
+            $existing = DB::queryFirstRow(
+                'SELECT i.id AS object_id, i.data AS data, i.encryption_type AS encryption_type,
+                    c.encrypted_data AS encrypted_data, c.title AS title
+                FROM ' . prefixTable('categories_items') . ' AS i
+                INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
+                WHERE i.item_id = %i AND i.field_id = %i',
+                $itemId,
+                $fieldId
+            );
+
+            // New field value for this item
+            if ($existing === null) {
+                if ((int) $this->isFieldEncrypted($fieldId) === 1) {
+                    $cryptedStuff = doDataEncryption($value);
+                    DB::insert(
+                        prefixTable('categories_items'),
+                        [
+                            'item_id' => $itemId,
+                            'field_id' => $fieldId,
+                            'data' => $cryptedStuff['encrypted'],
+                            'data_iv' => '',
+                            'encryption_type' => 'teampass_aes',
+                        ]
+                    );
+                    $newObjectId = (int) DB::insertId();
+                    storeUsersShareKey(
+                        'sharekeys_fields',
+                        $personal,
+                        $newObjectId,
+                        $cryptedStuff['objectKey'],
+                        false,
+                        true,
+                        [],
+                        -1,
+                        $userId
+                    );
+                } else {
+                    DB::insert(
+                        prefixTable('categories_items'),
+                        [
+                            'item_id' => $itemId,
+                            'field_id' => $fieldId,
+                            'data' => $value,
+                            'data_iv' => '',
+                            'encryption_type' => 'not_set',
+                        ]
+                    );
+                }
+                logItems($SETTINGS, $itemId, '', $userId, 'at_modification', $username, 'at_field');
+                continue;
+            }
+
+            // Field already exists — compare current value, update only if it changed
+            $objectId = (int) $existing['object_id'];
+            $oldValue = '';
+
+            if ($existing['encryption_type'] !== 'not_set') {
+                $userKey = DB::queryFirstRow(
+                    'SELECT share_key, increment_id
+                    FROM ' . prefixTable('sharekeys_fields') . '
+                    WHERE user_id = %i AND object_id = %i',
+                    $userId,
+                    $objectId
+                );
+                if (DB::count() > 0) {
+                    $oldValue = (string) base64_decode(
+                        (string) doDataDecryption(
+                            $existing['data'],
+                            decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $userPrivateKey,
+                                $userPublicKey,
+                                (int) $userKey['increment_id'],
+                                'sharekeys_fields'
+                            )
+                        )
+                    );
+                }
+            } else {
+                $oldValue = (string) $existing['data'];
+            }
+
+            if ($value === $oldValue) {
+                continue;
+            }
+
+            if ((int) $existing['encrypted_data'] === 1) {
+                $cryptedStuff = doDataEncryption($value);
+                DB::update(
+                    prefixTable('categories_items'),
+                    [
+                        'data' => $cryptedStuff['encrypted'],
+                        'data_iv' => '',
+                        'encryption_type' => 'teampass_aes',
+                    ],
+                    'item_id = %i AND field_id = %i',
+                    $itemId,
+                    $fieldId
+                );
+                storeUsersShareKey(
+                    'sharekeys_fields',
+                    $personal,
+                    $objectId,
+                    $cryptedStuff['objectKey'],
+                    false,
+                    true,
+                    [],
+                    -1,
+                    $userId
+                );
+            } else {
+                DB::update(
+                    prefixTable('categories_items'),
+                    [
+                        'data' => $value,
+                        'data_iv' => '',
+                        'encryption_type' => 'not_set',
+                    ],
+                    'item_id = %i AND field_id = %i',
+                    $itemId,
+                    $fieldId
+                );
+            }
+
+            logItems($SETTINGS, $itemId, (string) $existing['title'], $userId, 'at_modification', $username, 'at_field : ' . (string) $existing['title']);
+        }
+    }
+
+
+    /**
+     * Whether a field (category) is flagged as encrypted.
+     *
+     * @param int $fieldId
+     * @return int 1 if encrypted, 0 otherwise
+     */
+    private function isFieldEncrypted(int $fieldId): int
+    {
+        $cat = DB::queryFirstRow(
+            'SELECT encrypted_data FROM ' . prefixTable('categories') . ' WHERE id = %i',
+            $fieldId
+        );
+
+        return ($cat !== null && (int) $cat['encrypted_data'] === 1) ? 1 : 0;
     }
 
 
@@ -810,6 +1258,14 @@ class ItemModel
 
                 // Add new tags
                 $this->addTags($itemId, $params['tags']);
+            }
+
+            // Handle custom fields update
+            if (isset($params['fields']) && is_array($params['fields'])) {
+                $effectiveFolderId = isset($updateData['id_tree'])
+                    ? (int) $updateData['id_tree']
+                    : (int) $currentItem['id_tree'];
+                $this->handleCustomFieldsOnUpdate($itemId, $effectiveFolderId, $params['fields'], $userData, $userPrivateKey, $SETTINGS);
             }
 
             // If password was updated, update share keys

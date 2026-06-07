@@ -111,9 +111,11 @@ services:
       INSTALL_MODE: manual
 
     volumes:
-      - teampass-sk:/var/www/html/sk
-      - teampass-files:/var/www/html/files
-      - teampass-upload:/var/www/html/upload
+      - teampass-sk:/var/www/html/storage/sk
+      - teampass-files:/var/www/html/storage/files
+      - teampass-upload:/var/www/html/storage/upload
+      - teampass-config:/var/www/html/storage/config
+      - teampass-secrets:/var/www/html/secrets
 
     ports:
       - "${TEAMPASS_PORT:-8080}:80"
@@ -156,6 +158,8 @@ volumes:
   teampass-sk:
   teampass-files:
   teampass-upload:
+  teampass-config:
+  teampass-secrets:
   teampass-db:
 ```
 
@@ -179,6 +183,8 @@ Convert bind mounts to volumes:
 docker volume create teampass-sk
 docker volume create teampass-files
 docker volume create teampass-upload
+docker volume create teampass-config
+docker volume create teampass-secrets
 docker volume create teampass-db
 
 # Copy data from old bind mounts

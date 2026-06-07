@@ -105,7 +105,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         runtimes: 'gears,html5,flash,silverlight,browserplus',
         browse_button: 'profile-avatar-file',
         container: 'profile-avatar-file-container',
-        max_file_size: '2mb',
+        max_file_size: '10mb',
         chunk_size: '1mb',
         unique_names: true,
         dragdrop: true,
@@ -113,13 +113,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         multi_selection: false,
         max_file_count: 1,
         filters: [{
-            title: 'PNG files',
-            extensions: 'png'
+            title: 'Image files',
+            extensions: 'png,jpg,jpeg'
         }],
         resize: {
-            width: '90',
-            height: '90',
-            quality: '90'
+            width: '256',
+            height: '256',
+            quality: '85'
         },
         url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php',
         flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
@@ -148,7 +148,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         up.setOption('multipart_params', {
                             PHPSESSID: '<?php echo $session->get('key'); ?>',
                             type_upload: "upload_profile_photo",
-                            user_token: data[0].token
+                            user_upload_token: data[0].token
                         });
 
                         up.start();
@@ -168,7 +168,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 // update form
                 toastr.remove();
                 if (myData.error === false) {
-                    $('#profile-user-avatar').attr('src', 'includes/avatars/' + myData.filename);
+                    $('#profile-user-avatar').attr('src', 'assets/avatars/' + myData.filename);
+                    $('#profile-avatar-delete').removeClass('hidden');
                     $('#profile-avatar-file-list').html('').addClass('hidden');
                 } else {
                     toastr.error(
@@ -203,6 +204,66 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
 
     uploader_photo.init();
+
+    try { $('#profile-avatar-delete[data-toggle="tooltip"]').tooltip(); } catch (e) {}
+
+    $(document).on('click', '#profile-avatar-delete', function(e) {
+        e.preventDefault();
+
+        launchConfirmDialog(
+            '<?php echo addslashes($lang->get('delete_current_avatar')); ?>',
+            '<?php echo addslashes($lang->get('delete_current_avatar_confirm')); ?>',
+            function() {
+                toastr.remove();
+                toastr.info('<i class="fas fa-cog fa-spin fa-2x"></i>');
+
+                $.post(
+                    'sources/users.queries.php',
+                    {
+                        type: 'user_profile_avatar_delete',
+                        data: prepareExchangedData(JSON.stringify({}), 'encode', '<?php echo $session->get('key'); ?>'),
+                        isprofileupdate: true,
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        try {
+                            data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                        } catch (e) {
+                            toastr.remove();
+                            toastr.error(
+                                'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
+                                '',
+                                { closeButton: true }
+                            );
+                            return false;
+                        }
+
+                        toastr.remove();
+                        if (data.error === true) {
+                            toastr.error(
+                                data.message || '<?php echo addslashes($lang->get('avatar_delete_failed')); ?>',
+                                '',
+                                { closeButton: true }
+                            );
+                            return false;
+                        }
+
+                        $('#profile-user-avatar').attr('src', data.avatar_url || './assets/images/photo.jpg');
+                        $('#profile-avatar-delete').addClass('hidden');
+                        toastr.success(
+                            data.message || '<?php echo addslashes($lang->get('avatar_deleted')); ?>',
+                            '',
+                            {
+                                timeOut: 2000,
+                                progressBar: true
+                            }
+                        );
+                    }
+                );
+            },
+            '<?php echo addslashes($lang->get('delete')); ?>'
+        );
+    });
 
 
     // Save user settings
@@ -702,5 +763,124 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // nothing
         });
     });
+
+    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+        && $session->get('user-auth_type') === 'oauth2') : ?>
+    /**
+     * Browser extension tokens (Personal Access Tokens) for OAuth2 users.
+     */
+    var extensionTokenKey = '<?php echo $session->get('key'); ?>';
+
+    function renderExtensionTokens(tokens) {
+        var list = $('#extension-tokens-list');
+        if (list.length === 0) {
+            return;
+        }
+        if (!tokens || tokens.length === 0) {
+            list.html('<span class="text-muted"><?php echo $lang->get('extension_token_none'); ?></span>');
+            return;
+        }
+        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        tokens.forEach(function(token) {
+            var created = new Date(token.created_at * 1000).toLocaleString();
+            var lastUsed = token.last_used_at ? new Date(token.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
+            // Label is escaped to prevent XSS (also sanitized server-side on insert).
+            var label = token.label ? $('<span>').text(token.label).html() : '<i class="text-muted">&mdash;</i>';
+            html += '<tr>'
+                + '<td>' + label + '</td>'
+                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed + '</td>'
+                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-extension-token" data-id="' + parseInt(token.id, 10) + '" title="<?php echo $lang->get('extension_token_revoke'); ?>"><i class="fa-solid fa-trash"></i></button></td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        list.html(html);
+    }
+
+    function loadExtensionTokens() {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'list_extension_tokens',
+                data: prepareExchangedData(JSON.stringify({}), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', extensionTokenKey);
+                if (data.error === false) {
+                    renderExtensionTokens(data.tokens);
+                }
+            }
+        );
+    }
+
+    if ($('#extension-tokens-block').length > 0) {
+        loadExtensionTokens();
+    }
+
+    $(document).on('click', '#generate-extension-token', function() {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'generate_extension_token',
+                data: prepareExchangedData(JSON.stringify({ label: '' }), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(response) {
+                response = prepareExchangedData(response, 'decode', extensionTokenKey);
+                if (response.error === false) {
+                    $('#extension-token-value').val(response.token);
+                    $('#extension-token-modal').modal('show');
+                    loadExtensionTokens();
+                } else {
+                    toastr.remove();
+                    toastr.error(response.message, '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    });
+                }
+            }
+        );
+    });
+
+    $(document).on('click', '.revoke-extension-token', function() {
+        if (window.confirm('<?php echo $lang->get('extension_token_revoke_confirm'); ?>') === false) {
+            return;
+        }
+        var tokenId = parseInt($(this).data('id'), 10);
+        $.post(
+            'sources/users.queries.php', {
+                type: 'revoke_extension_token',
+                data: prepareExchangedData(JSON.stringify({ id: tokenId }), 'encode', extensionTokenKey),
+                key: extensionTokenKey
+            },
+            function(response) {
+                response = prepareExchangedData(response, 'decode', extensionTokenKey);
+                if (response.error === false) {
+                    loadExtensionTokens();
+                    toastr.remove();
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                        timeOut: 1500
+                    });
+                }
+            }
+        );
+    });
+
+    document.getElementById('copy-extension-token').addEventListener('click', function() {
+        const tokenValue = document.getElementById('extension-token-value').value;
+        navigator.clipboard.writeText(tokenValue).then(function() {
+            toastr.remove();
+            toastr.info(
+                '<?php echo $lang->get('copy_to_clipboard'); ?>',
+                '', {
+                    timeOut: 2000,
+                    progressBar: true,
+                    positionClass: 'toast-bottom-right'
+                }
+            );
+        }, function(err) {
+            // nothing
+        });
+    });
+    <?php endif; ?>
 
 </script>

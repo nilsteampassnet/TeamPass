@@ -50,7 +50,8 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 * __Additional User DN__ - This value is used in addition to the base DN when searching and loading users. If no value is supplied, the subtree search will start from the base DN.
 * __User Object Filter__ - The filter to use when searching user objects.
 * __LDAP group object filter__ - The filter to use when searching group objects.
-* __LDAP GUID attribute__ - Provides the GUID attribute used in your directory.Only used when option (1) is enabled.
+* __LDAP GUID attribute__ - Provides the GUID attribute used in your directory. Only used when option (1) is enabled.
+* __Restrict login to LDAP group (DN)__ - Full distinguished name of the LDAP group whose members are allowed to log in. Leave empty for no restriction. See [Login restriction by group membership](#login-restriction-by-group-membership) for details.
 
 #### Configure special Teampass characteritics
 
@@ -59,6 +60,46 @@ Depending of the AD type and your users annuary configuration, the next keys nee
 * __Hide forgot password link on Home page__ - If LDAP authentication is enabled, you should disable forgot password feature but it can be enabled for locally managed users.
 * __AD user to get created automatically__ - Valid AD user will have an account automatically created in Teampass and his AD groups mapped with corresponding Teampass roles.
 
+
+### Login restriction by group membership
+
+By default, any valid LDAP user can log into Teampass (subject to the *Local and LDAP users* setting). The **Restrict login to LDAP group (DN)** option lets you further narrow access to members of a single specific group.
+
+#### How it works
+
+When a DN is configured, Teampass performs an additional check **after** credential validation: it fetches the group entry directly by its full DN and verifies that the authenticating user is listed as a member. Users who are not members are denied login — and no local account is created for them.
+
+The group entry is retrieved with an LDAP `scope=base` read, which means **the group can be located anywhere in the directory tree**, including outside the users base DN. This is particularly useful in environments where groups and users are stored under different subtrees.
+
+All standard membership attribute types are supported:
+
+| Attribute | Object class |
+|-----------|-------------|
+| `uniqueMember` | `groupOfUniqueNames` |
+| `member` | `groupOfNames` |
+| `memberUid` | `posixGroup` |
+
+#### Configuration
+
+In the admin panel, navigate to **Settings › LDAP** and fill in the **Restrict login to LDAP group (DN)** field with the full DN of the group:
+
+```
+cn=xa_passman,ou=group,ou=rgy_res,o=desy,c=de
+```
+
+Leave the field empty to disable the restriction.
+
+> **Note** — This setting applies to both `OpenLDAP` and `Active Directory` connection types.
+
+#### Error handling
+
+| Situation | Behaviour |
+|-----------|-----------|
+| User not in the group | Login denied with message *"Access denied: your account is not in the required LDAP group."* |
+| Group DN not found (typo) | Login denied; a warning is written to the server error log |
+| Field left empty | No restriction applied — existing behaviour unchanged |
+
+---
 
 ## Multi Factor Authentication (MFA)
 
@@ -127,3 +168,33 @@ Navigate to `OAuth` page from the administration, and provide the expected infor
 It is suggested to perform a test with a fake user.
 
 ![OAuth2 settings example](../_media/tp3_auth_oauth2_1.png)
+
+### Allowing OAuth2 users to access the API
+
+By default OAuth2 (SSO) users **cannot** use the REST API or the browser extension. The API
+authenticates a user with their login, password and API key, but an OAuth2 user never sets a
+TeamPass password — so the password-based path cannot work for them.
+
+To enable API access for OAuth2 users, turn on **`Allow OAuth2 users to access the API`** on the
+`OAuth` administration page. This toggle is **disabled by default** and is independent from the
+global API switch on the `API` page: both must be enabled.
+
+Local and LDAP users are not affected — they keep authenticating the API with their password and
+API key.
+
+#### How an OAuth2 user connects the API / browser extension
+
+1. The OAuth2 user logs into the TeamPass web interface as usual (through Entra).
+2. In **Profile → Browser extension tokens**, they click *Generate a new token*. A 256-bit
+   **Personal Access Token** is shown **once** — they copy it immediately (it is never displayed
+   again).
+3. In the API client / browser extension they authenticate with their **login** and this
+   **token** (no password, no API key). The server returns the same kind of session as the
+   password path.
+4. Tokens can be **revoked** at any time from the same profile screen; a revoked token stops
+   working immediately.
+
+Security: the server never stores the token itself — only a hash of it, plus a copy of the user's
+private key re-wrapped with a key derived from the token. A database dump alone therefore cannot
+decrypt anything, and the token can only be created while the user is fully authenticated in the
+web interface.

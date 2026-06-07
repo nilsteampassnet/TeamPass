@@ -828,6 +828,10 @@ switch ($inputData['type']) {
             $arrData,
             'encode'
         );
+
+        // Response is complete: under PHP-FPM, flush it now so the worker is
+        // freed before PHP shutdown work (no-op under mod_php).
+        tpFinishRequestEarly();
         break;
 
     /*

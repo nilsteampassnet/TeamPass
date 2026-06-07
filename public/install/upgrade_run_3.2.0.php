@@ -83,6 +83,48 @@ $lang = new Language();
 
 //--->BEGIN 3.2.0
 
+// Ensure item notification subscriptions can be inserted on upgraded instances.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'notification` (
+        `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+        `item_id` INT(12) NOT NULL,
+        `user_id` INT(12) NOT NULL,
+        PRIMARY KEY (`increment_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating notification table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+$notificationIncrementColumnResult = mysqli_query(
+    $db_link,
+    "SHOW COLUMNS FROM `" . $pre . "notification` LIKE 'increment_id'"
+);
+if ($notificationIncrementColumnResult === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error reading notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+$notificationIncrementColumn = mysqli_fetch_assoc($notificationIncrementColumnResult);
+if (
+    $notificationIncrementColumn !== null
+    && $notificationIncrementColumn !== false
+    && stripos((string) ($notificationIncrementColumn['Extra'] ?? ''), 'auto_increment') === false
+) {
+    $res = mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "notification` MODIFY `increment_id` INT(12) NOT NULL AUTO_INCREMENT"
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error updating notification increment_id column: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Add server-side AES key column to teampass_api (session_aes_key is no longer stored in JWT)
 $res = addColumnIfNotExist(
     $pre . 'api',
@@ -271,7 +313,7 @@ checkIndexExist(
 // if they still point to the old root-level locations ({root}/upload and {root}/files).
 $row = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_dir'"));
 if ($row && !empty($row['valeur'])) {
-    $cpassmanDir = rtrim((string) $row['valeur'], '/');
+    $cpassmanDir = rtrim((string) $row['valeur'], '/\\');
 
     $rowUpload = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_upload_folder'"));
     if ($rowUpload && strpos((string) $rowUpload['valeur'], '/storage/upload') === false) {
@@ -281,6 +323,29 @@ if ($row && !empty($row['valeur'])) {
     $rowFiles = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='path_to_files_folder'"));
     if ($rowFiles && strpos((string) $rowFiles['valeur'], '/storage/files') === false) {
         mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($cpassmanDir . '/storage/files') . "' WHERE type='admin' AND intitule='path_to_files_folder'");
+    }
+
+    // Scheduled backups now default to storage/backups. Migrate only empty or
+    // known legacy root-level backup/files locations; explicit storage/files
+    // locations remain accepted by the runtime as legacy-compatible paths.
+    $newScheduledBackupDir = $cpassmanDir . '/storage/backups';
+    $legacyFilesDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/files'), '/');
+    $legacyBackupsDir = rtrim(str_replace('\\', '/', $cpassmanDir . '/backups'), '/');
+    $rowScheduled = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='settings' AND intitule='bck_scheduled_output_dir'"));
+    if ($rowScheduled === null || $rowScheduled === false) {
+        mysqli_query($db_link, "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('settings', 'bck_scheduled_output_dir', '" . addslashes($newScheduledBackupDir) . "')");
+    } else {
+        $scheduledDir = trim((string) ($rowScheduled['valeur'] ?? ''));
+        $scheduledDirNormalized = rtrim(str_replace('\\', '/', $scheduledDir), '/');
+        $isLegacyScheduledDir = $scheduledDir === ''
+            || $scheduledDirNormalized === $legacyFilesDir
+            || strpos($scheduledDirNormalized, $legacyFilesDir . '/') === 0
+            || $scheduledDirNormalized === $legacyBackupsDir
+            || strpos($scheduledDirNormalized, $legacyBackupsDir . '/') === 0;
+
+        if ($isLegacyScheduledDir === true) {
+            mysqli_query($db_link, "UPDATE `" . $pre . "misc` SET valeur='" . addslashes($newScheduledBackupDir) . "' WHERE type='settings' AND intitule='bck_scheduled_output_dir'");
+        }
     }
 
     $rowUrl = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='url_to_files_folder'"));
@@ -297,6 +362,64 @@ if ($row && !empty($row['valeur'])) {
 mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_cors_origins', '')"
+);
+
+// Add PHP-FPM performance settings: CLI binary override (empty = auto-detect)
+// and fastcgi_finish_request flush toggle (enabled by default, no-op under mod_php)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'cli_php_binary_path', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_fastcgi_finish_request', '1')"
+);
+
+// Add LDAP login group restriction settings
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_dn', '')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'ldap_allowed_login_group_mode', 'group')"
+);
+
+// Add the api_tokens table used by Personal Access Tokens (OAuth2/SSO API access).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_tokens` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `user_id` int(12) NOT NULL,
+        `token_hash` varchar(64) NOT NULL,
+        `wrapped_private_key` text NOT NULL,
+        `salt` varchar(64) NOT NULL,
+        `label` varchar(255) NULL DEFAULT NULL,
+        `created_at` int(12) NOT NULL,
+        `expires_at` int(12) NULL DEFAULT NULL,
+        `last_used_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `token_hash` (`token_hash`),
+        KEY `user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_tokens table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add OAuth2-for-API toggle (disabled by default; admin opt-in for SSO users API access).
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'oauth2_api_enabled', '0')"
+);
+
+// Add the "extension token for all auth types" toggle (disabled by default).
+// When enabled, local/LDAP users (not only OAuth2) can mint and use Personal Access
+// Tokens, which powers the browser-extension auto-configuration flow.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'extension_token_all_auth_types', '0')"
 );
 
 // Save upgrade timestamp (upsert: always update if exists)

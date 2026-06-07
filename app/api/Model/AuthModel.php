@@ -109,99 +109,8 @@ class AuthModel
                 return ["error" => "Login failed.", "info" => "Invalid credentials"];
             }
 
-                // Update user's key_tempo
-                $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
-
-                // Generate a unique session key for this API session (256 bits / 32 bytes)
-                // This key will be stored in the JWT and used to decrypt the private key
-                $sessionKey = random_bytes(32);
-                $sessionKeySalt = bin2hex(random_bytes(16));
-
-                // Encrypt the decrypted private key with the session key
-                // This allows us to store it securely in the database without exposing it
-                require_once API_ROOT_PATH . '/inc/encryption_utils.php';
-                $encryptedPrivateKey = encrypt_with_session_key($privateKeyClear, $sessionKey);
-
-                if ($encryptedPrivateKey === false) {
-                    return ["error" => "Login failed.", "info" => "Failed to encrypt private key"];
-                }
-
-                // Store the ENCRYPTED private key and the AES session key server-side.
-                // The session_aes_key never leaves the server (not embedded in JWT),
-                // so a stolen JWT alone cannot decrypt the private key.
-                DB::update(
-                    prefixTable('api'),
-                    [
-                        'encrypted_private_key' => $encryptedPrivateKey,
-                        'session_key_salt' => $sessionKeySalt,
-                        'session_key' => $keyTempo,
-                        'session_aes_key' => base64_encode($sessionKey),
-                        'timestamp' => time(),
-                    ],
-                    'user_id = %i',
-                    $userInfo['id']
-                );
-
-                // get user folders list and persist in cache_tree
-                $ret = $this->buildUserFoldersList($userInfo);
-                $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
-
-                // Log user
-                // Log user (API / browser extension)
-                // Prevent duplicate entries when the client retries within a very short window.
-                loadClasses('DB');
-                // Mark API-originated connections so they can be distinguished in logs UI
-                $originForDb = 'api | tp_src=api';
-
-                try {
-                    $recentCount = (int) DB::queryFirstField(
-                        'SELECT COUNT(*)
-                        FROM ' . prefixTable('log_system') . '
-                        WHERE type = %s AND label = %s AND qui = %i AND field_1 LIKE %ss AND date > %i',
-                        'user_connection',
-                        'user_connection',
-                        (int) $userInfo['id'],
-                        '%tp_src=api%',
-                        time() - 2
-                    );
-                } catch (\Throwable $e) {
-                    // Logging checks must never break API auth
-                    $recentCount = 0;
-                }
-
-                if ($recentCount === 0) {
-                    logEvents(
-                        $SETTINGS,
-                        'user_connection',
-                        'user_connection',
-                        (string) $userInfo['id'],
-                        stripslashes($userInfo['login']),
-                        $originForDb
-                    );
-                }
-                // create JWT (session_aes_key is stored server-side, not in the token)
-                return $this->createUserJWT(
-                    (int) $userInfo['id'],
-                    (string) $inputData['login'],
-                    (string) $userInfo['email'],
-                    (int) $userInfo['personal_folder'],
-                    '', // folders_list — kept empty, extension uses writableFolders endpoint
-                    '', // restricted_items_list — kept empty, no longer computed at auth time
-                    (string) $keyTempo,
-                    (int) $userInfo['admin'],
-                    (int) $userInfo['gestionnaire'],
-                    (int) $userInfo['can_create_root_folder'],
-                    (int) $userInfo['can_manage_all_users'],
-                    (string) $userInfo['fonction_id'],
-                    (string) $userInfo['api_allowed_folders'],
-                    (int) $userInfo['api_allowed_to_create'],
-                    (int) $userInfo['api_allowed_to_read'],
-                    (int) $userInfo['api_allowed_to_update'],
-                    (int) $userInfo['api_allowed_to_delete'],
-                    (int) ($SETTINGS['api_token_duration'] ?? 60),
-                    (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
-                    (int) ($SETTINGS['maintenance_mode'] ?? 0),
-                );
+                // Correct credentials — issue the JWT (shared with the token auth path)
+                return $this->issueJwtForUser($userInfo, $privateKeyClear, (string) $inputData['login'], $SETTINGS);
         } else {
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
             logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
@@ -209,6 +118,223 @@ class AuthModel
         }
     }
     //end getUserAuth
+
+    /**
+     * Authenticate an API/extension client using a Personal Access Token (PAT).
+     *
+     * Primarily for OAuth2/SSO users, who have no usable cleartext password (their stored
+     * pw is a hash of the non-secret Azure object id). The token unwraps a server-stored
+     * copy of the user's private key — re-wrapped at generation time under a key derived
+     * from the token (HKDF-SHA256) — then the standard JWT is issued.
+     *
+     * Gated by oauth2_api_enabled (OAuth2 users only) OR extension_token_all_auth_types
+     * (any auth type, powering the browser-extension auto-configuration flow). When neither
+     * toggle is enabled, token authentication is rejected and users keep the password + API
+     * key path, which is left untouched.
+     *
+     * @param string $login Username
+     * @param string $token Extension token (64 hex chars) generated in the web profile
+     * @return array{token:string}|array{error:string,info:string}
+     */
+    public function getUserAuthByToken(string $login, string $token): array
+    {
+        include_once API_ROOT_PATH . '/../sources/main.functions.php';
+
+        $inputData = dataSanitizer(
+            ['login' => $login, 'token' => $token],
+            ['login' => 'trim|escape|strip_tags', 'token' => 'trim'] // token is opaque
+        );
+
+        // Load config early — needed for the feature gate, bruteforce settings and logging.
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+
+        // Feature must be explicitly enabled by the administrator: either OAuth2-for-API
+        // (OAuth2 settings page) or extension tokens for all auth types (API settings page).
+        $oauth2ApiEnabled = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1;
+        $tokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+        if ($oauth2ApiEnabled === false && $tokenAllAuthTypes === false) {
+            return ["error" => "Login failed.", "info" => "OAuth2 API access is disabled"];
+        }
+
+        if (empty($inputData['login']) === true || empty($inputData['token']) === true) {
+            return ["error" => "Login failed.", "info" => "Missing credentials"];
+        }
+
+        // Token must be exactly 64 hex chars (bin2hex(random_bytes(32))).
+        if (preg_match('/^[a-f0-9]{64}$/', $inputData['token']) !== 1) {
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        }
+
+        $clientIp = $this->getClientIp();
+
+        // Anti-bruteforce: same table/thresholds as the password path.
+        $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
+        if ($lockUntil !== null) {
+            logEvents($SETTINGS, 'failed_auth', 'bruteforce_account_locked', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Account temporarily locked"];
+        }
+
+        $userInfo = getUserCompleteData($inputData['login']);
+
+        // User must exist and have API access enabled. The user must be OAuth2, unless
+        // the administrator allows extension tokens for all auth types.
+        // Uniform message — prevents user enumeration and auth_type probing.
+        if ($userInfo === null
+            || (int) $userInfo['api_enabled'] === 0
+            || ($tokenAllAuthTypes === false && (string) ($userInfo['auth_type'] ?? '') !== 'oauth2')
+        ) {
+            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+            logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        }
+
+        loadClasses('DB');
+        $row = DB::queryFirstRow(
+            'SELECT id, user_id, wrapped_private_key, salt, expires_at
+             FROM ' . prefixTable('api_tokens') . ' WHERE token_hash = %s',
+            hash('sha256', $inputData['token'])
+        );
+
+        $tokenValid = (
+            $row !== null
+            && (int) $row['user_id'] === (int) $userInfo['id']
+            && ($row['expires_at'] === null || (int) $row['expires_at'] > time())
+        );
+
+        if ($tokenValid === false) {
+            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+            logEvents($SETTINGS, 'failed_auth', 'api_invalid_token', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        }
+
+        // Derive the wrapping key from the token and unwrap the private key.
+        require_once API_ROOT_PATH . '/inc/encryption_utils.php';
+        $wrappingKey = hash_hkdf('sha256', $inputData['token'], 32, 'teampass-extension-token-v1', (string) hex2bin((string) $row['salt']));
+        $privateKeyClear = decrypt_with_session_key((string) $row['wrapped_private_key'], $wrappingKey);
+
+        if ($privateKeyClear === false || $privateKeyClear === '') {
+            $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
+            logEvents($SETTINGS, 'failed_auth', 'api_token_decrypt_failed', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
+            return ["error" => "Login failed.", "info" => "Invalid credentials"];
+        }
+
+        DB::update(prefixTable('api_tokens'), ['last_used_at' => time()], 'id = %i', (int) $row['id']);
+
+        return $this->issueJwtForUser($userInfo, $privateKeyClear, (string) $userInfo['login'], $SETTINGS);
+    }
+    //end getUserAuthByToken
+
+    /**
+     * Issue the API JWT for an already-authenticated user.
+     *
+     * Rotates key_tempo, re-wraps the cleartext private key under a fresh server-side
+     * session_aes_key (stored in teampass_api, never in the JWT), refreshes the folders
+     * cache, logs the connection and returns the signed JWT. Shared by the password and
+     * the Personal Access Token authentication paths.
+     *
+     * @param array<string,mixed> $userInfo        Row from getUserCompleteData()
+     * @param string              $privateKeyClear Cleartext RSA private key
+     * @param string              $loginForJwt     Login to embed in the JWT username claim
+     * @param array<string,mixed> $SETTINGS        Application settings
+     * @return array{token:string}|array{error:string,info:string}
+     */
+    private function issueJwtForUser(array $userInfo, string $privateKeyClear, string $loginForJwt, array $SETTINGS): array
+    {
+        // Update user's key_tempo
+        $keyTempo = getOrRotateKeyTempo($userInfo['id'], 3600);
+
+        // Generate a unique session key for this API session (256 bits / 32 bytes).
+        $sessionKey = random_bytes(32);
+        $sessionKeySalt = bin2hex(random_bytes(16));
+
+        // Encrypt the decrypted private key with the session key so it can be stored
+        // securely server-side without ever being exposed in the JWT.
+        require_once API_ROOT_PATH . '/inc/encryption_utils.php';
+        $encryptedPrivateKey = encrypt_with_session_key($privateKeyClear, $sessionKey);
+
+        if ($encryptedPrivateKey === false) {
+            return ["error" => "Login failed.", "info" => "Failed to encrypt private key"];
+        }
+
+        // Store the ENCRYPTED private key and the AES session key server-side.
+        // The session_aes_key never leaves the server (not embedded in JWT),
+        // so a stolen JWT alone cannot decrypt the private key.
+        DB::update(
+            prefixTable('api'),
+            [
+                'encrypted_private_key' => $encryptedPrivateKey,
+                'session_key_salt' => $sessionKeySalt,
+                'session_key' => $keyTempo,
+                'session_aes_key' => base64_encode($sessionKey),
+                'timestamp' => time(),
+            ],
+            'user_id = %i',
+            $userInfo['id']
+        );
+
+        // get user folders list and persist in cache_tree
+        $ret = $this->buildUserFoldersList($userInfo);
+        $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
+
+        // Log user (API / browser extension).
+        // Prevent duplicate entries when the client retries within a very short window.
+        loadClasses('DB');
+        // Mark API-originated connections so they can be distinguished in logs UI
+        $originForDb = 'api | tp_src=api';
+
+        try {
+            $recentCount = (int) DB::queryFirstField(
+                'SELECT COUNT(*)
+                FROM ' . prefixTable('log_system') . '
+                WHERE type = %s AND label = %s AND qui = %i AND field_1 LIKE %ss AND date > %i',
+                'user_connection',
+                'user_connection',
+                (int) $userInfo['id'],
+                '%tp_src=api%',
+                time() - 2
+            );
+        } catch (\Throwable $e) {
+            // Logging checks must never break API auth
+            $recentCount = 0;
+        }
+
+        if ($recentCount === 0) {
+            logEvents(
+                $SETTINGS,
+                'user_connection',
+                'user_connection',
+                (string) $userInfo['id'],
+                stripslashes($userInfo['login']),
+                $originForDb
+            );
+        }
+
+        // create JWT (session_aes_key is stored server-side, not in the token)
+        return $this->createUserJWT(
+            (int) $userInfo['id'],
+            $loginForJwt,
+            (string) $userInfo['email'],
+            (int) $userInfo['personal_folder'],
+            '', // folders_list — kept empty, extension uses writableFolders endpoint
+            '', // restricted_items_list — kept empty, no longer computed at auth time
+            (string) $keyTempo,
+            (int) $userInfo['admin'],
+            (int) $userInfo['gestionnaire'],
+            (int) $userInfo['can_create_root_folder'],
+            (int) $userInfo['can_manage_all_users'],
+            (string) $userInfo['fonction_id'],
+            (string) $userInfo['api_allowed_folders'],
+            (int) $userInfo['api_allowed_to_create'],
+            (int) $userInfo['api_allowed_to_read'],
+            (int) $userInfo['api_allowed_to_update'],
+            (int) $userInfo['api_allowed_to_delete'],
+            (int) ($SETTINGS['api_token_duration'] ?? 60),
+            (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
+            (int) ($SETTINGS['maintenance_mode'] ?? 0),
+        );
+    }
+    //end issueJwtForUser
 
     /**
      * Return the client IP address for bruteforce tracking.

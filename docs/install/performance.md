@@ -55,6 +55,47 @@ sudo a2enconf php8.4-fpm
 sudo systemctl restart apache2
 ```
 
+### Install and enable (Debian/Ubuntu with nginx)
+
+```
+sudo apt-get install php8.4-fpm nginx
+sudo systemctl restart php8.4-fpm nginx
+```
+
+### Pool tuning
+
+Edit the pool file (e.g. `/etc/php/8.4/fpm/pool.d/www.conf`):
+
+```ini
+pm = dynamic
+pm.max_children = 50          ; raise for 100+ concurrent users
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 15
+; Must be high enough for long operations (imports, exports, item moves).
+; Note: request_terminate_timeout overrides PHP set_time_limit(0).
+request_terminate_timeout = 300
+```
+
+> :warning: **Upload size — align the web server with PHP.** PHP-FPM never sees a request the
+> web server rejects first. Set the web-server body limit at least as high as the PHP limits
+> (`upload_max_filesize` / `post_max_size`):
+>
+> * nginx: `client_max_body_size 100M;`
+> * Apache: `LimitRequestBody 104857600`
+>
+> A lower web-server limit returns **HTTP 413** before PHP runs. The admin health page reports
+> the effective PHP limits as a reminder.
+
+### TeamPass FPM settings
+
+Two optional settings are available under **Administration > Tasks > Performance / PHP-FPM**:
+
+| Setting | Default | Purpose |
+|---|---|---|
+| **PHP CLI binary path** (`cli_php_binary_path`) | *(empty)* | Absolute path to the PHP **CLI** binary used to run background tasks (e.g. `/usr/bin/php8.4`). Leave empty for automatic detection. Set it only if background tasks fail to start — typically under PHP-FPM where auto-detection may resolve to the `php-fpm` binary. |
+| **Flush response before triggering tasks** (`enable_fastcgi_finish_request`) | *enabled* | Under PHP-FPM, send the HTTP response to the browser before triggering background tasks, freeing the worker earlier. No effect under Apache mod_php. Disable only if a reverse proxy buffers responses incorrectly. |
+
 ---
 
 ## 3. APCu (settings cache)
@@ -146,6 +187,7 @@ Go to **Administration > Dashboard**. The health check section displays the stat
 | OpenSSL | Required | Encryption |
 | OPcache | Recommended | Bytecode cache active |
 | PHP-FPM | Recommended | Running under FPM SAPI |
+| Upload limits | Informational | PHP limits + reminder to align the web-server body limit |
 | APCu | Recommended | Settings cache available |
 | Redis sessions | Informational | Redis session handler active |
 | WebSocket indexes | Informational | DB indexes present (when WebSocket is enabled) |

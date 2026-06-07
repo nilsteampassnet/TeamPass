@@ -142,8 +142,10 @@ $userInfo = DB::queryFirstRow(
 
 if (empty($userInfo['avatar']) === true) {
     $avatar = './assets/images/photo.jpg';
+    $hasCustomAvatar = false;
 } else {
     $avatar = './assets/avatars/' . strval($userInfo['avatar']);
+    $hasCustomAvatar = true;
 }
 
 // Get Groups name
@@ -328,8 +330,64 @@ foreach ($session->get('user-roles_array') as $role) {
                                         '</a>
                                     </li>';
                                     }
+                                    // Browser extension tokens (Personal Access Tokens) — OAuth2 users only, admin toggle on
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                        && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+                                        && $session->get('user-auth_type') === 'oauth2'
+                                    ) {
+                                        echo '
+                                    <li class="list-group-item" id="extension-tokens-block">
+                                        <button class="btn btn-sm btn-primary float-right infotip" id="generate-extension-token" title="' . $lang->get('extension_token_generate') . '"><i class="fa-solid fa-plus pointer"></i></button>
+                                        <b><i class="fa-solid fa-puzzle-piece fa-fw fa-lg mr-2"></i>' . $lang->get('extension_tokens') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('extension_tokens_tip') . '</small>
+                                        <div class="mt-2" id="extension-tokens-list"></div>
+                                    </li>';
+                                    }
+                                    // Browser extension auto-configuration — when token-based access is
+                                    // available to this user (OAuth2, or all-auth-types toggle on).
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                        && (
+                                            (isset($SETTINGS['extension_token_all_auth_types']) === true && (int) $SETTINGS['extension_token_all_auth_types'] === 1)
+                                            || (isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 && $session->get('user-auth_type') === 'oauth2')
+                                        )
+                                    ) {
+                                        echo '
+                                    <li class="list-group-item" id="extension-autoconfig-block">
+                                        <b><i class="fa-solid fa-wand-magic-sparkles fa-fw fa-lg mr-2"></i>' . $lang->get('extension_autoconfig_button') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('extension_autoconfig_prompt') . '</small>
+                                        <div class="mt-2">
+                                            <button class="btn btn-sm btn-primary" id="extension-autoconfig-configure"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>' . $lang->get('extension_autoconfig_button') . '</button>
+                                            <button class="btn btn-sm btn-secondary ml-1 hidden" id="extension-autoconfig-download"><i class="fa-solid fa-download mr-1"></i>' . $lang->get('extension_autoconfig_download') . '</button>
+                                        </div>
+                                    </li>';
+                                    }
                                     ?>
                                 </ul>
+                                <?php
+                                if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1
+                                    && isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1
+                                    && $session->get('user-auth_type') === 'oauth2'
+                                ) { ?>
+                                <div class="modal fade" id="extension-token-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                                    <div class="modal-dialog modal-dialog-centered" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"><i class="fa-solid fa-puzzle-piece mr-2"></i><?php echo $lang->get('extension_tokens'); ?></h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="alert alert-warning" role="alert"><i class="fa-solid fa-triangle-exclamation mr-2"></i><?php echo $lang->get('extension_token_copy_once'); ?></div>
+                                                <div class="input-group">
+                                                    <input type="text" readonly class="form-control" id="extension-token-value">
+                                                    <div class="input-group-append">
+                                                        <button class="btn btn-primary" type="button" id="copy-extension-token" title="<?php echo $lang->get('copy_to_clipboard'); ?>"><i class="fa-regular fa-copy"></i></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <?php } ?>
                             </div>
 
                             <!-- TIMELINE -->
@@ -467,8 +525,14 @@ foreach ($session->get('user-roles_array') as $role) {
                                                 <button type="button" class="btn btn-info" id="profile-user-save-settings"><?php echo $lang->get('save'); ?></button>
                                             </div>
                                             <div class="col-sm-8">
-                                                <?php if (($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
-                                                    <button type="button" class="btn btn-warning float-right ml-2" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                <?php if ((string) ($SETTINGS['disable_user_edit_profile'] ?? '0') === '0') { ?>
+                                                    <div class="text-muted small text-right mb-2"><?php echo $lang->get('avatar_upload_hint'); ?></div>
+                                                    <div class="d-flex justify-content-end align-items-center">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger mr-2<?php echo $hasCustomAvatar === true ? '' : ' hidden'; ?>" id="profile-avatar-delete" title="<?php echo $lang->get('delete_current_avatar'); ?>" aria-label="<?php echo $lang->get('delete_current_avatar'); ?>" data-toggle="tooltip">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-warning" id="profile-avatar-file"><?php echo $lang->get('upload_new_avatar'); ?></button>
+                                                    </div>
                                                 <?php 
                                                 }
                                                 ?>
@@ -533,4 +597,3 @@ foreach ($session->get('user-roles_array') as $role) {
     <!-- /.container-fluid -->
 </div>
 <!-- /.content -->
-

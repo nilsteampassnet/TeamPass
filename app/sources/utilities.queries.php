@@ -41,6 +41,7 @@ use TeampassClasses\NestedTree\NestedTree;
 
 // Load functions
 require_once 'main.functions.php';
+require_once __DIR__ . '/backup.functions.php';
 
 // init
 loadClasses('DB');
@@ -1302,7 +1303,7 @@ logItems(
                 $backupInfo['summary']['text'] = $lang->get((string) $backupInfo['summary']['text_key']);
             }
             if (isset($backupInfo['directories']) === true && is_array($backupInfo['directories']) === true) {
-                foreach (array('scheduled', 'onthefly') as $dirKey) {
+                foreach (array('scheduled', 'onthefly', 'externalized') as $dirKey) {
                     if (isset($backupInfo['directories'][$dirKey]['summary']['text_key']) === true) {
                         $backupInfo['directories'][$dirKey]['summary']['text'] = $lang->get(
                             (string) $backupInfo['directories'][$dirKey]['summary']['text_key']
@@ -3217,6 +3218,12 @@ function tpGetBackupsStatus(array $SETTINGS): array
     }
     $scheduledDir = rtrim((string) $scheduledDir, '/');
 
+    $externalizedEnabled = (int) tpHealthGetSettingsValue('bck_externalized_enabled', '0');
+    $externalizedDestinationType = function_exists('tpBackupResolveExternalizedDestinationType') === true
+        ? tpBackupResolveExternalizedDestinationType((string) tpHealthGetSettingsValue('bck_externalized_destination_type', 'local_directory'))
+        : (string) tpHealthGetSettingsValue('bck_externalized_destination_type', 'local_directory');
+    $externalizedDir = (string) tpHealthGetSettingsValue('bck_externalized_target_dir', '');
+
     // Expected values (current instance)
     $expectedSchemaLevel = function_exists('tpGetSchemaLevel') === true ? (string) tpGetSchemaLevel() : '';
     $expectedTpFilesVersion = function_exists('tpGetTpFilesVersion') === true ? (string) tpGetTpFilesVersion() : '';
@@ -3226,15 +3233,30 @@ function tpGetBackupsStatus(array $SETTINGS): array
     // ------------------------
     $scheduledAll = tpListBackupSqlFiles($scheduledDir, true, 0);
     $ontheflyAll = tpListBackupSqlFiles($ontheflyDir, false, 0);
+    $externalizedAll = tpListExternalizedBackupFilesForHealth(
+        $externalizedDestinationType,
+        $externalizedDir,
+        $SETTINGS,
+        0
+    );
 
     $scheduledLatest = tpListBackupSqlFiles($scheduledDir, true, 10);
     $ontheflyLatest = tpListBackupSqlFiles($ontheflyDir, false, 10);
+    $externalizedLatest = isset($externalizedAll['error']) === true
+        ? $externalizedAll
+        : array_slice($externalizedAll, 0, 10);
 
     // ------------------------
     // Orphan metadata (.meta.json) monitoring
     // ------------------------
     $scheduledMetaOrphans = function_exists('tpListOrphanBackupMetaFiles') ? count(tpListOrphanBackupMetaFiles($scheduledDir)) : 0;
     $ontheflyMetaOrphans = function_exists('tpListOrphanBackupMetaFiles') ? count(tpListOrphanBackupMetaFiles($ontheflyDir)) : 0;
+    $externalizedMetaOrphans = (
+        $externalizedDestinationType === 'local_directory'
+        && $externalizedDir !== ''
+        && is_dir($externalizedDir) === true
+        && function_exists('tpListOrphanBackupMetaFiles') === true
+    ) ? count(tpListOrphanBackupMetaFiles($externalizedDir)) : 0;
 
     // ------------------------
     // Build directory health (stats are computed on ALL files)
@@ -3263,11 +3285,29 @@ function tpGetBackupsStatus(array $SETTINGS): array
         )
     );
 
+    $externalizedDirHealth = tpBuildBackupDirHealth(
+        $externalizedDir,
+        'health_backup_externalized',
+        $externalizedLatest,
+        $externalizedMetaOrphans,
+        array(
+            'all_files' => $externalizedAll,
+            'expected_schema_level' => $expectedSchemaLevel,
+            'expected_tp_files_version' => $expectedTpFilesVersion,
+        )
+    );
+    $externalizedDirHealth['enabled'] = $externalizedEnabled === 1;
+    $externalizedDirHealth['destination_type'] = $externalizedDestinationType;
+    if ($externalizedEnabled !== 1) {
+        $externalizedDirHealth['summary']['status'] = 'info';
+        $externalizedDirHealth['summary']['text_key'] = 'health_backup_no_data';
+    }
+
     // ------------------------
-    // Summary: last backup age (best effort across BOTH dirs)
+    // Summary: last backup age (best effort across all dirs)
     // ------------------------
     $lastMtime = 0;
-    foreach (array($scheduledAll, $ontheflyAll) as $list) {
+    foreach (array($scheduledAll, $ontheflyAll, $externalizedAll) as $list) {
         if (isset($list['error']) === true || empty($list) === true) {
             continue;
         }
@@ -3333,6 +3373,16 @@ function tpGetBackupsStatus(array $SETTINGS): array
         }
     }
 
+    if (isset($externalizedLatest['error']) === false && empty($externalizedLatest) === false) {
+        foreach ($externalizedLatest as $f) {
+            if (is_array($f) === false) {
+                continue;
+            }
+            $f['type'] = 'externalized';
+            $latest[] = $f;
+        }
+    }
+
     usort($latest, static function (array $a, array $b): int {
         return ((int) ($b['mtime'] ?? 0)) <=> ((int) ($a['mtime'] ?? 0));
     });
@@ -3351,13 +3401,14 @@ function tpGetBackupsStatus(array $SETTINGS): array
 
 
     // ------------------------
-    // Backup history (merged, last 20 backups across scheduled + on-the-fly)
+    // Backup history (merged, last 20 backups across scheduled + on-the-fly + externalized)
     // ------------------------
     $backupHistory = array();
 
     $sources = array(
         array('type' => 'scheduled', 'files' => $scheduledAll),
         array('type' => 'onthefly', 'files' => $ontheflyAll),
+        array('type' => 'externalized', 'files' => $externalizedAll),
     );
 
     foreach ($sources as $src) {
@@ -3475,12 +3526,13 @@ function tpGetBackupsStatus(array $SETTINGS): array
         }
     }
 
-$scheduledStats = isset($scheduledDirHealth['stats']) && is_array($scheduledDirHealth['stats']) ? $scheduledDirHealth['stats'] : array();
+    $scheduledStats = isset($scheduledDirHealth['stats']) && is_array($scheduledDirHealth['stats']) ? $scheduledDirHealth['stats'] : array();
     $ontheflyStats = isset($ontheflyDirHealth['stats']) && is_array($ontheflyDirHealth['stats']) ? $ontheflyDirHealth['stats'] : array();
+    $externalizedStats = isset($externalizedDirHealth['stats']) && is_array($externalizedDirHealth['stats']) ? $externalizedDirHealth['stats'] : array();
 
-    $totalFiles = (int) ($scheduledStats['total_files'] ?? 0) + (int) ($ontheflyStats['total_files'] ?? 0);
-    $totalCompatible = (int) ($scheduledStats['compatible'] ?? 0) + (int) ($ontheflyStats['compatible'] ?? 0);
-    $anomaliesTotal = (int) ($scheduledStats['anomalies_total'] ?? 0) + (int) ($ontheflyStats['anomalies_total'] ?? 0);
+    $totalFiles = (int) ($scheduledStats['total_files'] ?? 0) + (int) ($ontheflyStats['total_files'] ?? 0) + (int) ($externalizedStats['total_files'] ?? 0);
+    $totalCompatible = (int) ($scheduledStats['compatible'] ?? 0) + (int) ($ontheflyStats['compatible'] ?? 0) + (int) ($externalizedStats['compatible'] ?? 0);
+    $anomaliesTotal = (int) ($scheduledStats['anomalies_total'] ?? 0) + (int) ($ontheflyStats['anomalies_total'] ?? 0) + (int) ($externalizedStats['anomalies_total'] ?? 0);
 
     $summaryStatus = 'info';
     $summaryTextKey = 'health_backup_no_data';
@@ -3505,6 +3557,7 @@ $scheduledStats = isset($scheduledDirHealth['stats']) && is_array($scheduledDirH
         'directories' => array(
             'scheduled' => $scheduledDirHealth,
             'onthefly' => $ontheflyDirHealth,
+            'externalized' => $externalizedDirHealth,
         ),
         'scheduler' => $scheduler,
         'latest_files' => $latest,
@@ -3641,7 +3694,211 @@ function tpListBackupFiles(string $dir, string $prefix, int $limit = 10, array $
 }
 
 
-function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10): array
+/**
+ * Return externalized backup files for the health view, using the remote provider when available.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<mixed>
+ */
+function tpListExternalizedBackupFilesForHealth(string $destinationType, string $targetDir, array $SETTINGS, int $limit = 10): array
+{
+    $destinationType = function_exists('tpBackupResolveExternalizedDestinationType') === true
+        ? tpBackupResolveExternalizedDestinationType($destinationType)
+        : $destinationType;
+
+    if ((int) tpHealthGetSettingsValue('bck_externalized_enabled', '0') !== 1) {
+        return array();
+    }
+
+    if (function_exists('tpBackupListExternalizedBackups') === false) {
+        return tpListBackupSqlFiles($targetDir, false, $limit, 'externalized');
+    }
+
+    $destinationConfig = tpHealthGetExternalizedDestinationConfig($destinationType, $SETTINGS);
+
+    $listed = tpBackupListExternalizedBackups($destinationType, $targetDir, $SETTINGS, $destinationConfig);
+    if ($listed['success'] !== true) {
+        return array(
+            'error' => $listed['reason'] !== '' ? $listed['reason'] : 'destination_unavailable',
+            'destination_type' => $destinationType,
+            'path' => $listed['path'] !== '' ? $listed['path'] : $targetDir,
+        );
+    }
+
+    $items = array();
+    foreach ($listed['files'] as $entry) {
+        $name = $entry['name'];
+        if ($name === '') {
+            continue;
+        }
+
+        $meta = is_array($entry['metadata'] ?? null) ? (array) $entry['metadata'] : array();
+        $path = $entry['path'];
+        if (empty($meta) === true && ($entry['remote'] ?? false) !== true && $path !== '' && function_exists('tpReadBackupMetadata') === true) {
+            $meta = tpReadBackupMetadata($path);
+        }
+
+        $schemaLevel = isset($meta['schema_level']) && is_scalar($meta['schema_level']) ? (string) $meta['schema_level'] : '';
+        if ($schemaLevel === '' && ($entry['remote'] ?? false) !== true && $path !== '' && function_exists('tpGetBackupSchemaLevelFromMetaOrFilename') === true) {
+            $schemaLevel = (string) tpGetBackupSchemaLevelFromMetaOrFilename($path);
+        }
+
+        $tpFilesVersion = isset($meta['tp_files_version']) && is_scalar($meta['tp_files_version']) ? (string) $meta['tp_files_version'] : '';
+        if ($tpFilesVersion === '' && ($entry['remote'] ?? false) !== true && $path !== '' && function_exists('tpGetBackupTpFilesVersionFromMeta') === true) {
+            $tpFilesVersion = (string) tpGetBackupTpFilesVersionFromMeta($path);
+        }
+
+        $comment = isset($meta['comment']) && is_scalar($meta['comment']) ? trim((string) $meta['comment']) : '';
+        $mtime = $entry['mtime'];
+        $sizeBytes = $entry['size_bytes'];
+
+        $items[] = array(
+            'name' => $name,
+            'mtime' => $mtime,
+            'mtime_human' => $mtime > 0 ? date('Y-m-d H:i:s', $mtime) : '',
+            'size_mb' => round(((float) $sizeBytes) / 1024 / 1024, 2),
+            'schema_level' => $schemaLevel !== '' ? $schemaLevel : null,
+            'tp_files_version' => $tpFilesVersion !== '' ? $tpFilesVersion : null,
+            'comment' => $comment !== '' ? $comment : null,
+            'metadata_present' => empty($meta) === false,
+            'remote' => !empty($entry['remote']),
+        );
+    }
+
+    usort($items, static function (array $a, array $b): int {
+        return $b['mtime'] <=> $a['mtime'];
+    });
+
+    if ($limit <= 0) {
+        return $items;
+    }
+
+    return array_slice($items, 0, $limit);
+}
+
+/**
+ * Return the externalized destination configuration used by the backup health checks.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthGetExternalizedDestinationConfig(string $destinationType, array $SETTINGS): array
+{
+    if ($destinationType === 'sftp') {
+        return tpHealthGetExternalizedSftpConfig($SETTINGS);
+    }
+
+    if ($destinationType === 'webdav') {
+        return tpHealthGetExternalizedWebdavConfig($SETTINGS);
+    }
+
+    if ($destinationType === 's3') {
+        return tpHealthGetExternalizedS3Config($SETTINGS);
+    }
+
+    return array();
+}
+
+/**
+ * Return the SFTP destination configuration for the health checks (secrets decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthGetExternalizedSftpConfig(array $SETTINGS): array
+{
+    $password = tpHealthDecryptSetting('bck_externalized_sftp_password', $SETTINGS);
+    $privateKey = tpHealthDecryptSetting('bck_externalized_sftp_private_key', $SETTINGS);
+    $privateKeyPassphrase = tpHealthDecryptSetting('bck_externalized_sftp_private_key_passphrase', $SETTINGS);
+    $authType = (string) tpHealthGetSettingsValue('bck_externalized_sftp_auth_type', 'password');
+    if ($authType !== 'private_key') {
+        $authType = 'password';
+    }
+
+    return array(
+        'host' => (string) tpHealthGetSettingsValue('bck_externalized_sftp_host', ''),
+        'port' => max(1, min(65535, (int) tpHealthGetSettingsValue('bck_externalized_sftp_port', '22'))),
+        'username' => (string) tpHealthGetSettingsValue('bck_externalized_sftp_username', ''),
+        'auth_type' => $authType,
+        'password' => $password,
+        'private_key' => $privateKey,
+        'private_key_passphrase' => $privateKeyPassphrase,
+        'password_available' => $password !== '' || (string) tpHealthGetSettingsValue('bck_externalized_sftp_password', '') !== '',
+        'private_key_available' => $privateKey !== '' || (string) tpHealthGetSettingsValue('bck_externalized_sftp_private_key', '') !== '',
+        'private_key_passphrase_available' => $privateKeyPassphrase !== '' || (string) tpHealthGetSettingsValue('bck_externalized_sftp_private_key_passphrase', '') !== '',
+    );
+}
+
+/**
+ * Return the WebDAV destination configuration for the health checks (password decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthGetExternalizedWebdavConfig(array $SETTINGS): array
+{
+    $password = tpHealthDecryptSetting('bck_externalized_webdav_password', $SETTINGS);
+
+    return array(
+        'url' => (string) tpHealthGetSettingsValue('bck_externalized_webdav_url', ''),
+        'username' => (string) tpHealthGetSettingsValue('bck_externalized_webdav_username', ''),
+        'password' => $password,
+        'password_available' => $password !== '' || (string) tpHealthGetSettingsValue('bck_externalized_webdav_password', '') !== '',
+    );
+}
+
+/**
+ * Return the S3 destination configuration for the health checks (secret key decrypted).
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return array<string, mixed>
+ */
+function tpHealthGetExternalizedS3Config(array $SETTINGS): array
+{
+    $secretKey = tpHealthDecryptSetting('bck_externalized_s3_secret_key', $SETTINGS);
+
+    return array(
+        'endpoint' => (string) tpHealthGetSettingsValue('bck_externalized_s3_endpoint', ''),
+        'region' => (string) tpHealthGetSettingsValue('bck_externalized_s3_region', 'us-east-1'),
+        'bucket' => (string) tpHealthGetSettingsValue('bck_externalized_s3_bucket', ''),
+        'access_key' => (string) tpHealthGetSettingsValue('bck_externalized_s3_access_key', ''),
+        'secret_key' => $secretKey,
+        'secret_key_available' => $secretKey !== '' || (string) tpHealthGetSettingsValue('bck_externalized_s3_secret_key', '') !== '',
+        'path_style' => ((int) tpHealthGetSettingsValue('bck_externalized_s3_path_style', '1') === 1) ? 1 : 0,
+    );
+}
+
+/**
+ * Decrypt a stored setting value for the health checks; '' when unset or invalid.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @return string
+ */
+function tpHealthDecryptSetting(string $key, array $SETTINGS): string
+{
+    $stored = (string) tpHealthGetSettingsValue($key, '');
+    if ($stored === '' || function_exists('cryption') === false) {
+        return '';
+    }
+
+    try {
+        $decrypted = cryption($stored, '', 'decrypt', $SETTINGS);
+        if (($decrypted['error'] ?? false) === false && isset($decrypted['string'])) {
+            return (string) $decrypted['string'];
+        }
+    } catch (Throwable) {
+        return '';
+    }
+
+    return '';
+}
+
+/**
+ * List local backup files in a directory, optionally restricted to scheduled backups.
+ *
+ * @return array<mixed>
+ */
+function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10, string $prefix = ''): array
 {
     $dir = trim($dir);
     if ($dir === '' || is_dir($dir) === false) {
@@ -3652,11 +3909,19 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
     }
 
     $dir = rtrim($dir, '/');
-    $pattern = $scheduledOnly ? ($dir . '/scheduled-*.sql') : ($dir . '/*.sql');
+    $packageExtension = function_exists('tpBackupGetPackageExtension') === true ? tpBackupGetPackageExtension() : 'tpbackup';
+    $effectivePrefix = $prefix !== '' ? $prefix : ($scheduledOnly ? 'scheduled' : '');
 
-    $paths = glob($pattern);
-    if ($paths === false) {
-        $paths = array();
+    if ($effectivePrefix !== '') {
+        $paths = array_values(array_unique(array_merge(
+            glob($dir . '/' . $effectivePrefix . '-*.sql') ?: array(),
+            glob($dir . '/' . $effectivePrefix . '-*.' . $packageExtension) ?: array()
+        )));
+    } else {
+        $paths = array_values(array_unique(array_merge(
+            glob($dir . '/*.sql') ?: array(),
+            glob($dir . '/*.' . $packageExtension) ?: array()
+        )));
     }
 
     $items = array();
@@ -3667,9 +3932,9 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
 
         $bn = basename($fp);
 
-        if ($scheduledOnly === false) {
+        if ($scheduledOnly === false && $effectivePrefix === '') {
             // Skip scheduled backups and temporary files (same filters as backups.queries.php)
-            if (strpos($bn, 'scheduled-') === 0) {
+            if (strpos($bn, 'scheduled-') === 0 || strpos($bn, 'externalized-') === 0) {
                 continue;
             }
             if (strpos($bn, 'defuse_temp_') === 0 || strpos($bn, 'defuse_temp_restore_') === 0) {
@@ -3678,9 +3943,15 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
         }
 
         $comment = null;
+        $metadataPresent = false;
         if (function_exists('tpGetBackupCommentFromMeta') === true) {
             $c = (string) tpGetBackupCommentFromMeta($fp);
             $comment = $c !== '' ? $c : null;
+        }
+        if (function_exists('tpGetBackupMetadataPath') === true) {
+            $metadataPresent = is_file((string) tpGetBackupMetadataPath($fp));
+        } else {
+            $metadataPresent = is_file($fp . '.meta.json');
         }
 
         $tpFilesVersion = null;
@@ -3708,6 +3979,7 @@ function tpListBackupSqlFiles(string $dir, bool $scheduledOnly, int $limit = 10)
             'schema_level' => $schemaLevel,
             'tp_files_version' => $tpFilesVersion,
             'comment' => $comment,
+            'metadata_present' => $metadataPresent,
         );
     }
 
@@ -3772,6 +4044,7 @@ function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int
     if (isset($allFiles['error']) === true) {
         $summaryStatus = 'warning';
         $summaryTextKey = 'health_backup_path_not_readable';
+        $stats['anomalies_total'] = 1;
     } elseif (empty($allFiles) === true) {
         $summaryStatus = 'danger';
         $summaryTextKey = 'health_backup_no_files';
@@ -3830,14 +4103,22 @@ function tpBuildBackupDirHealth(string $dir, string $labelKey, array $files, int
                 $stats['tp_version_mismatch']++;
             }
 
-            // Check missing meta (.meta.json)
-            $fullPath = rtrim($dir, '/') . '/' . $name;
-            $metaPath = $fullPath . '.meta.json';
-            if (function_exists('tpGetBackupMetadataPath') === true) {
-                $metaPath = (string) tpGetBackupMetadataPath($fullPath);
-            }
-            if (is_file($metaPath) === false) {
-                $stats['missing_meta']++;
+            if (array_key_exists('metadata_present', $f) === true) {
+                if ((bool) $f['metadata_present'] === false) {
+                    $stats['missing_meta']++;
+                }
+            } elseif (!empty($f['remote'])) {
+                // Remote destinations cannot be checked with local filesystem helpers.
+            } else {
+                // Check missing meta (.meta.json)
+                $fullPath = rtrim($dir, '/') . '/' . $name;
+                $metaPath = $fullPath . '.meta.json';
+                if (function_exists('tpGetBackupMetadataPath') === true) {
+                    $metaPath = (string) tpGetBackupMetadataPath($fullPath);
+                }
+                if (is_file($metaPath) === false) {
+                    $stats['missing_meta']++;
+                }
             }
         }
 
@@ -3935,10 +4216,19 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
             ),
         );
     } else {
+        // PHP/TeamPass limits are consistent. Remind that the front web server
+        // (nginx client_max_body_size / Apache LimitRequestBody) must allow at
+        // least as much, otherwise large uploads are rejected with HTTP 413
+        // before PHP ever sees the request. The web-server config is not readable
+        // from PHP, so this stays informational.
         $checks[] = array(
-            'status' => 'success',
+            'status' => 'info',
             'title' => $lang->get('health_check_upload_limits'),
-            'text' => $lang->get('health_status_ok'),
+            'text' => sprintf(
+                $lang->get('health_check_upload_limits_websrv'),
+                (string) ($phpIni['ini']['upload_max_filesize'] ?? ''),
+                (string) ($phpIni['ini']['post_max_size'] ?? '')
+            ),
         );
     }
 

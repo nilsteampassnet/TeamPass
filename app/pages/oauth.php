@@ -127,6 +127,18 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                 </div>
                             </div>
 
+                            <div class='row mb-2'>
+                                <div class='col-10'>
+                                    <?php echo $lang->get('settings_oauth2_api_enabled'); ?>
+                                    <small id='passwordHelpBlock' class='form-text text-muted'>
+                                        <?php echo $lang->get('settings_oauth2_api_enabled_tip'); ?>
+                                    </small>
+                                </div>
+                                <div class='col-2'>
+                                    <div class='toggle toggle-modern' id='oauth2_api_enabled' data-toggle-on='<?php echo isset($SETTINGS['oauth2_api_enabled']) === true && (int) $SETTINGS['oauth2_api_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='oauth2_api_enabled_input' value='<?php echo isset($SETTINGS['oauth2_api_enabled']) && (int) $SETTINGS['oauth2_api_enabled'] === 1 ? 1 : 0; ?>'>
+                                </div>
+                            </div>
+
                             <div class='row mb-2 tr-ldap'>
                                 <div class='col-5'>
                                     <?php echo $lang->get('app_name'); ?>

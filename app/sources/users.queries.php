@@ -106,7 +106,12 @@ if (null !== $post_type) {
     $all_users_can_access = [
         'get_generate_keys_progress',
         'user_profile_update',
+        'user_profile_avatar_delete',
         'save_user_change',
+        'generate_extension_token',
+        'list_extension_tokens',
+        'revoke_extension_token',
+        'build_extension_autoconfig',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -195,6 +200,272 @@ if (null !== $post_type) {
     }
 
     switch ($post_type) {
+        /*
+         * BROWSER EXTENSION TOKENS (Personal Access Tokens for OAuth2/SSO users)
+         *
+         * Reserved for OAuth2 users and gated by the admin toggle oauth2_api_enabled.
+         * The cleartext private key (held in session while the user is authenticated in
+         * the web UI) is re-wrapped under a key derived from the freshly generated token,
+         * so the API can later unwrap it without the user's password. Only the token hash
+         * is persisted; the token itself is returned exactly once.
+         */
+        case 'generate_extension_token':
+        case 'list_extension_tokens':
+        case 'revoke_extension_token':
+            // Feature gate: API enabled, AND either
+            //   - OAuth2-for-API enabled and the current user is OAuth2, OR
+            //   - extension tokens allowed for all auth types (local/LDAP/OAuth2).
+            $extTokenOauth2 = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1
+                && $session->get('user-auth_type') === 'oauth2';
+            $extTokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+            if ((int) ($SETTINGS['api'] ?? 0) !== 1
+                || ($extTokenOauth2 === false && $extTokenAllAuthTypes === false)
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userId = (int) $session->get('user-id');
+
+            if ($post_type === 'generate_extension_token') {
+                // The cleartext private key must be available in the current session.
+                $privateKeyClear = (string) $session->get('user-private_key');
+                if ($privateKeyClear === '' || $privateKeyClear === 'none') {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_no_user_keys'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                require_once __DIR__ . '/../api/inc/encryption_utils.php';
+
+                $label = trim((string) filter_var($dataReceived['label'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
+                $label = $label !== '' ? mb_substr($label, 0, 255) : null;
+
+                $tokenPlain = bin2hex(random_bytes(32));
+                $salt       = bin2hex(random_bytes(16));
+                $wrapKey    = hash_hkdf('sha256', $tokenPlain, 32, 'teampass-extension-token-v1', (string) hex2bin($salt));
+                $wrapped    = encrypt_with_session_key($privateKeyClear, $wrapKey);
+
+                if ($wrapped === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
+                DB::insert(prefixTable('api_tokens'), [
+                    'user_id'             => $userId,
+                    'token_hash'          => hash('sha256', $tokenPlain),
+                    'wrapped_private_key' => $wrapped,
+                    'salt'                => $salt,
+                    'label'               => $label,
+                    'created_at'          => time(),
+                    'expires_at'          => null,
+                ]);
+                $newId = (int) DB::insertId();
+
+                logEvents($SETTINGS, 'user_mngt', 'at_extension_token_generated', (string) $userId, (string) $session->get('user-login'), (string) $newId);
+
+                // Token returned ONCE; only its sha256 hash is persisted.
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        'token' => $tokenPlain,
+                        'id' => $newId,
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if ($post_type === 'revoke_extension_token') {
+                $tokenId = (int) ($dataReceived['id'] ?? 0);
+                if ($tokenId > 0) {
+                    DB::delete(prefixTable('api_tokens'), 'id = %i AND user_id = %i', $tokenId, $userId);
+                    logEvents($SETTINGS, 'user_mngt', 'at_extension_token_revoked', (string) $userId, (string) $session->get('user-login'), (string) $tokenId);
+                }
+                echo prepareExchangedData(array('error' => false), 'encode');
+                break;
+            }
+
+            // list_extension_tokens — never returns the token value itself.
+            $tokensList = DB::query(
+                'SELECT id, label, created_at, expires_at, last_used_at
+                 FROM ' . prefixTable('api_tokens') . ' WHERE user_id = %i ORDER BY created_at DESC',
+                $userId
+            );
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'tokens' => $tokensList,
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * BUILD BROWSER-EXTENSION AUTO-CONFIGURATION BUNDLE
+         *
+         * Returns a self-contained bundle the browser extension applies to configure
+         * itself: server URL, licence fields and a freshly minted, single-use,
+         * short-lived Personal Access Token. The password is never included — the
+         * extension authenticates in token mode. Same feature gate as the token cases.
+         */
+        case 'build_extension_autoconfig':
+            $extTokenOauth2 = (int) ($SETTINGS['oauth2_api_enabled'] ?? 0) === 1
+                && $session->get('user-auth_type') === 'oauth2';
+            $extTokenAllAuthTypes = (int) ($SETTINGS['extension_token_all_auth_types'] ?? 0) === 1;
+            if ((int) ($SETTINGS['api'] ?? 0) !== 1
+                || ($extTokenOauth2 === false && $extTokenAllAuthTypes === false)
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The cleartext private key must be available in the current session.
+            $privateKeyClear = (string) $session->get('user-private_key');
+            if ($privateKeyClear === '' || $privateKeyClear === 'none') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_no_user_keys'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__ . '/../api/inc/encryption_utils.php';
+
+            $userId = (int) $session->get('user-id');
+
+            // Mint a short-lived, single-use PAT wrapping the cleartext private key.
+            $tokenPlain = bin2hex(random_bytes(32));
+            $salt       = bin2hex(random_bytes(16));
+            $wrapKey    = hash_hkdf('sha256', $tokenPlain, 32, 'teampass-extension-token-v1', (string) hex2bin($salt));
+            $wrapped    = encrypt_with_session_key($privateKeyClear, $wrapKey);
+
+            if ($wrapped === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The token is the durable credential the extension reuses for silent
+            // re-auth, so it must not expire (same model as manually generated
+            // tokens). The *bundle* below carries a short staleness window instead.
+            DB::insert(prefixTable('api_tokens'), [
+                'user_id'             => $userId,
+                'token_hash'          => hash('sha256', $tokenPlain),
+                'wrapped_private_key' => $wrapped,
+                'salt'                => $salt,
+                'label'               => 'auto-config ' . date('Y-m-d H:i'),
+                'created_at'          => time(),
+                'expires_at'          => null,
+            ]);
+            $newTokenId = (int) DB::insertId();
+
+            // Soft staleness guard for the bundle/file (not a hard security control —
+            // the bundle is unsigned; revoke the token to truly invalidate it).
+            $bundleExpiresAt = time() + 86400; // 24 hours
+
+            // Derive the server URL and its origin (scheme://host[:port]) from cpassman_url.
+            $teampassUrl = rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/');
+            $extOrigin   = '';
+            $parsedUrl   = parse_url($teampassUrl);
+            if (isset($parsedUrl['scheme'], $parsedUrl['host']) === true) {
+                $extOrigin = $parsedUrl['scheme'] . '://' . $parsedUrl['host']
+                    . (isset($parsedUrl['port']) === true ? ':' . $parsedUrl['port'] : '');
+            }
+
+            $bundle = array(
+                'teampass_autoconfig' => true,
+                'version'             => 1,
+                'issued_at'           => time(),
+                'expires_at'          => $bundleExpiresAt,
+                'server'              => array(
+                    'teampass_url' => $teampassUrl,
+                    'origin'       => $extOrigin,
+                    'fqdn'         => (string) ($SETTINGS['browser_extension_fqdn'] ?? ''),
+                ),
+                'account'             => array(
+                    'username'     => (string) $session->get('user-login'),
+                    'display_name' => (string) $session->get('user-name'),
+                    'auth_mode'    => 'token',
+                ),
+                'credential'          => array(
+                    'auth_mode' => 'token',
+                    'token'     => $tokenPlain,
+                ),
+                'licence'             => array(
+                    'email' => (string) $session->get('user-email'),
+                    'fqdn'  => (string) ($SETTINGS['browser_extension_fqdn'] ?? ''),
+                    'key'   => (string) ($SETTINGS['browser_extension_key'] ?? ''),
+                ),
+                'nonce'               => bin2hex(random_bytes(16)),
+            );
+
+            logEvents($SETTINGS, 'user_mngt', 'at_extension_autoconfig_built', (string) $userId, (string) $session->get('user-login'), (string) $newTokenId);
+
+            echo prepareExchangedData(
+                array(
+                    'error'  => false,
+                    'bundle' => $bundle,
+                ),
+                'encode'
+            );
+            break;
+
         /*
          * ADD NEW USER
          */
@@ -1018,6 +1289,11 @@ if (null !== $post_type) {
                 $arrData['admin'] = (int) $rowUser['admin'];
                 $arrData['password'] = $password_do_not_change;
                 $arrData['mfa_enabled'] = (int) $rowUser['mfa_enabled'];
+                $avatarFile = basename(trim((string) ($rowUser['avatar'] ?? '')));
+                $avatarPath = TEAMPASS_ROOT . '/public/assets/avatars/' . $avatarFile;
+                $arrData['avatar_url'] = $avatarFile !== '' && is_file($avatarPath) === true
+                    ? rtrim((string) $SETTINGS['cpassman_url'], '/') . '/assets/avatars/' . rawurlencode($avatarFile)
+                    : '';
 
                 echo prepareExchangedData(
                     $arrData,
@@ -2052,6 +2328,85 @@ if (null !== $post_type) {
                     'treeloadstrategy' => $session->get('user-tree_load_strategy'),
                     'split_view_mode' => $session->get('user-split_view_mode'),
                     'show_subfolders' => $session->get('user-show_subfolders'),
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * DELETE CURRENT USER AVATAR
+         */
+        case 'user_profile_avatar_delete':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if (
+                null === $session->get('user-id')
+                || empty($session->get('user-id')) === true
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('no_user'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            if ((string) ($SETTINGS['disable_user_edit_profile'] ?? '0') !== '0') {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $avatarData = DB::queryFirstRow(
+                'SELECT avatar, avatar_thumb FROM ' . prefixTable('users') . ' WHERE id = %i',
+                $session->get('user-id')
+            );
+
+            if (is_array($avatarData) === true) {
+                $avatarDir = TEAMPASS_ROOT . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'avatars';
+                foreach (['avatar', 'avatar_thumb'] as $avatarColumn) {
+                    $avatarFile = basename(trim((string) ($avatarData[$avatarColumn] ?? '')));
+                    if ($avatarFile !== '') {
+                        fileDelete($avatarDir . DIRECTORY_SEPARATOR . $avatarFile, $SETTINGS);
+                    }
+                }
+            }
+
+            DB::update(
+                prefixTable('users'),
+                [
+                    'avatar' => '',
+                    'avatar_thumb' => '',
+                ],
+                'id = %i',
+                $session->get('user-id')
+            );
+
+            $session->set('user-avatar', '');
+            $session->set('user-avatar_thumb', '');
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'message' => $lang->get('avatar_deleted'),
+                    'avatar_url' => './assets/images/photo.jpg',
                 ),
                 'encode'
             );

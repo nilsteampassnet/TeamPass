@@ -257,6 +257,40 @@ $ldap_type = $SETTINGS['ldap_type'] ?? '';
                                     </div>
                                 </div>
 
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo $lang->get('settings_ldap_allowed_login_group_dn'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo $lang->get('settings_ldap_allowed_login_group_dn_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <input type='text'
+                                               class='form-control form-control-sm setting-ldap'
+                                               id='ldap_allowed_login_group_dn'
+                                               value='<?php echo htmlspecialchars($SETTINGS['ldap_allowed_login_group_dn'] ?? '', ENT_QUOTES, 'UTF-8'); ?>'>
+                                    </div>
+                                </div>
+
+                                <div class='row mb-2 tr-ldap'>
+                                    <div class='col-5'>
+                                        <?php echo $lang->get('settings_ldap_allowed_login_group_mode'); ?>
+                                        <small id='passwordHelpBlock' class='form-text text-muted'>
+                                            <?php echo $lang->get('settings_ldap_allowed_login_group_mode_tip'); ?>
+                                        </small>
+                                    </div>
+                                    <div class='col-7'>
+                                        <select class='form-control form-control-sm setting-ldap' id='ldap_allowed_login_group_mode'>
+                                            <option value='group'<?php echo ($SETTINGS['ldap_allowed_login_group_mode'] ?? 'group') === 'group' ? ' selected' : ''; ?>>
+                                                <?php echo $lang->get('settings_ldap_allowed_login_group_mode_group'); ?>
+                                            </option>
+                                            <option value='user'<?php echo ($SETTINGS['ldap_allowed_login_group_mode'] ?? 'group') === 'user' ? ' selected' : ''; ?>>
+                                                <?php echo $lang->get('settings_ldap_allowed_login_group_mode_user'); ?>
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
                                 <div class='row mb-2'>
                                     <div class='col-5'>
                                         <?php echo $lang->get('settings_ldap_type'); ?>

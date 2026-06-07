@@ -175,10 +175,16 @@ For testing, use `latest`. Versioned tags only appear after a GitHub Release is 
 
 | Volume | Container path | Purpose |
 |---|---|---|
-| `teampass-sk` | `/var/www/html/sk` | Saltkey file |
-| `teampass-files` | `/var/www/html/files` | Uploaded files |
-| `teampass-upload` | `/var/www/html/upload` | Temporary uploads |
+| `teampass-sk` | `/var/www/html/storage/sk` | Saltkey file |
+| `teampass-files` | `/var/www/html/storage/files` | Uploaded files |
+| `teampass-upload` | `/var/www/html/storage/upload` | Temporary uploads |
+| `teampass-config` | `/var/www/html/storage/config` | Install state (`settings.php`, `csrfp.config.php`) |
+| `teampass-secrets` | `/var/www/html/secrets` | Defuse master key |
 | `teampass-db` | `/var/lib/mysql` | Database data |
+
+> `teampass-config` and `teampass-secrets` are required: without them TeamPass
+> loses its install state and master key on container recreation and tries to
+> reinstall itself on every restart.
 
 ---
 
@@ -370,31 +376,37 @@ docker compose up -d
 
 ## Advanced Usage
 
-### Persist the secure key directory
+### Persist the install state and master key
 
-By default `/var/TeampassSecurity` is inside the container and lost on recreation.
-For production, add a named volume in `docker-compose.yml`:
+TeamPass 3.2 stores its install state and master key under:
+
+- `/var/www/html/secrets` — Defuse master key (saltkey)
+- `/var/www/html/storage/config` — `settings.php` and `csrfp.config.php`
+
+The provided `docker-compose.yml` already mounts `teampass-secrets` and
+`teampass-config` for these paths, so the installation survives container
+recreation out of the box. If you maintain your own compose file, make sure
+both volumes are present:
 
 ```yaml
 services:
   teampass:
     volumes:
-      - teampass-sk:/var/www/html/sk
-      - teampass-files:/var/www/html/files
-      - teampass-upload:/var/www/html/upload
-      - teampass-security:/var/TeampassSecurity   # add this line
+      - teampass-sk:/var/www/html/storage/sk
+      - teampass-files:/var/www/html/storage/files
+      - teampass-upload:/var/www/html/storage/upload
+      - teampass-config:/var/www/html/storage/config
+      - teampass-secrets:/var/www/html/secrets
 
 volumes:
-  teampass-security:
+  teampass-config:
+    driver: local
+  teampass-secrets:
     driver: local
 ```
 
-Then recreate and set permissions:
-
-```bash
-docker compose down && docker compose up -d
-docker exec teampass-app sh -c "chown nginx:nginx /var/TeampassSecurity && chmod 750 /var/TeampassSecurity"
-```
+Without these volumes TeamPass loses its configuration on `docker compose down`
+and shows the installer again on the next start.
 
 ### Custom PHP configuration
 

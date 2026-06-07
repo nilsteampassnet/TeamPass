@@ -222,6 +222,55 @@ For custom fields, the loop must:
 
 ---
 
+## Personal Access Tokens (OAuth2 API access)
+
+OAuth2/SSO users cannot use the password+apikey API path: the API needs the cleartext
+password to AES-decrypt the RSA private key (`decryptPrivateKey()`), and OAuth2 users have no
+usable password (their `pw` is a hash of the non-secret 64-bit `hashUserId(oid)`). A **Personal
+Access Token (PAT)** solves this without weakening anything — it is a second, token-unlockable
+copy of the private key, **independent of the RSA sharekey layer**.
+
+**Admin gate:** `oauth2_api_enabled` (setting, default `0`; Settings → OAuth2). Independent of and
+additional to the global `api` setting. Off ⇒ no token can be generated or used.
+
+**Table** `teampass_api_tokens` (one row per token/device — created in `run.step5.php` and
+`upgrade_run_3.2.0.php`):
+
+```sql
+id, user_id, token_hash VARCHAR(64) UNIQUE, wrapped_private_key TEXT,
+salt VARCHAR(64), label, created_at, expires_at, last_used_at
+```
+
+**Crypto contract (authoritative — server owns both sides):**
+```
+T          = bin2hex(random_bytes(32))                                    # 64 hex, shown ONCE
+token_hash = hash('sha256', T)                                            # DB lookup key
+salt       = bin2hex(random_bytes(16))                                    # per token
+K          = hash_hkdf('sha256', T, 32, 'teampass-extension-token-v1', hex2bin(salt))   # 32 bytes
+wrapped_pk = encrypt_with_session_key($privateKeyClear, K)               # AES-256-GCM (reused helper)
+```
+Reuses `encrypt_/decrypt_with_session_key()` in `app/api/inc/encryption_utils.php` — no new
+primitive. Deterministic `K` ⇒ same key on generation and on auth.
+
+**Generation** (`app/sources/users.queries.php`, `generate_extension_token`): only when
+`api=1 && oauth2_api_enabled=1 && session auth_type='oauth2'` and the cleartext private key is in
+`$session->get('user-private_key')` (the issuance gate). Returns `T` once; stores only
+`token_hash` + `wrapped_private_key` + `salt`.
+
+**Authentication** (`AuthModel::getUserAuthByToken()` ← `POST /api/authorizeToken`): re-checks the
+gate, the `^[a-f0-9]{64}$` format, bruteforce, that the user exists / `api_enabled=1` /
+`auth_type='oauth2'`; looks up by `sha256(T)`; derives `K`; `decrypt_with_session_key()` → cleartext
+private key → `issueJwtForUser()` (the shared tail extracted from the password path). On success
+updates `last_used_at`.
+
+**Security properties:** server stores only `sha256(T)` + token-wrapped key + salt → a DB dump
+alone cannot decrypt; `T` is 256-bit (bypasses the 64-bit `hashUserId`); AES-256-GCM is
+authenticated; revocable per device; optional `expires_at`; same bruteforce + `tp_src=api` logging
+as the password path; body-only credentials, HTTPS only. The RSA sharekey layer is **untouched** —
+PATs only add an alternate unlock of the existing private key.
+
+---
+
 ## Known Security Weaknesses (to address)
 
 See full analysis in `workReadmeFiles/encryption-analysis.md`.

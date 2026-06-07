@@ -58,6 +58,41 @@ class ItemController extends BaseController
 
 
     /**
+     * Normalize the optional custom-fields payload.
+     *
+     * Accepts an array (JSON body) or a JSON-encoded string (form-data / query string)
+     * and returns a clean list of [ 'id' => int, 'value' => string ] entries. Entries
+     * without an 'id' are dropped.
+     *
+     * @param mixed $raw Raw fields input
+     * @return array<int, array{id:int, value:string}>
+     */
+    private function normalizeFields($raw): array
+    {
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : [];
+        }
+
+        if (!is_array($raw)) {
+            return [];
+        }
+
+        $out = [];
+        foreach ($raw as $field) {
+            if (is_array($field) && isset($field['id'])) {
+                $out[] = [
+                    'id' => (int) $field['id'],
+                    'value' => (string) ($field['value'] ?? ''),
+                ];
+            }
+        }
+
+        return $out;
+    }
+
+
+    /**
      * Manage case inFolder - get items inside an array of folders
      *
      * @param array $userData
@@ -261,6 +296,7 @@ class ItemController extends BaseController
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
                             'totp' => (string) ($arrQueryStringParams['totp'] ?? ''),
+                            'fields' => $this->normalizeFields($arrQueryStringParams['fields'] ?? []),
                         ];
 
                         // launch
@@ -778,7 +814,7 @@ class ItemController extends BaseController
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
-                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp'];
+                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp', 'fields'];
                                     $hasUpdateField = false;
                                     foreach ($updateableFields as $field) {
                                         if (isset($arrQueryStringParams[$field])) {
@@ -788,9 +824,13 @@ class ItemController extends BaseController
                                     }
 
                                     if (!$hasUpdateField) {
-                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp)';
+                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields)';
                                         $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                                     } else {
+                                        // Normalize custom fields payload (accepts JSON array or JSON-encoded string)
+                                        if (isset($arrQueryStringParams['fields'])) {
+                                            $arrQueryStringParams['fields'] = $this->normalizeFields($arrQueryStringParams['fields']);
+                                        }
                                         // Get user's private key for password encryption/decryption
                                         $userPrivateKey = $this->getUserPrivateKey($userData);
                                         if ($userPrivateKey === null) {
