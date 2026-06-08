@@ -273,6 +273,7 @@ class WebSocketServer implements MessageComponentInterface
 
             if (empty($otherConns)) {
                 $this->releaseEditionLocks((int) $userId, $userLogin);
+                $this->releaseKbEditionLocks((int) $userId, $userLogin);
             }
         }
 
@@ -280,6 +281,10 @@ class WebSocketServer implements MessageComponentInterface
         $affectedViews = $this->connections->clearItemViewsForConnection($conn);
         foreach ($affectedViews as $target) {
             $this->connections->broadcastItemViewersChanged($target['folder_id'], $target['item_id']);
+        }
+        $affectedKbViews = $this->connections->clearKbViewsForConnection($conn);
+        foreach ($affectedKbViews as $target) {
+            $this->connections->broadcastKbViewersChanged($target['kb_id']);
         }
 
         // Clean up
@@ -368,6 +373,78 @@ class WebSocketServer implements MessageComponentInterface
 
         } catch (\Exception $e) {
             $this->logger->error('Failed to release edition locks on disconnect', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Release all KB edition locks held by a disconnected user
+     * and emit WebSocket events to notify other users.
+     *
+     * @param int $userId The user ID whose locks should be released
+     * @param string $userLogin The user login for notification payload
+     */
+    private function releaseKbEditionLocks(int $userId, string $userLogin): void
+    {
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            $locks = \DB::query(
+                'SELECT kb_id
+                 FROM %l
+                 WHERE user_id = %i',
+                $tablePrefix . 'kb_edition',
+                $userId
+            );
+
+            if (empty($locks)) {
+                return;
+            }
+
+            \DB::delete(
+                $tablePrefix . 'kb_edition',
+                'user_id = %i',
+                $userId
+            );
+
+            $wsEnabled = \DB::queryFirstField(
+                'SELECT valeur FROM %l WHERE intitule = %s',
+                $tablePrefix . 'misc',
+                'websocket_enabled'
+            );
+
+            if ($wsEnabled !== '1') {
+                return;
+            }
+
+            foreach ($locks as $lock) {
+                \DB::insert(
+                    $tablePrefix . 'websocket_events',
+                    [
+                        'event_type' => 'kb_edition_stopped',
+                        'target_type' => 'kb',
+                        'target_id' => null,
+                        'payload' => json_encode([
+                            'kb_id' => (int) $lock['kb_id'],
+                            'user_login' => $userLogin,
+                            'user_id' => $userId,
+                            'reason' => 'disconnected',
+                            'server_timestamp' => time(),
+                        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    ]
+                );
+            }
+
+            $this->logger->info('Released KB edition locks on disconnect', [
+                'user_id' => $userId,
+                'user_login' => $userLogin,
+                'locks_released' => count($locks),
+            ]);
+
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to release KB edition locks on disconnect', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);
