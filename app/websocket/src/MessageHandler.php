@@ -31,6 +31,9 @@ class MessageHandler
         'renew_item_lock',    // Renew edition lock heartbeat
         'start_item_view',    // Mark an item as opened in read-only consultation
         'stop_item_view',     // Clear read-only consultation presence
+        'renew_kb_lock',      // Renew KB edition lock heartbeat
+        'start_kb_view',      // Mark a KB article as opened in consultation
+        'stop_kb_view',       // Clear KB consultation presence
     ];
 
     public function __construct(
@@ -92,6 +95,9 @@ class MessageHandler
             'renew_item_lock' => $this->handleRenewItemLock($conn, $message, $requestId),
             'start_item_view' => $this->handleStartItemView($conn, $message, $requestId),
             'stop_item_view' => $this->handleStopItemView($conn, $message, $requestId),
+            'renew_kb_lock' => $this->handleRenewKbLock($conn, $message, $requestId),
+            'start_kb_view' => $this->handleStartKbView($conn, $message, $requestId),
+            'stop_kb_view' => $this->handleStopKbView($conn, $message, $requestId),
             default => null,
         };
     }
@@ -185,6 +191,62 @@ class MessageHandler
             ];
         }
 
+        if ($channel === 'kb') {
+            $userData = $conn->userData ?? [];
+            if (!$this->authValidator->canAccessKnowledgeBase($userData)) {
+                $this->logger->warning('Knowledge base access denied', [
+                    'user_id' => $userData['user_id'] ?? null,
+                ]);
+
+                return $this->error('forbidden', 'Access denied to knowledge base', $requestId);
+            }
+
+            $this->connections->subscribeToKb(
+                (int) $userData['user_id'],
+                $conn
+            );
+
+            $lockedKbs = [];
+            try {
+                $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+                $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+                    ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+                    : 300;
+                $rows = \DB::query(
+                    'SELECT ke.kb_id, u.login AS user_login
+                     FROM %l ke
+                     JOIN %l k ON ke.kb_id = k.id
+                     JOIN %l u ON ke.user_id = u.id
+                     WHERE k.deleted_at IS NULL AND ke.timestamp >= %i AND ke.user_id <> %i',
+                    $tablePrefix . 'kb_edition',
+                    $tablePrefix . 'kb',
+                    $tablePrefix . 'users',
+                    time() - $heartbeatTimeout,
+                    (int) $userData['user_id']
+                );
+                foreach ($rows as $row) {
+                    $lockedKbs[] = [
+                        'kb_id' => (int) $row['kb_id'],
+                        'user_login' => (string) $row['user_login'],
+                    ];
+                }
+            } catch (\Exception $e) {
+                $this->logger->warning('Failed to fetch locked KB articles', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'type' => 'response',
+                'status' => 'success',
+                'action' => 'subscribed',
+                'channel' => 'kb',
+                'locked_kbs' => $lockedKbs,
+                'viewing_kbs' => $this->connections->getKbViewersForKb(),
+                'request_id' => $requestId,
+            ];
+        }
+
         return $this->error('invalid_channel', "Channel '$channel' is not supported", $requestId);
     }
 
@@ -226,6 +288,27 @@ class MessageHandler
                 'action' => 'unsubscribed',
                 'channel' => 'folder',
                 'folder_id' => $folderId,
+                'request_id' => $requestId,
+            ];
+        }
+
+        if ($channel === 'kb') {
+            $userData = $conn->userData ?? [];
+            $this->connections->unsubscribeFromKb(
+                (int) ($userData['user_id'] ?? 0),
+                $conn
+            );
+
+            $affectedViews = $this->connections->stopKbView($conn);
+            foreach ($affectedViews as $target) {
+                $this->connections->broadcastKbViewersChanged($target['kb_id']);
+            }
+
+            return [
+                'type' => 'response',
+                'status' => 'success',
+                'action' => 'unsubscribed',
+                'channel' => 'kb',
                 'request_id' => $requestId,
             ];
         }
@@ -449,6 +532,132 @@ class MessageHandler
     }
 
     /**
+     * Handle renew_kb_lock: refresh the edition lock timestamp for a KB article.
+     */
+    private function handleRenewKbLock(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        $userId = $userData['user_id'] ?? null;
+
+        if ($userId === null) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        if (!$this->authValidator->canAccessKnowledgeBase($userData)) {
+            return $this->error('forbidden', 'Access denied to knowledge base', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $kbId = isset($data['kb_id']) ? (int) $data['kb_id'] : 0;
+
+        if ($kbId <= 0) {
+            return $this->error('invalid_request', 'kb_id is required', $requestId);
+        }
+
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            \DB::query(
+                'UPDATE %l SET timestamp = %i WHERE kb_id = %i AND user_id = %i',
+                $tablePrefix . 'kb_edition',
+                time(),
+                $kbId,
+                (int) $userId
+            );
+
+            if (\DB::affectedRows() === 0) {
+                return $this->error('no_lock', 'No active lock found for this KB article', $requestId);
+            }
+
+            return [
+                'type' => 'response',
+                'status' => 'success',
+                'action' => 'kb_lock_renewed',
+                'kb_id' => $kbId,
+                'request_id' => $requestId,
+            ];
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to renew KB edition lock', [
+                'user_id' => $userId,
+                'kb_id' => $kbId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->error('server_error', 'Failed to renew KB lock', $requestId);
+        }
+    }
+
+    /**
+     * Handle start_kb_view: track KB article consultation presence.
+     */
+    private function handleStartKbView(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        $userId = $userData['user_id'] ?? null;
+
+        if ($userId === null) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        if (!$this->authValidator->canAccessKnowledgeBase($userData)) {
+            return $this->error('forbidden', 'Access denied to knowledge base', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $kbId = isset($data['kb_id']) ? (int) $data['kb_id'] : 0;
+
+        if ($kbId <= 0) {
+            return $this->error('invalid_request', 'kb_id is required', $requestId);
+        }
+
+        if (!$this->kbExists($kbId)) {
+            return $this->error('not_found', 'KB article not found', $requestId);
+        }
+
+        $affectedViews = $this->connections->startKbView($conn, $kbId);
+        foreach ($affectedViews as $target) {
+            $this->connections->broadcastKbViewersChanged($target['kb_id']);
+        }
+
+        return [
+            'type' => 'response',
+            'status' => 'success',
+            'action' => 'kb_view_started',
+            'kb_id' => $kbId,
+            'viewers' => $this->connections->getKbViewers($kbId),
+            'request_id' => $requestId,
+        ];
+    }
+
+    /**
+     * Handle stop_kb_view: clear KB consultation presence.
+     */
+    private function handleStopKbView(ConnectionInterface $conn, array $message, ?string $requestId): array
+    {
+        $userData = $conn->userData ?? [];
+        if (!isset($userData['user_id'])) {
+            return $this->error('unauthorized', 'Authentication required', $requestId);
+        }
+
+        $data = $message['data'] ?? [];
+        $kbId = isset($data['kb_id']) ? (int) $data['kb_id'] : null;
+        $kbId = $kbId !== null && $kbId > 0 ? $kbId : null;
+
+        $affectedViews = $this->connections->stopKbView($conn, $kbId);
+        foreach ($affectedViews as $target) {
+            $this->connections->broadcastKbViewersChanged($target['kb_id']);
+        }
+
+        return [
+            'type' => 'response',
+            'status' => 'success',
+            'action' => 'kb_view_stopped',
+            'kb_id' => $kbId,
+            'request_id' => $requestId,
+        ];
+    }
+
+    /**
      * Resolve the current folder of an item from the database.
      */
     private function getItemFolderId(int $itemId): ?int
@@ -470,6 +679,30 @@ class MessageHandler
         }
 
         return $folderId === null || $folderId === false ? null : (int) $folderId;
+    }
+
+    /**
+     * Check if a knowledge base article exists and is not deleted.
+     */
+    private function kbExists(int $kbId): bool
+    {
+        $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
+
+        try {
+            $count = \DB::queryFirstField(
+                'SELECT COUNT(*) FROM %l WHERE id = %i AND deleted_at IS NULL',
+                $tablePrefix . 'kb',
+                $kbId
+            );
+        } catch (\Exception $e) {
+            $this->logger->warning('Failed to resolve KB article for presence', [
+                'kb_id' => $kbId,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+
+        return (int) $count > 0;
     }
 
     /**
