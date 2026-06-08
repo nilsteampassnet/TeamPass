@@ -111,6 +111,9 @@ if (
         kb_save_before_attachments: <?php echo json_encode($lang->get('kb_save_before_attachments')); ?>,
         kb_pending_attachments_after_save: <?php echo json_encode($lang->get('kb_pending_attachments_after_save')); ?>,
         kb_no_attachments: <?php echo json_encode($lang->get('kb_no_attachments')); ?>,
+        kb_currently_being_updated: <?php echo json_encode($lang->get('kb_currently_being_updated')); ?>,
+        remaining_lock_time: <?php echo json_encode($lang->get('remaining_lock_time')); ?>,
+        seconds: <?php echo json_encode($lang->get('seconds')); ?>,
         close: <?php echo json_encode($lang->get('close')); ?>,
         edit: <?php echo json_encode($lang->get('edit')); ?>,
         delete: <?php echo json_encode($lang->get('delete')); ?>,
@@ -126,6 +129,9 @@ if (
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
     let kbTable = null;
     let kbLoadedDirectId = false;
+    let kbEditionLockInterval = null;
+    let kbActiveEditionLockId = 0;
+    let kbRestoreViewerAfterEditionId = 0;
 
     function kbEncodePayload(payload) {
         return prepareExchangedData(JSON.stringify(payload), 'encode', kbSessionKey, 'kb.queries.php', 'encode', false);
@@ -319,12 +325,139 @@ if (
         kbRefreshAttachmentsHelp();
     }
 
-    function kbHideEditor() {
+    function kbBuildLockMessage(delay, baseMessage) {
+        let message = baseMessage || kbTranslations.kb_currently_being_updated || kbTranslations.server_answer_error;
+        const remainingDelay = parseInt(delay, 10);
+
+        if (Number.isFinite(remainingDelay) === true && remainingDelay > 0) {
+            message += '<br>' + kbTranslations.remaining_lock_time + ' : ' + remainingDelay + ' ' + kbTranslations.seconds;
+        }
+
+        return message;
+    }
+
+    function kbToastEditionLocked(data) {
+        const lockData = data || {};
+        kbToastError(kbBuildLockMessage(lockData.edition_locked_delay, lockData.message));
+    }
+
+    function kbStopEditionLockHeartbeat() {
+        if (kbEditionLockInterval !== null) {
+            clearInterval(kbEditionLockInterval);
+            kbEditionLockInterval = null;
+        }
+    }
+
+    function kbClearLocalEditionLock(kbId) {
+        kbId = parseInt(kbId, 10) || 0;
+        if (!kbId) {
+            return;
+        }
+
+        if (window.tpLockedKbs) {
+            delete window.tpLockedKbs[kbId];
+        }
+        if (typeof window.tpWsRemoveKbEditionLock === 'function') {
+            window.tpWsRemoveKbEditionLock(kbId);
+        }
+        if (typeof window.tpWsRemoveKbEditionLockDetail === 'function') {
+            window.tpWsRemoveKbEditionLockDetail(kbId);
+        }
+    }
+
+    function kbRenewEditionLock(kbId) {
+        kbId = parseInt(kbId, 10) || 0;
+        if (!kbId) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'handle_kb_edition_lock',
+                data: kbEncodePayload({kb_id: kbId, action: 'renew_lock'}),
+                key: kbSessionKey
+            },
+            function(response) {
+                const data = kbDecodeResponse(response, 'handle_kb_edition_lock');
+                if (data.error === true && data.edition_locked === true) {
+                    kbToastEditionLocked(data);
+                    kbStopEditionLockHeartbeat();
+                    kbActiveEditionLockId = 0;
+                }
+            }
+        );
+    }
+
+    function kbStartEditionLockHeartbeat(kbId) {
+        kbId = parseInt(kbId, 10) || 0;
+        kbStopEditionLockHeartbeat();
+        if (!kbId) {
+            kbActiveEditionLockId = 0;
+            return;
+        }
+
+        kbActiveEditionLockId = kbId;
+        kbEditionLockInterval = setInterval(function() {
+            kbRenewEditionLock(kbId);
+        }, 10000);
+    }
+
+    function kbReleaseEditionLock(kbId) {
+        kbId = parseInt(kbId, 10) || 0;
+        kbStopEditionLockHeartbeat();
+        kbActiveEditionLockId = 0;
+        if (!kbId) {
+            return;
+        }
+
+        $.post(
+            'sources/kb.queries.php',
+            {
+                type: 'handle_kb_edition_lock',
+                data: kbEncodePayload({kb_id: kbId, action: 'release_lock'}),
+                key: kbSessionKey
+            }
+        );
+        kbClearLocalEditionLock(kbId);
+    }
+
+    function kbStopConsultationPresence(kbId) {
+        if (typeof window.tpWsStopKbView === 'function') {
+            window.tpWsStopKbView(kbId);
+        }
+    }
+
+    function kbHideEditor(releaseLock) {
+        const shouldReleaseLock = releaseLock !== false;
+        const currentKbId = parseInt($('#kb-id').val(), 10) || kbActiveEditionLockId || 0;
+
+        if (shouldReleaseLock === true) {
+            kbReleaseEditionLock(currentKbId);
+        } else {
+            kbStopEditionLockHeartbeat();
+            if (kbActiveEditionLockId === currentKbId) {
+                kbActiveEditionLockId = 0;
+            }
+            kbClearLocalEditionLock(currentKbId);
+        }
+
         kbResetForm();
         $('#kb-editor-card').addClass('hidden');
     }
 
     function kbHideViewer() {
+        const currentKbId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+        if (currentKbId > 0) {
+            kbStopConsultationPresence(currentKbId);
+            if (typeof window.tpWsRemoveKbEditionLockDetail === 'function') {
+                window.tpWsRemoveKbEditionLockDetail(currentKbId);
+            }
+            if (typeof window.tpWsRemoveKbViewDetail === 'function') {
+                window.tpWsRemoveKbViewDetail(currentKbId);
+            }
+        }
+
         $('#kb-viewer-card').addClass('hidden');
         $('#kb-viewer-card').data('id', 0);
         $('#button-kb-edit-from-view').addClass('hidden').data('id', 0);
@@ -340,6 +473,26 @@ if (
         $('#kb-viewer-comments-disabled').addClass('hidden');
         $('#kb-viewer-comment-form').addClass('hidden');
         $('#kb-comment-text').val('');
+    }
+
+    function kbRestoreViewerAfterEdition() {
+        const kbId = kbRestoreViewerAfterEditionId;
+        kbRestoreViewerAfterEditionId = 0;
+
+        if (kbId > 0) {
+            kbOpenViewer(kbId);
+        }
+    }
+
+    function kbCancelEditor() {
+        const kbIdToRestore = kbRestoreViewerAfterEditionId;
+        kbRestoreViewerAfterEditionId = 0;
+
+        kbHideEditor();
+
+        if (kbIdToRestore > 0) {
+            kbOpenViewer(kbIdToRestore);
+        }
     }
 
     function kbAttachmentDownloadUrl(attachmentId) {
@@ -491,6 +644,7 @@ if (
 
     function kbRenderViewer(entry) {
         const commentsCount = parseInt(entry.comments_count || 0, 10) || 0;
+        const entryId = parseInt(entry.id || 0, 10) || 0;
         $('#kb-viewer-title').text(entry.label || '');
         $('#kb-viewer-category').text(entry.category || '');
         $('#kb-viewer-author').text(kbTranslations.kb_created_by + ' ' + (entry.author || ''));
@@ -498,7 +652,7 @@ if (
         kbRenderAssociatedItems(entry.associated_items || []);
         kbRenderViewerAttachments(entry.attachments || []);
         kbRenderComments(entry);
-        $('#kb-viewer-card').data('id', entry.id || 0);
+        $('#kb-viewer-card').data('id', entryId);
         if (commentsCount > 0 || parseInt(entry.allow_comments || 0, 10) === 1) {
             $('#kb-viewer-comments-badge').text(String(commentsCount) + ' ' + kbTranslations.kb_comments.toLowerCase()).removeClass('hidden');
         } else {
@@ -518,11 +672,25 @@ if (
         }
 
         $('#kb-viewer-card').removeClass('hidden');
+
+        if (entryId > 0 && window.tpLockedKbs && window.tpLockedKbs[entryId] && typeof window.tpWsShowKbEditionLockDetail === 'function') {
+            window.tpWsShowKbEditionLockDetail(entryId, window.tpLockedKbs[entryId]);
+        }
+        if (entryId > 0 && window.tpViewingKbs && window.tpViewingKbs[entryId] && typeof window.tpWsSetKbViewers === 'function') {
+            window.tpWsSetKbViewers(entryId, window.tpViewingKbs[entryId]);
+        }
     }
 
     function kbOpenViewer(id) {
         if (!id || id < 1) {
             return;
+        }
+
+        kbRestoreViewerAfterEditionId = 0;
+
+        const previousKbId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+        if (previousKbId > 0 && previousKbId !== parseInt(id, 10)) {
+            kbStopConsultationPresence(previousKbId);
         }
 
         $.post(
@@ -540,7 +708,11 @@ if (
                 }
 
                 kbHideEditor();
-                kbRenderViewer(data.entry || {});
+                const entry = data.entry || {};
+                kbRenderViewer(entry);
+                if (typeof window.tpWsStartKbView === 'function') {
+                    window.tpWsStartKbView(parseInt(entry.id || id, 10) || 0);
+                }
                 kbLoadedDirectId = true;
             }
         ).fail(function() {
@@ -569,6 +741,15 @@ if (
     }
 
     function kbOpenEditor(id) {
+        id = parseInt(id, 10) || 0;
+        if (kbActiveEditionLockId > 0 && kbActiveEditionLockId !== id) {
+            kbReleaseEditionLock(kbActiveEditionLockId);
+        }
+
+        const currentViewerId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+        const viewerIsVisible = $('#kb-viewer-card').hasClass('hidden') === false;
+        kbRestoreViewerAfterEditionId = viewerIsVisible === true && currentViewerId === id ? currentViewerId : 0;
+
         kbHideViewer();
 
         if (!id || id < 1) {
@@ -581,21 +762,32 @@ if (
             'sources/kb.queries.php',
             {
                 type: 'get_kb',
-                data: kbEncodePayload({id: id, log_view: 0}),
+                data: kbEncodePayload({id: id, log_view: 0, lock_for_edit: 1}),
                 key: kbSessionKey
             },
             function(response) {
                 const data = kbDecodeResponse(response, 'get_kb');
                 if (data.error === true) {
                     kbToastError(data.message);
+                    kbRestoreViewerAfterEdition();
+                    return;
+                }
+
+                if (data.edition_locked === true) {
+                    window.tpBlockedEditKbId = id;
+                    kbToastEditionLocked(data);
+                    kbRestoreViewerAfterEdition();
                     return;
                 }
 
                 kbFillEditor(data.entry || {});
+                kbStartEditionLockHeartbeat(id);
+                kbClearLocalEditionLock(id);
                 $('#kb-editor-card').removeClass('hidden');
             }
         ).fail(function() {
             kbToastError(kbTranslations.server_answer_error);
+            kbRestoreViewerAfterEdition();
         });
     }
 
@@ -618,12 +810,17 @@ if (
             function(response) {
                 const data = kbDecodeResponse(response, 'delete_kb');
                 if (data.error === true) {
-                    kbToastError(data.message);
+                    if (data.edition_locked === true) {
+                        window.tpBlockedEditKbId = id;
+                        kbToastEditionLocked(data);
+                    } else {
+                        kbToastError(data.message);
+                    }
                     return;
                 }
 
                 kbHideViewer();
-                kbHideEditor();
+                kbHideEditor(false);
                 loadKbList();
                 kbToastSuccess(kbTranslations.kb_deleted);
             }
@@ -661,7 +858,12 @@ if (
             success: function(response) {
                 const data = kbDecodeResponse(response, 'upload_attachment');
                 if (data.error === true) {
-                    kbToastError(data.message);
+                    if (data.edition_locked === true) {
+                        window.tpBlockedEditKbId = kbId;
+                        kbToastEditionLocked(data);
+                    } else {
+                        kbToastError(data.message);
+                    }
                     return;
                 }
 
@@ -711,7 +913,8 @@ if (
             description: description,
             anyone_can_modify: $('#kb-anyone-can-modify').is(':checked') ? 1 : 0,
             allow_comments: $('#kb-allow-comments').is(':checked') ? 1 : 0,
-            associated_items: associatedItems
+            associated_items: associatedItems,
+            keep_lock_after_save: kbHasPendingAttachments() === true ? 1 : 0
         };
 
         $.post(
@@ -724,13 +927,22 @@ if (
             function(response) {
                 const data = kbDecodeResponse(response, 'save_kb');
                 if (data.error === true) {
-                    kbToastError(data.message);
+                    if (data.edition_locked === true) {
+                        window.tpBlockedEditKbId = payload.id;
+                        kbToastEditionLocked(data);
+                    } else {
+                        kbToastError(data.message);
+                    }
                     return;
                 }
 
                 const entryId = parseInt((data.entry && data.entry.id) ? data.entry.id : (data.id || 0), 10) || 0;
-                const finalizeSave = function(message) {
-                    kbHideEditor();
+                const finalizeSave = function(message, releaseLock) {
+                    kbRestoreViewerAfterEditionId = 0;
+                    if (releaseLock === true) {
+                        kbReleaseEditionLock(entryId);
+                    }
+                    kbHideEditor(false);
                     loadKbList();
                     if (entryId > 0) {
                         kbOpenViewer(entryId);
@@ -740,13 +952,14 @@ if (
 
                 if (entryId > 0 && kbHasPendingAttachments() === true) {
                     $('#kb-id').val(entryId);
+                    kbStartEditionLockHeartbeat(entryId);
                     kbUploadAttachments(entryId, function() {
-                        finalizeSave(kbTranslations.kb_attachment_uploaded);
+                        finalizeSave(kbTranslations.kb_attachment_uploaded, true);
                     });
                     return;
                 }
 
-                finalizeSave(kbTranslations.kb_saved);
+                finalizeSave(kbTranslations.kb_saved, false);
             }
         ).fail(function() {
             kbToastError(kbTranslations.server_answer_error);
@@ -805,7 +1018,7 @@ if (
                     }
 
                     kbTable.row.add([
-                        '<div class="tp-kb-list-entry">' +
+                        '<div class="tp-kb-list-entry" data-kb-id="' + entry.id + '">' +
                             '<a href="#" class="kb-action-view tp-kb-list-entry-title" data-id="' + entry.id + '">' + safeLabel + '</a>' +
                             (safeExcerpt !== '' ? '<div class="small tp-kb-list-entry-excerpt">' + safeExcerpt + '</div>' : '') +
                             (metaBadges.length > 0 ? '<div class="tp-kb-list-entry-meta">' + metaBadges.join('') + '</div>' : '') +
@@ -818,6 +1031,17 @@ if (
                 });
 
                 kbTable.draw();
+
+                if (window.tpLockedKbs && typeof window.tpWsShowKbEditionLock === 'function') {
+                    Object.keys(window.tpLockedKbs).forEach(function(kbId) {
+                        window.tpWsShowKbEditionLock(parseInt(kbId, 10), window.tpLockedKbs[kbId]);
+                    });
+                }
+                if (window.tpViewingKbs && typeof window.tpWsSetKbViewers === 'function') {
+                    Object.keys(window.tpViewingKbs).forEach(function(kbId) {
+                        window.tpWsSetKbViewers(parseInt(kbId, 10), window.tpViewingKbs[kbId]);
+                    });
+                }
 
                 if (kbDirectId > 0 && kbLoadedDirectId === false) {
                     kbOpenViewer(kbDirectId);
@@ -923,13 +1147,16 @@ if (
 
         kbRefreshAttachmentsHelp();
         loadKbList();
+        if (typeof window.tpWsSubscribeToKb === 'function') {
+            window.tpWsSubscribeToKb();
+        }
 
         $('#button-kb-new').on('click', function() {
             kbOpenEditor(0);
         });
 
         $('#button-kb-cancel').on('click', function() {
-            kbHideEditor();
+            kbCancelEditor();
         });
 
         $('#button-kb-close-view').on('click', function() {
@@ -986,6 +1213,41 @@ if (
             event.preventDefault();
             kbDeleteComment(parseInt($(this).data('id'), 10) || 0, parseInt($(this).data('kb-id'), 10) || 0);
         });
+
+        $(document).on('teampass:kb:refresh', function() {
+            loadKbList();
+        });
+
+        $(document).on('teampass:kb:updated', function(event, data) {
+            const kbId = parseInt((data && (data.kb_id || data.id)) || 0, 10) || 0;
+            const viewerKbId = parseInt($('#kb-viewer-card').data('id'), 10) || 0;
+            const editorKbId = parseInt($('#kb-id').val(), 10) || 0;
+
+            if (kbId > 0 && viewerKbId === kbId && editorKbId !== kbId) {
+                kbOpenViewer(kbId);
+            }
+        });
+
+        $(document).on('teampass:kb:deleted', function(event, data) {
+            const kbId = parseInt((data && (data.kb_id || data.id)) || 0, 10) || 0;
+            if (!kbId) {
+                return;
+            }
+
+            if ((parseInt($('#kb-viewer-card').data('id'), 10) || 0) === kbId) {
+                kbHideViewer();
+            }
+            if ((parseInt($('#kb-id').val(), 10) || 0) === kbId) {
+                kbHideEditor(false);
+            }
+        });
+
+        $(window).on('beforeunload.kb', function() {
+            if (kbActiveEditionLockId > 0) {
+                kbReleaseEditionLock(kbActiveEditionLockId);
+            }
+            kbStopConsultationPresence();
+        });
     });
 
     function kbDeleteAttachment(attachmentId, kbId) {
@@ -1007,7 +1269,12 @@ if (
             function(response) {
                 const data = kbDecodeResponse(response, 'delete_attachment');
                 if (data.error === true) {
-                    kbToastError(data.message);
+                    if (data.edition_locked === true) {
+                        window.tpBlockedEditKbId = kbId;
+                        kbToastEditionLocked(data);
+                    } else {
+                        kbToastError(data.message);
+                    }
                     return;
                 }
 
