@@ -266,6 +266,7 @@ function performStep5() {
         { id: 'check19', action: 'kb_categories' },
         { id: 'check20', action: 'kb_items' },
         { id: 'check61', action: 'kb_comments' },
+        { id: 'check62', action: 'kb_edition' },
         { id: 'check21', action: 'ldap_groups_roles' },
         { id: 'check22', action: 'languages' },
         { id: 'check23', action: 'log_items' },
