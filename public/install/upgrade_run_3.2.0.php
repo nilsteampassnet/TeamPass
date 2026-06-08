@@ -167,6 +167,22 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_kb', '0')"
 );
 
+// Allow WebSocket events to target the global knowledge base channel.
+$websocketEventsTableResult = mysqli_query(
+    $db_link,
+    "SHOW TABLES LIKE '" . $pre . "websocket_events'"
+);
+if ($websocketEventsTableResult !== false && mysqli_num_rows($websocketEventsTableResult) > 0) {
+    $res = mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "websocket_events` MODIFY `target_type` ENUM('user', 'folder', 'kb', 'broadcast') NOT NULL COMMENT 'Target type for routing'"
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error updating websocket_events target_type: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
 
 // Add HIBP (HaveIBeenPwned) columns to teampass_items
 $res = addColumnIfNotExist(
@@ -240,6 +256,18 @@ mysqli_query(
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 );
 
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "kb_edition` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            `timestamp` varchar(50) NOT NULL,
+            KEY `kb_id_idx` (`kb_id`),
+            PRIMARY KEY (`increment_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+);
+
 checkIndexExist(
     $pre . 'kb_comments',
     'idx_kb_id',
@@ -258,6 +286,12 @@ checkIndexExist(
     'ADD KEY `idx_created_at` (`created_at`)'
 );
 
+checkIndexExist(
+    $pre . 'kb_edition',
+    'kb_id_idx',
+    'ADD KEY `kb_id_idx` (`kb_id`)'
+);
+
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "kb` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -266,6 +300,11 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "kb_comments` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_edition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 );
 
 //---------------------------------------------------------------------
