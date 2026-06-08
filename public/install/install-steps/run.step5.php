@@ -1151,6 +1151,21 @@ class DatabaseInstaller
         );
     }
 
+    // Create table kb_edition
+    private function kb_edition()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'kb_edition` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            `timestamp` varchar(50) NOT NULL,
+            KEY `kb_id_idx` (`kb_id`),
+            PRIMARY KEY (`increment_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+        );
+    }
+
     // Create table restriction_to_roles
     private function restriction_to_roles()
     {
@@ -1833,7 +1848,7 @@ class DatabaseInstaller
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `event_type` VARCHAR(50) NOT NULL COMMENT 'Type of event (item_created, item_updated, etc.)',
-                `target_type` ENUM('user', 'folder', 'broadcast') NOT NULL COMMENT 'Target type for routing',
+                `target_type` ENUM('user', 'folder', 'kb', 'broadcast') NOT NULL COMMENT 'Target type for routing',
                 `target_id` INT UNSIGNED NULL COMMENT 'Target ID (user_id or folder_id)',
                 `payload` JSON NOT NULL COMMENT 'Event payload data',
                 `processed` TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Has this event been broadcast?',
