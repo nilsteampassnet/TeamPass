@@ -7672,7 +7672,7 @@ function tpFinishRequestEarly(): bool
  * to connected clients.
  *
  * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
- * @param string $targetType Target type for routing: 'user', 'folder', or 'broadcast'
+ * @param string $targetType Target type for routing: 'user', 'folder', 'kb', or 'broadcast'
  * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
  * @param array $payload Event payload data to send to clients
  * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
@@ -7736,7 +7736,7 @@ function emitWebSocketEvent(
     }
 
     // Validate target type
-    if (!in_array($targetType, ['user', 'folder', 'broadcast'], true)) {
+    if (!in_array($targetType, ['user', 'folder', 'kb', 'broadcast'], true)) {
         error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
         return false;
     }
@@ -7833,6 +7833,62 @@ function emitEditionLockEvent(
     $excludeUserId = ($action === 'started') ? $userId : null;
 
     return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base operations.
+ *
+ * @param string $action Action performed: 'created', 'updated', or 'deleted'
+ * @param int $kbId Knowledge base article ID
+ * @param string $label Article label
+ * @param string $userLogin User who performed the action
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitKbEvent(
+    string $action,
+    int $kbId,
+    string $label,
+    string $userLogin,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'kb_' . $action;
+
+    $payload = [
+        'kb_id' => $kbId,
+        'label' => $label,
+        $action . '_by' => $userLogin,
+    ];
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base edition lock changes.
+ *
+ * @param string $action 'started' or 'stopped'
+ * @param int $kbId Knowledge base article ID
+ * @param string $userLogin The user who locked/unlocked
+ * @param int $userId The user ID who locked/unlocked
+ * @return bool True if event was queued
+ */
+function emitKbEditionLockEvent(
+    string $action,
+    int $kbId,
+    string $userLogin,
+    int $userId
+): bool {
+    $eventType = 'kb_edition_' . $action;
+
+    $payload = [
+        'kb_id' => $kbId,
+        'user_login' => $userLogin,
+        'user_id' => $userId,
+    ];
+
+    $excludeUserId = ($action === 'started') ? $userId : null;
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
 }
 
 /**
