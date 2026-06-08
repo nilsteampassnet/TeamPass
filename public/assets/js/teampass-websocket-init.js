@@ -108,6 +108,8 @@
   // Current folder tracking
   var currentFolderId = null
   var activeItemView = null
+  var activeKbView = null
+  var kbSubscriptionRequested = false
 
   /**
    * Initialize WebSocket connection
@@ -120,6 +122,9 @@
         // Subscribe to current folder if any
         if (currentFolderId) {
           subscribeToFolder(currentFolderId)
+        }
+        if (kbSubscriptionRequested) {
+          subscribeToKb()
         }
 
         // Show subtle connection indicator
@@ -157,6 +162,9 @@
     tpWs.on('connected', function(data) {
       if (data && data.user_id) {
         window.TeamPassCurrentUserId = parseInt(data.user_id, 10)
+      }
+      if (activeKbView) {
+        sendStartKbView(activeKbView.kbId)
       }
     })
 
@@ -255,6 +263,54 @@
         setItemViewers(data.item_id, data.viewers || [])
       }
       updateItemViewersInDetailView(data.item_id, data.viewers || [])
+    })
+
+    // Knowledge base events
+    tpWs.on('kb_created', function(data) {
+      if (typeof $ !== 'undefined') {
+        $(document).trigger('teampass:kb:refresh', [data])
+      }
+    })
+
+    tpWs.on('kb_updated', function(data) {
+      if (typeof $ !== 'undefined') {
+        $(document).trigger('teampass:kb:refresh', [data])
+        $(document).trigger('teampass:kb:updated', [data])
+      }
+    })
+
+    tpWs.on('kb_deleted', function(data) {
+      if (typeof $ !== 'undefined') {
+        $(document).trigger('teampass:kb:refresh', [data])
+        $(document).trigger('teampass:kb:deleted', [data])
+      }
+    })
+
+    tpWs.on('kb_edition_started', function(data) {
+      if (!window.tpLockedKbs) window.tpLockedKbs = {}
+      window.tpLockedKbs[data.kb_id] = data.user_login
+      showKbEditionLockIndicator(data.kb_id, data.user_login)
+      showKbEditionLockInViewer(data.kb_id, data.user_login)
+    })
+
+    tpWs.on('kb_edition_stopped', function(data) {
+      if (window.tpLockedKbs) {
+        delete window.tpLockedKbs[data.kb_id]
+      }
+      removeKbEditionLockIndicator(data.kb_id)
+      removeKbEditionLockFromViewer(data.kb_id)
+      if (window.tpBlockedEditKbId && window.tpBlockedEditKbId === data.kb_id) {
+        showNotification('success',
+          L.kb_now_available || 'Knowledge article available',
+          (L.kb_edition_released || 'Knowledge article is now available for editing') +
+          ' (' + data.user_login + ')'
+        )
+        window.tpBlockedEditKbId = null
+      }
+    })
+
+    tpWs.on('kb_viewers_changed', function(data) {
+      setKbViewers(data.kb_id, data.viewers || [])
     })
 
     // Item moved event
@@ -455,6 +511,54 @@
       })
       .catch(function(err) {
         tpWsDebug('[TeamPass WS] Failed to subscribe to folder ' + folderId + " - " + err, 'error')
+      })
+  }
+
+  /**
+   * Subscribe to the global knowledge base channel for real-time updates.
+   */
+  function subscribeToKb() {
+    kbSubscriptionRequested = true
+    if (!tpWs.isConnectedNow() || typeof tpWs.subscribeToKb !== 'function') return
+
+    tpWs.subscribeToKb()
+      .then(function(response) {
+        tpWsDebug('[TeamPass WS] Subscribed to knowledge base channel', 'log')
+
+        if (response && Array.isArray(response.locked_kbs)) {
+          if (window.tpLockedKbs) {
+            Object.keys(window.tpLockedKbs).forEach(function(kbId) {
+              removeKbEditionLockIndicator(kbId)
+              removeKbEditionLockFromViewer(kbId)
+            })
+          }
+          window.tpLockedKbs = {}
+          response.locked_kbs.forEach(function(lock) {
+            window.tpLockedKbs[lock.kb_id] = lock.user_login
+            showKbEditionLockIndicator(lock.kb_id, lock.user_login)
+            showKbEditionLockInViewer(lock.kb_id, lock.user_login)
+          })
+        }
+
+        if (response && Array.isArray(response.viewing_kbs)) {
+          if (window.tpViewingKbs) {
+            Object.keys(window.tpViewingKbs).forEach(function(kbId) {
+              removeKbViewIndicator(kbId)
+              removeKbViewFromViewer(kbId)
+            })
+          }
+          window.tpViewingKbs = {}
+          response.viewing_kbs.forEach(function(kbView) {
+            setKbViewers(kbView.kb_id, kbView.viewers || [])
+          })
+        }
+
+        if (activeKbView) {
+          sendStartKbView(activeKbView.kbId)
+        }
+      })
+      .catch(function(err) {
+        tpWsDebug('[TeamPass WS] Failed to subscribe to knowledge base channel - ' + err, 'error')
       })
   }
 
@@ -820,6 +924,188 @@
     $container.find('.item-view-detail-badge').remove()
   }
 
+  function showKbEditionLockIndicator(kbId, userLogin) {
+    if (typeof $ === 'undefined') return
+    kbId = parseInt(kbId, 10)
+    if (!kbId) return
+
+    var $entry = $('.tp-kb-list-entry[data-kb-id="' + kbId + '"]').first()
+    if ($entry.length === 0) return
+    if ($entry.find('.kb-edition-lock-badge').length > 0) return
+
+    var badge = $('<span class="kb-edition-lock-badge badge badge-warning ml-2" ' +
+      'title="' + escapeAttribute((L.being_edited_by || 'Being edited by') + ' ' + userLogin) + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + escapeHtml(userLogin) +
+      '</span>')
+
+    $entry.find('.tp-kb-list-entry-title').first().after(badge)
+  }
+
+  function removeKbEditionLockIndicator(kbId) {
+    if (typeof $ === 'undefined') return
+    $('.tp-kb-list-entry[data-kb-id="' + parseInt(kbId, 10) + '"]').find('.kb-edition-lock-badge').remove()
+  }
+
+  function showKbEditionLockInViewer(kbId, userLogin) {
+    if (typeof $ === 'undefined') return
+    var $viewer = $('#kb-viewer-card')
+    if ($viewer.hasClass('hidden')) return
+    if (parseInt($viewer.data('id')) !== parseInt(kbId)) return
+    if ($viewer.find('.kb-edition-lock-detail-badge').length > 0) return
+
+    var badge = $('<span class="kb-edition-lock-detail-badge badge badge-warning mr-2">' +
+      '<i class="fas fa-lock mr-1"></i>' +
+      (L.being_edited_by || 'Being edited by') + ' <strong>' + escapeHtml(userLogin) + '</strong>' +
+      '</span>')
+
+    $('#kb-viewer-author').before(badge)
+  }
+
+  function removeKbEditionLockFromViewer(kbId) {
+    if (typeof $ === 'undefined') return
+    var $viewer = $('#kb-viewer-card')
+    if (kbId && parseInt($viewer.data('id')) !== parseInt(kbId)) return
+    $viewer.find('.kb-edition-lock-detail-badge').remove()
+  }
+
+  function setKbViewers(kbId, viewers) {
+    kbId = parseInt(kbId, 10)
+    if (!kbId) return
+
+    var normalizedViewers = normalizeViewers(viewers)
+    if (!window.tpViewingKbs) window.tpViewingKbs = {}
+
+    if (normalizedViewers.length === 0) {
+      delete window.tpViewingKbs[kbId]
+      removeKbViewIndicator(kbId)
+      removeKbViewFromViewer(kbId)
+      return
+    }
+
+    window.tpViewingKbs[kbId] = normalizedViewers
+    showKbViewIndicator(kbId, normalizedViewers)
+    showKbViewInViewer(kbId, normalizedViewers)
+  }
+
+  function showKbViewIndicator(kbId, viewers) {
+    if (typeof $ === 'undefined') return
+
+    var $entry = $('.tp-kb-list-entry[data-kb-id="' + kbId + '"]').first()
+    if ($entry.length === 0) return
+
+    removeKbViewIndicator(kbId)
+
+    var names = viewers.map(function(viewer) {
+      return viewer.user_login
+    })
+    var label = buildViewerLabel(viewers)
+    var badge = $('<span class="kb-view-badge badge badge-success ml-2" ' +
+      'title="' + escapeAttribute((L.kb_viewed_by || L.item_viewed_by || 'Viewed by') + ' ' + names.join(', ')) + '">' +
+      '<i class="fa-regular fa-eye mr-1"></i>' + escapeHtml(label) +
+      '</span>')
+
+    var $lockBadge = $entry.find('.kb-edition-lock-badge').last()
+    if ($lockBadge.length > 0) {
+      $lockBadge.after(badge)
+    } else {
+      $entry.find('.tp-kb-list-entry-title').first().after(badge)
+    }
+  }
+
+  function removeKbViewIndicator(kbId) {
+    if (typeof $ === 'undefined') return
+    $('.tp-kb-list-entry[data-kb-id="' + parseInt(kbId, 10) + '"]').find('.kb-view-badge').remove()
+  }
+
+  function showKbViewInViewer(kbId, viewers) {
+    if (typeof $ === 'undefined') return
+    var $viewer = $('#kb-viewer-card')
+    if ($viewer.hasClass('hidden')) return
+    if (parseInt($viewer.data('id')) !== parseInt(kbId)) return
+
+    removeKbViewFromViewer(kbId)
+
+    var names = viewers.map(function(viewer) {
+      return viewer.user_login
+    })
+    var badge = $('<span class="kb-view-detail-badge badge badge-success mr-2">' +
+      '<i class="fa-regular fa-eye mr-1"></i>' +
+      (L.kb_viewed_by || L.item_viewed_by || 'Viewed by') + ' <strong>' + escapeHtml(names.join(', ')) + '</strong>' +
+      '</span>')
+
+    var $lockBadge = $viewer.find('.kb-edition-lock-detail-badge').last()
+    if ($lockBadge.length > 0) {
+      $lockBadge.after(badge)
+    } else {
+      $('#kb-viewer-author').before(badge)
+    }
+  }
+
+  function removeKbViewFromViewer(kbId) {
+    if (typeof $ === 'undefined') return
+    var $viewer = $('#kb-viewer-card')
+    if (kbId && parseInt($viewer.data('id')) !== parseInt(kbId)) return
+    $viewer.find('.kb-view-detail-badge').remove()
+  }
+
+  function sendStartKbView(kbId) {
+    if (!tpWs.isConnectedNow()) return
+    tpWs.send({
+      action: 'start_kb_view',
+      data: {
+        kb_id: parseInt(kbId, 10)
+      }
+    }).catch(function(err) {
+      tpWsDebug('[TeamPass WS] Failed to start KB view presence - ' + err, 'warn')
+    })
+  }
+
+  function startKbView(kbId) {
+    kbId = parseInt(kbId, 10)
+    if (!kbId) return
+
+    if (activeKbView && parseInt(activeKbView.kbId) === kbId) {
+      return
+    }
+
+    var previousKbView = activeKbView
+    activeKbView = { kbId: kbId }
+
+    var start = function() {
+      sendStartKbView(kbId)
+    }
+
+    if (previousKbView && tpWs.isConnectedNow()) {
+      tpWs.send({
+        action: 'stop_kb_view',
+        data: {
+          kb_id: parseInt(previousKbView.kbId, 10)
+        }
+      }).then(start).catch(start)
+    } else {
+      start()
+    }
+  }
+
+  function stopKbView(kbId) {
+    kbId = kbId ? parseInt(kbId, 10) : null
+    if (!activeKbView) return
+    if (kbId && parseInt(activeKbView.kbId) !== kbId) return
+
+    var previousKbView = activeKbView
+    activeKbView = null
+
+    if (!tpWs.isConnectedNow()) return
+    tpWs.send({
+      action: 'stop_kb_view',
+      data: {
+        kb_id: parseInt(previousKbView.kbId, 10)
+      }
+    }).catch(function(err) {
+      tpWsDebug('[TeamPass WS] Failed to stop KB view presence - ' + err, 'warn')
+    })
+  }
+
   /**
    * Refresh user folders after a permission change
    *
@@ -845,6 +1131,16 @@
   window.tpWsSetItemViewers = setItemViewers
   window.tpWsRemoveItemView = removeItemViewIndicator
   window.tpWsRemoveItemViewDetail = removeItemViewFromDetailView
+  window.tpWsSubscribeToKb = subscribeToKb
+  window.tpWsShowKbEditionLock = showKbEditionLockIndicator
+  window.tpWsRemoveKbEditionLock = removeKbEditionLockIndicator
+  window.tpWsShowKbEditionLockDetail = showKbEditionLockInViewer
+  window.tpWsRemoveKbEditionLockDetail = removeKbEditionLockFromViewer
+  window.tpWsStartKbView = startKbView
+  window.tpWsStopKbView = stopKbView
+  window.tpWsSetKbViewers = setKbViewers
+  window.tpWsRemoveKbView = removeKbViewIndicator
+  window.tpWsRemoveKbViewDetail = removeKbViewFromViewer
   window.refreshUserFolders = refreshUserFolders
 
   // Initialize when DOM is ready
