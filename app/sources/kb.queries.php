@@ -867,6 +867,169 @@ function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseU
     ];
 }
 
+function kbEditionLockHeartbeatTimeout(): int
+{
+    return defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+        ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+        : 300;
+}
+
+function kbLatestEditionLock(int $kbId): ?array
+{
+    $lock = DB::queryFirstRow(
+        'SELECT timestamp, user_id, increment_id
+        FROM ' . prefixTable('kb_edition') . '
+        WHERE kb_id = %i
+        ORDER BY increment_id DESC',
+        $kbId
+    );
+
+    return $lock === null ? null : $lock;
+}
+
+function kbCreateEditionLock(int $kbId, int $userId, int $timestamp): void
+{
+    DB::insert(
+        prefixTable('kb_edition'),
+        [
+            'timestamp' => $timestamp,
+            'kb_id' => $kbId,
+            'user_id' => $userId,
+        ]
+    );
+}
+
+function kbReleaseEditionLock(int $kbId, int $userId, string $userLogin): void
+{
+    DB::delete(
+        prefixTable('kb_edition'),
+        'kb_id = %i AND user_id = %i',
+        $kbId,
+        $userId
+    );
+
+    if (DB::affectedRows() > 0) {
+        emitKbEditionLockEvent('stopped', $kbId, $userLogin, $userId);
+    }
+}
+
+function kbReleaseAllEditionLocks(int $kbId, string $userLogin, int $userId): void
+{
+    DB::delete(prefixTable('kb_edition'), 'kb_id = %i', $kbId);
+    if (DB::affectedRows() > 0) {
+        emitKbEditionLockEvent('stopped', $kbId, $userLogin, $userId);
+    }
+}
+
+function kbIsLocked(int $kbId, SessionInterface $session, int $userId, string $actionType = ''): array
+{
+    if ($kbId <= 0 || $userId <= 0) {
+        return ['status' => false];
+    }
+
+    $now = time();
+    $lastLock = kbLatestEditionLock($kbId);
+
+    if ($lastLock === null) {
+        if ($actionType === 'edit') {
+            kbCreateEditionLock($kbId, $userId, $now);
+            emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), $userId);
+        }
+
+        return ['status' => false];
+    }
+
+    if ((int) $lastLock['user_id'] === $userId) {
+        if ($actionType === 'edit') {
+            DB::update(
+                prefixTable('kb_edition'),
+                ['timestamp' => $now],
+                'increment_id = %i',
+                (int) $lastLock['increment_id']
+            );
+        }
+
+        return ['status' => false];
+    }
+
+    $heartbeatTimeout = kbEditionLockHeartbeatTimeout();
+    $elapsed = abs($now - (int) $lastLock['timestamp']);
+
+    if ($elapsed > $heartbeatTimeout) {
+        $lockOwnerLogin = DB::queryFirstField(
+            'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
+            (int) $lastLock['user_id']
+        );
+        emitKbEditionLockEvent('stopped', $kbId, (string) ($lockOwnerLogin ?? ''), (int) $lastLock['user_id']);
+        DB::delete(prefixTable('kb_edition'), 'kb_id = %i', $kbId);
+
+        if ($actionType === 'edit') {
+            kbCreateEditionLock($kbId, $userId, $now);
+            emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), $userId);
+        }
+
+        return ['status' => false];
+    }
+
+    return [
+        'status' => true,
+        'delay' => max(0, $heartbeatTimeout - $elapsed),
+    ];
+}
+
+function kbEditionLockSaveStatus(int $kbId, int $userId): array
+{
+    if ($kbId <= 0 || $userId <= 0) {
+        return ['allowed' => false, 'reason' => 'invalid'];
+    }
+
+    $locks = DB::query(
+        'SELECT timestamp, user_id, increment_id
+        FROM ' . prefixTable('kb_edition') . '
+        WHERE kb_id = %i
+        ORDER BY increment_id DESC',
+        $kbId
+    );
+    if (count($locks) === 0) {
+        return ['allowed' => false, 'reason' => 'missing'];
+    }
+
+    $now = time();
+    $timeout = kbEditionLockHeartbeatTimeout();
+    $hasOwnActiveLock = false;
+
+    foreach ($locks as $lock) {
+        $elapsed = abs($now - (int) $lock['timestamp']);
+        if ($elapsed > $timeout) {
+            continue;
+        }
+
+        if ((int) $lock['user_id'] !== $userId) {
+            return [
+                'allowed' => false,
+                'reason' => 'locked_by_other_user',
+                'delay' => max(0, $timeout - $elapsed),
+            ];
+        }
+
+        $hasOwnActiveLock = true;
+    }
+
+    return $hasOwnActiveLock === true
+        ? ['allowed' => true]
+        : ['allowed' => false, 'reason' => 'missing_active_lock'];
+}
+
+function kbEditionLockErrorPayload(Language $lang, array $status): array
+{
+    return [
+        'error' => true,
+        'message' => $lang->get('kb_currently_being_updated'),
+        'edition_locked' => true,
+        'edition_locked_delay' => $status['delay'] ?? null,
+    ];
+}
+
 function kbInsertLog(array $SETTINGS, SessionInterface $session, int $kbId, string $label, string $action, string $reason = ''): void
 {
     $createdAt = time();
@@ -991,6 +1154,57 @@ $data = (string) $request->request->get('data', '');
 $key = (string) $request->request->get('key', $request->query->get('key', ''));
 
 switch ($type) {
+    case 'handle_kb_edition_lock':
+        if (kbIsAdmin($session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+        if ($key !== (string) $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+
+        $payload = prepareExchangedData($data, 'decode');
+        if (!is_array($payload)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('json_error_format')], 'encode');
+            break;
+        }
+
+        $kbId = (int) ($payload['kb_id'] ?? 0);
+        $action = (string) ($payload['action'] ?? '');
+        $kb = kbLoadRow($kbId);
+        if ($kb === null) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
+            break;
+        }
+
+        if ($action === 'release_lock') {
+            kbReleaseEditionLock($kbId, (int) $session->get('user-id'), (string) ($session->get('user-login') ?? ''));
+            echo (string) prepareExchangedData(['error' => false], 'encode');
+            break;
+        }
+
+        if ($action === 'renew_lock') {
+            if (!kbCanEdit($kb, $session)) {
+                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            DB::update(
+                prefixTable('kb_edition'),
+                ['timestamp' => time()],
+                'kb_id = %i AND user_id = %i',
+                $kbId,
+                (int) $session->get('user-id')
+            );
+
+            echo (string) prepareExchangedData(['error' => false], 'encode');
+            break;
+        }
+
+        echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        break;
+
     case 'list_kbs':
         if (kbIsAdmin($session)) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
@@ -1044,10 +1258,31 @@ switch ($type) {
 
         $kbId = (int) ($payload['id'] ?? 0);
         $logView = (int) ($payload['log_view'] ?? 0);
+        $lockForEdit = (int) ($payload['lock_for_edit'] ?? 0);
         $kb = kbLoadRow($kbId);
         if ($kb === null) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
             break;
+        }
+        if ($lockForEdit === 1) {
+            if (!kbCanEdit($kb, $session)) {
+                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            $editionLocked = kbIsLocked($kbId, $session, (int) $session->get('user-id'), 'edit');
+            if (($editionLocked['status'] ?? false) === true) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => false,
+                        'edition_locked' => true,
+                        'edition_locked_delay' => $editionLocked['delay'] ?? null,
+                        'message' => $lang->get('kb_currently_being_updated'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
         }
 
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
@@ -1055,7 +1290,7 @@ switch ($type) {
             kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_shown');
         }
 
-        echo (string) prepareExchangedData(['error' => false, 'entry' => $entry], 'encode');
+        echo (string) prepareExchangedData(['error' => false, 'edition_locked' => false, 'entry' => $entry], 'encode');
         break;
 
     case 'save_kb':
@@ -1081,6 +1316,7 @@ switch ($type) {
         $anyoneCanModify = (int) ($payload['anyone_can_modify'] ?? 0) === 1 ? 1 : 0;
         $allowComments = (int) ($payload['allow_comments'] ?? 0) === 1 ? 1 : 0;
         $requestedAssociatedItems = is_array($payload['associated_items'] ?? null) ? $payload['associated_items'] : [];
+        $keepLockAfterSave = (int) ($payload['keep_lock_after_save'] ?? 0) === 1 ? 1 : 0;
 
         $label = trim((string) $antiXss->xss_clean($label));
         $category = trim((string) $antiXss->xss_clean($category));
@@ -1121,6 +1357,11 @@ switch ($type) {
                 echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
                 break;
             }
+            $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+            if ($editionLockForSave['allowed'] !== true) {
+                echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+                break;
+            }
 
             $oldAssociatedItems = kbLoadAssociatedItemIds($kbId);
 
@@ -1149,6 +1390,10 @@ switch ($type) {
                 ]
             );
             $kbId = (int) DB::insertId();
+            if ($keepLockAfterSave === 1) {
+                kbCreateEditionLock($kbId, (int) $session->get('user-id'), time());
+                emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+            }
         }
 
         $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds($kbId, $requestedAssociatedItems, $session);
@@ -1199,6 +1444,18 @@ switch ($type) {
             );
         }
 
+        emitKbEvent(
+            $oldKb === null ? 'created' : 'updated',
+            $kbId,
+            $label,
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
+
+        if ($oldKb !== null && $keepLockAfterSave !== 1) {
+            kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+        }
+
         $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_saved'), 'id' => $kbId, 'entry' => $entry], 'encode');
         break;
@@ -1229,6 +1486,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLocked = kbIsLocked($kbId, $session, (int) $session->get('user-id'));
+        if (($editionLocked['status'] ?? false) === true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLocked), 'encode');
+            break;
+        }
 
         $associatedRows = DB::query(
             'SELECT item_id
@@ -1242,6 +1504,14 @@ switch ($type) {
         DB::delete(prefixTable('kb_items'), 'kb_id = %i', $kbId);
         DB::delete(prefixTable('kb'), 'id = %i', $kbId);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_delete');
+        kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+        emitKbEvent(
+            'deleted',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
 
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_deleted')], 'encode');
         break;
@@ -1347,6 +1617,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+            break;
+        }
 
         $directory = kbAttachmentBaseDirectory($SETTINGS);
         if ($directory === '') {
@@ -1430,6 +1705,13 @@ switch ($type) {
         }
 
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
+        emitKbEvent(
+            'updated',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
@@ -1559,6 +1841,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+            break;
+        }
 
         $attachmentRow = kbFindAttachmentRowById($attachmentId);
         if ($attachmentRow === null) {
@@ -1572,6 +1859,13 @@ switch ($type) {
 
         kbDeleteAttachmentFileAndRow($attachmentRow, $SETTINGS);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_delete');
+        emitKbEvent(
+            'updated',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_deleted'), 'entry' => $entry], 'encode');
         break;
