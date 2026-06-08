@@ -403,6 +403,28 @@ class AuthValidator
     }
 
     /**
+     * Validate user has access to the knowledge base channel.
+     */
+    public function canAccessKnowledgeBase(array $userData): bool
+    {
+        if ($userData['is_admin'] ?? false) {
+            return false;
+        }
+
+        try {
+            $enabled = \DB::queryFirstField(
+                'SELECT valeur FROM %l WHERE intitule = %s',
+                $this->tablePrefix . 'misc',
+                'enable_kb'
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return (int) $enabled === 1;
+    }
+
+    /**
      * Check if JWT authentication is available
      */
     public function isJwtAvailable(): bool
