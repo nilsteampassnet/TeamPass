@@ -114,6 +114,7 @@ class FolderAccessModel
                 SELECT 1
                 FROM ' . prefixTable('nested_tree') . ' AS other_personal
                 WHERE other_personal.personal_folder = 1
+                AND other_personal.parent_id = 0
                 AND other_personal.title <> %s
                 AND nt.nleft >= other_personal.nleft
                 AND nt.nright <= other_personal.nright
@@ -156,6 +157,7 @@ class FolderAccessModel
                 SELECT 1
                 FROM ' . prefixTable('nested_tree') . ' AS other_personal
                 WHERE other_personal.personal_folder = 1
+                AND other_personal.parent_id = 0
                 AND other_personal.title <> %s
                 AND nt.nleft >= other_personal.nleft
                 AND nt.nright <= other_personal.nright
@@ -292,6 +294,7 @@ class FolderAccessModel
             FROM ' . prefixTable('nested_tree') . ' AS nt_access
             INNER JOIN ' . prefixTable('nested_tree') . ' AS other_personal
                 ON other_personal.personal_folder = 1
+                AND other_personal.parent_id = 0
                 AND nt_access.nleft >= other_personal.nleft
                 AND nt_access.nright <= other_personal.nright
             WHERE nt_access.id = ' . $itemFolderColumn . '
