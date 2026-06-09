@@ -154,7 +154,7 @@ class MessageHandler
                     ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
                     : 300;
                 $rows = \DB::query(
-                    'SELECT ie.item_id, u.login AS user_login
+                    'SELECT ie.item_id, u.login AS user_login, u.name AS user_name, u.lastname AS user_lastname
                      FROM %l ie
                      JOIN %l i ON ie.item_id = i.id
                      JOIN %l u ON ie.user_id = u.id
@@ -167,9 +167,15 @@ class MessageHandler
                     (int) $userData['user_id']
                 );
                 foreach ($rows as $row) {
+                    $userLogin = (string) $row['user_login'];
                     $lockedItems[] = [
-                        'item_id'    => (int) $row['item_id'],
-                        'user_login' => (string) $row['user_login'],
+                        'item_id' => (int) $row['item_id'],
+                        'user_login' => $userLogin,
+                        'user_display_name' => $this->buildUserDisplayName(
+                            (string) ($row['user_name'] ?? ''),
+                            (string) ($row['user_lastname'] ?? ''),
+                            $userLogin
+                        ),
                     ];
                 }
             } catch (\Exception $e) {
@@ -213,7 +219,7 @@ class MessageHandler
                     ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
                     : 300;
                 $rows = \DB::query(
-                    'SELECT ke.kb_id, u.login AS user_login
+                    'SELECT ke.kb_id, u.login AS user_login, u.name AS user_name, u.lastname AS user_lastname
                      FROM %l ke
                      JOIN %l k ON ke.kb_id = k.id
                      JOIN %l u ON ke.user_id = u.id
@@ -225,9 +231,15 @@ class MessageHandler
                     (int) $userData['user_id']
                 );
                 foreach ($rows as $row) {
+                    $userLogin = (string) $row['user_login'];
                     $lockedKbs[] = [
                         'kb_id' => (int) $row['kb_id'],
-                        'user_login' => (string) $row['user_login'],
+                        'user_login' => $userLogin,
+                        'user_display_name' => $this->buildUserDisplayName(
+                            (string) ($row['user_name'] ?? ''),
+                            (string) ($row['user_lastname'] ?? ''),
+                            $userLogin
+                        ),
                     ];
                 }
             } catch (\Exception $e) {
@@ -353,6 +365,7 @@ class MessageHandler
             'connected' => true,
             'user_id' => $userData['user_id'] ?? null,
             'user_login' => $userData['user_login'] ?? null,
+            'user_display_name' => $userData['user_display_name'] ?? $userData['user_login'] ?? null,
             'auth_method' => $userData['auth_method'] ?? null,
             'subscriptions' => $conn->subscriptions ?? [],
             'connected_at' => $conn->connectedAt ?? null,
@@ -703,6 +716,17 @@ class MessageHandler
         }
 
         return (int) $count > 0;
+    }
+
+    /**
+     * Build a friendly user display name, falling back to the TeamPass login.
+     */
+    private function buildUserDisplayName(string $name, string $lastname, string $fallbackLogin): string
+    {
+        $displayName = trim(trim($name) . ' ' . trim($lastname));
+        $displayName = preg_replace('/\s+/', ' ', $displayName) ?? '';
+
+        return $displayName !== '' ? $displayName : $fallbackLogin;
     }
 
     /**
