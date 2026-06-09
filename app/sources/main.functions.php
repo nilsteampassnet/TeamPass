@@ -7802,6 +7802,46 @@ function emitItemEvent(
 }
 
 /**
+ * Build a friendly user display name, falling back to the TeamPass login.
+ */
+function teampassBuildUserDisplayName(string $name, string $lastname, string $fallbackLogin): string
+{
+    $displayName = trim(trim($name) . ' ' . trim($lastname));
+    $displayName = preg_replace('/\s+/', ' ', $displayName) ?? '';
+
+    return $displayName !== '' ? $displayName : $fallbackLogin;
+}
+
+/**
+ * Resolve a user's display name from the users table for WebSocket payloads.
+ */
+function teampassGetUserDisplayNameForPayload(int $userId, string $fallbackLogin): string
+{
+    if ($userId <= 0) {
+        return $fallbackLogin;
+    }
+
+    try {
+        $user = DB::queryFirstRow(
+            'SELECT login, name, lastname FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+    } catch (Exception $e) {
+        return $fallbackLogin;
+    }
+
+    if (is_array($user) === false) {
+        return $fallbackLogin;
+    }
+
+    return teampassBuildUserDisplayName(
+        (string) ($user['name'] ?? ''),
+        (string) ($user['lastname'] ?? ''),
+        (string) ($user['login'] ?? $fallbackLogin)
+    );
+}
+
+/**
  * Emit a WebSocket event for item edition lock changes
  *
  * Notifies folder subscribers when an item is being edited or released.
@@ -7821,11 +7861,13 @@ function emitEditionLockEvent(
     int $userId
 ): bool {
     $eventType = 'item_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
 
     $payload = [
         'item_id' => $itemId,
         'folder_id' => $folderId,
         'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
         'user_id' => $userId,
     ];
 
@@ -7879,10 +7921,12 @@ function emitKbEditionLockEvent(
     int $userId
 ): bool {
     $eventType = 'kb_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
 
     $payload = [
         'kb_id' => $kbId,
         'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
         'user_id' => $userId,
     ];
 
@@ -8054,7 +8098,7 @@ function validateWebSocketToken(string $token): ?array
     try {
         // Find the token with user info
         $tokenData = DB::queryFirstRow(
-            'SELECT wt.*, u.login, u.admin
+            'SELECT wt.*, u.login, u.name, u.lastname, u.admin
              FROM %l wt
              JOIN %l u ON wt.user_id = u.id
              WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
@@ -8094,9 +8138,16 @@ function validateWebSocketToken(string $token): ?array
             $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
         }
 
+        $userLogin = (string) $tokenData['login'];
+
         return [
             'user_id' => $userId,
-            'user_login' => $tokenData['login'],
+            'user_login' => $userLogin,
+            'user_display_name' => teampassBuildUserDisplayName(
+                (string) ($tokenData['name'] ?? ''),
+                (string) ($tokenData['lastname'] ?? ''),
+                $userLogin
+            ),
             'accessible_folders' => $accessibleFolders,
             'is_admin' => $tokenData['admin'] === '1',
             'auth_method' => 'ws_token',
