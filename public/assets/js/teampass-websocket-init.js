@@ -228,13 +228,13 @@
     // Edition lock events
     tpWs.on('item_edition_started', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
-        showEditionLockIndicator(data.item_id, data.user_login)
+        showEditionLockIndicator(data.item_id, data)
       }
       // Track locked items globally
       if (!window.tpLockedItems) window.tpLockedItems = {}
-      window.tpLockedItems[data.item_id] = data.user_login
+      window.tpLockedItems[data.item_id] = normalizeUserIdentity(data)
       // If this item is currently open in the detail panel, show lock there too
-      showEditionLockInDetailView(data.item_id, data.user_login)
+      showEditionLockInDetailView(data.item_id, data)
     })
 
     tpWs.on('item_edition_stopped', function(data) {
@@ -252,7 +252,7 @@
         showNotification('success',
           L.item_now_available || 'Item available',
           (L.item_edition_released || 'Item is now available for editing') +
-          ' (' + data.user_login + ')'
+          ' (' + getUserDisplayName(data) + ')'
         )
         window.tpBlockedEditItemId = null
       }
@@ -288,9 +288,9 @@
 
     tpWs.on('kb_edition_started', function(data) {
       if (!window.tpLockedKbs) window.tpLockedKbs = {}
-      window.tpLockedKbs[data.kb_id] = data.user_login
-      showKbEditionLockIndicator(data.kb_id, data.user_login)
-      showKbEditionLockInViewer(data.kb_id, data.user_login)
+      window.tpLockedKbs[data.kb_id] = normalizeUserIdentity(data)
+      showKbEditionLockIndicator(data.kb_id, data)
+      showKbEditionLockInViewer(data.kb_id, data)
     })
 
     tpWs.on('kb_edition_stopped', function(data) {
@@ -303,7 +303,7 @@
         showNotification('success',
           L.kb_now_available || 'Knowledge article available',
           (L.kb_edition_released || 'Knowledge article is now available for editing') +
-          ' (' + data.user_login + ')'
+          ' (' + getUserDisplayName(data) + ')'
         )
         window.tpBlockedEditKbId = null
       }
@@ -489,8 +489,8 @@
           }
           window.tpLockedItems = {}
           response.locked_items.forEach(function(lock) {
-            window.tpLockedItems[lock.item_id] = lock.user_login
-            showEditionLockIndicator(lock.item_id, lock.user_login)
+            window.tpLockedItems[lock.item_id] = normalizeUserIdentity(lock)
+            showEditionLockIndicator(lock.item_id, lock)
           })
         }
         if (response && Array.isArray(response.viewing_items)) {
@@ -534,9 +534,9 @@
           }
           window.tpLockedKbs = {}
           response.locked_kbs.forEach(function(lock) {
-            window.tpLockedKbs[lock.kb_id] = lock.user_login
-            showKbEditionLockIndicator(lock.kb_id, lock.user_login)
-            showKbEditionLockInViewer(lock.kb_id, lock.user_login)
+            window.tpLockedKbs[lock.kb_id] = normalizeUserIdentity(lock)
+            showKbEditionLockIndicator(lock.kb_id, lock)
+            showKbEditionLockInViewer(lock.kb_id, lock)
           })
         }
 
@@ -683,9 +683,10 @@
     // Don't add duplicate indicator
     if ($row.find('.edition-lock-badge').length > 0) return
 
+    var displayName = getUserDisplayName(userLogin)
     var badge = $('<span class="edition-lock-badge badge badge-warning ml-2" ' +
-      'title="' + (L.being_edited_by || 'Being edited by') + ' ' + userLogin + '">' +
-      '<i class="fas fa-lock mr-1"></i>' + userLogin +
+      'title="' + escapeAttribute((L.being_edited_by || 'Being edited by') + ' ' + displayName) + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + escapeHtml(displayName) +
       '</span>')
 
     $row.find('.list-item-row-description').first().after(badge)
@@ -710,9 +711,10 @@
     if (parseInt($container.data('id')) !== parseInt(itemId)) return
     // Don't add duplicate
     if ($container.find('.edition-lock-detail-badge').length > 0) return
+    var displayName = getUserDisplayName(userLogin)
     var badge = $('<div class="edition-lock-detail-badge alert alert-warning py-1 px-2 mt-1 mb-0 ml-2 d-inline-block">' +
       '<i class="fas fa-lock mr-1"></i>' +
-      (L.being_edited_by || 'Being edited by') + ' <strong>' + userLogin + '</strong>' +
+      (L.being_edited_by || 'Being edited by') + ' <strong>' + escapeHtml(displayName) + '</strong>' +
       '</div>')
     $('#card-item-label').after(badge)
   }
@@ -747,6 +749,34 @@
     return escapeHtml(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
   }
 
+  function getUserDisplayName(user) {
+    if (user && typeof user === 'object') {
+      var displayName = user.user_display_name || user.display_name || user.full_name || ''
+      if (!displayName && (user.user_name || user.name || user.user_lastname || user.lastname)) {
+        displayName = ((user.user_name || user.name || '') + ' ' + (user.user_lastname || user.lastname || '')).replace(/\s+/g, ' ').trim()
+      }
+      return String(displayName || user.user_login || user.login || '').trim()
+    }
+    return String(user || '').trim()
+  }
+
+  function normalizeUserIdentity(user) {
+    if (user && typeof user === 'object') {
+      return {
+        user_id: parseInt(user.user_id || user.id || 0, 10),
+        user_login: String(user.user_login || user.login || ''),
+        user_display_name: getUserDisplayName(user)
+      }
+    }
+
+    var login = String(user || '').trim()
+    return {
+      user_id: 0,
+      user_login: login,
+      user_display_name: login
+    }
+  }
+
   function normalizeViewers(viewers) {
     var currentUserId = getCurrentUserId()
     var unique = {}
@@ -754,9 +784,11 @@
     ;(viewers || []).forEach(function(viewer) {
       var userId = parseInt(viewer.user_id || viewer.id || 0, 10)
       if (!userId || userId === currentUserId) return
+      var identity = normalizeUserIdentity(viewer)
       unique[userId] = {
         user_id: userId,
-        user_login: viewer.user_login || viewer.login || ''
+        user_login: identity.user_login,
+        user_display_name: identity.user_display_name
       }
     })
 
@@ -767,8 +799,8 @@
 
   function buildViewerLabel(viewers) {
     if (viewers.length === 0) return ''
-    if (viewers.length === 1) return viewers[0].user_login
-    return viewers[0].user_login + ' +' + (viewers.length - 1)
+    if (viewers.length === 1) return getUserDisplayName(viewers[0])
+    return getUserDisplayName(viewers[0]) + ' +' + (viewers.length - 1)
   }
 
   function setItemViewers(itemId, viewers) {
@@ -866,7 +898,7 @@
     removeItemViewIndicator(itemId)
 
     var names = viewers.map(function(viewer) {
-      return viewer.user_login
+      return getUserDisplayName(viewer)
     })
     var label = buildViewerLabel(viewers)
     var badge = $('<span class="item-view-badge badge badge-success ml-2" ' +
@@ -903,7 +935,7 @@
     removeItemViewFromDetailView(itemId)
 
     var names = viewers.map(function(viewer) {
-      return viewer.user_login
+      return getUserDisplayName(viewer)
     })
     var badge = $('<div class="item-view-detail-badge alert alert-success py-1 px-2 mt-1 mb-0 ml-2 d-inline-block">' +
       '<i class="fa-regular fa-eye mr-1"></i>' +
@@ -933,9 +965,10 @@
     if ($entry.length === 0) return
     if ($entry.find('.kb-edition-lock-badge').length > 0) return
 
+    var displayName = getUserDisplayName(userLogin)
     var badge = $('<span class="kb-edition-lock-badge badge badge-warning ml-2" ' +
-      'title="' + escapeAttribute((L.being_edited_by || 'Being edited by') + ' ' + userLogin) + '">' +
-      '<i class="fas fa-lock mr-1"></i>' + escapeHtml(userLogin) +
+      'title="' + escapeAttribute((L.being_edited_by || 'Being edited by') + ' ' + displayName) + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + escapeHtml(displayName) +
       '</span>')
 
     $entry.find('.tp-kb-list-entry-title').first().after(badge)
@@ -953,9 +986,10 @@
     if (parseInt($viewer.data('id')) !== parseInt(kbId)) return
     if ($viewer.find('.kb-edition-lock-detail-badge').length > 0) return
 
+    var displayName = getUserDisplayName(userLogin)
     var badge = $('<span class="kb-edition-lock-detail-badge badge badge-warning mr-2">' +
       '<i class="fas fa-lock mr-1"></i>' +
-      (L.being_edited_by || 'Being edited by') + ' <strong>' + escapeHtml(userLogin) + '</strong>' +
+      (L.being_edited_by || 'Being edited by') + ' <strong>' + escapeHtml(displayName) + '</strong>' +
       '</span>')
 
     $('#kb-viewer-author').before(badge)
@@ -996,7 +1030,7 @@
     removeKbViewIndicator(kbId)
 
     var names = viewers.map(function(viewer) {
-      return viewer.user_login
+      return getUserDisplayName(viewer)
     })
     var label = buildViewerLabel(viewers)
     var badge = $('<span class="kb-view-badge badge badge-success ml-2" ' +
@@ -1026,7 +1060,7 @@
     removeKbViewFromViewer(kbId)
 
     var names = viewers.map(function(viewer) {
-      return viewer.user_login
+      return getUserDisplayName(viewer)
     })
     var badge = $('<span class="kb-view-detail-badge badge badge-success mr-2">' +
       '<i class="fa-regular fa-eye mr-1"></i>' +
