@@ -37,14 +37,14 @@ class ConnectionManager
     /**
      * Item consultation presence by connection resource ID.
      *
-     * @var array<int, array{folder_id: int, item_id: int, user_id: int, user_login: string}>
+     * @var array<int, array{folder_id: int, item_id: int, user_id: int, user_login: string, user_display_name: string}>
      */
     private array $itemViews = [];
 
     /**
      * Knowledge base consultation presence by connection resource ID.
      *
-     * @var array<int, array{kb_id: int, user_id: int, user_login: string}>
+     * @var array<int, array{kb_id: int, user_id: int, user_login: string, user_display_name: string}>
      */
     private array $kbViews = [];
 
@@ -288,6 +288,7 @@ class ConnectionManager
             'item_id' => $itemId,
             'user_id' => (int) ($conn->userData['user_id'] ?? 0),
             'user_login' => (string) ($conn->userData['user_login'] ?? ''),
+            'user_display_name' => (string) ($conn->userData['user_display_name'] ?? $conn->userData['user_login'] ?? ''),
         ];
 
         $affected[] = [
@@ -341,7 +342,7 @@ class ConnectionManager
     /**
      * Get unique users currently viewing an item.
      *
-     * @return array<int, array{user_id: int, user_login: string}>
+     * @return array<int, array{user_id: int, user_login: string, user_display_name: string}>
      */
     public function getItemViewers(int $folderId, int $itemId): array
     {
@@ -360,6 +361,7 @@ class ConnectionManager
             $viewers[$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
@@ -369,7 +371,7 @@ class ConnectionManager
     /**
      * Get the item consultation presence state for a folder.
      *
-     * @return array<int, array{item_id: int, viewers: array<int, array{user_id: int, user_login: string}>}>
+     * @return array<int, array{item_id: int, viewers: array<int, array{user_id: int, user_login: string, user_display_name: string}>}>
      */
     public function getItemViewersForFolder(int $folderId): array
     {
@@ -396,6 +398,7 @@ class ConnectionManager
             $items[$itemId]['viewers'][$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
@@ -430,6 +433,7 @@ class ConnectionManager
             'kb_id' => $kbId,
             'user_id' => (int) ($conn->userData['user_id'] ?? 0),
             'user_login' => (string) ($conn->userData['user_login'] ?? ''),
+            'user_display_name' => (string) ($conn->userData['user_display_name'] ?? $conn->userData['user_login'] ?? ''),
         ];
 
         $affected[] = ['kb_id' => $kbId];
@@ -473,7 +477,7 @@ class ConnectionManager
     /**
      * Get unique users currently viewing a knowledge base article.
      *
-     * @return array<int, array{user_id: int, user_login: string}>
+     * @return array<int, array{user_id: int, user_login: string, user_display_name: string}>
      */
     public function getKbViewers(int $kbId): array
     {
@@ -492,6 +496,7 @@ class ConnectionManager
             $viewers[$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
@@ -501,7 +506,7 @@ class ConnectionManager
     /**
      * Get the knowledge base consultation presence state for the KB channel.
      *
-     * @return array<int, array{kb_id: int, viewers: array<int, array{user_id: int, user_login: string}>}>
+     * @return array<int, array{kb_id: int, viewers: array<int, array{user_id: int, user_login: string, user_display_name: string}>}>
      */
     public function getKbViewersForKb(): array
     {
@@ -524,6 +529,7 @@ class ConnectionManager
             $articles[$kbId]['viewers'][$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
