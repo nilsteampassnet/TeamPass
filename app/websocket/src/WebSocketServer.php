@@ -181,6 +181,7 @@ class WebSocketServer implements MessageComponentInterface
             'type' => 'connected',
             'user_id' => $userData['user_id'],
             'user_login' => $userData['user_login'],
+            'user_display_name' => $userData['user_display_name'] ?? $userData['user_login'],
             'server_time' => time(),
             'config' => [
                 'ping_interval' => $this->config['ping_interval_sec'] ?? 30,
@@ -259,6 +260,7 @@ class WebSocketServer implements MessageComponentInterface
     {
         $userId = $conn->userData['user_id'] ?? null;
         $userLogin = $conn->userData['user_login'] ?? 'unknown';
+        $userDisplayName = $conn->userData['user_display_name'] ?? $userLogin;
         $connectedAt = $conn->connectedAt ?? null;
         $duration = $connectedAt ? time() - $connectedAt : 0;
 
@@ -272,8 +274,8 @@ class WebSocketServer implements MessageComponentInterface
             );
 
             if (empty($otherConns)) {
-                $this->releaseEditionLocks((int) $userId, $userLogin);
-                $this->releaseKbEditionLocks((int) $userId, $userLogin);
+                $this->releaseEditionLocks((int) $userId, $userLogin, $userDisplayName);
+                $this->releaseKbEditionLocks((int) $userId, $userLogin, $userDisplayName);
             }
         }
 
@@ -306,8 +308,9 @@ class WebSocketServer implements MessageComponentInterface
      *
      * @param int $userId The user ID whose locks should be released
      * @param string $userLogin The user login for notification payload
+     * @param string $userDisplayName The friendly user display name for notification payload
      */
-    private function releaseEditionLocks(int $userId, string $userLogin): void
+    private function releaseEditionLocks(int $userId, string $userLogin, string $userDisplayName): void
     {
         $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
 
@@ -357,6 +360,7 @@ class WebSocketServer implements MessageComponentInterface
                             'item_id' => (int) $lock['item_id'],
                             'folder_id' => (int) $lock['folder_id'],
                             'user_login' => $userLogin,
+                            'user_display_name' => $userDisplayName,
                             'user_id' => $userId,
                             'reason' => 'disconnected',
                             'server_timestamp' => time(),
@@ -385,8 +389,9 @@ class WebSocketServer implements MessageComponentInterface
      *
      * @param int $userId The user ID whose locks should be released
      * @param string $userLogin The user login for notification payload
+     * @param string $userDisplayName The friendly user display name for notification payload
      */
-    private function releaseKbEditionLocks(int $userId, string $userLogin): void
+    private function releaseKbEditionLocks(int $userId, string $userLogin, string $userDisplayName): void
     {
         $tablePrefix = defined('DB_PREFIX') ? DB_PREFIX : 'teampass_';
 
@@ -429,6 +434,7 @@ class WebSocketServer implements MessageComponentInterface
                         'payload' => json_encode([
                             'kb_id' => (int) $lock['kb_id'],
                             'user_login' => $userLogin,
+                            'user_display_name' => $userDisplayName,
                             'user_id' => $userId,
                             'reason' => 'disconnected',
                             'server_timestamp' => time(),
