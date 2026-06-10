@@ -201,8 +201,9 @@ function get_user_keys(int $userId, string $keyTempo): ?array
     }
 
     // Validate key_tempo (ensures the session is still valid)
+    // Do not log the presented value — key_tempo is a live session credential
     if (($userInfo['key_tempo']) !== $keyTempo) {
-        error_log('[API] get_user_keys: Invalid key_tempo (' . $keyTempo.') for user ID ' . $userId);
+        error_log('[API] get_user_keys: key_tempo mismatch for user ID ' . $userId);
         return null;
     }
 

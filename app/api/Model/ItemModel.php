@@ -42,8 +42,8 @@ class ItemModel
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
-     * @param bool $showItem
-     * 
+     * @param bool $showItem Kept for caller compatibility — access is now logged on every path
+     *
      * @return array
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
@@ -169,17 +169,17 @@ class ItemModel
                 ]
             );
 
-            // Increase viewed number
-            if ($showItem === true) {
-                logItems(
-                    [],
-                    (int) $row['id'],
-                    $row['label'] ?? '',
-                    (int) $userId,
-                    'at_shown',
-                    ''
-                );
-            }
+            // Audit trail: the decrypted password is returned to the client, so log the
+            // access for every lookup path (id, label, description, inFolders) — not only
+            // get-by-id. logItems() tags API context (tp_src=api) and dedupes within 5s.
+            logItems(
+                [],
+                (int) $row['id'],
+                $row['label'] ?? '',
+                (int) $userId,
+                'at_shown',
+                ''
+            );
         }
 
         return $ret;

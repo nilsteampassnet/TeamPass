@@ -74,7 +74,7 @@ class AuthModel
             return ["error" => "Login failed.", "info" => "Missing credentials"];
         }
 
-        $clientIp = $this->getClientIp();
+        $clientIp = $this->getClientIp($SETTINGS);
 
         // Anti-bruteforce: check for active lock before any DB lookup
         $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
@@ -87,7 +87,7 @@ class AuthModel
         // Check if user exists
         $userInfo = getUserCompleteData($inputData['login']);
 
-        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0) {
+        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0 || (int) $userInfo['disabled'] === 1) {
             // Uniform message — prevents user enumeration
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
             logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
@@ -166,7 +166,7 @@ class AuthModel
             return ["error" => "Login failed.", "info" => "Invalid credentials"];
         }
 
-        $clientIp = $this->getClientIp();
+        $clientIp = $this->getClientIp($SETTINGS);
 
         // Anti-bruteforce: same table/thresholds as the password path.
         $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
@@ -177,11 +177,12 @@ class AuthModel
 
         $userInfo = getUserCompleteData($inputData['login']);
 
-        // User must exist and have API access enabled. The user must be OAuth2, unless
-        // the administrator allows extension tokens for all auth types.
+        // User must exist, be active and have API access enabled. The user must be OAuth2,
+        // unless the administrator allows extension tokens for all auth types.
         // Uniform message — prevents user enumeration and auth_type probing.
         if ($userInfo === null
             || (int) $userInfo['api_enabled'] === 0
+            || (int) $userInfo['disabled'] === 1
             || ($tokenAllAuthTypes === false && (string) ($userInfo['auth_type'] ?? '') !== 'oauth2')
         ) {
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
@@ -339,18 +340,28 @@ class AuthModel
     /**
      * Return the client IP address for bruteforce tracking.
      *
+     * Forwarded headers (X-Forwarded-For, ...) are only honoured when the request
+     * comes from a configured trusted proxy (network_security_mode = reverse_proxy),
+     * via teampassGetClientIpForSecurity(). Trusting them blindly would let an
+     * attacker bypass the per-IP lock or lock out arbitrary victim IPs.
+     *
+     * @param array $SETTINGS Application settings
      * @return string
      */
-    private function getClientIp(): string
+    private function getClientIp(array $SETTINGS): string
     {
-        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'] as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ip = trim(explode(',', $_SERVER[$key])[0]);
-                if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                    return $ip;
-                }
-            }
+        $context = teampassGetClientIpForSecurity($SETTINGS);
+
+        if (!empty($context['detected_ip'])) {
+            return (string) $context['detected_ip'];
         }
+
+        // Fallback: REMOTE_ADDR is set by the webserver and cannot be spoofed (e.g. IPv6 clients)
+        $remoteAddr = (string) ($context['remote_addr'] ?? '');
+        if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false) {
+            return $remoteAddr;
+        }
+
         return '0.0.0.0';
     }
 

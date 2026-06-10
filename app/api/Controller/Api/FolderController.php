@@ -96,18 +96,36 @@ class FolderController extends BaseController
                 } else {
                     // get parameters
                     $arrQueryStringParams = $this->getQueryStringParams();
+
+                    // Validate required parameters — avoids PHP warnings and gives a clear 400
+                    $missingParams = [];
+                    foreach (['title', 'parent_id', 'complexity'] as $requiredParam) {
+                        if (isset($arrQueryStringParams[$requiredParam]) === false
+                            || $arrQueryStringParams[$requiredParam] === ''
+                        ) {
+                            $missingParams[] = $requiredParam;
+                        }
+                    }
+                    if (count($missingParams) > 0) {
+                        $this->sendOutput(
+                            json_encode(['error' => 'Missing required parameters: ' . implode(', ', $missingParams)]),
+                            ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
+                        );
+                        return;
+                    }
+
                     try {
                         $folderModel = new FolderModel();
                         $arrFolder = $folderModel->createFolder(
                             (string) $arrQueryStringParams['title'],
                             (int) $arrQueryStringParams['parent_id'],
                             (int) $arrQueryStringParams['complexity'],
-                            (int) $arrQueryStringParams['duration'],
-                            (int) $arrQueryStringParams['create_auth_without'],
-                            (int) $arrQueryStringParams['edit_auth_without'],
-                            (string) $arrQueryStringParams['icon'],
-                            (string) $arrQueryStringParams['icon_selected'],
-                            (string) $arrQueryStringParams['access_rights'],
+                            (int) ($arrQueryStringParams['duration'] ?? 0),
+                            (int) ($arrQueryStringParams['create_auth_without'] ?? 0),
+                            (int) ($arrQueryStringParams['edit_auth_without'] ?? 0),
+                            (string) ($arrQueryStringParams['icon'] ?? ''),
+                            (string) ($arrQueryStringParams['icon_selected'] ?? ''),
+                            (string) ($arrQueryStringParams['access_rights'] ?? ''),
                             (int) $userData['is_admin'],
                             (array) explode(',', $userData['folders_list']),
                             (int) $userData['is_manager'],
