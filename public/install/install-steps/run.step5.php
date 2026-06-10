@@ -1097,7 +1097,7 @@ class DatabaseInstaller
             `id` int(12) NOT null AUTO_INCREMENT,
             `category_id` int(12) NOT NULL,
             `label` varchar(200) NOT NULL,
-            `description` text NOT NULL,
+            `description` MEDIUMTEXT NOT NULL,
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             `allow_comments` tinyint(1) NOT null DEFAULT '0',
