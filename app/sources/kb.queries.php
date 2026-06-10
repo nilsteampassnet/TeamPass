@@ -95,6 +95,8 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
+const KB_DESCRIPTION_MAX_BYTES = 4194304;
+
 function kbAccessibleFolders(SessionInterface $session): array
 {
     $folders = $session->get('user-accessible_folders');
@@ -493,6 +495,304 @@ function kbSanitizeTextInput(string $text): string
     return trim($text);
 }
 
+function kbFormatBytesForMessage(int $bytes): string
+{
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $value = max(0, $bytes);
+    $unitIndex = 0;
+
+    while ($value >= 1024 && $unitIndex < count($units) - 1) {
+        $value /= 1024;
+        $unitIndex++;
+    }
+
+    return rtrim(rtrim(number_format((float) $value, $unitIndex === 0 ? 0 : 1, '.', ''), '0'), '.') . ' ' . $units[$unitIndex];
+}
+
+function kbRichTextLooksLikeHtml(string $text): bool
+{
+    return preg_match('/<(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/iu', $text) === 1;
+}
+
+function kbEscapedRichTextLooksLikeHtml(string $text): bool
+{
+    return preg_match('/&lt;\/?(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/iu', $text) === 1;
+}
+
+function kbDecodeEscapedRichHtml(string $html): string
+{
+    if (kbEscapedRichTextLooksLikeHtml($html) === false) {
+        return $html;
+    }
+
+    $hasEscapedBlock = preg_match('/&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/iu', $html) === 1;
+    $candidate = $html;
+
+    if ($hasEscapedBlock === true) {
+        $candidate = preg_replace('/<\/p>\s*<p[^>]*>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<br\s*\/?>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/?p[^>]*>/iu', '', $candidate) ?? $candidate;
+    }
+
+    $decodedHtml = html_entity_decode($candidate, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    return kbRichTextLooksLikeHtml($decodedHtml) === true ? $decodedHtml : $html;
+}
+
+function kbRichHtmlHasContent(string $html): bool
+{
+    $plainText = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+    return $plainText !== ''
+        || preg_match('/<img\b[^>]*\bsrc\s*=/iu', $html) === 1
+        || preg_match('/<(?:table|hr)\b/iu', $html) === 1;
+}
+
+function kbRichHtmlAllowedTags(): array
+{
+    return [
+        'a', 'br', 'p', 'div', 'ul', 'ol', 'li', 'blockquote',
+        'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+        'h2', 'h3', 'h4', 'pre', 'code', 'hr',
+        'table', 'thead', 'tbody', 'tr', 'th', 'td',
+        'img',
+    ];
+}
+
+function kbRichHtmlDangerousTags(): array
+{
+    return [
+        'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed',
+        'applet', 'link', 'meta', 'base', 'form', 'input', 'button', 'textarea',
+        'select', 'option', 'svg', 'math', 'canvas', 'video', 'audio', 'source',
+    ];
+}
+
+function kbRichHtmlIsSafeHref(string $href): bool
+{
+    $href = trim(html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($href === '') {
+        return false;
+    }
+    if (preg_match('/^\s*(?:javascript|data|vbscript):/iu', $href) === 1) {
+        return false;
+    }
+
+    return preg_match('/^(?:https?:\/\/|mailto:|\/|\.\/|\.\.\/|#|\?)/iu', $href) === 1;
+}
+
+function kbRichHtmlIsSafeImageSource(string $src): bool
+{
+    $src = trim(html_entity_decode($src, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    if ($src === '') {
+        return false;
+    }
+    if (preg_match('/^https?:\/\//iu', $src) === 1) {
+        return true;
+    }
+
+    $compactSrc = preg_replace('/\s+/', '', $src) ?? $src;
+    return preg_match('/^data:image\/(?:png|jpe?g|gif|webp);base64,[A-Za-z0-9+\/=]+$/iu', $compactSrc) === 1;
+}
+
+function kbRichHtmlSanitizeDimension(string $value): string
+{
+    $value = trim($value);
+    if (preg_match('/^\d{1,4}$/', $value) !== 1) {
+        return '';
+    }
+
+    $dimension = max(1, min(2000, (int) $value));
+    return (string) $dimension;
+}
+
+function kbRichHtmlSanitizeCellSpan(string $value): string
+{
+    $value = trim($value);
+    if (preg_match('/^\d{1,2}$/', $value) !== 1) {
+        return '';
+    }
+
+    return (string) max(1, min(20, (int) $value));
+}
+
+function kbRichHtmlCleanAttributes(DOMElement $element): bool
+{
+    $tagName = strtolower($element->nodeName);
+    $allowedAttributes = [];
+    if ($tagName === 'a') {
+        $allowedAttributes = ['href', 'target', 'rel', 'title'];
+    } elseif ($tagName === 'img') {
+        $allowedAttributes = ['src', 'alt', 'width', 'height', 'title'];
+    } elseif ($tagName === 'td' || $tagName === 'th') {
+        $allowedAttributes = ['colspan', 'rowspan'];
+    }
+
+    $attributeNames = [];
+    foreach ($element->attributes as $attribute) {
+        $attributeNames[] = $attribute->nodeName;
+    }
+    foreach ($attributeNames as $attributeName) {
+        $name = strtolower($attributeName);
+        if (in_array($name, $allowedAttributes, true) === false) {
+            $element->removeAttribute($attributeName);
+        }
+    }
+
+    if ($tagName === 'a') {
+        $href = $element->getAttribute('href');
+        if (kbRichHtmlIsSafeHref($href) === false) {
+            $element->removeAttribute('href');
+            $element->removeAttribute('target');
+            $element->removeAttribute('rel');
+        } else {
+            $element->setAttribute('href', trim($href));
+            $element->setAttribute('target', '_blank');
+            $element->setAttribute('rel', 'noopener noreferrer');
+        }
+    }
+
+    if ($tagName === 'img') {
+        $src = $element->getAttribute('src');
+        if (kbRichHtmlIsSafeImageSource($src) === false) {
+            return false;
+        }
+        $src = preg_match('/^data:image\//iu', trim($src)) === 1 ? (preg_replace('/\s+/', '', trim($src)) ?? trim($src)) : trim($src);
+        $element->setAttribute('src', $src);
+        $element->setAttribute('alt', mb_substr(trim(strip_tags($element->getAttribute('alt'))), 0, 200));
+        foreach (['width', 'height'] as $dimensionAttribute) {
+            $dimension = kbRichHtmlSanitizeDimension($element->getAttribute($dimensionAttribute));
+            if ($dimension === '') {
+                $element->removeAttribute($dimensionAttribute);
+            } else {
+                $element->setAttribute($dimensionAttribute, $dimension);
+            }
+        }
+    }
+
+    if ($tagName === 'td' || $tagName === 'th') {
+        foreach (['colspan', 'rowspan'] as $spanAttribute) {
+            $span = kbRichHtmlSanitizeCellSpan($element->getAttribute($spanAttribute));
+            if ($span === '') {
+                $element->removeAttribute($spanAttribute);
+            } else {
+                $element->setAttribute($spanAttribute, $span);
+            }
+        }
+    }
+
+    return true;
+}
+
+function kbRichHtmlUnwrapNode(DOMNode $node): void
+{
+    if ($node->parentNode === null) {
+        return;
+    }
+
+    while ($node->firstChild !== null) {
+        $node->parentNode->insertBefore($node->firstChild, $node);
+    }
+    $node->parentNode->removeChild($node);
+}
+
+function kbRichHtmlSanitizeNode(DOMNode $node): void
+{
+    $allowedTags = kbRichHtmlAllowedTags();
+    $dangerousTags = kbRichHtmlDangerousTags();
+
+    for ($child = $node->firstChild; $child !== null;) {
+        $next = $child->nextSibling;
+
+        if ($child->nodeType === XML_COMMENT_NODE) {
+            $node->removeChild($child);
+            $child = $next;
+            continue;
+        }
+
+        if ($child->nodeType !== XML_ELEMENT_NODE) {
+            $child = $next;
+            continue;
+        }
+
+        $tagName = strtolower($child->nodeName);
+        if (in_array($tagName, $dangerousTags, true) === true) {
+            $node->removeChild($child);
+            $child = $next;
+            continue;
+        }
+
+        kbRichHtmlSanitizeNode($child);
+        if (in_array($tagName, $allowedTags, true) === false) {
+            kbRichHtmlUnwrapNode($child);
+            $child = $next;
+            continue;
+        }
+
+        if ($child instanceof DOMElement && kbRichHtmlCleanAttributes($child) === false) {
+            $node->removeChild($child);
+        }
+
+        $child = $next;
+    }
+}
+
+function kbSanitizeRichHtml(string $html): string
+{
+    $html = kbSanitizeTextInput($html);
+    if ($html === '') {
+        return '';
+    }
+    $html = kbDecodeEscapedRichHtml($html);
+    if (class_exists('DOMDocument') === false) {
+        return kbBuildRichTextHtml(strip_tags($html));
+    }
+
+    $previousUseErrors = libxml_use_internal_errors(true);
+    $dom = new DOMDocument('1.0', 'UTF-8');
+    $dom->loadHTML(
+        '<?xml encoding="UTF-8"><!DOCTYPE html><html><body><div id="tp-kb-root">' . $html . '</div></body></html>',
+        LIBXML_NOWARNING | LIBXML_NOERROR
+    );
+    libxml_clear_errors();
+    libxml_use_internal_errors($previousUseErrors);
+
+    $root = null;
+    foreach ($dom->getElementsByTagName('div') as $div) {
+        if ($div instanceof DOMElement && $div->getAttribute('id') === 'tp-kb-root') {
+            $root = $div;
+            break;
+        }
+    }
+    if ($root === null) {
+        return '';
+    }
+
+    kbRichHtmlSanitizeNode($root);
+
+    $sanitizedHtml = '';
+    foreach ($root->childNodes as $child) {
+        $sanitizedHtml .= $dom->saveHTML($child);
+    }
+    $sanitizedHtml = trim($sanitizedHtml);
+
+    return kbRichHtmlHasContent($sanitizedHtml) === true ? $sanitizedHtml : '';
+}
+
+function kbSanitizeArticleContent(string $content): string
+{
+    $content = kbSanitizeTextInput($content);
+    if ($content === '') {
+        return '';
+    }
+    $content = kbDecodeEscapedRichHtml($content);
+    if (kbRichTextLooksLikeHtml($content) === true) {
+        return kbSanitizeRichHtml($content);
+    }
+
+    return $content;
+}
+
 function kbNormalizeLegacyRichTextMarkers(string $text): string
 {
     $decodedText = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -533,7 +833,12 @@ function kbFormatTimestamp(int $timestamp): string
 
 function kbBuildDescriptionExcerpt(string $description, int $maxLength = 180): string
 {
-    $excerpt = trim((string) preg_replace('/\s+/u', ' ', kbNormalizeTextLineEndings($description)));
+    $description = kbDecodeEscapedRichHtml(kbNormalizeTextLineEndings($description));
+    $excerpt = trim((string) preg_replace(
+        '/\s+/u',
+        ' ',
+        html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+    ));
     if ($excerpt === '') {
         return '';
     }
@@ -681,7 +986,17 @@ function kbBuildRichTextHtml(string $text): string
 
 function kbGetDescriptionHtml(string $description): string
 {
+    $description = kbDecodeEscapedRichHtml($description);
+    if (kbRichTextLooksLikeHtml($description) === true) {
+        return kbSanitizeRichHtml($description);
+    }
+
     return kbBuildRichTextHtml($description);
+}
+
+function kbGetCommentHtml(string $comment): string
+{
+    return kbBuildRichTextHtml($comment);
 }
 
 function kbCanComment(array $kb, SessionInterface $session): bool
@@ -748,7 +1063,7 @@ function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
             'id' => (int) ($row['id'] ?? 0),
             'kb_id' => (int) ($row['kb_id'] ?? 0),
             'content' => (string) ($row['content'] ?? ''),
-            'content_html' => kbGetDescriptionHtml((string) ($row['content'] ?? '')),
+            'content_html' => kbGetCommentHtml((string) ($row['content'] ?? '')),
             'author' => kbBuildCommentAuthorLabel($row),
             'author_id' => (int) ($row['author_id'] ?? 0),
             'created_at' => (int) ($row['created_at'] ?? 0),
@@ -1320,10 +1635,17 @@ switch ($type) {
 
         $label = trim((string) $antiXss->xss_clean($label));
         $category = trim((string) $antiXss->xss_clean($category));
-        $description = kbSanitizeTextInput($description);
+        $description = kbSanitizeArticleContent($description);
 
         if ($label === '' || $category === '' || $description === '') {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('all_fields_are_required')], 'encode');
+            break;
+        }
+        if (strlen($description) > KB_DESCRIPTION_MAX_BYTES) {
+            echo (string) prepareExchangedData([
+                'error' => true,
+                'message' => $lang->get('description') . ' ' . $lang->get('exceeds_maximum_length_of') . ' ' . kbFormatBytesForMessage(KB_DESCRIPTION_MAX_BYTES),
+            ], 'encode');
             break;
         }
 
