@@ -42,7 +42,7 @@ Authors cannot edit articles created by other users unless **Anyone can modify**
 3. Fill in:
    - **Label**: the article title.
    - **Category**: the article category. Existing categories are suggested while typing.
-   - **Description**: the article body.
+   - **Description**: the article body, with rich text formatting and pasted inline images.
    - **Anyone can modify**: allows other regular users to edit the article.
    - **Allow comments**: lets readers comment on the article.
    - **Associated items**: optional links to password items the current user can access.
