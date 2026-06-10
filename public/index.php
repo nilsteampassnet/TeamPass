@@ -1381,6 +1381,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <script src="./plugins/slimScroll/jquery.slimscroll.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- FastClick -->
             <script src="./plugins/fastclick/fastclick.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <?php
+            if ($get['page'] === 'kb') {
+                ?>
+                <!-- SUMMERNOTE -->
+                <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+                <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <?php
+            }
+            ?>
         <?php
         } elseif ($get['page'] === 'profile') {
             ?>
