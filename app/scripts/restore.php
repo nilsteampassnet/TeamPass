@@ -258,6 +258,18 @@ if ($initiatorId > 0) {
             'id = %i',
             $initiatorId
         );
+        DB::update(
+            prefixTable('api'),
+            [
+                'encrypted_private_key' => null,
+                'session_key_salt' => null,
+                'session_key' => null,
+                'session_aes_key' => null,
+                'timestamp' => '',
+            ],
+            'user_id = %i',
+            $initiatorId
+        );
         $log('INFO', 'Disconnected restore initiator (user id=' . $initiatorId . ').');
     } catch (Throwable $e) {
         $log('WARN', 'Unable to disconnect restore initiator: ' . $e->getMessage());
@@ -293,47 +305,44 @@ try {
 }
 
 try {
-    $apiTokenDuration = 3600;
-    if (isset($SETTINGS['api_token_duration']) && is_numeric($SETTINGS['api_token_duration'])) {
-        $apiTokenDuration = (int) $SETTINGS['api_token_duration'];
-    }
-    if ($apiTokenDuration <= 0) {
-        $apiTokenDuration = 3600;
-    }
-    $apiConnectedAfter = $now - ($apiTokenDuration + 600);
+    $apiTokenDurationMinutes = min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440);
+    $apiConnectedAfter = (string) ($now - (($apiTokenDurationMinutes * 60) + 600));
 
     $apiUsers = DB::query(
         'SELECT u.id, u.login, u.name, u.lastname, api_conn.last_api_date AS last_api
          FROM ' . prefixTable('users') . ' u
          INNER JOIN (
-            SELECT qui, MAX(date) AS last_api_date
-            FROM ' . prefixTable('log_system') . '
-            WHERE type = %s AND label = %s AND date >= %i
-            GROUP BY qui
-         ) api_conn ON api_conn.qui = u.id',
-        'api',
-        'user_connection',
-        $apiConnectedAfter
+            SELECT user_id, MAX(timestamp) AS last_api_date
+            FROM ' . prefixTable('api') . '
+            WHERE session_key IS NOT NULL
+                AND session_key != %s
+                AND timestamp >= %s
+            GROUP BY user_id
+         ) api_conn ON api_conn.user_id = u.id
+         WHERE (%i = 0 OR u.id != %i)',
+        '',
+        $apiConnectedAfter,
+        $initiatorId,
+        $initiatorId
     );
 } catch (Throwable $e) {
     // Optional: ignore API checks if unavailable
     $log('WARN', 'Unable to check API activity: ' . $e->getMessage());
 }
 
-// Enforce disconnect policy for web sessions
-if (!empty($webUsers) && $forceDisconnect === false) {
-    $log('ERROR', 'Active web sessions detected. Re-run with --force-disconnect or disconnect users first.');
+// Enforce disconnect policy for web and API sessions
+if ((!empty($webUsers) || !empty($apiUsers)) && $forceDisconnect === false) {
+    $log('ERROR', 'Active sessions detected. Re-run with --force-disconnect or disconnect users first.');
     foreach ($webUsers as $u) {
         $log('ERROR', 'WEB user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
     }
     if (!empty($apiUsers)) {
-        $log('WARN', 'API activity detected as well (best-effort detection):');
         foreach ($apiUsers as $u) {
-            $log('WARN', 'API activity: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
+            $log('ERROR', 'API user connected: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
         }
     }
     // IMPORTANT: keep token pending so the operator can retry after disconnecting users.
-    $payload['last_error'] = 'active_web_sessions';
+    $payload['last_error'] = 'active_sessions';
     $payload['last_error_at'] = time();
     tpRestoreAuthorizationUpdatePayload($authId, $payload);
 
@@ -358,17 +367,38 @@ if (!empty($webUsers) && $forceDisconnect === true) {
     }
 }
 
+if (!empty($apiUsers) && $forceDisconnect === true) {
+    $log('INFO', 'Active API sessions detected: forcing disconnection.');
+    try {
+        $apiUserIds = array_values(array_unique(array_map(
+            static fn ($user): int => (int) ($user['id'] ?? 0),
+            $apiUsers
+        )));
+        $apiUserIds = array_values(array_filter($apiUserIds, static fn (int $userId): bool => $userId > 0));
+
+        if (!empty($apiUserIds)) {
+            DB::update(
+                prefixTable('api'),
+                [
+                    'encrypted_private_key' => null,
+                    'session_key_salt' => null,
+                    'session_key' => null,
+                    'session_aes_key' => null,
+                    'timestamp' => '',
+                ],
+                'user_id IN %li',
+                $apiUserIds
+            );
+        }
+    } catch (Throwable $e) {
+        $log('WARN', 'Failed to force-disconnect API users: ' . $e->getMessage());
+    }
+}
+
 // From this point, we consider the restore authorized to start.
 $payload['status'] = 'in_progress';
 $payload['started_at'] = time();
 tpRestoreAuthorizationUpdatePayload($authId, $payload);
-
-if (!empty($apiUsers)) {
-    $log('WARN', 'API activity detected (best-effort): those sessions may not be revocable. Proceeding.');
-    foreach ($apiUsers as $u) {
-        $log('WARN', 'API activity: ' . strval($u['login'] ?? '') . ' (' . strval($u['name'] ?? '') . ' ' . strval($u['lastname'] ?? '') . ')');
-    }
-}
 
 // Maintenance mode toggle (best-effort)
 // Keep maintenance enabled at the end of the restore (same behavior as the legacy web restore),
