@@ -260,18 +260,41 @@ class AuthModel
         // Store the ENCRYPTED private key and the AES session key server-side.
         // The session_aes_key never leaves the server (not embedded in JWT),
         // so a stolen JWT alone cannot decrypt the private key.
-        DB::update(
+        $apiSessionData = [
+            'encrypted_private_key' => $encryptedPrivateKey,
+            'session_key_salt' => $sessionKeySalt,
+            'session_key' => $keyTempo,
+            'session_aes_key' => base64_encode($sessionKey),
+            'timestamp' => time(),
+        ];
+
+        $apiSessionUpdated = DB::update(
             prefixTable('api'),
-            [
-                'encrypted_private_key' => $encryptedPrivateKey,
-                'session_key_salt' => $sessionKeySalt,
-                'session_key' => $keyTempo,
-                'session_aes_key' => base64_encode($sessionKey),
-                'timestamp' => time(),
-            ],
+            $apiSessionData,
             'user_id = %i',
             $userInfo['id']
         );
+
+        if ((int) $apiSessionUpdated === 0) {
+            DB::insert(
+                prefixTable('api'),
+                array_merge(
+                    [
+                        'type' => 'user',
+                        'label' => null,
+                        'value' => null,
+                        'user_id' => (int) $userInfo['id'],
+                        'allowed_folders' => (string) ($userInfo['api_allowed_folders'] ?? ''),
+                        'enabled' => (int) ($userInfo['api_enabled'] ?? 1),
+                        'allowed_to_create' => (int) ($userInfo['api_allowed_to_create'] ?? 0),
+                        'allowed_to_read' => (int) ($userInfo['api_allowed_to_read'] ?? 1),
+                        'allowed_to_update' => (int) ($userInfo['api_allowed_to_update'] ?? 0),
+                        'allowed_to_delete' => (int) ($userInfo['api_allowed_to_delete'] ?? 0),
+                    ],
+                    $apiSessionData
+                )
+            );
+        }
 
         // get user folders list and persist in cache_tree
         $ret = $this->buildUserFoldersList($userInfo);
