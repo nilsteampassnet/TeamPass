@@ -962,6 +962,7 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_user_id
                 );
+                tpInvalidateUserApiSession($post_user_id);
             }
             break;
             
@@ -985,23 +986,48 @@ if (null !== $post_type) {
             }
 
             $now = time();
+            $apiTokenDurationMinutes = min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440);
+            $apiConnectedAfter = (string) ($now - (($apiTokenDurationMinutes * 60) + 600));
 
             try {
                 // Select IDs first to avoid multi-row update locking issues
                 if ($excludeUserId > 0) {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i AND id != %i',
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.id != %i
+                         AND (
+                            u.session_end >= %i
+                            OR EXISTS (
+                                SELECT 1
+                                FROM ' . prefixTable('api') . ' api_session
+                                WHERE api_session.user_id = u.id
+                                    AND api_session.session_key IS NOT NULL
+                                    AND api_session.session_key != %s
+                                    AND api_session.timestamp >= %s
+                            )
+                         )',
+                        $excludeUserId,
                         $now,
-                        $excludeUserId
+                        '',
+                        $apiConnectedAfter
                     );
                 } else {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i',
-                        $now
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.session_end >= %i
+                         OR EXISTS (
+                            SELECT 1
+                            FROM ' . prefixTable('api') . ' api_session
+                            WHERE api_session.user_id = u.id
+                                AND api_session.session_key IS NOT NULL
+                                AND api_session.session_key != %s
+                                AND api_session.timestamp >= %s
+                         )',
+                        $now,
+                        '',
+                        $apiConnectedAfter
                     );
                 }
 
@@ -1017,6 +1043,7 @@ if (null !== $post_type) {
                         'id = %i',
                         (int) $row['id']
                     );
+                    tpInvalidateUserApiSession((int) $row['id']);
                 }
 
                 echo prepareExchangedData(
@@ -4377,6 +4404,26 @@ function canAccessInactiveAndDeletedUsersPanels(): bool
     $session = SessionManager::getSession();
 
     return (int) $session->get('user-admin') === 1;
+}
+
+function tpInvalidateUserApiSession(int $userId): void
+{
+    if ($userId <= 0) {
+        return;
+    }
+
+    DB::update(
+        prefixTable('api'),
+        array(
+            'encrypted_private_key' => null,
+            'session_key_salt' => null,
+            'session_key' => null,
+            'session_aes_key' => null,
+            'timestamp' => '',
+        ),
+        'user_id = %i',
+        $userId
+    );
 }
 
 /**
