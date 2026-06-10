@@ -161,6 +161,17 @@ if ($res === false) {
     exit();
 }
 
+// Allow rich KB articles with embedded images.
+$res = mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb` MODIFY COLUMN `description` MEDIUMTEXT NOT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error updating description column in kb table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Add enable_kb setting if not present
 mysqli_query(
     $db_link,
