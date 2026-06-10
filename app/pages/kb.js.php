@@ -123,7 +123,15 @@ if (
         no_data_to_display: <?php echo json_encode($lang->get('no_data_to_display')); ?>,
         select_files: <?php echo json_encode($lang->get('select_files')); ?>,
         start_upload: <?php echo json_encode($lang->get('start_upload')); ?>,
-        attached_files: <?php echo json_encode($lang->get('attached_files')); ?>
+        attached_files: <?php echo json_encode($lang->get('attached_files')); ?>,
+        exceeds_maximum_length_of: <?php echo json_encode($lang->get('exceeds_maximum_length_of')); ?>
+    };
+
+    const kbEditorOptions = {
+        maxDescriptionBytes: 4 * 1024 * 1024,
+        imageMaxWidth: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, (int) ($SETTINGS['upload_imageresize_width'] ?? 1200)) : 1200; ?>,
+        imageMaxHeight: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, (int) ($SETTINGS['upload_imageresize_height'] ?? 900)) : 900; ?>,
+        imageQuality: <?php echo isset($SETTINGS['upload_imageresize_options']) === true && (int) $SETTINGS['upload_imageresize_options'] === 1 ? max(1, min(100, (int) ($SETTINGS['upload_imageresize_quality'] ?? 82))) / 100 : 0.82; ?>
     };
 
     const kbDirectId = parseInt($('#kb-direct-id').val(), 10) || 0;
@@ -157,12 +165,44 @@ if (
         });
     }
 
+    function kbByteLength(value) {
+        return new Blob([(value || '').toString()]).size;
+    }
+
     function kbSanitizeHtml(html) {
-        return DOMPurify.sanitize(html || '', {
-            ALLOWED_TAGS: ['a', 'br', 'p', 'ul', 'ol', 'li', 'blockquote'],
-            ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
-            ALLOW_DATA_ATTR: false
+        const sanitized = DOMPurify.sanitize(html || '', {
+            ALLOWED_TAGS: [
+                'a', 'br', 'p', 'div', 'ul', 'ol', 'li', 'blockquote',
+                'strong', 'b', 'em', 'i', 'u', 's', 'strike',
+                'h2', 'h3', 'h4', 'pre', 'code', 'hr',
+                'table', 'thead', 'tbody', 'tr', 'th', 'td',
+                'img'
+            ],
+            ALLOWED_ATTR: ['href', 'target', 'rel', 'src', 'alt', 'width', 'height', 'colspan', 'rowspan'],
+            ADD_DATA_URI_TAGS: ['img'],
+            ALLOW_DATA_ATTR: false,
+            ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto):|\/|\.\/|\.\.\/|#|\?|data:image\/(?:png|jpe?g|gif|webp);base64,)/i
         });
+        const $container = $('<div>').html(sanitized);
+
+        $container.find('a[href]').each(function() {
+            const href = ($(this).attr('href') || '').trim();
+            if (/^\s*(javascript|data|vbscript):/i.test(href) === true) {
+                $(this).replaceWith($(this).text());
+                return;
+            }
+            $(this).attr('target', '_blank').attr('rel', 'noopener noreferrer').addClass('tp-kb-link');
+        });
+        $container.find('img').each(function() {
+            const src = ($(this).attr('src') || '').trim();
+            if (/^(data:image\/(?:png|jpe?g|gif|webp);base64,|https?:\/\/)/i.test(src) !== true) {
+                $(this).remove();
+                return;
+            }
+            $(this).attr('loading', 'lazy');
+        });
+
+        return $container.html();
     }
 
     function kbEscapeHtml(value) {
@@ -228,6 +268,34 @@ if (
         return textarea.value;
     }
 
+    function kbRichContentLooksLikeHtml(text) {
+        return /<(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/i.test((text || '').toString());
+    }
+
+    function kbEscapedRichContentLooksLikeHtml(text) {
+        return /&lt;\/?(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/i.test((text || '').toString());
+    }
+
+    function kbDecodeEscapedRichContent(html) {
+        const value = (html || '').toString();
+        if (kbEscapedRichContentLooksLikeHtml(value) === false) {
+            return value;
+        }
+
+        const hasEscapedBlock = /&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/i.test(value);
+        let candidate = value;
+
+        if (hasEscapedBlock === true) {
+            candidate = candidate
+                .replace(/<\/p>\s*<p[^>]*>/ig, '\n')
+                .replace(/<br\s*\/?>/ig, '\n')
+                .replace(/<\/?p[^>]*>/ig, '');
+        }
+
+        const decoded = kbDecodeHtmlEntities(candidate);
+        return kbRichContentLooksLikeHtml(decoded) === true ? decoded : value;
+    }
+
     function kbNormalizeLegacyPlainText(text) {
         return kbDecodeHtmlEntities(text)
             .replace(/<a\s+[^>]*href=(['"])(.*?)\1[^>]*>(.*?)<\/a>/ig, function(match, quote, href, label) {
@@ -263,12 +331,137 @@ if (
     }
 
     function kbRenderRichContent(html, plainText) {
-        const serverHtml = (html || '').toString();
-        if (/<(?:a|br|p|ul|ol|li|blockquote)\b/i.test(serverHtml) === true) {
+        const serverHtml = kbDecodeEscapedRichContent((html || '').toString());
+        if (kbRichContentLooksLikeHtml(serverHtml) === true) {
             return kbSanitizeHtml(serverHtml);
         }
 
-        return kbSanitizeHtml(kbFormatPlainText((plainText || serverHtml || '').toString()));
+        const fallbackContent = kbDecodeEscapedRichContent((plainText || serverHtml || '').toString());
+        if (kbRichContentLooksLikeHtml(fallbackContent) === true) {
+            return kbSanitizeHtml(fallbackContent);
+        }
+
+        return kbSanitizeHtml(kbFormatPlainText(fallbackContent));
+    }
+
+    function kbDescriptionEditorInitialized() {
+        return $('#kb-description').next('.note-editor').length > 0;
+    }
+
+    function kbNormalizeEditorContent(html) {
+        const sanitized = kbSanitizeHtml(kbDecodeEscapedRichContent((html || '').toString().trim()));
+        const $container = $('<div>').html(sanitized);
+        const hasText = $.trim($container.text()) !== '';
+        const hasImage = $container.find('img[src]').length > 0;
+        const hasTable = $container.find('table').length > 0;
+        const hasRule = $container.find('hr').length > 0;
+
+        if (hasText === false && hasImage === false && hasTable === false && hasRule === false) {
+            return '';
+        }
+
+        return sanitized;
+    }
+
+    function kbGetEditorContent() {
+        if (kbDescriptionEditorInitialized() === true) {
+            return kbNormalizeEditorContent($('#kb-description').summernote('code'));
+        }
+
+        return kbNormalizeEditorContent($('#kb-description').val() || '');
+    }
+
+    function kbSetEditorContent(html) {
+        if (kbDescriptionEditorInitialized() === true) {
+            $('#kb-description').summernote('code', html || '');
+            return;
+        }
+
+        $('#kb-description').val(html || '');
+    }
+
+    function kbDestroyDescriptionEditor() {
+        if (kbDescriptionEditorInitialized() === true) {
+            $('#kb-description').summernote('destroy');
+        }
+    }
+
+    function kbResizeImageDataUrl(dataUrl, imageName, callback) {
+        const image = new Image();
+        image.onload = function() {
+            let width = image.width;
+            let height = image.height;
+            const scale = Math.min(1, kbEditorOptions.imageMaxWidth / width, kbEditorOptions.imageMaxHeight / height);
+
+            width = Math.max(1, Math.round(width * scale));
+            height = Math.max(1, Math.round(height * scale));
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const context = canvas.getContext('2d');
+            context.fillStyle = '#ffffff';
+            context.fillRect(0, 0, width, height);
+            context.drawImage(image, 0, 0, width, height);
+
+            callback(canvas.toDataURL('image/jpeg', kbEditorOptions.imageQuality), imageName || '');
+        };
+        image.onerror = function() {
+            kbToastError(kbTranslations.server_answer_error);
+        };
+        image.src = dataUrl;
+    }
+
+    function kbInsertEditorImage(file) {
+        if (!file || /^image\/(?:png|jpe?g|gif|webp)$/i.test(file.type || '') !== true) {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            kbResizeImageDataUrl(event.target.result, file.name || '', function(dataUrl, imageName) {
+                $('#kb-description').summernote('insertImage', dataUrl, function($image) {
+                    $image.attr('alt', imageName);
+                });
+            });
+        };
+        reader.onerror = function() {
+            kbToastError(kbTranslations.server_answer_error);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function kbInsertEditorImages(files) {
+        Array.from(files || []).forEach(function(file) {
+            kbInsertEditorImage(file);
+        });
+    }
+
+    function kbInitDescriptionEditor(html) {
+        kbDestroyDescriptionEditor();
+        const $description = $('#kb-description');
+
+        $description.val('');
+        $description.summernote({
+            height: 360,
+            toolbar: [
+                ['style', ['style']],
+                ['font', ['bold', 'italic', 'underline', 'strikethrough', 'clear']],
+                ['para', ['ul', 'ol', 'paragraph']],
+                ['insert', ['link', 'picture', 'hr', 'table']],
+                ['view', ['codeview']]
+            ],
+            styleTags: ['p', 'blockquote', 'pre', 'h2', 'h3', 'h4'],
+            codeviewFilter: true,
+            codeviewIframeFilter: true,
+            callbacks: {
+                onImageUpload: function(files) {
+                    kbInsertEditorImages(files);
+                }
+            }
+        });
+        kbSetEditorContent(html || '');
+        $('#kb-editor-card .btn-light').addClass('btn-secondary').removeClass('btn-light');
     }
 
     function kbFormatBytes(bytes) {
@@ -314,7 +507,7 @@ if (
         $('#kb-id').val('0');
         $('#kb-label').val('');
         $('#kb-category').val('');
-        $('#kb-description').val('');
+        kbSetEditorContent('');
         $('#kb-anyone-can-modify').prop('checked', false);
         $('#kb-allow-comments').prop('checked', false);
         $('#kb-associated-items').empty().trigger('change');
@@ -442,6 +635,7 @@ if (
             kbClearLocalEditionLock(currentKbId);
         }
 
+        kbDestroyDescriptionEditor();
         kbResetForm();
         $('#kb-editor-card').addClass('hidden');
     }
@@ -725,7 +919,7 @@ if (
         $('#kb-id').val(String(entry.id || 0));
         $('#kb-label').val(entry.label || '');
         $('#kb-category').val(entry.category || '');
-        $('#kb-description').val(entry.description || '');
+        kbInitDescriptionEditor(entry.description_html || kbFormatPlainText(entry.description || ''));
         $('#kb-anyone-can-modify').prop('checked', parseInt(entry.anyone_can_modify || 0, 10) === 1);
         $('#kb-allow-comments').prop('checked', parseInt(entry.allow_comments || 0, 10) === 1);
         $('#kb-editor-title').text((entry.id || 0) > 0 ? kbTranslations.kb_edit_entry : kbTranslations.kb_add_entry);
@@ -754,6 +948,7 @@ if (
 
         if (!id || id < 1) {
             kbResetForm();
+            kbInitDescriptionEditor('');
             $('#kb-editor-card').removeClass('hidden');
             return;
         }
@@ -893,10 +1088,14 @@ if (
     function kbSaveEntry() {
         const label = ($('#kb-label').val() || '').toString().trim();
         const category = ($('#kb-category').val() || '').toString().trim();
-        const description = ($('#kb-description').val() || '').toString().trim();
+        const description = kbGetEditorContent();
 
         if (label === '' || category === '' || description === '') {
             kbToastError(kbTranslations.all_fields_are_required);
+            return false;
+        }
+        if (kbByteLength(description) > kbEditorOptions.maxDescriptionBytes) {
+            kbToastError(kbTranslations.exceeds_maximum_length_of + ' ' + kbFormatBytes(kbEditorOptions.maxDescriptionBytes));
             return false;
         }
 
