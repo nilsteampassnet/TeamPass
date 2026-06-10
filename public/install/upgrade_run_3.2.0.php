@@ -422,6 +422,14 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'extension_token_all_auth_types', '0')"
 );
 
+// Invalidate API folders cache: cache_tree.folders may hold a truncated list
+// (personal subfolders wrongly filtered out before 3.2.0.3). Marking rows as
+// invalidated forces a rebuild on the next API request.
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "cache_tree` SET `invalidated_at` = " . time()
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
