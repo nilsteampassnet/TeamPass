@@ -2468,10 +2468,28 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $excludeUserId = (int) $session->get('user-id');
             }
 
+            $apiTokenDurationMinutes = min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440);
+            $apiConnectedAfter = (string) (time() - (($apiTokenDurationMinutes * 60) + 600));
+
             $connectedCount = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
+                'SELECT COUNT(*)
+                 FROM ' . prefixTable('users') . ' u
+                 WHERE u.id != %i
+                 AND (
+                    u.session_end >= %i
+                    OR EXISTS (
+                        SELECT 1
+                        FROM ' . prefixTable('api') . ' api_session
+                        WHERE api_session.user_id = u.id
+                            AND api_session.session_key IS NOT NULL
+                            AND api_session.session_key != %s
+                            AND api_session.timestamp >= %s
+                    )
+                 )',
+                $excludeUserId,
                 time(),
-                $excludeUserId
+                '',
+                $apiConnectedAfter
             );
 
             echo prepareExchangedData(['error' => false, 'connected_count' => $connectedCount], 'encode');
