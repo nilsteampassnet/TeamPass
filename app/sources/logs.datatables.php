@@ -893,13 +893,10 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
-    // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
-    // A user is considered 'API connected' while their last API token is still valid.
-    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 3600); // Default 1 hour
-    if ($apiTokenDuration < 60) {
-        $apiTokenDuration = 3600; // Minimum 1 hour for safety
-    }
-    $apiConnectedAfter = time() - ($apiTokenDuration + 600);
+    // API JWT duration is configured in minutes. teampass_api.timestamp is refreshed
+    // when a JWT is issued, so it is cheaper to use than scanning log_system.
+    $apiTokenDurationMinutes = min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440);
+    $apiConnectedAfter = (string) (time() - (($apiTokenDurationMinutes * 60) + 600));
 
     // Filtering
     $sWhere = new WhereClause('AND');
@@ -912,20 +909,14 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     $subclause2 = $sWhere->addClause('OR');
     $subclause2->add('u.session_end >= %i', time());
     $subclause2->add(
-        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls
-            WHERE ls.qui = u.id
-                AND ls.label = %s
-                AND ls.date >= %i
-                AND (
-                    (ls.type = %s)
-                    OR (ls.type = %s AND ls.field_1 LIKE %s)
-                )
+        'EXISTS (SELECT 1 FROM '.prefixTable('api').' api_session
+            WHERE api_session.user_id = u.id
+                AND api_session.session_key IS NOT NULL
+                AND api_session.session_key != %s
+                AND api_session.timestamp >= %s
         )',
-        'user_connection',
-        $apiConnectedAfter,
-        'api',
-        'user_connection',
-        '%tp_src=api%'
+        '',
+        $apiConnectedAfter
     );
 
     // Get the total number of records - use alias 'u'
@@ -941,21 +932,18 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         api_conn.last_api_date AS api_last_connection
     FROM '.prefixTable('users').' u
     LEFT JOIN (
-        SELECT qui, MAX(date) as last_api_date
-        FROM '.prefixTable('log_system').'
-        WHERE label = %s
-            AND date >= %i
-            AND (
-                (type = %s)
-                OR (type = %s AND field_1 LIKE %s)
-            )
-        GROUP BY qui
-    ) api_conn ON api_conn.qui = u.id
+        SELECT user_id, MAX(timestamp) as last_api_date
+        FROM '.prefixTable('api').'
+        WHERE session_key IS NOT NULL
+            AND session_key != %s
+            AND timestamp >= %s
+        GROUP BY user_id
+    ) api_conn ON api_conn.user_id = u.id
     WHERE %l
     ORDER BY %l %l
     LIMIT %i, %i';
 
-    $params = ['user_connection', $apiConnectedAfter, 'api', 'user_connection', '%tp_src=api%', $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $params = ['', $apiConnectedAfter, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
