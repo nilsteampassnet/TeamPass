@@ -68,8 +68,10 @@ class BaseController
         }
 
         $parts = array_values(array_filter(explode('/', $uriPath)));
-        // Transparently strip /api/v1/ (or any /vN/) prefix — treated as v1 implicitly
-        if (!empty($parts) && preg_match('/^v\d+$/', $parts[0]) === 1) {
+        // Transparently strip the /api/v1/ prefix — only v1 exists today. Unknown
+        // versions (e.g. /v2/) are NOT stripped: the segment falls through to the
+        // router, which returns 404 instead of silently behaving as v1.
+        if (!empty($parts) && $parts[0] === 'v1') {
             array_shift($parts);
         }
         return $this->sanitizeUrl($parts);

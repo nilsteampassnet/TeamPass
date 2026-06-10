@@ -503,13 +503,23 @@ class AuthModel
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
 
+        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+
+        $issuedAt = time();
 		$payload = [
+            // Standard claims (RFC 7519 / RFC 8725): issuer, audience, issued-at,
+            // not-before and a unique token id (enables future revocation/tracking).
+            'iss' => rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/'),
+            'aud' => TEAMPASS_API_JWT_AUDIENCE,
+            'iat' => $issuedAt,
+            'nbf' => $issuedAt,
+            'jti' => bin2hex(random_bytes(16)),
             'username' => $login,
             'id' => $id,
             // api_token_duration is in minutes (contract with the browser extension).
             // Clamp to [1, 1440] minutes so a zero/missing value never produces an
             // instantly-expired token, and tokens are capped at 24 hours.
-            'exp' => (time() + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60),
+            'exp' => ($issuedAt + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60),
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,

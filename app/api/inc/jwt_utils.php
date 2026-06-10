@@ -77,47 +77,85 @@ function getApiJwtSigningKey(): string
 }
 
 /**
+ * Audience claim expected in API JWTs (RFC 7519 "aud").
+ */
+const TEAMPASS_API_JWT_AUDIENCE = 'teampass-api';
+
+/**
+ * Verify the JWT (signature, exp/nbf/iat, iss/aud) and return its payload.
+ *
+ * Single verified decode: callers must use this payload instead of re-parsing
+ * the token without signature verification.
+ *
+ * iss/aud are validated only when present so that tokens issued before these
+ * claims were introduced keep working until they expire (max 24h).
+ *
+ * @param string $jwt
+ * @return array|null Decoded payload, or null when the token is invalid
+ */
+function validate_and_get_jwt_payload(string $jwt): ?array
+{
+	try {
+		// Tolerate small clock skew between servers for nbf/iat/exp checks
+		JWT::$leeway = 60;
+		$decoded = (array) JWT::decode($jwt, new Key(getApiJwtSigningKey(), 'HS256'));
+
+		// Check if expiration is reached
+		if (isset($decoded['exp']) === false || $decoded['exp'] - time() < 0) {
+			return null;
+		}
+
+		// Audience must match when the claim is present (legacy tokens lack it)
+		if (isset($decoded['aud']) && $decoded['aud'] !== TEAMPASS_API_JWT_AUDIENCE) {
+			return null;
+		}
+
+		// Issuer must match this instance when both the claim and the setting exist
+		if (isset($decoded['iss']) && $decoded['iss'] !== '') {
+			$configManager = new ConfigManager();
+			$expectedIssuer = rtrim((string) ($configManager->getSetting('cpassman_url') ?? ''), '/');
+			if ($expectedIssuer !== '' && rtrim((string) $decoded['iss'], '/') !== $expectedIssuer) {
+				return null;
+			}
+		}
+
+		return $decoded;
+	} catch (InvalidArgumentException $e) {
+		// provided key/key-array is empty or malformed.
+		return null;
+	} catch (DomainException $e) {
+		// provided algorithm is unsupported OR
+		// provided key is invalid OR
+		// unknown error thrown in openSSL or libsodium OR
+		// libsodium is required but not available.
+		return null;
+	} catch (SignatureInvalidException $e) {
+		// provided JWT signature verification failed.
+		return null;
+	} catch (BeforeValidException $e) {
+		// provided JWT is trying to be used before "nbf" claim OR
+		// provided JWT is trying to be used before "iat" claim.
+		return null;
+	} catch (ExpiredException $e) {
+		// provided JWT is trying to be used after "exp" claim.
+		return null;
+	} catch (UnexpectedValueException $e) {
+		// provided JWT is malformed OR
+		// provided JWT is missing an algorithm / using an unsupported algorithm OR
+		// provided JWT algorithm does not match provided key OR
+		// provided key ID in key/key-array is empty or invalid.
+		return null;
+	}
+}
+
+/**
  * Is the JWT valid
  *
  * @param string $jwt
  * @return boolean
  */
 function is_jwt_valid($jwt) {
-	try {
-		$decoded = (array) JWT::decode($jwt, new Key(getApiJwtSigningKey(), 'HS256'));
-
-		// Check if expiration is reached
-		if ($decoded['exp'] - time() < 0) {
-			return false;
-		}
-
-		return true;
-	} catch (InvalidArgumentException $e) {
-		// provided key/key-array is empty or malformed.
-		return false;
-	} catch (DomainException $e) {
-		// provided algorithm is unsupported OR
-		// provided key is invalid OR
-		// unknown error thrown in openSSL or libsodium OR
-		// libsodium is required but not available.
-		return false;
-	} catch (SignatureInvalidException $e) {
-		// provided JWT signature verification failed.
-		return false;
-	} catch (BeforeValidException $e) {
-		// provided JWT is trying to be used before "nbf" claim OR
-		// provided JWT is trying to be used before "iat" claim.
-		return false;
-	} catch (ExpiredException $e) {
-		// provided JWT is trying to be used after "exp" claim.
-		return false;
-	} catch (UnexpectedValueException $e) {
-		// provided JWT is malformed OR
-		// provided JWT is missing an algorithm / using an unsupported algorithm OR
-		// provided JWT algorithm does not match provided key OR
-		// provided key ID in key/key-array is empty or invalid.
-		return false;
-	}
+	return validate_and_get_jwt_payload((string) $jwt) !== null;
 }
 
 function base64url_encode($data) {
@@ -154,18 +192,6 @@ function get_bearer_token() {
         if (preg_match('/Bearer\s(\S+)/', $headers, $matches)) {
             return $matches[1];
         }
-    }
-    return null;
-}
-
-function get_bearer_data($jwt) {
-    // split the jwt
-	$tokenParts = explode('.', $jwt);
-	$payload = base64_decode($tokenParts[1]);
-
-    // HEADER: Get the access token from the header
-    if (empty($payload) === false) {
-        return json_decode($payload, true);
     }
     return null;
 }

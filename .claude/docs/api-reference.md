@@ -13,11 +13,12 @@
 
 ## Versioning
 
-Routes are available both with and without a version prefix — `BaseController::getUriSegments()` strips the `/vN/` segment transparently:
+Routes are available both with and without the `v1` prefix — `BaseController::getUriSegments()` strips only `/v1/`:
 
 ```
 GET /api/item/get          # legacy, treated as v1
 GET /api/v1/item/get       # explicit v1
+GET /api/v2/item/get       # unknown version → 404 "Unknown route"
 ```
 
 All responses include `X-Api-Version: 1`.
@@ -86,7 +87,10 @@ Credentials must be in the body — query string is rejected (400). The token mu
 - Algorithm: HS256
 - Signing key: `api_jwt_secret` in `teampass_misc` (256-bit hex, lazy-generated on first use — **distinct from DB password**)
 - Expiry: `api_token_duration` **minutes** (configurable in Settings → API, default 60). The server computes `exp = now + duration * 60`. The claim is carried in the JWT payload as the raw number so clients can compute `token_expiry = issue_time + api_token_duration * 60 * 1000` ms.
+- Standard claims: `iss` (instance `cpassman_url`), `aud` (`teampass-api`), `iat`, `nbf`, `jti` (random 128-bit). `iss`/`aud` are validated only when present so pre-3.2.1 tokens keep working until expiry. Decode leeway: 60s.
 - Key claims: `id`, `username`, `exp`, `key_tempo`, `is_admin`, `is_manager`, `allowed_to_create`, `allowed_to_read`, `allowed_to_update`, `allowed_to_delete`, `folders_list`
+
+**Per-request revalidation:** `api/index.php` re-reads `disabled`/`deleted_at`/`api.enabled` and overrides `is_admin`, `is_manager` and the 4 CRUD claims from the DB on every request — disabling a user or revoking API rights takes effect immediately, not at token expiry.
 
 **Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in `teampass_api`. The JWT carries only `key_tempo` (a reference). A stolen JWT alone cannot decrypt the private key.
 

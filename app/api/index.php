@@ -136,8 +136,41 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
         );
     }
 } elseif ($jwtStatus['error'] === false) {
-    // get infos from JWT parameters
-    $userData = json_decode(getDataFromToken(), true);
+    // Payload comes from the signature-verified token (single decode in verifyAuth)
+    $userData = ['data' => $jwtStatus['data'], 'error' => false];
+
+    // Re-validate user status and CRUD rights on every request — JWT claims are a
+    // snapshot at issuance: a user disabled or whose API rights were revoked must
+    // lose access immediately, not at token expiry.
+    $jwtUserId = (int) ($userData['data']['id'] ?? 0);
+    $freshUser = $jwtUserId > 0 ? DB::queryFirstRow(
+        'SELECT u.disabled, u.admin, u.gestionnaire,
+            a.enabled AS api_enabled,
+            a.allowed_to_create, a.allowed_to_read, a.allowed_to_update, a.allowed_to_delete
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('api') . ' AS a ON (a.user_id = u.id)
+        WHERE u.id = %i AND u.deleted_at IS NULL',
+        $jwtUserId
+    ) : null;
+
+    if ($freshUser === null
+        || (int) $freshUser['disabled'] === 1
+        || (int) $freshUser['api_enabled'] !== 1
+    ) {
+        errorHdl(
+            'HTTP/1.1 401 Unauthorized',
+            json_encode(['error' => 'Invalid or expired token'])
+        );
+        exit;
+    }
+
+    // Override the stale JWT claims with the fresh values
+    $userData['data']['is_admin'] = (int) $freshUser['admin'];
+    $userData['data']['is_manager'] = (int) $freshUser['gestionnaire'];
+    $userData['data']['allowed_to_create'] = (int) $freshUser['allowed_to_create'];
+    $userData['data']['allowed_to_read'] = (int) $freshUser['allowed_to_read'];
+    $userData['data']['allowed_to_update'] = (int) $freshUser['allowed_to_update'];
+    $userData['data']['allowed_to_delete'] = (int) $freshUser['allowed_to_delete'];
 
     // Populate folders_list from cache_tree (was removed from JWT to reduce token size).
     // On cache miss or invalidation, rebuild from DB and refresh the cache.
@@ -230,14 +263,13 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
 
 
     // define the position of controller in $uri
-    $controller = $uri[0];
-    $action = $uri[1];
-    
-    if ($userData['error'] === true) {
-        // Error management
+    $controller = $uri[0] ?? '';
+    $action = $uri[1] ?? '';
+
+    if ($controller === '' || $action === '') {
         errorHdl(
-            $userData['error_header'],
-            json_encode(['error' => $userData['error_message']])
+            "HTTP/1.1 404 Not Found",
+            json_encode(['error' => 'Unknown route'])
         );
 
     // action related to USER
@@ -272,7 +304,7 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
     } else {
         errorHdl(
             "HTTP/1.1 404 Not Found",
-            json_encode(['error' => 'No action provided'])
+            json_encode(['error' => 'Unknown route'])
         );
     }
 // manage error case

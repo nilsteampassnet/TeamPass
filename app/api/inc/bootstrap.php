@@ -145,7 +145,10 @@ function apiIsEnabled(): string
 
 
 /**
- * Check if connection is authorized
+ * Check if connection is authorized.
+ *
+ * Single verified decode: on success the signature-checked JWT payload is
+ * returned in 'data' — callers must use it instead of re-parsing the token.
  *
  * @return string
  */
@@ -162,7 +165,8 @@ function verifyAuth(): string
         ]);
     }
 
-    if (is_jwt_valid($bearer_token) !== true) {
+    $payload = validate_and_get_jwt_payload($bearer_token);
+    if ($payload === null) {
         return json_encode([
             'error' => true,
             'error_message' => 'Invalid or expired token',
@@ -171,33 +175,7 @@ function verifyAuth(): string
     }
 
     return json_encode([
-        'error' => false,
-        'error_message' => '',
-        'error_header' => '',
-    ]);
-}
-
-
-/**
- * Get the payload from bearer
- *
- * @return string
- */
-function getDataFromToken(): string
-{
-    include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-    $bearer_token = get_bearer_token();
-
-    if (empty($bearer_token) === true) {
-        return json_encode([
-            'error' => true,
-            'error_message' => 'Missing Authorization header',
-            'error_header' => 'HTTP/1.1 401 Unauthorized',
-        ]);
-    }
-
-    return json_encode([
-        'data' => get_bearer_data($bearer_token),
+        'data' => $payload,
         'error' => false,
         'error_message' => '',
         'error_header' => '',
