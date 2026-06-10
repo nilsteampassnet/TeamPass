@@ -87,11 +87,11 @@ function is_jwt_valid($jwt) {
 		$decoded = (array) JWT::decode($jwt, new Key(getApiJwtSigningKey(), 'HS256'));
 
 		// Check if expiration is reached
-		if ($decoded['exp'] - time() < 0) {
+		if (!isset($decoded['exp']) || $decoded['exp'] - time() < 0) {
 			return false;
 		}
 
-		return true;
+        return is_api_session_valid($decoded);
 	} catch (InvalidArgumentException $e) {
 		// provided key/key-array is empty or malformed.
 		return false;
@@ -118,6 +118,33 @@ function is_jwt_valid($jwt) {
 		// provided key ID in key/key-array is empty or invalid.
 		return false;
 	}
+}
+
+function is_api_session_valid(array $decoded): bool
+{
+    $userId = (int) ($decoded['id'] ?? 0);
+    $keyTempo = (string) ($decoded['key_tempo'] ?? '');
+
+    if ($userId <= 0 || $keyTempo === '') {
+        return false;
+    }
+
+    $apiSession = DB::queryFirstRow(
+        'SELECT session_key, session_aes_key, encrypted_private_key
+         FROM ' . prefixTable('api') . '
+         WHERE user_id = %i',
+        $userId
+    );
+
+    if ($apiSession === null || empty($apiSession['session_key'])) {
+        return false;
+    }
+
+    if (!hash_equals((string) $apiSession['session_key'], $keyTempo)) {
+        return false;
+    }
+
+    return !empty($apiSession['session_aes_key']) && !empty($apiSession['encrypted_private_key']);
 }
 
 function base64url_encode($data) {
