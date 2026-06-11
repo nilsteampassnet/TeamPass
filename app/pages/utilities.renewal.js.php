@@ -71,7 +71,7 @@ $checkUserAccess = new PerformChecks(
 );
 // Handle the case
 echo $checkUserAccess->caseHandler();
-if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.logs') === false) {
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('utilities.renewal') === false) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
     include TEAMPASS_ROOT . '/public/error.php';
@@ -99,23 +99,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'sPaginationType': 'listbox',
         'searching': true,
         'order': [
-            [1, 'asc']
+            [0, 'asc']
         ],
         'info': true,
-        'processing': false,
+        'processing': true,
         'serverSide': true,
         'responsive': true,
         'stateSave': true,
-        'autoWidth': true,
+        'autoWidth': false,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/expired.datatables.php',
-            data: function() {
-                if ($('#renewal-date').datepicker("getDate") === '' || $('#renewal-date').datepicker("getDate") === null) {
-                    return {};
-                } else {
-                    return {
-                        "dateCriteria": $('#renewal-date').datepicker("getDate").valueOf()
-                    }
+            data: function(data) {
+                var selectedDate = $('#renewal-date').datepicker("getDate");
+
+                if (selectedDate instanceof Date) {
+                    data.dateCriteria = selectedDate.valueOf();
                 }
             }
         },
@@ -127,24 +125,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
         },
         'drawCallback': function() {
-            // Inform user
             toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+            $('.infotip').tooltip();
         },
         'columns': [{
-                'width': '60px',
-                className: 'dt-body-center'
-            },
-            {
                 'width': '40%',
-                className: 'dt-body-center'
+                className: 'dt-body-left'
             },
             {
                 'width': '20%',
                 className: 'dt-body-center'
             },
             {
-                className: 'datatable.path'
+                className: 'dt-body-left'
             }
         ]
     });
