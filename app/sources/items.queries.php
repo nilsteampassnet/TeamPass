@@ -4411,18 +4411,18 @@ switch ($inputData['type']) {
 
                 // Batch: get the most recent relevant date per item (creation or last pw change)
                 $logRows = DB::query(
-                    'SELECT id_item, MAX(date) AS date
+                    'SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
                     FROM ' . prefixTable('log_items') . '
                     WHERE id_item IN %ls
                     AND (
                         action = %s
-                        OR (action = %s AND raison = %s)
+                        OR (action = %s AND raison LIKE %s)
                     )
                     GROUP BY id_item',
                     $allItemIds,
                     'at_creation',
                     'at_modification',
-                    'at_pw'
+                    'at_pw%'
                 );
                 foreach ($logRows as $logRow) {
                     $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
@@ -4468,7 +4468,7 @@ switch ($inputData['type']) {
                     if (
                         (int) $SETTINGS['activate_expiration'] === 1
                         && intval($record['renewal_period']) > 0
-                        && (intval($record['date']) + (intval($record['renewal_period']) * TP_ONE_MONTH_SECONDS)) < time()
+                        && (intval($record['date']) + (intval($record['renewal_period']) * TP_ONE_DAY_SECONDS)) < time()
                     ) {
                         $expired_item = 1;
                     }
