@@ -2708,7 +2708,7 @@ switch ($post_type) {
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
-        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip'], true) === true) {
+        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip', 'api_rate_limit_per_minute'], true) === true) {
             $post_value = (string) max(0, (int) $post_value);
         }
         if ($post_field === 'bruteforce_lock_duration') {

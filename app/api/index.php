@@ -87,6 +87,22 @@ if (preg_match('/(^|,)\s*fr([-_][a-z]{2})?(\s*;|,|$)/i', $acceptLanguage) === 1)
 }
 $lang = new \TeampassClasses\Language\Language($apiLanguage);
 
+// Enforce HTTPS when api_require_https is enabled (default on new installations).
+// Credentials (/authorize*) and bearer tokens must never travel unencrypted.
+// X-Forwarded-Proto is honoured for TLS-terminating reverse proxies.
+if ((int) ($SETTINGS['api_require_https'] ?? 0) === 1) {
+    $isRequestSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if ($isRequestSecure === false) {
+        errorHdl(
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'HTTPS is required for API requests (api_require_https is enabled)'])
+        );
+        exit;
+    }
+}
+
 $networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
 $networkAccessRules = teampassLoadNetworkAclRules(true);
 $networkAccess = teampassEvaluateNetworkAclAccess(
@@ -186,6 +202,47 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
     $userData['data']['allowed_to_read'] = (int) $freshUser['allowed_to_read'];
     $userData['data']['allowed_to_update'] = (int) $freshUser['allowed_to_update'];
     $userData['data']['allowed_to_delete'] = (int) $freshUser['allowed_to_delete'];
+
+    // Rate limiting (sliding window, per user AND per IP) — applied to all
+    // authenticated endpoints. 0 (default on upgraded instances) disables it.
+    $rateLimitPerMinute = (int) ($SETTINGS['api_rate_limit_per_minute'] ?? 0);
+    if ($rateLimitPerMinute > 0) {
+        $rateLimitState = teampassApiRateLimitCheck(
+            $jwtUserId,
+            (string) ($networkAccessContext['detected_ip'] ?? ''),
+            $rateLimitPerMinute
+        );
+        if ($rateLimitState['allowed'] === false) {
+            header('Retry-After: ' . $rateLimitState['retry_after']);
+            errorHdl(
+                'HTTP/1.1 429 Too Many Requests',
+                json_encode(['error' => 'Rate limit exceeded — retry in ' . $rateLimitState['retry_after'] . ' seconds'])
+            );
+            exit;
+        }
+    }
+
+    // Per-token revocation: a token logged out via /auth/logout (or revoked from
+    // the profile) is rejected on EVERY endpoint, not only key-needing ones.
+    // Tokens issued before the api_sessions table existed have no row — they are
+    // tolerated until expiry (legacy fallback, max 24h).
+    $jwtJti = (string) ($userData['data']['jti'] ?? '');
+    if ($jwtJti !== '') {
+        $apiSession = DB::queryFirstRow(
+            'SELECT revoked_at, expires_at FROM ' . prefixTable('api_sessions') . ' WHERE jti = %s AND user_id = %i',
+            $jwtJti,
+            $jwtUserId
+        );
+        if ($apiSession !== null
+            && ($apiSession['revoked_at'] !== null || (int) $apiSession['expires_at'] < time())
+        ) {
+            errorHdl(
+                'HTTP/1.1 401 Unauthorized',
+                json_encode(['error' => 'Invalid or expired token'])
+            );
+            exit;
+        }
+    }
 
     // Populate folders_list from cache_tree (was removed from JWT to reduce token size).
     // On cache miss or invalidation, rebuild from DB and refresh the cache.
@@ -316,6 +373,13 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
         $objFeedController = new MiscController();
         $strMethodName = (string) $action . 'Action';
         $objFeedController->{$strMethodName}();
+
+    // action related to AUTH session lifecycle — only the logout action is routed
+    // here (token issuance stays on the unauthenticated /authorize* routes above)
+    } elseif ($controller === 'auth' && $action === 'logout') {
+        require API_ROOT_PATH . "/Controller/Api/AuthController.php";
+        $objFeedController = new AuthController();
+        $objFeedController->logoutAction($userData['data']);
     } else {
         errorHdl(
             "HTTP/1.1 404 Not Found",

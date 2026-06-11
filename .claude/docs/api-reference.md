@@ -39,6 +39,14 @@ The legacy `error` member duplicates `detail` and is kept for backward compatibi
 
 ---
 
+## Transport & throttling
+
+**HTTPS enforcement** — setting `api_require_https` (Settings → API; **`1` on new installs, `0` after an upgrade** so existing HTTP integrations keep working — a health-check warning is raised instead). When enabled, any API request over plain HTTP gets `403` + problem body. `X-Forwarded-Proto: https` is honoured for TLS-terminating reverse proxies.
+
+**Rate limiting** — setting `api_rate_limit_per_minute` (Settings → API; **`120` on new installs, `0` = disabled after an upgrade**). Sliding-window counter applied **per user and per IP** on every authenticated endpoint, after JWT validation (`teampass_api_rate_limit` table). Above the limit: `429` + `Retry-After: <seconds>` + problem body. `/authorize*` stays covered by the anti-bruteforce lock instead.
+
+---
+
 ## Authentication
 
 ### `POST /api/authorize`
@@ -95,6 +103,16 @@ Credentials must be in the body — query string is rejected (400). The token mu
 | 500 | Internal error |
 
 **Restrictions:** only `auth_type = 'oauth2'` users are accepted; local/LDAP users are rejected (they keep using `/api/authorize`). Same bruteforce protection and `tp_src=api` logging as the password path. On success, `teampass_api_tokens.last_used_at` is updated.
+
+### `POST /api/auth/logout`
+
+Revokes the **current API session** (requires `Authorization: Bearer <jwt>`). The `teampass_api_sessions` row matching the token's `jti` is flagged `revoked_at` — the JWT is then rejected with `401` on **every** endpoint until it expires. Legacy tokens without a session row wipe the user's single-row `teampass_api` session instead.
+
+**Response 200:** `{ "error": false, "message": "Session revoked" }`. Only POST is accepted (405 + `Allow: POST` otherwise).
+
+### API sessions (one per token)
+
+Every `/authorize*` call inserts a row in `teampass_api_sessions` keyed by the JWT's `jti`: per-token wrapped private key (`encrypted_private_key` + `session_aes_key`), `key_tempo`, `user_agent`, `created_at`/`expires_at`/`last_used_at`/`revoked_at`. This enables **concurrent API clients on the same account** (each token decrypts with its own session row), per-token revocation, and the **"Active API sessions"** list in the user profile (list/revoke — handlers `list_api_sessions`/`revoke_api_session` in `users.queries.php`; key material is never returned). Per-request check in `api/index.php`: a revoked or expired session row → uniform `401`. Tokens issued before the table existed have no row and fall back to the legacy single-row session until expiry (max 24h). Expired rows are purged opportunistically at each authentication (24h grace).
 
 ### JWT Structure
 
@@ -298,6 +316,7 @@ Returns browser extension connection settings.
 | 404 | Resource not found / unknown route |
 | 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
 | 422 | Validation failed (password rules, invalid complexity/access_rights) |
+| 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |
 | 503 | API disabled in TeamPass settings |
 
@@ -341,6 +360,6 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 **Users (admin scope):** create, update, delete, disable, folder_rights.
 
-**Auth:** refresh token (`POST /api/v1/auth/refresh`), logout/revoke (`POST /api/v1/auth/logout`), JWT scopes (`scope=full|extension|mobile|readonly`).
+**Auth:** refresh token (`POST /api/v1/auth/refresh`), JWT scopes (`scope=full|extension|mobile|readonly`). ~~logout/revoke~~ — done (`POST /api/v1/auth/logout` + profile sessions list/revoke).
 
 **Discovery:** unified search (`GET /api/v1/search?q=...`). ~~OpenAPI 3.1 spec~~ — done (`/api/v1/openapi.json`).

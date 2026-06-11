@@ -38,16 +38,17 @@ class ItemModel
     /**
      * Get the list of items to return
      *
-     * @param string $sqlExtra
+     * @param string $sqlExtra WHERE clause, may contain MeekroDB placeholders (%s, ...)
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
      * @param bool $showItem Kept for caller compatibility — access is now logged on every path
      * @param integer $offset Pagination offset — only applied when a limit is set
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
      *
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0, array $sqlParams = []): array
     {
         // Fetch user's public key once for migration-aware decryption
         $userPublicKey = '';
@@ -78,7 +79,8 @@ class ItemModel
             LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
             $sqlExtra .
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT " . ($offset > 0 ? $offset . ", " : "") . $limit : '')
+            ($limit > 0 ? " LIMIT " . ($offset > 0 ? $offset . ", " : "") . $limit : ''),
+            ...$sqlParams
         );
         
         $ret = [];
@@ -194,14 +196,17 @@ class ItemModel
      * getItems(): it is the number of matching items in accessible folders,
      * not the number of items the user can currently decrypt.
      *
-     * @param string $sqlExtra WHERE clause referencing the 'i' items alias only
+     * @param string $sqlExtra WHERE clause referencing the 'i' items alias only,
+     *                         may contain MeekroDB placeholders (%s, ...)
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
      *
      * @return int
      */
-    public function countItems(string $sqlExtra): int
+    public function countItems(string $sqlExtra, array $sqlParams = []): int
     {
         return (int) DB::queryFirstField(
-            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i ' . $sqlExtra
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i ' . $sqlExtra,
+            ...$sqlParams
         );
     }
     //end countItems()

@@ -184,6 +184,80 @@ function verifyAuth(): string
 
 
 /**
+ * Sliding-window rate limit check (per user id AND per client IP).
+ *
+ * Uses the api_rate_limit table with the classic two-bucket sliding-window
+ * counter: rate = previous-minute hits weighted by the remaining overlap +
+ * current-minute hits. Counters are upserted atomically; buckets older than
+ * 3 minutes are dropped opportunistically.
+ *
+ * @param int    $userId         Authenticated user id (0 to skip the user scope)
+ * @param string $clientIp       Trusted client IP ('' to skip the IP scope)
+ * @param int    $limitPerMinute Allowed requests per minute (<= 0 disables the check)
+ * @return array{allowed: bool, retry_after: int}
+ */
+function teampassApiRateLimitCheck(int $userId, string $clientIp, int $limitPerMinute): array
+{
+    if ($limitPerMinute <= 0) {
+        return ['allowed' => true, 'retry_after' => 0];
+    }
+
+    $now = time();
+    $windowStart = $now - ($now % 60);
+    $elapsed = $now - $windowStart;
+
+    $scopes = [];
+    if ($userId > 0) {
+        $scopes[] = 'u:' . $userId;
+    }
+    if ($clientIp !== '') {
+        $scopes[] = 'ip:' . $clientIp;
+    }
+
+    $allowed = true;
+    foreach ($scopes as $scopeKey) {
+        DB::query(
+            'INSERT INTO ' . prefixTable('api_rate_limit') . ' (scope_key, window_start, hits)
+            VALUES (%s, %i, 1)
+            ON DUPLICATE KEY UPDATE hits = hits + 1',
+            $scopeKey,
+            $windowStart
+        );
+
+        $buckets = DB::query(
+            'SELECT window_start, hits FROM ' . prefixTable('api_rate_limit') . '
+            WHERE scope_key = %s AND window_start >= %i',
+            $scopeKey,
+            $windowStart - 60
+        );
+
+        $currentHits = $previousHits = 0;
+        foreach ($buckets as $bucket) {
+            if ((int) $bucket['window_start'] === $windowStart) {
+                $currentHits = (int) $bucket['hits'];
+            } else {
+                $previousHits = (int) $bucket['hits'];
+            }
+        }
+
+        $effectiveRate = $previousHits * ((60 - $elapsed) / 60) + $currentHits;
+        if ($effectiveRate > $limitPerMinute) {
+            $allowed = false;
+        }
+    }
+
+    // Opportunistic cleanup of stale buckets (~2% of requests)
+    if (random_int(1, 50) === 1) {
+        DB::delete(prefixTable('api_rate_limit'), 'window_start < %i', $windowStart - 180);
+    }
+
+    return [
+        'allowed' => $allowed,
+        'retry_after' => $allowed ? 0 : (60 - $elapsed),
+    ];
+}
+
+/**
  * Send error output as RFC 9457 application/problem+json.
  *
  * Accepts the legacy (status line, json body) pair used across the router and

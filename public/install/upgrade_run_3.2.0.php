@@ -422,6 +422,65 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'extension_token_all_auth_types', '0')"
 );
 
+// Add the api_sessions table — one API session per issued JWT (keyed by the jti
+// claim). Enables concurrent API clients per user, per-token revocation and the
+// "active API sessions" list in the user profile.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_sessions` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `user_id` int(12) NOT NULL,
+        `jti` varchar(32) NOT NULL,
+        `key_tempo` varchar(100) NOT NULL,
+        `encrypted_private_key` text NULL,
+        `session_aes_key` varchar(64) NULL,
+        `user_agent` varchar(255) NOT NULL DEFAULT \'\',
+        `created_at` int(12) NOT NULL,
+        `expires_at` int(12) NOT NULL,
+        `last_used_at` int(12) NULL DEFAULT NULL,
+        `revoked_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `jti` (`jti`),
+        KEY `user_id` (`user_id`),
+        KEY `expires_at` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_sessions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the api_rate_limit table — sliding-window request counters (per user and per IP).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_rate_limit` (
+        `scope_key` varchar(100) NOT NULL,
+        `window_start` int(12) NOT NULL,
+        `hits` int(12) NOT NULL DEFAULT 1,
+        PRIMARY KEY (`scope_key`, `window_start`),
+        KEY `window_start` (`window_start`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_rate_limit table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Require HTTPS for the API: enabled on NEW installs, kept DISABLED on upgrades so
+// existing HTTP-based integrations keep working (a health-check warning is raised
+// instead; the admin can enable it from Settings > API).
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_require_https', '0')"
+);
+
+// API rate limit (requests per minute, per user and per IP): 120 on NEW installs,
+// 0 (disabled) on upgrades so existing heavy API clients are not throttled silently.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_rate_limit_per_minute', '0')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

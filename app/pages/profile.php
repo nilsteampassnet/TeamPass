@@ -343,6 +343,15 @@ foreach ($session->get('user-roles_array') as $role) {
                                         <div class="mt-2" id="extension-tokens-list"></div>
                                     </li>';
                                     }
+                                    // Active API sessions (one per issued JWT) — list and revoke
+                                    if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) {
+                                        echo '
+                                    <li class="list-group-item" id="api-sessions-block">
+                                        <b><i class="fa-solid fa-tower-broadcast fa-fw fa-lg mr-2"></i>' . $lang->get('api_sessions') . '</b>
+                                        <small class="form-text text-muted">' . $lang->get('api_sessions_tip') . '</small>
+                                        <div class="mt-2" id="api-sessions-list"></div>
+                                    </li>';
+                                    }
                                     // Browser extension auto-configuration — when token-based access is
                                     // available to this user (OAuth2, or all-auth-types toggle on).
                                     if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1

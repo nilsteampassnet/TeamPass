@@ -173,4 +173,66 @@ class AuthController extends BaseController
             $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
+
+    /**
+     * Revoke the current API session (POST /auth/logout).
+     *
+     * Requires a valid JWT (the router dispatches here after verification). The
+     * api_sessions row matching the token's jti is flagged revoked — the token is
+     * then rejected on every endpoint until it expires. Legacy tokens without a
+     * session row fall back to wiping the single-row teampass_api session, which
+     * invalidates the key_tempo for that user's legacy tokens.
+     *
+     * @param array $userData Verified JWT payload
+     */
+    public function logoutAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+
+        if (strtoupper($requestMethod) !== 'POST') {
+            $this->sendProblem(405, 'Method not supported', ['Allow: POST']);
+            return;
+        }
+
+        $userId = (int) ($userData['id'] ?? 0);
+        $jti = (string) ($userData['jti'] ?? '');
+
+        try {
+            $revokedSession = false;
+            if ($jti !== '') {
+                DB::update(
+                    prefixTable('api_sessions'),
+                    ['revoked_at' => time()],
+                    'jti = %s AND user_id = %i AND revoked_at IS NULL',
+                    $jti,
+                    $userId
+                );
+                $revokedSession = DB::affectedRows() > 0;
+            }
+
+            if ($revokedSession === false) {
+                // Legacy token (no api_sessions row): invalidate the single-row session
+                DB::update(
+                    prefixTable('api'),
+                    [
+                        'session_key' => '',
+                        'session_aes_key' => '',
+                        'encrypted_private_key' => '',
+                        'timestamp' => time(),
+                    ],
+                    'user_id = %i',
+                    $userId
+                );
+            }
+
+            $this->sendOutput(
+                json_encode(['error' => false, 'message' => 'Session revoked']),
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } catch (Error $e) {
+            error_log('[API] AuthController::logoutAction error: ' . $e->getMessage());
+            $this->sendProblem(500, 'An internal error occurred. Please contact support.');
+        }
+    }
 }

@@ -46,7 +46,8 @@ class ItemController extends BaseController
 
         $userKeys = get_user_keys(
             (int) $userData['id'],
-            (string) $userData['key_tempo']
+            (string) $userData['key_tempo'],
+            isset($userData['jti']) ? (string) $userData['jti'] : null
         );
 
         if ($userKeys === null) {
@@ -379,35 +380,37 @@ class ItemController extends BaseController
         $arrQueryStringParams = $this->getQueryStringParams();
 
         if (strtoupper($requestMethod) === 'GET') {
+            // Values bound to the MeekroDB placeholders embedded in $sqlExtra
+            $sqlParams = [];
             // SQL where clause with item id
             if (isset($arrQueryStringParams['id']) === true) {
                 // build sql where clause by ID
                 $sqlExtra .= ' AND i.id = ' . (int) $arrQueryStringParams['id'] . $sql_constraint;
                 $showItem = true;
             } else if (isset($arrQueryStringParams['label']) === true) {
-                // build sql where clause by LABEL
+                // build sql where clause by LABEL (value bound via placeholder)
                 $isLikeLabel = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
                 if ($isLikeLabel) {
                     $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['label']);
-                    $escapedLabel = DB::escape('%' . $likeVal . '%');
+                    $sqlParams[] = '%' . $likeVal . '%';
                 } else {
-                    $escapedLabel = DB::escape($arrQueryStringParams['label']);
+                    $sqlParams[] = (string) $arrQueryStringParams['label'];
                 }
-                $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE ' : '= ') . $escapedLabel . $sql_constraint;
+                $sqlExtra .= ' AND i.label ' . ($isLikeLabel ? 'LIKE' : '=') . ' %s' . $sql_constraint;
                 $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
                     ? min((int) $arrQueryStringParams['limit'], 500)
                     : 50;
                 $sqlOffset = max(0, (int) ($arrQueryStringParams['offset'] ?? 0));
             } else if (isset($arrQueryStringParams['description']) === true) {
-                // build sql where clause by DESCRIPTION
+                // build sql where clause by DESCRIPTION (value bound via placeholder)
                 $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
                 if ($isLikeDesc) {
                     $likeVal = str_replace(['%', '_'], ['\\%', '\\_'], $arrQueryStringParams['description']);
-                    $escapedDesc = DB::escape('%' . $likeVal . '%');
+                    $sqlParams[] = '%' . $likeVal . '%';
                 } else {
-                    $escapedDesc = DB::escape($arrQueryStringParams['description']);
+                    $sqlParams[] = (string) $arrQueryStringParams['description'];
                 }
-                $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE ' : '= ') . $escapedDesc . $sql_constraint;
+                $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE' : '=') . ' %s' . $sql_constraint;
                 $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
                     ? min((int) $arrQueryStringParams['limit'], 500)
                     : 50;
@@ -428,11 +431,11 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem, $sqlOffset);
+                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem, $sqlOffset, $sqlParams);
                     $responseData = json_encode($arrItems);
                     // Pagination contract only applies to searches (a get-by-id is a single resource)
                     if ($showItem === false) {
-                        $arrSuccessHeaders[] = 'X-Total-Count: ' . $itemModel->countItems($sqlExtra);
+                        $arrSuccessHeaders[] = 'X-Total-Count: ' . $itemModel->countItems($sqlExtra, $sqlParams);
                     }
                 }
             } catch (Error $e) {

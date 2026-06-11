@@ -206,11 +206,71 @@ function get_bearer_token() {
  *
  * @param int $userId User ID from JWT token
  * @param string $keyTempo Session token from JWT (for validation)
+ * @param string|null $jti Unique token id from the JWT — selects the per-token
+ *                         api_sessions row; legacy tokens without a session row
+ *                         fall back to the single teampass_api row
  * @return array|null Array containing public_key and private_key (decrypted), or null if validation fails
  */
-function get_user_keys(int $userId, string $keyTempo): ?array
+function get_user_keys(int $userId, string $keyTempo, ?string $jti = null): ?array
 {
     require_once API_ROOT_PATH . '/inc/encryption_utils.php';
+
+    // Per-token session lookup (one row per JWT, keyed by jti) — enables
+    // concurrent API clients on the same account and per-token revocation.
+    if ($jti !== null && $jti !== '') {
+        $sessionRow = DB::queryFirstRow(
+            'SELECT s.encrypted_private_key, s.session_aes_key, s.key_tempo,
+                s.expires_at, s.revoked_at, s.last_used_at, s.id AS session_id,
+                u.public_key
+            FROM ' . prefixTable('api_sessions') . ' AS s
+            INNER JOIN ' . prefixTable('users') . ' AS u ON (u.id = s.user_id)
+            WHERE s.jti = %s AND s.user_id = %i',
+            $jti,
+            $userId
+        );
+
+        if ($sessionRow !== null) {
+            if ($sessionRow['revoked_at'] !== null
+                || (int) $sessionRow['expires_at'] < time()
+                || (string) $sessionRow['key_tempo'] !== $keyTempo
+            ) {
+                error_log('[API] get_user_keys: revoked/expired API session for user ID ' . $userId);
+                return null;
+            }
+
+            $sessionKeyDecoded = base64_decode((string) $sessionRow['session_aes_key'], true);
+            if ($sessionKeyDecoded === false || strlen($sessionKeyDecoded) !== 32) {
+                error_log('[API] get_user_keys: Invalid session AES key format for user ID ' . $userId);
+                return null;
+            }
+
+            $privateKeyDecrypted = decrypt_with_session_key(
+                (string) $sessionRow['encrypted_private_key'],
+                $sessionKeyDecoded
+            );
+            if ($privateKeyDecrypted === false) {
+                error_log('[API] get_user_keys: Failed to decrypt private key for user ID ' . $userId);
+                return null;
+            }
+
+            // Throttled last-used tracking (at most one write per minute)
+            if ($sessionRow['last_used_at'] === null || (int) $sessionRow['last_used_at'] < time() - 60) {
+                DB::update(
+                    prefixTable('api_sessions'),
+                    ['last_used_at' => time()],
+                    'id = %i',
+                    (int) $sessionRow['session_id']
+                );
+            }
+
+            return [
+                'public_key' => $sessionRow['public_key'],
+                'private_key' => $privateKeyDecrypted,
+            ];
+        }
+        // No session row for this jti: token issued before api_sessions existed —
+        // fall through to the legacy single-row lookup until it expires.
+    }
 
     // Retrieve user's public key, encrypted private key, and server-side AES key
     $userInfo = DB::queryFirstRow(

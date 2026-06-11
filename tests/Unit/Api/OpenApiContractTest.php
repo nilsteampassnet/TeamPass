@@ -27,6 +27,7 @@ class OpenApiContractTest extends TestCase
     private const SEGMENT_TO_CONTROLLER = [
         'authorize' => 'AuthController.php',
         'authorizeToken' => 'AuthController.php',
+        'auth' => 'AuthController.php',
         'item' => 'ItemController.php',
         'folder' => 'FolderController.php',
         'user' => 'UserController.php',
@@ -129,9 +130,11 @@ class OpenApiContractTest extends TestCase
         }
 
         foreach ($this->getControllerActions('AuthController.php') as $action) {
-            self::assertContains(
-                '/' . $action,
-                $documentedPaths,
+            // authorize/authorizeToken are routed without a segment prefix;
+            // session-lifecycle actions live under /auth/<action> (e.g. /auth/logout)
+            $candidates = ['/' . $action, '/auth/' . $action];
+            self::assertNotEmpty(
+                array_intersect($candidates, $documentedPaths),
                 "Action {$action}Action in AuthController.php is not documented in openapi.json"
             );
         }

@@ -274,6 +274,28 @@ class AuthModel
             $userInfo['id']
         );
 
+        // One API session per issued token, keyed by the jti claim — enables
+        // concurrent clients on the same account, per-token revocation (logout)
+        // and the "active API sessions" list in the user profile. The single-row
+        // teampass_api session above is kept as a fallback for tokens issued
+        // before this table existed (accepted until they expire).
+        $issuedAt = time();
+        $jti = bin2hex(random_bytes(16));
+        $expiresAt = $issuedAt + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60;
+        DB::insert(prefixTable('api_sessions'), [
+            'user_id' => (int) $userInfo['id'],
+            'jti' => $jti,
+            'key_tempo' => (string) $keyTempo,
+            'encrypted_private_key' => $encryptedPrivateKey,
+            'session_aes_key' => base64_encode($sessionKey),
+            'user_agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+            'created_at' => $issuedAt,
+            'expires_at' => $expiresAt,
+        ]);
+
+        // Opportunistic cleanup: drop sessions expired for more than 24 hours
+        DB::delete(prefixTable('api_sessions'), 'expires_at < %i', $issuedAt - 86400);
+
         // get user folders list and persist in cache_tree
         $ret = $this->buildUserFoldersList($userInfo);
         $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
@@ -313,6 +335,9 @@ class AuthModel
 
         // create JWT (session_aes_key is stored server-side, not in the token)
         return $this->createUserJWT(
+            $jti,
+            $issuedAt,
+            $expiresAt,
             (int) $userInfo['id'],
             $loginForJwt,
             (string) $userInfo['email'],
@@ -454,6 +479,9 @@ class AuthModel
      * validate the session and locate the row). The AES key never leaves the server,
      * so a stolen JWT alone cannot be used to decrypt the private key.
      *
+     * @param string $jti       Unique token id, matches the api_sessions row
+     * @param integer $issuedAt
+     * @param integer $expiresAt
      * @param integer $id
      * @param string $login
      * @param string $email
@@ -477,6 +505,9 @@ class AuthModel
      * @return array
      */
     private function createUserJWT(
+        string $jti,
+        int $issuedAt,
+        int $expiresAt,
         int $id,
         string $login,
         string $email,
@@ -505,21 +536,19 @@ class AuthModel
 
         include_once API_ROOT_PATH . '/inc/jwt_utils.php';
 
-        $issuedAt = time();
 		$payload = [
             // Standard claims (RFC 7519 / RFC 8725): issuer, audience, issued-at,
-            // not-before and a unique token id (enables future revocation/tracking).
+            // not-before and a unique token id. The jti and exp are computed by the
+            // caller (issueJwtForUser) so they match the stored api_sessions row
+            // (api_token_duration clamped to [1, 1440] minutes — 24h cap).
             'iss' => rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/'),
             'aud' => TEAMPASS_API_JWT_AUDIENCE,
             'iat' => $issuedAt,
             'nbf' => $issuedAt,
-            'jti' => bin2hex(random_bytes(16)),
+            'jti' => $jti,
             'username' => $login,
             'id' => $id,
-            // api_token_duration is in minutes (contract with the browser extension).
-            // Clamp to [1, 1440] minutes so a zero/missing value never produces an
-            // instantly-expired token, and tokens are capped at 24 hours.
-            'exp' => ($issuedAt + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60),
+            'exp' => $expiresAt,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,
