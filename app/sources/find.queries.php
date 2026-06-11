@@ -329,7 +329,7 @@ if (null === $request->query->get('type')) {
         // Expiration
         if ($SETTINGS['activate_expiration'] === '1') {
             if ($record['renewal_period'] > 0
-                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
+                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
             ) {
                 $expired = 1;
             } else {
@@ -482,7 +482,7 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['is_result_of_search'] = 1;
         if ((int) $SETTINGS['activate_expiration'] === 1) {
             if ($record['renewal_period'] > 0
-                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_MONTH_SECONDS)) < time()
+                && ($record['timestamp'] + ($record['renewal_period'] * TP_ONE_DAY_SECONDS)) < time()
             ) {
                 $arr_data[$record['id']]['expired'] = 1;
                 $arr_data[$record['id']]['expirationFlag'] = 'red';
