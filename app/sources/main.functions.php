@@ -1920,23 +1920,33 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
  */
 function getClientIpServer(): string
 {
-    if (getenv('HTTP_CLIENT_IP')) {
-        $ipaddress = getenv('HTTP_CLIENT_IP');
-    } elseif (getenv('HTTP_X_FORWARDED_FOR')) {
-        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    } elseif (getenv('HTTP_X_FORWARDED')) {
-        $ipaddress = getenv('HTTP_X_FORWARDED');
-    } elseif (getenv('HTTP_FORWARDED_FOR')) {
-        $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    } elseif (getenv('HTTP_FORWARDED')) {
-        $ipaddress = getenv('HTTP_FORWARDED');
-    } elseif (getenv('REMOTE_ADDR')) {
-        $ipaddress = getenv('REMOTE_ADDR');
-    } else {
-        $ipaddress = 'UNKNOWN';
+    // Candidate sources, in order of preference. Proxy headers are attacker-controllable and may
+    // carry a comma-separated list, so every candidate is validated as a real IP before being used.
+    $sources = [
+        'HTTP_CLIENT_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_FORWARDED',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_FORWARDED',
+        'REMOTE_ADDR',
+    ];
+
+    foreach ($sources as $source) {
+        $value = getenv($source);
+        if ($value === false || $value === '') {
+            continue;
+        }
+
+        foreach (explode(',', (string) $value) as $candidate) {
+            $candidate = trim($candidate);
+            // Return the first candidate that is a valid IPv4/IPv6 address.
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                return $candidate;
+            }
+        }
     }
 
-    return $ipaddress;
+    return 'UNKNOWN';
 }
 
 

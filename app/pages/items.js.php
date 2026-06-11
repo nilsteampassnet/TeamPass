@@ -89,7 +89,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 <script type="text/javascript">
     window.TeamPassCurrentUserId = <?php echo (int) $session->get('user-id'); ?>;
 
-    // BIP-39 wordlist for the passphrase generator (language: <?php echo htmlspecialchars($session->get('user-language') ?? 'english', ENT_QUOTES, 'UTF-8'); ?>)
+    // BIP-39 wordlist for the passphrase generator (language depends on the user's profile).
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
@@ -4686,7 +4686,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 <tr data-tree-id="${folder.id}" class="pointer open-folder">
                     <td style="width: 100%;">
                         <i class="fas fa-folder${folder.disabled ? '-closed text-muted' : ' text-warning'}"></i>
-                        <strong class="ml-2">${folder.title}</strong>
+                        <strong class="ml-2">${htmlEncode(folder.title)}</strong>
                     </td>
                 </tr>
             `).join('');
@@ -5403,14 +5403,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
                 }
                 // Add Description
-                value.desc = htmlDecode(value.desc);
-                // Ensure preview is plain text even if backend sent HTML-encoded tags (ex: &lt;p&gt;...&lt;/p&gt;)
+                // The backend already returns a plain-text preview (tags stripped). Treat it as text:
+                // strip any residual markup and HTML-encode before inserting it into the row markup.
                 const descPreview = (value.desc ?? '')
                     .replace(/<[^>]*>/g, '')
                     .replace(/\u00A0/g, ' ')
                     .replace(/\s+/g, ' ')
                     .trim();
-                description = (descPreview !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + descPreview : '<i>'+itemLabel + '</i>');
+                description = (descPreview !== '' ? '<i>'+itemLabel + '</i><i class="fa-solid fa-heading mr-1 ml-2"></i>' + htmlEncode(descPreview) : '<i>'+itemLabel + '</i>');
                 // Consolidate item label
                 if (description !== '') {
                     description = '<span class="text-secondary small d-inline-block text-truncate">' + description + '</span>';
@@ -5438,7 +5438,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     '<span class="list-item-clicktoshow d-inline-flex align-items-center' + (value.rights === 10 ? '' : ' pointer') + '" data-item-id="' + value.item_id + '" data-item-key="' + value.item_key + '">' +
                     corruption_marker +
                     // Show item fa_icon if set
-                    (value.fa_icon !== '' ? '<i class="'+value.fa_icon+' mr-1 user-fa-icon"></i>' : '') +
+                    (value.fa_icon !== '' ? '<i class="'+htmlEncode(value.fa_icon)+' mr-1 user-fa-icon"></i>' : '') +
                     '<span class="list-item-row-description d-inline-block' + (value.rights === 10 ? ' font-weight-light' : '') + '"><i class="item-favorite-star fa-solid' + ((store.get('teampassApplication').highlightFavorites === 1 && value.is_favourited === 1) ? ' fa-star mr-1' : '') + '"></i>' + value.label + '</span>' + (value.rights === 10 ? '' : description) +
                     '<span class="list-item-row-description-extend"></span>' +
                     '</span>' +

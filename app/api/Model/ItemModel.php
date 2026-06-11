@@ -351,7 +351,8 @@ class ItemModel
             'tags' => (string) ($arrItemParams['tags'] ?? ''),
             'anyoneCanModify' => (int) ($arrItemParams['anyone_can_modify'] ?? 0),
             'url' => (string) ($arrItemParams['url'] ?? ''),
-            'icon' => (string) ($arrItemParams['icon'] ?? ''),
+            // Constrain the icon to safe Font Awesome class characters (letters, digits, space, underscore, hyphen)
+            'icon' => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) ($arrItemParams['icon'] ?? '')),
             'totp' => (string) ($arrItemParams['totp'] ?? ''),
             'favicon_url' => '',
         ];
@@ -1187,7 +1188,7 @@ class ItemModel
                 'login'             => ['db_key' => 'login', 'type' => 'string'],
                 'email'             => ['db_key' => 'email', 'type' => 'string'],
                 'url'               => ['db_key' => 'url', 'type' => 'string'],
-                'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
+                'icon'              => ['db_key' => 'fa_icon', 'type' => 'icon'],
                 'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
                 'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
             ];
@@ -1195,6 +1196,7 @@ class ItemModel
                 if (isset($params[$paramKey])) {
                     $updateData[$def['db_key']] = match($def['type']) {
                         'int'   => (int) $params[$paramKey],
+                        'icon'  => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
                         default => $params[$paramKey],
                     };
                 }

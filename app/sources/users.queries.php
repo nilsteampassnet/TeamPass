@@ -4361,8 +4361,17 @@ break;
         if ($value[0] === 'userlanguage') {
             $value[0] = 'user_language';
             $post_newValue = strtolower($post_newValue);
+            // Enforce the list of installed languages; fall back to the default on an unknown value.
+            // Prevents arbitrary values (ex: newline-carrying payloads) from being stored as user_language.
+            $isKnownLanguage = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('languages') . ' WHERE LOWER(name) = %s',
+                $post_newValue
+            );
+            if ($isKnownLanguage === 0) {
+                $post_newValue = strtolower((string) ($SETTINGS['default_language'] ?? 'english'));
+            }
         }
-        
+
         // Check that operation is allowed
         if (in_array(
             $value[0],

@@ -1695,7 +1695,7 @@ const displayedMigrationPercentage = displayedTotalUsers > 0
                                         '<br>' +
                                         '<small class="text-muted ml-4">' + formattedDate + '</small>' +
                                     '</div>' +
-                                    '<span class="badge badge-secondary">' + TP_MIGRATION_STATS_I18N.user + ' ' + event.login + '</span>' +
+                                    '<span class="badge badge-secondary">' + TP_MIGRATION_STATS_I18N.user + ' ' + escapeHtml(event.login) + '</span>' +
                                 '</div>' +
                             '</li>';
                 });

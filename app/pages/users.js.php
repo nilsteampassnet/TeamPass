@@ -4165,13 +4165,13 @@ function refreshListInactiveUsers(filterValue) {
             } else if (Array.isArray(folder.roles) && folder.roles.length > 0) {
                 folder.roles.forEach(role => {
                     const cls = typeBadgeClass[role.type] || 'badge-secondary'
-                    rolesBadges += '<span class="badge ' + cls + ' mr-1 infotip" title="' + role.type + '">' +
-                        role.title + '</span>'
+                    rolesBadges += '<span class="badge ' + cls + ' mr-1 infotip" title="' + htmlEncode(role.type) + '">' +
+                        htmlEncode(role.title) + '</span>'
                 })
             }
 
-            html += '<tr data-folder-type="' + folder.type + '">' +
-                '<td>' + ident + folder.title +
+            html += '<tr data-folder-type="' + htmlEncode(folder.type) + '">' +
+                '<td>' + ident + htmlEncode(folder.title) +
                 ' <small class="text-info">[' + folder.id + ']</small></td>' +
                 '<td>' + label + '</td>' +
                 '<td>' + rolesBadges + '</td>' +
