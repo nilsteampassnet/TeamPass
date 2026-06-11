@@ -43,10 +43,11 @@ class ItemModel
      * @param string $userPrivateKey
      * @param integer $userId
      * @param bool $showItem Kept for caller compatibility — access is now logged on every path
+     * @param integer $offset Pagination offset — only applied when a limit is set
      *
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0): array
     {
         // Fetch user's public key once for migration-aware decryption
         $userPublicKey = '';
@@ -75,10 +76,10 @@ class ItemModel
             FROM " . prefixTable('items') . " AS i
             LEFT JOIN " . prefixTable('nested_tree') . " AS t ON (t.id = i.id_tree)
             LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
-            $sqlExtra . 
+            $sqlExtra .
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT ". $limit : '')
-        ); 
+            ($limit > 0 ? " LIMIT " . ($offset > 0 ? $offset . ", " : "") . $limit : '')
+        );
         
         $ret = [];
         foreach ($rows as $row) {
@@ -184,7 +185,26 @@ class ItemModel
 
         return $ret;
     }
-    //end getItems() 
+    //end getItems()
+
+    /**
+     * Count items matching a WHERE clause — pagination total (X-Total-Count).
+     *
+     * The count is taken before the per-item sharekey filtering performed in
+     * getItems(): it is the number of matching items in accessible folders,
+     * not the number of items the user can currently decrypt.
+     *
+     * @param string $sqlExtra WHERE clause referencing the 'i' items alias only
+     *
+     * @return int
+     */
+    public function countItems(string $sqlExtra): int
+    {
+        return (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i ' . $sqlExtra
+        );
+    }
+    //end countItems()
 
     /**
      * Main function to add a new item to the database.

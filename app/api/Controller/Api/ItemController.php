@@ -102,6 +102,8 @@ class ItemController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
+        $arrErrorHeaders = [];
+        $arrSuccessHeaders = [];
 
         // get parameters
         $arrQueryStringParams = $this->getQueryStringParams();
@@ -132,18 +134,12 @@ class ItemController extends BaseController
                     $sqlExtra .= ' AND i.id_tree IN (' . $foldersList . ')';
                 } else {
                     // Send error
-                    $this->sendOutput(
-                        json_encode(['error' => 'Folders are mandatory']),
-                        ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
-                    );
+                    $this->sendProblem(400, 'Folders are mandatory');
                     return;
                 }
             } else {
                 // Send error
-                $this->sendOutput(
-                    json_encode(['error' => 'Folders are mandatory']),
-                    ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
-                );
+                $this->sendProblem(400, 'Folders are mandatory');
                 return;
             }
 
@@ -151,6 +147,13 @@ class ItemController extends BaseController
             $intLimit = isset($arrQueryStringParams['limit'])
                 ? min(max(0, (int) $arrQueryStringParams['limit']), 500)
                 : 0;
+            // SQL OFFSET — pagination requires a LIMIT; default it when only offset is given
+            $intOffset = isset($arrQueryStringParams['offset'])
+                ? max(0, (int) $arrQueryStringParams['offset'])
+                : 0;
+            if ($intOffset > 0 && $intLimit === 0) {
+                $intLimit = 50;
+            }
 
             // send query
             try {
@@ -162,13 +165,10 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userPrivateKey, $userData['id']);
-                    if (!empty($arrItems)) {
-                        $responseData = json_encode($arrItems);
-                    } else {
-                        $strErrorDesc = 'No content for this label';
-                        $strErrorHeader = 'HTTP/1.1 204 No Content';
-                    }
+                    $arrItems = $itemModel->getItems($sqlExtra, $intLimit, $userPrivateKey, $userData['id'], false, $intOffset);
+                    // Empty collection → 200 + [] (a 204 must not carry a body — RFC 9110)
+                    $responseData = json_encode($arrItems);
+                    $arrSuccessHeaders[] = 'X-Total-Count: ' . $itemModel->countItems($sqlExtra);
                 }
             } catch (Error $e) {
                 error_log('ItemController::inFoldersAction error: ' . $e->getMessage());
@@ -177,20 +177,18 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                array_merge(['Content-Type: application/json', 'HTTP/1.1 200 OK'], $arrSuccessHeaders)
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
         }
     }
     //end InFoldersAction()
@@ -213,7 +211,7 @@ class ItemController extends BaseController
                 return [
                     'error' => true,
                     'strErrorDesc' => 'User is not allowed in this folder',
-                    'strErrorHeader' => 'HTTP/1.1 401 Unauthorized',
+                    'strErrorHeader' => 'HTTP/1.1 403 Forbidden',
                 ];
             } elseif ($folderAccessModel->isFolderReadOnlyForUser($folderId, (int) ($userData['id'] ?? 0))) {
                 return [
@@ -225,7 +223,7 @@ class ItemController extends BaseController
                 return [
                     'error' => true,
                     'strErrorDesc' => 'Label is mandatory',
-                    'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
+                    'strErrorHeader' => 'HTTP/1.1 400 Bad Request',
                 ];
             } else {
                 return [
@@ -237,7 +235,7 @@ class ItemController extends BaseController
         return [
             'error' => true,
             'strErrorDesc' => 'All fields have to be provided even if empty (refer to documentation).',
-            'strErrorHeader' => 'HTTP/1.1 401 Expected parameters not provided',
+            'strErrorHeader' => 'HTTP/1.1 400 Bad Request',
         ];
     }
 
@@ -252,13 +250,16 @@ class ItemController extends BaseController
         $request = symfonyRequest::createFromGlobals();
         $requestMethod = $request->getMethod();
         $strErrorDesc = $strErrorHeader = $responseData = '';
+        $arrErrorHeaders = [];
+        $arrSuccessHeaders = [];
+        $intSuccessStatus = 200;
 
         if (strtoupper($requestMethod) === 'POST') {
             // Is user allowed to create a folder
             // We check if allowed_to_create
             if ((int) $userData['allowed_to_create'] !== 1) {
                 $strErrorDesc = 'User is not allowed to create an item';
-                $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
             } else {
                 if (empty($userData['folders_list']) === false) {
                     $userData['folders_list'] = explode(',', $userData['folders_list']);
@@ -304,9 +305,20 @@ class ItemController extends BaseController
                         $ret = $itemModel->addItem(
                             $arrItemParams
                         );
-                        $responseData = json_encode($ret);
+                        if (($ret['error'] ?? false) === true) {
+                            $strErrorDesc = (string) ($ret['error_message'] ?? 'Item creation failed');
+                            $strErrorHeader = (string) ($ret['error_header'] ?? 'HTTP/1.1 422 Unprocessable Entity');
+                        } else {
+                            // 201 Created + Location of the new resource (path-absolute reference)
+                            $responseData = json_encode($ret);
+                            $intSuccessStatus = 201;
+                            $requestPath = (string) parse_url($request->getRequestUri(), PHP_URL_PATH);
+                            $arrSuccessHeaders[] = 'Location: '
+                                . preg_replace('/create$/', 'get', $requestPath)
+                                . '?id=' . (int) $ret['newId'];
+                        }
                     }
-                
+
                 } else {
                     $strErrorDesc = 'Data not consistent';
                     $strErrorHeader = 'HTTP/1.1 400 Bad Request';
@@ -314,20 +326,18 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: POST';
         }
 
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                array_merge(['Content-Type: application/json', $this->statusLine($intSuccessStatus)], $arrSuccessHeaders)
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
         }
     }
     //end addAction()
@@ -347,8 +357,11 @@ class ItemController extends BaseController
         $showItem = false;
         $sqlExtra = 'WHERE i.deleted_at IS NULL';
         $sqlLimit = 0;
+        $sqlOffset = 0;
         $responseData = '';
         $strErrorHeader = '';
+        $arrErrorHeaders = [];
+        $arrSuccessHeaders = [];
         // Sanitize folder/item IDs — already filtered by index.php, normalize to strict integers
         $folderAccessModel = new FolderAccessModel();
         $safeFolders = implode(
@@ -384,6 +397,7 @@ class ItemController extends BaseController
                 $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
                     ? min((int) $arrQueryStringParams['limit'], 500)
                     : 50;
+                $sqlOffset = max(0, (int) ($arrQueryStringParams['offset'] ?? 0));
             } else if (isset($arrQueryStringParams['description']) === true) {
                 // build sql where clause by DESCRIPTION
                 $isLikeDesc = isset($arrQueryStringParams['like']) && (int) $arrQueryStringParams['like'] === 1;
@@ -394,12 +408,13 @@ class ItemController extends BaseController
                     $escapedDesc = DB::escape($arrQueryStringParams['description']);
                 }
                 $sqlExtra .= ' AND i.description ' . ($isLikeDesc ? 'LIKE ' : '= ') . $escapedDesc . $sql_constraint;
+                $sqlLimit = isset($arrQueryStringParams['limit']) && (int) $arrQueryStringParams['limit'] > 0
+                    ? min((int) $arrQueryStringParams['limit'], 500)
+                    : 50;
+                $sqlOffset = max(0, (int) ($arrQueryStringParams['offset'] ?? 0));
             } else {
                 // Send error
-                $this->sendOutput(
-                    json_encode(['error' => 'Item id, label or description is mandatory']),
-                    ['Content-Type: application/json', 'HTTP/1.1 401 Expected parameters not provided']
-                );
+                $this->sendProblem(400, 'Item id, label or description is mandatory');
                 return;
             }
 
@@ -413,8 +428,12 @@ class ItemController extends BaseController
                     $strErrorDesc = 'Invalid session or user keys not found';
                     $strErrorHeader = 'HTTP/1.1 401 Unauthorized';
                 } else {
-                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem);
+                    $arrItems = $itemModel->getItems($sqlExtra, $sqlLimit, $userPrivateKey, $userData['id'], $showItem, $sqlOffset);
                     $responseData = json_encode($arrItems);
+                    // Pagination contract only applies to searches (a get-by-id is a single resource)
+                    if ($showItem === false) {
+                        $arrSuccessHeaders[] = 'X-Total-Count: ' . $itemModel->countItems($sqlExtra);
+                    }
                 }
             } catch (Error $e) {
                 error_log('ItemController::getAction error: ' . $e->getMessage());
@@ -423,20 +442,18 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                array_merge(['Content-Type: application/json', 'HTTP/1.1 200 OK'], $arrSuccessHeaders)
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
         }
     }
     //end getAction()
@@ -460,10 +477,7 @@ class ItemController extends BaseController
         if (strtoupper($requestMethod) === 'GET') {
             // Check if URL parameter is provided
             if (isset($arrQueryStringParams['url']) === false || empty($arrQueryStringParams['url']) === true) {
-                $this->sendOutput(
-                    json_encode(['error' => 'URL parameter is mandatory']),
-                    ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
-                );
+                $this->sendProblem(400, 'URL parameter is mandatory');
                 return;
             }
 
@@ -543,12 +557,8 @@ class ItemController extends BaseController
                         ];
                     }
 
-                    if (!empty($ret)) {
-                        $responseData = json_encode($ret);
-                    } else {
-                        $strErrorDesc = 'No items found with this URL';
-                        $strErrorHeader = 'HTTP/1.1 204 No Content';
-                    }
+                    // Empty collection → 200 + [] (a 204 must not carry a body — RFC 9110)
+                    $responseData = json_encode($ret);
                 }
             } catch (Error $e) {
                 error_log('ItemController error: ' . $e->getMessage());
@@ -557,7 +567,8 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // Send output
@@ -567,10 +578,7 @@ class ItemController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end findByUrlAction()
@@ -597,10 +605,7 @@ class ItemController extends BaseController
         if (strtoupper($requestMethod) === 'GET') {
             // Check if item ID is provided
             if (!isset($arrQueryStringParams['id']) || empty($arrQueryStringParams['id'])) {
-                $this->sendOutput(
-                    json_encode(['error' => 'Item id is mandatory']),
-                    ['Content-Type: application/json', 'HTTP/1.1 400 Bad Request']
-                );
+                $this->sendProblem(400, 'Item id is mandatory');
                 return;
             }
 
@@ -681,7 +686,8 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
@@ -691,10 +697,7 @@ class ItemController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end getOtpAction()
@@ -729,7 +732,8 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
@@ -739,10 +743,7 @@ class ItemController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end allTagsAction()
@@ -869,7 +870,8 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: PUT';
         }
 
         // send output
@@ -879,10 +881,7 @@ class ItemController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end updateAction()
@@ -972,7 +971,8 @@ class ItemController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: DELETE';
         }
 
         // send output
@@ -982,10 +982,7 @@ class ItemController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end deleteAction()

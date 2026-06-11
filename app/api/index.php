@@ -64,6 +64,7 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE');
 header('Access-Control-Max-Age: 3600');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+header('Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
@@ -119,6 +120,20 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 // Do initial checks
 $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
+
+// Machine-readable API contract (OpenAPI 3.1) — no JWT required, gated by the api setting
+if (isset($uri[0]) && $uri[0] === 'openapi.json') {
+    if ($apiStatus['error'] === false) {
+        header('Content-Type: application/json; charset=UTF-8');
+        readfile(API_ROOT_PATH . '/openapi.json');
+    } else {
+        errorHdl(
+            $apiStatus['error_header'],
+            json_encode(['error' => $apiStatus['error_message']])
+        );
+    }
+    exit;
+}
 
 // Authorization handler
 if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken')) {

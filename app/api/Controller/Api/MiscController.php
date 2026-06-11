@@ -49,6 +49,7 @@ class MiscController extends BaseController
         } else {
             $strErrorDesc = 'Method not supported';
             $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET, POST';
         }
 
         // send output
@@ -58,10 +59,7 @@ class MiscController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]), 
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
 }

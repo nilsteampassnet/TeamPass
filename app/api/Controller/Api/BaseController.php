@@ -29,11 +29,85 @@ use Symfony\Component\HttpFoundation\Request AS symfonyRequest;
 class BaseController
 {
     /**
+     * Standard reason phrases for the HTTP status codes used by the API (RFC 9110).
+     */
+    public const HTTP_REASONS = [
+        200 => 'OK',
+        201 => 'Created',
+        204 => 'No Content',
+        400 => 'Bad Request',
+        401 => 'Unauthorized',
+        403 => 'Forbidden',
+        404 => 'Not Found',
+        405 => 'Method Not Allowed',
+        422 => 'Unprocessable Entity',
+        429 => 'Too Many Requests',
+        500 => 'Internal Server Error',
+        503 => 'Service Unavailable',
+    ];
+
+    /**
      * __call magic method.
      */
     public function __call($name, $arguments)
     {
-        $this->sendOutput('', array('HTTP/1.1 404 Not Found'));
+        $this->sendProblem(404, 'Unknown route');
+    }
+
+    /**
+     * Build a status line with the standard reason phrase (RFC 9110 — custom
+     * reason phrases are vestigial and must not carry information).
+     *
+     * @param int $status HTTP status code
+     * @return string
+     */
+    protected function statusLine(int $status): string
+    {
+        return 'HTTP/1.1 ' . $status . ' ' . (self::HTTP_REASONS[$status] ?? 'Error');
+    }
+
+    /**
+     * Send an RFC 9457 application/problem+json error response.
+     *
+     * The legacy 'error' member is kept alongside 'title'/'detail' so existing
+     * clients (browser extension, scripts) keep working for one major version.
+     *
+     * @param int    $status       HTTP status code
+     * @param string $detail       Human-readable explanation of the error
+     * @param array  $extraHeaders Additional headers (e.g. 'Allow: GET' on 405)
+     */
+    protected function sendProblem(int $status, string $detail, array $extraHeaders = []): void
+    {
+        $this->sendOutput(
+            json_encode([
+                'type' => 'about:blank',
+                'title' => self::HTTP_REASONS[$status] ?? 'Error',
+                'status' => $status,
+                'detail' => $detail,
+                'error' => $detail,
+            ]),
+            array_merge(
+                ['Content-Type: application/problem+json; charset=UTF-8', $this->statusLine($status)],
+                $extraHeaders
+            )
+        );
+    }
+
+    /**
+     * Send a problem response from a legacy 'HTTP/1.1 <code> <text>' header string
+     * (models still return error_header strings) — the status code is extracted
+     * and the reason phrase replaced by the standard one.
+     *
+     * @param string $statusHeader Legacy status line, e.g. 'HTTP/1.1 404 Not Found'
+     * @param string $detail       Human-readable explanation of the error
+     * @param array  $extraHeaders Additional headers
+     */
+    protected function sendProblemFromHeader(string $statusHeader, string $detail, array $extraHeaders = []): void
+    {
+        $status = preg_match('/\b([1-5]\d{2})\b/', $statusHeader, $matches) === 1
+            ? (int) $matches[1]
+            : 500;
+        $this->sendProblem($status, $detail, $extraHeaders);
     }
 
     /**

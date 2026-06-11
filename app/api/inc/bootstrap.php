@@ -184,17 +184,38 @@ function verifyAuth(): string
 
 
 /**
- * Send error output
+ * Send error output as RFC 9457 application/problem+json.
  *
- * @param string $errorHeader
- * @param string $errorValues
+ * Accepts the legacy (status line, json body) pair used across the router and
+ * rebuilds a problem document; the legacy 'error' member is kept alongside
+ * 'title'/'detail' for backward compatibility.
+ *
+ * @param string $errorHeader Legacy status line, e.g. 'HTTP/1.1 403 Forbidden'
+ * @param string $errorValues Legacy JSON body, e.g. '{"error":"..."}'
  * @return void
  */
 function errorHdl(string $errorHeader, string $errorValues)
 {
     header_remove('Set-Cookie');
 
-    header($errorHeader);
+    $status = preg_match('/\b([1-5]\d{2})\b/', $errorHeader, $matches) === 1
+        ? (int) $matches[1]
+        : 500;
+    $title = BaseController::HTTP_REASONS[$status] ?? 'Error';
 
-    echo $errorValues;
+    $decoded = json_decode($errorValues, true);
+    $detail = is_array($decoded) && isset($decoded['error'])
+        ? (string) $decoded['error']
+        : $errorValues;
+
+    header('HTTP/1.1 ' . $status . ' ' . $title);
+    header('Content-Type: application/problem+json; charset=UTF-8');
+
+    echo json_encode([
+        'type' => 'about:blank',
+        'title' => $title,
+        'status' => $status,
+        'detail' => $detail,
+        'error' => $detail,
+    ]);
 }

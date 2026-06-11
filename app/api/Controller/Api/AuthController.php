@@ -85,7 +85,8 @@ class AuthController extends BaseController
 
         } else {
             $strErrorDesc = 'Method '.$requestMethod.' not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: POST';
         }
 
         // send output
@@ -95,10 +96,7 @@ class AuthController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
 
@@ -161,7 +159,8 @@ class AuthController extends BaseController
 
         } else {
             $strErrorDesc = 'Method '.$requestMethod.' not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: POST';
         }
 
         // send output
@@ -171,10 +170,7 @@ class AuthController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
 }
