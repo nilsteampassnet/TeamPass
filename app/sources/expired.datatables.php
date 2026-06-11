@@ -71,7 +71,7 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if (
-    $checkUserAccess->userAccessPage('folders') === false ||
+    $checkUserAccess->userAccessPage('utilities.renewal') === false ||
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
@@ -93,17 +93,100 @@ set_time_limit(0);
 
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 //Columns name
-$aColumns = ['a.item_id', 'i.label', 'a.del_value', 'i.id_tree'];
-$aSortTypes = ['asc', 'desc'];
+$aColumns = ['i.label', 'expiration_date', 'n.title'];
+$aSortTypes = ['ASC', 'DESC'];
 //init SQL variables
-$sWhere = ' WHERE a.del_type = 2';
 $sOrder = $sLimit = '';
+
+$draw = (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT);
+$emptyOutput = [
+    'draw' => $draw,
+    'recordsTotal' => 0,
+    'recordsFiltered' => 0,
+    'data' => [],
+    'sEcho' => $draw,
+    'iTotalRecords' => 0,
+    'iTotalDisplayRecords' => 0,
+    'aaData' => [],
+];
+
+if ((int) ($SETTINGS['activate_expiration'] ?? 0) !== 1) {
+    echo json_encode($emptyOutput);
+    exit;
+}
+
+$visibleFolders = $session->get('user-accessible_folders');
+if (is_array($visibleFolders) === false || empty($visibleFolders) === true) {
+    echo json_encode($emptyOutput);
+    exit;
+}
+
+$visibleFolders = array_values(
+    array_unique(
+        array_map(
+            'intval',
+            array_diff(
+                $visibleFolders,
+                is_array($session->get('user-forbiden_personal_folders')) === true ? $session->get('user-forbiden_personal_folders') : []
+            )
+        )
+    )
+);
+
+if (empty($visibleFolders) === true) {
+    echo json_encode($emptyOutput);
+    exit;
+}
+
 // Is a date sent?
 $dateCriteria = $request->query->get('dateCriteria');
 if ($dateCriteria !== null && !empty($dateCriteria)) {
-    $sWhere .= ' AND a.del_value < ' . round(filter_var($dateCriteria, FILTER_SANITIZE_NUMBER_INT) / 1000, 0);
+    $dateCriteria = (int) round((int) filter_var($dateCriteria, FILTER_SANITIZE_NUMBER_INT) / 1000, 0);
+    $targetExpirationTimestamp = $dateCriteria + TP_ONE_DAY_SECONDS - 1;
+} else {
+    $targetExpirationTimestamp = time();
 }
-//echo $sWhere;
+
+$lastRelevantDateSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+$expirationDateSql = '(' . $lastRelevantDateSql . ' + (n.renewal_period * ' . TP_ONE_DAY_SECONDS . '))';
+$fromWhereSql = '
+    FROM ' . prefixTable('items') . ' AS i
+    INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+    LEFT JOIN (
+        SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+        FROM ' . prefixTable('log_items') . '
+        WHERE action = %s
+        OR (action = %s AND raison LIKE %s)
+        GROUP BY id_item
+    ) AS l ON (l.id_item = i.id)
+    WHERE i.inactif = %i
+    AND i.deleted_at IS NULL
+    AND i.id_tree IN %ls
+    AND n.renewal_period > %i
+    AND ' . $lastRelevantDateSql . ' > %i
+    AND ' . $expirationDateSql . ' <= %i';
+$queryParams = [
+    'at_creation',
+    'at_modification',
+    'at_pw%',
+    0,
+    $visibleFolders,
+    0,
+    0,
+    (int) $targetExpirationTimestamp,
+];
+$baseFromWhereSql = $fromWhereSql;
+$baseQueryParams = $queryParams;
+
+// Filtering
+$search = $request->query->all('search');
+$searchValue = is_array($search) === true && isset($search['value']) === true ? trim((string) $search['value']) : '';
+if ($searchValue !== '') {
+    $fromWhereSql .= ' AND (i.label LIKE %ss OR n.title LIKE %ss)';
+    $queryParams[] = $searchValue;
+    $queryParams[] = $searchValue;
+}
+
 /* BUILD QUERY */
 //Paging
 $sLimit = '';
@@ -118,109 +201,50 @@ if ($request->query->has('order')) {
     $order = $request->query->all('order');
 
     // Vérifiez si la direction 'dir' est définie et est valide
-    if (isset($order[0]['dir']) && in_array($order[0]['dir'], $aSortTypes)) {
-        $sOrder = 'ORDER BY ';
+    if (isset($order[0]['dir']) && in_array(strtoupper((string) $order[0]['dir']), $aSortTypes, true)) {
         $columnIndex = filter_var($order[0]['column'], FILTER_SANITIZE_NUMBER_INT);
 
         if (array_key_exists($columnIndex, $aColumns)) {
-            $sOrder .= $aColumns[$columnIndex] . ' ' . $order[0]['dir'];
-        }
-
-        // Supprimez la virgule finale si elle existe
-        $sOrder = rtrim($sOrder, ', ');
-
-        if ($sOrder === 'ORDER BY') {
-            $sOrder = '';
+            $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . strtoupper((string) $order[0]['dir']);
         }
     }
 }
 
-/*
-   * Filtering
-   * NOTE this does not match the built-in DataTables filtering which does it
-   * word by word on any field. It's possible to do here, but concerned about efficiency
-   * on very large tables, and MySQL's regex functionality is very limited
-*/
-// Vérifiez si 'letter' existe dans la requête GET
-if ($request->query->has('letter')) {
-    $letter = $request->query->filter('letter', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-    if ($letter !== '' && $letter !== 'None') {
-        $sWhere .= ' AND ';
-        $sWhere .= $aColumns[1] . " LIKE '" . $letter . "%' OR ";
-        $sWhere .= $aColumns[2] . " LIKE '" . $letter . "%' OR ";
-        $sWhere .= $aColumns[3] . " LIKE '" . $letter . "%' ";
-    }
-}
-
-// Si 'letter' n'est pas défini ou est vide, vérifiez 'search[value]'
-if (!isset($letter) || $letter === '') {
-    if ($request->query->has('search[value]')) {
-        $searchValue = $request->query->filter('search[value]', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-        if ($searchValue !== '') {
-            $sWhere = ' AND ';
-            $sWhere .= $aColumns[1] . " LIKE '" . $searchValue . "%' OR ";
-            $sWhere .= $aColumns[2] . " LIKE '" . $searchValue . "%' OR ";
-            $sWhere .= $aColumns[3] . " LIKE '" . $searchValue . "%' ";
-        }
-    }
-}
-
+$totalCountSql = 'SELECT COUNT(*) FROM (SELECT i.id ' . $baseFromWhereSql . ') AS renewal_items';
+$filteredCountSql = 'SELECT COUNT(*) FROM (SELECT i.id ' . $fromWhereSql . ') AS renewal_items';
+$iTotal = (int) DB::queryFirstField($totalCountSql, ...$baseQueryParams);
+$iFilteredTotal = (int) DB::queryFirstField($filteredCountSql, ...$queryParams);
 $rows = DB::query(
-    'SELECT a.item_id, i.label, a.del_value, i.id_tree
-    FROM ' . prefixTable('automatic_del') . ' AS a
-    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = a.item_id)' .
-    $sWhere.
-    (string) $sOrder
+    'SELECT i.label, i.id_tree, ' . $expirationDateSql . ' AS expiration_date ' .
+    $fromWhereSql .
+    $sOrder .
+    $sLimit,
+    ...$queryParams
 );
-$iTotal = DB::count();
-$rows = DB::query(
-    'SELECT a.item_id, i.label, a.del_value, i.id_tree
-    FROM ' . prefixTable('automatic_del') . ' AS a
-    INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = a.item_id)' .
-        $sWhere .
-        $sLimit
-);
-$iFilteredTotal = DB::count();
-/*
-   * Output
-*/
-$sOutput = '{';
-$sOutput .= '"sEcho": '. (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT) . ', ';
-$sOutput .= '"iTotalRecords": '.$iTotal.', ';
-$sOutput .= '"iTotalDisplayRecords": '.$iTotal.', ';
-$sOutput .= '"aaData": ';
-if ($iTotal > 0) {
-    $sOutput .= '[';
-} else {
-    $sOutput .= '';
-}
 
+$data = [];
 foreach ($rows as $record) {
-    // start the line
-    $sOutput .= '[';
-    // Column 1
-    $sOutput .= '"<i class=\"fas fa-external-link-alt pointer text-primary mr-2\" onclick=\"showItemCard($(this))\" data-item-id=\"' . $record['item_id'] . '\"  data-item-tree-id=\"' . $record['id_tree'] . '\"></i>", ';
-    // Column 2
-    $sOutput .= '"' . $record['label'] . '", ';
-    // Column 3
-    $sOutput .= '"' . date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['del_value']) . '", ';
-    // Column 4
     $path = [];
     $treeDesc = $tree->getPath($record['id_tree'], true);
     foreach ($treeDesc as $t) {
-        array_push($path, $t->title);
+        $path[] = htmlspecialchars((string) $t->title, ENT_QUOTES, 'UTF-8');
     }
-    $sOutput .= '"' . implode('<i class=\"fas fa-angle-right ml-1 mr-1\"></i>', $path) . '"],';
-}
 
-if (count($rows) > 0) {
-    $sOutput = substr_replace($sOutput, '', -1);
-    $sOutput .= '] }';
-} else {
-    $sOutput .= '[] }';
+    $data[] = [
+        htmlspecialchars((string) $record['label'], ENT_QUOTES, 'UTF-8'),
+        date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $record['expiration_date']),
+        implode('<i class="fas fa-angle-right ml-1 mr-1"></i>', $path),
+    ];
 }
 
 // finalize output
-echo (string) $sOutput;
+echo json_encode([
+    'draw' => $draw,
+    'recordsTotal' => $iTotal,
+    'recordsFiltered' => $iFilteredTotal,
+    'data' => $data,
+    'sEcho' => $draw,
+    'iTotalRecords' => $iTotal,
+    'iTotalDisplayRecords' => $iFilteredTotal,
+    'aaData' => $data,
+]);
