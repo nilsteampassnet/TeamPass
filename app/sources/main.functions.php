@@ -693,13 +693,23 @@ function cacheTableRefresh(): void
     // reload date
         $rows = DB::query(
             'SELECT i.*,
-                IFNULL(l.id_user, 0) AS id_user,
-                IFNULL(l.date, 0) AS date
+                IFNULL(c.id_user, 0) AS id_user,
+                IFNULL(l.date, IFNULL(c.date, 0)) AS date
             FROM ' . prefixTable('items') . ' as i
-            LEFT JOIN ' . prefixTable('log_items') . ' as l
-                ON (l.id_item = i.id AND l.action = %s)
+            LEFT JOIN ' . prefixTable('log_items') . ' as c
+                ON (c.id_item = i.id AND c.action = %s)
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s
+                OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON (l.id_item = i.id)
             WHERE i.inactif = %i',
             'at_creation',
+            'at_creation',
+            'at_modification',
+            'at_pw%',
             0
         );
 
@@ -783,9 +793,22 @@ function cacheTableUpdate(?int $ident = null): void
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
-        'SELECT label, description, id_tree, perso, restricted_to, login, url
-        FROM ' . prefixTable('items') . '
-        WHERE id=%i',
+        'SELECT i.label, i.description, i.id_tree, i.perso, i.restricted_to, i.login, i.url,
+            n.renewal_period,
+            IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
+        FROM ' . prefixTable('items') . ' AS i
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s
+            OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)
+        WHERE i.id=%i',
+        'at_creation',
+        'at_modification',
+        'at_pw%',
         $ident
     );
     // Get all TAGS
@@ -833,6 +856,8 @@ function cacheTableUpdate(?int $ident = null): void
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
             'author' => $session->get('user-id'),
+            'renewal_period' => $data['renewal_period'] ?? '0',
+            'timestamp' => $data['date'] ?? '0',
         ],
         'id = %i',
         $ident
@@ -859,12 +884,21 @@ function cacheTableAdd(?int $ident = null): void
     // get new value from db
     $data = DB::queryFirstRow(
         'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url,
-            IFNULL(l.date, 0) AS date
+            n.renewal_period,
+            IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
         FROM ' . prefixTable('items') . ' as i
-        LEFT JOIN ' . prefixTable('log_items') . ' as l
-            ON (l.id_item = i.id AND l.action = %s)
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s
+            OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)
         WHERE i.id = %i',
         'at_creation',
+        'at_modification',
+        'at_pw%',
         $ident
     );
     // Get all TAGS
@@ -913,6 +947,7 @@ function cacheTableAdd(?int $ident = null): void
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
             'author' => $globalsUserId,
+            'renewal_period' => $data['renewal_period'] ?? '0',
             'timestamp' => $data['date'],
         ]
     );
