@@ -2471,10 +2471,24 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $excludeUserId = (int) $session->get('user-id');
             }
 
+            $nowTime = time();
             $connectedCount = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-                time(),
-                $excludeUserId
+                'SELECT COUNT(*)
+                 FROM ' . prefixTable('users') . ' u
+                 WHERE u.id != %i
+                 AND (
+                    u.session_end >= %i
+                    OR EXISTS (
+                        SELECT 1
+                        FROM ' . prefixTable('api_sessions') . ' aps
+                        WHERE aps.user_id = u.id
+                            AND aps.revoked_at IS NULL
+                            AND aps.expires_at >= %i
+                    )
+                 )',
+                $excludeUserId,
+                $nowTime,
+                $nowTime
             );
 
             echo prepareExchangedData(['error' => false, 'connected_count' => $connectedCount], 'encode');

@@ -7640,6 +7640,47 @@ function triggerBackgroundHandler(): void
 }
 
 /**
+ * Invalidate all API session material for a user.
+ *
+ * Revokes every live per-token session in teampass_api_sessions (revoked_at) so
+ * the matching JWTs are rejected on every API endpoint, and clears the legacy
+ * single-row teampass_api session fields used by tokens issued before the
+ * per-token table existed. The permanent API configuration (permissions and API
+ * key) is left untouched.
+ *
+ * @param integer $userId User identifier whose API sessions must be revoked.
+ * @return void
+ */
+function tpInvalidateUserApiSession(int $userId): void
+{
+    if ($userId <= 0) {
+        return;
+    }
+
+    // Revoke every live per-token session (current model used by JWT validation)
+    DB::update(
+        prefixTable('api_sessions'),
+        ['revoked_at' => time()],
+        'user_id = %i AND revoked_at IS NULL',
+        $userId
+    );
+
+    // Clear the legacy single-row session (tokens issued before api_sessions existed)
+    DB::update(
+        prefixTable('api'),
+        array(
+            'encrypted_private_key' => null,
+            'session_key_salt' => null,
+            'session_key' => null,
+            'session_aes_key' => null,
+            'timestamp' => '',
+        ),
+        'user_id = %i',
+        $userId
+    );
+}
+
+/**
  * Flush the HTTP response to the client and free the PHP-FPM worker early.
  *
  * Under PHP-FPM, fastcgi_finish_request() sends the buffered response to the
