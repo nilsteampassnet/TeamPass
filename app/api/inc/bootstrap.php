@@ -145,7 +145,10 @@ function apiIsEnabled(): string
 
 
 /**
- * Check if connection is authorized
+ * Check if connection is authorized.
+ *
+ * Single verified decode: on success the signature-checked JWT payload is
+ * returned in 'data' — callers must use it instead of re-parsing the token.
  *
  * @return string
  */
@@ -162,7 +165,8 @@ function verifyAuth(): string
         ]);
     }
 
-    if (is_jwt_valid($bearer_token) !== true) {
+    $payload = validate_and_get_jwt_payload($bearer_token);
+    if ($payload === null) {
         return json_encode([
             'error' => true,
             'error_message' => 'Invalid or expired token',
@@ -171,6 +175,7 @@ function verifyAuth(): string
     }
 
     return json_encode([
+        'data' => $payload,
         'error' => false,
         'error_message' => '',
         'error_header' => '',
@@ -179,44 +184,112 @@ function verifyAuth(): string
 
 
 /**
- * Get the payload from bearer
+ * Sliding-window rate limit check (per user id AND per client IP).
  *
- * @return string
+ * Uses the api_rate_limit table with the classic two-bucket sliding-window
+ * counter: rate = previous-minute hits weighted by the remaining overlap +
+ * current-minute hits. Counters are upserted atomically; buckets older than
+ * 3 minutes are dropped opportunistically.
+ *
+ * @param int    $userId         Authenticated user id (0 to skip the user scope)
+ * @param string $clientIp       Trusted client IP ('' to skip the IP scope)
+ * @param int    $limitPerMinute Allowed requests per minute (<= 0 disables the check)
+ * @return array{allowed: bool, retry_after: int}
  */
-function getDataFromToken(): string
+function teampassApiRateLimitCheck(int $userId, string $clientIp, int $limitPerMinute): array
 {
-    include_once API_ROOT_PATH . '/inc/jwt_utils.php';
-    $bearer_token = get_bearer_token();
-
-    if (empty($bearer_token) === true) {
-        return json_encode([
-            'error' => true,
-            'error_message' => 'Missing Authorization header',
-            'error_header' => 'HTTP/1.1 401 Unauthorized',
-        ]);
+    if ($limitPerMinute <= 0) {
+        return ['allowed' => true, 'retry_after' => 0];
     }
 
-    return json_encode([
-        'data' => get_bearer_data($bearer_token),
-        'error' => false,
-        'error_message' => '',
-        'error_header' => '',
-    ]);
+    $now = time();
+    $windowStart = $now - ($now % 60);
+    $elapsed = $now - $windowStart;
+
+    $scopes = [];
+    if ($userId > 0) {
+        $scopes[] = 'u:' . $userId;
+    }
+    if ($clientIp !== '') {
+        $scopes[] = 'ip:' . $clientIp;
+    }
+
+    $allowed = true;
+    foreach ($scopes as $scopeKey) {
+        DB::query(
+            'INSERT INTO ' . prefixTable('api_rate_limit') . ' (scope_key, window_start, hits)
+            VALUES (%s, %i, 1)
+            ON DUPLICATE KEY UPDATE hits = hits + 1',
+            $scopeKey,
+            $windowStart
+        );
+
+        $buckets = DB::query(
+            'SELECT window_start, hits FROM ' . prefixTable('api_rate_limit') . '
+            WHERE scope_key = %s AND window_start >= %i',
+            $scopeKey,
+            $windowStart - 60
+        );
+
+        $currentHits = $previousHits = 0;
+        foreach ($buckets as $bucket) {
+            if ((int) $bucket['window_start'] === $windowStart) {
+                $currentHits = (int) $bucket['hits'];
+            } else {
+                $previousHits = (int) $bucket['hits'];
+            }
+        }
+
+        $effectiveRate = $previousHits * ((60 - $elapsed) / 60) + $currentHits;
+        if ($effectiveRate > $limitPerMinute) {
+            $allowed = false;
+        }
+    }
+
+    // Opportunistic cleanup of stale buckets (~2% of requests)
+    if (random_int(1, 50) === 1) {
+        DB::delete(prefixTable('api_rate_limit'), 'window_start < %i', $windowStart - 180);
+    }
+
+    return [
+        'allowed' => $allowed,
+        'retry_after' => $allowed ? 0 : (60 - $elapsed),
+    ];
 }
 
-
 /**
- * Send error output
+ * Send error output as RFC 9457 application/problem+json.
  *
- * @param string $errorHeader
- * @param string $errorValues
+ * Accepts the legacy (status line, json body) pair used across the router and
+ * rebuilds a problem document; the legacy 'error' member is kept alongside
+ * 'title'/'detail' for backward compatibility.
+ *
+ * @param string $errorHeader Legacy status line, e.g. 'HTTP/1.1 403 Forbidden'
+ * @param string $errorValues Legacy JSON body, e.g. '{"error":"..."}'
  * @return void
  */
 function errorHdl(string $errorHeader, string $errorValues)
 {
     header_remove('Set-Cookie');
 
-    header($errorHeader);
+    $status = preg_match('/\b([1-5]\d{2})\b/', $errorHeader, $matches) === 1
+        ? (int) $matches[1]
+        : 500;
+    $title = BaseController::HTTP_REASONS[$status] ?? 'Error';
 
-    echo $errorValues;
+    $decoded = json_decode($errorValues, true);
+    $detail = is_array($decoded) && isset($decoded['error'])
+        ? (string) $decoded['error']
+        : $errorValues;
+
+    header('HTTP/1.1 ' . $status . ' ' . $title);
+    header('Content-Type: application/problem+json; charset=UTF-8');
+
+    echo json_encode([
+        'type' => 'about:blank',
+        'title' => $title,
+        'status' => $status,
+        'detail' => $detail,
+        'error' => $detail,
+    ]);
 }

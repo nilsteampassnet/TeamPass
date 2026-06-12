@@ -13,14 +13,37 @@
 
 ## Versioning
 
-Routes are available both with and without a version prefix — `BaseController::getUriSegments()` strips the `/vN/` segment transparently:
+Routes are available both with and without the `v1` prefix — `BaseController::getUriSegments()` strips only `/v1/`:
 
 ```
 GET /api/item/get          # legacy, treated as v1
 GET /api/v1/item/get       # explicit v1
+GET /api/v2/item/get       # unknown version → 404 "Unknown route"
 ```
 
 All responses include `X-Api-Version: 1`.
+
+**OpenAPI contract:** `GET /api/v1/openapi.json` serves the machine-readable OpenAPI 3.1 spec (static file `app/api/openapi.json`, no JWT required, gated by the global `api` setting). The sentinel test `tests/Unit/Api/OpenApiContractTest.php` keeps the spec and the controllers in sync (every documented path ↔ a `*Action` method).
+
+---
+
+## Error envelope (RFC 9457)
+
+All error responses use `Content-Type: application/problem+json`:
+
+```json
+{ "type": "about:blank", "title": "Bad Request", "status": 400, "detail": "<message>", "error": "<message>" }
+```
+
+The legacy `error` member duplicates `detail` and is kept for backward compatibility (browser extension, scripts) for one major version. Status lines use standard reason phrases only. `405` responses carry an `Allow:` header listing the supported methods. Empty collections return `200` + `[]` (never a 204 with a body). Exposed headers for browser clients: `Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow`.
+
+---
+
+## Transport & throttling
+
+**HTTPS enforcement** — setting `api_require_https` (Settings → API; **`1` on new installs, `0` after an upgrade** so existing HTTP integrations keep working — a health-check warning is raised instead). When enabled, any API request over plain HTTP gets `403` + problem body. `X-Forwarded-Proto: https` is honoured for TLS-terminating reverse proxies.
+
+**Rate limiting** — setting `api_rate_limit_per_minute` (Settings → API; **`120` on new installs, `0` = disabled after an upgrade**). Sliding-window counter applied **per user and per IP** on every authenticated endpoint, after JWT validation (`teampass_api_rate_limit` table). Above the limit: `429` + `Retry-After: <seconds>` + problem body. `/authorize*` stays covered by the anti-bruteforce lock instead.
 
 ---
 
@@ -81,12 +104,25 @@ Credentials must be in the body — query string is rejected (400). The token mu
 
 **Restrictions:** only `auth_type = 'oauth2'` users are accepted; local/LDAP users are rejected (they keep using `/api/authorize`). Same bruteforce protection and `tp_src=api` logging as the password path. On success, `teampass_api_tokens.last_used_at` is updated.
 
+### `POST /api/auth/logout`
+
+Revokes the **current API session** (requires `Authorization: Bearer <jwt>`). The `teampass_api_sessions` row matching the token's `jti` is flagged `revoked_at` — the JWT is then rejected with `401` on **every** endpoint until it expires. Legacy tokens without a session row wipe the user's single-row `teampass_api` session instead.
+
+**Response 200:** `{ "error": false, "message": "Session revoked" }`. Only POST is accepted (405 + `Allow: POST` otherwise).
+
+### API sessions (one per token)
+
+Every `/authorize*` call inserts a row in `teampass_api_sessions` keyed by the JWT's `jti`: per-token wrapped private key (`encrypted_private_key` + `session_aes_key`), `key_tempo`, `user_agent`, `created_at`/`expires_at`/`last_used_at`/`revoked_at`. This enables **concurrent API clients on the same account** (each token decrypts with its own session row), per-token revocation, and the **"Active API sessions"** list in the user profile (list/revoke — handlers `list_api_sessions`/`revoke_api_session` in `users.queries.php`; key material is never returned). Per-request check in `api/index.php`: a revoked or expired session row → uniform `401`. Tokens issued before the table existed have no row and fall back to the legacy single-row session until expiry (max 24h). Expired rows are purged opportunistically at each authentication (24h grace).
+
 ### JWT Structure
 
 - Algorithm: HS256
 - Signing key: `api_jwt_secret` in `teampass_misc` (256-bit hex, lazy-generated on first use — **distinct from DB password**)
 - Expiry: `api_token_duration` **minutes** (configurable in Settings → API, default 60). The server computes `exp = now + duration * 60`. The claim is carried in the JWT payload as the raw number so clients can compute `token_expiry = issue_time + api_token_duration * 60 * 1000` ms.
+- Standard claims: `iss` (instance `cpassman_url`), `aud` (`teampass-api`), `iat`, `nbf`, `jti` (random 128-bit). `iss`/`aud` are validated only when present so pre-3.2.1 tokens keep working until expiry. Decode leeway: 60s.
 - Key claims: `id`, `username`, `exp`, `key_tempo`, `is_admin`, `is_manager`, `allowed_to_create`, `allowed_to_read`, `allowed_to_update`, `allowed_to_delete`, `folders_list`
+
+**Per-request revalidation:** `api/index.php` re-reads `disabled`/`deleted_at`/`api.enabled` and overrides `is_admin`, `is_manager` and the 4 CRUD claims from the DB on every request — disabling a user or revoking API rights takes effect immediately, not at token expiry.
 
 **Private key architecture:** User private key is encrypted with a per-session AES-256-GCM key (`session_aes_key`) stored server-side in `teampass_api`. The JWT carries only `key_tempo` (a reference). A stolen JWT alone cannot decrypt the private key.
 
@@ -102,7 +138,9 @@ All require `Authorization: Bearer <jwt>`.
 
 Get item(s) by ID or label.
 
-**Params:** `id` (int) OR `label` (string) OR `description` (string), optional `limit` (default 50, max 500).
+**Params:** `id` (int) OR `label` (string) OR `description` (string), optional `limit` (default 50, max 500) and `offset` (default 0) for searches. Missing all three → `400`.
+
+**Pagination:** label/description searches return `X-Total-Count` (total matches in accessible folders, before per-item sharekey filtering).
 
 **Response:** array of item objects `{ id, label, description, login, email, url, password, path, folder_id, folder_label, has_otp, favicon_url, tags, fields }`.
 
@@ -118,7 +156,7 @@ Get item(s) by ID or label.
 
 Get items in one or more folders.
 
-**Params:** `folders` (comma-separated or JSON array of folder IDs), optional `limit` (default 50, max 500).
+**Params:** `folders` (comma-separated or JSON array of folder IDs), optional `limit` (default unlimited, max 500) and `offset` (default 0; forces `limit=50` if no limit given). Returns `X-Total-Count`; empty result → `200` + `[]`.
 
 **Permissions:** `allowed_to_read`.
 
@@ -130,7 +168,7 @@ Find items by URL match.
 
 **Params:** `url` (string). The `%` and `_` characters are escaped before the LIKE query.
 
-**Response:** array of `{ id, label, login, url, folder_id, has_otp, favicon_url }`.
+**Response:** array of `{ id, label, login, url, folder_id, has_otp, favicon_url }`. Empty result → `200` + `[]`.
 
 **Permissions:** `allowed_to_read`.
 
@@ -171,7 +209,7 @@ Create a new item.
 
 **Custom fields:** `fields` = array of `{ id, value }` (field id + value). Encrypt-before-INSERT for encrypted categories; creator sharekey created synchronously, other users via the `new_item` background task. Only fields tied to the folder are stored; empty values ignored. Requires `item_extra_fields`.
 
-**Response 200:** item object with `id`.
+**Response 201:** `{ error: false, message, newId }` + `Location: /api/v1/item/get?id=<newId>` (path-absolute reference). Validation failures → `422`; missing fields → `400`; folder not allowed / read-only → `403`.
 
 **Permissions:** `allowed_to_create`. Blocked with 403 if folder is read-only for user.
 
@@ -205,7 +243,9 @@ Soft-delete an item.
 
 List all folders accessible to the authenticated user.
 
-**Response:** array of folder objects with hierarchy info.
+**Params:** optional `limit`/`offset` — applied to the **root-level** entries of the hierarchical tree; `X-Total-Count` is the number of root entries.
+
+**Response:** array of folder objects with hierarchy info (`{ id, title, isVisible, childrens[] }`). No accessible folder → `200` + `[]`.
 
 **Permissions:** `allowed_to_read`.
 
@@ -230,9 +270,11 @@ List all folders accessible to the user with label, level, and read-only flag.
 
 Create a new folder.
 
-**Body:** `title`, `parent_id`, `complexity`, `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`, `access_rights`.
+**Body:** `title`, `parent_id`, `complexity` (required → `400` listing missing fields), `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`, `access_rights`.
 
-**Permissions:** `allowed_to_create` + admin/manager checks. Returns 403 if not allowed.
+**Response 201:** `{ error: false, newId }` — no `Location` header (no folder get-by-id endpoint yet). Invalid `complexity`/`access_rights` → `422`.
+
+**Permissions:** `allowed_to_create` + admin/manager checks. Returns 403 if not allowed, or if the user has no accessible folders.
 
 ---
 
@@ -266,13 +308,15 @@ Returns browser extension connection settings.
 
 | Code | Meaning in API context |
 |---|---|
-| 200 | Success |
-| 204 | Empty result (no folders accessible) |
+| 200 | Success (collections return `[]` when empty — 204 is no longer used) |
+| 201 | Resource created (`item/create` adds a `Location` header) |
 | 400 | Missing or invalid parameters |
 | 401 | `"Missing Authorization header"` — no bearer token received (check webserver vhost passes Authorization on GET). `"Invalid or expired token"` — token present but rejected (bad signature, expired, malformed). Match on HTTP 401 status rather than the body string. |
 | 403 | Permission denied (folder read-only, admin required, CRUD rights missing) |
-| 404 | Resource not found |
-| 405 | HTTP method not supported for this endpoint |
+| 404 | Resource not found / unknown route |
+| 405 | HTTP method not supported for this endpoint (`Allow:` header lists supported methods) |
+| 422 | Validation failed (password rules, invalid complexity/access_rights) |
+| 429 | Rate limit exceeded (`api_rate_limit_per_minute`) — `Retry-After` header gives the wait in seconds |
 | 500 | Internal server error (details logged server-side, not returned to client) |
 | 503 | API disabled in TeamPass settings |
 
@@ -316,6 +360,6 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 **Users (admin scope):** create, update, delete, disable, folder_rights.
 
-**Auth:** refresh token (`POST /api/v1/auth/refresh`), logout/revoke (`POST /api/v1/auth/logout`), JWT scopes (`scope=full|extension|mobile|readonly`).
+**Auth:** refresh token (`POST /api/v1/auth/refresh`), JWT scopes (`scope=full|extension|mobile|readonly`). ~~logout/revoke~~ — done (`POST /api/v1/auth/logout` + profile sessions list/revoke).
 
-**Discovery:** unified search (`GET /api/v1/search?q=...`), OpenAPI 3.1 spec (`/api/v1/openapi.json`).
+**Discovery:** unified search (`GET /api/v1/search?q=...`). ~~OpenAPI 3.1 spec~~ — done (`/api/v1/openapi.json`).

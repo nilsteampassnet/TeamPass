@@ -38,15 +38,17 @@ class ItemModel
     /**
      * Get the list of items to return
      *
-     * @param string $sqlExtra
+     * @param string $sqlExtra WHERE clause, may contain MeekroDB placeholders (%s, ...)
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
-     * @param bool $showItem
-     * 
+     * @param bool $showItem Kept for caller compatibility — access is now logged on every path
+     * @param integer $offset Pagination offset — only applied when a limit is set
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
+     *
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0, array $sqlParams = []): array
     {
         // Fetch user's public key once for migration-aware decryption
         $userPublicKey = '';
@@ -75,10 +77,11 @@ class ItemModel
             FROM " . prefixTable('items') . " AS i
             LEFT JOIN " . prefixTable('nested_tree') . " AS t ON (t.id = i.id_tree)
             LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
-            $sqlExtra . 
+            $sqlExtra .
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT ". $limit : '')
-        ); 
+            ($limit > 0 ? " LIMIT " . ($offset > 0 ? $offset . ", " : "") . $limit : ''),
+            ...$sqlParams
+        );
         
         $ret = [];
         foreach ($rows as $row) {
@@ -169,22 +172,44 @@ class ItemModel
                 ]
             );
 
-            // Increase viewed number
-            if ($showItem === true) {
-                logItems(
-                    [],
-                    (int) $row['id'],
-                    $row['label'] ?? '',
-                    (int) $userId,
-                    'at_shown',
-                    ''
-                );
-            }
+            // Audit trail: the decrypted password is returned to the client, so log the
+            // access for every lookup path (id, label, description, inFolders) — not only
+            // get-by-id. logItems() tags API context (tp_src=api) and dedupes within 5s.
+            logItems(
+                [],
+                (int) $row['id'],
+                $row['label'] ?? '',
+                (int) $userId,
+                'at_shown',
+                ''
+            );
         }
 
         return $ret;
     }
-    //end getItems() 
+    //end getItems()
+
+    /**
+     * Count items matching a WHERE clause — pagination total (X-Total-Count).
+     *
+     * The count is taken before the per-item sharekey filtering performed in
+     * getItems(): it is the number of matching items in accessible folders,
+     * not the number of items the user can currently decrypt.
+     *
+     * @param string $sqlExtra WHERE clause referencing the 'i' items alias only,
+     *                         may contain MeekroDB placeholders (%s, ...)
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
+     *
+     * @return int
+     */
+    public function countItems(string $sqlExtra, array $sqlParams = []): int
+    {
+        return (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i ' . $sqlExtra,
+            ...$sqlParams
+        );
+    }
+    //end countItems()
 
     /**
      * Main function to add a new item to the database.
@@ -326,7 +351,8 @@ class ItemModel
             'tags' => (string) ($arrItemParams['tags'] ?? ''),
             'anyoneCanModify' => (int) ($arrItemParams['anyone_can_modify'] ?? 0),
             'url' => (string) ($arrItemParams['url'] ?? ''),
-            'icon' => (string) ($arrItemParams['icon'] ?? ''),
+            // Constrain the icon to safe Font Awesome class characters (letters, digits, space, underscore, hyphen)
+            'icon' => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) ($arrItemParams['icon'] ?? '')),
             'totp' => (string) ($arrItemParams['totp'] ?? ''),
             'favicon_url' => '',
         ];
@@ -1162,7 +1188,7 @@ class ItemModel
                 'login'             => ['db_key' => 'login', 'type' => 'string'],
                 'email'             => ['db_key' => 'email', 'type' => 'string'],
                 'url'               => ['db_key' => 'url', 'type' => 'string'],
-                'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
+                'icon'              => ['db_key' => 'fa_icon', 'type' => 'icon'],
                 'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
                 'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
             ];
@@ -1170,6 +1196,7 @@ class ItemModel
                 if (isset($params[$paramKey])) {
                     $updateData[$def['db_key']] = match($def['type']) {
                         'int'   => (int) $params[$paramKey],
+                        'icon'  => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
                         default => $params[$paramKey],
                     };
                 }

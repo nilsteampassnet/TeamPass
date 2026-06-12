@@ -3817,11 +3817,12 @@ switch ($inputData['type']) {
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
 
-        // Emit WebSocket event for real-time notification
+        // Emit WebSocket event for real-time notification.
+        // Target the item's actual folder (id_tree) instead of the caller-supplied folder_id.
         emitItemEvent(
             'deleted',
             (int) $inputData['itemId'],
-            (int) $inputData['folderId'],
+            (int) ($data['id_tree'] ?? $inputData['folderId']),
             $inputData['label'] ?? '',
             $session->get('user-login') ?? '',
             (int) $session->get('user-id')

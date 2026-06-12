@@ -468,7 +468,8 @@ var tpBckMetaOrphansPurgeNone = "<?php echo addslashes($lang->get('bck_meta_orph
 
     function tpFmtTpVersion(v) {
         v = (v || '').toString().trim();
-        return v !== '' ? v : tpBckVersionUnknown;
+        // Sidecar metadata is untrusted: HTML-encode before any concatenation into markup
+        return v !== '' ? htmlEncode(v) : tpBckVersionUnknown;
     }
 
     function tpShowRestoreIncompatMessage(backupVersion, expectedVersion) {

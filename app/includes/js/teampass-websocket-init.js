@@ -163,14 +163,14 @@
     // Item events
     tpWs.on('item_created', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
-        showNotification('success', L.new_item, '"' + data.label + '" ' + L.item_created_by + ' ' + data.created_by)
+        showNotification('success', L.new_item, '"' + escapeHtml(data.label) + '" ' + L.item_created_by + ' ' + escapeHtml(data.created_by))
         refreshItemsList()
       }
     })
 
     tpWs.on('item_updated', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
-        showNotification('info', L.item_updated, '"' + data.label + '" ' + L.item_updated_by + ' ' + data.updated_by)
+        showNotification('info', L.item_updated, '"' + escapeHtml(data.label) + '" ' + L.item_updated_by + ' ' + escapeHtml(data.updated_by))
         refreshItemsList()
 
         // If the updated item is currently being viewed, reload its details
@@ -183,7 +183,7 @@
             toastr.remove()
             toastr.warning(
               (L.item_modified_while_editing ||
-                'This item was just modified by ' + data.updated_by +
+                'This item was just modified by ' + escapeHtml(data.updated_by) +
                 '. Save or discard your changes before reloading.'),
               L.conflict_warning || 'Edit conflict',
               { timeOut: 0, closeButton: true }
@@ -204,7 +204,7 @@
 
     tpWs.on('item_deleted', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
-        showNotification('warning', L.item_deleted, '"' + data.label + '" ' + L.item_deleted_by + ' ' + data.deleted_by)
+        showNotification('warning', L.item_deleted, '"' + escapeHtml(data.label) + '" ' + L.item_deleted_by + ' ' + escapeHtml(data.deleted_by))
         refreshItemsList()
       }
     })
@@ -212,7 +212,7 @@
     tpWs.on('item_copied', function(data) {
       if (parseInt(data.folder_id) === parseInt(currentFolderId)) {
         showNotification('success', L.new_item,
-          '"' + data.label + '" ' + (L.item_copied_by || 'copied by') + ' ' + data.copied_by)
+          '"' + escapeHtml(data.label) + '" ' + (L.item_copied_by || 'copied by') + ' ' + escapeHtml(data.copied_by))
         refreshItemsList()
       }
     })
@@ -244,7 +244,7 @@
         showNotification('success',
           L.item_now_available || 'Item available',
           (L.item_edition_released || 'Item is now available for editing') +
-          ' (' + data.user_login + ')'
+          ' (' + escapeHtml(data.user_login) + ')'
         )
         window.tpBlockedEditItemId = null
       }
@@ -276,7 +276,7 @@
             $container.find('.item-view-detail-badge').remove()
             toastr.remove()
             toastr.warning(
-              '"' + data.label + '" ' + (L.item_moved_away || 'has been moved to another folder by') + ' ' + data.moved_by,
+              '"' + escapeHtml(data.label) + '" ' + (L.item_moved_away || 'has been moved to another folder by') + ' ' + escapeHtml(data.moved_by),
               L.item_moved || 'Item moved',
               { timeOut: 6000, progressBar: true }
             )
@@ -285,7 +285,7 @@
           } else {
             showNotification('info',
               L.item_moved || 'Item moved',
-              '"' + data.label + '" ' + (L.item_moved_by || 'moved by') + ' ' + data.moved_by
+              '"' + escapeHtml(data.label) + '" ' + (L.item_moved_by || 'moved by') + ' ' + escapeHtml(data.moved_by)
             )
           }
         }
@@ -580,8 +580,8 @@
     if ($row.find('.edition-lock-badge').length > 0) return
 
     var badge = $('<span class="edition-lock-badge badge badge-warning ml-2" ' +
-      'title="' + (L.being_edited_by || 'Being edited by') + ' ' + userLogin + '">' +
-      '<i class="fas fa-lock mr-1"></i>' + userLogin +
+      'title="' + escapeAttribute((L.being_edited_by || 'Being edited by') + ' ' + userLogin) + '">' +
+      '<i class="fas fa-lock mr-1"></i>' + escapeHtml(userLogin) +
       '</span>')
 
     $row.find('.list-item-row-description').first().after(badge)
@@ -608,7 +608,7 @@
     if ($container.find('.edition-lock-detail-badge').length > 0) return
     var badge = $('<div class="edition-lock-detail-badge alert alert-warning py-1 px-2 mt-1 mb-0 ml-2 d-inline-block">' +
       '<i class="fas fa-lock mr-1"></i>' +
-      (L.being_edited_by || 'Being edited by') + ' <strong>' + userLogin + '</strong>' +
+      (L.being_edited_by || 'Being edited by') + ' <strong>' + escapeHtml(userLogin) + '</strong>' +
       '</div>')
     $('#card-item-label').after(badge)
   }

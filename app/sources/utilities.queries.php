@@ -4174,6 +4174,9 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'tasks_log_retention_delay',
         'bck_script_path',
         'bck_script_filename',
+        'api',
+        'api_cors_origins',
+        'api_require_https',
     );
 
     $out = array();
@@ -4370,6 +4373,27 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 'status' => 'success',
                 'title' => $lang->get('health_check_ws_indexes'),
                 'text' => $lang->get('health_status_ok'),
+            );
+        }
+    }
+
+    // API exposure posture (only relevant when the API is enabled)
+    if (isset($tpSettings['api']) && (int) $tpSettings['api'] === 1) {
+        // Default-open CORS: any origin may call the API from a browser context
+        if (trim((string) ($tpSettings['api_cors_origins'] ?? '')) === '') {
+            $checks[] = array(
+                'status' => 'info',
+                'title' => $lang->get('health_check_api_cors_open'),
+                'text' => $lang->get('health_check_api_cors_open_message'),
+            );
+        }
+
+        // Plain-HTTP API: credentials and bearer tokens may travel unencrypted
+        if ((int) ($tpSettings['api_require_https'] ?? 0) !== 1) {
+            $checks[] = array(
+                'status' => 'warning',
+                'title' => $lang->get('health_check_api_https_off'),
+                'text' => $lang->get('health_check_api_https_off_message'),
             );
         }
     }

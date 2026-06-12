@@ -1,0 +1,1499 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "TeamPass REST API",
+        "description": "Collaborative password manager REST API. Authenticate via POST /authorize (login + password + apikey) or POST /authorizeToken (OAuth2 Personal Access Token), then pass the returned JWT as 'Authorization: Bearer <jwt>'. Errors use the RFC 9457 application/problem+json envelope; the legacy 'error' member is kept for backward compatibility.",
+        "version": "1",
+        "license": {
+            "name": "GPL-3.0-only",
+            "identifier": "GPL-3.0-only"
+        }
+    },
+    "servers": [
+        {
+            "url": "/api/v1",
+            "description": "Versioned base path (preferred)"
+        },
+        {
+            "url": "/api",
+            "description": "Legacy unversioned base path (treated as v1)"
+        }
+    ],
+    "security": [
+        {
+            "bearerAuth": []
+        }
+    ],
+    "paths": {
+        "/authorize": {
+            "post": {
+                "operationId": "authorize",
+                "summary": "Get a JWT from login + password + API key",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "login",
+                                    "password",
+                                    "apikey"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "apikey": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "login",
+                                    "password",
+                                    "apikey"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "password": {
+                                        "type": "string"
+                                    },
+                                    "apikey": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/JwtToken"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/HttpsRequired"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/authorizeToken": {
+            "post": {
+                "operationId": "authorizeToken",
+                "summary": "Get a JWT from a Personal Access Token (OAuth2/SSO users)",
+                "security": [],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "login",
+                                    "token"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                    }
+                                }
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "login",
+                                    "token"
+                                ],
+                                "properties": {
+                                    "login": {
+                                        "type": "string"
+                                    },
+                                    "token": {
+                                        "type": "string",
+                                        "pattern": "^[a-f0-9]{64}$"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/JwtToken"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/HttpsRequired"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "post": {
+                "operationId": "authLogout",
+                "summary": "Revoke the current API session",
+                "description": "Flags the api_sessions row matching the token's jti as revoked — the JWT is then rejected on every endpoint until it expires. Legacy tokens without a session row invalidate the user's single legacy API session instead.",
+                "responses": {
+                    "200": {
+                        "description": "Session revoked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "error": {
+                                            "type": "boolean"
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    }
+                }
+            }
+        },
+        "/item/get": {
+            "get": {
+                "operationId": "itemGet",
+                "summary": "Get item(s) by id, label or description",
+                "description": "Exactly one of 'id', 'label' or 'description' is required. 'label' and 'description' lookups are searches: they accept 'like', 'limit' and 'offset' and return X-Total-Count.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "label",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "description",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "like",
+                        "in": "query",
+                        "description": "1 = LIKE %value% search ('%' and '_' are escaped)",
+                        "schema": {
+                            "type": "integer",
+                            "enum": [
+                                0,
+                                1
+                            ]
+                        }
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching items (empty array when none)",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/X-Total-Count"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Item"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/inFolders": {
+            "get": {
+                "operationId": "itemInFolders",
+                "summary": "Get items contained in a list of folders",
+                "parameters": [
+                    {
+                        "name": "folders",
+                        "in": "query",
+                        "required": true,
+                        "description": "Comma-separated or JSON array of folder ids",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "example": "1,2,3"
+                    },
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Items in the requested folders (empty array when none)",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/X-Total-Count"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Item"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/findByUrl": {
+            "get": {
+                "operationId": "itemFindByUrl",
+                "summary": "Find items whose URL matches",
+                "parameters": [
+                    {
+                        "name": "url",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Matching items (empty array when none)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/ItemSummary"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/getOtp": {
+            "get": {
+                "operationId": "itemGetOtp",
+                "summary": "Get the current TOTP code of an item",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current TOTP code",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "otp_code": {
+                                            "type": "string"
+                                        },
+                                        "expires_in": {
+                                            "type": "integer"
+                                        },
+                                        "item_id": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/allTags": {
+            "get": {
+                "operationId": "itemAllTags",
+                "summary": "Get all distinct item tags",
+                "responses": {
+                    "200": {
+                        "description": "Tag list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/create": {
+            "post": {
+                "operationId": "itemCreate",
+                "summary": "Create a new item",
+                "description": "All listed fields must be present, even if empty.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ItemCreateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Item created",
+                        "headers": {
+                            "Location": {
+                                "description": "Path-absolute reference of the created resource (item/get?id=N)",
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreatedResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/update": {
+            "put": {
+                "operationId": "itemUpdate",
+                "summary": "Update an existing item",
+                "description": "Requires 'id' plus at least one updatable field (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields).",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ItemUpdateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Item updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/item/delete": {
+            "delete": {
+                "operationId": "itemDelete",
+                "summary": "Soft-delete an item",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Item deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/folder/listFolders": {
+            "get": {
+                "operationId": "folderListFolders",
+                "summary": "List the folder tree accessible to the user",
+                "description": "Returns a hierarchical tree. Pagination ('offset'/'limit') applies to the root-level entries; X-Total-Count is the total number of root entries.",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    },
+                    {
+                        "$ref": "#/components/parameters/offset"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder tree (empty array when the user has no accessible folder)",
+                        "headers": {
+                            "X-Total-Count": {
+                                "$ref": "#/components/headers/X-Total-Count"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/FolderNode"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/folder/writableFolders": {
+            "get": {
+                "operationId": "folderWritableFolders",
+                "summary": "List accessible folders with read-only flag",
+                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry.",
+                "responses": {
+                    "200": {
+                        "description": "Flat folder list",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/WritableFolder"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/folder/create": {
+            "post": {
+                "operationId": "folderCreate",
+                "summary": "Create a new folder",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FolderCreateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Folder created (no Location header: the API has no folder get-by-id endpoint yet; the body carries newId)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CreatedResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/user/list": {
+            "get": {
+                "operationId": "userList",
+                "summary": "List users (admin only)",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/limit"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User list (sensitive columns are never returned)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/User"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/misc/refreshExtensionSettings": {
+            "get": {
+                "operationId": "miscRefreshExtensionSettings",
+                "summary": "Get browser extension connection settings",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/ExtensionSettings"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "miscRefreshExtensionSettingsPost",
+                "summary": "Get browser extension connection settings (POST variant)",
+                "responses": {
+                    "200": {
+                        "$ref": "#/components/responses/ExtensionSettings"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/openapi.json": {
+            "get": {
+                "operationId": "getOpenApiSpec",
+                "summary": "This OpenAPI 3.1 contract",
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "The OpenAPI document",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/ApiDisabled"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT"
+            }
+        },
+        "parameters": {
+            "limit": {
+                "name": "limit",
+                "in": "query",
+                "description": "Maximum number of results (capped at 500)",
+                "schema": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 500
+                }
+            },
+            "offset": {
+                "name": "offset",
+                "in": "query",
+                "description": "Number of results to skip (pagination)",
+                "schema": {
+                    "type": "integer",
+                    "minimum": 0
+                }
+            }
+        },
+        "headers": {
+            "X-Total-Count": {
+                "description": "Total number of matching entries before pagination",
+                "schema": {
+                    "type": "integer"
+                }
+            }
+        },
+        "schemas": {
+            "Problem": {
+                "type": "object",
+                "description": "RFC 9457 problem details; the legacy 'error' member duplicates 'detail' for backward compatibility.",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "default": "about:blank"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "type": "integer"
+                    },
+                    "detail": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    }
+                }
+            },
+            "Item": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "pwd": {
+                        "type": "string",
+                        "description": "Decrypted password"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "viewed_no": {
+                        "type": "integer"
+                    },
+                    "fa_icon": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "inactif": {
+                        "type": "integer"
+                    },
+                    "perso": {
+                        "type": "integer"
+                    },
+                    "id_tree": {
+                        "type": "integer"
+                    },
+                    "folder_label": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "path": {
+                        "type": "string"
+                    },
+                    "totp": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "favicon_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tags": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "anyone_can_modify": {
+                        "type": [
+                            "integer",
+                            "string"
+                        ]
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CustomField"
+                        }
+                    }
+                }
+            },
+            "ItemSummary": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "folder_id": {
+                        "type": "integer"
+                    },
+                    "has_otp": {
+                        "type": "integer"
+                    },
+                    "favicon_url": {
+                        "type": "string"
+                    }
+                }
+            },
+            "CustomField": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string"
+                    },
+                    "masked": {
+                        "type": "integer"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ItemCreateBody": {
+                "type": "object",
+                "required": [
+                    "label",
+                    "folder_id",
+                    "password",
+                    "login",
+                    "email",
+                    "url",
+                    "tags",
+                    "anyone_can_modify"
+                ],
+                "properties": {
+                    "label": {
+                        "type": "string"
+                    },
+                    "folder_id": {
+                        "type": "integer"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "string"
+                    },
+                    "anyone_can_modify": {
+                        "type": "integer"
+                    },
+                    "icon": {
+                        "type": "string"
+                    },
+                    "totp": {
+                        "type": "string"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "ItemUpdateBody": {
+                "type": "object",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "password": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
+                    },
+                    "tags": {
+                        "type": "string"
+                    },
+                    "anyone_can_modify": {
+                        "type": "integer"
+                    },
+                    "icon": {
+                        "type": "string"
+                    },
+                    "folder_id": {
+                        "type": "integer"
+                    },
+                    "totp": {
+                        "type": "string"
+                    },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "integer"
+                                },
+                                "value": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "FolderCreateBody": {
+                "type": "object",
+                "required": [
+                    "title",
+                    "parent_id",
+                    "complexity"
+                ],
+                "properties": {
+                    "title": {
+                        "type": "string"
+                    },
+                    "parent_id": {
+                        "type": "integer"
+                    },
+                    "complexity": {
+                        "type": "integer"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "create_auth_without": {
+                        "type": "integer"
+                    },
+                    "edit_auth_without": {
+                        "type": "integer"
+                    },
+                    "icon": {
+                        "type": "string"
+                    },
+                    "icon_selected": {
+                        "type": "string"
+                    },
+                    "access_rights": {
+                        "type": "string",
+                        "enum": [
+                            "R",
+                            "W",
+                            "NE",
+                            "ND",
+                            "NDNE"
+                        ]
+                    }
+                }
+            },
+            "CreatedResult": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "newId": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "FolderNode": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "isVisible": {
+                        "type": "boolean"
+                    },
+                    "childrens": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/FolderNode"
+                        }
+                    }
+                }
+            },
+            "WritableFolder": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "level": {
+                        "type": "integer"
+                    },
+                    "parent_id": {
+                        "type": "integer"
+                    },
+                    "first_position": {
+                        "type": "integer"
+                    },
+                    "is_readonly": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "User": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "login": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lastname": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "email": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "admin": {
+                        "type": "integer"
+                    },
+                    "gestionnaire": {
+                        "type": "integer"
+                    },
+                    "disabled": {
+                        "type": "integer"
+                    },
+                    "last_connection_time": {
+                        "type": [
+                            "integer",
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "is_ready_for_usage": {
+                        "type": "integer"
+                    },
+                    "personal_folder": {
+                        "type": "integer"
+                    },
+                    "auth_type": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "responses": {
+            "JwtToken": {
+                "description": "Authentication succeeded",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "token": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "ExtensionSettings": {
+                "description": "Browser extension connection settings",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "extension_fqdn": {
+                                    "type": "string"
+                                },
+                                "extension_key": {
+                                    "type": "string"
+                                },
+                                "cpassman_url": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "BadRequest": {
+                "description": "Missing or invalid parameters",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Unauthorized": {
+                "description": "Missing, invalid or expired credentials/token",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Forbidden": {
+                "description": "Permission denied",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "Resource not found",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "MethodNotAllowed": {
+                "description": "HTTP method not supported for this endpoint (Allow header lists supported methods)",
+                "headers": {
+                    "Allow": {
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "UnprocessableEntity": {
+                "description": "Validation failed",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "InternalError": {
+                "description": "Internal server error",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "ApiDisabled": {
+                "description": "API disabled in TeamPass settings",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "RateLimited": {
+                "description": "Rate limit exceeded (api_rate_limit_per_minute, per user and per IP)",
+                "headers": {
+                    "Retry-After": {
+                        "description": "Seconds to wait before retrying",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "HttpsRequired": {
+                "description": "Request rejected because api_require_https is enabled and the request was sent over plain HTTP",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

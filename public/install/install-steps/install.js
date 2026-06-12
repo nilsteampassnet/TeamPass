@@ -306,7 +306,9 @@ function performStep5() {
         { id: 'check58', action: 'websocket_tokens' },
         { id: 'check59', action: 'network_acl' },
         { id: 'check60', action: 'items_corruption' },
-        { id: 'check62', action: 'api_tokens' }
+        { id: 'check62', action: 'api_tokens' },
+        { id: 'check63', action: 'api_sessions' },
+        { id: 'check64', action: 'api_rate_limit' }
     ];
     
     let errorOccurred = false; // Variable to track errors

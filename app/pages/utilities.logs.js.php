@@ -213,7 +213,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 'targets': [1, 2, 3],
                 'render': function (data, type, row, meta) {
                     if (type !== 'display') { return data; }
-                    return decodeHtmlEntities(data);
+                    // Decode entities for readability, then re-escape so user-controlled
+                    // values render as inert text instead of active HTML.
+                    return $('<div/>').text(decodeHtmlEntities(data)).html();
                 }
             }
         ],
@@ -272,7 +274,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     'targets': [1, 2, 3],
                     'render': function (data, type) {
                         if (type !== 'display') { return data; }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 },
                 {
@@ -341,7 +343,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     'targets': [1, 2],
                     'render': function (data, type) {
                         if (type !== 'display') { return data; }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 }
             ],
@@ -402,7 +404,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (type !== 'display') {
                             return data;
                         }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 }
             ],
@@ -462,7 +464,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (type !== 'display') {
                             return data;
                         }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 }
             ],
@@ -581,7 +583,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (type !== 'display') {
                             return data;
                         }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 }
             ],
@@ -652,7 +654,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         if (type !== 'display') {
                             return data;
                         }
-                        return decodeHtmlEntities(data);
+                        return $('<div/>').text(decodeHtmlEntities(data)).html();
                     }
                 }
             ],

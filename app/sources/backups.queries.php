@@ -996,8 +996,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         }
 
         if ($targetIsRemote === true) {
-            if (is_scalar($meta['tp_files_version'] ?? null) && (string) $meta['tp_files_version'] !== '') {
-                $backupVersion = (string) $meta['tp_files_version'];
+            // Sidecar metadata is untrusted: only accept a strict version pattern
+            if (is_scalar($meta['tp_files_version'] ?? null)
+                && preg_match('/^\d+(?:\.\d+){0,3}(?:[-+][A-Za-z0-9_.-]+)?$/', trim((string) $meta['tp_files_version'])) === 1
+            ) {
+                $backupVersion = trim((string) $meta['tp_files_version']);
             }
             if (is_scalar($meta['schema_level'] ?? null) && preg_match('/^\d+$/', (string) $meta['schema_level']) === 1) {
                 $backupSchema = (string) $meta['schema_level'];
