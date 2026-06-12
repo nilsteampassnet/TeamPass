@@ -1034,9 +1034,12 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_user_id
                 );
+
+                // Also invalidate the user's API sessions so their JWTs are rejected
+                tpInvalidateUserApiSession($post_user_id);
             }
             break;
-            
+
         case 'disconnect_users_logged_in':
             // Admin only + key check
             if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
@@ -1059,20 +1062,41 @@ if (null !== $post_type) {
             $now = time();
 
             try {
-                // Select IDs first to avoid multi-row update locking issues
+                // Select IDs first to avoid multi-row update locking issues.
+                // A user counts as connected through the web (session_end) or
+                // through an API session that is neither revoked nor expired.
                 if ($excludeUserId > 0) {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i AND id != %i',
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.id != %i
+                         AND (
+                            u.session_end >= %i
+                            OR EXISTS (
+                                SELECT 1
+                                FROM ' . prefixTable('api_sessions') . ' aps
+                                WHERE aps.user_id = u.id
+                                    AND aps.revoked_at IS NULL
+                                    AND aps.expires_at >= %i
+                            )
+                         )',
+                        $excludeUserId,
                         $now,
-                        $excludeUserId
+                        $now
                     );
                 } else {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i',
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.session_end >= %i
+                         OR EXISTS (
+                            SELECT 1
+                            FROM ' . prefixTable('api_sessions') . ' aps
+                            WHERE aps.user_id = u.id
+                                AND aps.revoked_at IS NULL
+                                AND aps.expires_at >= %i
+                         )',
+                        $now,
                         $now
                     );
                 }
@@ -1089,6 +1113,9 @@ if (null !== $post_type) {
                         'id = %i',
                         (int) $row['id']
                     );
+
+                    // Also invalidate the user's API sessions
+                    tpInvalidateUserApiSession((int) $row['id']);
                 }
 
                 echo prepareExchangedData(
