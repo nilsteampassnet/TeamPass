@@ -180,7 +180,7 @@ $baseQueryParams = $queryParams;
 
 // Filtering
 $search = $request->query->all('search');
-$searchValue = is_array($search) === true && isset($search['value']) === true ? trim((string) $search['value']) : '';
+$searchValue = isset($search['value']) === true ? trim((string) $search['value']) : '';
 if ($searchValue !== '') {
     $fromWhereSql .= ' AND (i.label LIKE %ss OR n.title LIKE %ss)';
     $queryParams[] = $searchValue;
