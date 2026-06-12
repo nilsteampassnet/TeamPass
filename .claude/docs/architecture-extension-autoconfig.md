@@ -151,6 +151,14 @@ relaxes **both** gates behind one admin toggle:
   instance does not have the `confirm/` directory: it was added after load and the reload did not
   register it. Fully reload (remove + re-add) the unpacked extension, or rebuild so `build.js` copies
   `confirm/` into the package.
+- **`Failed to fetch` / dropped `Authorization` header with no server-side log** ⇒ the server's TLS
+  certificate is untrusted, expired, or its CN/SAN does not match the FQDN the extension targets. The
+  browser **silently** drops the connection and the request headers in the background — nothing reaches
+  PHP, so there is no API log to inspect. This is a **server/environment** issue, not an extension or
+  web-UI bug: install a fully trusted certificate matching `browser_extension_fqdn` / `cpassman_url`.
+  Field-confirmed: a test environment with a mismatched/untrusted cert failed, and the same build
+  worked immediately once a valid trusted certificate was applied. The auto-config flow (My Profile →
+  Configure) itself is unaffected — it only ever runs once the TLS connection is trusted.
 - **Diagnose detection** in the page console: `window.tpExtAutoconfig.state` — `detected:false` after a
   reload means the content-script bridge is not answering (injection/reload issue, not the web UI).
 - The confirmation window is opened with `chrome.runtime.getURL('confirm/confirm.html') + '?id=' + confirmId`;

@@ -43,6 +43,8 @@ The legacy `error` member duplicates `detail` and is kept for backward compatibi
 
 **HTTPS enforcement** — setting `api_require_https` (Settings → API; **`1` on new installs, `0` after an upgrade** so existing HTTP integrations keep working — a health-check warning is raised instead). When enabled, any API request over plain HTTP gets `403` + problem body. `X-Forwarded-Proto: https` is honoured for TLS-terminating reverse proxies.
 
+**Trusted TLS certificate required for browser clients** — the browser extension (and any `fetch()`-based browser client) only completes a request over HTTPS when the server presents a **fully trusted certificate whose CN/SAN matches the FQDN** the client targets. With a self-signed, expired, or FQDN-mismatched certificate the browser **silently drops the connection and the `Authorization` header** in the background: the request never reaches PHP, so there is **no server-side log**, and the client sees `Failed to fetch` / missing-auth errors. This is a **server/environment** issue, not an application bug — install a CA-trusted certificate matching the configured `cpassman_url` / `browser_extension_fqdn`. (Field-confirmed: a test environment with an untrusted/mismatched cert failed while the same build worked on a production server with a valid certificate.)
+
 **Rate limiting** — setting `api_rate_limit_per_minute` (Settings → API; **`120` on new installs, `0` = disabled after an upgrade**). Sliding-window counter applied **per user and per IP** on every authenticated endpoint, after JWT validation (`teampass_api_rate_limit` table). Above the limit: `429` + `Retry-After: <seconds>` + problem body. `/authorize*` stays covered by the anti-bruteforce lock instead.
 
 ---

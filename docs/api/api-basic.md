@@ -979,6 +979,13 @@ All API endpoints may return the following standard HTTP error codes:
 3. **HTTPS**
    - Always use HTTPS in production
    - Avoid API requests over unsecured connections
+   - **Use a fully trusted certificate whose FQDN matches the API URL.** Browser-based clients
+     (the browser extension, any `fetch()` call) silently drop the connection **and the
+     `Authorization` header** when the certificate is self-signed, expired, or its CN/SAN does
+     not match the host — this usually surfaces as a `Failed to fetch` error. With an untrusted
+     or mismatched certificate the request never reaches Teampass, so there is **no server-side
+     log**. Command-line tools (`curl`) can bypass this with `-k`, but browsers cannot — this is a
+     server/environment requirement, not an application bug.
 
 ### Performance
 
