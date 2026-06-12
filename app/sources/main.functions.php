@@ -797,7 +797,7 @@ function cacheTableUpdate(?int $ident = null): void
             n.renewal_period,
             IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
         FROM ' . prefixTable('items') . ' AS i
-        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
         LEFT JOIN (
             SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
             FROM ' . prefixTable('log_items') . '
@@ -887,7 +887,7 @@ function cacheTableAdd(?int $ident = null): void
             n.renewal_period,
             IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
         FROM ' . prefixTable('items') . ' as i
-        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
         LEFT JOIN (
             SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
             FROM ' . prefixTable('log_items') . '
