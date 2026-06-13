@@ -548,195 +548,18 @@ function kbRichHtmlHasContent(string $html): bool
         || preg_match('/<(?:table|hr)\b/iu', $html) === 1;
 }
 
-function kbRichHtmlAllowedTags(): array
-{
-    return [
-        'a', 'br', 'p', 'div', 'ul', 'ol', 'li', 'blockquote',
-        'strong', 'b', 'em', 'i', 'u', 's', 'strike',
-        'h2', 'h3', 'h4', 'pre', 'code', 'hr',
-        'table', 'thead', 'tbody', 'tr', 'th', 'td',
-        'img',
-    ];
-}
-
-function kbRichHtmlDangerousTags(): array
-{
-    return [
-        'script', 'style', 'iframe', 'frame', 'frameset', 'object', 'embed',
-        'applet', 'link', 'meta', 'base', 'form', 'input', 'button', 'textarea',
-        'select', 'option', 'svg', 'math', 'canvas', 'video', 'audio', 'source',
-    ];
-}
-
-function kbRichHtmlIsSafeHref(string $href): bool
-{
-    $href = trim(html_entity_decode($href, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-    if ($href === '') {
-        return false;
-    }
-    if (preg_match('/^\s*(?:javascript|data|vbscript):/iu', $href) === 1) {
-        return false;
-    }
-
-    return preg_match('/^(?:https?:\/\/|mailto:|\/|\.\/|\.\.\/|#|\?)/iu', $href) === 1;
-}
-
-function kbRichHtmlIsSafeImageSource(string $src): bool
-{
-    $src = trim(html_entity_decode($src, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
-    if ($src === '') {
-        return false;
-    }
-    if (preg_match('/^https?:\/\//iu', $src) === 1) {
-        return true;
-    }
-
-    $compactSrc = preg_replace('/\s+/', '', $src) ?? $src;
-    return preg_match('/^data:image\/(?:png|jpe?g|gif|webp);base64,[A-Za-z0-9+\/=]+$/iu', $compactSrc) === 1;
-}
-
-function kbRichHtmlSanitizeDimension(string $value): string
-{
-    $value = trim($value);
-    if (preg_match('/^\d{1,4}$/', $value) !== 1) {
-        return '';
-    }
-
-    $dimension = max(1, min(2000, (int) $value));
-    return (string) $dimension;
-}
-
-function kbRichHtmlSanitizeCellSpan(string $value): string
-{
-    $value = trim($value);
-    if (preg_match('/^\d{1,2}$/', $value) !== 1) {
-        return '';
-    }
-
-    return (string) max(1, min(20, (int) $value));
-}
-
-function kbRichHtmlCleanAttributes(DOMElement $element): bool
-{
-    $tagName = strtolower($element->nodeName);
-    $allowedAttributes = [];
-    if ($tagName === 'a') {
-        $allowedAttributes = ['href', 'target', 'rel', 'title'];
-    } elseif ($tagName === 'img') {
-        $allowedAttributes = ['src', 'alt', 'width', 'height', 'title'];
-    } elseif ($tagName === 'td' || $tagName === 'th') {
-        $allowedAttributes = ['colspan', 'rowspan'];
-    }
-
-    $attributeNames = [];
-    foreach ($element->attributes as $attribute) {
-        $attributeNames[] = $attribute->nodeName;
-    }
-    foreach ($attributeNames as $attributeName) {
-        $name = strtolower($attributeName);
-        if (in_array($name, $allowedAttributes, true) === false) {
-            $element->removeAttribute($attributeName);
-        }
-    }
-
-    if ($tagName === 'a') {
-        $href = $element->getAttribute('href');
-        if (kbRichHtmlIsSafeHref($href) === false) {
-            $element->removeAttribute('href');
-            $element->removeAttribute('target');
-            $element->removeAttribute('rel');
-        } else {
-            $element->setAttribute('href', trim($href));
-            $element->setAttribute('target', '_blank');
-            $element->setAttribute('rel', 'noopener noreferrer');
-        }
-    }
-
-    if ($tagName === 'img') {
-        $src = $element->getAttribute('src');
-        if (kbRichHtmlIsSafeImageSource($src) === false) {
-            return false;
-        }
-        $src = preg_match('/^data:image\//iu', trim($src)) === 1 ? (preg_replace('/\s+/', '', trim($src)) ?? trim($src)) : trim($src);
-        $element->setAttribute('src', $src);
-        $element->setAttribute('alt', mb_substr(trim(strip_tags($element->getAttribute('alt'))), 0, 200));
-        foreach (['width', 'height'] as $dimensionAttribute) {
-            $dimension = kbRichHtmlSanitizeDimension($element->getAttribute($dimensionAttribute));
-            if ($dimension === '') {
-                $element->removeAttribute($dimensionAttribute);
-            } else {
-                $element->setAttribute($dimensionAttribute, $dimension);
-            }
-        }
-    }
-
-    if ($tagName === 'td' || $tagName === 'th') {
-        foreach (['colspan', 'rowspan'] as $spanAttribute) {
-            $span = kbRichHtmlSanitizeCellSpan($element->getAttribute($spanAttribute));
-            if ($span === '') {
-                $element->removeAttribute($spanAttribute);
-            } else {
-                $element->setAttribute($spanAttribute, $span);
-            }
-        }
-    }
-
-    return true;
-}
-
-function kbRichHtmlUnwrapNode(DOMNode $node): void
-{
-    if ($node->parentNode === null) {
-        return;
-    }
-
-    while ($node->firstChild !== null) {
-        $node->parentNode->insertBefore($node->firstChild, $node);
-    }
-    $node->parentNode->removeChild($node);
-}
-
-function kbRichHtmlSanitizeNode(DOMNode $node): void
-{
-    $allowedTags = kbRichHtmlAllowedTags();
-    $dangerousTags = kbRichHtmlDangerousTags();
-
-    for ($child = $node->firstChild; $child !== null;) {
-        $next = $child->nextSibling;
-
-        if ($child->nodeType === XML_COMMENT_NODE) {
-            $node->removeChild($child);
-            $child = $next;
-            continue;
-        }
-
-        if ($child->nodeType !== XML_ELEMENT_NODE) {
-            $child = $next;
-            continue;
-        }
-
-        $tagName = strtolower($child->nodeName);
-        if (in_array($tagName, $dangerousTags, true) === true) {
-            $node->removeChild($child);
-            $child = $next;
-            continue;
-        }
-
-        kbRichHtmlSanitizeNode($child);
-        if (in_array($tagName, $allowedTags, true) === false) {
-            kbRichHtmlUnwrapNode($child);
-            $child = $next;
-            continue;
-        }
-
-        if ($child instanceof DOMElement && kbRichHtmlCleanAttributes($child) === false) {
-            $node->removeChild($child);
-        }
-
-        $child = $next;
-    }
-}
-
+/**
+ * Sanitize rich KB HTML using HTMLPurifier with a strict tag/attribute allowlist.
+ *
+ * Replaces the former hand-rolled DOMDocument sanitizer. The allowlist matches the
+ * tags and attributes previously permitted; unsafe schemes (javascript:, vbscript:,
+ * non-image data:) and dangerous tags (script, style, iframe, svg, ...) are removed.
+ * Links are forced to rel="noopener noreferrer" target="_blank". The client-side
+ * DOMPurify pass re-sanitizes the same content on render (defense-in-depth).
+ *
+ * @param string $html Raw rich-text HTML.
+ * @return string Sanitized HTML, or '' when no displayable content remains.
+ */
 function kbSanitizeRichHtml(string $html): string
 {
     $html = kbSanitizeTextInput($html);
@@ -744,37 +567,33 @@ function kbSanitizeRichHtml(string $html): string
         return '';
     }
     $html = kbDecodeEscapedRichHtml($html);
-    if (class_exists('DOMDocument') === false) {
+
+    if (class_exists('HTMLPurifier') === false) {
+        // Defensive fallback if the library is unavailable.
         return kbBuildRichTextHtml(strip_tags($html));
     }
 
-    $previousUseErrors = libxml_use_internal_errors(true);
-    $dom = new DOMDocument('1.0', 'UTF-8');
-    $dom->loadHTML(
-        '<?xml encoding="UTF-8"><!DOCTYPE html><html><body><div id="tp-kb-root">' . $html . '</div></body></html>',
-        LIBXML_NOWARNING | LIBXML_NOERROR
+    $config = HTMLPurifier_Config::createDefault();
+    $config->set('Core.Encoding', 'UTF-8');
+    // Tag/attribute allowlist mirrors the former kbRichHtmlAllowedTags()/kbRichHtmlCleanAttributes().
+    $config->set(
+        'HTML.Allowed',
+        'a[href|title],br,p,div,ul,ol,li,blockquote,'
+        . 'strong,b,em,i,u,s,h2,h3,h4,pre,code,hr,'
+        . 'table,thead,tbody,tr,th[colspan|rowspan],td[colspan|rowspan],'
+        . 'img[src|alt|width|height|title]'
     );
-    libxml_clear_errors();
-    libxml_use_internal_errors($previousUseErrors);
+    // Reject javascript:/vbscript:; the data: scheme only resolves to base64 images.
+    $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true, 'data' => true]);
+    $config->set('Attr.AllowedFrameTargets', ['_blank']);
+    // Force target="_blank" rel="noopener noreferrer" on links.
+    $config->set('HTML.TargetBlank', true);
+    // Clamp image dimensions (was 1..2000 in the former sanitizer).
+    $config->set('HTML.MaxImgLength', 2000);
+    // No writable cache directory required (read-only vendor / Docker).
+    $config->set('Cache.DefinitionImpl', null);
 
-    $root = null;
-    foreach ($dom->getElementsByTagName('div') as $div) {
-        if ($div instanceof DOMElement && $div->getAttribute('id') === 'tp-kb-root') {
-            $root = $div;
-            break;
-        }
-    }
-    if ($root === null) {
-        return '';
-    }
-
-    kbRichHtmlSanitizeNode($root);
-
-    $sanitizedHtml = '';
-    foreach ($root->childNodes as $child) {
-        $sanitizedHtml .= $dom->saveHTML($child);
-    }
-    $sanitizedHtml = trim($sanitizedHtml);
+    $sanitizedHtml = trim((new HTMLPurifier($config))->purify($html));
 
     return kbRichHtmlHasContent($sanitizedHtml) === true ? $sanitizedHtml : '';
 }

@@ -273,7 +273,7 @@ mysqli_query(
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `kb_id` int(12) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `timestamp` varchar(50) NOT NULL,
+            `timestamp` int(11) NOT NULL,
             KEY `kb_id_idx` (`kb_id`),
             PRIMARY KEY (`increment_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
@@ -316,6 +316,18 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "kb_edition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+// Edition-lock timestamps are Unix timestamps: store them as integers.
+// MODIFY auto-casts existing numeric-string rows; stale lock rows are transient.
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "items_edition` MODIFY `timestamp` int(11) NOT NULL;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_edition` MODIFY `timestamp` int(11) NOT NULL;"
 );
 
 //---------------------------------------------------------------------

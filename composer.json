@@ -209,7 +209,8 @@
         "composer/composer": "^2.7",
         "phpseclib/phpseclib": "^3.0",
         "cboden/ratchet": "^0.4.4",
-        "react/event-loop": "^1.6"
+        "react/event-loop": "^1.6",
+        "ezyang/htmlpurifier": "^4.17"
     },
     "require-dev": {
         "dominikb/composer-license-checker": "^2.6",

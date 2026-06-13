@@ -1159,7 +1159,7 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `kb_id` int(12) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `timestamp` varchar(50) NOT NULL,
+            `timestamp` int(11) NOT NULL,
             KEY `kb_id_idx` (`kb_id`),
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
@@ -1268,7 +1268,7 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `item_id` int(11) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `timestamp` varchar(50) NOT NULL,
+            `timestamp` int(11) NOT NULL,
             KEY `item_id_idx` (`item_id`),
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
