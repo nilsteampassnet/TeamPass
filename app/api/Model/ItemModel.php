@@ -50,19 +50,26 @@ class ItemModel
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0, array $sqlParams = []): array
     {
-        // Fetch user's public key (migration-aware decryption) and roles (field
-        // visibility) once. fonction_id is the same ';'-separated role list the web
-        // session exposes as 'user-roles'.
+        // Fetch user's public key (migration-aware decryption) once.
         $userPublicKey = '';
         $userRoles = '';
         $userKeyRow = DB::queryFirstRow(
-            'SELECT public_key, fonction_id FROM ' . prefixTable('users') . ' WHERE id = %i',
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
             $userId
         );
         if ($userKeyRow !== null) {
             $userPublicKey = (string) $userKeyRow['public_key'];
-            $userRoles = (string) $userKeyRow['fonction_id'];
         }
+        // Roles (field visibility) live in the dedicated users_roles table; the
+        // ';'-separated 'fonction_id' exposed elsewhere (api/index.php, core.php) is a
+        // derived GROUP_CONCAT alias, not a physical column on the users table.
+        $userRolesRow = DB::queryFirstRow(
+            'SELECT GROUP_CONCAT(DISTINCT role_id ORDER BY role_id SEPARATOR ";") AS fonction_id
+             FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i AND source = %s',
+            $userId,
+            'manual'
+        );
+        $userRoles = $userRolesRow !== null ? (string) ($userRolesRow['fonction_id'] ?? '') : '';
 
         // Load settings once to know whether custom fields are enabled
         $configManager = new ConfigManager();
