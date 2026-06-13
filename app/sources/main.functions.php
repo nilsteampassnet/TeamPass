@@ -5103,6 +5103,57 @@ function invalidateCacheForFolderUsers(int $folderId, array $additionalUserIds =
 }
 
 /**
+ * Incrementally adjust the folder tree item counters after a single item is
+ * added to or removed from a folder, then invalidate the tree cache so the
+ * change shows up immediately instead of waiting for the do_calculation
+ * background task (which stays the periodic source of truth and corrects any
+ * drift).
+ *
+ * Counters are stored columns in nested_tree:
+ *   - nb_items_in_folder     on the folder itself
+ *   - nb_items_in_subfolders on every ancestor folder
+ *
+ * @param int $folderId Folder the item belongs to
+ * @param int $delta    +1 when an item is added, -1 when an item is removed
+ * @return void
+ */
+function adjustFolderItemsCounter(int $folderId, int $delta): void
+{
+    if ($folderId <= 0 || $delta === 0) {
+        return;
+    }
+
+    loadClasses('DB');
+
+    // The folder itself: number of items directly inside it
+    DB::query(
+        'UPDATE ' . prefixTable('nested_tree') . '
+        SET nb_items_in_folder = GREATEST(0, CAST(nb_items_in_folder AS SIGNED) + %i)
+        WHERE id = %i',
+        $delta,
+        $folderId
+    );
+
+    // Every ancestor: number of items located in its subfolders
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $ancestors = $tree->getPath($folderId, false);
+    if (empty($ancestors) === false) {
+        DB::query(
+            'UPDATE ' . prefixTable('nested_tree') . '
+            SET nb_items_in_subfolders = GREATEST(0, CAST(nb_items_in_subfolders AS SIGNED) + %i)
+            WHERE id IN %li',
+            $delta,
+            array_map('intval', array_keys($ancestors))
+        );
+    }
+
+    // Drop the per-user tree cache so the fresh counter is served on next load.
+    // The client tree version is a content hash, so the browser localStorage
+    // copy is refreshed automatically once the served tree changes.
+    invalidateCacheForFolderUsers($folderId);
+}
+
+/**
  * Permits to calculate a %
  *
  * @param float $nombre

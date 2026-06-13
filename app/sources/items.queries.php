@@ -796,6 +796,9 @@ switch ($inputData['type']) {
             if (isset($newID) === true) {
                 updateCacheTable('add_value', intval($newID));
 
+                // Refresh the folder tree counters + invalidate tree cache (#5221)
+                adjustFolderItemsCounter((int) $inputData['folderId'], 1);
+
                 // Emit WebSocket event for real-time notification
                 emitItemEvent(
                     'created',
@@ -1853,6 +1856,12 @@ switch ($inputData['type']) {
             // Update CACHE table
             updateCacheTable('update_value', (int) $inputData['itemId']);
 
+            // If the item was moved to another folder, refresh both folders' tree counters (#5221)
+            if ($originalFolderId !== $targetFolderId) {
+                adjustFolderItemsCounter($originalFolderId, -1);
+                adjustFolderItemsCounter($targetFolderId, 1);
+            }
+
 
             // Manage OTP status
             // Get current status
@@ -2673,6 +2682,9 @@ switch ($inputData['type']) {
 
             // Add new item to cache table.
             updateCacheTable('add_value', intval($newItemId));
+
+            // Refresh the destination folder tree counters + invalidate cache (#5221)
+            adjustFolderItemsCounter((int) $post_dest_id, 1);
         } else {
             // no item
             echo (string) prepareExchangedData(
@@ -3347,6 +3359,9 @@ switch ($inputData['type']) {
                         // Update cache table
                         updateCacheTable('delete_value', (int) $inputData['id']);
 
+                        // Refresh the folder tree counters + invalidate tree cache (#5221)
+                        adjustFolderItemsCounter((int) $dataItem['id_tree'], -1);
+
                         $arrData['show_detail_option'] = 1;
                         $arrData['to_be_deleted'] = 0;
                     } elseif ($dataDelete['del_type'] === '2') {
@@ -3851,6 +3866,9 @@ switch ($inputData['type']) {
         );
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
+
+        // Refresh the folder tree counters + invalidate tree cache (#5221)
+        adjustFolderItemsCounter((int) ($data['id_tree'] ?? $inputData['folderId']), -1);
 
         // Emit WebSocket event for real-time notification.
         // Target the item's actual folder (id_tree) instead of the caller-supplied folder_id.
@@ -5692,6 +5710,10 @@ switch ($inputData['type']) {
         // Update cache table
         updateCacheTable('update_value', (int) $inputData['itemId']);
 
+        // Refresh tree counters for both source and destination folders (#5221)
+        adjustFolderItemsCounter((int) $dataSource['id_tree'], -1);
+        adjustFolderItemsCounter((int) $inputData['folderId'], 1);
+
         // Notify via WebSocket: item moved from source folder and arrived in destination folder.
         // Both folders' subscribers receive the event (excluding the user who performed the move).
         $movePayload = [
@@ -5751,6 +5773,9 @@ switch ($inputData['type']) {
         );
         $inputData['folderId'] = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
         $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+        $folderCounterDeltas = [];
 
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
@@ -6036,12 +6061,23 @@ switch ($inputData['type']) {
                 $massMoveExclude = (int) $session->get('user-id');
                 emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $massMovePayload, $massMoveExclude);
                 emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $massMovePayload, $massMoveExclude);
+
+                // Track counter change: -1 on source folder, +1 on destination (#5221)
+                $srcFolder = (int) $dataSource['id_tree'];
+                $dstFolder = (int) $inputData['folderId'];
+                $folderCounterDeltas[$srcFolder] = ($folderCounterDeltas[$srcFolder] ?? 0) - 1;
+                $folderCounterDeltas[$dstFolder] = ($folderCounterDeltas[$dstFolder] ?? 0) + 1;
             }
         }
 
         // reload cache table
         require_once TEAMPASS_APP . '/sources/main.functions.php';
         updateCacheTable('reload', null);
+
+        // Refresh tree counters for all affected folders (#5221)
+        foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+            adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
+        }
 
         echo (string) prepareExchangedData(
             array(
@@ -6098,6 +6134,9 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+        $folderCounterDeltas = [];
+
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
@@ -6146,7 +6185,16 @@ switch ($inputData['type']) {
 
                 // Update CACHE table
                 updateCacheTable('delete_value', (int) $item_id);
+
+                // Track counter change: -1 on the item's folder (#5221)
+                $srcFolder = (int) $dataSource['id_tree'];
+                $folderCounterDeltas[$srcFolder] = ($folderCounterDeltas[$srcFolder] ?? 0) - 1;
             }
+        }
+
+        // Refresh tree counters for all affected folders (#5221)
+        foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+            adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
         }
 
         echo (string) prepareExchangedData(
@@ -7658,6 +7706,9 @@ switch ($inputData['type']) {
             $successfulDeletions = array();
             $failedDeletions = array();
 
+            // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+            $folderCounterDeltas = [];
+
             foreach( $selectedItemIds as $itemId) {
                 // Check that user can access this item
                 $granted = accessToItemIsGranted((int) $itemId, $SETTINGS);
@@ -7721,8 +7772,16 @@ switch ($inputData['type']) {
                 // Update CACHE table
                 updateCacheTable('delete_value', (int) $itemId);
 
+                // Track counter change: -1 on the item's folder (#5221)
+                $folderCounterDeltas[$itemTreeId] = ($folderCounterDeltas[$itemTreeId] ?? 0) - 1;
+
                 // Ajouter l'item à la liste des succès
                 $successfulDeletions[] = $itemId;
+            }
+
+            // Refresh tree counters for all affected folders (#5221)
+            foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+                adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
             }
 
             // Préparer la réponse
