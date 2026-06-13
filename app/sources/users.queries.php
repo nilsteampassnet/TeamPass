@@ -2778,7 +2778,7 @@ if (null !== $post_type) {
             try {
                 $results = $connection->query()
                     ->select($adQueryAttributes)
-                    ->rawfilter($SETTINGS['ldap_user_object_filter'])
+                    ->rawfilter(tpLdapBuildObjectFilter((string) $SETTINGS['ldap_user_object_filter']))
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
                     ->paginate(100);
@@ -4766,6 +4766,62 @@ function tpLdapEscapeFilterValue(string $value): string
 }
 
 /**
+ * Build a valid LDAP filter from the user-object-filter setting.
+ *
+ * The setting accepts either a single filter, e.g. "(objectClass=user)", or
+ * several filters separated by a top-level comma, e.g.
+ * "(objectCategory=Person),(sAMAccountName=*)". Multiple filters are combined
+ * with a logical AND. Commas located inside a value (e.g. a DN like
+ * "memberOf=CN=x,OU=y") are preserved.
+ *
+ * @param string $rawFilter Raw value stored in settings.
+ * @return string A single valid LDAP filter, or '' when none provided.
+ */
+function tpLdapBuildObjectFilter(string $rawFilter): string
+{
+    $rawFilter = trim($rawFilter);
+    if ($rawFilter === '') {
+        return '';
+    }
+
+    // Split on commas located at the top level (parenthesis depth 0) only.
+    $parts = [];
+    $current = '';
+    $depth = 0;
+    $length = strlen($rawFilter);
+    for ($i = 0; $i < $length; $i++) {
+        $char = $rawFilter[$i];
+        if ($char === '(') {
+            $depth++;
+        } elseif ($char === ')') {
+            $depth--;
+        }
+        if ($char === ',' && $depth === 0) {
+            $parts[] = $current;
+            $current = '';
+            continue;
+        }
+        $current .= $char;
+    }
+    $parts[] = $current;
+
+    // Drop empty segments (e.g. trailing comma).
+    $parts = array_values(array_filter(
+        array_map('trim', $parts),
+        static fn($p) => $p !== ''
+    ));
+
+    if (count($parts) === 0) {
+        return '';
+    }
+    if (count($parts) === 1) {
+        return $parts[0];
+    }
+
+    return '(&' . implode('', $parts) . ')';
+}
+
+/**
  * Retrieve LDAP/AD status (disabled/expired) for a list of TeamPass user IDs.
  * This is designed for the main Users page to avoid fetching the full LDAP directory.
  */
@@ -4853,8 +4909,10 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
     $orFilter = '(|' . $orParts . ')';
 
     // Combine with object filter
-    $objectFilter = (string) $SETTINGS['ldap_user_object_filter'];
-    $finalFilter = '(&' . $objectFilter . $orFilter . ')';
+    $objectFilter = tpLdapBuildObjectFilter((string) $SETTINGS['ldap_user_object_filter']);
+    $finalFilter = $objectFilter === ''
+        ? $orFilter
+        : '(&' . $objectFilter . $orFilter . ')';
 
     // Attributes needed for status detection
     $adQueryAttributes = array_values(array_unique(array(
