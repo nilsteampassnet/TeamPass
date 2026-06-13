@@ -148,6 +148,8 @@ Get item(s) by ID or label.
 
 **Custom fields:** `fields` is an array of `{ id, title, type, masked, value }` for the item's folder-associated categories. Encrypted values are decrypted via `decryptUserObjectKeyWithMigration()` on `sharekeys_fields` (+ `base64_decode`); empty when no sharekey is available yet. Only present when `item_extra_fields` is enabled. Also returned by `item/inFolders`.
 
+**Field role visibility:** a field restricted via `categories.role_visibility` (Custom Fields → "Restrict Visibility to") is **omitted entirely** from `fields` for a user holding none of those roles — its value is never decrypted nor returned. `role_visibility = 'all'` (or a role the user holds) ⇒ returned. The check uses the requesting user's `fonction_id` and mirrors the web item card (`core.php` *LOAD CATEGORIES*); there is **no admin bypass**. Enforced in `ItemModel::getItemCustomFields()`.
+
 **Permissions:** `allowed_to_read`. Uses folder access constraint — IDOR protection via sharekey (item skipped if no sharekey found for user).
 
 **LIKE search:** `label` and `description` params trigger a `LIKE %value%` search. The `%` and `_` characters in the input are escaped to prevent LIKE injection.

@@ -1048,6 +1048,7 @@
             },
             "CustomField": {
                 "type": "object",
+                "description": "A custom field value attached to an item. Fields restricted via 'Restrict Visibility to' (categories.role_visibility) are omitted entirely for users holding none of the required roles; their value is never decrypted nor returned. No admin bypass.",
                 "properties": {
                     "id": {
                         "type": "integer"

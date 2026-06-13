@@ -3139,6 +3139,24 @@ switch ($inputData['type']) {
                         $arrCatList
                     );
                     foreach ($rows_tmp as $row) {
+                        // Enforce field role-based visibility (same rule as the
+                        // "LOAD CATEGORIES" block in core.php): a field restricted to
+                        // roles must never be returned to a user holding none of them.
+                        // Without this check the decrypted value leaks in the AJAX
+                        // response even though the item card hides the widget (#5176).
+                        // 'all' = visible to every role.
+                        if (
+                            $row['role_visibility'] !== 'all'
+                            && count(
+                                array_intersect(
+                                    explode(';', (string) $session->get('user-roles')),
+                                    explode(',', (string) $row['role_visibility'])
+                                )
+                            ) === 0
+                        ) {
+                            continue;
+                        }
+
                         // Uncrypt data
                         // Get the object key for the user
                         //db::debugmode(true);

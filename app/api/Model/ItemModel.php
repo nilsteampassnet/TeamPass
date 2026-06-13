@@ -50,14 +50,18 @@ class ItemModel
      */
     public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0, array $sqlParams = []): array
     {
-        // Fetch user's public key once for migration-aware decryption
+        // Fetch user's public key (migration-aware decryption) and roles (field
+        // visibility) once. fonction_id is the same ';'-separated role list the web
+        // session exposes as 'user-roles'.
         $userPublicKey = '';
+        $userRoles = '';
         $userKeyRow = DB::queryFirstRow(
-            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            'SELECT public_key, fonction_id FROM ' . prefixTable('users') . ' WHERE id = %i',
             $userId
         );
         if ($userKeyRow !== null) {
             $userPublicKey = (string) $userKeyRow['public_key'];
+            $userRoles = (string) $userKeyRow['fonction_id'];
         }
 
         // Load settings once to know whether custom fields are enabled
@@ -144,7 +148,7 @@ class ItemModel
 
             // Custom fields attached to this item (only if the feature is enabled)
             $itemFields = $itemExtraFields === true
-                ? $this->getItemCustomFields((int) $row['id'], (int) $row['id_tree'], $userId, $userPrivateKey, $userPublicKey)
+                ? $this->getItemCustomFields((int) $row['id'], (int) $row['id_tree'], $userId, $userPrivateKey, $userPublicKey, $userRoles)
                 : [];
 
             array_push(
@@ -708,10 +712,11 @@ class ItemModel
      * @param int    $userId         Requesting user ID
      * @param string $userPrivateKey User private key (already decrypted)
      * @param string $userPublicKey  User public key
+     * @param string $userRoles      Requesting user roles (';'-separated, from fonction_id)
      *
      * @return array<int, array{id:int, title:string, type:string, masked:int, value:string}>
      */
-    private function getItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey): array
+    private function getItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey, string $userRoles = ''): array
     {
         // Categories associated to the item's folder
         $catRows = DB::query(
@@ -727,7 +732,8 @@ class ItemModel
         $rows = DB::query(
             'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
                 i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
-                c.title AS title, c.type AS type, c.masked AS masked
+                c.title AS title, c.type AS type, c.masked AS masked,
+                c.role_visibility AS role_visibility
             FROM ' . prefixTable('categories_items') . ' AS i
             INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
             WHERE i.item_id = %i AND c.parent_id IN %li',
@@ -737,6 +743,22 @@ class ItemModel
 
         $fields = [];
         foreach ($rows as $row) {
+            // Enforce field role-based visibility (same rule as the web item card and
+            // core.php "LOAD CATEGORIES"): never return a field restricted to roles the
+            // requesting user does not hold, otherwise its decrypted value leaks (#5176).
+            // 'all' = visible to every role.
+            if (
+                $row['role_visibility'] !== 'all'
+                && count(
+                    array_intersect(
+                        explode(';', $userRoles),
+                        explode(',', (string) $row['role_visibility'])
+                    )
+                ) === 0
+            ) {
+                continue;
+            }
+
             $value = '';
             $isEncrypted = (int) $row['encrypted_data'] === 1 && $row['encryption_type'] !== 'not_set';
 
