@@ -975,7 +975,7 @@ switch ($inputData['type']) {
 
         // Check PWD EMPTY
         if (
-            empty($pw)
+            empty($post_password)
             && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
             && (int) $session->get('user-create_item_without_password') !== 1
         ) {
@@ -1232,39 +1232,56 @@ switch ($inputData['type']) {
                     isset($previousValue['string']) === true ? $previousValue['string'] : '',
                 );
             }
-            
-            // encrypt PW on if it has changed, or if it is empty
-            if (
-                (
-                    (
+            // Manage the password value when it has changed.
+            if ($post_password !== $pw) {
+                if (empty($post_password) === true) {
+                    // Password intentionally cleared. Enforce the create_item_without_password
+                    // gate at the sink too (defense in depth, fail-closed): only clear when the
+                    // user is explicitly allowed. If the session flag is absent (e.g. a session
+                    // opened before it was populated), keep the existing password rather than
+                    // wiping it.
+                    if (
                         $session->has('user-create_item_without_password')
-                        && (int) $session->get('user-create_item_without_password') !== 1
-                    )
-                    || !empty($post_password)
-                )
-                && $post_password !== $pw
-            ) {
-                //-----
-                // NEW ENCRYPTION
-                $cryptedStuff = doDataEncryption($post_password);
-                $encrypted_password = $cryptedStuff['encrypted'];
-                $encrypted_password_key = $cryptedStuff['objectKey'];
+                        && (int) $session->get('user-create_item_without_password') === 1
+                    ) {
+                        // Store a truly empty value like item creation does: no object key, no
+                        // sharekeys and no background encryption task. This also avoids the client
+                        // waiting on an encryption task that would never refresh the detail view
+                        // for an empty password.
+                        $encrypted_password = '';
+                        DB::delete(
+                            prefixTable('sharekeys_items'),
+                            'object_id = %i',
+                            (int) $inputData['itemId']
+                        );
+                        $passwordWasUpdated = true;
+                    } else {
+                        // Not allowed to clear the password — keep the existing one.
+                        $encrypted_password = $data['pw'];
+                    }
+                } else {
+                    //-----
+                    // NEW ENCRYPTION
+                    $cryptedStuff = doDataEncryption($post_password);
+                    $encrypted_password = $cryptedStuff['encrypted'];
+                    $encrypted_password_key = $cryptedStuff['objectKey'];
 
-                // Create sharekeys for users
-                storeUsersShareKey(
-                    'sharekeys_items',
-                    (int) $post_folder_is_personal,
-                    (int) $inputData['itemId'],
-                    $encrypted_password_key,
-                    true,   // only for the item creator
-                    true,   // delete all
-                );
+                    // Create sharekeys for users
+                    storeUsersShareKey(
+                        'sharekeys_items',
+                        (int) $post_folder_is_personal,
+                        (int) $inputData['itemId'],
+                        $encrypted_password_key,
+                        true,   // only for the item creator
+                        true,   // delete all
+                    );
 
-                // Create a task to create sharekeys for users
-                if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
-                $tasksToBePerformed = ['item_password'];
-                $encryptionTaskIsRequested = true;
-                $passwordWasUpdated = true;
+                    // Create a task to create sharekeys for users
+                    if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
+                    $tasksToBePerformed = ['item_password'];
+                    $encryptionTaskIsRequested = true;
+                    $passwordWasUpdated = true;
+                }
             } else {
                 $encrypted_password = $data['pw'];
             }
