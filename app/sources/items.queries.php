@@ -796,6 +796,9 @@ switch ($inputData['type']) {
             if (isset($newID) === true) {
                 updateCacheTable('add_value', intval($newID));
 
+                // Refresh the folder tree counters + invalidate tree cache (#5221)
+                adjustFolderItemsCounter((int) $inputData['folderId'], 1);
+
                 // Emit WebSocket event for real-time notification
                 emitItemEvent(
                     'created',
@@ -2673,6 +2676,9 @@ switch ($inputData['type']) {
 
             // Add new item to cache table.
             updateCacheTable('add_value', intval($newItemId));
+
+            // Refresh the destination folder tree counters + invalidate cache (#5221)
+            adjustFolderItemsCounter((int) $post_dest_id, 1);
         } else {
             // no item
             echo (string) prepareExchangedData(
@@ -3347,6 +3353,9 @@ switch ($inputData['type']) {
                         // Update cache table
                         updateCacheTable('delete_value', (int) $inputData['id']);
 
+                        // Refresh the folder tree counters + invalidate tree cache (#5221)
+                        adjustFolderItemsCounter((int) $dataItem['id_tree'], -1);
+
                         $arrData['show_detail_option'] = 1;
                         $arrData['to_be_deleted'] = 0;
                     } elseif ($dataDelete['del_type'] === '2') {
@@ -3851,6 +3860,9 @@ switch ($inputData['type']) {
         );
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
+
+        // Refresh the folder tree counters + invalidate tree cache (#5221)
+        adjustFolderItemsCounter((int) ($data['id_tree'] ?? $inputData['folderId']), -1);
 
         // Emit WebSocket event for real-time notification.
         // Target the item's actual folder (id_tree) instead of the caller-supplied folder_id.
