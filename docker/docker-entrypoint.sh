@@ -78,6 +78,7 @@ create_directories() {
     mkdir -p /var/www/html/storage/files
     mkdir -p /var/www/html/storage/upload
     mkdir -p /var/www/html/storage/config
+    mkdir -p /var/www/html/storage/backups
     mkdir -p /var/www/html/secrets
     mkdir -p /var/www/html/app/includes/libraries/csrfp/log
 
@@ -88,17 +89,23 @@ create_directories() {
 set_permissions() {
     echo -e "${BLUE}🔒 Setting file permissions...${NC}"
 
+    # The storage/ root itself must be writable by nginx so PHP can create
+    # runtime sub-directories, and the installer "writable" check passes (issue #5238).
+    chown nginx:nginx /var/www/html/storage
     chown -R nginx:nginx /var/www/html/storage/sk
     chown -R nginx:nginx /var/www/html/storage/files
     chown -R nginx:nginx /var/www/html/storage/upload
     chown -R nginx:nginx /var/www/html/storage/config
+    chown -R nginx:nginx /var/www/html/storage/backups
     chown -R nginx:nginx /var/www/html/secrets
     chown -R nginx:nginx /var/www/html/app/includes/libraries/csrfp/log
 
+    chmod 750 /var/www/html/storage
     chmod 700 /var/www/html/storage/sk
     chmod 750 /var/www/html/storage/files
     chmod 750 /var/www/html/storage/upload
     chmod 750 /var/www/html/storage/config
+    chmod 750 /var/www/html/storage/backups
     chmod 700 /var/www/html/secrets
     chmod 750 /var/www/html/app/includes/libraries/csrfp/log
 
@@ -128,8 +135,15 @@ link_persistent_file() {
         ln -s "$persist_file" "$app_file"
     fi
 
+    # Force ownership and mode so PHP-FPM (running as the nginx user) can read
+    # AND write the persistent file. A file copied in from an on-premise install
+    # may arrive owned by www-data or with restrictive bits, which otherwise
+    # fails the installer "writable" check (issue #5238).
     chown -h nginx:nginx "$app_file" 2>/dev/null || true
-    [ -f "$persist_file" ] && chown nginx:nginx "$persist_file" 2>/dev/null || true
+    if [ -f "$persist_file" ]; then
+        chown nginx:nginx "$persist_file"
+        chmod 0640 "$persist_file"
+    fi
 }
 
 # Ensure install-time state survives container recreation.
@@ -220,6 +234,29 @@ auto_install() {
     fi
 }
 
+# Read the TeamPass version recorded in the database.
+# Tries the current key (teampass_version) first, then the legacy key
+# (cpassman_version) used by TeamPass 3.1.5.x and earlier — so a database
+# migrated from an older on-premise install is detected correctly (issue #5238).
+# Echoes the version string, or nothing when it cannot be read.
+read_db_version() {
+    if [ -z "$DB_PASSWORD" ]; then
+        return 0
+    fi
+
+    _db_version=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
+        "$DB_NAME" --skip-column-names --silent \
+        -e "SELECT valeur FROM ${DB_PREFIX}misc WHERE type='admin' AND intitule='teampass_version' LIMIT 1" 2>/dev/null || true)
+
+    if [ -z "$_db_version" ]; then
+        _db_version=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
+            "$DB_NAME" --skip-column-names --silent \
+            -e "SELECT valeur FROM ${DB_PREFIX}misc WHERE type='admin' AND intitule='cpassman_version' LIMIT 1" 2>/dev/null || true)
+    fi
+
+    echo "$_db_version"
+}
+
 # Function to run pending database migrations when the container image is
 # newer than the version recorded in teampass_misc.  The upgrade scripts are
 # idempotent (CREATE TABLE IF NOT EXISTS / ALTER ... IF NOT EXISTS), so it is
@@ -230,10 +267,8 @@ auto_upgrade() {
         return 0
     fi
 
-    # Read the version stored in the database
-    DB_VERSION=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-        "$DB_NAME" --skip-column-names --silent \
-        -e "SELECT valeur FROM ${DB_PREFIX}misc WHERE type='admin' AND intitule='teampass_version' LIMIT 1" 2>/dev/null || true)
+    # Read the version stored in the database (current or legacy key)
+    DB_VERSION=$(read_db_version)
 
     if [ -z "$DB_VERSION" ]; then
         echo -e "${YELLOW}⚠️  Could not read DB version, skipping auto-upgrade${NC}"
@@ -326,16 +361,25 @@ main() {
     if is_installed; then
         echo -e "${GREEN}✅ TeamPass is already configured${NC}"
 
-        # Remove install directory if it exists (keep it during upgrades so
-        # upgrade.php is accessible, then remove once complete)
-        if [ -d "/var/www/html/public/install" ]; then
-            echo -e "${BLUE}🗑️  Removing install directory...${NC}"
-            rm -rf /var/www/html/public/install
-        fi
-
         # Auto-upgrade: apply pending database migrations when the image
         # version is newer than the version recorded in teampass_misc.
         auto_upgrade
+
+        # Remove the install directory only when the database is already at the
+        # image version. While an upgrade is pending (e.g. a database migrated
+        # from an older on-premise install), the install directory is kept so
+        # that /install/upgrade.php remains reachable to finish the upgrade
+        # through the web wizard (issue #5238). If the version cannot be read,
+        # the directory is removed (preserves the previous hardening default).
+        if [ -d "/var/www/html/public/install" ]; then
+            CURRENT_DB_VERSION=$(read_db_version)
+            if [ -n "$CURRENT_DB_VERSION" ] && [ "$CURRENT_DB_VERSION" != "${TP_VERSION:-${TEAMPASS_VERSION}}" ]; then
+                echo -e "${YELLOW}⏳ Upgrade pending (DB ${CURRENT_DB_VERSION} → ${TP_VERSION:-${TEAMPASS_VERSION}}); keeping install directory for /install/upgrade.php${NC}"
+            else
+                echo -e "${BLUE}🗑️  Removing install directory...${NC}"
+                rm -rf /var/www/html/public/install
+            fi
+        fi
     else
         echo -e "${YELLOW}⚙️  TeamPass is not configured yet${NC}"
 
