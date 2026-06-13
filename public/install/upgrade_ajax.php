@@ -935,7 +935,19 @@ if (isset($post_type)) {
             // get php location
             require_once 'tp.functions.php';
             $phpLocation = findPhpBinary();
-            if ($phpLocation['error'] === false) {
+            if (function_exists('exec') === false) {
+                // exec() is disabled (e.g. Docker hardening). The crontab manager
+                // relies on exec(), and in such environments the scheduler cron is
+                // already provided by the host (system crontab / supervisord), so
+                // skip the in-app crontab setup gracefully instead of crashing.
+                array_push(
+                    $returnStatus,
+                    array(
+                        'id' => 'step5_cronJob',
+                        'html' => '<i class="fa-solid fa-circle-check fa-lg text-success ml-2 mr-2"></i><span class="text-info font-italic">Skipped — cron managed by the host</span>',
+                    )
+                );
+            } elseif ($phpLocation['error'] === false) {
                 // Instantiate the adapter and repository
                 try {
                     $crontabAdapter = new CrontabAdapter();
@@ -972,8 +984,9 @@ if (isset($post_type)) {
                             )
                         );
                     }
-                } catch (Exception $e) {
-                    // do nothing
+                } catch (\Throwable $e) {
+                    // Swallow any failure (including a disabled-function Error)
+                    // so the crontab step can never abort the upgrade response.
                 }
             } else {
                 array_push(
