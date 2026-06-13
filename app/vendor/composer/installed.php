@@ -226,6 +226,15 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
+        'ezyang/htmlpurifier' => array(
+            'pretty_version' => 'v4.19.0',
+            'version' => '4.19.0.0',
+            'reference' => 'b287d2a16aceffbf6e0295559b39662612b77fcf',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../ezyang/htmlpurifier',
+            'aliases' => array(),
+            'dev_requirement' => false,
+        ),
         'firebase/php-jwt' => array(
             'pretty_version' => 'v7.0.5',
             'version' => '7.0.5.0',

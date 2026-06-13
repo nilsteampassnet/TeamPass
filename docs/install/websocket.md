@@ -3,9 +3,20 @@
 
 ## WebSocket Server
 
-TeamPass includes an optional WebSocket server that provides real-time notifications to connected users. When enabled, users receive instant updates when items or folders are created, modified or deleted by other users, without needing to refresh the page.
+TeamPass includes an optional WebSocket server that provides real-time notifications to connected users. When enabled, users receive instant updates when items, folders, or Knowledge Base articles are created, modified or deleted by other users, without needing to refresh the page.
 
 > :bulb: **Note:** The WebSocket feature is optional. TeamPass works perfectly without it. Enable it only if you need real-time collaboration features.
+
+## Real-time features
+
+The WebSocket server currently supports:
+
+| Area | Real-time behavior |
+|------|--------------------|
+| **Items** | Item and folder refresh events, edition lock indicators, and consultation presence |
+| **Knowledge Base** | Article refresh events, edition lock indicators, lock release notifications, and consultation presence |
+
+Edition locks are still enforced by the server-side HTTP endpoints and database tables. WebSocket only broadcasts the state changes so connected clients can update their UI immediately.
 
 
 ## 1. Prerequisites

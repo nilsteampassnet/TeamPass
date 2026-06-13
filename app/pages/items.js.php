@@ -297,6 +297,27 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     }
 
+    function resumeConsultationPresenceForVisibleItem(itemId) {
+        itemId = parseInt(itemId || 0, 10)
+        if (!itemId || typeof window.tpWsStartItemView !== 'function') return
+
+        const $detailsContainer = $('#items-details-container')
+        if ($detailsContainer.hasClass('hidden')) return
+        if (parseInt($detailsContainer.data('id'), 10) !== itemId) return
+
+        const itemState = store.get('teampassItem') || {}
+        const folderId = parseInt(
+            itemState.folderId ||
+            itemState.tree_id ||
+            $('#list-item-row_' + itemId).data('item-tree-id') ||
+            0,
+            10
+        )
+        if (!folderId) return
+
+        window.tpWsStartItemView(itemId, folderId)
+    }
+
     // Clean up edition lock on page unload (tab close, navigation away)
     $(window).on('beforeunload', function() {
         stopEditionLockHeartbeat()
@@ -1586,9 +1607,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     $('.but-back').click(function() {
         userDidAChange = false;
+        let itemIdToResumeConsultation = 0;
         if ($(this).hasClass('but-back-to-item') === false) {
             // Is this form the edition one?
             if ($(this).hasClass('item-edit') === true) {
+                itemIdToResumeConsultation = parseInt(store.get('teampassItem').id, 10) || 0;
                 // Stop edition lock heartbeat
                 stopEditionLockHeartbeat();
 
@@ -1634,6 +1657,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Show expected one
             $(store.get('teampassUser').previousView).removeClass('hidden');
+
+            if (itemIdToResumeConsultation > 0) {
+                resumeConsultationPresenceForVisibleItem(itemIdToResumeConsultation);
+            }
         } else {
             $(store.get('teampassUser').previousView).removeClass('hidden');
             $(store.get('teampassUser').currentView).addClass('hidden');

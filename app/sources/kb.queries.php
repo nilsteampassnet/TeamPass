@@ -95,6 +95,8 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
 
+const KB_DESCRIPTION_MAX_BYTES = 4194304;
+
 function kbAccessibleFolders(SessionInterface $session): array
 {
     $folders = $session->get('user-accessible_folders');
@@ -493,6 +495,123 @@ function kbSanitizeTextInput(string $text): string
     return trim($text);
 }
 
+function kbFormatBytesForMessage(int $bytes): string
+{
+    $units = ['B', 'KB', 'MB', 'GB'];
+    $value = max(0, $bytes);
+    $unitIndex = 0;
+
+    while ($value >= 1024 && $unitIndex < count($units) - 1) {
+        $value /= 1024;
+        $unitIndex++;
+    }
+
+    return rtrim(rtrim(number_format((float) $value, $unitIndex === 0 ? 0 : 1, '.', ''), '0'), '.') . ' ' . $units[$unitIndex];
+}
+
+function kbRichTextLooksLikeHtml(string $text): bool
+{
+    return preg_match('/<(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/iu', $text) === 1;
+}
+
+function kbEscapedRichTextLooksLikeHtml(string $text): bool
+{
+    return preg_match('/&lt;\/?(?:a|br|p|div|ul|ol|li|blockquote|strong|b|em|i|u|s|strike|h[1-6]|pre|code|hr|table|thead|tbody|tr|th|td|img)\b/iu', $text) === 1;
+}
+
+function kbDecodeEscapedRichHtml(string $html): string
+{
+    if (kbEscapedRichTextLooksLikeHtml($html) === false) {
+        return $html;
+    }
+
+    $hasEscapedBlock = preg_match('/&lt;\/?(?:br|p|div|ul|ol|li|blockquote|h[1-6]|pre|hr|table|thead|tbody|tr|th|td|img)\b/iu', $html) === 1;
+    $candidate = $html;
+
+    if ($hasEscapedBlock === true) {
+        $candidate = preg_replace('/<\/p>\s*<p[^>]*>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<br\s*\/?>/iu', "\n", $candidate) ?? $candidate;
+        $candidate = preg_replace('/<\/?p[^>]*>/iu', '', $candidate) ?? $candidate;
+    }
+
+    $decodedHtml = html_entity_decode($candidate, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    return kbRichTextLooksLikeHtml($decodedHtml) === true ? $decodedHtml : $html;
+}
+
+function kbRichHtmlHasContent(string $html): bool
+{
+    $plainText = trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+    return $plainText !== ''
+        || preg_match('/<img\b[^>]*\bsrc\s*=/iu', $html) === 1
+        || preg_match('/<(?:table|hr)\b/iu', $html) === 1;
+}
+
+/**
+ * Sanitize rich KB HTML using HTMLPurifier with a strict tag/attribute allowlist.
+ *
+ * Replaces the former hand-rolled DOMDocument sanitizer. The allowlist matches the
+ * tags and attributes previously permitted; unsafe schemes (javascript:, vbscript:,
+ * non-image data:) and dangerous tags (script, style, iframe, svg, ...) are removed.
+ * Links are forced to rel="noopener noreferrer" target="_blank". The client-side
+ * DOMPurify pass re-sanitizes the same content on render (defense-in-depth).
+ *
+ * @param string $html Raw rich-text HTML.
+ * @return string Sanitized HTML, or '' when no displayable content remains.
+ */
+function kbSanitizeRichHtml(string $html): string
+{
+    $html = kbSanitizeTextInput($html);
+    if ($html === '') {
+        return '';
+    }
+    $html = kbDecodeEscapedRichHtml($html);
+
+    if (class_exists('HTMLPurifier') === false) {
+        // Defensive fallback if the library is unavailable.
+        return kbBuildRichTextHtml(strip_tags($html));
+    }
+
+    $config = HTMLPurifier_Config::createDefault();
+    $config->set('Core.Encoding', 'UTF-8');
+    // Tag/attribute allowlist mirrors the former kbRichHtmlAllowedTags()/kbRichHtmlCleanAttributes().
+    $config->set(
+        'HTML.Allowed',
+        'a[href|title],br,p,div,ul,ol,li,blockquote,'
+        . 'strong,b,em,i,u,s,h2,h3,h4,pre,code,hr,'
+        . 'table,thead,tbody,tr,th[colspan|rowspan],td[colspan|rowspan],'
+        . 'img[src|alt|width|height|title]'
+    );
+    // Reject javascript:/vbscript:; the data: scheme only resolves to base64 images.
+    $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true, 'data' => true]);
+    $config->set('Attr.AllowedFrameTargets', ['_blank']);
+    // Force target="_blank" rel="noopener noreferrer" on links.
+    $config->set('HTML.TargetBlank', true);
+    // Clamp image dimensions (was 1..2000 in the former sanitizer).
+    $config->set('HTML.MaxImgLength', 2000);
+    // No writable cache directory required (read-only vendor / Docker).
+    $config->set('Cache.DefinitionImpl', null);
+
+    $sanitizedHtml = trim((new HTMLPurifier($config))->purify($html));
+
+    return kbRichHtmlHasContent($sanitizedHtml) === true ? $sanitizedHtml : '';
+}
+
+function kbSanitizeArticleContent(string $content): string
+{
+    $content = kbSanitizeTextInput($content);
+    if ($content === '') {
+        return '';
+    }
+    $content = kbDecodeEscapedRichHtml($content);
+    if (kbRichTextLooksLikeHtml($content) === true) {
+        return kbSanitizeRichHtml($content);
+    }
+
+    return $content;
+}
+
 function kbNormalizeLegacyRichTextMarkers(string $text): string
 {
     $decodedText = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -533,7 +652,12 @@ function kbFormatTimestamp(int $timestamp): string
 
 function kbBuildDescriptionExcerpt(string $description, int $maxLength = 180): string
 {
-    $excerpt = trim((string) preg_replace('/\s+/u', ' ', kbNormalizeTextLineEndings($description)));
+    $description = kbDecodeEscapedRichHtml(kbNormalizeTextLineEndings($description));
+    $excerpt = trim((string) preg_replace(
+        '/\s+/u',
+        ' ',
+        html_entity_decode(strip_tags($description), ENT_QUOTES | ENT_HTML5, 'UTF-8')
+    ));
     if ($excerpt === '') {
         return '';
     }
@@ -681,7 +805,17 @@ function kbBuildRichTextHtml(string $text): string
 
 function kbGetDescriptionHtml(string $description): string
 {
+    $description = kbDecodeEscapedRichHtml($description);
+    if (kbRichTextLooksLikeHtml($description) === true) {
+        return kbSanitizeRichHtml($description);
+    }
+
     return kbBuildRichTextHtml($description);
+}
+
+function kbGetCommentHtml(string $comment): string
+{
+    return kbBuildRichTextHtml($comment);
 }
 
 function kbCanComment(array $kb, SessionInterface $session): bool
@@ -748,7 +882,7 @@ function kbLoadComments(int $kbId, array $kb, SessionInterface $session): array
             'id' => (int) ($row['id'] ?? 0),
             'kb_id' => (int) ($row['kb_id'] ?? 0),
             'content' => (string) ($row['content'] ?? ''),
-            'content_html' => kbGetDescriptionHtml((string) ($row['content'] ?? '')),
+            'content_html' => kbGetCommentHtml((string) ($row['content'] ?? '')),
             'author' => kbBuildCommentAuthorLabel($row),
             'author_id' => (int) ($row['author_id'] ?? 0),
             'created_at' => (int) ($row['created_at'] ?? 0),
@@ -864,6 +998,169 @@ function kbBuildEntryPayload(array $kb, SessionInterface $session, string $baseU
         'can_comment' => kbCanComment($kb, $session),
         'can_edit' => kbCanEdit($kb, $session),
         'can_delete' => kbCanDelete($kb, $session),
+    ];
+}
+
+function kbEditionLockHeartbeatTimeout(): int
+{
+    return defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+        ? (int) EDITION_LOCK_HEARTBEAT_TIMEOUT
+        : 300;
+}
+
+function kbLatestEditionLock(int $kbId): ?array
+{
+    $lock = DB::queryFirstRow(
+        'SELECT timestamp, user_id, increment_id
+        FROM ' . prefixTable('kb_edition') . '
+        WHERE kb_id = %i
+        ORDER BY increment_id DESC',
+        $kbId
+    );
+
+    return $lock === null ? null : $lock;
+}
+
+function kbCreateEditionLock(int $kbId, int $userId, int $timestamp): void
+{
+    DB::insert(
+        prefixTable('kb_edition'),
+        [
+            'timestamp' => $timestamp,
+            'kb_id' => $kbId,
+            'user_id' => $userId,
+        ]
+    );
+}
+
+function kbReleaseEditionLock(int $kbId, int $userId, string $userLogin): void
+{
+    DB::delete(
+        prefixTable('kb_edition'),
+        'kb_id = %i AND user_id = %i',
+        $kbId,
+        $userId
+    );
+
+    if (DB::affectedRows() > 0) {
+        emitKbEditionLockEvent('stopped', $kbId, $userLogin, $userId);
+    }
+}
+
+function kbReleaseAllEditionLocks(int $kbId, string $userLogin, int $userId): void
+{
+    DB::delete(prefixTable('kb_edition'), 'kb_id = %i', $kbId);
+    if (DB::affectedRows() > 0) {
+        emitKbEditionLockEvent('stopped', $kbId, $userLogin, $userId);
+    }
+}
+
+function kbIsLocked(int $kbId, SessionInterface $session, int $userId, string $actionType = ''): array
+{
+    if ($kbId <= 0 || $userId <= 0) {
+        return ['status' => false];
+    }
+
+    $now = time();
+    $lastLock = kbLatestEditionLock($kbId);
+
+    if ($lastLock === null) {
+        if ($actionType === 'edit') {
+            kbCreateEditionLock($kbId, $userId, $now);
+            emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), $userId);
+        }
+
+        return ['status' => false];
+    }
+
+    if ((int) $lastLock['user_id'] === $userId) {
+        if ($actionType === 'edit') {
+            DB::update(
+                prefixTable('kb_edition'),
+                ['timestamp' => $now],
+                'increment_id = %i',
+                (int) $lastLock['increment_id']
+            );
+        }
+
+        return ['status' => false];
+    }
+
+    $heartbeatTimeout = kbEditionLockHeartbeatTimeout();
+    $elapsed = abs($now - (int) $lastLock['timestamp']);
+
+    if ($elapsed > $heartbeatTimeout) {
+        $lockOwnerLogin = DB::queryFirstField(
+            'SELECT login FROM ' . prefixTable('users') . ' WHERE id = %i',
+            (int) $lastLock['user_id']
+        );
+        emitKbEditionLockEvent('stopped', $kbId, (string) ($lockOwnerLogin ?? ''), (int) $lastLock['user_id']);
+        DB::delete(prefixTable('kb_edition'), 'kb_id = %i', $kbId);
+
+        if ($actionType === 'edit') {
+            kbCreateEditionLock($kbId, $userId, $now);
+            emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), $userId);
+        }
+
+        return ['status' => false];
+    }
+
+    return [
+        'status' => true,
+        'delay' => max(0, $heartbeatTimeout - $elapsed),
+    ];
+}
+
+function kbEditionLockSaveStatus(int $kbId, int $userId): array
+{
+    if ($kbId <= 0 || $userId <= 0) {
+        return ['allowed' => false, 'reason' => 'invalid'];
+    }
+
+    $locks = DB::query(
+        'SELECT timestamp, user_id, increment_id
+        FROM ' . prefixTable('kb_edition') . '
+        WHERE kb_id = %i
+        ORDER BY increment_id DESC',
+        $kbId
+    );
+    if (count($locks) === 0) {
+        return ['allowed' => false, 'reason' => 'missing'];
+    }
+
+    $now = time();
+    $timeout = kbEditionLockHeartbeatTimeout();
+    $hasOwnActiveLock = false;
+
+    foreach ($locks as $lock) {
+        $elapsed = abs($now - (int) $lock['timestamp']);
+        if ($elapsed > $timeout) {
+            continue;
+        }
+
+        if ((int) $lock['user_id'] !== $userId) {
+            return [
+                'allowed' => false,
+                'reason' => 'locked_by_other_user',
+                'delay' => max(0, $timeout - $elapsed),
+            ];
+        }
+
+        $hasOwnActiveLock = true;
+    }
+
+    return $hasOwnActiveLock === true
+        ? ['allowed' => true]
+        : ['allowed' => false, 'reason' => 'missing_active_lock'];
+}
+
+function kbEditionLockErrorPayload(Language $lang, array $status): array
+{
+    return [
+        'error' => true,
+        'message' => $lang->get('kb_currently_being_updated'),
+        'edition_locked' => true,
+        'edition_locked_delay' => $status['delay'] ?? null,
     ];
 }
 
@@ -991,6 +1288,57 @@ $data = (string) $request->request->get('data', '');
 $key = (string) $request->request->get('key', $request->query->get('key', ''));
 
 switch ($type) {
+    case 'handle_kb_edition_lock':
+        if (kbIsAdmin($session)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+        if ($key !== (string) $session->get('key')) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+
+        $payload = prepareExchangedData($data, 'decode');
+        if (!is_array($payload)) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('json_error_format')], 'encode');
+            break;
+        }
+
+        $kbId = (int) ($payload['kb_id'] ?? 0);
+        $action = (string) ($payload['action'] ?? '');
+        $kb = kbLoadRow($kbId);
+        if ($kb === null) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
+            break;
+        }
+
+        if ($action === 'release_lock') {
+            kbReleaseEditionLock($kbId, (int) $session->get('user-id'), (string) ($session->get('user-login') ?? ''));
+            echo (string) prepareExchangedData(['error' => false], 'encode');
+            break;
+        }
+
+        if ($action === 'renew_lock') {
+            if (!kbCanEdit($kb, $session)) {
+                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            DB::update(
+                prefixTable('kb_edition'),
+                ['timestamp' => time()],
+                'kb_id = %i AND user_id = %i',
+                $kbId,
+                (int) $session->get('user-id')
+            );
+
+            echo (string) prepareExchangedData(['error' => false], 'encode');
+            break;
+        }
+
+        echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        break;
+
     case 'list_kbs':
         if (kbIsAdmin($session)) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
@@ -1044,10 +1392,31 @@ switch ($type) {
 
         $kbId = (int) ($payload['id'] ?? 0);
         $logView = (int) ($payload['log_view'] ?? 0);
+        $lockForEdit = (int) ($payload['lock_for_edit'] ?? 0);
         $kb = kbLoadRow($kbId);
         if ($kb === null) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('kb_direct_link_not_found')], 'encode');
             break;
+        }
+        if ($lockForEdit === 1) {
+            if (!kbCanEdit($kb, $session)) {
+                echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+                break;
+            }
+
+            $editionLocked = kbIsLocked($kbId, $session, (int) $session->get('user-id'), 'edit');
+            if (($editionLocked['status'] ?? false) === true) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => false,
+                        'edition_locked' => true,
+                        'edition_locked_delay' => $editionLocked['delay'] ?? null,
+                        'message' => $lang->get('kb_currently_being_updated'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
         }
 
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
@@ -1055,7 +1424,7 @@ switch ($type) {
             kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_shown');
         }
 
-        echo (string) prepareExchangedData(['error' => false, 'entry' => $entry], 'encode');
+        echo (string) prepareExchangedData(['error' => false, 'edition_locked' => false, 'entry' => $entry], 'encode');
         break;
 
     case 'save_kb':
@@ -1081,13 +1450,21 @@ switch ($type) {
         $anyoneCanModify = (int) ($payload['anyone_can_modify'] ?? 0) === 1 ? 1 : 0;
         $allowComments = (int) ($payload['allow_comments'] ?? 0) === 1 ? 1 : 0;
         $requestedAssociatedItems = is_array($payload['associated_items'] ?? null) ? $payload['associated_items'] : [];
+        $keepLockAfterSave = (int) ($payload['keep_lock_after_save'] ?? 0) === 1 ? 1 : 0;
 
         $label = trim((string) $antiXss->xss_clean($label));
         $category = trim((string) $antiXss->xss_clean($category));
-        $description = kbSanitizeTextInput($description);
+        $description = kbSanitizeArticleContent($description);
 
         if ($label === '' || $category === '' || $description === '') {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('all_fields_are_required')], 'encode');
+            break;
+        }
+        if (strlen($description) > KB_DESCRIPTION_MAX_BYTES) {
+            echo (string) prepareExchangedData([
+                'error' => true,
+                'message' => $lang->get('description') . ' ' . $lang->get('exceeds_maximum_length_of') . ' ' . kbFormatBytesForMessage(KB_DESCRIPTION_MAX_BYTES),
+            ], 'encode');
             break;
         }
 
@@ -1121,6 +1498,11 @@ switch ($type) {
                 echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
                 break;
             }
+            $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+            if ($editionLockForSave['allowed'] !== true) {
+                echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+                break;
+            }
 
             $oldAssociatedItems = kbLoadAssociatedItemIds($kbId);
 
@@ -1149,6 +1531,10 @@ switch ($type) {
                 ]
             );
             $kbId = (int) DB::insertId();
+            if ($keepLockAfterSave === 1) {
+                kbCreateEditionLock($kbId, (int) $session->get('user-id'), time());
+                emitKbEditionLockEvent('started', $kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+            }
         }
 
         $associatedItemsToPersist = kbBuildPersistedAssociatedItemIds($kbId, $requestedAssociatedItems, $session);
@@ -1199,6 +1585,18 @@ switch ($type) {
             );
         }
 
+        emitKbEvent(
+            $oldKb === null ? 'created' : 'updated',
+            $kbId,
+            $label,
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
+
+        if ($oldKb !== null && $keepLockAfterSave !== 1) {
+            kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+        }
+
         $entry = kbBuildEntryPayload(kbLoadRow($kbId) ?? [], $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_saved'), 'id' => $kbId, 'entry' => $entry], 'encode');
         break;
@@ -1229,6 +1627,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLocked = kbIsLocked($kbId, $session, (int) $session->get('user-id'));
+        if (($editionLocked['status'] ?? false) === true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLocked), 'encode');
+            break;
+        }
 
         $associatedRows = DB::query(
             'SELECT item_id
@@ -1242,6 +1645,14 @@ switch ($type) {
         DB::delete(prefixTable('kb_items'), 'kb_id = %i', $kbId);
         DB::delete(prefixTable('kb'), 'id = %i', $kbId);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_delete');
+        kbReleaseAllEditionLocks($kbId, (string) ($session->get('user-login') ?? ''), (int) $session->get('user-id'));
+        emitKbEvent(
+            'deleted',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
 
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_deleted')], 'encode');
         break;
@@ -1347,6 +1758,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+            break;
+        }
 
         $directory = kbAttachmentBaseDirectory($SETTINGS);
         if ($directory === '') {
@@ -1430,6 +1846,13 @@ switch ($type) {
         }
 
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_upload');
+        emitKbEvent(
+            'updated',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_uploaded'), 'entry' => $entry], 'encode');
         break;
@@ -1559,6 +1982,11 @@ switch ($type) {
             echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
             break;
         }
+        $editionLockForSave = kbEditionLockSaveStatus($kbId, (int) $session->get('user-id'));
+        if ($editionLockForSave['allowed'] !== true) {
+            echo (string) prepareExchangedData(kbEditionLockErrorPayload($lang, $editionLockForSave), 'encode');
+            break;
+        }
 
         $attachmentRow = kbFindAttachmentRowById($attachmentId);
         if ($attachmentRow === null) {
@@ -1572,6 +2000,13 @@ switch ($type) {
 
         kbDeleteAttachmentFileAndRow($attachmentRow, $SETTINGS);
         kbInsertLog($SETTINGS, $session, $kbId, (string) $kb['label'], 'at_modification', 'attachments_delete');
+        emitKbEvent(
+            'updated',
+            $kbId,
+            (string) $kb['label'],
+            (string) ($session->get('user-login') ?? ''),
+            (int) $session->get('user-id')
+        );
         $entry = kbBuildEntryPayload($kb, $session, (string) ($SETTINGS['cpassman_url'] ?? ''));
         echo (string) prepareExchangedData(['error' => false, 'message' => $lang->get('kb_attachment_deleted'), 'entry' => $entry], 'encode');
         break;

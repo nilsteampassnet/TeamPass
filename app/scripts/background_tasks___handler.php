@@ -1100,7 +1100,9 @@ class BackgroundTasksHandler {
      */
     private function performMaintenanceTasks(): void {
         $this->cleanMultipleItemsEdition();
+        $this->cleanMultipleKbEdition();
         $this->handleItemTokensExpiration();
+        $this->handleKbTokensExpiration();
         $this->cleanOldFinishedTasks();
         $this->cleanOldImportFiles();
     }
@@ -1118,6 +1120,22 @@ class BackgroundTasksHandler {
                 GROUP BY user_id, item_id
             ) i2 ON i1.user_id = i2.user_id AND i1.item_id = i2.item_id
             WHERE i1.timestamp > i2.oldest_timestamp'
+        );
+    }
+
+    /**
+     * Clean up multiple KB edition locks.
+     * This method removes duplicate entries in the kb_edition table.
+     */
+    private function cleanMultipleKbEdition(): void {
+        DB::query(
+            'DELETE k1 FROM ' . prefixTable('kb_edition') . ' k1
+            JOIN (
+                SELECT user_id, kb_id, MIN(timestamp) AS oldest_timestamp
+                FROM ' . prefixTable('kb_edition') . '
+                GROUP BY user_id, kb_id
+            ) k2 ON k1.user_id = k2.user_id AND k1.kb_id = k2.kb_id
+            WHERE k1.timestamp > k2.oldest_timestamp'
         );
     }
 
@@ -1156,6 +1174,41 @@ class BackgroundTasksHandler {
 
         DB::query(
             'DELETE FROM ' . prefixTable('items_edition') . '
+            WHERE timestamp < %i',
+            $cutoff
+        );
+    }
+
+    /**
+     * Handle KB edition lock expiration.
+     * This method emits kb_edition_stopped events for stale locks, then removes them.
+     */
+    private function handleKbTokensExpiration(): void {
+        $heartbeatTimeout = defined('EDITION_LOCK_HEARTBEAT_TIMEOUT')
+            ? EDITION_LOCK_HEARTBEAT_TIMEOUT
+            : 300;
+
+        $cutoff = time() - $heartbeatTimeout;
+
+        $staleLocks = DB::query(
+            'SELECT ke.kb_id, ke.user_id, u.login
+             FROM ' . prefixTable('kb_edition') . ' ke
+             LEFT JOIN ' . prefixTable('users') . ' u ON ke.user_id = u.id
+             WHERE ke.timestamp < %i',
+            $cutoff
+        );
+
+        foreach ($staleLocks as $lock) {
+            emitKbEditionLockEvent(
+                'stopped',
+                intval($lock['kb_id']),
+                strval($lock['login'] ?? ''),
+                intval($lock['user_id'])
+            );
+        }
+
+        DB::query(
+            'DELETE FROM ' . prefixTable('kb_edition') . '
             WHERE timestamp < %i',
             $cutoff
         );

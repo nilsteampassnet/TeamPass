@@ -202,7 +202,7 @@ class AuthValidator
         try {
             // Find a valid token in database with user info (reusable within validity window)
             $tokenData = \DB::queryFirstRow(
-                'SELECT wt.*, u.login, u.admin
+                'SELECT wt.*, u.login, u.name, u.lastname, u.admin
                  FROM %l wt
                  JOIN %l u ON wt.user_id = u.id
                  WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
@@ -248,9 +248,16 @@ class AuthValidator
             // Generate a long-lived reconnect token sent over the secure WS channel
             $reconnectToken = $this->generateReconnectToken($userId);
 
+            $userLogin = (string) $tokenData['login'];
+
             return [
                 'user_id' => $userId,
-                'user_login' => $tokenData['login'],
+                'user_login' => $userLogin,
+                'user_display_name' => $this->buildUserDisplayName(
+                    (string) ($tokenData['name'] ?? ''),
+                    (string) ($tokenData['lastname'] ?? ''),
+                    $userLogin
+                ),
                 'accessible_folders' => $accessibleFolders,
                 'is_admin' => $tokenData['admin'] === '1',
                 'auth_method' => 'ws_token',
@@ -317,7 +324,7 @@ class AuthValidator
 
             // Verify user still exists and is active
             $user = \DB::queryFirstRow(
-                'SELECT id, login, admin, disabled FROM %l WHERE id = %i',
+                'SELECT id, login, name, lastname, admin, disabled FROM %l WHERE id = %i',
                 $this->tablePrefix . 'users',
                 (int) $decoded->sub
             );
@@ -326,9 +333,16 @@ class AuthValidator
                 return null;
             }
 
+            $userLogin = (string) ($decoded->username ?? $user['login']);
+
             return [
                 'user_id' => (int) $decoded->sub,
-                'user_login' => $decoded->username ?? $user['login'],
+                'user_login' => $userLogin,
+                'user_display_name' => $this->buildUserDisplayName(
+                    (string) ($user['name'] ?? ''),
+                    (string) ($user['lastname'] ?? ''),
+                    $userLogin
+                ),
                 'accessible_folders' => isset($decoded->allowed_folders)
                     ? array_map('intval', explode(',', $decoded->allowed_folders))
                     : [],
@@ -369,9 +383,16 @@ class AuthValidator
             }
         }
 
+        $userLogin = (string) ($sessionData['user-login'] ?? 'unknown');
+
         return [
             'user_id' => (int) $sessionData['user-id'],
-            'user_login' => $sessionData['user-login'] ?? 'unknown',
+            'user_login' => $userLogin,
+            'user_display_name' => $this->buildUserDisplayName(
+                (string) ($sessionData['user-name'] ?? ''),
+                (string) ($sessionData['user-lastname'] ?? ''),
+                $userLogin
+            ),
             'accessible_folders' => $accessibleFolders,
             'is_admin' => ($sessionData['user-admin'] ?? '0') === '1',
             'auth_method' => 'session',
@@ -382,6 +403,17 @@ class AuthValidator
                 'delete' => true,
             ],
         ];
+    }
+
+    /**
+     * Build a friendly user display name, falling back to the TeamPass login.
+     */
+    private function buildUserDisplayName(string $name, string $lastname, string $fallbackLogin): string
+    {
+        $displayName = trim(trim($name) . ' ' . trim($lastname));
+        $displayName = preg_replace('/\s+/', ' ', $displayName) ?? '';
+
+        return $displayName !== '' ? $displayName : $fallbackLogin;
     }
 
     /**
@@ -400,6 +432,28 @@ class AuthValidator
 
         $accessibleFolders = $userData['accessible_folders'] ?? [];
         return in_array($folderId, $accessibleFolders, true);
+    }
+
+    /**
+     * Validate user has access to the knowledge base channel.
+     */
+    public function canAccessKnowledgeBase(array $userData): bool
+    {
+        if ($userData['is_admin'] ?? false) {
+            return false;
+        }
+
+        try {
+            $enabled = \DB::queryFirstField(
+                'SELECT valeur FROM %l WHERE intitule = %s',
+                $this->tablePrefix . 'misc',
+                'enable_kb'
+            );
+        } catch (Exception $e) {
+            return false;
+        }
+
+        return (int) $enabled === 1;
     }
 
     /**

@@ -2,56 +2,79 @@
 
 ## Overview
 
-The **Knowledge Base** (KB) is a built-in article repository for documenting internal procedures, policies, or any information that should be accessible alongside the password vault. It is separate from items: KB articles are not encrypted and are not tied to a folder's access rights.
+The **Knowledge Base** (KB) is a built-in article repository for documenting internal procedures, policies, notes, and operational knowledge alongside the password vault.
 
-The Knowledge Base must be enabled by an administrator before it becomes visible to users.
+KB articles are stored separately from password items. They can reference items, but article content itself is not encrypted like item passwords and is not controlled by folder permissions.
+
+The Knowledge Base must be enabled before it becomes visible to regular users.
 
 ---
 
 ## Enabling the Knowledge Base
 
-1. Go to **Admin → Settings → Collaboration**.
-2. Toggle **Enable knowledge base** to on.
-3. Click **Save**.
+1. Go to **Administration > Settings > Collaboration**.
+2. Enable the **Knowledge base feature** setting.
+3. Save the settings.
 
-Once enabled, the **Knowledge Base** entry appears in the left navigation menu for all users.
+Once enabled, the **Knowledge Base** entry appears in the navigation menu for regular users.
+
+> **Note:** In the current application flow, administrators do not use the regular Knowledge Base article page. Administrative KB operations are exposed through the maintenance and logs utilities.
 
 ---
 
 ## Roles and permissions
 
 | Role | Capabilities |
-|------|-------------|
-| **Author** | Create articles, edit their own articles, delete their own articles |
-| **Any user (if allowed)** | Edit any article where *Anyone can modify* is checked by the author |
-| **Administrator** | All of the above + restore soft-deleted articles, permanently purge deleted articles |
+|------|--------------|
+| **Author** | Create articles, edit their own articles, delete their own articles, manage attachments on their editable articles |
+| **Any user, if allowed** | Edit articles where **Anyone can modify** is enabled by the author |
+| **Regular user with access to KB** | Read articles and add comments when comments are enabled |
+| **Administrator** | Restore or purge deleted KB articles and review KB logs from the administrative utilities |
 
-Authors cannot edit or delete articles created by other users unless the *Anyone can modify* flag was set by the original author.
+Authors cannot edit articles created by other users unless **Anyone can modify** is enabled for the article. Only the author can delete an active article from the regular KB page.
 
 ---
 
 ## Creating an article
 
 1. Open the **Knowledge Base** page from the navigation menu.
-2. Click **New article**.
+2. Click **Add entry**.
 3. Fill in:
-   - **Title** — short descriptive title.
-   - **Description** — optional summary shown in the article list.
-   - **Content** — the article body (rich text editor).
-   - **Tags** — comma-separated keywords for filtering.
-   - **Folders** — restrict visibility to users who have access to the selected folders. Leave empty to make the article visible to all users.
-   - **Anyone can modify** — allow any user to edit this article.
-4. Attach files if needed (see [File attachments](#file-attachments)).
-5. Click **Save**.
+   - **Label**: the article title.
+   - **Category**: the article category. Existing categories are suggested while typing.
+   - **Description**: the article body, with rich text formatting and pasted inline images.
+   - **Anyone can modify**: allows other regular users to edit the article.
+   - **Allow comments**: lets readers comment on the article.
+   - **Associated items**: optional links to password items the current user can access.
+4. Attach files if needed.
+5. Save the article.
+
+If files are selected while creating a new article, the article is saved first and the attachments are uploaded immediately after the article ID exists.
+
+---
+
+## Reading articles
+
+Click the view icon on an article row to open its detail view. The detail view displays the article category, author, description, associated items, attachments, and comments.
+
+When WebSocket support is enabled, other users can see that the article is currently being viewed. The current user's own consultation is filtered from their own UI.
 
 ---
 
 ## Editing and deleting articles
 
-- Click the **edit icon** (pencil) on an article row to open the edit form.
-- Click the **delete icon** (trash) to soft-delete the article. Soft-deleted articles remain in the database and can be restored by an administrator.
+Click the edit icon on an article row, or use the edit button from the article detail view, to open the edit form.
 
-> 🔔 Only the author and administrators can delete articles. Soft deletion moves the article to a hidden state — it does not permanently remove it.
+When an existing article is opened for editing, TeamPass creates an edition lock:
+
+- Other users cannot edit the same article while the lock is active.
+- Delete operations are blocked while another user is editing the article.
+- Attachment uploads and attachment deletions require the current user to hold the active edition lock.
+- Comments remain available and are not blocked by the edition lock.
+- Cancelling or saving the edit releases the lock.
+- If the browser tab closes or the heartbeat stops, the lock expires automatically after the edition lock timeout.
+
+The same locking rules apply with or without WebSocket support. Without WebSocket, the server still enforces the lock when another user tries to edit, delete, or mutate attachments. With WebSocket, lock and release indicators are also shown in real time.
 
 ---
 
@@ -59,34 +82,53 @@ Authors cannot edit or delete articles created by other users unless the *Anyone
 
 Articles support file attachments. In the edit form:
 
-1. Click **Choose file** or drag and drop onto the upload zone.
-2. The file is stored in `storage/files/kb_attachments/` on the server.
-3. Save the article.
+1. Select one or more files.
+2. Save the article or click the upload button when editing an existing article.
+3. The files are stored in the KB attachments storage directory.
 
-Attachments are served through Teampass and require a valid session to download.
+Attachments are served through TeamPass and require a valid session to download.
+
+Deleting an attachment is treated as an article mutation and requires the current user to hold the article edition lock.
 
 ---
 
 ## Comments
 
-Every article has a comment thread accessible at the bottom of the article detail view.
+Every article can have a comment thread when **Allow comments** is enabled.
 
-- Any user with access to the article can post a comment.
-- Authors and administrators can delete comments.
+- Any regular user with access to the article can add a comment.
+- A comment can be deleted by its author or by the article author.
+- Comments are intentionally independent from article edition locks.
 
 ---
 
 ## Searching and filtering
 
-Use the **search bar** at the top of the Knowledge Base page to filter articles by title or description. The **Tags** filter narrows results to articles that share a selected tag.
+Use the table search field on the Knowledge Base page to filter articles by article data displayed in the list, including label, category, author, and summary text.
+
+Associated item and comment counters are shown in the article list when relevant.
 
 ---
 
-## Administrator maintenance
+## Real-time collaboration
 
-Administrators have access to two additional maintenance operations under the Knowledge Base page (visible only to admins):
+When WebSocket support is enabled, the Knowledge Base participates in TeamPass real-time collaboration:
+
+- article creation, updates, and deletions refresh other connected KB views;
+- edition locks are displayed to other users while an article is being edited;
+- users who previously tried to edit a locked article are notified when the article becomes available again;
+- article consultation presence shows who is currently reading an article.
+
+The WebSocket channel is only a real-time notification layer. Lock ownership and mutation checks are enforced by the server-side KB endpoints and the `kb_edition` table.
+
+---
+
+## Administrative maintenance
+
+Administrators can manage deleted KB articles and KB logs through the administrative utilities.
 
 | Operation | Description |
 |-----------|-------------|
-| **Restore deleted articles** | Lists soft-deleted articles and allows selective restoration |
-| **Purge deleted articles** | Permanently removes all soft-deleted articles (irreversible) |
+| **Restore deleted articles** | Restores soft-deleted KB articles from the deleted entries store |
+| **Purge deleted articles** | Permanently removes selected deleted KB entries and their related stored data |
+| **KB logs** | Displays KB creation, update, delete, restore, view, attachment, and comment activity |

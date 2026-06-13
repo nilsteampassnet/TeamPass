@@ -7758,7 +7758,7 @@ function tpFinishRequestEarly(): bool
  * to connected clients.
  *
  * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
- * @param string $targetType Target type for routing: 'user', 'folder', or 'broadcast'
+ * @param string $targetType Target type for routing: 'user', 'folder', 'kb', or 'broadcast'
  * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
  * @param array $payload Event payload data to send to clients
  * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
@@ -7822,7 +7822,7 @@ function emitWebSocketEvent(
     }
 
     // Validate target type
-    if (!in_array($targetType, ['user', 'folder', 'broadcast'], true)) {
+    if (!in_array($targetType, ['user', 'folder', 'kb', 'broadcast'], true)) {
         error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
         return false;
     }
@@ -7888,6 +7888,46 @@ function emitItemEvent(
 }
 
 /**
+ * Build a friendly user display name, falling back to the TeamPass login.
+ */
+function teampassBuildUserDisplayName(string $name, string $lastname, string $fallbackLogin): string
+{
+    $displayName = trim(trim($name) . ' ' . trim($lastname));
+    $displayName = preg_replace('/\s+/', ' ', $displayName) ?? '';
+
+    return $displayName !== '' ? $displayName : $fallbackLogin;
+}
+
+/**
+ * Resolve a user's display name from the users table for WebSocket payloads.
+ */
+function teampassGetUserDisplayNameForPayload(int $userId, string $fallbackLogin): string
+{
+    if ($userId <= 0) {
+        return $fallbackLogin;
+    }
+
+    try {
+        $user = DB::queryFirstRow(
+            'SELECT login, name, lastname FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+    } catch (Exception $e) {
+        return $fallbackLogin;
+    }
+
+    if (is_array($user) === false) {
+        return $fallbackLogin;
+    }
+
+    return teampassBuildUserDisplayName(
+        (string) ($user['name'] ?? ''),
+        (string) ($user['lastname'] ?? ''),
+        (string) ($user['login'] ?? $fallbackLogin)
+    );
+}
+
+/**
  * Emit a WebSocket event for item edition lock changes
  *
  * Notifies folder subscribers when an item is being edited or released.
@@ -7907,11 +7947,13 @@ function emitEditionLockEvent(
     int $userId
 ): bool {
     $eventType = 'item_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
 
     $payload = [
         'item_id' => $itemId,
         'folder_id' => $folderId,
         'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
         'user_id' => $userId,
     ];
 
@@ -7919,6 +7961,64 @@ function emitEditionLockEvent(
     $excludeUserId = ($action === 'started') ? $userId : null;
 
     return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base operations.
+ *
+ * @param string $action Action performed: 'created', 'updated', or 'deleted'
+ * @param int $kbId Knowledge base article ID
+ * @param string $label Article label
+ * @param string $userLogin User who performed the action
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitKbEvent(
+    string $action,
+    int $kbId,
+    string $label,
+    string $userLogin,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'kb_' . $action;
+
+    $payload = [
+        'kb_id' => $kbId,
+        'label' => $label,
+        $action . '_by' => $userLogin,
+    ];
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base edition lock changes.
+ *
+ * @param string $action 'started' or 'stopped'
+ * @param int $kbId Knowledge base article ID
+ * @param string $userLogin The user who locked/unlocked
+ * @param int $userId The user ID who locked/unlocked
+ * @return bool True if event was queued
+ */
+function emitKbEditionLockEvent(
+    string $action,
+    int $kbId,
+    string $userLogin,
+    int $userId
+): bool {
+    $eventType = 'kb_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
+
+    $payload = [
+        'kb_id' => $kbId,
+        'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
+        'user_id' => $userId,
+    ];
+
+    $excludeUserId = ($action === 'started') ? $userId : null;
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
 }
 
 /**
@@ -8084,7 +8184,7 @@ function validateWebSocketToken(string $token): ?array
     try {
         // Find the token with user info
         $tokenData = DB::queryFirstRow(
-            'SELECT wt.*, u.login, u.admin
+            'SELECT wt.*, u.login, u.name, u.lastname, u.admin
              FROM %l wt
              JOIN %l u ON wt.user_id = u.id
              WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
@@ -8124,9 +8224,16 @@ function validateWebSocketToken(string $token): ?array
             $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
         }
 
+        $userLogin = (string) $tokenData['login'];
+
         return [
             'user_id' => $userId,
-            'user_login' => $tokenData['login'],
+            'user_login' => $userLogin,
+            'user_display_name' => teampassBuildUserDisplayName(
+                (string) ($tokenData['name'] ?? ''),
+                (string) ($tokenData['lastname'] ?? ''),
+                $userLogin
+            ),
             'accessible_folders' => $accessibleFolders,
             'is_admin' => $tokenData['admin'] === '1',
             'auth_method' => 'ws_token',

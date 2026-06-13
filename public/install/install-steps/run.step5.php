@@ -1099,7 +1099,7 @@ class DatabaseInstaller
             `id` int(12) NOT null AUTO_INCREMENT,
             `category_id` int(12) NOT NULL,
             `label` varchar(200) NOT NULL,
-            `description` text NOT NULL,
+            `description` MEDIUMTEXT NOT NULL,
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             `allow_comments` tinyint(1) NOT null DEFAULT '0',
@@ -1149,6 +1149,21 @@ class DatabaseInstaller
             KEY `idx_kb_id` (`kb_id`),
             KEY `idx_author_id` (`author_id`),
             KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+        );
+    }
+
+    // Create table kb_edition
+    private function kb_edition()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'kb_edition` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            `timestamp` int(11) NOT NULL,
+            KEY `kb_id_idx` (`kb_id`),
+            PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
@@ -1255,7 +1270,7 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `item_id` int(11) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `timestamp` varchar(50) NOT NULL,
+            `timestamp` int(11) NOT NULL,
             KEY `item_id_idx` (`item_id`),
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
@@ -1873,7 +1888,7 @@ class DatabaseInstaller
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `event_type` VARCHAR(50) NOT NULL COMMENT 'Type of event (item_created, item_updated, etc.)',
-                `target_type` ENUM('user', 'folder', 'broadcast') NOT NULL COMMENT 'Target type for routing',
+                `target_type` ENUM('user', 'folder', 'kb', 'broadcast') NOT NULL COMMENT 'Target type for routing',
                 `target_id` INT UNSIGNED NULL COMMENT 'Target ID (user_id or folder_id)',
                 `payload` JSON NOT NULL COMMENT 'Event payload data',
                 `processed` TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Has this event been broadcast?',

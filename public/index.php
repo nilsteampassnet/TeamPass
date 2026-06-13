@@ -1381,6 +1381,15 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             <script src="./plugins/slimScroll/jquery.slimscroll.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
             <!-- FastClick -->
             <script src="./plugins/fastclick/fastclick.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <?php
+            if ($get['page'] === 'kb') {
+                ?>
+                <!-- SUMMERNOTE -->
+                <link rel="stylesheet" href="./plugins/summernote/summernote-bs4.css?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>">
+                <script src="./plugins/summernote/summernote-bs4.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+            <?php
+            }
+            ?>
         <?php
         } elseif ($get['page'] === 'profile') {
             ?>
@@ -1456,6 +1465,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             being_edited_by: <?php echo json_encode($lang->get('ws_being_edited_by')); ?>,
             item_now_available: <?php echo json_encode($lang->get('ws_item_now_available')); ?>,
             item_edition_released: <?php echo json_encode($lang->get('ws_item_edition_released')); ?>,
+            item_viewed_by: <?php echo json_encode($lang->get('item_viewed_by')); ?>,
+            kb_now_available: <?php echo json_encode($lang->get('kb_now_available')); ?>,
+            kb_edition_released: <?php echo json_encode($lang->get('kb_edition_released')); ?>,
+            kb_viewed_by: <?php echo json_encode($lang->get('kb_viewed_by')); ?>,
             item_reloading: <?php echo json_encode($lang->get('ws_item_reloading')); ?>,
             click_to_reload: <?php echo json_encode($lang->get('ws_click_to_reload')); ?>,
             item_moved_away: <?php echo json_encode($lang->get('ws_click_to_reload')); ?>,

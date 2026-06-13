@@ -193,6 +193,14 @@ class EventBroadcaster
                 }
                 break;
 
+            case 'kb':
+                $excludeUserId = $payload['exclude_user_id'] ?? null;
+                $count = $this->connections->broadcastToKb(
+                    $message,
+                    $excludeUserId ? (int) $excludeUserId : null
+                );
+                break;
+
             case 'broadcast':
                 $excludeUserId = $payload['exclude_user_id'] ?? null;
                 $count = $this->connections->broadcastToAll(

@@ -6,6 +6,7 @@ $vendorDir = dirname(__DIR__);
 $baseDir = dirname(dirname($vendorDir));
 
 return array(
+    'HTMLPurifier' => array($vendorDir . '/ezyang/htmlpurifier/library'),
     'Goodby\\CSV' => array($vendorDir . '/goodby/csv/src'),
     'GibberishAES' => array($vendorDir . '/dittertp/gibberish-aes-php/src'),
     'ForceUTF8\\' => array($vendorDir . '/neitanod/forceutf8/src'),
