@@ -2451,4 +2451,5 @@ return array(
     'health_check_api_cors_open_message' => 'The API accepts cross-origin requests from any origin (Access-Control-Allow-Origin: *). Consider restricting the allowed origins in Settings > API.',
     'health_check_api_https_off' => 'API does not require HTTPS',
     'health_check_api_https_off_message' => 'The API accepts credentials and tokens over plain HTTP. Enable "Require HTTPS for API requests" in Settings > API.',
+    'seconds' => 'seconds',
     );
