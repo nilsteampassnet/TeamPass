@@ -719,6 +719,13 @@ function loadSystemHealth() {
                 updateHealthBadge('health-encryption', data.encryption.status, data.encryption.text)
                 updateHealthBadge('health-sessions', 'info', data.sessions.count + ' active')
                 updateHealthBadge('health-cron', data.cron.status, data.cron.text)
+                // Cron health: show an actionable tooltip for Delayed/Error states
+                const cronInfo = $('#health-cron-info')
+                if (data.cron.tooltip) {
+                    cronInfo.attr('title', data.cron.tooltip).show()
+                } else {
+                    cronInfo.removeAttr('title').hide()
+                }
                 updateHealthBadge('health-unknown-files',
                     data.unknown_files.count > 0 ? 'warning' : 'success',
                     data.unknown_files.count

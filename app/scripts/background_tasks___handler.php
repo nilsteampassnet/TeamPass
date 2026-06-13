@@ -606,12 +606,22 @@ class BackgroundTasksHandler {
     private function acquireProcessLock(): bool {
         $lockFile = !empty(TASKS_LOCK_FILE) ? TASKS_LOCK_FILE : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.lock' : __DIR__ . '/../../storage/logs/teampass_background_tasks.lock');
 
-        $fp = fopen($lockFile, 'w');
+        // Opening (or creating) the lock file failing is NOT a concurrency
+        // situation but a filesystem/permission problem (typically the web
+        // server user cannot write to storage/logs). Surface it via error_log()
+        // because LOG_TASKS may be disabled and the task log itself lives in the
+        // same directory, so the failure would otherwise be completely silent.
+        $fp = @fopen($lockFile, 'w');
         if ($fp === false) {
+            error_log(
+                'Teampass Background Tasks: cannot create lock file "' . $lockFile
+                . '" - check that the web server user can write to this directory.'
+            );
             return false;
         }
 
         if (!flock($fp, LOCK_EX | LOCK_NB)) {
+            // Another handler instance already holds the lock: expected, not an error.
             fclose($fp);
             return false;
         }

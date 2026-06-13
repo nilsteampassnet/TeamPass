@@ -98,6 +98,8 @@ return array(
     'health_status_ok' => 'Operational',
     'health_secure_file_missing' => 'Secure file missing',
     'health_cron_delayed' => 'Delayed',
+    'health_cron_delayed_help' => 'The cron is running but background tasks are not being processed. Most likely the web server user cannot write to storage/logs/, so the task handler cannot create its lock file and aborts. Check the PHP error log for "cannot create lock file" and make storage/logs/ writable by the web server user. See the File permissions documentation.',
+    'health_cron_error_help' => 'No cron execution has been detected in the last 10 minutes. Make sure the cron job that runs app/sources/scheduler.php every minute is configured (Tasks page). See the Tasks and File permissions documentation.',
     'action_accessed' => 'accessed',
     'action_created' => 'created',
     'action_modified' => 'modified',

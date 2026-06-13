@@ -7654,8 +7654,17 @@ function triggerBackgroundHandler(): void
         : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger' : __DIR__ . '/../../storage/logs/teampass_background_tasks.trigger');
 
     // Create/touch the trigger file to notify running handler
-    // The file content includes timestamp for debugging purposes
-    file_put_contents($triggerFile, (string) time());
+    // The file content includes timestamp for debugging purposes.
+    // A failure here usually means the web server user cannot write to
+    // storage/logs, which also prevents the handler from acquiring its lock
+    // file (background tasks then never run). Surface it via error_log() so the
+    // misconfiguration is not silently ignored.
+    if (@file_put_contents($triggerFile, (string) time()) === false) {
+        error_log(
+            'Teampass: cannot write background tasks trigger file "' . $triggerFile
+            . '" - check that the web server user can write to this directory.'
+        );
+    }
 
     // Launch the handler as a fully detached background process.
     // We use exec() instead of Symfony Process because Process::start() creates

@@ -4553,22 +4553,38 @@ case 'get_system_health':
         $cronStatus = 'danger';
         $cronText = $lang->get('error');
     } else {
-        // Cron check (last execution should be < 2 minutes ago)
-        $lastCron = DB::queryFirstField(
-            'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
-            ORDER BY created_at DESC 
-            LIMIT 1'
-        );
-        
+        // Cron is running. Detect a real backlog independently of the optional
+        // task DB-logging setting (enable_tasks_log): background_tasks_logs is
+        // only written when that setting is on, so it cannot be used as a
+        // freshness signal. Instead, flag "Delayed" when a task has been waiting
+        // unprocessed for too long while the cron is fresh - meaning the handler
+        // is not draining the queue (e.g. it cannot write its lock file).
         $cronStatus = 'success';
         $cronText = $lang->get('health_status_ok');
-        
-        if (!$lastCron || (time() - intval($lastCron)) > 120) {
+
+        $oldestPending = DB::queryFirstField(
+            'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 0
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+        );
+
+        if ($oldestPending !== null && (time() - intval($oldestPending)) > 300) {
             $cronStatus = 'warning';
             $cronText = $lang->get('health_cron_delayed');
         }
     }
-    
+
+    // Actionable hint shown as a tooltip in the dashboard for non-nominal states.
+    // 'warning' (Delayed): the cron runs but tasks are not processed - typically the
+    // web server user cannot write to storage/logs (handler cannot acquire its lock).
+    // 'danger' (Error): no cron execution detected at all.
+    $cronTooltip = '';
+    if ($cronStatus === 'danger') {
+        $cronTooltip = $lang->get('health_cron_error_help');
+    } elseif ($cronStatus === 'warning') {
+        $cronTooltip = $lang->get('health_cron_delayed_help');
+    }
+
     // Unknown files count
     $unknownFilesData = DB::queryFirstField(
         'SELECT valeur FROM ' . prefixTable('misc') . ' 
@@ -4620,6 +4636,7 @@ case 'get_system_health':
             'cron' => array(
                 'status' => $cronStatus,
                 'text' => $cronText,
+                'tooltip' => $cronTooltip,
             ),
             'unknown_files' => array(
                 'count' => $unknownFilesCount,

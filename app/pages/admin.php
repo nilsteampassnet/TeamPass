@@ -297,7 +297,10 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fas fa-history text-success"></i> <?php echo $lang->get('health_cron'); ?></span>
-                                                <span class="badge badge-success" id="health-cron">-</span>
+                                                <span>
+                                                    <i class="fas fa-info-circle text-muted mr-1" id="health-cron-info" style="display:none; cursor:help;"></i>
+                                                    <span class="badge badge-success" id="health-cron">-</span>
+                                                </span>
                                             </li>
                                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                                 <span><i class="fas fa-file-code text-warning"></i> <?php echo $lang->get('health_unknown_files'); ?></span>

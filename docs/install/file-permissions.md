@@ -93,7 +93,8 @@ These paths must remain writable by the web server process during normal operati
 | Path | Required | Recommended perms | What is written |
 |------|:--------:|------------------|-----------------|
 | `storage/` | **yes** | `0750` | Parent directory — PHP creates sub-directories at runtime |
-| `storage/files/` | **yes** | `0750` | Background task trigger/lock files, restore logs |
+| `storage/logs/` | **yes** | `0750` | Background task trigger/lock files and task log. **The task handler aborts silently if it cannot write here** (see Troubleshooting below) |
+| `storage/files/` | **yes** | `0750` | Temporary import files, restore logs |
 | `storage/upload/` | optional | `0750` | Encrypted file attachments uploaded by users |
 | `storage/backups/` | optional | `0750` | SQL backup files generated before schema migrations |
 | `public/assets/avatars/` | optional | `0750` | User avatar images |
@@ -173,6 +174,7 @@ sudo chmod 0750 ${TEAMPASS}/app/includes/libraries/csrfp/libs
 
 # ── Always-writable runtime directories ──────────────────────────────────────
 sudo chmod 0750 ${TEAMPASS}/storage
+sudo chmod 0750 ${TEAMPASS}/storage/logs
 sudo chmod 0750 ${TEAMPASS}/storage/files
 sudo chmod 0750 ${TEAMPASS}/storage/upload
 sudo chmod 0750 ${TEAMPASS}/storage/backups
@@ -287,6 +289,52 @@ find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
 
 ---
 
+## Troubleshooting
+
+### Background tasks never run (dashboard shows "Delayed", PHP log shows "cannot create lock file")
+
+**Symptoms**
+
+- Admin dashboard → *System Health* → *Cron Jobs* shows **Delayed** (or **Error**). Hover the
+  info icon next to the badge for the same hint.
+- Tasks pile up in *Tasks → In progress* and only complete when the handler is launched by hand.
+- The PHP / web-server error log contains one of:
+  - `Teampass Background Tasks: cannot create lock file ".../storage/logs/teampass_background_tasks.lock" - check that the web server user can write to this directory.`
+  - `Teampass: cannot write background tasks trigger file ".../storage/logs/...".`
+
+**Cause**
+
+The web server user (for example `www-data`) cannot write to `storage/logs/`. The task handler
+writes its lock and trigger files there; if it cannot create the lock file it aborts immediately
+and **silently**, so no background task is processed. Running the handler from a shell as your own
+user appears to work because that user owns the directory — which is exactly why the problem is
+easy to miss.
+
+**Fix**
+
+Make `storage/logs/` (and the rest of `storage/`) writable and owned by the web server user:
+
+```bash
+TEAMPASS=/var/www/html/teampass
+WEB_USER=www-data
+sudo chown -R ${WEB_USER}:${WEB_USER} ${TEAMPASS}/storage
+sudo find ${TEAMPASS}/storage -type d -exec chmod 2750 {} \;
+```
+
+Then confirm a background task completes — create or edit an item, or run the handler once
+**as the web server user**:
+
+```bash
+sudo -u ${WEB_USER} php ${TEAMPASS}/app/scripts/background_tasks___handler.php
+```
+
+> The cron that runs `app/sources/scheduler.php` must also be configured (see
+> [Tasks](../manage/tasks.md)). The event-driven trigger only covers tasks created by a web
+> action; purely scheduled jobs (scheduled backups, inactive-user housekeeping, maintenance)
+> rely on the cron.
+
+---
+
 ## Summary table
 
 | Path | Upgrade wizard check | Install/Upgrade | Runtime | Recommended perms |
@@ -301,6 +349,7 @@ find ${TEAMPASS} -not -path "*/vendor/*" -perm -o+w -ls
 | `public/assets/avatars/` | optional writable | — | write | `0750` |
 | `public/install/` | — | read | **none** | Remove or deny via web server |
 | `storage/` | **required writable** | write | write | `0750` |
+| `storage/logs/` | **required writable** | write | write | `0750` |
 | `storage/files/` | **required writable** | write | write | `0750` |
 | `storage/upload/` | optional writable | — | write | `0750` |
 | `storage/backups/` | optional writable | write | write | `0750` |

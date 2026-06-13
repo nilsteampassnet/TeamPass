@@ -2455,5 +2455,7 @@ return array(
     'websocket' => 'Websocket',
     'kb_attachment_extension_not_allowed' => 'This file type is not allowed. Allowed extensions: %s.',
     'kb_attachment_zero_byte_not_allowed' => 'Empty files cannot be uploaded.',
+    'health_cron_delayed_help' => 'The cron is running but background tasks are not being processed. Most likely the web server user cannot write to storage/logs/, so the task handler cannot create its lock file and aborts. Check the PHP error log for "cannot create lock file" and make storage/logs/ writable by the web server user. See the File permissions documentation.',
+    'health_cron_error_help' => 'No cron execution has been detected in the last 10 minutes. Make sure the cron job that runs app/sources/scheduler.php every minute is configured (Tasks page). See the Tasks and File permissions documentation.',
 
 );

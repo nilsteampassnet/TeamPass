@@ -2459,5 +2459,7 @@ return array(
     'websocket' => 'WebSocket',
     'kb_attachment_extension_not_allowed' => 'Ce type de fichier n’est pas autorisé. Extensions autorisées : %s.',
     'kb_attachment_zero_byte_not_allowed' => 'Les fichiers vides ne peuvent pas être téléchargés.',
+    'health_cron_delayed_help' => 'Le cron s’exécute mais les tâches de fond ne sont pas traitées. Le plus souvent, l’utilisateur du serveur web ne peut pas écrire dans storage/logs/ : le gestionnaire de tâches ne peut pas créer son fichier verrou et s’arrête. Vérifiez le log d’erreurs PHP (message « cannot create lock file ») et rendez storage/logs/ accessible en écriture pour l’utilisateur du serveur web. Voir la documentation Permissions des fichiers.',
+    'health_cron_error_help' => 'Aucune exécution du cron détectée depuis 10 minutes. Vérifiez que la tâche cron exécutant app/sources/scheduler.php chaque minute est bien configurée (page Tâches). Voir la documentation Tâches et Permissions des fichiers.',
 
 );

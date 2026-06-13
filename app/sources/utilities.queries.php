@@ -1011,16 +1011,22 @@ logItems(
                 $cronStatus = 'danger';
                 $cronText = $lang->get('error');
             } else {
-                $lastCron = DB::queryFirstField(
-                    'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . '
-                    ORDER BY created_at DESC
-                    LIMIT 1'
-                );
-
+                // Cron is running. Detect a real backlog independently of the
+                // optional task DB-logging setting (enable_tasks_log): the
+                // background_tasks_logs table is only written when that setting
+                // is on, so a stale/empty table does not mean tasks are delayed.
+                // Flag "Delayed" only when a task has been waiting unprocessed
+                // for too long while the cron is fresh.
                 $cronStatus = 'success';
                 $cronText = $lang->get('health_status_ok');
 
-                if (!$lastCron || ($now - (int) $lastCron) > 120) {
+                $oldestPending = DB::queryFirstField(
+                    'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+                    WHERE is_in_progress = 0
+                    AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+                );
+
+                if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
                     $cronStatus = 'warning';
                     $cronText = $lang->get('health_cron_delayed');
                 }
