@@ -615,7 +615,7 @@ return array(
     'group' => 'Mapper',
     'group_parent' => 'Foreldremappe',
     'group_pw_duration' => 'Renewal period',
-    'group_pw_duration_tip' => 'In months. Use 0 to disable.',
+    'group_pw_duration_tip' => 'In days. Use 0 to disable.',
     'history' => 'Endringslogg',
     'home_personal_saltkey' => 'Din personlige SALT-kode',
     'home_personal_saltkey_label' => 'Skriv inn din personlige saltnøkkel',

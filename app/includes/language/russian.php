@@ -615,7 +615,7 @@ return array(
     'group' => 'Папка',
     'group_parent' => 'Родительская папка',
     'group_pw_duration' => 'Период продления',
-    'group_pw_duration_tip' => 'В месяцах. Используйте 0 для отключения.',
+    'group_pw_duration_tip' => 'В днях. Используйте 0 для отключения.',
     'history' => 'История',
     'home_personal_saltkey' => 'Ваш персональный salt key',
     'home_personal_saltkey_label' => 'Введите свой личный salt key',

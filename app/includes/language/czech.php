@@ -615,7 +615,7 @@ return array(
     'group' => 'Složka',
     'group_parent' => 'Nadřazená složka',
     'group_pw_duration' => 'Interval obnovení',
-    'group_pw_duration_tip' => 'v měsících (pro deaktivování zadejte 0).',
+    'group_pw_duration_tip' => 've dnech (pro deaktivování zadejte 0).',
     'history' => 'Historie',
     'home_personal_saltkey' => 'Váš osobní klíč SALTKEY',
     'home_personal_saltkey_label' => 'Zadejte Váš osobní klíč SALTKEY',

@@ -615,7 +615,7 @@ return array(
     'group' => 'Ordner',
     'group_parent' => 'Unterordner von',
     'group_pw_duration' => 'Erneuerungsintervall',
-    'group_pw_duration_tip' => 'in Monaten (0 = deaktiviert)',
+    'group_pw_duration_tip' => 'in Tagen (0 = deaktiviert)',
     'history' => 'Verlauf',
     'home_personal_saltkey' => 'Ihr persönlicher Salt-Schlüssel',
     'home_personal_saltkey_label' => 'Geben Sie Ihren persönlichen SALT Schlüssel ein',

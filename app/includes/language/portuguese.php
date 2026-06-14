@@ -615,7 +615,7 @@ return array(
     'group' => 'Diretório',
     'group_parent' => 'Diretório parentesco',
     'group_pw_duration' => 'Período de renovação',
-    'group_pw_duration_tip' => 'Em meses. Use 0 para desabilitar',
+    'group_pw_duration_tip' => 'Em dias. Use 0 para desabilitar',
     'history' => 'Historia ',
     'home_personal_saltkey' => 'Sua senha pessoal \’SALT KEY\’',
     'home_personal_saltkey_label' => 'Entre com seu \’SALT KEY\’ pesso',

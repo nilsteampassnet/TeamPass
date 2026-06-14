@@ -615,7 +615,7 @@ return array(
     'group' => '文件夹',
     'group_parent' => '父文件夹',
     'group_pw_duration' => '更新周期',
-    'group_pw_duration_tip' => '以月为单位。0表示禁用。',
+    'group_pw_duration_tip' => '以天为单位。0表示禁用。',
     'history' => '历史',
     'home_personal_saltkey' => '您的个人盐密钥',
     'home_personal_saltkey_label' => '输入您的个人盐密钥',

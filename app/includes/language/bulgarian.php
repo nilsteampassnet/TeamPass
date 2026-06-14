@@ -615,7 +615,7 @@ return array(
     'group' => 'Папка',
     'group_parent' => 'Parent Folder',
     'group_pw_duration' => 'Период на подновяване',
-    'group_pw_duration_tip' => 'In months. Use 0 to disable.',
+    'group_pw_duration_tip' => 'In days. Use 0 to disable.',
     'history' => 'История',
     'home_personal_saltkey' => 'Your personal salt key',
     'home_personal_saltkey_label' => 'Въведете вашия личен SALT ключ',

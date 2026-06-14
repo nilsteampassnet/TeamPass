@@ -1015,20 +1015,36 @@ logItems(
                 // optional task DB-logging setting (enable_tasks_log): the
                 // background_tasks_logs table is only written when that setting
                 // is on, so a stale/empty table does not mean tasks are delayed.
-                // Flag "Delayed" only when a task has been waiting unprocessed
-                // for too long while the cron is fresh.
+                // Two delay causes are distinguished so the status label names the
+                // actual problem: a task stuck "in progress" (worker crashed/killed,
+                // blocking the queue) vs a queued backlog the handler is not draining.
                 $cronStatus = 'success';
                 $cronText = $lang->get('health_status_ok');
 
-                $oldestPending = DB::queryFirstField(
-                    'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
-                    WHERE is_in_progress = 0
-                    AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+                // A task stuck "in progress" for over 30 minutes. started_at is set
+                // when a task starts being processed; guard against NULL/empty/zero.
+                $oldestStuck = DB::queryFirstField(
+                    'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
+                    WHERE is_in_progress = 1
+                    AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
                 );
 
-                if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
+                if ($oldestStuck !== null && ($now - (int) $oldestStuck) > 1800) {
                     $cronStatus = 'warning';
-                    $cronText = $lang->get('health_cron_delayed');
+                    $cronText = $lang->get('health_cron_stuck');
+                } else {
+                    // No stuck task: flag "Delayed" when a queued task has waited
+                    // unprocessed for too long while the cron is fresh.
+                    $oldestPending = DB::queryFirstField(
+                        'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+                        WHERE is_in_progress = 0
+                        AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+                    );
+
+                    if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
+                        $cronStatus = 'warning';
+                        $cronText = $lang->get('health_cron_delayed');
+                    }
                 }
             }
 

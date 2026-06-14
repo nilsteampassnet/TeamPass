@@ -615,7 +615,7 @@ return array(
     'group' => 'Folder',
     'group_parent' => 'Folder nadrzędny',
     'group_pw_duration' => 'Czas ponowienia',
-    'group_pw_duration_tip' => 'W miesącach. Użyj 0 aby deaktywować.',
+    'group_pw_duration_tip' => 'W dniach. Użyj 0 aby deaktywować.',
     'history' => 'Historia',
     'home_personal_saltkey' => 'Twój osobisty SALTKey',
     'home_personal_saltkey_label' => 'Podaj swój osobidy SALTKey',

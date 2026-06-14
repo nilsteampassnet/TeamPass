@@ -615,7 +615,7 @@ return array(
     'group' => 'Kaust',
     'group_parent' => 'Ülemkaust',
     'group_pw_duration' => 'Uuendamise periood',
-    'group_pw_duration_tip' => 'Kuudes. Keelamiseks sisesta 0.',
+    'group_pw_duration_tip' => 'Päevades. Keelamiseks sisesta 0.',
     'history' => 'Ajalugu',
     'home_personal_saltkey' => 'Sinu parooli sool',
     'home_personal_saltkey_label' => 'Sisesta oma personaalne parooli sool',

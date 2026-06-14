@@ -615,7 +615,7 @@ return array(
     'group' => 'Тека',
     'group_parent' => 'Батьківська тека',
     'group_pw_duration' => 'Період оновлення',
-    'group_pw_duration_tip' => 'У місяцях. Використовуйте 0 для відключення.',
+    'group_pw_duration_tip' => 'У днях. Використовуйте 0 для відключення.',
     'history' => 'Історія',
     'home_personal_saltkey' => 'Ваш особистий ключ солі',
     'home_personal_saltkey_label' => 'Введіть ваш особистий ключ солі',

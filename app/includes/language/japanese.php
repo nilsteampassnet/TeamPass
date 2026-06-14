@@ -615,7 +615,7 @@ return array(
     'group' => 'フォルダ',
     'group_parent' => '親階層フォルダ',
     'group_pw_duration' => '更新期間',
-    'group_pw_duration_tip' => '月単位。0を指定すると更新なし',
+    'group_pw_duration_tip' => '日単位。0を指定すると更新なし',
     'history' => '履歴',
     'home_personal_saltkey' => 'Your personal salt key',
     'home_personal_saltkey_label' => 'Enter your personal salt key',

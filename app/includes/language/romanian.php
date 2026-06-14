@@ -615,7 +615,7 @@ return array(
     'group' => 'Director',
     'group_parent' => 'Director parinte',
     'group_pw_duration' => 'Termen de reinnoire',
-    'group_pw_duration_tip' => 'In luni. Utilizati 0 pentru a dezactiva',
+    'group_pw_duration_tip' => 'In zile. Utilizati 0 pentru a dezactiva',
     'history' => 'Istoric',
     'home_personal_saltkey' => 'Cheia dumneavoastra de salt',
     'home_personal_saltkey_label' => 'Introduceti cheia dumneavoastra de salt',

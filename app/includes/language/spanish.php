@@ -615,7 +615,7 @@ return array(
     'group' => 'Carpeta',
     'group_parent' => 'Carpeta Padre',
     'group_pw_duration' => 'Periodo de renovación',
-    'group_pw_duration_tip' => 'En meses. Use 0 para deshabilitar.',
+    'group_pw_duration_tip' => 'En días. Use 0 para deshabilitar.',
     'history' => 'Historial',
     'home_personal_saltkey' => 'Su clave salt personal',
     'home_personal_saltkey_label' => 'Introduzca su clave salt personal',

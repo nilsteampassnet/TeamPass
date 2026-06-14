@@ -615,7 +615,7 @@ return array(
     'group' => 'Mapp',
     'group_parent' => 'Parent mapp',
     'group_pw_duration' => 'Renewal period',
-    'group_pw_duration_tip' => 'In months. Use 0 to disable.',
+    'group_pw_duration_tip' => 'In days. Use 0 to disable.',
     'history' => 'Historik',
     'home_personal_saltkey' => 'Your personal salt key',
     'home_personal_saltkey_label' => 'Enter your personal salt key',

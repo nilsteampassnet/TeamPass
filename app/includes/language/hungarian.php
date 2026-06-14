@@ -615,7 +615,7 @@ return array(
     'group' => 'Mappa',
     'group_parent' => 'Szülő mappa',
     'group_pw_duration' => 'Megújítási periódus',
-    'group_pw_duration_tip' => 'Hónapokban. Adjon 0-át a tiltáshoz.',
+    'group_pw_duration_tip' => 'Napokban. Adjon 0-át a tiltáshoz.',
     'history' => 'Történet',
     'home_personal_saltkey' => 'Az Ön személyes SALT kulcsa',
     'home_personal_saltkey_label' => 'Adja meg a személyes SALT kulcsát',

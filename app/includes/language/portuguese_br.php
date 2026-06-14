@@ -615,7 +615,7 @@ return array(
     'group' => 'Pasta',
     'group_parent' => 'Pasta pai',
     'group_pw_duration' => 'Período de renovação',
-    'group_pw_duration_tip' => 'Em meses. Use 0 para desabilitar.',
+    'group_pw_duration_tip' => 'Em dias. Use 0 para desabilitar.',
     'history' => 'Histórico',
     'home_personal_saltkey' => 'Sua SaltKey pessoal',
     'home_personal_saltkey_label' => 'Insira sua SaltKey pessoal',

@@ -615,7 +615,7 @@ return array(
     'group' => 'Klasör',
     'group_parent' => 'Ana Klasör',
     'group_pw_duration' => 'Yenileme Aralığı',
-    'group_pw_duration_tip' => 'Ay cinsinden, etkisiz kılmak için 0 giriniz',
+    'group_pw_duration_tip' => 'Gün cinsinden, etkisiz kılmak için 0 giriniz',
     'history' => 'Geçmiş',
     'home_personal_saltkey' => 'Kişisel SALT Anahtarınız',
     'home_personal_saltkey_label' => 'Kişisel salt anahtarınızı giriniz.',

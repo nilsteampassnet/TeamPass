@@ -615,7 +615,7 @@ return array(
     'group' => 'Cartella',
     'group_parent' => 'Cartella genitore',
     'group_pw_duration' => 'Durata password',
-    'group_pw_duration_tip' => 'In mesi. Usa 0 per disabilitare.',
+    'group_pw_duration_tip' => 'In giorni. Usa 0 per disabilitare.',
     'history' => 'Storico',
     'home_personal_saltkey' => 'La tua chiave SALT personale',
     'home_personal_saltkey_label' => 'Inserisci la tua chiave SALT',

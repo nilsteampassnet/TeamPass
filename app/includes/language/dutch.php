@@ -615,7 +615,7 @@ return array(
     'group' => 'Map',
     'group_parent' => 'Hoofdmap',
     'group_pw_duration' => 'Vernieuwing periode',
-    'group_pw_duration_tip' => 'In maanden. Gebruik 0 om uit te schakelen.',
+    'group_pw_duration_tip' => 'In dagen. Gebruik 0 om uit te schakelen.',
     'history' => 'Geschiedenis',
     'home_personal_saltkey' => 'Uw persoonlijke salt key',
     'home_personal_saltkey_label' => 'Voer uw persoonlijke salt key in',

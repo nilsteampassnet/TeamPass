@@ -615,7 +615,7 @@ return array(
     'group' => 'Directori',
     'group_parent' => 'Carpeta pare',
     'group_pw_duration' => 'Període de renvació',
-    'group_pw_duration_tip' => 'En mesos. 0 per deshabilitar.',
+    'group_pw_duration_tip' => 'En dies. 0 per deshabilitar.',
     'history' => 'Història',
     'home_personal_saltkey' => 'La teva clau SALT personal',
     'home_personal_saltkey_label' => 'Introdueix la teva clau personal SALT',
