@@ -341,4 +341,201 @@ class CryptoManagerTest extends TestCase
 
         CryptoManager::loadRSAKey('this-is-not-a-key');
     }
+
+    // =========================================================================
+    // AES v2 (authenticated GCM) — aesGcmEncrypt / aesGcmDecrypt
+    // =========================================================================
+
+    public function testAesGcmEncryptDecryptRoundTrip(): void
+    {
+        $objectKey = random_bytes(16);
+        $plain     = 'gcm-secret-value';
+
+        $enc = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $dec = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame($plain, $dec);
+    }
+
+    public function testAesGcmRoundTripWithSpecialCharacters(): void
+    {
+        $objectKey = random_bytes(16);
+        $plain     = "P@\$\$w0rd!#%^&*()_+-=[]{}|\nLine2\téàü中文日本語<>&\"'";
+
+        $enc = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $dec = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame($plain, $dec);
+    }
+
+    public function testAesGcmRoundTripWithLongData(): void
+    {
+        $objectKey = random_bytes(16);
+        $plain     = str_repeat('abcdefghij', 500); // 5000 chars
+
+        $enc = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $dec = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame($plain, $dec);
+    }
+
+    public function testAesGcmRoundTripWithEmptyPlaintext(): void
+    {
+        $objectKey = random_bytes(16);
+
+        $enc = CryptoManager::aesGcmEncrypt('', $objectKey);
+        $dec = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame('', $dec);
+    }
+
+    public function testAesGcmMetaHasExpectedLength(): void
+    {
+        // meta = version[1] | nonce[12] | salt[32] = 45 raw bytes
+        $enc = CryptoManager::aesGcmEncrypt('x', random_bytes(16));
+
+        $this->assertSame(45, strlen($enc['meta']));
+        $this->assertSame(2, ord($enc['meta'][0])); // version byte = 0x02
+    }
+
+    public function testAesGcmAppendsSixteenByteTag(): void
+    {
+        // ciphertext length == plaintext length + 16-byte GCM tag (no block padding in GCM)
+        $plain = 'exact-length-check';
+        $enc   = CryptoManager::aesGcmEncrypt($plain, random_bytes(16));
+
+        $this->assertSame(strlen($plain) + 16, strlen($enc['ciphertext']));
+    }
+
+    public function testAesGcmSameInputProducesDifferentCiphertext(): void
+    {
+        // Random nonce + salt per call → identical plaintext/key must yield different output,
+        // unlike the legacy fixed-IV CBC path (SEC-1).
+        $objectKey = random_bytes(16);
+        $plain     = 'same-plaintext';
+
+        $a = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $b = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+
+        $this->assertNotEquals($a['ciphertext'], $b['ciphertext']);
+        $this->assertNotEquals($a['meta'], $b['meta']);
+    }
+
+    public function testAesGcmTamperedTagThrows(): void
+    {
+        $objectKey = random_bytes(16);
+        $enc       = CryptoManager::aesGcmEncrypt('authentic', $objectKey);
+
+        // Flip the last byte (part of the auth tag) → authentication must fail.
+        $tampered = $enc['ciphertext'];
+        $last     = strlen($tampered) - 1;
+        $tampered[$last] = chr(ord($tampered[$last]) ^ 0xFF);
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($tampered, $enc['meta'], $objectKey);
+    }
+
+    public function testAesGcmTamperedCiphertextThrows(): void
+    {
+        $objectKey = random_bytes(16);
+        $enc       = CryptoManager::aesGcmEncrypt('authentic-body', $objectKey);
+
+        // Flip a byte inside the ciphertext body (before the tag).
+        $tampered     = $enc['ciphertext'];
+        $tampered[0]  = chr(ord($tampered[0]) ^ 0xFF);
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($tampered, $enc['meta'], $objectKey);
+    }
+
+    public function testAesGcmWrongKeyThrows(): void
+    {
+        $enc = CryptoManager::aesGcmEncrypt('secret', random_bytes(16));
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], random_bytes(16));
+    }
+
+    public function testAesGcmTruncatedMetaThrows(): void
+    {
+        $objectKey = random_bytes(16);
+        $enc       = CryptoManager::aesGcmEncrypt('secret', $objectKey);
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($enc['ciphertext'], substr($enc['meta'], 0, 10), $objectKey);
+    }
+
+    public function testAesGcmUnsupportedVersionThrows(): void
+    {
+        $objectKey = random_bytes(16);
+        $enc       = CryptoManager::aesGcmEncrypt('secret', $objectKey);
+
+        $badMeta    = $enc['meta'];
+        $badMeta[0] = chr(99); // unknown version byte
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($enc['ciphertext'], $badMeta, $objectKey);
+    }
+
+    public function testAesGcmUnknownKdfThrows(): void
+    {
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmEncrypt('secret', random_bytes(16), '', 'bogus-kdf');
+    }
+
+    public function testAesGcmPbkdf2RoundTrip(): void
+    {
+        // private_key path: human password as key material, PBKDF2-SHA256.
+        $password = 'human-password-123';
+        $plain    = '-----BEGIN RSA PRIVATE KEY----- ... -----END RSA PRIVATE KEY-----';
+
+        $enc = CryptoManager::aesGcmEncrypt($plain, $password, '', 'pbkdf2');
+        $dec = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $password, '', 'pbkdf2');
+
+        $this->assertSame($plain, $dec);
+    }
+
+    public function testAesGcmHkdfKeyDerivationIsDeterministic(): void
+    {
+        // Same key material + same meta (nonce/salt) → identical decryption,
+        // proving HKDF derivation is deterministic for a given salt.
+        $objectKey = random_bytes(16);
+        $plain     = 'deterministic-kdf';
+
+        $enc = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $d1  = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+        $d2  = CryptoManager::aesGcmDecrypt($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame($d1, $d2);
+        $this->assertSame($plain, $d1);
+    }
+
+    // =========================================================================
+    // aesDecryptAuto — v1/v2 format dispatch
+    // =========================================================================
+
+    public function testAesDecryptAutoDetectsV2(): void
+    {
+        $objectKey = random_bytes(16);
+        $plain     = 'auto-v2';
+
+        $enc    = CryptoManager::aesGcmEncrypt($plain, $objectKey);
+        $result = CryptoManager::aesDecryptAuto($enc['ciphertext'], $enc['meta'], $objectKey);
+
+        $this->assertSame($plain, $result['data']);
+        $this->assertSame(2, $result['version_used']);
+    }
+
+    public function testAesDecryptAutoDetectsLegacyCbc(): void
+    {
+        // Legacy data has empty meta → CBC path, version_used = 1.
+        $objectKey = random_bytes(16);
+        $plain     = 'auto-legacy';
+
+        $legacyCiphertext = CryptoManager::aesEncrypt($plain, $objectKey, 'cbc', 'sha256');
+        $result           = CryptoManager::aesDecryptAuto($legacyCiphertext, '', $objectKey);
+
+        $this->assertSame($plain, $result['data']);
+        $this->assertSame(1, $result['version_used']);
+    }
 }

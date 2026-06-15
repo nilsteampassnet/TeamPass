@@ -34,6 +34,19 @@ use Exception;
 class CryptoManager
 {
     /**
+     * AES v2 (authenticated GCM) format constants.
+     *
+     * Format: meta = version[1] | nonce[12] | salt[32] ; payload = GCM_ciphertext || tag[16].
+     * The RSA sharekey layer is independent and unaffected by this format.
+     */
+    private const AES_V2_VERSION = 2;                 // meta version byte
+    private const AES_V2_NONCE_LEN = 12;              // GCM standard nonce (96 bits)
+    private const AES_V2_SALT_LEN = 32;               // KDF salt
+    private const AES_V2_TAG_LEN = 16;                // GCM authentication tag
+    private const AES_V2_PBKDF2_ITERATIONS = 600000;  // private_key path (human password, OWASP 2023)
+    private const AES_V2_HKDF_INFO = 'teampass-item-v2'; // objectKey path
+
+    /**
      * Generate RSA key pair
      *
      * @param int $bits Key size in bits (default 4096)
@@ -404,6 +417,152 @@ class CryptoManager
         }
 
         throw new Exception('AES decryption failed with both SHA-256 and SHA-1');
+    }
+
+    /**
+     * Derive a 32-byte AES-256 key for the v2 (GCM) format.
+     *
+     * - 'hkdf'   : $keyMaterial is a high-entropy random objectKey → HKDF-SHA256 (cheap).
+     * - 'pbkdf2' : $keyMaterial is a human password (private_key) → PBKDF2-SHA256, 600k iterations.
+     *
+     * @param string $keyMaterial Raw key material (objectKey bytes or password)
+     * @param string $salt        Per-object random salt (raw bytes)
+     * @param string $kdf         'hkdf' or 'pbkdf2'
+     * @return string 32 raw bytes
+     * @throws Exception on unknown KDF
+     */
+    private static function deriveV2Key(string $keyMaterial, string $salt, string $kdf): string
+    {
+        switch ($kdf) {
+            case 'pbkdf2':
+                return hash_pbkdf2('sha256', $keyMaterial, $salt, self::AES_V2_PBKDF2_ITERATIONS, 32, true);
+            case 'hkdf':
+                return hash_hkdf('sha256', $keyMaterial, 32, self::AES_V2_HKDF_INFO, $salt);
+            default:
+                throw new Exception('Unknown KDF for AES v2: ' . $kdf);
+        }
+    }
+
+    /**
+     * Encrypt with AES-256-GCM (v2 authenticated format).
+     *
+     * Works on raw binary (base64 is handled by the doData* wrappers or the private_key "v2:"
+     * prefix), consistent with aesEncrypt()/aesDecrypt(). phpseclib does NOT embed the GCM tag,
+     * so the 16-byte tag is appended to the ciphertext. The 12-byte nonce and 32-byte salt are
+     * returned in 'meta' (to be stored in pw_iv / data_iv).
+     *
+     * @param string $plaintext   Data to encrypt (raw)
+     * @param string $keyMaterial objectKey bytes (kdf='hkdf') or password (kdf='pbkdf2')
+     * @param string $aad         Additional authenticated data (reserved; empty by default)
+     * @param string $kdf         'hkdf' (default) or 'pbkdf2'
+     * @return array{ciphertext: string, meta: string} raw ciphertext||tag and raw meta(version|nonce|salt)
+     * @throws Exception
+     */
+    public static function aesGcmEncrypt(string $plaintext, string $keyMaterial, string $aad = '', string $kdf = 'hkdf'): array
+    {
+        if (!class_exists('phpseclib3\\Crypt\\AES')) {
+            throw new Exception('phpseclib v3 is required for AES-GCM (v2) encryption');
+        }
+
+        $nonce = random_bytes(self::AES_V2_NONCE_LEN);
+        $salt = random_bytes(self::AES_V2_SALT_LEN);
+        $key = self::deriveV2Key($keyMaterial, $salt, $kdf);
+
+        $cipher = new AES('gcm');
+        $cipher->setKey($key);
+        $cipher->setNonce($nonce); // GCM uses setNonce(), NOT setIV()
+        if ($aad !== '') {
+            $cipher->setAAD($aad);
+        }
+
+        $ciphertext = $cipher->encrypt($plaintext);
+        $tag = $cipher->getTag(); // 16 bytes, not embedded in the ciphertext
+
+        return [
+            'ciphertext' => $ciphertext . $tag,
+            'meta' => chr(self::AES_V2_VERSION) . $nonce . $salt,
+        ];
+    }
+
+    /**
+     * Decrypt an AES-256-GCM (v2) payload produced by aesGcmEncrypt().
+     *
+     * @param string $ciphertext  Raw ciphertext||tag
+     * @param string $meta        Raw meta (version|nonce|salt)
+     * @param string $keyMaterial objectKey bytes (kdf='hkdf') or password (kdf='pbkdf2')
+     * @param string $aad         Additional authenticated data (must match encryption)
+     * @param string $kdf         'hkdf' (default) or 'pbkdf2'
+     * @return string Decrypted plaintext (raw)
+     * @throws Exception on malformed input or authentication-tag mismatch
+     */
+    public static function aesGcmDecrypt(string $ciphertext, string $meta, string $keyMaterial, string $aad = '', string $kdf = 'hkdf'): string
+    {
+        if (!class_exists('phpseclib3\\Crypt\\AES')) {
+            throw new Exception('phpseclib v3 is required for AES-GCM (v2) decryption');
+        }
+
+        if (strlen($meta) < 1 + self::AES_V2_NONCE_LEN + self::AES_V2_SALT_LEN) {
+            throw new Exception('Invalid AES v2 meta (too short)');
+        }
+
+        $version = ord($meta[0]);
+        if ($version !== self::AES_V2_VERSION) {
+            throw new Exception('Unsupported AES v2 version: ' . $version);
+        }
+
+        $nonce = substr($meta, 1, self::AES_V2_NONCE_LEN);
+        $salt = substr($meta, 1 + self::AES_V2_NONCE_LEN, self::AES_V2_SALT_LEN);
+
+        if (strlen($ciphertext) < self::AES_V2_TAG_LEN) {
+            throw new Exception('Invalid AES v2 ciphertext (too short)');
+        }
+        $tag = substr($ciphertext, -self::AES_V2_TAG_LEN);
+        $ct = substr($ciphertext, 0, -self::AES_V2_TAG_LEN);
+
+        $key = self::deriveV2Key($keyMaterial, $salt, $kdf);
+
+        $cipher = new AES('gcm');
+        $cipher->setKey($key);
+        $cipher->setNonce($nonce);
+        if ($aad !== '') {
+            $cipher->setAAD($aad);
+        }
+        $cipher->setTag($tag); // must be set before decrypt()
+
+        $plaintext = $cipher->decrypt($ct); // throws BadDecryptionException on tag mismatch
+        return (string) $plaintext;
+    }
+
+    /**
+     * Decrypt with automatic v1/v2 format detection.
+     *
+     * Mirror of aesDecryptWithVersionDetection() but across the AES *format* axis:
+     *   - $meta !== '' → v2 (authenticated GCM)       → version_used = 2
+     *   - $meta === '' → legacy CBC (IV0, fixed salt) → version_used = 1
+     *
+     * @param string $ciphertext  Raw ciphertext (v2: ct||tag ; legacy: CBC ciphertext)
+     * @param string $meta        Raw v2 meta, or '' for legacy
+     * @param string $keyMaterial objectKey bytes (kdf='hkdf') or password (kdf='pbkdf2')
+     * @param string $mode        Legacy AES mode (default 'cbc')
+     * @param string $kdf         v2 KDF: 'hkdf' (default) or 'pbkdf2'
+     * @return array{data: string, version_used: int}
+     * @throws Exception
+     */
+    public static function aesDecryptAuto(string $ciphertext, string $meta, string $keyMaterial, string $mode = 'cbc', string $kdf = 'hkdf'): array
+    {
+        if ($meta !== '') {
+            return [
+                'data' => self::aesGcmDecrypt($ciphertext, $meta, $keyMaterial, '', $kdf),
+                'version_used' => 2,
+            ];
+        }
+
+        // Legacy path: CBC with hash detection (SHA-256 then SHA-1).
+        $legacy = self::aesDecryptWithVersionDetection($ciphertext, $keyMaterial, $mode);
+        return [
+            'data' => $legacy['data'],
+            'version_used' => 1,
+        ];
     }
 
     /**
