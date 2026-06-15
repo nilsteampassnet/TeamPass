@@ -3747,14 +3747,40 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
 }
 
 /**
+ * Whether new item/field/file data must be written in the AES v2 (authenticated
+ * GCM) format. Gated by the admin setting `aes_v2_write_enabled` (default 0).
+ *
+ * When OFF, doDataEncryption() keeps emitting the legacy CBC format (meta='')
+ * so behaviour is unchanged. Turning it ON is the rollback switch for Phase 2.
+ *
+ * @return bool
+ */
+function aesV2WriteEnabled(): bool
+{
+    if (class_exists('TeampassClasses\ConfigManager\ConfigManager') === true) {
+        $configManager = new ConfigManager();
+        return (int) ($configManager->getSetting('aes_v2_write_enabled') ?? 0) === 1;
+    }
+    return false;
+}
+
+/**
  * Encrypts a string using AES.
  *
- * @param string $data String to encrypt
- * @param string $key
+ * Emits the AES v2 (authenticated GCM, random IV + salt) format when
+ * aesV2WriteEnabled() is true, otherwise the legacy CBC format. The returned
+ * 'meta' MUST be stored in the companion column (pw_iv / data_iv): it is empty
+ * for legacy data and carries the v2 nonce/salt otherwise.
  *
- * @return array
+ * @param string      $data              String to encrypt
+ * @param string|null $key               Reuse an existing object key (base64) instead of generating one
+ * @param bool        $forceLegacyFormat Force the legacy CBC format even when v2 writes are enabled.
+ *                                       Use only for storage targets that have no companion meta column
+ *                                       (e.g. items_change.pw) and never go through doDataDecryption($meta).
+ *
+ * @return array{encrypted: string, objectKey: string, meta: string}
  */
-function doDataEncryption(string $data, ?string $key = null): array
+function doDataEncryption(string $data, ?string $key = null, bool $forceLegacyFormat = false): array
 {
     // Passwords are secrets: do NOT sanitize before encryption or HTML-sensitive chars get corrupted.
     // XSS protection applies at output (HTML rendering), never at the encryption boundary.
@@ -3763,12 +3789,25 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
 
-    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    if ($forceLegacyFormat === false && aesV2WriteEnabled() === true) {
+        // AES v2: authenticated GCM with random nonce + salt; meta carries nonce/salt.
+        // Key material is the raw objectKey string (same value the legacy path feeds to aesEncrypt).
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($data, $objectKey);
+
+        return [
+            'encrypted' => base64_encode($v2['ciphertext']),
+            'objectKey' => base64_encode($objectKey),
+            'meta' => base64_encode($v2['meta']),
+        ];
+    }
+
+    // Legacy format (AES-CBC) — unchanged
     $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
 
     return [
         'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
+        'meta' => '',
     ];
 }
 

@@ -767,8 +767,10 @@ switch ($inputData['type']) {
                 } else {
                     $cryptedStuff['encrypted'] = '';
                     $cryptedStuff['objectKey'] = '';
+                    $cryptedStuff['meta'] = '';
                 }
                 $itemPassword = $cryptedStuff['encrypted'];
+                $itemPasswordIv = $cryptedStuff['meta'] ?? '';
 
                 // Insert new item in table ITEMS
                 DB::insert(
@@ -777,7 +779,7 @@ switch ($inputData['type']) {
                         'label' => substr($item['label'], 0, 500),
                         'description' => empty($item['description']) === true ? '' : $item['description'],
                         'pw' => $itemPassword,
-                        'pw_iv' => '',
+                        'pw_iv' => $itemPasswordIv,
                         'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
                         'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
                         'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
@@ -1280,6 +1282,7 @@ switch ($inputData['type']) {
             } else {
                 $cryptedStuff['encrypted'] = '';
                 $cryptedStuff['objectKey'] = '';
+                $cryptedStuff['meta'] = '';
             }
             $post_password = $cryptedStuff['encrypted'];
             $folderId = isset($post_folders[$item['parentFolderId']]['id']) ? (int)$post_folders[$item['parentFolderId']]['id'] : 0;
@@ -1291,7 +1294,7 @@ switch ($inputData['type']) {
                     'label' => substr($item['Title'], 0, 500),
                     'description' => $item['Notes'],
                     'pw' => $cryptedStuff['encrypted'],
-                    'pw_iv' => '',
+                    'pw_iv' => $cryptedStuff['meta'] ?? '',
                     'url' => substr($item['URL'], 0, 500),
                     'id_tree' => $folderId,
                     'login' => substr($item['UserName'], 0, 500),

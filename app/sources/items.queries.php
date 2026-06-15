@@ -441,10 +441,12 @@ switch ($inputData['type']) {
                 } else {
                     $cryptedStuff['encrypted'] = '';
                     $cryptedStuff['objectKey'] = '';
+                    $cryptedStuff['meta'] = '';
                 }
 
                 $post_password = $cryptedStuff['encrypted'];
                 $post_password_key = $cryptedStuff['objectKey'];
+                $post_password_iv = $cryptedStuff['meta'] ?? '';
                 $itemFilesForTasks = [];
                 $itemFieldsForTasks = [];
                 
@@ -460,7 +462,7 @@ switch ($inputData['type']) {
                             'label' => $inputData['label'],
                             'description' => $post_description,
                             'pw' => $post_password,
-                            'pw_iv' => '',
+                            'pw_iv' => $post_password_iv,
                             'pw_len' => $strlen_post_password,
                             'email' => $post_email,
                             'url' => $post_url,
@@ -518,7 +520,7 @@ switch ($inputData['type']) {
                                             'item_id' => $newID,
                                             'field_id' => $field['id'],
                                             'data' => $cryptedStuff['encrypted'],
-                                            'data_iv' => '',
+                                            'data_iv' => $cryptedStuff['meta'],
                                             'encryption_type' => TP_ENCRYPTION_NAME,
                                         )
                                     );
@@ -1075,6 +1077,7 @@ switch ($inputData['type']) {
         $tasksToBePerformed = [];
         $encrypted_password = '';
         $encrypted_password_key = '';
+        $encrypted_password_iv = '';
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
@@ -1277,6 +1280,7 @@ switch ($inputData['type']) {
                         // waiting on an encryption task that would never refresh the detail view
                         // for an empty password.
                         $encrypted_password = '';
+                        $encrypted_password_iv = '';
                         DB::delete(
                             prefixTable('sharekeys_items'),
                             'object_id = %i',
@@ -1284,8 +1288,9 @@ switch ($inputData['type']) {
                         );
                         $passwordWasUpdated = true;
                     } else {
-                        // Not allowed to clear the password — keep the existing one.
+                        // Not allowed to clear the password — keep the existing one (and its meta).
                         $encrypted_password = $data['pw'];
+                        $encrypted_password_iv = $data['pw_iv'] ?? '';
                     }
                 } else {
                     //-----
@@ -1293,6 +1298,7 @@ switch ($inputData['type']) {
                     $cryptedStuff = doDataEncryption($post_password);
                     $encrypted_password = $cryptedStuff['encrypted'];
                     $encrypted_password_key = $cryptedStuff['objectKey'];
+                    $encrypted_password_iv = $cryptedStuff['meta'];
 
                     // Create sharekeys for users
                     storeUsersShareKey(
@@ -1312,6 +1318,7 @@ switch ($inputData['type']) {
                 }
             } else {
                 $encrypted_password = $data['pw'];
+                $encrypted_password_iv = $data['pw_iv'] ?? '';
             }
 
             // ---Manage tags
@@ -1375,6 +1382,7 @@ switch ($inputData['type']) {
                     'label' => $inputData['label'],
                     'description' => $post_description,
                     'pw' => $encrypted_password,
+                    'pw_iv' => $encrypted_password_iv,
                     'pw_len' => $strlen_post_password,
                     'email' => $post_email,
                     'login' => $post_login,
@@ -1437,9 +1445,11 @@ switch ($inputData['type']) {
                             if (intval($dataTmpCat['encrypted_data']) === 1) {
                                 $cryptedStuff   = doDataEncryption($field['value']);
                                 $dataToStore    = $cryptedStuff['encrypted'];
+                                $dataIvToStore  = $cryptedStuff['meta'];
                                 $encryptionType = TP_ENCRYPTION_NAME;
                             } else {
                                 $dataToStore    = $field['value'];
+                                $dataIvToStore  = '';
                                 $encryptionType = 'not_set';
                             }
 
@@ -1450,7 +1460,7 @@ switch ($inputData['type']) {
                                     'item_id' => $inputData['itemId'],
                                     'field_id' => $field['id'],
                                     'data' => $dataToStore,
-                                    'data_iv' => '',
+                                    'data_iv' => $dataIvToStore,
                                     'encryption_type' => $encryptionType,
                                 )
                             );
@@ -1534,6 +1544,7 @@ switch ($inputData['type']) {
                                 if (intval($dataTmpCat['encrypted_data']) === 1) {
                                     $cryptedStuff = doDataEncryption($field['value']);
                                     $encrypt['string'] = $cryptedStuff['encrypted'];
+                                    $encrypt['iv'] = $cryptedStuff['meta'];
                                     $encrypt['type'] = TP_ENCRYPTION_NAME;
 
                                     // Create sharekeys for users
@@ -1553,6 +1564,7 @@ switch ($inputData['type']) {
                                     $encryptedFieldIsChanged = true;
                                 } else {
                                     $encrypt['string'] = $field['value'];
+                                    $encrypt['iv'] = '';
                                     $encrypt['type'] = 'not_set';
                                 }
 
@@ -1561,7 +1573,7 @@ switch ($inputData['type']) {
                                     prefixTable('categories_items'),
                                     array(
                                         'data' => $encrypt['string'],
-                                        'data_iv' => '',
+                                        'data_iv' => $encrypt['iv'],
                                         'encryption_type' => $encrypt['type'],
                                     ),
                                     'item_id = %i AND field_id = %i',
@@ -2435,7 +2447,10 @@ switch ($inputData['type']) {
                     $aSet['viewed_no'] = '0';
                 } elseif ($key === 'pw') {
                     $aSet['pw'] = $originalRecord['pw'];
-                    $aSet['pw_iv'] = '';
+                    $aSet['pw_iv'] = $cryptedStuff['meta'];
+                } elseif ($key === 'pw_iv') {
+                    // pw_iv reflects the freshly re-encrypted pw (set in the 'pw' branch);
+                    // never copy the source row's pw_iv.
                 } elseif ($key === 'perso') {
                     $aSet['perso'] = $is_perso;
                 } elseif ($key !== 'id' && $key !== 'key') {
@@ -2511,7 +2526,8 @@ switch ($inputData['type']) {
                         'field_id' => $field['field_id'],
                         'data' => intval($field['encrypted_data']) === 1 ?
                             $cryptedStuff['encrypted'] : $field['data'],
-                        'data_iv' => '',
+                        'data_iv' => intval($field['encrypted_data']) === 1 ?
+                            $cryptedStuff['meta'] : '',
                         'encryption_type' => intval($field['encrypted_data']) === 1 ?
                             TP_ENCRYPTION_NAME : 'not_set',
                     )
@@ -7308,7 +7324,9 @@ switch ($inputData['type']) {
             $cryptedStuff['encrypted'] = '';
             $cryptedStuff['objectKey'] = '';
         } else {
-            $cryptedStuff = doDataEncryption($pwd);
+            // items_change has no pw_iv column and its pw is never read via doDataDecryption($meta),
+            // so it must stay in the legacy format (no meta to persist).
+            $cryptedStuff = doDataEncryption($pwd, null, true);
         }
 
         // query

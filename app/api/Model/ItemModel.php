@@ -269,6 +269,7 @@ class ItemModel
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
+            $passwordIv = $cryptedData['meta'] ?? '';
 
             // Generate favicon URL if URL is provided and favicon_url is empty
             if (empty($data['url']) === false) {
@@ -276,7 +277,7 @@ class ItemModel
             }
 
             // Step 8: Insert the new item into the database
-            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel);
+            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel, $passwordIv);
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $fields, $data, $SETTINGS);
@@ -526,6 +527,7 @@ class ItemModel
         return [
             'encrypted' => $cryptedStuff['encrypted'],
             'passwordKey' => $cryptedStuff['objectKey'],
+            'meta' => $cryptedStuff['meta'],
         ];
     }
 
@@ -535,9 +537,10 @@ class ItemModel
      * @param string $password - The encrypted password
      * @param array $itemInfos - Folder-specific settings
      * @param int $complexityLevel - Complexity level computed from the plaintext password by checkPasswordComplexity()
+     * @param string $passwordIv - v2 metadata (pw_iv) returned by encryptPassword(); empty for legacy data
      * @return int - Returns the ID of the newly created item
      */
-    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel) : int
+    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel, string $passwordIv = '') : int
     {
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
 
@@ -547,7 +550,7 @@ class ItemModel
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'pw' => $password,
-                'pw_iv' => '',
+                'pw_iv' => $passwordIv,
                 'pw_len' => strlen($data['password']),
                 'email' => $data['email'],
                 'url' => $data['url'],
@@ -877,7 +880,7 @@ class ItemModel
                         'item_id' => $newID,
                         'field_id' => $fieldId,
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ]
                 );
@@ -992,7 +995,7 @@ class ItemModel
                             'item_id' => $itemId,
                             'field_id' => $fieldId,
                             'data' => $cryptedStuff['encrypted'],
-                            'data_iv' => '',
+                            'data_iv' => $cryptedStuff['meta'],
                             'encryption_type' => 'teampass_aes',
                         ]
                     );
@@ -1065,7 +1068,7 @@ class ItemModel
                     prefixTable('categories_items'),
                     [
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ],
                     'item_id = %i AND field_id = %i',
@@ -1260,6 +1263,7 @@ class ItemModel
                 $cryptedData = $this->encryptPassword($newPassword);
                 $passwordKey = $cryptedData['passwordKey'];
                 $updateData['pw'] = $cryptedData['encrypted'];
+                $updateData['pw_iv'] = $cryptedData['meta'] ?? '';
                 $updateData['pw_len'] = strlen($newPassword);
                 $updateData['complexity_level'] = $complexityLevel;
             }

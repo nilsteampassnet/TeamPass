@@ -239,6 +239,13 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'hibp_check_interval_days', '7')"
 );
 
+// Phase 2 AES v2 (authenticated GCM) write switch. Disabled by default: when off, new data
+// keeps the legacy CBC format. Existing v2-aware read paths can already decrypt v2 data.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'aes_v2_write_enabled', '0')"
+);
+
 // Add knowledge base comments support.
 $res = addColumnIfNotExist(
     $pre . 'kb',

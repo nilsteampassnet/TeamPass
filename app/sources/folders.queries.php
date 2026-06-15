@@ -1420,7 +1420,7 @@ if (null !== $post_type) {
                                         'description' => empty($record['description']) === true ? '' : $record['description'],
                                         'id_tree' => $newFolderId,
                                         'pw' => $cryptedStuff['encrypted'],
-                                        'pw_iv' => '',
+                                        'pw_iv' => $cryptedStuff['meta'],
                                         'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
                                         'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
                                         'viewed_no' => 0,
