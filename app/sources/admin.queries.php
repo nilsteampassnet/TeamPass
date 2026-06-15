@@ -2708,7 +2708,7 @@ switch ($post_type) {
         $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
         $post_translate = isset($dataReceived['translate']) === true ? filter_var($dataReceived['translate'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
 
-        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip'], true) === true) {
+        if (in_array($post_field, ['nb_bad_authentication', 'nb_bad_authentication_by_ip', 'api_rate_limit_per_minute'], true) === true) {
             $post_value = (string) max(0, (int) $post_value);
         }
         if ($post_field === 'bruteforce_lock_duration') {
@@ -4553,22 +4553,61 @@ case 'get_system_health':
         $cronStatus = 'danger';
         $cronText = $lang->get('error');
     } else {
-        // Cron check (last execution should be < 2 minutes ago)
-        $lastCron = DB::queryFirstField(
-            'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . ' 
-            ORDER BY created_at DESC 
-            LIMIT 1'
-        );
-        
+        // Cron is running. Two independent delay causes are distinguished so the
+        // dashboard tooltip can name the actual problem (enable_tasks_log is
+        // irrelevant here: background_tasks_logs is not used as a freshness signal).
+        //  - "Stuck task": a task has been "in progress" for too long, i.e. the
+        //    worker that picked it up crashed or was killed (e.g. FPM
+        //    request_terminate_timeout) and never released it, blocking the queue.
+        //  - "Delayed": a queued task waited unprocessed for too long while the
+        //    cron is fresh - the handler is not draining the queue (typically it
+        //    cannot write its lock file in storage/logs).
         $cronStatus = 'success';
         $cronText = $lang->get('health_status_ok');
-        
-        if (!$lastCron || (time() - intval($lastCron)) > 120) {
+        $cronDelayReason = '';
+
+        // A task stuck "in progress" for over 30 minutes. started_at is set when a
+        // task starts being processed; guard against NULL/empty/zero values.
+        $oldestStuck = DB::queryFirstField(
+            'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
+            WHERE is_in_progress = 1
+            AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
+        );
+
+        if ($oldestStuck !== null && (time() - intval($oldestStuck)) > 1800) {
             $cronStatus = 'warning';
-            $cronText = $lang->get('health_cron_delayed');
+            $cronText = $lang->get('health_cron_stuck');
+            $cronDelayReason = 'stuck';
+        } else {
+            // No stuck task: check for a queued backlog the handler is not draining.
+            $oldestPending = DB::queryFirstField(
+                'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+                WHERE is_in_progress = 0
+                AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+            );
+
+            if ($oldestPending !== null && (time() - intval($oldestPending)) > 300) {
+                $cronStatus = 'warning';
+                $cronText = $lang->get('health_cron_delayed');
+                $cronDelayReason = 'pending';
+            }
         }
     }
-    
+
+    // Actionable hint shown as a tooltip in the dashboard, worded to match the
+    // detected cause:
+    //  - 'danger' (Error): no cron execution detected at all.
+    //  - 'stuck': a background task is hung in progress, blocking the queue.
+    //  - 'pending' (Delayed): the cron runs but queued tasks are not processed.
+    $cronTooltip = '';
+    if ($cronStatus === 'danger') {
+        $cronTooltip = $lang->get('health_cron_error_help');
+    } elseif ($cronDelayReason === 'stuck') {
+        $cronTooltip = $lang->get('health_cron_stuck_help');
+    } elseif ($cronStatus === 'warning') {
+        $cronTooltip = $lang->get('health_cron_delayed_help');
+    }
+
     // Unknown files count
     $unknownFilesData = DB::queryFirstField(
         'SELECT valeur FROM ' . prefixTable('misc') . ' 
@@ -4620,6 +4659,7 @@ case 'get_system_health':
             'cron' => array(
                 'status' => $cronStatus,
                 'text' => $cronText,
+                'tooltip' => $cronTooltip,
             ),
             'unknown_files' => array(
                 'count' => $unknownFilesCount,

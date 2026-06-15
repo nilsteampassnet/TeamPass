@@ -64,6 +64,7 @@ header('Content-Type: application/json; charset=UTF-8');
 header('Access-Control-Allow-Methods: POST, GET, PUT, DELETE');
 header('Access-Control-Max-Age: 3600');
 header('Access-Control-Allow-Headers: Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+header('Access-Control-Expose-Headers: X-Api-Version, X-Total-Count, Location, Allow');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('Referrer-Policy: no-referrer');
@@ -85,6 +86,22 @@ if (preg_match('/(^|,)\s*fr([-_][a-z]{2})?(\s*;|,|$)/i', $acceptLanguage) === 1)
     $apiLanguage = 'french';
 }
 $lang = new \TeampassClasses\Language\Language($apiLanguage);
+
+// Enforce HTTPS when api_require_https is enabled (default on new installations).
+// Credentials (/authorize*) and bearer tokens must never travel unencrypted.
+// X-Forwarded-Proto is honoured for TLS-terminating reverse proxies.
+if ((int) ($SETTINGS['api_require_https'] ?? 0) === 1) {
+    $isRequestSecure = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (int) ($_SERVER['SERVER_PORT'] ?? 0) === 443
+        || strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    if ($isRequestSecure === false) {
+        errorHdl(
+            'HTTP/1.1 403 Forbidden',
+            json_encode(['error' => 'HTTPS is required for API requests (api_require_https is enabled)'])
+        );
+        exit;
+    }
+}
 
 $networkAccessContext = teampassGetClientIpForSecurity($SETTINGS);
 $networkAccessRules = teampassLoadNetworkAclRules(true);
@@ -120,6 +137,20 @@ if (defined('DB_PASSWD_CLEAR') === false) {
 $apiStatus = json_decode(apiIsEnabled(), true);
 $jwtStatus = json_decode(verifyAuth(), true);
 
+// Machine-readable API contract (OpenAPI 3.1) — no JWT required, gated by the api setting
+if (isset($uri[0]) && $uri[0] === 'openapi.json') {
+    if ($apiStatus['error'] === false) {
+        header('Content-Type: application/json; charset=UTF-8');
+        readfile(API_ROOT_PATH . '/openapi.json');
+    } else {
+        errorHdl(
+            $apiStatus['error_header'],
+            json_encode(['error' => $apiStatus['error_message']])
+        );
+    }
+    exit;
+}
+
 // Authorization handler
 if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken')) {
     // Is API enabled in Teampass settings
@@ -136,8 +167,82 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
         );
     }
 } elseif ($jwtStatus['error'] === false) {
-    // get infos from JWT parameters
-    $userData = json_decode(getDataFromToken(), true);
+    // Payload comes from the signature-verified token (single decode in verifyAuth)
+    $userData = ['data' => $jwtStatus['data'], 'error' => false];
+
+    // Re-validate user status and CRUD rights on every request — JWT claims are a
+    // snapshot at issuance: a user disabled or whose API rights were revoked must
+    // lose access immediately, not at token expiry.
+    $jwtUserId = (int) ($userData['data']['id'] ?? 0);
+    $freshUser = $jwtUserId > 0 ? DB::queryFirstRow(
+        'SELECT u.disabled, u.admin, u.gestionnaire,
+            a.enabled AS api_enabled,
+            a.allowed_to_create, a.allowed_to_read, a.allowed_to_update, a.allowed_to_delete
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('api') . ' AS a ON (a.user_id = u.id)
+        WHERE u.id = %i AND u.deleted_at IS NULL',
+        $jwtUserId
+    ) : null;
+
+    if ($freshUser === null
+        || (int) $freshUser['disabled'] === 1
+        || (int) $freshUser['api_enabled'] !== 1
+    ) {
+        errorHdl(
+            'HTTP/1.1 401 Unauthorized',
+            json_encode(['error' => 'Invalid or expired token'])
+        );
+        exit;
+    }
+
+    // Override the stale JWT claims with the fresh values
+    $userData['data']['is_admin'] = (int) $freshUser['admin'];
+    $userData['data']['is_manager'] = (int) $freshUser['gestionnaire'];
+    $userData['data']['allowed_to_create'] = (int) $freshUser['allowed_to_create'];
+    $userData['data']['allowed_to_read'] = (int) $freshUser['allowed_to_read'];
+    $userData['data']['allowed_to_update'] = (int) $freshUser['allowed_to_update'];
+    $userData['data']['allowed_to_delete'] = (int) $freshUser['allowed_to_delete'];
+
+    // Rate limiting (sliding window, per user AND per IP) — applied to all
+    // authenticated endpoints. 0 (default on upgraded instances) disables it.
+    $rateLimitPerMinute = (int) ($SETTINGS['api_rate_limit_per_minute'] ?? 0);
+    if ($rateLimitPerMinute > 0) {
+        $rateLimitState = teampassApiRateLimitCheck(
+            $jwtUserId,
+            (string) ($networkAccessContext['detected_ip'] ?? ''),
+            $rateLimitPerMinute
+        );
+        if ($rateLimitState['allowed'] === false) {
+            header('Retry-After: ' . $rateLimitState['retry_after']);
+            errorHdl(
+                'HTTP/1.1 429 Too Many Requests',
+                json_encode(['error' => 'Rate limit exceeded — retry in ' . $rateLimitState['retry_after'] . ' seconds'])
+            );
+            exit;
+        }
+    }
+
+    // Per-token revocation: a token logged out via /auth/logout (or revoked from
+    // the profile) is rejected on EVERY endpoint, not only key-needing ones.
+    // Tokens issued before the api_sessions table existed have no row — they are
+    // tolerated until expiry (legacy fallback, max 24h).
+    $jwtJti = (string) ($userData['data']['jti'] ?? '');
+    if ($jwtJti !== '') {
+        $apiSession = DB::queryFirstRow(
+            'SELECT revoked_at, expires_at FROM ' . prefixTable('api_sessions') . ' WHERE jti = %s AND user_id = %i',
+            $jwtJti,
+            $jwtUserId
+        );
+        if ($apiSession !== null
+            && ($apiSession['revoked_at'] !== null || (int) $apiSession['expires_at'] < time())
+        ) {
+            errorHdl(
+                'HTTP/1.1 401 Unauthorized',
+                json_encode(['error' => 'Invalid or expired token'])
+            );
+            exit;
+        }
+    }
 
     // Populate folders_list from cache_tree (was removed from JWT to reduce token size).
     // On cache miss or invalidation, rebuild from DB and refresh the cache.
@@ -230,14 +335,13 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
 
 
     // define the position of controller in $uri
-    $controller = $uri[0];
-    $action = $uri[1];
-    
-    if ($userData['error'] === true) {
-        // Error management
+    $controller = $uri[0] ?? '';
+    $action = $uri[1] ?? '';
+
+    if ($controller === '' || $action === '') {
         errorHdl(
-            $userData['error_header'],
-            json_encode(['error' => $userData['error_message']])
+            "HTTP/1.1 404 Not Found",
+            json_encode(['error' => 'Unknown route'])
         );
 
     // action related to USER
@@ -269,10 +373,17 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
         $objFeedController = new MiscController();
         $strMethodName = (string) $action . 'Action';
         $objFeedController->{$strMethodName}();
+
+    // action related to AUTH session lifecycle — only the logout action is routed
+    // here (token issuance stays on the unauthenticated /authorize* routes above)
+    } elseif ($controller === 'auth' && $action === 'logout') {
+        require API_ROOT_PATH . "/Controller/Api/AuthController.php";
+        $objFeedController = new AuthController();
+        $objFeedController->logoutAction($userData['data']);
     } else {
         errorHdl(
             "HTTP/1.1 404 Not Found",
-            json_encode(['error' => 'No action provided'])
+            json_encode(['error' => 'Unknown route'])
         );
     }
 // manage error case

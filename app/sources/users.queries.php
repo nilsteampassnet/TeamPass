@@ -112,6 +112,8 @@ if (null !== $post_type) {
         'list_extension_tokens',
         'revoke_extension_token',
         'build_extension_autoconfig',
+        'list_api_sessions',
+        'revoke_api_session',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -325,6 +327,76 @@ if (null !== $post_type) {
                 array(
                     'error' => false,
                     'tokens' => $tokensList,
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * ACTIVE API SESSIONS (one row per issued JWT, keyed by jti)
+         *
+         * Lets a user list and revoke their own API sessions (CI scripts, browser
+         * extension, mobile clients). Revocation flags the row — the matching JWT
+         * is then rejected on every API endpoint until it expires.
+         */
+        case 'list_api_sessions':
+        case 'revoke_api_session':
+            // Feature gate: API enabled
+            if ((int) ($SETTINGS['api'] ?? 0) !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $userId = (int) $session->get('user-id');
+
+            if ($post_type === 'revoke_api_session') {
+                $sessionId = (int) ($dataReceived['id'] ?? 0);
+                if ($sessionId > 0) {
+                    DB::update(
+                        prefixTable('api_sessions'),
+                        ['revoked_at' => time()],
+                        'id = %i AND user_id = %i AND revoked_at IS NULL',
+                        $sessionId,
+                        $userId
+                    );
+                    logEvents($SETTINGS, 'user_mngt', 'at_api_session_revoked', (string) $userId, (string) $session->get('user-login'), (string) $sessionId);
+                }
+                echo prepareExchangedData(array('error' => false), 'encode');
+                break;
+            }
+
+            // list_api_sessions — only live (non-revoked, non-expired) sessions;
+            // key material columns are never returned.
+            $sessionsList = DB::query(
+                'SELECT id, user_agent, created_at, expires_at, last_used_at
+                 FROM ' . prefixTable('api_sessions') . '
+                 WHERE user_id = %i AND revoked_at IS NULL AND expires_at >= %i
+                 ORDER BY created_at DESC',
+                $userId,
+                time()
+            );
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'sessions' => $sessionsList,
                 ),
                 'encode'
             );
@@ -962,9 +1034,12 @@ if (null !== $post_type) {
                     'id = %i',
                     $post_user_id
                 );
+
+                // Also invalidate the user's API sessions so their JWTs are rejected
+                tpInvalidateUserApiSession($post_user_id);
             }
             break;
-            
+
         case 'disconnect_users_logged_in':
             // Admin only + key check
             if ($post_key !== $session->get('key') || (int) $session->get('user-admin') !== 1) {
@@ -987,20 +1062,41 @@ if (null !== $post_type) {
             $now = time();
 
             try {
-                // Select IDs first to avoid multi-row update locking issues
+                // Select IDs first to avoid multi-row update locking issues.
+                // A user counts as connected through the web (session_end) or
+                // through an API session that is neither revoked nor expired.
                 if ($excludeUserId > 0) {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i AND id != %i',
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.id != %i
+                         AND (
+                            u.session_end >= %i
+                            OR EXISTS (
+                                SELECT 1
+                                FROM ' . prefixTable('api_sessions') . ' aps
+                                WHERE aps.user_id = u.id
+                                    AND aps.revoked_at IS NULL
+                                    AND aps.expires_at >= %i
+                            )
+                         )',
+                        $excludeUserId,
                         $now,
-                        $excludeUserId
+                        $now
                     );
                 } else {
                     $rows = DB::query(
                         'SELECT id
-                         FROM ' . prefixTable('users') . '
-                         WHERE session_end >= %i',
+                         FROM ' . prefixTable('users') . ' u
+                         WHERE u.session_end >= %i
+                         OR EXISTS (
+                            SELECT 1
+                            FROM ' . prefixTable('api_sessions') . ' aps
+                            WHERE aps.user_id = u.id
+                                AND aps.revoked_at IS NULL
+                                AND aps.expires_at >= %i
+                         )',
+                        $now,
                         $now
                     );
                 }
@@ -1017,6 +1113,9 @@ if (null !== $post_type) {
                         'id = %i',
                         (int) $row['id']
                     );
+
+                    // Also invalidate the user's API sessions
+                    tpInvalidateUserApiSession((int) $row['id']);
                 }
 
                 echo prepareExchangedData(
@@ -2679,7 +2778,7 @@ if (null !== $post_type) {
             try {
                 $results = $connection->query()
                     ->select($adQueryAttributes)
-                    ->rawfilter($SETTINGS['ldap_user_object_filter'])
+                    ->rawfilter(tpLdapBuildObjectFilter((string) $SETTINGS['ldap_user_object_filter']))
                     ->in((empty($SETTINGS['ldap_dn_additional_user_dn']) === false ? $SETTINGS['ldap_dn_additional_user_dn'].',' : '').$SETTINGS['ldap_bdn'])
                     ->whereHas($SETTINGS['ldap_user_attribute'])
                     ->paginate(100);
@@ -4289,8 +4388,17 @@ break;
         if ($value[0] === 'userlanguage') {
             $value[0] = 'user_language';
             $post_newValue = strtolower($post_newValue);
+            // Enforce the list of installed languages; fall back to the default on an unknown value.
+            // Prevents arbitrary values (ex: newline-carrying payloads) from being stored as user_language.
+            $isKnownLanguage = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('languages') . ' WHERE LOWER(name) = %s',
+                $post_newValue
+            );
+            if ($isKnownLanguage === 0) {
+                $post_newValue = strtolower((string) ($SETTINGS['default_language'] ?? 'english'));
+            }
         }
-        
+
         // Check that operation is allowed
         if (in_array(
             $value[0],
@@ -4658,6 +4766,62 @@ function tpLdapEscapeFilterValue(string $value): string
 }
 
 /**
+ * Build a valid LDAP filter from the user-object-filter setting.
+ *
+ * The setting accepts either a single filter, e.g. "(objectClass=user)", or
+ * several filters separated by a top-level comma, e.g.
+ * "(objectCategory=Person),(sAMAccountName=*)". Multiple filters are combined
+ * with a logical AND. Commas located inside a value (e.g. a DN like
+ * "memberOf=CN=x,OU=y") are preserved.
+ *
+ * @param string $rawFilter Raw value stored in settings.
+ * @return string A single valid LDAP filter, or '' when none provided.
+ */
+function tpLdapBuildObjectFilter(string $rawFilter): string
+{
+    $rawFilter = trim($rawFilter);
+    if ($rawFilter === '') {
+        return '';
+    }
+
+    // Split on commas located at the top level (parenthesis depth 0) only.
+    $parts = [];
+    $current = '';
+    $depth = 0;
+    $length = strlen($rawFilter);
+    for ($i = 0; $i < $length; $i++) {
+        $char = $rawFilter[$i];
+        if ($char === '(') {
+            $depth++;
+        } elseif ($char === ')') {
+            $depth--;
+        }
+        if ($char === ',' && $depth === 0) {
+            $parts[] = $current;
+            $current = '';
+            continue;
+        }
+        $current .= $char;
+    }
+    $parts[] = $current;
+
+    // Drop empty segments (e.g. trailing comma).
+    $parts = array_values(array_filter(
+        array_map('trim', $parts),
+        static fn($p) => $p !== ''
+    ));
+
+    if (count($parts) === 0) {
+        return '';
+    }
+    if (count($parts) === 1) {
+        return $parts[0];
+    }
+
+    return '(&' . implode('', $parts) . ')';
+}
+
+/**
  * Retrieve LDAP/AD status (disabled/expired) for a list of TeamPass user IDs.
  * This is designed for the main Users page to avoid fetching the full LDAP directory.
  */
@@ -4745,8 +4909,10 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
     $orFilter = '(|' . $orParts . ')';
 
     // Combine with object filter
-    $objectFilter = (string) $SETTINGS['ldap_user_object_filter'];
-    $finalFilter = '(&' . $objectFilter . $orFilter . ')';
+    $objectFilter = tpLdapBuildObjectFilter((string) $SETTINGS['ldap_user_object_filter']);
+    $finalFilter = $objectFilter === ''
+        ? $orFilter
+        : '(&' . $objectFilter . $orFilter . ')';
 
     // Attributes needed for status detection
     $adQueryAttributes = array_values(array_unique(array(

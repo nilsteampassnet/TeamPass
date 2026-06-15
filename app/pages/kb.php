@@ -312,8 +312,33 @@ $directKbId = (int) $request->query->get('id', 0);
     .tp-kb-content p,
     .tp-kb-content ul,
     .tp-kb-content ol,
-    .tp-kb-content blockquote {
+    .tp-kb-content blockquote,
+    .tp-kb-content pre,
+    .tp-kb-content table {
         margin-bottom: 1rem;
+    }
+
+    .tp-kb-content h2,
+    .tp-kb-content h3,
+    .tp-kb-content h4 {
+        color: #1f2d3d;
+        font-weight: 700;
+        line-height: 1.3;
+        margin: 1.35rem 0 0.75rem;
+    }
+
+    .tp-kb-content h2 {
+        font-size: 1.45rem;
+        padding-bottom: 0.35rem;
+        border-bottom: 1px solid rgba(23, 162, 184, 0.18);
+    }
+
+    .tp-kb-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .tp-kb-content h4 {
+        font-size: 1.05rem;
     }
 
     .tp-kb-content ul,
@@ -337,6 +362,62 @@ $directKbId = (int) $request->query->get('id', 0);
         text-decoration-thickness: 1px;
         text-underline-offset: 2px;
         word-break: break-word;
+    }
+
+    .tp-kb-content img {
+        display: block;
+        max-width: 100%;
+        height: auto;
+        margin: 1rem auto;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        border-radius: 0.5rem;
+        box-shadow: 0 0.45rem 1rem rgba(15, 23, 42, 0.08);
+    }
+
+    .tp-kb-content table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+    }
+
+    .tp-kb-content th,
+    .tp-kb-content td {
+        border: 1px solid rgba(15, 23, 42, 0.12);
+        padding: 0.55rem 0.65rem;
+        vertical-align: top;
+    }
+
+    .tp-kb-content th {
+        background: #f3f7fa;
+        color: #23324d;
+        font-weight: 700;
+    }
+
+    .tp-kb-content pre {
+        overflow-x: auto;
+        padding: 0.85rem 1rem;
+        background: #172033;
+        color: #edf2f7;
+        border-radius: 0.5rem;
+        line-height: 1.55;
+    }
+
+    .tp-kb-content code {
+        padding: 0.1rem 0.3rem;
+        border-radius: 0.25rem;
+        background: rgba(15, 23, 42, 0.08);
+        color: #22304a;
+    }
+
+    .tp-kb-content pre code {
+        padding: 0;
+        background: transparent;
+        color: inherit;
+    }
+
+    #kb-editor-card .note-editor .note-editable {
+        min-height: 360px;
+        background: #ffffff;
     }
 
     .tp-kb-viewer-meta {

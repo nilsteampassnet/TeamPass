@@ -40,6 +40,8 @@ Vérifie également si la PR :
 
 ## 3. Analyse du diff
 
+Le diff doit se faire en fonction de la branche develop du projet local.
+
 ### 3.1 Qualité du code PHP
 
 Pour chaque fichier `.php` modifié, évalue :

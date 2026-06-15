@@ -38,18 +38,21 @@ class ItemModel
     /**
      * Get the list of items to return
      *
-     * @param string $sqlExtra
+     * @param string $sqlExtra WHERE clause, may contain MeekroDB placeholders (%s, ...)
      * @param integer $limit
      * @param string $userPrivateKey
      * @param integer $userId
-     * @param bool $showItem
-     * 
+     * @param bool $showItem Kept for caller compatibility — access is now logged on every path
+     * @param integer $offset Pagination offset — only applied when a limit is set
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
+     *
      * @return array
      */
-    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false): array
+    public function getItems(string $sqlExtra, int $limit, string $userPrivateKey, int $userId, bool $showItem = false, int $offset = 0, array $sqlParams = []): array
     {
-        // Fetch user's public key once for migration-aware decryption
+        // Fetch user's public key (migration-aware decryption) once.
         $userPublicKey = '';
+        $userRoles = '';
         $userKeyRow = DB::queryFirstRow(
             'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
             $userId
@@ -57,6 +60,16 @@ class ItemModel
         if ($userKeyRow !== null) {
             $userPublicKey = (string) $userKeyRow['public_key'];
         }
+        // Roles (field visibility) live in the dedicated users_roles table; the
+        // ';'-separated 'fonction_id' exposed elsewhere (api/index.php, core.php) is a
+        // derived GROUP_CONCAT alias, not a physical column on the users table.
+        $userRolesRow = DB::queryFirstRow(
+            'SELECT GROUP_CONCAT(DISTINCT role_id ORDER BY role_id SEPARATOR ";") AS fonction_id
+             FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i AND source = %s',
+            $userId,
+            'manual'
+        );
+        $userRoles = $userRolesRow !== null ? (string) ($userRolesRow['fonction_id'] ?? '') : '';
 
         // Load settings once to know whether custom fields are enabled
         $configManager = new ConfigManager();
@@ -75,10 +88,11 @@ class ItemModel
             FROM " . prefixTable('items') . " AS i
             LEFT JOIN " . prefixTable('nested_tree') . " AS t ON (t.id = i.id_tree)
             LEFT JOIN " . prefixTable('items_otp') . " AS io ON (io.item_id = i.id)".
-            $sqlExtra . 
+            $sqlExtra .
             " ORDER BY i.id ASC" .
-            ($limit > 0 ? " LIMIT ". $limit : '')
-        ); 
+            ($limit > 0 ? " LIMIT " . ($offset > 0 ? $offset . ", " : "") . $limit : ''),
+            ...$sqlParams
+        );
         
         $ret = [];
         foreach ($rows as $row) {
@@ -141,7 +155,7 @@ class ItemModel
 
             // Custom fields attached to this item (only if the feature is enabled)
             $itemFields = $itemExtraFields === true
-                ? $this->getItemCustomFields((int) $row['id'], (int) $row['id_tree'], $userId, $userPrivateKey, $userPublicKey)
+                ? $this->getItemCustomFields((int) $row['id'], (int) $row['id_tree'], $userId, $userPrivateKey, $userPublicKey, $userRoles)
                 : [];
 
             array_push(
@@ -169,22 +183,44 @@ class ItemModel
                 ]
             );
 
-            // Increase viewed number
-            if ($showItem === true) {
-                logItems(
-                    [],
-                    (int) $row['id'],
-                    $row['label'] ?? '',
-                    (int) $userId,
-                    'at_shown',
-                    ''
-                );
-            }
+            // Audit trail: the decrypted password is returned to the client, so log the
+            // access for every lookup path (id, label, description, inFolders) — not only
+            // get-by-id. logItems() tags API context (tp_src=api) and dedupes within 5s.
+            logItems(
+                [],
+                (int) $row['id'],
+                $row['label'] ?? '',
+                (int) $userId,
+                'at_shown',
+                ''
+            );
         }
 
         return $ret;
     }
-    //end getItems() 
+    //end getItems()
+
+    /**
+     * Count items matching a WHERE clause — pagination total (X-Total-Count).
+     *
+     * The count is taken before the per-item sharekey filtering performed in
+     * getItems(): it is the number of matching items in accessible folders,
+     * not the number of items the user can currently decrypt.
+     *
+     * @param string $sqlExtra WHERE clause referencing the 'i' items alias only,
+     *                         may contain MeekroDB placeholders (%s, ...)
+     * @param array $sqlParams Values bound to the placeholders in $sqlExtra, in order
+     *
+     * @return int
+     */
+    public function countItems(string $sqlExtra, array $sqlParams = []): int
+    {
+        return (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('items') . ' AS i ' . $sqlExtra,
+            ...$sqlParams
+        );
+    }
+    //end countItems()
 
     /**
      * Main function to add a new item to the database.
@@ -326,7 +362,8 @@ class ItemModel
             'tags' => (string) ($arrItemParams['tags'] ?? ''),
             'anyoneCanModify' => (int) ($arrItemParams['anyone_can_modify'] ?? 0),
             'url' => (string) ($arrItemParams['url'] ?? ''),
-            'icon' => (string) ($arrItemParams['icon'] ?? ''),
+            // Constrain the icon to safe Font Awesome class characters (letters, digits, space, underscore, hyphen)
+            'icon' => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) ($arrItemParams['icon'] ?? '')),
             'totp' => (string) ($arrItemParams['totp'] ?? ''),
             'favicon_url' => '',
         ];
@@ -682,10 +719,11 @@ class ItemModel
      * @param int    $userId         Requesting user ID
      * @param string $userPrivateKey User private key (already decrypted)
      * @param string $userPublicKey  User public key
+     * @param string $userRoles      Requesting user roles (';'-separated, from fonction_id)
      *
      * @return array<int, array{id:int, title:string, type:string, masked:int, value:string}>
      */
-    private function getItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey): array
+    private function getItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey, string $userRoles = ''): array
     {
         // Categories associated to the item's folder
         $catRows = DB::query(
@@ -701,7 +739,8 @@ class ItemModel
         $rows = DB::query(
             'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
                 i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
-                c.title AS title, c.type AS type, c.masked AS masked
+                c.title AS title, c.type AS type, c.masked AS masked,
+                c.role_visibility AS role_visibility
             FROM ' . prefixTable('categories_items') . ' AS i
             INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
             WHERE i.item_id = %i AND c.parent_id IN %li',
@@ -711,6 +750,22 @@ class ItemModel
 
         $fields = [];
         foreach ($rows as $row) {
+            // Enforce field role-based visibility (same rule as the web item card and
+            // core.php "LOAD CATEGORIES"): never return a field restricted to roles the
+            // requesting user does not hold, otherwise its decrypted value leaks (#5176).
+            // 'all' = visible to every role.
+            if (
+                $row['role_visibility'] !== 'all'
+                && count(
+                    array_intersect(
+                        explode(';', $userRoles),
+                        explode(',', (string) $row['role_visibility'])
+                    )
+                ) === 0
+            ) {
+                continue;
+            }
+
             $value = '';
             $isEncrypted = (int) $row['encrypted_data'] === 1 && $row['encryption_type'] !== 'not_set';
 
@@ -1162,7 +1217,7 @@ class ItemModel
                 'login'             => ['db_key' => 'login', 'type' => 'string'],
                 'email'             => ['db_key' => 'email', 'type' => 'string'],
                 'url'               => ['db_key' => 'url', 'type' => 'string'],
-                'icon'              => ['db_key' => 'fa_icon', 'type' => 'string'],
+                'icon'              => ['db_key' => 'fa_icon', 'type' => 'icon'],
                 'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
                 'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
             ];
@@ -1170,6 +1225,7 @@ class ItemModel
                 if (isset($params[$paramKey])) {
                     $updateData[$def['db_key']] = match($def['type']) {
                         'int'   => (int) $params[$paramKey],
+                        'icon'  => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
                         default => $params[$paramKey],
                     };
                 }

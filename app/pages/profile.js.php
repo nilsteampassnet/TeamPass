@@ -883,4 +883,83 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     });
     <?php endif; ?>
 
+    <?php if (isset($SETTINGS['api']) === true && (int) $SETTINGS['api'] === 1) : ?>
+    /**
+     * Active API sessions (one per issued JWT) — list and revoke.
+     */
+    var apiSessionsKey = '<?php echo $session->get('key'); ?>';
+
+    function renderApiSessions(sessions) {
+        var list = $('#api-sessions-list');
+        if (list.length === 0) {
+            return;
+        }
+        if (!sessions || sessions.length === 0) {
+            list.html('<span class="text-muted"><?php echo $lang->get('api_sessions_none'); ?></span>');
+            return;
+        }
+        var html = '<table class="table table-sm table-striped mb-0"><tbody>';
+        sessions.forEach(function(apiSession) {
+            var created = new Date(apiSession.created_at * 1000).toLocaleString();
+            var expires = new Date(apiSession.expires_at * 1000).toLocaleString();
+            var lastUsed = apiSession.last_used_at ? new Date(apiSession.last_used_at * 1000).toLocaleString() : '<?php echo $lang->get('extension_token_never_used'); ?>';
+            // User agent is escaped to prevent XSS
+            var client = apiSession.user_agent ? $('<span>').text(apiSession.user_agent).html() : '<i class="text-muted">&mdash;</i>';
+            html += '<tr>'
+                + '<td class="small">' + client + '</td>'
+                + '<td class="text-muted small"><?php echo $lang->get('extension_token_created'); ?>: ' + created
+                + '<br><?php echo $lang->get('extension_token_last_used'); ?>: ' + lastUsed
+                + '<br><?php echo $lang->get('expiration_date'); ?>: ' + expires + '</td>'
+                + '<td class="text-right"><button type="button" class="btn btn-sm btn-danger revoke-api-session" data-id="' + parseInt(apiSession.id, 10) + '" title="<?php echo $lang->get('api_session_revoke'); ?>"><i class="fa-solid fa-ban"></i></button></td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        list.html(html);
+    }
+
+    function loadApiSessions() {
+        $.post(
+            'sources/users.queries.php', {
+                type: 'list_api_sessions',
+                data: prepareExchangedData(JSON.stringify({}), 'encode', apiSessionsKey),
+                key: apiSessionsKey
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', apiSessionsKey);
+                if (data.error === false) {
+                    renderApiSessions(data.sessions);
+                }
+            }
+        );
+    }
+
+    if ($('#api-sessions-block').length > 0) {
+        loadApiSessions();
+    }
+
+    $(document).on('click', '.revoke-api-session', function() {
+        if (window.confirm('<?php echo $lang->get('api_session_revoke_confirm'); ?>') === false) {
+            return;
+        }
+        var apiSessionId = parseInt($(this).data('id'), 10);
+        $.post(
+            'sources/users.queries.php', {
+                type: 'revoke_api_session',
+                data: prepareExchangedData(JSON.stringify({ id: apiSessionId }), 'encode', apiSessionsKey),
+                key: apiSessionsKey
+            },
+            function(response) {
+                response = prepareExchangedData(response, 'decode', apiSessionsKey);
+                if (response.error === false) {
+                    loadApiSessions();
+                    toastr.remove();
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                        timeOut: 1500
+                    });
+                }
+            }
+        );
+    });
+    <?php endif; ?>
+
 </script>

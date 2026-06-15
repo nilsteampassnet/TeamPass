@@ -780,6 +780,12 @@ function buildUserSession(
     $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
     $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
     $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
+    // Global setting (teampass_misc) cached in session so item create/update can
+    // honor it without a DB read on every request.
+    $session->set(
+        'user-create_item_without_password',
+        isset($SETTINGS['create_item_without_password']) === true ? (int) $SETTINGS['create_item_without_password'] : 0
+    );
     $session->set(
         'user-tree_load_strategy',
         (isset($userInfo['treeloadstrategy']) === false || empty($userInfo['treeloadstrategy']) === true) ? 'full' : $userInfo['treeloadstrategy']

@@ -42,6 +42,21 @@ use voku\helper\AntiXSS;
 require_once 'main.functions.php';
 
 /**
+ * Encode a single value as a safe JSON string literal for the manually built DataTables output.
+ * Escapes backslashes and HTML-significant characters so a stored JSON unicode escape
+ * sequence (ex: <) cannot be re-decoded into HTML by the browser JSON parser.
+ *
+ * @param mixed $value
+ */
+function tpDatatableJsonCell($value): string
+{
+    return (string) json_encode(
+        (string) $value,
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+    );
+}
+
+/**
  * Normalize a display value: decode HTML entities then re-encode for safe output.
  */
 function normalizeBackgroundTaskDisplayValue($value): string
@@ -279,7 +294,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES)).'", ';
+        $sOutput .= tpDatatableJsonCell(str_replace([chr(10), chr(13)], [' ', ' '], htmlspecialchars(stripslashes((string) $record['label']), ENT_QUOTES))).', ';
         //col3 (Source)
         $field1 = isset($record['field_1']) ? trim((string) $record['field_1']) : '';
         $isApi = ($field1 === 'api') || (strpos($field1, 'tp_src=api') !== false);
@@ -292,9 +307,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                 (string) ($record['name'] ?? '') . ' ' .
                 (string) ($record['lastname'] ?? '')
             );
-            $sOutput .= '"' . ($fullname !== '' ? $fullname . ' ' : '') . '[' . $record['login'] . ']"';
+            $sOutput .= tpDatatableJsonCell(($fullname !== '' ? $fullname . ' ' : '') . '[' . $record['login'] . ']');
         } else {
-            $sOutput .= '"IP: ' . (string) $record['who'] . '"';
+            $sOutput .= tpDatatableJsonCell('IP: ' . (string) $record['who']);
         }
         //Finish the line
         $sOutput .= '],';
@@ -367,9 +382,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label']).'", ';
+        $sOutput .= tpDatatableJsonCell(str_replace([chr(10), chr(13)], [' ', ' '], (string) $record['label'])).', ';
         //col3
-        $sOutput .= '"'.(string) $record['login'].'"';
+        $sOutput .= tpDatatableJsonCell((string) $record['login']);
         //Finish the line
         $sOutput .= '],';
     }
@@ -441,9 +456,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput .= '"'.trim((string) $record['label']).'", ';
+        $sOutput .= tpDatatableJsonCell(trim((string) $record['label'])).', ';
         //col3
-        $sOutput .= '"'.trim((string) $record['login']).'"';
+        $sOutput .= tpDatatableJsonCell(trim((string) $record['login']));
         //Finish the line
         $sOutput .= '],';
     }
@@ -513,7 +528,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput_item .= '"'.date($SETTINGS['date_format'].' '.$SETTINGS['time_format'], (int) $record['date']).'", ';
         //col2
-        $sOutput_item .= '"'.(string) $record['login'].'", ';
+        $sOutput_item .= tpDatatableJsonCell((string) $record['login']).', ';
         //col3
         if ($record['label'] === 'at_user_added') {
             $cell = $lang->get('user_creation');
@@ -533,7 +548,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         } else {
             $cell = (string) $record['label'];
         }
-        $sOutput_item .= '"'.$cell.'" ';
+        $sOutput_item .= tpDatatableJsonCell($cell).' ';
         //col4
         if (empty($record['field_1']) === false) {
             // get user name
@@ -544,7 +559,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
                     $record['field_1']
             );
             $info = secureOutput($info ?? [], ['name', 'lastname']);
-            $sOutput_item .= ', "'.(empty($info['name']) === false ? (string) $info['name'].' '.$info['lastname'] : 'Removed user ('.$record['field_1'].')').'" ';
+            $sOutput_item .= ', '.tpDatatableJsonCell(empty($info['name']) === false ? (string) $info['name'].' '.$info['lastname'] : 'Removed user ('.$record['field_1'].')').' ';
         } else {
             $sOutput_item .= ', "" ';
         }
@@ -619,11 +634,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col3
         $sOutput_item .= '"'.trim((string) $record['id']).'", ';
         //col3
-        $sOutput_item .= '"'.trim((string) $record['label']).'", ';
+        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['label'])).', ';
         //col2
-        $sOutput_item .= '"'.trim((string) $record['folder']).'", ';
+        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['folder'])).', ';
         //col2
-        $sOutput_item .= '"'.trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']", ';
+        $sOutput_item .= tpDatatableJsonCell(trim((string) $record['name']).' '.trim((string) $record['lastname']).' ['.trim((string) $record['login']).']').', ';
         //col6
         $sOutput_item .= '"'.secureOutput($lang->get($record['action'])).'", ';
         //col7 (API / Extension)
@@ -797,7 +812,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col2
         $sOutput .= '"'.addslashes(str_replace([chr(10), chr(13), '`', '<br />@', "'"], ['<br>', '<br>', "'", '', '&#39;'], $record['label'])).'", ';
         //col3
-        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']"';
+        $sOutput .= tpDatatableJsonCell((string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']');
         //Finish the line
         $sOutput .= '],';
     }
@@ -870,9 +885,9 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $minutesDiffRemainder = floor($time_diff % 3600 / 60);
         $sOutput .= '"'.$hoursDiff.'h '.$minutesDiffRemainder.'m'.'", ';
         //col3
-        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
+        $sOutput .= tpDatatableJsonCell((string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']').', ';
         //col5 - TAGS
-        $sOutput .= '"'.(string) $record['label'].' ['.$record['item_id'].']"';
+        $sOutput .= tpDatatableJsonCell((string) $record['label'].' ['.$record['item_id'].']');
         //Finish the line
         $sOutput .= '],';
     }
@@ -893,39 +908,29 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $orderColumn = $aColumns[$params['order'][0]['column']];
     }    
 
-    // API activity is logged in log_system (type=api, label=user_connection) when a JWT is issued.
-    // A user is considered 'API connected' while their last API token is still valid.
-    $apiTokenDuration = (int) ($SETTINGS['api_token_duration'] ?? 3600); // Default 1 hour
-    if ($apiTokenDuration < 60) {
-        $apiTokenDuration = 3600; // Minimum 1 hour for safety
-    }
-    $apiConnectedAfter = time() - ($apiTokenDuration + 600);
+    // API presence is derived from teampass_api_sessions (one row per issued JWT).
+    // A user is "API connected" while at least one session is neither revoked nor
+    // expired — expires_at already encodes the token lifetime (api_token_duration),
+    // so no extra grace computation is needed and log_system is no longer scanned.
+    $nowTime = time();
 
     // Filtering
     $sWhere = new WhereClause('AND');
-    if ($searchValue !== '') {        
+    if ($searchValue !== '') {
         $subclause = $sWhere->addClause('OR');
         foreach ($aColumns as $column) {
             $subclause->add($column.' LIKE %ss', $searchValue);
         }
     }
     $subclause2 = $sWhere->addClause('OR');
-    $subclause2->add('u.session_end >= %i', time());
+    $subclause2->add('u.session_end >= %i', $nowTime);
     $subclause2->add(
-        'EXISTS (SELECT 1 FROM '.prefixTable('log_system').' ls
-            WHERE ls.qui = u.id
-                AND ls.label = %s
-                AND ls.date >= %i
-                AND (
-                    (ls.type = %s)
-                    OR (ls.type = %s AND ls.field_1 LIKE %s)
-                )
+        'EXISTS (SELECT 1 FROM '.prefixTable('api_sessions').' aps
+            WHERE aps.user_id = u.id
+                AND aps.revoked_at IS NULL
+                AND aps.expires_at >= %i
         )',
-        'user_connection',
-        $apiConnectedAfter,
-        'api',
-        'user_connection',
-        '%tp_src=api%'
+        $nowTime
     );
 
     // Get the total number of records - use alias 'u'
@@ -941,21 +946,17 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         api_conn.last_api_date AS api_last_connection
     FROM '.prefixTable('users').' u
     LEFT JOIN (
-        SELECT qui, MAX(date) as last_api_date
-        FROM '.prefixTable('log_system').'
-        WHERE label = %s
-            AND date >= %i
-            AND (
-                (type = %s)
-                OR (type = %s AND field_1 LIKE %s)
-            )
-        GROUP BY qui
-    ) api_conn ON api_conn.qui = u.id
+        SELECT user_id, MAX(created_at) as last_api_date
+        FROM '.prefixTable('api_sessions').'
+        WHERE revoked_at IS NULL
+            AND expires_at >= %i
+        GROUP BY user_id
+    ) api_conn ON api_conn.user_id = u.id
     WHERE %l
     ORDER BY %l %l
     LIMIT %i, %i';
 
-    $params = ['user_connection', $apiConnectedAfter, 'api', 'user_connection', '%tp_src=api%', $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
+    $params = [$nowTime, $sWhere, $orderColumn, $orderDirection, $sLimitStart, $sLimitLength];
 
     // Get the records
     $rows = DB::query($sql, ...$params);
@@ -976,7 +977,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         //col1
         $sOutput .= '"<span data-id=\"'.$record['id'].'\">", ';
         //col2
-        $sOutput .= '"'.(string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']", ';
+        $sOutput .= tpDatatableJsonCell((string) $record['name'].' '.(string) $record['lastname'].' ['.(string) $record['login'].']').', ';
         //col3
         if ($record['admin'] === '1') {
             $user_role = $lang->get('god');
@@ -1080,7 +1081,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $args = json_decode($record['arguments'], true);
         $args = is_array($args) ? $args : [];
 
-        $sOutput .= '"'.resolveBackgroundTaskUserDisplay($args, (string) $record['process_type']).'", ';
+        $sOutput .= tpDatatableJsonCell(resolveBackgroundTaskUserDisplay($args, (string) $record['process_type'])).', ';
 
         // col6
         $sOutput .= '""';
@@ -1194,7 +1195,7 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         // col6
         $arguments = json_decode($record['arguments'], true);
         $arguments = is_array($arguments) ? $arguments : [];
-        $sOutput .= '"'.resolveBackgroundTaskUserDisplay($arguments, (string) $record['process_type']).'"';
+        $sOutput .= tpDatatableJsonCell(resolveBackgroundTaskUserDisplay($arguments, (string) $record['process_type']));
         //Finish the line
         $sOutput .= '],';
     }

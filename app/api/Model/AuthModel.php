@@ -74,7 +74,7 @@ class AuthModel
             return ["error" => "Login failed.", "info" => "Missing credentials"];
         }
 
-        $clientIp = $this->getClientIp();
+        $clientIp = $this->getClientIp($SETTINGS);
 
         // Anti-bruteforce: check for active lock before any DB lookup
         $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
@@ -87,7 +87,7 @@ class AuthModel
         // Check if user exists
         $userInfo = getUserCompleteData($inputData['login']);
 
-        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0) {
+        if ($userInfo === null || (int) $userInfo['api_enabled'] === 0 || (int) $userInfo['disabled'] === 1) {
             // Uniform message — prevents user enumeration
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
             logEvents($SETTINGS, 'failed_auth', 'api_invalid_credentials', '', $inputData['login'], $inputData['login'] . ' | tp_src=api');
@@ -166,7 +166,7 @@ class AuthModel
             return ["error" => "Login failed.", "info" => "Invalid credentials"];
         }
 
-        $clientIp = $this->getClientIp();
+        $clientIp = $this->getClientIp($SETTINGS);
 
         // Anti-bruteforce: same table/thresholds as the password path.
         $lockUntil = $this->checkBruteforceProtection($inputData['login'], $clientIp);
@@ -177,11 +177,12 @@ class AuthModel
 
         $userInfo = getUserCompleteData($inputData['login']);
 
-        // User must exist and have API access enabled. The user must be OAuth2, unless
-        // the administrator allows extension tokens for all auth types.
+        // User must exist, be active and have API access enabled. The user must be OAuth2,
+        // unless the administrator allows extension tokens for all auth types.
         // Uniform message — prevents user enumeration and auth_type probing.
         if ($userInfo === null
             || (int) $userInfo['api_enabled'] === 0
+            || (int) $userInfo['disabled'] === 1
             || ($tokenAllAuthTypes === false && (string) ($userInfo['auth_type'] ?? '') !== 'oauth2')
         ) {
             $this->recordFailedAttempt($inputData['login'], $clientIp, $SETTINGS);
@@ -273,6 +274,28 @@ class AuthModel
             $userInfo['id']
         );
 
+        // One API session per issued token, keyed by the jti claim — enables
+        // concurrent clients on the same account, per-token revocation (logout)
+        // and the "active API sessions" list in the user profile. The single-row
+        // teampass_api session above is kept as a fallback for tokens issued
+        // before this table existed (accepted until they expire).
+        $issuedAt = time();
+        $jti = bin2hex(random_bytes(16));
+        $expiresAt = $issuedAt + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60;
+        DB::insert(prefixTable('api_sessions'), [
+            'user_id' => (int) $userInfo['id'],
+            'jti' => $jti,
+            'key_tempo' => (string) $keyTempo,
+            'encrypted_private_key' => $encryptedPrivateKey,
+            'session_aes_key' => base64_encode($sessionKey),
+            'user_agent' => mb_substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255),
+            'created_at' => $issuedAt,
+            'expires_at' => $expiresAt,
+        ]);
+
+        // Opportunistic cleanup: drop sessions expired for more than 24 hours
+        DB::delete(prefixTable('api_sessions'), 'expires_at < %i', $issuedAt - 86400);
+
         // get user folders list and persist in cache_tree
         $ret = $this->buildUserFoldersList($userInfo);
         $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
@@ -312,6 +335,9 @@ class AuthModel
 
         // create JWT (session_aes_key is stored server-side, not in the token)
         return $this->createUserJWT(
+            $jti,
+            $issuedAt,
+            $expiresAt,
             (int) $userInfo['id'],
             $loginForJwt,
             (string) $userInfo['email'],
@@ -339,18 +365,28 @@ class AuthModel
     /**
      * Return the client IP address for bruteforce tracking.
      *
+     * Forwarded headers (X-Forwarded-For, ...) are only honoured when the request
+     * comes from a configured trusted proxy (network_security_mode = reverse_proxy),
+     * via teampassGetClientIpForSecurity(). Trusting them blindly would let an
+     * attacker bypass the per-IP lock or lock out arbitrary victim IPs.
+     *
+     * @param array $SETTINGS Application settings
      * @return string
      */
-    private function getClientIp(): string
+    private function getClientIp(array $SETTINGS): string
     {
-        foreach (['HTTP_X_FORWARDED_FOR', 'HTTP_CLIENT_IP', 'REMOTE_ADDR'] as $key) {
-            if (!empty($_SERVER[$key])) {
-                $ip = trim(explode(',', $_SERVER[$key])[0]);
-                if (filter_var($ip, FILTER_VALIDATE_IP)) {
-                    return $ip;
-                }
-            }
+        $context = teampassGetClientIpForSecurity($SETTINGS);
+
+        if (!empty($context['detected_ip'])) {
+            return (string) $context['detected_ip'];
         }
+
+        // Fallback: REMOTE_ADDR is set by the webserver and cannot be spoofed (e.g. IPv6 clients)
+        $remoteAddr = (string) ($context['remote_addr'] ?? '');
+        if ($remoteAddr !== '' && filter_var($remoteAddr, FILTER_VALIDATE_IP) !== false) {
+            return $remoteAddr;
+        }
+
         return '0.0.0.0';
     }
 
@@ -443,6 +479,9 @@ class AuthModel
      * validate the session and locate the row). The AES key never leaves the server,
      * so a stolen JWT alone cannot be used to decrypt the private key.
      *
+     * @param string $jti       Unique token id, matches the api_sessions row
+     * @param integer $issuedAt
+     * @param integer $expiresAt
      * @param integer $id
      * @param string $login
      * @param string $email
@@ -466,6 +505,9 @@ class AuthModel
      * @return array
      */
     private function createUserJWT(
+        string $jti,
+        int $issuedAt,
+        int $expiresAt,
         int $id,
         string $login,
         string $email,
@@ -492,13 +534,21 @@ class AuthModel
         $configManager = new ConfigManager();
         $SETTINGS = $configManager->getAllSettings();
 
+        include_once API_ROOT_PATH . '/inc/jwt_utils.php';
+
 		$payload = [
+            // Standard claims (RFC 7519 / RFC 8725): issuer, audience, issued-at,
+            // not-before and a unique token id. The jti and exp are computed by the
+            // caller (issueJwtForUser) so they match the stored api_sessions row
+            // (api_token_duration clamped to [1, 1440] minutes — 24h cap).
+            'iss' => rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/'),
+            'aud' => TEAMPASS_API_JWT_AUDIENCE,
+            'iat' => $issuedAt,
+            'nbf' => $issuedAt,
+            'jti' => $jti,
             'username' => $login,
             'id' => $id,
-            // api_token_duration is in minutes (contract with the browser extension).
-            // Clamp to [1, 1440] minutes so a zero/missing value never produces an
-            // instantly-expired token, and tokens are capped at 24 hours.
-            'exp' => (time() + min(max((int) ($SETTINGS['api_token_duration'] ?? 60), 1), 1440) * 60),
+            'exp' => $expiresAt,
             'pf_enabled' => $pf_enabled,
             'folders_list' => $folders,
             'restricted_items_list' => $items,

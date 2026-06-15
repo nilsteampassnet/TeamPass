@@ -121,23 +121,26 @@ RUN mkdir -p \
     storage/files \
     storage/upload \
     storage/config \
+    storage/backups \
     secrets \
     app/includes/libraries/csrfp/log \
     /var/lib/nginx/tmp \
     /var/log/supervisor \
     /run/nginx \
     && chown -R nginx:nginx \
+        storage \
         storage/sk \
         storage/files \
         storage/upload \
         storage/config \
+        storage/backups \
         secrets \
         app/includes/libraries/csrfp/log \
         /var/lib/nginx \
         /var/log \
         /run/nginx \
     && chmod 700 storage/sk secrets \
-    && chmod 750 storage/files storage/upload storage/config app/includes/libraries/csrfp/log
+    && chmod 750 storage storage/files storage/upload storage/config storage/backups app/includes/libraries/csrfp/log
 
 # Remove unnecessary files for production
 RUN rm -rf \

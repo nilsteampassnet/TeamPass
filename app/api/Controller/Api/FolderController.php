@@ -39,14 +39,30 @@ class FolderController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
 
+        $arrErrorHeaders = [];
+        $arrSuccessHeaders = [];
+
         if (strtoupper($requestMethod) === 'GET') {
             if (empty($userData['folders_list'])) {
-                $this->sendOutput("", ['HTTP/1.1 204 No Content']);
+                // Empty collection → 200 + [] (a 204 must not carry a body — RFC 9110)
+                $responseData = json_encode([]);
+                $arrSuccessHeaders[] = 'X-Total-Count: 0';
             } else {
                 try {
                     $folderModel = new FolderModel();
                     $arrFolders = $folderModel->getFoldersInfo(explode(",", $userData['folders_list']));
+
+                    // Pagination over the root-level entries (the tree is hierarchical)
+                    $arrQueryStringParams = $this->getQueryStringParams();
+                    $intTotal = count($arrFolders);
+                    $intOffset = max(0, (int) ($arrQueryStringParams['offset'] ?? 0));
+                    $intLimit = max(0, (int) ($arrQueryStringParams['limit'] ?? 0));
+                    if ($intOffset > 0 || $intLimit > 0) {
+                        $arrFolders = array_slice($arrFolders, $intOffset, $intLimit > 0 ? $intLimit : null);
+                    }
+
                     $responseData = json_encode($arrFolders);
+                    $arrSuccessHeaders[] = 'X-Total-Count: ' . $intTotal;
                 } catch (Error $e) {
                     error_log('[API] FolderController::listFoldersAction error: ' . $e->getMessage());
                     $strErrorDesc = 'An internal error occurred. Please contact support.';
@@ -55,20 +71,18 @@ class FolderController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                array_merge(['Content-Type: application/json', 'HTTP/1.1 200 OK'], $arrSuccessHeaders)
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
         }
     }
     //end listInFoldersAction()
@@ -84,9 +98,14 @@ class FolderController extends BaseController
         $requestMethod = $request->getMethod();
         $strErrorDesc = $responseData = $strErrorHeader = '';
 
+        $arrErrorHeaders = [];
+        $intSuccessStatus = 200;
+
         if (strtoupper($requestMethod) === 'POST') {
             if (empty($userData['folders_list'])) {
-                $this->sendOutput("", ['HTTP/1.1 204 No Content']);
+                // No accessible folder → nothing can host the new folder
+                $this->sendProblem(403, 'Access denied: no accessible folders');
+                return;
             } else {
                 // Is user allowed to create a folder
                 // We check if allowed_to_create
@@ -96,18 +115,33 @@ class FolderController extends BaseController
                 } else {
                     // get parameters
                     $arrQueryStringParams = $this->getQueryStringParams();
+
+                    // Validate required parameters — avoids PHP warnings and gives a clear 400
+                    $missingParams = [];
+                    foreach (['title', 'parent_id', 'complexity'] as $requiredParam) {
+                        if (isset($arrQueryStringParams[$requiredParam]) === false
+                            || $arrQueryStringParams[$requiredParam] === ''
+                        ) {
+                            $missingParams[] = $requiredParam;
+                        }
+                    }
+                    if (count($missingParams) > 0) {
+                        $this->sendProblem(400, 'Missing required parameters: ' . implode(', ', $missingParams));
+                        return;
+                    }
+
                     try {
                         $folderModel = new FolderModel();
                         $arrFolder = $folderModel->createFolder(
                             (string) $arrQueryStringParams['title'],
                             (int) $arrQueryStringParams['parent_id'],
                             (int) $arrQueryStringParams['complexity'],
-                            (int) $arrQueryStringParams['duration'],
-                            (int) $arrQueryStringParams['create_auth_without'],
-                            (int) $arrQueryStringParams['edit_auth_without'],
-                            (string) $arrQueryStringParams['icon'],
-                            (string) $arrQueryStringParams['icon_selected'],
-                            (string) $arrQueryStringParams['access_rights'],
+                            (int) ($arrQueryStringParams['duration'] ?? 0),
+                            (int) ($arrQueryStringParams['create_auth_without'] ?? 0),
+                            (int) ($arrQueryStringParams['edit_auth_without'] ?? 0),
+                            (string) ($arrQueryStringParams['icon'] ?? ''),
+                            (string) ($arrQueryStringParams['icon_selected'] ?? ''),
+                            (string) ($arrQueryStringParams['access_rights'] ?? ''),
                             (int) $userData['is_admin'],
                             (array) explode(',', $userData['folders_list']),
                             (int) $userData['is_manager'],
@@ -116,8 +150,16 @@ class FolderController extends BaseController
                             (int) $userData['id'],
                             (string) $userData['roles'],
                         );
-                        
-                        $responseData = json_encode($arrFolder);
+
+                        if (($arrFolder['error'] ?? false) === true) {
+                            $strErrorDesc = (string) ($arrFolder['error_message'] ?? 'Folder creation failed');
+                            $strErrorHeader = (string) ($arrFolder['error_header'] ?? 'HTTP/1.1 422 Unprocessable Entity');
+                        } else {
+                            // 201 Created — no Location header: the API has no folder
+                            // get-by-id endpoint yet (the body carries newId)
+                            $responseData = json_encode($arrFolder);
+                            $intSuccessStatus = 201;
+                        }
                     } catch (Error $e) {
                         error_log('[API] FolderController::createAction error: ' . $e->getMessage());
                         $strErrorDesc = 'An internal error occurred. Please contact support.';
@@ -127,20 +169,18 @@ class FolderController extends BaseController
             }
         } else {
             $strErrorDesc = 'Method not supported';
-            $strErrorHeader = 'HTTP/1.1 422 Unprocessable Entity';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: POST';
         }
 
         // send output
         if (empty($strErrorDesc) === true) {
             $this->sendOutput(
                 $responseData,
-                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+                ['Content-Type: application/json', $this->statusLine($intSuccessStatus)]
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
         }
     }
     //end createFolderAction()
@@ -199,6 +239,7 @@ class FolderController extends BaseController
         } else {
             $strErrorDesc = 'Method not supported';
             $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
         }
 
         // send output
@@ -208,10 +249,7 @@ class FolderController extends BaseController
                 ['Content-Type: application/json', 'HTTP/1.1 200 OK']
             );
         } else {
-            $this->sendOutput(
-                json_encode(['error' => $strErrorDesc]),
-                ['Content-Type: application/json', $strErrorHeader]
-            );
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders ?? []);
         }
     }
     //end writableFoldersAction()

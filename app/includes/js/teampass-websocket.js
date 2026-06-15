@@ -261,6 +261,10 @@
         self._sendSubscribe('folder', id).catch(function(err) {
           self._log('warn', 'Failed to resubscribe to folder ' + id, err)
         })
+      } else if (channel === 'kb') {
+        self._sendSubscribe('kb', null).catch(function(err) {
+          self._log('warn', 'Failed to resubscribe to KB channel', err)
+        })
       }
     })
   }
@@ -423,6 +427,28 @@
       action: 'unsubscribe',
       channel: 'folder',
       data: { folder_id: folderId }
+    })
+  }
+
+  /**
+   * Subscribe to the knowledge base channel
+   * @returns {Promise}
+   */
+  TeamPassWebSocket.prototype.subscribeToKb = function() {
+    this.subscriptions.add('kb:0')
+    return this._sendSubscribe('kb', null)
+  }
+
+  /**
+   * Unsubscribe from the knowledge base channel
+   * @returns {Promise}
+   */
+  TeamPassWebSocket.prototype.unsubscribeFromKb = function() {
+    this.subscriptions.delete('kb:0')
+    return this.send({
+      action: 'unsubscribe',
+      channel: 'kb',
+      data: {}
     })
   }
 

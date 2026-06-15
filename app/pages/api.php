@@ -182,6 +182,30 @@ function getDomainFromSettingsUrl(string $url): string
                             </div>
                         </div>
 
+                        <div class='row mb-2'>
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_api_require_https'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_api_require_https_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='api_require_https' data-toggle-on='<?php echo isset($SETTINGS['api_require_https']) === true && (int) $SETTINGS['api_require_https'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='api_require_https_input' value='<?php echo isset($SETTINGS['api_require_https']) === true && (int) $SETTINGS['api_require_https'] === 1 ? '1' : '0'; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-3'>
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_api_rate_limit'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_api_rate_limit_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='text' class='form-control form-control-sm' id='api_rate_limit_per_minute' value='<?php echo isset($SETTINGS['api_rate_limit_per_minute']) === true ? (int) $SETTINGS['api_rate_limit_per_minute'] : 0; ?>'>
+                            </div>
+                        </div>
+
                         <ul class="nav nav-tabs">
                             <li class="nav-item">
                                 <a class="nav-link active" data-toggle="tab" href="#users" role="tab" aria-controls="users"><?php echo $lang->get('users'); ?></a>

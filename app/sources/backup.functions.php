@@ -5762,7 +5762,9 @@ function tpGetBackupTpFilesVersionFromMeta(string $backupFilePath): string
 {
     $meta = tpReadBackupMetadata($backupFilePath);
     if (!empty($meta['tp_files_version']) && is_scalar($meta['tp_files_version'])) {
-        return (string) $meta['tp_files_version'];
+        // Sidecar metadata is untrusted: only accept a strict version pattern, reject anything else
+        $v = trim((string) $meta['tp_files_version']);
+        return preg_match('/^\d+(?:\.\d+){0,3}(?:[-+][A-Za-z0-9_.-]+)?$/', $v) === 1 ? $v : '';
     }
     return '';
 }

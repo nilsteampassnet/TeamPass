@@ -161,12 +161,39 @@ if ($res === false) {
     exit();
 }
 
+// Allow rich KB articles with embedded images.
+$res = mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb` MODIFY COLUMN `description` MEDIUMTEXT NOT NULL"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error updating description column in kb table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Add enable_kb setting if not present
 mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'enable_kb', '0')"
 );
 
+// Allow WebSocket events to target the global knowledge base channel.
+$websocketEventsTableResult = mysqli_query(
+    $db_link,
+    "SHOW TABLES LIKE '" . $pre . "websocket_events'"
+);
+if ($websocketEventsTableResult !== false && mysqli_num_rows($websocketEventsTableResult) > 0) {
+    $res = mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "websocket_events` MODIFY `target_type` ENUM('user', 'folder', 'kb', 'broadcast') NOT NULL COMMENT 'Target type for routing'"
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error updating websocket_events target_type: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
 
 // Add HIBP (HaveIBeenPwned) columns to teampass_items
 $res = addColumnIfNotExist(
@@ -240,6 +267,18 @@ mysqli_query(
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 );
 
+mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . "kb_edition` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            `timestamp` int(11) NOT NULL,
+            KEY `kb_id_idx` (`kb_id`),
+            PRIMARY KEY (`increment_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+);
+
 checkIndexExist(
     $pre . 'kb_comments',
     'idx_kb_id',
@@ -258,6 +297,12 @@ checkIndexExist(
     'ADD KEY `idx_created_at` (`created_at`)'
 );
 
+checkIndexExist(
+    $pre . 'kb_edition',
+    'kb_id_idx',
+    'ADD KEY `kb_id_idx` (`kb_id`)'
+);
+
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "kb` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
@@ -266,6 +311,23 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "ALTER TABLE `" . $pre . "kb_comments` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_edition` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+);
+
+// Edition-lock timestamps are Unix timestamps: store them as integers.
+// MODIFY auto-casts existing numeric-string rows; stale lock rows are transient.
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "items_edition` MODIFY `timestamp` int(11) NOT NULL;"
+);
+
+mysqli_query(
+    $db_link,
+    "ALTER TABLE `" . $pre . "kb_edition` MODIFY `timestamp` int(11) NOT NULL;"
 );
 
 //---------------------------------------------------------------------
@@ -420,6 +482,73 @@ mysqli_query(
 mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'extension_token_all_auth_types', '0')"
+);
+
+// Add the api_sessions table — one API session per issued JWT (keyed by the jti
+// claim). Enables concurrent API clients per user, per-token revocation and the
+// "active API sessions" list in the user profile.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_sessions` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `user_id` int(12) NOT NULL,
+        `jti` varchar(32) NOT NULL,
+        `key_tempo` varchar(100) NOT NULL,
+        `encrypted_private_key` text NULL,
+        `session_aes_key` varchar(64) NULL,
+        `user_agent` varchar(255) NOT NULL DEFAULT \'\',
+        `created_at` int(12) NOT NULL,
+        `expires_at` int(12) NOT NULL,
+        `last_used_at` int(12) NULL DEFAULT NULL,
+        `revoked_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `jti` (`jti`),
+        KEY `user_id` (`user_id`),
+        KEY `expires_at` (`expires_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_sessions table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the api_rate_limit table — sliding-window request counters (per user and per IP).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'api_rate_limit` (
+        `scope_key` varchar(100) NOT NULL,
+        `window_start` int(12) NOT NULL,
+        `hits` int(12) NOT NULL DEFAULT 1,
+        PRIMARY KEY (`scope_key`, `window_start`),
+        KEY `window_start` (`window_start`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating api_rate_limit table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Require HTTPS for the API: enabled on NEW installs, kept DISABLED on upgrades so
+// existing HTTP-based integrations keep working (a health-check warning is raised
+// instead; the admin can enable it from Settings > API).
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_require_https', '0')"
+);
+
+// API rate limit (requests per minute, per user and per IP): 120 on NEW installs,
+// 0 (disabled) on upgrades so existing heavy API clients are not throttled silently.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'api_rate_limit_per_minute', '0')"
+);
+
+// Invalidate API folders cache: cache_tree.folders may hold a truncated list
+// (personal subfolders wrongly filtered out before 3.2.0.3). Marking rows as
+// invalidated forces a rebuild on the next API request.
+mysqli_query(
+    $db_link,
+    "UPDATE `" . $pre . "cache_tree` SET `invalidated_at` = " . time()
 );
 
 // Save upgrade timestamp (upsert: always update if exists)

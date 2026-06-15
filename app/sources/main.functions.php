@@ -693,13 +693,23 @@ function cacheTableRefresh(): void
     // reload date
         $rows = DB::query(
             'SELECT i.*,
-                IFNULL(l.id_user, 0) AS id_user,
-                IFNULL(l.date, 0) AS date
+                IFNULL(c.id_user, 0) AS id_user,
+                IFNULL(l.date, IFNULL(c.date, 0)) AS date
             FROM ' . prefixTable('items') . ' as i
-            LEFT JOIN ' . prefixTable('log_items') . ' as l
-                ON (l.id_item = i.id AND l.action = %s)
+            LEFT JOIN ' . prefixTable('log_items') . ' as c
+                ON (c.id_item = i.id AND c.action = %s)
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s
+                OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON (l.id_item = i.id)
             WHERE i.inactif = %i',
             'at_creation',
+            'at_creation',
+            'at_modification',
+            'at_pw%',
             0
         );
 
@@ -783,9 +793,22 @@ function cacheTableUpdate(?int $ident = null): void
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
     $data = DB::queryFirstRow(
-        'SELECT label, description, id_tree, perso, restricted_to, login, url
-        FROM ' . prefixTable('items') . '
-        WHERE id=%i',
+        'SELECT i.label, i.description, i.id_tree, i.perso, i.restricted_to, i.login, i.url,
+            n.renewal_period,
+            IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
+        FROM ' . prefixTable('items') . ' AS i
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s
+            OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)
+        WHERE i.id=%i',
+        'at_creation',
+        'at_modification',
+        'at_pw%',
         $ident
     );
     // Get all TAGS
@@ -833,6 +856,8 @@ function cacheTableUpdate(?int $ident = null): void
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
             'author' => $session->get('user-id'),
+            'renewal_period' => $data['renewal_period'] ?? '0',
+            'timestamp' => $data['date'] ?? '0',
         ],
         'id = %i',
         $ident
@@ -859,12 +884,21 @@ function cacheTableAdd(?int $ident = null): void
     // get new value from db
     $data = DB::queryFirstRow(
         'SELECT i.label, i.description, i.id_tree as id_tree, i.perso, i.restricted_to, i.id, i.login, i.url,
-            IFNULL(l.date, 0) AS date
+            n.renewal_period,
+            IFNULL(l.date, NULLIF(CAST(i.created_at AS UNSIGNED), 0)) AS date
         FROM ' . prefixTable('items') . ' as i
-        LEFT JOIN ' . prefixTable('log_items') . ' as l
-            ON (l.id_item = i.id AND l.action = %s)
+        LEFT JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s
+            OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)
         WHERE i.id = %i',
         'at_creation',
+        'at_modification',
+        'at_pw%',
         $ident
     );
     // Get all TAGS
@@ -913,6 +947,7 @@ function cacheTableAdd(?int $ident = null): void
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
             'author' => $globalsUserId,
+            'renewal_period' => $data['renewal_period'] ?? '0',
             'timestamp' => $data['date'],
         ]
     );
@@ -1920,23 +1955,33 @@ function geItemReadablePath(int $id_tree, string $label, array $SETTINGS): strin
  */
 function getClientIpServer(): string
 {
-    if (getenv('HTTP_CLIENT_IP')) {
-        $ipaddress = getenv('HTTP_CLIENT_IP');
-    } elseif (getenv('HTTP_X_FORWARDED_FOR')) {
-        $ipaddress = getenv('HTTP_X_FORWARDED_FOR');
-    } elseif (getenv('HTTP_X_FORWARDED')) {
-        $ipaddress = getenv('HTTP_X_FORWARDED');
-    } elseif (getenv('HTTP_FORWARDED_FOR')) {
-        $ipaddress = getenv('HTTP_FORWARDED_FOR');
-    } elseif (getenv('HTTP_FORWARDED')) {
-        $ipaddress = getenv('HTTP_FORWARDED');
-    } elseif (getenv('REMOTE_ADDR')) {
-        $ipaddress = getenv('REMOTE_ADDR');
-    } else {
-        $ipaddress = 'UNKNOWN';
+    // Candidate sources, in order of preference. Proxy headers are attacker-controllable and may
+    // carry a comma-separated list, so every candidate is validated as a real IP before being used.
+    $sources = [
+        'HTTP_CLIENT_IP',
+        'HTTP_X_FORWARDED_FOR',
+        'HTTP_X_FORWARDED',
+        'HTTP_FORWARDED_FOR',
+        'HTTP_FORWARDED',
+        'REMOTE_ADDR',
+    ];
+
+    foreach ($sources as $source) {
+        $value = getenv($source);
+        if ($value === false || $value === '') {
+            continue;
+        }
+
+        foreach (explode(',', (string) $value) as $candidate) {
+            $candidate = trim($candidate);
+            // Return the first candidate that is a valid IPv4/IPv6 address.
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP) !== false) {
+                return $candidate;
+            }
+        }
     }
 
-    return $ipaddress;
+    return 'UNKNOWN';
 }
 
 
@@ -5058,6 +5103,57 @@ function invalidateCacheForFolderUsers(int $folderId, array $additionalUserIds =
 }
 
 /**
+ * Incrementally adjust the folder tree item counters after a single item is
+ * added to or removed from a folder, then invalidate the tree cache so the
+ * change shows up immediately instead of waiting for the do_calculation
+ * background task (which stays the periodic source of truth and corrects any
+ * drift).
+ *
+ * Counters are stored columns in nested_tree:
+ *   - nb_items_in_folder     on the folder itself
+ *   - nb_items_in_subfolders on every ancestor folder
+ *
+ * @param int $folderId Folder the item belongs to
+ * @param int $delta    +1 when an item is added, -1 when an item is removed
+ * @return void
+ */
+function adjustFolderItemsCounter(int $folderId, int $delta): void
+{
+    if ($folderId <= 0 || $delta === 0) {
+        return;
+    }
+
+    loadClasses('DB');
+
+    // The folder itself: number of items directly inside it
+    DB::query(
+        'UPDATE ' . prefixTable('nested_tree') . '
+        SET nb_items_in_folder = GREATEST(0, CAST(nb_items_in_folder AS SIGNED) + %i)
+        WHERE id = %i',
+        $delta,
+        $folderId
+    );
+
+    // Every ancestor: number of items located in its subfolders
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $ancestors = $tree->getPath($folderId, false);
+    if (empty($ancestors) === false) {
+        DB::query(
+            'UPDATE ' . prefixTable('nested_tree') . '
+            SET nb_items_in_subfolders = GREATEST(0, CAST(nb_items_in_subfolders AS SIGNED) + %i)
+            WHERE id IN %li',
+            $delta,
+            array_map('intval', array_keys($ancestors))
+        );
+    }
+
+    // Drop the per-user tree cache so the fresh counter is served on next load.
+    // The client tree version is a content hash, so the browser localStorage
+    // copy is refreshed automatically once the served tree changes.
+    invalidateCacheForFolderUsers($folderId);
+}
+
+/**
  * Permits to calculate a %
  *
  * @param float $nombre
@@ -7609,8 +7705,17 @@ function triggerBackgroundHandler(): void
         : (defined('TEAMPASS_STORAGE') ? TEAMPASS_STORAGE . '/logs/teampass_background_tasks.trigger' : __DIR__ . '/../../storage/logs/teampass_background_tasks.trigger');
 
     // Create/touch the trigger file to notify running handler
-    // The file content includes timestamp for debugging purposes
-    file_put_contents($triggerFile, (string) time());
+    // The file content includes timestamp for debugging purposes.
+    // A failure here usually means the web server user cannot write to
+    // storage/logs, which also prevents the handler from acquiring its lock
+    // file (background tasks then never run). Surface it via error_log() so the
+    // misconfiguration is not silently ignored.
+    if (@file_put_contents($triggerFile, (string) time()) === false) {
+        error_log(
+            'Teampass: cannot write background tasks trigger file "' . $triggerFile
+            . '" - check that the web server user can write to this directory.'
+        );
+    }
 
     // Launch the handler as a fully detached background process.
     // We use exec() instead of Symfony Process because Process::start() creates
@@ -7627,6 +7732,47 @@ function triggerBackgroundHandler(): void
             . ' > /dev/null 2>&1 &';
         exec($cmd);
     }
+}
+
+/**
+ * Invalidate all API session material for a user.
+ *
+ * Revokes every live per-token session in teampass_api_sessions (revoked_at) so
+ * the matching JWTs are rejected on every API endpoint, and clears the legacy
+ * single-row teampass_api session fields used by tokens issued before the
+ * per-token table existed. The permanent API configuration (permissions and API
+ * key) is left untouched.
+ *
+ * @param integer $userId User identifier whose API sessions must be revoked.
+ * @return void
+ */
+function tpInvalidateUserApiSession(int $userId): void
+{
+    if ($userId <= 0) {
+        return;
+    }
+
+    // Revoke every live per-token session (current model used by JWT validation)
+    DB::update(
+        prefixTable('api_sessions'),
+        ['revoked_at' => time()],
+        'user_id = %i AND revoked_at IS NULL',
+        $userId
+    );
+
+    // Clear the legacy single-row session (tokens issued before api_sessions existed)
+    DB::update(
+        prefixTable('api'),
+        array(
+            'encrypted_private_key' => null,
+            'session_key_salt' => null,
+            'session_key' => null,
+            'session_aes_key' => null,
+            'timestamp' => '',
+        ),
+        'user_id = %i',
+        $userId
+    );
 }
 
 /**
@@ -7672,7 +7818,7 @@ function tpFinishRequestEarly(): bool
  * to connected clients.
  *
  * @param string $eventType Type of event (item_created, item_updated, folder_created, etc.)
- * @param string $targetType Target type for routing: 'user', 'folder', or 'broadcast'
+ * @param string $targetType Target type for routing: 'user', 'folder', 'kb', or 'broadcast'
  * @param int|null $targetId Target ID (user_id for 'user', folder_id for 'folder', null for 'broadcast')
  * @param array $payload Event payload data to send to clients
  * @param int|null $excludeUserId Optional user ID to exclude from receiving the event
@@ -7736,7 +7882,7 @@ function emitWebSocketEvent(
     }
 
     // Validate target type
-    if (!in_array($targetType, ['user', 'folder', 'broadcast'], true)) {
+    if (!in_array($targetType, ['user', 'folder', 'kb', 'broadcast'], true)) {
         error_log("emitWebSocketEvent: Invalid target type '{$targetType}'");
         return false;
     }
@@ -7802,6 +7948,46 @@ function emitItemEvent(
 }
 
 /**
+ * Build a friendly user display name, falling back to the TeamPass login.
+ */
+function teampassBuildUserDisplayName(string $name, string $lastname, string $fallbackLogin): string
+{
+    $displayName = trim(trim($name) . ' ' . trim($lastname));
+    $displayName = preg_replace('/\s+/', ' ', $displayName) ?? '';
+
+    return $displayName !== '' ? $displayName : $fallbackLogin;
+}
+
+/**
+ * Resolve a user's display name from the users table for WebSocket payloads.
+ */
+function teampassGetUserDisplayNameForPayload(int $userId, string $fallbackLogin): string
+{
+    if ($userId <= 0) {
+        return $fallbackLogin;
+    }
+
+    try {
+        $user = DB::queryFirstRow(
+            'SELECT login, name, lastname FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+    } catch (Exception $e) {
+        return $fallbackLogin;
+    }
+
+    if (is_array($user) === false) {
+        return $fallbackLogin;
+    }
+
+    return teampassBuildUserDisplayName(
+        (string) ($user['name'] ?? ''),
+        (string) ($user['lastname'] ?? ''),
+        (string) ($user['login'] ?? $fallbackLogin)
+    );
+}
+
+/**
  * Emit a WebSocket event for item edition lock changes
  *
  * Notifies folder subscribers when an item is being edited or released.
@@ -7821,11 +8007,13 @@ function emitEditionLockEvent(
     int $userId
 ): bool {
     $eventType = 'item_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
 
     $payload = [
         'item_id' => $itemId,
         'folder_id' => $folderId,
         'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
         'user_id' => $userId,
     ];
 
@@ -7833,6 +8021,64 @@ function emitEditionLockEvent(
     $excludeUserId = ($action === 'started') ? $userId : null;
 
     return emitWebSocketEvent($eventType, 'folder', $folderId, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base operations.
+ *
+ * @param string $action Action performed: 'created', 'updated', or 'deleted'
+ * @param int $kbId Knowledge base article ID
+ * @param string $label Article label
+ * @param string $userLogin User who performed the action
+ * @param int|null $excludeUserId User to exclude from notification
+ * @return bool True if event was queued
+ */
+function emitKbEvent(
+    string $action,
+    int $kbId,
+    string $label,
+    string $userLogin,
+    ?int $excludeUserId = null
+): bool {
+    $eventType = 'kb_' . $action;
+
+    $payload = [
+        'kb_id' => $kbId,
+        'label' => $label,
+        $action . '_by' => $userLogin,
+    ];
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
+}
+
+/**
+ * Emit a WebSocket event for knowledge base edition lock changes.
+ *
+ * @param string $action 'started' or 'stopped'
+ * @param int $kbId Knowledge base article ID
+ * @param string $userLogin The user who locked/unlocked
+ * @param int $userId The user ID who locked/unlocked
+ * @return bool True if event was queued
+ */
+function emitKbEditionLockEvent(
+    string $action,
+    int $kbId,
+    string $userLogin,
+    int $userId
+): bool {
+    $eventType = 'kb_edition_' . $action;
+    $userDisplayName = teampassGetUserDisplayNameForPayload($userId, $userLogin);
+
+    $payload = [
+        'kb_id' => $kbId,
+        'user_login' => $userLogin,
+        'user_display_name' => $userDisplayName,
+        'user_id' => $userId,
+    ];
+
+    $excludeUserId = ($action === 'started') ? $userId : null;
+
+    return emitWebSocketEvent($eventType, 'kb', null, $payload, $excludeUserId);
 }
 
 /**
@@ -7998,7 +8244,7 @@ function validateWebSocketToken(string $token): ?array
     try {
         // Find the token with user info
         $tokenData = DB::queryFirstRow(
-            'SELECT wt.*, u.login, u.admin
+            'SELECT wt.*, u.login, u.name, u.lastname, u.admin
              FROM %l wt
              JOIN %l u ON wt.user_id = u.id
              WHERE wt.token = %s AND wt.expires_at > NOW() AND u.disabled = 0',
@@ -8038,9 +8284,16 @@ function validateWebSocketToken(string $token): ?array
             $accessibleFolders = array_unique(array_merge($accessibleFolders, array_map('intval', $roleFolders ?: [])));
         }
 
+        $userLogin = (string) $tokenData['login'];
+
         return [
             'user_id' => $userId,
-            'user_login' => $tokenData['login'],
+            'user_login' => $userLogin,
+            'user_display_name' => teampassBuildUserDisplayName(
+                (string) ($tokenData['name'] ?? ''),
+                (string) ($tokenData['lastname'] ?? ''),
+                $userLogin
+            ),
             'accessible_folders' => $accessibleFolders,
             'is_admin' => $tokenData['admin'] === '1',
             'auth_method' => 'ws_token',

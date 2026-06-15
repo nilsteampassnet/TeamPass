@@ -1011,18 +1011,40 @@ logItems(
                 $cronStatus = 'danger';
                 $cronText = $lang->get('error');
             } else {
-                $lastCron = DB::queryFirstField(
-                    'SELECT created_at FROM ' . prefixTable('background_tasks_logs') . '
-                    ORDER BY created_at DESC
-                    LIMIT 1'
-                );
-
+                // Cron is running. Detect a real backlog independently of the
+                // optional task DB-logging setting (enable_tasks_log): the
+                // background_tasks_logs table is only written when that setting
+                // is on, so a stale/empty table does not mean tasks are delayed.
+                // Two delay causes are distinguished so the status label names the
+                // actual problem: a task stuck "in progress" (worker crashed/killed,
+                // blocking the queue) vs a queued backlog the handler is not draining.
                 $cronStatus = 'success';
                 $cronText = $lang->get('health_status_ok');
 
-                if (!$lastCron || ($now - (int) $lastCron) > 120) {
+                // A task stuck "in progress" for over 30 minutes. started_at is set
+                // when a task starts being processed; guard against NULL/empty/zero.
+                $oldestStuck = DB::queryFirstField(
+                    'SELECT MIN(started_at) FROM ' . prefixTable('background_tasks') . '
+                    WHERE is_in_progress = 1
+                    AND started_at IS NOT NULL AND started_at <> "" AND started_at <> 0'
+                );
+
+                if ($oldestStuck !== null && ($now - (int) $oldestStuck) > 1800) {
                     $cronStatus = 'warning';
-                    $cronText = $lang->get('health_cron_delayed');
+                    $cronText = $lang->get('health_cron_stuck');
+                } else {
+                    // No stuck task: flag "Delayed" when a queued task has waited
+                    // unprocessed for too long while the cron is fresh.
+                    $oldestPending = DB::queryFirstField(
+                        'SELECT MIN(created_at) FROM ' . prefixTable('background_tasks') . '
+                        WHERE is_in_progress = 0
+                        AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)'
+                    );
+
+                    if ($oldestPending !== null && ($now - (int) $oldestPending) > 300) {
+                        $cronStatus = 'warning';
+                        $cronText = $lang->get('health_cron_delayed');
+                    }
                 }
             }
 
@@ -4174,6 +4196,9 @@ function tpGetTeampassSettingsForHealth(array $SETTINGS): array
         'tasks_log_retention_delay',
         'bck_script_path',
         'bck_script_filename',
+        'api',
+        'api_cors_origins',
+        'api_require_https',
     );
 
     $out = array();
@@ -4370,6 +4395,27 @@ function tpGetSystemChecks(array $phpIni, array $tpSettings, Language $lang): ar
                 'status' => 'success',
                 'title' => $lang->get('health_check_ws_indexes'),
                 'text' => $lang->get('health_status_ok'),
+            );
+        }
+    }
+
+    // API exposure posture (only relevant when the API is enabled)
+    if (isset($tpSettings['api']) && (int) $tpSettings['api'] === 1) {
+        // Default-open CORS: any origin may call the API from a browser context
+        if (trim((string) ($tpSettings['api_cors_origins'] ?? '')) === '') {
+            $checks[] = array(
+                'status' => 'info',
+                'title' => $lang->get('health_check_api_cors_open'),
+                'text' => $lang->get('health_check_api_cors_open_message'),
+            );
+        }
+
+        // Plain-HTTP API: credentials and bearer tokens may travel unencrypted
+        if ((int) ($tpSettings['api_require_https'] ?? 0) !== 1) {
+            $checks[] = array(
+                'status' => 'warning',
+                'title' => $lang->get('health_check_api_https_off'),
+                'text' => $lang->get('health_check_api_https_off_message'),
             );
         }
     }

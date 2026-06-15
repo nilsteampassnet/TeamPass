@@ -996,8 +996,11 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
         }
 
         if ($targetIsRemote === true) {
-            if (is_scalar($meta['tp_files_version'] ?? null) && (string) $meta['tp_files_version'] !== '') {
-                $backupVersion = (string) $meta['tp_files_version'];
+            // Sidecar metadata is untrusted: only accept a strict version pattern
+            if (is_scalar($meta['tp_files_version'] ?? null)
+                && preg_match('/^\d+(?:\.\d+){0,3}(?:[-+][A-Za-z0-9_.-]+)?$/', trim((string) $meta['tp_files_version'])) === 1
+            ) {
+                $backupVersion = trim((string) $meta['tp_files_version']);
             }
             if (is_scalar($meta['schema_level'] ?? null) && preg_match('/^\d+$/', (string) $meta['schema_level']) === 1) {
                 $backupSchema = (string) $meta['schema_level'];
@@ -2468,10 +2471,24 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
                 $excludeUserId = (int) $session->get('user-id');
             }
 
+            $nowTime = time();
             $connectedCount = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE session_end >= %i AND id != %i',
-                time(),
-                $excludeUserId
+                'SELECT COUNT(*)
+                 FROM ' . prefixTable('users') . ' u
+                 WHERE u.id != %i
+                 AND (
+                    u.session_end >= %i
+                    OR EXISTS (
+                        SELECT 1
+                        FROM ' . prefixTable('api_sessions') . ' aps
+                        WHERE aps.user_id = u.id
+                            AND aps.revoked_at IS NULL
+                            AND aps.expires_at >= %i
+                    )
+                 )',
+                $excludeUserId,
+                $nowTime,
+                $nowTime
             );
 
             echo prepareExchangedData(['error' => false, 'connected_count' => $connectedCount], 'encode');

@@ -90,7 +90,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-12">
-                <h1 class="m-0 text-dark"><i class="fas fa-calendar mr-2"></i><?php echo $lang->get('renewal'); ?></h1>
+                <h1 class="m-0 text-dark"><i class="fas fa-calendar-check mr-2"></i><?php echo $lang->get('renewal'); ?></h1>
             </div><!-- /.col -->
         </div><!-- /.row -->
     </div><!-- /.container-fluid -->
@@ -103,31 +103,36 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12">
-                <div class="card">
+                <div class="card card-outline card-primary">
+                    <div class="card-header">
+                        <h3 class="card-title">
+                            <i class="fas fa-clock mr-2"></i><?php echo $lang->get('renewal'); ?>
+                        </h3>
+                    </div>
                     <div class="card-body">
-                        <div class="alert alert-primary row">
-                            <div class="col-1">
-                                <i class="fas fa-lightbulb text-warning fa-lg"></i>
-                            </div>
-                            <div class="col-11">
-                                <?php echo $lang->get('renewal_page_info'); ?>
+                        <div class="callout callout-info mb-3">
+                            <div class="d-flex align-items-start">
+                                <i class="fas fa-lightbulb text-info fa-lg mr-3 mt-1"></i>
+                                <div><?php echo $lang->get('renewal_page_info'); ?></div>
                             </div>
                         </div>
-                        <div class="row">
-                            <div class="d-inline p-2">
-                                <?php echo $lang->get('select_date_showing_items_expiration'); ?>
-                            </div>
-                            <div class="d-inline p-2">
-                                <div class="input-group date inline">
-                                    <input type="text" class="form-control" id="renewal-date">
+
+                        <div class="row align-items-end mb-3">
+                            <div class="col-md-6 col-lg-4">
+                                <label for="renewal-date"><?php echo $lang->get('select_date_showing_items_expiration'); ?></label>
+                                <div class="input-group date">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
+                                    </div>
+                                    <input type="text" class="form-control" id="renewal-date" autocomplete="off">
                                 </div>
                             </div>
                         </div>
-                        <div>
-                            <table class="table table-striped table-responsive" id="table-renewal" style="width:100%;">
+
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover table-responsive-sm nowrap" id="table-renewal" style="width:100%;">
                                 <thead>
                                     <tr>
-                                        <th></th>
                                         <th><?php echo $lang->get('label'); ?></th>
                                         <th><?php echo $lang->get('expiration_date'); ?></th>
                                         <th><?php echo $lang->get('folder'); ?></th>

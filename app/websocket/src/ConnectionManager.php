@@ -30,11 +30,23 @@ class ConnectionManager
     private array $folderSubscriptions = [];
 
     /**
+     * Connections subscribed to the knowledge base channel: [resourceId => conn, ...]
+     */
+    private array $kbSubscriptions = [];
+
+    /**
      * Item consultation presence by connection resource ID.
      *
-     * @var array<int, array{folder_id: int, item_id: int, user_id: int, user_login: string}>
+     * @var array<int, array{folder_id: int, item_id: int, user_id: int, user_login: string, user_display_name: string}>
      */
     private array $itemViews = [];
+
+    /**
+     * Knowledge base consultation presence by connection resource ID.
+     *
+     * @var array<int, array{kb_id: int, user_id: int, user_login: string, user_display_name: string}>
+     */
+    private array $kbViews = [];
 
     public function __construct()
     {
@@ -67,6 +79,7 @@ class ConnectionManager
     {
         $this->connections->detach($conn);
         $this->clearItemViewsForConnection($conn);
+        $this->clearKbViewsForConnection($conn);
 
         // Get user ID from connection metadata
         $userId = $conn->userData['user_id'] ?? null;
@@ -90,6 +103,8 @@ class ConnectionManager
                 unset($this->folderSubscriptions[$folderId]);
             }
         }
+
+        unset($this->kbSubscriptions[$conn->resourceId]);
     }
 
     /**
@@ -148,6 +163,40 @@ class ConnectionManager
     }
 
     /**
+     * Subscribe a user's connection(s) to the global knowledge base channel.
+     */
+    public function subscribeToKb(int $userId, ?ConnectionInterface $specificConn = null): void
+    {
+        if ($specificConn !== null) {
+            $this->kbSubscriptions[$specificConn->resourceId] = $specificConn;
+            $this->trackSubscription($specificConn, 'kb', 0);
+            return;
+        }
+
+        foreach ($this->userConnections[$userId] ?? [] as $resourceId => $conn) {
+            $this->kbSubscriptions[$resourceId] = $conn;
+            $this->trackSubscription($conn, 'kb', 0);
+        }
+    }
+
+    /**
+     * Unsubscribe a user's connection(s) from the global knowledge base channel.
+     */
+    public function unsubscribeFromKb(int $userId, ?ConnectionInterface $specificConn = null): void
+    {
+        if ($specificConn !== null) {
+            unset($this->kbSubscriptions[$specificConn->resourceId]);
+            $this->untrackSubscription($specificConn, 'kb', 0);
+            return;
+        }
+
+        foreach ($this->userConnections[$userId] ?? [] as $conn) {
+            unset($this->kbSubscriptions[$conn->resourceId]);
+            $this->untrackSubscription($conn, 'kb', 0);
+        }
+    }
+
+    /**
      * Track subscription on connection object
      */
     private function trackSubscription(ConnectionInterface $conn, string $type, int $id): void
@@ -200,6 +249,16 @@ class ConnectionManager
     }
 
     /**
+     * Get all connections subscribed to the knowledge base channel.
+     *
+     * @return ConnectionInterface[]
+     */
+    public function getKbSubscribers(): array
+    {
+        return $this->kbSubscriptions;
+    }
+
+    /**
      * Mark a connection as viewing an item in read-only mode.
      *
      * @return array<int, array{folder_id: int, item_id: int}> Presence targets whose viewer list changed
@@ -229,6 +288,7 @@ class ConnectionManager
             'item_id' => $itemId,
             'user_id' => (int) ($conn->userData['user_id'] ?? 0),
             'user_login' => (string) ($conn->userData['user_login'] ?? ''),
+            'user_display_name' => (string) ($conn->userData['user_display_name'] ?? $conn->userData['user_login'] ?? ''),
         ];
 
         $affected[] = [
@@ -282,7 +342,7 @@ class ConnectionManager
     /**
      * Get unique users currently viewing an item.
      *
-     * @return array<int, array{user_id: int, user_login: string}>
+     * @return array<int, array{user_id: int, user_login: string, user_display_name: string}>
      */
     public function getItemViewers(int $folderId, int $itemId): array
     {
@@ -301,6 +361,7 @@ class ConnectionManager
             $viewers[$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
@@ -310,7 +371,7 @@ class ConnectionManager
     /**
      * Get the item consultation presence state for a folder.
      *
-     * @return array<int, array{item_id: int, viewers: array<int, array{user_id: int, user_login: string}>}>
+     * @return array<int, array{item_id: int, viewers: array<int, array{user_id: int, user_login: string, user_display_name: string}>}>
      */
     public function getItemViewersForFolder(int $folderId): array
     {
@@ -337,6 +398,7 @@ class ConnectionManager
             $items[$itemId]['viewers'][$userId] = [
                 'user_id' => $userId,
                 'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
             ];
         }
 
@@ -346,6 +408,137 @@ class ConnectionManager
         unset($item);
 
         return array_values($items);
+    }
+
+    /**
+     * Mark a connection as viewing a knowledge base article.
+     *
+     * @return array<int, array{kb_id: int}> Presence targets whose viewer list changed
+     */
+    public function startKbView(ConnectionInterface $conn, int $kbId): array
+    {
+        $resourceId = (int) $conn->resourceId;
+        $affected = [];
+        $existing = $this->kbViews[$resourceId] ?? null;
+
+        if ($existing !== null && (int) $existing['kb_id'] === $kbId) {
+            return [];
+        }
+
+        if ($existing !== null) {
+            $affected[] = ['kb_id' => (int) $existing['kb_id']];
+        }
+
+        $this->kbViews[$resourceId] = [
+            'kb_id' => $kbId,
+            'user_id' => (int) ($conn->userData['user_id'] ?? 0),
+            'user_login' => (string) ($conn->userData['user_login'] ?? ''),
+            'user_display_name' => (string) ($conn->userData['user_display_name'] ?? $conn->userData['user_login'] ?? ''),
+        ];
+
+        $affected[] = ['kb_id' => $kbId];
+
+        return $this->uniqueKbViewTargets($affected);
+    }
+
+    /**
+     * Stop knowledge base viewing for a connection.
+     *
+     * @return array<int, array{kb_id: int}> Presence targets whose viewer list changed
+     */
+    public function stopKbView(ConnectionInterface $conn, ?int $kbId = null): array
+    {
+        $resourceId = (int) $conn->resourceId;
+        $existing = $this->kbViews[$resourceId] ?? null;
+
+        if ($existing === null) {
+            return [];
+        }
+
+        if ($kbId !== null && (int) $existing['kb_id'] !== $kbId) {
+            return [];
+        }
+
+        unset($this->kbViews[$resourceId]);
+
+        return [['kb_id' => (int) $existing['kb_id']]];
+    }
+
+    /**
+     * Clear all knowledge base views for a connection.
+     *
+     * @return array<int, array{kb_id: int}> Presence targets whose viewer list changed
+     */
+    public function clearKbViewsForConnection(ConnectionInterface $conn): array
+    {
+        return $this->stopKbView($conn);
+    }
+
+    /**
+     * Get unique users currently viewing a knowledge base article.
+     *
+     * @return array<int, array{user_id: int, user_login: string, user_display_name: string}>
+     */
+    public function getKbViewers(int $kbId): array
+    {
+        $viewers = [];
+
+        foreach ($this->kbViews as $view) {
+            if ((int) $view['kb_id'] !== $kbId) {
+                continue;
+            }
+
+            $userId = (int) $view['user_id'];
+            if ($userId <= 0) {
+                continue;
+            }
+
+            $viewers[$userId] = [
+                'user_id' => $userId,
+                'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
+            ];
+        }
+
+        return array_values($viewers);
+    }
+
+    /**
+     * Get the knowledge base consultation presence state for the KB channel.
+     *
+     * @return array<int, array{kb_id: int, viewers: array<int, array{user_id: int, user_login: string, user_display_name: string}>}>
+     */
+    public function getKbViewersForKb(): array
+    {
+        $articles = [];
+
+        foreach ($this->kbViews as $view) {
+            $kbId = (int) $view['kb_id'];
+            $userId = (int) $view['user_id'];
+            if ($kbId <= 0 || $userId <= 0) {
+                continue;
+            }
+
+            if (!isset($articles[$kbId])) {
+                $articles[$kbId] = [
+                    'kb_id' => $kbId,
+                    'viewers' => [],
+                ];
+            }
+
+            $articles[$kbId]['viewers'][$userId] = [
+                'user_id' => $userId,
+                'user_login' => (string) $view['user_login'],
+                'user_display_name' => (string) ($view['user_display_name'] ?? $view['user_login']),
+            ];
+        }
+
+        foreach ($articles as &$article) {
+            $article['viewers'] = array_values($article['viewers']);
+        }
+        unset($article);
+
+        return array_values($articles);
     }
 
     /**
@@ -362,6 +555,22 @@ class ConnectionManager
                 'folder_id' => (int) $target['folder_id'],
                 'item_id' => (int) $target['item_id'],
             ];
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * @param array<int, array{kb_id: int}> $targets
+     * @return array<int, array{kb_id: int}>
+     */
+    private function uniqueKbViewTargets(array $targets): array
+    {
+        $unique = [];
+
+        foreach ($targets as $target) {
+            $kbId = (int) $target['kb_id'];
+            $unique[$kbId] = ['kb_id' => $kbId];
         }
 
         return array_values($unique);
@@ -440,6 +649,30 @@ class ConnectionManager
     }
 
     /**
+     * Broadcast a message to all subscribers of the knowledge base channel.
+     *
+     * @param array $message Message data to send
+     * @param int|null $excludeUserId Optional user ID to exclude from broadcast
+     * @return int Number of connections message was sent to
+     */
+    public function broadcastToKb(array $message, ?int $excludeUserId = null): int
+    {
+        $json = json_encode($message);
+        $count = 0;
+
+        foreach ($this->getKbSubscribers() as $conn) {
+            if ($excludeUserId !== null && ($conn->userData['user_id'] ?? null) === $excludeUserId) {
+                continue;
+            }
+
+            $conn->send($json);
+            $count++;
+        }
+
+        return $count;
+    }
+
+    /**
      * Broadcast a message to all connected clients
      *
      * @param array $message Message data to send
@@ -475,6 +708,7 @@ class ConnectionManager
             'total_connections' => $this->connections->count(),
             'unique_users' => count($this->userConnections),
             'folder_subscriptions' => count($this->folderSubscriptions),
+            'kb_subscriptions' => count($this->kbSubscriptions),
         ];
     }
 
@@ -533,6 +767,25 @@ class ConnectionManager
                 'item_id' => $itemId,
                 'folder_id' => $folderId,
                 'viewers' => $this->getItemViewers($folderId, $itemId),
+                'server_timestamp' => time(),
+            ],
+            'timestamp' => time(),
+        ]);
+    }
+
+    /**
+     * Broadcast the current viewer list for one KB article to all KB subscribers.
+     *
+     * @param int $kbId Article whose viewer list changed
+     */
+    public function broadcastKbViewersChanged(int $kbId): void
+    {
+        $this->broadcastToKb([
+            'type' => 'event',
+            'event' => 'kb_viewers_changed',
+            'data' => [
+                'kb_id' => $kbId,
+                'viewers' => $this->getKbViewers($kbId),
                 'server_timestamp' => time(),
             ],
             'timestamp' => time(),

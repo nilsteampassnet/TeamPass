@@ -24,6 +24,9 @@ services:
       - nginx-certs:/etc/nginx/certs:ro
       - nginx-vhost:/etc/nginx/vhost.d
       - nginx-html:/usr/share/nginx/html
+      # Raise the proxy upload limit (default 1M) so uploads/backups reach the
+      # TeamPass container instead of being rejected with 413 (issue #5234).
+      - ../../docker/nginx/proxy-client-max-body-size.conf:/etc/nginx/conf.d/client_max_body_size.conf:ro
 
     networks:
       - teampass-network

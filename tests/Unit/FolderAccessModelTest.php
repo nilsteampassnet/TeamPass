@@ -34,4 +34,17 @@ class FolderAccessModelTest extends TestCase
 
         self::assertSame(' AND 1 = 0', $model->getItemFolderSqlConstraint('i.id_tree;DROP', 7));
     }
+
+    /**
+     * Guards the personal-folder fix: the deny-list must restrict to top-level
+     * personal roots (parent_id = 0) in all three exclusion sites, so a user's
+     * own personal subfolders are not misclassified as another user's root.
+     */
+    public function testPersonalFolderFiltersOnlyExcludeOtherUsersRoots(): void
+    {
+        $source = file_get_contents(__DIR__ . '/../../app/api/Model/FolderAccessModel.php');
+        self::assertIsString($source);
+
+        self::assertSame(3, substr_count($source, 'other_personal.parent_id = 0'));
+    }
 }

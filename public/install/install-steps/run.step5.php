@@ -687,6 +687,8 @@ class DatabaseInstaller
             array('admin', 'oauth2_client_appname', 'Login with Azure'),
             array('admin', 'oauth2_api_enabled', '0'),
             array('admin', 'extension_token_all_auth_types', '0'),
+            array('admin', 'api_require_https', '1'),
+            array('admin', 'api_rate_limit_per_minute', '120'),
             array('admin', 'show_item_data', '0'),
             array('admin', 'oauth2_tenant_id', '', '1'),
             array('admin', 'limited_search_default', '0'),
@@ -1097,7 +1099,7 @@ class DatabaseInstaller
             `id` int(12) NOT null AUTO_INCREMENT,
             `category_id` int(12) NOT NULL,
             `label` varchar(200) NOT NULL,
-            `description` text NOT NULL,
+            `description` MEDIUMTEXT NOT NULL,
             `author_id` int(12) NOT NULL,
             `anyone_can_modify` tinyint(1) NOT null DEFAULT '0',
             `allow_comments` tinyint(1) NOT null DEFAULT '0',
@@ -1147,6 +1149,21 @@ class DatabaseInstaller
             KEY `idx_kb_id` (`kb_id`),
             KEY `idx_author_id` (`author_id`),
             KEY `idx_created_at` (`created_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+        );
+    }
+
+    // Create table kb_edition
+    private function kb_edition()
+    {
+        DB::query(
+            'CREATE TABLE IF NOT EXISTS `' . $this->inputData['tablePrefix'] . 'kb_edition` (
+            `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+            `kb_id` int(12) NOT NULL,
+            `user_id` int(12) NOT NULL,
+            `timestamp` int(11) NOT NULL,
+            KEY `kb_id_idx` (`kb_id`),
+            PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
         );
     }
@@ -1253,7 +1270,7 @@ class DatabaseInstaller
             `increment_id` int(12) NOT NULL AUTO_INCREMENT,
             `item_id` int(11) NOT NULL,
             `user_id` int(12) NOT NULL,
-            `timestamp` varchar(50) NOT NULL,
+            `timestamp` int(11) NOT NULL,
             KEY `item_id_idx` (`item_id`),
             PRIMARY KEY (`increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
@@ -1357,6 +1374,44 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             UNIQUE KEY `token_hash` (`token_hash`),
             KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
+        );
+    }
+
+    // Create table api_sessions (one API session per JWT, keyed by the jti claim)
+    private function api_sessions()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "api_sessions` (
+            `id` int(12) NOT NULL AUTO_INCREMENT,
+            `user_id` int(12) NOT NULL,
+            `jti` varchar(32) NOT NULL,
+            `key_tempo` varchar(100) NOT NULL,
+            `encrypted_private_key` text NULL,
+            `session_aes_key` varchar(64) NULL,
+            `user_agent` varchar(255) NOT NULL DEFAULT '',
+            `created_at` int(12) NOT NULL,
+            `expires_at` int(12) NOT NULL,
+            `last_used_at` int(12) NULL DEFAULT NULL,
+            `revoked_at` int(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `jti` (`jti`),
+            KEY `user_id` (`user_id`),
+            KEY `expires_at` (`expires_at`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
+        );
+    }
+
+    // Create table api_rate_limit (sliding-window counters per user and per IP)
+    private function api_rate_limit()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "api_rate_limit` (
+            `scope_key` varchar(100) NOT NULL,
+            `window_start` int(12) NOT NULL,
+            `hits` int(12) NOT NULL DEFAULT 1,
+            PRIMARY KEY (`scope_key`, `window_start`),
+            KEY `window_start` (`window_start`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;"
         );
     }
@@ -1833,7 +1888,7 @@ class DatabaseInstaller
                 `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `event_type` VARCHAR(50) NOT NULL COMMENT 'Type of event (item_created, item_updated, etc.)',
-                `target_type` ENUM('user', 'folder', 'broadcast') NOT NULL COMMENT 'Target type for routing',
+                `target_type` ENUM('user', 'folder', 'kb', 'broadcast') NOT NULL COMMENT 'Target type for routing',
                 `target_id` INT UNSIGNED NULL COMMENT 'Target ID (user_id or folder_id)',
                 `payload` JSON NOT NULL COMMENT 'Event payload data',
                 `processed` TINYINT(1) UNSIGNED DEFAULT 0 COMMENT 'Has this event been broadcast?',

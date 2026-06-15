@@ -796,6 +796,9 @@ switch ($inputData['type']) {
             if (isset($newID) === true) {
                 updateCacheTable('add_value', intval($newID));
 
+                // Refresh the folder tree counters + invalidate tree cache (#5221)
+                adjustFolderItemsCounter((int) $inputData['folderId'], 1);
+
                 // Emit WebSocket event for real-time notification
                 emitItemEvent(
                     'created',
@@ -975,7 +978,7 @@ switch ($inputData['type']) {
 
         // Check PWD EMPTY
         if (
-            empty($pw)
+            empty($post_password)
             && $session->has('user-create_item_without_password') && null !== $session->get('user-create_item_without_password')
             && (int) $session->get('user-create_item_without_password') !== 1
         ) {
@@ -1232,39 +1235,56 @@ switch ($inputData['type']) {
                     isset($previousValue['string']) === true ? $previousValue['string'] : '',
                 );
             }
-            
-            // encrypt PW on if it has changed, or if it is empty
-            if (
-                (
-                    (
+            // Manage the password value when it has changed.
+            if ($post_password !== $pw) {
+                if (empty($post_password) === true) {
+                    // Password intentionally cleared. Enforce the create_item_without_password
+                    // gate at the sink too (defense in depth, fail-closed): only clear when the
+                    // user is explicitly allowed. If the session flag is absent (e.g. a session
+                    // opened before it was populated), keep the existing password rather than
+                    // wiping it.
+                    if (
                         $session->has('user-create_item_without_password')
-                        && (int) $session->get('user-create_item_without_password') !== 1
-                    )
-                    || !empty($post_password)
-                )
-                && $post_password !== $pw
-            ) {
-                //-----
-                // NEW ENCRYPTION
-                $cryptedStuff = doDataEncryption($post_password);
-                $encrypted_password = $cryptedStuff['encrypted'];
-                $encrypted_password_key = $cryptedStuff['objectKey'];
+                        && (int) $session->get('user-create_item_without_password') === 1
+                    ) {
+                        // Store a truly empty value like item creation does: no object key, no
+                        // sharekeys and no background encryption task. This also avoids the client
+                        // waiting on an encryption task that would never refresh the detail view
+                        // for an empty password.
+                        $encrypted_password = '';
+                        DB::delete(
+                            prefixTable('sharekeys_items'),
+                            'object_id = %i',
+                            (int) $inputData['itemId']
+                        );
+                        $passwordWasUpdated = true;
+                    } else {
+                        // Not allowed to clear the password — keep the existing one.
+                        $encrypted_password = $data['pw'];
+                    }
+                } else {
+                    //-----
+                    // NEW ENCRYPTION
+                    $cryptedStuff = doDataEncryption($post_password);
+                    $encrypted_password = $cryptedStuff['encrypted'];
+                    $encrypted_password_key = $cryptedStuff['objectKey'];
 
-                // Create sharekeys for users
-                storeUsersShareKey(
-                    'sharekeys_items',
-                    (int) $post_folder_is_personal,
-                    (int) $inputData['itemId'],
-                    $encrypted_password_key,
-                    true,   // only for the item creator
-                    true,   // delete all
-                );
+                    // Create sharekeys for users
+                    storeUsersShareKey(
+                        'sharekeys_items',
+                        (int) $post_folder_is_personal,
+                        (int) $inputData['itemId'],
+                        $encrypted_password_key,
+                        true,   // only for the item creator
+                        true,   // delete all
+                    );
 
-                // Create a task to create sharekeys for users
-                if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
-                $tasksToBePerformed = ['item_password'];
-                $encryptionTaskIsRequested = true;
-                $passwordWasUpdated = true;
+                    // Create a task to create sharekeys for users
+                    if (WIP=== true) error_log('createTaskForItem - new password for this item - '.$post_password ." -- ". $pw);
+                    $tasksToBePerformed = ['item_password'];
+                    $encryptionTaskIsRequested = true;
+                    $passwordWasUpdated = true;
+                }
             } else {
                 $encrypted_password = $data['pw'];
             }
@@ -1835,6 +1855,12 @@ switch ($inputData['type']) {
             }
             // Update CACHE table
             updateCacheTable('update_value', (int) $inputData['itemId']);
+
+            // If the item was moved to another folder, refresh both folders' tree counters (#5221)
+            if ($originalFolderId !== $targetFolderId) {
+                adjustFolderItemsCounter($originalFolderId, -1);
+                adjustFolderItemsCounter($targetFolderId, 1);
+            }
 
 
             // Manage OTP status
@@ -2656,6 +2682,9 @@ switch ($inputData['type']) {
 
             // Add new item to cache table.
             updateCacheTable('add_value', intval($newItemId));
+
+            // Refresh the destination folder tree counters + invalidate cache (#5221)
+            adjustFolderItemsCounter((int) $post_dest_id, 1);
         } else {
             // no item
             echo (string) prepareExchangedData(
@@ -3122,6 +3151,24 @@ switch ($inputData['type']) {
                         $arrCatList
                     );
                     foreach ($rows_tmp as $row) {
+                        // Enforce field role-based visibility (same rule as the
+                        // "LOAD CATEGORIES" block in core.php): a field restricted to
+                        // roles must never be returned to a user holding none of them.
+                        // Without this check the decrypted value leaks in the AJAX
+                        // response even though the item card hides the widget (#5176).
+                        // 'all' = visible to every role.
+                        if (
+                            $row['role_visibility'] !== 'all'
+                            && count(
+                                array_intersect(
+                                    explode(';', (string) $session->get('user-roles')),
+                                    explode(',', (string) $row['role_visibility'])
+                                )
+                            ) === 0
+                        ) {
+                            continue;
+                        }
+
                         // Uncrypt data
                         // Get the object key for the user
                         //db::debugmode(true);
@@ -3311,6 +3358,9 @@ switch ($inputData['type']) {
 
                         // Update cache table
                         updateCacheTable('delete_value', (int) $inputData['id']);
+
+                        // Refresh the folder tree counters + invalidate tree cache (#5221)
+                        adjustFolderItemsCounter((int) $dataItem['id_tree'], -1);
 
                         $arrData['show_detail_option'] = 1;
                         $arrData['to_be_deleted'] = 0;
@@ -3817,11 +3867,15 @@ switch ($inputData['type']) {
         // Update CACHE table
         updateCacheTable('delete_value', (int) $inputData['itemId']);
 
-        // Emit WebSocket event for real-time notification
+        // Refresh the folder tree counters + invalidate tree cache (#5221)
+        adjustFolderItemsCounter((int) ($data['id_tree'] ?? $inputData['folderId']), -1);
+
+        // Emit WebSocket event for real-time notification.
+        // Target the item's actual folder (id_tree) instead of the caller-supplied folder_id.
         emitItemEvent(
             'deleted',
             (int) $inputData['itemId'],
-            (int) $inputData['folderId'],
+            (int) ($data['id_tree'] ?? $inputData['folderId']),
             $inputData['label'] ?? '',
             $session->get('user-login') ?? '',
             (int) $session->get('user-id')
@@ -4411,18 +4465,18 @@ switch ($inputData['type']) {
 
                 // Batch: get the most recent relevant date per item (creation or last pw change)
                 $logRows = DB::query(
-                    'SELECT id_item, MAX(date) AS date
+                    'SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS date
                     FROM ' . prefixTable('log_items') . '
                     WHERE id_item IN %ls
                     AND (
                         action = %s
-                        OR (action = %s AND raison = %s)
+                        OR (action = %s AND raison LIKE %s)
                     )
                     GROUP BY id_item',
                     $allItemIds,
                     'at_creation',
                     'at_modification',
-                    'at_pw'
+                    'at_pw%'
                 );
                 foreach ($logRows as $logRow) {
                     $batchExpirationDates[$logRow['id_item']] = $logRow['date'];
@@ -4468,7 +4522,7 @@ switch ($inputData['type']) {
                     if (
                         (int) $SETTINGS['activate_expiration'] === 1
                         && intval($record['renewal_period']) > 0
-                        && (intval($record['date']) + (intval($record['renewal_period']) * TP_ONE_MONTH_SECONDS)) < time()
+                        && (intval($record['date']) + (intval($record['renewal_period']) * TP_ONE_DAY_SECONDS)) < time()
                     ) {
                         $expired_item = 1;
                     }
@@ -5656,6 +5710,10 @@ switch ($inputData['type']) {
         // Update cache table
         updateCacheTable('update_value', (int) $inputData['itemId']);
 
+        // Refresh tree counters for both source and destination folders (#5221)
+        adjustFolderItemsCounter((int) $dataSource['id_tree'], -1);
+        adjustFolderItemsCounter((int) $inputData['folderId'], 1);
+
         // Notify via WebSocket: item moved from source folder and arrived in destination folder.
         // Both folders' subscribers receive the event (excluding the user who performed the move).
         $movePayload = [
@@ -5715,6 +5773,9 @@ switch ($inputData['type']) {
         );
         $inputData['folderId'] = filter_var($dataReceived['folder_id'], FILTER_SANITIZE_NUMBER_INT);
         $post_item_ids = filter_var($dataReceived['item_ids'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+        $folderCounterDeltas = [];
 
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
@@ -6000,12 +6061,23 @@ switch ($inputData['type']) {
                 $massMoveExclude = (int) $session->get('user-id');
                 emitWebSocketEvent('item_moved', 'folder', (int) $dataSource['id_tree'], $massMovePayload, $massMoveExclude);
                 emitWebSocketEvent('item_moved', 'folder', (int) $inputData['folderId'], $massMovePayload, $massMoveExclude);
+
+                // Track counter change: -1 on source folder, +1 on destination (#5221)
+                $srcFolder = (int) $dataSource['id_tree'];
+                $dstFolder = (int) $inputData['folderId'];
+                $folderCounterDeltas[$srcFolder] = ($folderCounterDeltas[$srcFolder] ?? 0) - 1;
+                $folderCounterDeltas[$dstFolder] = ($folderCounterDeltas[$dstFolder] ?? 0) + 1;
             }
         }
 
         // reload cache table
         require_once TEAMPASS_APP . '/sources/main.functions.php';
         updateCacheTable('reload', null);
+
+        // Refresh tree counters for all affected folders (#5221)
+        foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+            adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
+        }
 
         echo (string) prepareExchangedData(
             array(
@@ -6062,6 +6134,9 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+        $folderCounterDeltas = [];
+
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
@@ -6110,7 +6185,16 @@ switch ($inputData['type']) {
 
                 // Update CACHE table
                 updateCacheTable('delete_value', (int) $item_id);
+
+                // Track counter change: -1 on the item's folder (#5221)
+                $srcFolder = (int) $dataSource['id_tree'];
+                $folderCounterDeltas[$srcFolder] = ($folderCounterDeltas[$srcFolder] ?? 0) - 1;
             }
+        }
+
+        // Refresh tree counters for all affected folders (#5221)
+        foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+            adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
         }
 
         echo (string) prepareExchangedData(
@@ -7622,6 +7706,9 @@ switch ($inputData['type']) {
             $successfulDeletions = array();
             $failedDeletions = array();
 
+            // Accumulate per-folder counter deltas, applied once after the loop (#5221)
+            $folderCounterDeltas = [];
+
             foreach( $selectedItemIds as $itemId) {
                 // Check that user can access this item
                 $granted = accessToItemIsGranted((int) $itemId, $SETTINGS);
@@ -7685,8 +7772,16 @@ switch ($inputData['type']) {
                 // Update CACHE table
                 updateCacheTable('delete_value', (int) $itemId);
 
+                // Track counter change: -1 on the item's folder (#5221)
+                $folderCounterDeltas[$itemTreeId] = ($folderCounterDeltas[$itemTreeId] ?? 0) - 1;
+
                 // Ajouter l'item à la liste des succès
                 $successfulDeletions[] = $itemId;
+            }
+
+            // Refresh tree counters for all affected folders (#5221)
+            foreach ($folderCounterDeltas as $folderId => $folderDelta) {
+                adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
             }
 
             // Préparer la réponse

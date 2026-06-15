@@ -159,7 +159,7 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 - ⚠ **Dead parameters** (confirmed by code inspection, `main.functions.php:4068`):
   - `$post_folder_is_personal` (2nd param) — accepted in signature, **never read** in body
   - `$onlyForUser` (5th param, default `false`) — accepted in signature, **never read** in body
-  - Consequence: the function **always** creates/updates sharekeys for ALL eligible users, regardless of what callers pass. During `update_item` this means N×RSA-4096 operations happen synchronously in the HTTP request handler — a performance issue, not a security gap.
+  - Consequence: the function **always** creates/updates sharekeys for ALL eligible users, regardless of what callers pass. During `update_item` (public items) this is a performance issue (N×RSA-4096 synchronous in the HTTP request handler). **But at PERSONAL item creation it is a security gap (SEC-8)**: `items.queries.php:480-487` (and custom fields `523-530`) pass `onlyForUser=true` believing only the creator gets a sharekey — in reality ALL users receive a sharekey for the personal object, and since personal items skip the background task, nothing cleans them up. Only a lazy cleanup on item update exists (`EnsurePersonalItemHasOnlyKeysForOwner()`, `main.functions.php:6551`, called from `items.queries.php:1352`).
 - `deleteAll=TRUE` IS active: removes sharekeys for users no longer in the eligible set (access removed, not an access gap for current users)
 
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
@@ -273,10 +273,12 @@ PATs only add an alternate unlock of the existing private key.
 
 ## Known Security Weaknesses (to address)
 
-See full analysis in `workReadmeFiles/encryption-analysis.md`.
+See full analysis in `workReadmeFiles/encryption-analysis.md` and the phased improvement
+roadmap in `workReadmeFiles/encryption-improvement-roadmap.md`.
 
 | ID | Issue | Location | Priority |
 |---|---|---|---|
+| SEC-8 | Personal item sharekeys distributed to ALL users at creation (dead `$onlyForUser`/`$post_folder_is_personal` params) | `main.functions.php:4224`, `items.queries.php:480-530` | 🔴 Critical |
 | SEC-1 | Fixed zero IV in AES-CBC | `CryptoManager.php:199,262` | 🔴 Critical |
 | SEC-2 | PBKDF2 only 1 000 iterations | `CryptoManager.php:205,268` | 🟠 High |
 | SEC-3 | Fixed PBKDF2 salt `'phpseclib/salt'` | `CryptoManager.php:205,268` | 🔴 Critical |
@@ -287,7 +289,7 @@ See full analysis in `workReadmeFiles/encryption-analysis.md`.
 | FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` (dead `$onlyForUser` param) | `items.queries.php`, `main.functions.php:4068` | 🟡 Performance |
 | FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience |
 | FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience |
-| FUNC-5 | Dead params `$post_folder_is_personal` + `$onlyForUser` in `storeUsersShareKey()` | `main.functions.php:4068` | 🟢 Cleanup |
+| FUNC-5 | Dead params `$post_folder_is_personal` + `$onlyForUser` in `storeUsersShareKey()` — root cause of SEC-8 | `main.functions.php:4224` | 🔴 (reclassified) |
 | FUNC-6 | No DB transaction wrapping item INSERT + creator sharekey creation | `items.queries.php` | 🟡 Consistency |
 
 **Fixing SEC-1/3/5 does not affect sharekeys** — the RSA layer is independent. Only `items.pw`,

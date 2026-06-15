@@ -180,9 +180,11 @@ class ExtensionTokenAuthTest extends TestCase
         self::assertStringContainsString("case 'generate_extension_token':", $src);
         self::assertStringContainsString("case 'list_extension_tokens':", $src);
         self::assertStringContainsString("case 'revoke_extension_token':", $src);
-        // Gate: api + oauth2_api_enabled + oauth2 session.
+        // Gate: api + (oauth2_api_enabled + oauth2 session, or the
+        // extension_token_all_auth_types admin toggle — extension auto-config).
         self::assertStringContainsString("\$SETTINGS['oauth2_api_enabled']", $src);
-        self::assertStringContainsString("\$session->get('user-auth_type') !== 'oauth2'", $src);
+        self::assertStringContainsString("\$session->get('user-auth_type') === 'oauth2'", $src);
+        self::assertStringContainsString("\$SETTINGS['extension_token_all_auth_types']", $src);
         // Requires the cleartext private key (issuance gate).
         self::assertStringContainsString("\$session->get('user-private_key')", $src);
         // Only the hash is persisted; the raw token is returned in the response.
