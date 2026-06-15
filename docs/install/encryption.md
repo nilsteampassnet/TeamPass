@@ -23,3 +23,10 @@ Each encrypted element (password, custom fields) has one shared key by user. Thi
 
 When a user has to visualize an encrypted element, his password and private key is mandatory
 ![encryption model](../_media/tp3_decrypt_item.png)
+
+## Personal items isolation
+
+Items stored in a **personal folder** are encrypted so that only their **owner** (plus the internal
+`TP_USER_ID` recovery account) holds a share key — no other user can decrypt them, even at the
+cryptographic layer. See [Security hardening](security-hardening.md) for the related maintenance
+steps and the one-off remediation script for instances upgraded from older versions.

@@ -449,109 +449,130 @@ switch ($inputData['type']) {
                 $itemFieldsForTasks = [];
                 
                 // ADD item
-                DB::insert(
-                    prefixTable('items'),
-                    array(
-                        'label' => $inputData['label'],
-                        'description' => $post_description,
-                        'pw' => $post_password,
-                        'pw_iv' => '',
-                        'pw_len' => $strlen_post_password,
-                        'email' => $post_email,
-                        'url' => $post_url,
-                        'id_tree' => $inputData['folderId'],
-                        'login' => $post_login,
-                        'inactif' => 0,
-                        'restricted_to' => empty($post_restricted_to) === true ?
-                            '' : implode(';', $post_restricted_to),
-                        'perso' => ((int) $post_folder_is_personal === 1) ?
-                            1 : 0,
-                        'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
-                        'complexity_level' => $post_complexity_level,
-                        'encryption_type' => 'teampass_aes',
-                        'fa_icon' => $post_fa_icon,
-                        'item_key' => uniqidReal(50),
-                        'created_at' => time(),
-                    )
-                );
-                $newID = DB::insertId();
+                // FUNC-6: the item row, the creator sharekey and the encrypted custom fields
+                // (with their sharekeys) must be atomic. A crash in between would leave an
+                // encrypted item or field with no key, i.e. permanently unreadable (I4 violation).
+                DB::startTransaction();
+                try {
+                    DB::insert(
+                        prefixTable('items'),
+                        array(
+                            'label' => $inputData['label'],
+                            'description' => $post_description,
+                            'pw' => $post_password,
+                            'pw_iv' => '',
+                            'pw_len' => $strlen_post_password,
+                            'email' => $post_email,
+                            'url' => $post_url,
+                            'id_tree' => $inputData['folderId'],
+                            'login' => $post_login,
+                            'inactif' => 0,
+                            'restricted_to' => empty($post_restricted_to) === true ?
+                                '' : implode(';', $post_restricted_to),
+                            'perso' => ((int) $post_folder_is_personal === 1) ?
+                                1 : 0,
+                            'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
+                            'complexity_level' => $post_complexity_level,
+                            'encryption_type' => 'teampass_aes',
+                            'fa_icon' => $post_fa_icon,
+                            'item_key' => uniqidReal(50),
+                            'created_at' => time(),
+                        )
+                    );
+                    $newID = DB::insertId();
 
-                // Create sharekeys for the user itself
-                storeUsersShareKey(
-                    'sharekeys_items',
-                    (int) $post_folder_is_personal,
-                    intval($newID),
-                    $cryptedStuff['objectKey'],
-                    true,   // only for the item creator
-                    false,  // no delete all
-                );
+                    // Create sharekeys for the user itself
+                    storeUsersShareKey(
+                        'sharekeys_items',
+                        (int) $post_folder_is_personal,
+                        intval($newID),
+                        $cryptedStuff['objectKey'],
+                        true,   // only for the item creator
+                        false,  // no delete all
+                    );
 
-                // update fields
-                if (
-                    isset($SETTINGS['item_extra_fields']) === true
-                    && (int) $SETTINGS['item_extra_fields'] === 1
-                ) {
-                    foreach ($post_fields as $field) {
-                        if (empty($field['value']) === false) {
-                            // should we encrypt the data
-                            $dataTmp = DB::queryFirstRow(
-                                'SELECT encrypted_data
-                                FROM ' . prefixTable('categories') . '
-                                WHERE id = %i',
-                                $field['id']
-                            );
-
-                            // Should we encrypt the data
-                            if (intval($dataTmp['encrypted_data']) === 1) {
-                                // Create sharekeys for users
-                                $cryptedStuff = doDataEncryption($field['value']);
-
-                                // Store value
-                                DB::insert(
-                                    prefixTable('categories_items'),
-                                    array(
-                                        'item_id' => $newID,
-                                        'field_id' => $field['id'],
-                                        'data' => $cryptedStuff['encrypted'],
-                                        'data_iv' => '',
-                                        'encryption_type' => TP_ENCRYPTION_NAME,
-                                    )
-                                );
-                                $newObjectId = DB::insertId();
-
-                                // Create sharekeys for user
-                                storeUsersShareKey(
-                                    'sharekeys_fields',
-                                    (int) $post_folder_is_personal,
-                                    intval($newObjectId),
-                                    $cryptedStuff['objectKey'],
-                                    true,   // only for the item creator
-                                    false,  // delete all
+                    // update fields
+                    if (
+                        isset($SETTINGS['item_extra_fields']) === true
+                        && (int) $SETTINGS['item_extra_fields'] === 1
+                    ) {
+                        foreach ($post_fields as $field) {
+                            if (empty($field['value']) === false) {
+                                // should we encrypt the data
+                                $dataTmp = DB::queryFirstRow(
+                                    'SELECT encrypted_data
+                                    FROM ' . prefixTable('categories') . '
+                                    WHERE id = %i',
+                                    $field['id']
                                 );
 
-                                array_push(
-                                    $itemFieldsForTasks,
-                                    [
-                                        'object_id' => $newObjectId,
-                                        'object_key' => $cryptedStuff['objectKey'],
-                                    ]
-                                );
-                                
-                            } else {
-                                // update value
-                                DB::insert(
-                                    prefixTable('categories_items'),
-                                    array(
-                                        'item_id' => $newID,
-                                        'field_id' => $field['id'],
-                                        'data' => $field['value'],
-                                        'data_iv' => '',
-                                        'encryption_type' => 'not_set',
-                                    )
-                                );
+                                // Should we encrypt the data
+                                if (intval($dataTmp['encrypted_data']) === 1) {
+                                    // Create sharekeys for users
+                                    $cryptedStuff = doDataEncryption($field['value']);
+
+                                    // Store value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field['id'],
+                                            'data' => $cryptedStuff['encrypted'],
+                                            'data_iv' => '',
+                                            'encryption_type' => TP_ENCRYPTION_NAME,
+                                        )
+                                    );
+                                    $newObjectId = DB::insertId();
+
+                                    // Create sharekeys for user
+                                    storeUsersShareKey(
+                                        'sharekeys_fields',
+                                        (int) $post_folder_is_personal,
+                                        intval($newObjectId),
+                                        $cryptedStuff['objectKey'],
+                                        true,   // only for the item creator
+                                        false,  // delete all
+                                    );
+
+                                    array_push(
+                                        $itemFieldsForTasks,
+                                        [
+                                            'object_id' => $newObjectId,
+                                            'object_key' => $cryptedStuff['objectKey'],
+                                        ]
+                                    );
+
+                                } else {
+                                    // update value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field['id'],
+                                            'data' => $field['value'],
+                                            'data_iv' => '',
+                                            'encryption_type' => 'not_set',
+                                        )
+                                    );
+                                }
                             }
                         }
                     }
+
+                    DB::commit();
+                } catch (Throwable $e) {
+                    DB::rollback();
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS Error - create_item transaction failed: ' . $e->getMessage());
+                    }
+                    echo (string) prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error'),
+                        ),
+                        'encode'
+                    );
+                    break;
                 }
 
                 // If template enable, is there a main one selected?
@@ -1193,7 +1214,7 @@ switch ($inputData['type']) {
 
             // Should we log a password change?
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
@@ -1205,9 +1226,12 @@ switch ($inputData['type']) {
             } else {
                 $pw = teampassDecryptPasswordValue(
                     $data['pw'],
-                    decryptUserObjectKey(
+                    decryptUserObjectKeyWithMigration(
                         $userKey['share_key'],
-                        $session->get('user-private_key')
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_items'
                     ),
                     (int) ($data['pw_len'] ?? 0)
                 );
@@ -2520,7 +2544,7 @@ switch ($inputData['type']) {
             // get file key
             $rows = DB::query(
                 'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-                f.size AS size, f.type AS type, s.share_key AS share_key
+                f.size AS size, f.type AS type, s.share_key AS share_key, s.increment_id AS increment_id
                 FROM ' . prefixTable('files') . ' AS f
                 INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                 WHERE s.user_id = %i AND f.id_item = %i',
@@ -2535,7 +2559,13 @@ switch ($inputData['type']) {
                     $fileContent = decryptFile(
                         $record['file'],
                         $SETTINGS['path_to_upload_folder'],
-                        decryptUserObjectKey($record['share_key'] ?? '', $session->get('user-private_key'))
+                        decryptUserObjectKeyWithMigration(
+                            $record['share_key'] ?? '',
+                            $session->get('user-private_key'),
+                            $session->get('user-public_key'),
+                            intval($record['increment_id'] ?? 0),
+                            'sharekeys_files'
+                        )
                     );
 
                     // Step2 - create file
@@ -2868,7 +2898,7 @@ switch ($inputData['type']) {
         // Uncrypt PW
         // Get the object key for the user
         $userKeys = DB::query(
-            'SELECT share_key
+            'SELECT share_key, increment_id
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE user_id = %i AND object_id = %i',
             $session->get('user-id'),
@@ -2904,7 +2934,13 @@ switch ($inputData['type']) {
             // Loop on available keys
             // We should only have one but in case of, do this loop
             foreach ($userKeys as $userKey) {
-                $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $decryptedObject = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_items'
+                );
 
                 if (!empty($decryptedObject)) {
                     $validKeyFound = true;
@@ -5553,14 +5589,20 @@ switch ($inputData['type']) {
 
             // Get the ITEM object key for the user
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
                 $inputData['itemId']
             );
             if (DB::count() > 0) {
-                $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_items'
+                );
 
                 // This is a public object
                 $users = DB::query(
@@ -5597,7 +5639,7 @@ switch ($inputData['type']) {
                 }
 
                 $userKey = DB::queryFirstRow(
-                    'SELECT share_key
+                    'SELECT share_key, increment_id
                     FROM ' . prefixTable('sharekeys_fields') . '
                     WHERE user_id = %i AND object_id = %i',
                     $session->get('user-id'),
@@ -5622,7 +5664,13 @@ switch ($inputData['type']) {
                     continue;
                 }
 
-                $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_fields'
+                );
 
                 // This is a public object
                 $users = DB::query(
@@ -5653,14 +5701,20 @@ switch ($inputData['type']) {
             );
             foreach ($rows as $attachment) {
                 $userKey = DB::queryFirstRow(
-                    'SELECT share_key
+                    'SELECT share_key, increment_id
                     FROM ' . prefixTable('sharekeys_files') . '
                     WHERE user_id = %i AND object_id = %i',
                     $session->get('user-id'),
                     $attachment['id']
                 );
                 if (DB::count() > 0) {
-                    $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                    $objectKey = decryptUserObjectKeyWithMigration(
+                        $userKey['share_key'],
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_files'
+                    );
 
                     // This is a public object
                     $users = DB::query(
@@ -5918,14 +5972,20 @@ switch ($inputData['type']) {
 
                     // Get the ITEM object key for the user
                     $userKey = DB::queryFirstRow(
-                        'SELECT share_key
+                        'SELECT share_key, increment_id
                         FROM ' . prefixTable('sharekeys_items') . '
                         WHERE user_id = %i AND object_id = %i',
                         $session->get('user-id'),
                         $item_id
                     );
                     if (DB::count() > 0) {
-                        $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                        $objectKey = decryptUserObjectKeyWithMigration(
+                            $userKey['share_key'],
+                            $session->get('user-private_key'),
+                            $session->get('user-public_key'),
+                            intval($userKey['increment_id']),
+                            'sharekeys_items'
+                        );
 
                         // This is a public object
                         $users = DB::query(
@@ -5957,14 +6017,20 @@ switch ($inputData['type']) {
                     );
                     foreach ($rows as $field) {
                         $userKey = DB::queryFirstRow(
-                            'SELECT share_key
+                            'SELECT share_key, increment_id
                             FROM ' . prefixTable('sharekeys_fields') . '
                             WHERE user_id = %i AND object_id = %i',
                             $session->get('user-id'),
                             $field['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                            $objectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_fields'
+                            );
 
                             // This is a public object
                             $users = DB::query(
@@ -5997,14 +6063,20 @@ switch ($inputData['type']) {
                     );
                     foreach ($rows as $attachment) {
                         $userKey = DB::queryFirstRow(
-                            'SELECT share_key
+                            'SELECT share_key, increment_id
                             FROM ' . prefixTable('sharekeys_files') . '
                             WHERE user_id = %i AND object_id = %i',
                             $session->get('user-id'),
                             $attachment['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                            $objectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_files'
+                            );
 
                             // This is a public object
                             $users = DB::query(
@@ -6502,7 +6574,7 @@ switch ($inputData['type']) {
         // Decrypt the pwd
         // Should we log a password change?
         $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, i.pw, i.pw_len
+            'SELECT s.share_key, s.increment_id, i.pw, i.pw_len
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6515,9 +6587,12 @@ switch ($inputData['type']) {
         } else {
             $pw = teampassDecryptPasswordValue(
                 $itemQ['pw'],
-                decryptUserObjectKey(
+                decryptUserObjectKeyWithMigration(
                     $itemQ['share_key'],
-                    $session->get('user-private_key')
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($itemQ['increment_id']),
+                    'sharekeys_items'
                 ),
                 (int) ($itemQ['pw_len'] ?? 0)
             );
@@ -6675,7 +6750,7 @@ switch ($inputData['type']) {
         $file_info = DB::queryFirstRow(
             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
             f.extension AS extension, f.type AS type,
-            s.share_key AS share_key
+            s.share_key AS share_key, s.increment_id AS increment_id
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6706,7 +6781,13 @@ switch ($inputData['type']) {
         $fileContent = decryptFile(
             $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
-            decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
+            decryptUserObjectKeyWithMigration(
+                $file_info['share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                intval($file_info['increment_id']),
+                'sharekeys_files'
+            )
         );
 
         // Check error
@@ -7851,7 +7932,7 @@ switch ($inputData['type']) {
 
             // Get the user's share key for this item
             $hibpUserKeys = DB::query(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
@@ -7869,7 +7950,13 @@ switch ($inputData['type']) {
             // Decrypt the object key then the password
             $hibpPw = '';
             foreach ($hibpUserKeys as $hibpKey) {
-                $hibpObjectKey = decryptUserObjectKey($hibpKey['share_key'], $session->get('user-private_key'));
+                $hibpObjectKey = decryptUserObjectKeyWithMigration(
+                    $hibpKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($hibpKey['increment_id']),
+                    'sharekeys_items'
+                );
                 if (!empty($hibpObjectKey)) {
                     $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey));
                     break;

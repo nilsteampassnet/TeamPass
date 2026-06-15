@@ -4254,12 +4254,17 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
 /**
  * Permit to store the sharekey of an object for users.
  *
+ * When $post_folder_is_personal === 1, the object is personal: the sharekey is created only for
+ * the owner and for TP_USER_ID (server-side recovery). Otherwise, it is created for every eligible
+ * user (all active users with a public key, except the OTV/SSH/API system accounts).
+ *
  * @param string $object_name             Type for table selection
- * @param int    $post_folder_is_personal Personal
+ * @param int    $post_folder_is_personal 1 = personal object (owner + TP_USER_ID only), 0 = public
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
- * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
- * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
+ * @param bool   $onlyForUser             DEPRECATED — ignored. Callers pass true on public paths too,
+ *                                        so it is unreliable; $post_folder_is_personal is the signal.
+ * @param bool   $deleteAll               If is TRUE, then stale/foreign entries are deleted
  * @param array  $objectKeyArray          Array of objects
  * @param int    $all_users_except_id     All users except this one
  * @param int    $apiUserId               API User ID
@@ -4283,6 +4288,54 @@ function storeUsersShareKey(
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
+
+    // SEC-8 — Personal object: distribute the sharekey ONLY to the owner and to TP_USER_ID
+    // (server-side recovery key). $onlyForUser is intentionally NOT used as the decision signal:
+    // callers historically pass it as true on public paths too, so it is unreliable. The personal
+    // folder flag is the authoritative signal. See encryption-improvement-roadmap.md §5.1.
+    if ($post_folder_is_personal === 1) {
+        $personalRecipients = [$userId, (int) TP_USER_ID];
+        $recipients = DB::query(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id IN %li
+            AND public_key != ""',
+            $personalRecipients
+        );
+
+        $rows = [];
+        foreach ($recipients as $recipient) {
+            if (count($objectKeyArray) === 0) {
+                $rows[] = [
+                    'object_id'          => $post_object_id,
+                    'user_id'            => (int) $recipient['id'],
+                    'share_key'          => encryptUserObjectKey($objectKey, $recipient['public_key']),
+                    'encryption_version' => 3,
+                ];
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    $rows[] = [
+                        'object_id'          => (int) $object['objectId'],
+                        'user_id'            => (int) $recipient['id'],
+                        'share_key'          => encryptUserObjectKey($object['objectKey'], $recipient['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                }
+            }
+        }
+        batchUpsertSharekeys(prefixTable($object_name), $rows);
+
+        // Remove any foreign sharekey left on this personal object (legacy over-distribution).
+        if ($deleteAll === true && count($objectKeyArray) === 0) {
+            DB::delete(
+                prefixTable($object_name),
+                'object_id = %i AND user_id NOT IN %li',
+                $post_object_id,
+                [$userId, (int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID]
+            );
+        }
+        return;
+    }
 
     // Create sharekey for each user
     $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];

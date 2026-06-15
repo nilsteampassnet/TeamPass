@@ -804,9 +804,11 @@ switch ($inputData['type']) {
                         );
                     } else {
                         // Create sharekeys for current user
+                        // This branch is the public one ($personalFolder === 0): pass the personal
+                        // flag, not the folder id (storeUsersShareKey now honours this parameter).
                         storeUsersShareKey(
                             'sharekeys_items',
-                            (int) $item['folder_id'],
+                            (int) $personalFolder,
                             (int) $newId,
                             $cryptedStuff['objectKey'],
                             false

@@ -151,16 +151,18 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 | `insertOrUpdateSharekey()` | ~4164 | Upsert a single sharekey row in DB |
 | `uniqidReal()` | ~2718 | CSPRNG key generator (random_bytes → hex) |
 
-**storeUsersShareKey() behavior:**
-- Queries all active users with a non-empty public key
-- Excludes special user IDs: `OTV_USER_ID`, `SSH_USER_ID`, `API_USER_ID`, and optionally `all_users_except_id`
-- Calls `encryptUserObjectKey()` for each user → RSA-4096 per user (**throws RuntimeException on failure** — no per-user catch, one failure aborts the whole batch)
-- Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible
-- ⚠ **Dead parameters** (confirmed by code inspection, `main.functions.php:4068`):
-  - `$post_folder_is_personal` (2nd param) — accepted in signature, **never read** in body
-  - `$onlyForUser` (5th param, default `false`) — accepted in signature, **never read** in body
-  - Consequence: the function **always** creates/updates sharekeys for ALL eligible users, regardless of what callers pass. During `update_item` (public items) this is a performance issue (N×RSA-4096 synchronous in the HTTP request handler). **But at PERSONAL item creation it is a security gap (SEC-8)**: `items.queries.php:480-487` (and custom fields `523-530`) pass `onlyForUser=true` believing only the creator gets a sharekey — in reality ALL users receive a sharekey for the personal object, and since personal items skip the background task, nothing cleans them up. Only a lazy cleanup on item update exists (`EnsurePersonalItemHasOnlyKeysForOwner()`, `main.functions.php:6551`, called from `items.queries.php:1352`).
-- `deleteAll=TRUE` IS active: removes sharekeys for users no longer in the eligible set (access removed, not an access gap for current users)
+**storeUsersShareKey() behavior** (SEC-8 fixed — commit `32a82be8d`, branch `improve/encryption-mecanisms`):
+- **`$post_folder_is_personal === 1` (personal object)** → owner-only branch: creates a sharekey **only for the owner and for `TP_USER_ID`** (server-side recovery), then (when `deleteAll=true`) removes any foreign sharekey left on the object. This restores invariant I1 at creation. Consistent with `EnsurePersonalItemHasOnlyKeysForOwner()` and the `migrate_user_personal_items` trait, which both keep `TP_USER_ID`.
+- **`$post_folder_is_personal === 0` (public object)** → unchanged all-eligible-users path:
+  - Queries all active users with a non-empty public key
+  - Excludes special user IDs: `OTV_USER_ID`, `SSH_USER_ID`, `API_USER_ID`, and optionally `all_users_except_id`
+  - Calls `encryptUserObjectKey()` for each user → RSA-4096 per user (**throws RuntimeException on failure** — no per-user catch, one failure aborts the whole batch)
+  - Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible
+- ⚠ **`$onlyForUser` (5th param) is DEPRECATED and ignored.** It is **not** the owner-only trigger: every caller historically passed `true` (including on public paths — `update_item` pw/fields), so it is unreliable. The authoritative signal is `$post_folder_is_personal`. Branching on `$onlyForUser` would silently under-distribute public items.
+- **Caller contract:** the personal flag must reflect the real folder. Web (`items.queries.php`) trusts the client `folder_is_personal` POST (residual hardening to derive it server-side is deferred). API (`ItemModel.php`) and import derive it from `personal_folder` server-side and pass `apiUserId` so the owner-only branch resolves the right owner.
+- `deleteAll=TRUE` IS active in both branches: removes sharekeys for users no longer eligible (public) / foreign sharekeys on the object (personal).
+
+**Existing-data remediation (SEC-8):** `/scripts/remediate_personal_sharekeys.php` (`--dry-run` by default) strips foreign sharekeys from personal items created before the fix. Owner-only decision logic lives in the DB-free module `/scripts/personal_sharekeys_logic.php` (unit-tested by `tests/Unit/PersonalSharekeysLogicTest.php`). Admin runbook: `docs/install/security-hardening.md`.
 
 **Forced batch migration** (background tasks via `/scripts/traits/PhpseclibV3MigrationTrait.php`):
 - Migrates all v1 sharekeys for a user in batches of 100
@@ -276,21 +278,23 @@ PATs only add an alternate unlock of the existing private key.
 See full analysis in `workReadmeFiles/encryption-analysis.md` and the phased improvement
 roadmap in `workReadmeFiles/encryption-improvement-roadmap.md`.
 
-| ID | Issue | Location | Priority |
-|---|---|---|---|
-| SEC-8 | Personal item sharekeys distributed to ALL users at creation (dead `$onlyForUser`/`$post_folder_is_personal` params) | `main.functions.php:4224`, `items.queries.php:480-530` | 🔴 Critical |
-| SEC-1 | Fixed zero IV in AES-CBC | `CryptoManager.php:199,262` | 🔴 Critical |
-| SEC-2 | PBKDF2 only 1 000 iterations | `CryptoManager.php:205,268` | 🟠 High |
-| SEC-3 | Fixed PBKDF2 salt `'phpseclib/salt'` | `CryptoManager.php:205,268` | 🔴 Critical |
-| SEC-4 | objectKey only 64-bit entropy (`KEY_LENGTH=16`) | `include.php:46` | 🟠 High |
-| SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical |
-| SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate |
-| SEC-7 | `decryptUserObjectKey()` (non-migration) used in ~12 read call sites | `items.queries.php` | 🟠 High |
-| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` (dead `$onlyForUser` param) | `items.queries.php`, `main.functions.php:4068` | 🟡 Performance |
-| FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience |
-| FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience |
-| FUNC-5 | Dead params `$post_folder_is_personal` + `$onlyForUser` in `storeUsersShareKey()` — root cause of SEC-8 | `main.functions.php:4224` | 🔴 (reclassified) |
-| FUNC-6 | No DB transaction wrapping item INSERT + creator sharekey creation | `items.queries.php` | 🟡 Consistency |
+Status legend: ✅ fixed · ⬜ open. Phase 1 (commit `32a82be8d`) closed SEC-8, SEC-7, FUNC-5, FUNC-6.
+
+| ID | Issue | Location | Priority | Status |
+|---|---|---|---|---|
+| SEC-8 | Personal item sharekeys distributed to ALL users at creation | `main.functions.php:4269`, `items.queries.php:480-530` | 🔴 Critical | ✅ Phase 1 — personal ⇒ owner + `TP_USER_ID` only |
+| SEC-1 | Fixed zero IV in AES-CBC | `CryptoManager.php:199,262` | 🔴 Critical | ⬜ Phase 2 |
+| SEC-2 | PBKDF2 only 1 000 iterations | `CryptoManager.php:205,268` | 🟠 High | ⬜ Phase 2 |
+| SEC-3 | Fixed PBKDF2 salt `'phpseclib/salt'` | `CryptoManager.php:205,268` | 🔴 Critical | ⬜ Phase 2 |
+| SEC-4 | objectKey only 64-bit entropy (`KEY_LENGTH=16`) | `include.php:46` | 🟠 High | ⬜ Phase 3 |
+| SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical | ⬜ Phase 2 |
+| SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate | ⬜ Phase 5 |
+| SEC-7 | `decryptUserObjectKey()` (non-migration) used in 12 read call sites | `items.queries.php` | 🟠 High | ✅ Phase 1 — all 12 on `decryptUserObjectKeyWithMigration()` |
+| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` | `items.queries.php`, `main.functions.php:4269` | 🟡 Performance | ⬜ Phase 4 |
+| FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience | ⬜ Phase 4 |
+| FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience | ⬜ Phase 4 |
+| FUNC-5 | `$onlyForUser` ignored in `storeUsersShareKey()` (was root cause of SEC-8) | `main.functions.php:4269` | 🔴 (reclassified) | ✅ Phase 1 — `$post_folder_is_personal` now effective; `$onlyForUser` deprecated |
+| FUNC-6 | No DB transaction wrapping item INSERT + creator sharekey creation | `items.queries.php` | 🟡 Consistency | ✅ Phase 1 — `create_item` wrapped in a transaction |
 
 **Fixing SEC-1/3/5 does not affect sharekeys** — the RSA layer is independent. Only `items.pw`,
 `categories_items.data`, and `users.private_key` need re-encryption. The `pw_iv` and `data_iv`
