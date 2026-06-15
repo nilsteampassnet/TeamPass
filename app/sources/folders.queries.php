@@ -1407,9 +1407,10 @@ if (null !== $post_type) {
                                             $itemUserTpKey['share_key'],
                                             $userTpPrivateKey
                                         ),
-                                        (int) ($record['pw_len'] ?? 0)
+                                        (int) ($record['pw_len'] ?? 0),
+                                        (string) ($record['pw_iv'] ?? '')
                                     )
-                                );                                
+                                );
 
                                 // Insert the new record and get the new auto_increment id
                                 DB::insert(

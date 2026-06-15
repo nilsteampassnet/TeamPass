@@ -176,7 +176,7 @@ if (null !== $post_type) {
                             ) {
                                 // Run query
                                 $dataItem = DB::queryFirstRow(
-                                    'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
+                                    'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key
                                     FROM ' . prefixTable('items') . ' AS i
                                     INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                     WHERE user_id = %i AND i.id = %i',
@@ -195,7 +195,8 @@ if (null !== $post_type) {
                                             $dataItem['share_key'],
                                             $session->get('user-private_key')
                                         ),
-                                        (int) ($dataItem['pw_len'] ?? 0)
+                                        (int) ($dataItem['pw_len'] ?? 0),
+                                        (string) ($dataItem['pw_iv'] ?? '')
                                     );
                                 }
 
@@ -403,7 +404,7 @@ if (null !== $post_type) {
                         } else {
                             // Run query
                             $dataItem = DB::queryFirstRow(
-                                'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key
+                                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key
                                 FROM ' . prefixTable('items') . ' AS i
                                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                                 WHERE user_id = %i AND i.id = %i',
@@ -422,7 +423,8 @@ if (null !== $post_type) {
                                         $dataItem['share_key'],
                                         $session->get('user-private_key')
                                     ),
-                                    (int) ($dataItem['pw_len'] ?? 0)
+                                    (int) ($dataItem['pw_len'] ?? 0),
+                                    (string) ($dataItem['pw_iv'] ?? '')
                                 );
                             }
 

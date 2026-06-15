@@ -1201,7 +1201,7 @@ switch ($inputData['type']) {
         ) {
             // Get existing values
             $data = DB::queryFirstRow(
-                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
+                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.pw_iv as pw_iv, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
@@ -1233,7 +1233,8 @@ switch ($inputData['type']) {
                         intval($userKey['increment_id']),
                         'sharekeys_items'
                     ),
-                    (int) ($data['pw_len'] ?? 0)
+                    (int) ($data['pw_len'] ?? 0),
+                    (string) ($data['pw_iv'] ?? '')
                 );
             }
 
@@ -1514,7 +1515,8 @@ switch ($inputData['type']) {
                                             $session->get('user-public_key'),
                                             intval($userKey['increment_id']),
                                             'sharekeys_fields'
-                                        )
+                                        ),
+                                        (string) ($dataTmpCat['data_iv'] ?? '')
                                     ));
                                 } else {
                                     $oldVal = '';
@@ -2410,7 +2412,8 @@ switch ($inputData['type']) {
                         intval($userKey['increment_id']),
                         'sharekeys_items'
                     ),
-                    (int) ($originalRecord['pw_len'] ?? 0)
+                    (int) ($originalRecord['pw_len'] ?? 0),
+                    (string) ($originalRecord['pw_iv'] ?? '')
                 )
             );
             // reaffect pw
@@ -2460,7 +2463,7 @@ switch ($inputData['type']) {
             // --------------------
             // Manage Custom Fields
             $rows = DB::query(
-                'SELECT ci.id AS id, ci.data AS data, ci.field_id AS field_id, c.encrypted_data AS encrypted_data
+                'SELECT ci.id AS id, ci.data AS data, ci.data_iv AS data_iv, ci.field_id AS field_id, c.encrypted_data AS encrypted_data
                 FROM ' . prefixTable('categories_items') . ' AS ci
                 INNER JOIN ' . prefixTable('categories') . ' AS c ON (c.id = ci.field_id)
                 WHERE ci.item_id = %i',
@@ -2491,7 +2494,8 @@ switch ($inputData['type']) {
                                     $session->get('user-public_key'),
                                     intval($userKey['increment_id'] ?? 0),
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($field['data_iv'] ?? '')
                             )
                         )
                     );
@@ -2952,7 +2956,8 @@ switch ($inputData['type']) {
                 $passwordForMetrics = teampassDecryptPasswordValue(
                     $dataItem['pw'],
                     $decryptedObject,
-                    (int) ($dataItem['pw_len'] ?? 0)
+                    (int) ($dataItem['pw_len'] ?? 0),
+                    (string) ($dataItem['pw_iv'] ?? '')
                 );
                 $pw = $passwordForMetrics === '' ? '' : base64_encode($passwordForMetrics);
                 $arrData['pwd_encryption_error'] = false;
@@ -3177,7 +3182,7 @@ switch ($inputData['type']) {
 
                     // get fields for this Item
                     $rows_tmp = DB::query(
-                        'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
+                        'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv, i.item_id AS item_id,
                         i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data, c.parent_id AS parent_id,
                         c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                         FROM ' . prefixTable('categories_items') . ' AS i
@@ -3258,7 +3263,8 @@ switch ($inputData['type']) {
                                     $session->get('user-public_key'),
                                     intval($userKey['increment_id']),
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($row['data_iv'] ?? '')
                             );
                             if ($decryptedValue === '') {
                                 $fieldText = [
@@ -4819,7 +4825,7 @@ switch ($inputData['type']) {
 
         // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
+            'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
                     i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -4896,7 +4902,8 @@ switch ($inputData['type']) {
                     intval($dataItem['sharekey_id']),
                     'sharekeys_items'
                 ),
-                (int) ($dataItem['pw_len'] ?? 0)
+                (int) ($dataItem['pw_len'] ?? 0),
+                (string) ($dataItem['pw_iv'] ?? '')
             );
             $pw = $passwordPlain === '' ? '' : base64_encode($passwordPlain);
         }
@@ -6574,7 +6581,7 @@ switch ($inputData['type']) {
         // Decrypt the pwd
         // Should we log a password change?
         $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, s.increment_id, i.pw, i.pw_len
+            'SELECT s.share_key, s.increment_id, i.pw, i.pw_iv, i.pw_len
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6594,7 +6601,8 @@ switch ($inputData['type']) {
                     intval($itemQ['increment_id']),
                     'sharekeys_items'
                 ),
-                (int) ($itemQ['pw_len'] ?? 0)
+                (int) ($itemQ['pw_len'] ?? 0),
+                (string) ($itemQ['pw_iv'] ?? '')
             );
         }
 
@@ -7917,7 +7925,7 @@ switch ($inputData['type']) {
 
             // Load item and verify user has access via sharekey
             $hibpItem = DB::queryFirstRow(
-                'SELECT pw, hibp_status, hibp_checked_at
+                'SELECT pw, pw_iv, hibp_status, hibp_checked_at
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $hibpItemId
@@ -7958,7 +7966,7 @@ switch ($inputData['type']) {
                     'sharekeys_items'
                 );
                 if (!empty($hibpObjectKey)) {
-                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey));
+                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey, (string) ($hibpItem['pw_iv'] ?? '')));
                     break;
                 }
             }

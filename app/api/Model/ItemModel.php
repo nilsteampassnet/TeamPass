@@ -78,9 +78,9 @@ class ItemModel
 
         // Get items
         $rows = DB::query(
-            "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
+            "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
-                t.title as folder_label, 
+                t.title as folder_label,
                 io.secret as otp_secret,
                 (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
                  FROM " . prefixTable('tags') . " AS tg 
@@ -121,7 +121,8 @@ class ItemModel
                             $userPublicKey,
                             (int) $userKey['increment_id'],
                             'sharekeys_items'
-                        )
+                        ),
+                        (string) ($row['pw_iv'] ?? '')
                     )
                 );
             } catch (Exception $e) {
@@ -737,7 +738,7 @@ class ItemModel
 
         // Field values for this item, restricted to the folder's categories
         $rows = DB::query(
-            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
+            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
                 i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
                 c.title AS title, c.type AS type, c.masked AS masked,
                 c.role_visibility AS role_visibility
@@ -789,7 +790,8 @@ class ItemModel
                                     $userPublicKey,
                                     (int) $userKey['increment_id'],
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($row['data_iv'] ?? '')
                             )
                         );
                     } catch (Exception $e) {
@@ -971,7 +973,7 @@ class ItemModel
             }
 
             $existing = DB::queryFirstRow(
-                'SELECT i.id AS object_id, i.data AS data, i.encryption_type AS encryption_type,
+                'SELECT i.id AS object_id, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type,
                     c.encrypted_data AS encrypted_data, c.title AS title
                 FROM ' . prefixTable('categories_items') . ' AS i
                 INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
@@ -1044,7 +1046,8 @@ class ItemModel
                                 $userPublicKey,
                                 (int) $userKey['increment_id'],
                                 'sharekeys_fields'
-                            )
+                            ),
+                            (string) ($existing['data_iv'] ?? '')
                         )
                     );
                 }

@@ -3775,17 +3775,23 @@ function doDataEncryption(string $data, ?string $key = null): array
 /**
  * Decrypts a string using AES.
  *
- * @param string $data Encrypted data
- * @param string $key  Key to uncrypt
+ * Dispatches on $meta (the pw_iv / data_iv column value):
+ *   - $meta === '' → legacy format (AES-CBC, fixed IV/salt) — behaviour unchanged.
+ *   - $meta !== '' → AES v2 (authenticated GCM); nonce + salt are carried in $meta.
+ *
+ * @param string $data Encrypted data (base64)
+ * @param string $key  Object key to decrypt with (base64)
+ * @param string $meta Base64 v2 metadata (pw_iv / data_iv); empty for legacy data
  *
  * @return string Empty string on decryption failure
  */
-function doDataDecryption(string $data, string $key): string
+function doDataDecryption(string $data, string $key, string $meta = ''): string
 {
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
+    // $meta is base64 of binary (version|nonce|salt) — not user-facing text, left untouched.
 
     // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
     if (empty($key)) {
@@ -3793,11 +3799,20 @@ function doDataDecryption(string $data, string $key): string
     }
 
     try {
-        // Decrypt using CryptoManager (phpseclib v3)
-        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-            base64_decode($data),
-            base64_decode($key)
-        );
+        if ($meta === '') {
+            // Legacy format (AES-CBC) — unchanged
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($data),
+                base64_decode($key)
+            );
+        } else {
+            // AES v2 (authenticated GCM) — nonce/salt carried in $meta (pw_iv/data_iv)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                base64_decode($data),
+                base64_decode($meta),
+                base64_decode($key)
+            );
+        }
 
         return base64_encode((string) $decrypted);
     } catch (Exception $e) {
@@ -3885,10 +3900,15 @@ function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = fa
 /**
  * Decrypt an item password and normalize legacy entity-encoded values when
  * pw_len proves that the decoded form is the original one.
+ *
+ * @param string   $encryptedPassword Encrypted password (base64)
+ * @param string   $objectKey         Object key (base64)
+ * @param int|null $storedLength      Stored pw_len for legacy entity normalization
+ * @param string   $meta              Base64 v2 metadata (items.pw_iv); empty for legacy data
  */
-function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null): string
+function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null, string $meta = ''): string
 {
-    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey);
+    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey, $meta);
     if ($decryptedB64 === '') {
         return '';
     }

@@ -70,7 +70,7 @@ echo "\n=== TeamPass Item Recovery (item #{$itemId}) ===\n\n";
 
 // ─── Step 1: Load item ─────────────────────────────────────────────────────
 $item = DB::queryFirstRow(
-    'SELECT id, label, pw, pw_len, encryption_type FROM ' . prefixTable('items') . ' WHERE id = %i',
+    'SELECT id, label, pw, pw_iv, pw_len, encryption_type FROM ' . prefixTable('items') . ' WHERE id = %i',
     $itemId
 );
 if (empty($item)) {
@@ -153,7 +153,7 @@ echo "  Item key recovered (" . strlen(base64_decode($itemKeyB64)) . " bytes raw
 
 // ─── Step 6: Decrypt item password ────────────────────────────────────────
 echo "--- [4] Decrypting item password with recovered key...\n";
-$decryptedPwB64 = doDataDecryption($item['pw'], $itemKeyB64);
+$decryptedPwB64 = doDataDecryption($item['pw'], $itemKeyB64, (string) ($item['pw_iv'] ?? ''));
 if (empty($decryptedPwB64)) {
     echo "ERROR: Failed to decrypt item password with recovered item key.\n";
     echo "  → The item key from TP_USER sharekey might not match the current pw encryption.\n";
