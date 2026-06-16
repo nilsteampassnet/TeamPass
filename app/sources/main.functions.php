@@ -3079,6 +3079,32 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     // making future logins use Pass 1 only.
 
     if (empty($userPwd) === false) {
+        // AES v2 (authenticated GCM): value is "v2:<base64(meta)>:<base64(ciphertext)>".
+        // v2 keys are always written with the raw password (post xss-fix) and the GCM tag
+        // authenticates, so a single attempt is enough (no PKCS7 false-positive guard needed).
+        if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+            $parts = explode(':', $userPrivateKey, 3);
+            if (count($parts) === 3) {
+                try {
+                    $decrypted = (string) \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                        base64_decode($parts[2]),
+                        base64_decode($parts[1]),
+                        $userPwd,
+                        '',
+                        'pbkdf2'
+                    );
+                    if (strpos($decrypted, '-----BEGIN') !== false) {
+                        return base64_encode($decrypted);
+                    }
+                } catch (Exception $e) {
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS decryptPrivateKey v2 failed: ' . $e->getMessage());
+                    }
+                }
+            }
+            return '';
+        }
+
         $keyRaw = base64_decode($userPrivateKey);
 
         /**
@@ -3147,7 +3173,14 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     // chars but is removed for consistency and to avoid confusion.
     if (empty($userPwd) === false) {
         try {
-            // Encrypt using CryptoManager (phpseclib v3, SHA-256)
+            if (aesV2WriteEnabled() === true) {
+                // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
+                // companion column, so the metadata is encoded in the value with a "v2:" prefix.
+                $v2 = CryptoManager::aesGcmEncrypt(base64_decode($userPrivateKey), $userPwd, '', 'pbkdf2');
+                return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+            }
+
+            // Legacy format (AES-CBC, SHA-256) — unchanged
             $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
                 $userPwd,
@@ -3203,6 +3236,43 @@ function decryptPrivateKeyWithMigration(
     //
     // Return array includes:
     //   'needs_xss_migration' (bool) — true when Pass 2 was needed (re-encrypt required)
+
+    // AES v2 (authenticated GCM): self-describing "v2:" prefix — already the current format,
+    // so no migration is needed. The GCM tag authenticates the password (clean failure on a
+    // wrong password). version_used stays 3 (the RSA sharekey layer is v3, unaffected).
+    if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+        $parts = explode(':', $userPrivateKey, 3);
+        if (count($parts) === 3) {
+            try {
+                $decrypted = (string) CryptoManager::aesGcmDecrypt(
+                    base64_decode($parts[2]),
+                    base64_decode($parts[1]),
+                    $userPwd,
+                    '',
+                    'pbkdf2'
+                );
+                if (strpos($decrypted, '-----BEGIN') !== false) {
+                    return [
+                        'private_key_clear'   => base64_encode($decrypted),
+                        'migration_error'     => false,
+                        'needs_migration'     => false,
+                        'needs_xss_migration' => false,
+                        'version_used'        => 3,
+                    ];
+                }
+            } catch (Exception $e) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Error - User ' . $userId . ' v2 private key decryption failed: ' . $e->getMessage());
+                }
+            }
+        }
+        return [
+            'private_key_clear'   => '',
+            'migration_error'     => true,
+            'needs_migration'     => false,
+            'needs_xss_migration' => false,
+        ];
+    }
 
     $keyRaw = base64_decode($userPrivateKey);
 

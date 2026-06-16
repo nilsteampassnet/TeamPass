@@ -538,4 +538,45 @@ class CryptoManagerTest extends TestCase
         $this->assertSame($plain, $result['data']);
         $this->assertSame(1, $result['version_used']);
     }
+
+    // =========================================================================
+    // private_key v2 format — "v2:<base64(meta)>:<base64(ciphertext)>" (PBKDF2)
+    // Mirrors the encryptPrivateKey()/decryptPrivateKey() v2 path.
+    // =========================================================================
+
+    public function testPrivateKeyV2FormatRoundTrip(): void
+    {
+        $password = 'user-Password-<>&é中';
+        $pem      = "-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJ...placeholder...\n-----END RSA PRIVATE KEY-----";
+
+        // encryptPrivateKey() v2 emission
+        $v2     = CryptoManager::aesGcmEncrypt($pem, $password, '', 'pbkdf2');
+        $stored = 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+
+        $this->assertStringStartsWith('v2:', $stored);
+
+        // decryptPrivateKey() v2 parse
+        $parts = explode(':', $stored, 3);
+        $this->assertCount(3, $parts);
+
+        $decrypted = CryptoManager::aesGcmDecrypt(
+            base64_decode($parts[2]),
+            base64_decode($parts[1]),
+            $password,
+            '',
+            'pbkdf2'
+        );
+
+        $this->assertSame($pem, $decrypted);
+        $this->assertStringContainsString('-----BEGIN', $decrypted);
+    }
+
+    public function testPrivateKeyV2WrongPasswordThrows(): void
+    {
+        // GCM authentication rejects a wrong password cleanly (no CBC-style garbage output).
+        $v2 = CryptoManager::aesGcmEncrypt('-----BEGIN RSA PRIVATE KEY-----x', 'right-password', '', 'pbkdf2');
+
+        $this->expectException(Exception::class);
+        CryptoManager::aesGcmDecrypt($v2['ciphertext'], $v2['meta'], 'wrong-password', '', 'pbkdf2');
+    }
 }
