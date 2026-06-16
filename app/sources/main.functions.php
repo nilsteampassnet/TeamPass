@@ -4573,23 +4573,34 @@ function storeUsersShareKey(
             $personalRecipients
         );
 
+        // FUNC-3 — isolate each recipient: a single invalid public key must not
+        // abort the whole batch. On failure we log and skip that recipient only.
         $rows = [];
         foreach ($recipients as $recipient) {
+            $recipientId = (int) $recipient['id'];
             if (count($objectKeyArray) === 0) {
-                $rows[] = [
-                    'object_id'          => $post_object_id,
-                    'user_id'            => (int) $recipient['id'],
-                    'share_key'          => encryptUserObjectKey($objectKey, $recipient['public_key']),
-                    'encryption_version' => 3,
-                ];
-            } else {
-                foreach ($objectKeyArray as $object) {
+                try {
                     $rows[] = [
-                        'object_id'          => (int) $object['objectId'],
-                        'user_id'            => (int) $recipient['id'],
-                        'share_key'          => encryptUserObjectKey($object['objectKey'], $recipient['public_key']),
+                        'object_id'          => $post_object_id,
+                        'user_id'            => $recipientId,
+                        'share_key'          => encryptUserObjectKey($objectKey, $recipient['public_key']),
                         'encryption_version' => 3,
                     ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => $recipientId,
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $recipient['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
                 }
             }
         }
@@ -4620,34 +4631,52 @@ function storeUsersShareKey(
         $user_ids
     );
 
-    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert
+    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert.
+    // FUNC-3 — each user is isolated: a failing RSA encryption (invalid public key)
+    // is logged and skipped instead of aborting the whole batch. A user is added to
+    // $processedUserIds only when at least one of his sharekeys was produced, so the
+    // deleteAll pass below never wipes a key it could not regenerate.
     $rows = [];
     $processedUserIds = [];
     foreach ($users as $user) {
+        $loopUserId = (int) $user['id'];
+        $userProcessed = false;
         if (count($objectKeyArray) === 0) {
             if (WIP === true) {
                 error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
             }
-            $rows[] = [
-                'object_id'          => $post_object_id,
-                'user_id'            => (int) $user['id'],
-                'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
-                'encryption_version' => 3,
-            ];
+            try {
+                $rows[] = [
+                    'object_id'          => $post_object_id,
+                    'user_id'            => $loopUserId,
+                    'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
+                    'encryption_version' => 3,
+                ];
+                $userProcessed = true;
+            } catch (Throwable $e) {
+                error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+            }
         } else {
             foreach ($objectKeyArray as $object) {
                 if (WIP === true) {
                     error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
                 }
-                $rows[] = [
-                    'object_id'          => (int) $object['objectId'],
-                    'user_id'            => (int) $user['id'],
-                    'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
-                    'encryption_version' => 3,
-                ];
+                try {
+                    $rows[] = [
+                        'object_id'          => (int) $object['objectId'],
+                        'user_id'            => $loopUserId,
+                        'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                    $userProcessed = true;
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                }
             }
         }
-        $processedUserIds[] = (int) $user['id'];
+        if ($userProcessed === true) {
+            $processedUserIds[] = $loopUserId;
+        }
     }
 
     // Single batched upsert instead of N individual queries
@@ -4664,13 +4693,19 @@ function storeUsersShareKey(
                 $post_object_id,
                 $processedUserIds
             );
-        } else {
-            // No eligible users found: remove all sharekeys for this object
+        } elseif (empty($users)) {
+            // No eligible users at all: remove all sharekeys for this object
             DB::delete(
                 prefixTable($object_name),
                 'object_id = %i',
                 $post_object_id
             );
+        } else {
+            // FUNC-3 — eligible users existed but every RSA encryption failed.
+            // Do NOT wipe the existing sharekeys: that would orphan the object
+            // (invariant I4 — no encrypted object without a live key). Keep them
+            // for retry/repair and surface the anomaly in the log.
+            error_log('TEAMPASS Error - storeUsersShareKey: all RSA encryptions failed for object ' . $post_object_id . ' on ' . $object_name . '; skipping deleteAll to avoid orphaning the object.');
         }
     }
 }

@@ -1568,6 +1568,8 @@ class DatabaseInstaller
             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
+            `retry_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
+            `max_retries` tinyint(3) unsigned NOT NULL DEFAULT 3,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (finished_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"

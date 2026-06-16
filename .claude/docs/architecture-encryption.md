@@ -156,8 +156,8 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 - **`$post_folder_is_personal === 0` (public object)** → unchanged all-eligible-users path:
   - Queries all active users with a non-empty public key
   - Excludes special user IDs: `OTV_USER_ID`, `SSH_USER_ID`, `API_USER_ID`, and optionally `all_users_except_id`
-  - Calls `encryptUserObjectKey()` for each user → RSA-4096 per user (**throws RuntimeException on failure** — no per-user catch, one failure aborts the whole batch)
-  - Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible
+  - Calls `encryptUserObjectKey()` for each user → RSA-4096 per user. **FUNC-3 (Phase 4):** each user is wrapped in a per-user try/catch — a failing RSA encryption (invalid public key) is logged and skipped, the user is left out of `$processedUserIds`, and the batch continues for everyone else.
+  - Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible. **FUNC-3 guard:** if eligible users existed but *every* encryption failed, the deleteAll is skipped (it would otherwise wipe all keys and orphan the object — invariant I4).
 - ⚠ **`$onlyForUser` (5th param) is DEPRECATED and ignored.** It is **not** the owner-only trigger: every caller historically passed `true` (including on public paths — `update_item` pw/fields), so it is unreliable. The authoritative signal is `$post_folder_is_personal`. Branching on `$onlyForUser` would silently under-distribute public items.
 - **Caller contract:** the personal flag must reflect the real folder. Web (`items.queries.php`) trusts the client `folder_is_personal` POST (residual hardening to derive it server-side is deferred). API (`ItemModel.php`) and import derive it from `personal_folder` server-side and pass `apiUserId` so the owner-only branch resolves the right owner.
 - `deleteAll=TRUE` IS active in both branches: removes sharekeys for users no longer eligible (public) / foreign sharekeys on the object (personal).
@@ -290,9 +290,9 @@ Status legend: ✅ fixed · ⬜ open. Phase 1 (commit `32a82be8d`) closed SEC-8,
 | SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical | ⬜ Phase 2 |
 | SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate | ⬜ Phase 5 |
 | SEC-7 | `decryptUserObjectKey()` (non-migration) used in 12 read call sites | `items.queries.php` | 🟠 High | ✅ Phase 1 — all 12 on `decryptUserObjectKeyWithMigration()` |
-| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` | `items.queries.php`, `main.functions.php:4269` | 🟡 Performance | ⬜ Phase 4 |
-| FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience | ⬜ Phase 4 |
-| FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience | ⬜ Phase 4 |
+| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` | `items.queries.php`, `main.functions.php:4269` | 🟡 Performance | ⬜ Phase 4 (deferred — hot-path change, needs `deleteAll` ownership moved to the fan-out task) |
+| FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience | ✅ Phase 4 — per-user try/catch in both `storeUsersShareKey()` branches; failed user skipped + logged, kept out of `$processedUserIds`; total-failure guard prevents wiping all keys (I4) |
+| FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience | ✅ Phase 4 — `retry_count`/`max_retries` on `background_subtasks`; failed subtask re-queued (paced by the handler resource-key guard, capped at 3) and parent task reset for re-pickup |
 | FUNC-5 | `$onlyForUser` ignored in `storeUsersShareKey()` (was root cause of SEC-8) | `main.functions.php:4269` | 🔴 (reclassified) | ✅ Phase 1 — `$post_folder_is_personal` now effective; `$onlyForUser` deprecated |
 | FUNC-6 | No DB transaction wrapping item INSERT + creator sharekey creation | `items.queries.php` | 🟡 Consistency | ✅ Phase 1 — `create_item` wrapped in a transaction |
 

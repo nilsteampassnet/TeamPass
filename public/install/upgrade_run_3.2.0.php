@@ -558,6 +558,28 @@ mysqli_query(
     "UPDATE `" . $pre . "cache_tree` SET `invalidated_at` = " . time()
 );
 
+// FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
+$res = addColumnIfNotExist(
+    $pre . 'background_subtasks',
+    'retry_count',
+    'TINYINT(3) UNSIGNED NOT NULL DEFAULT 0'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column retry_count to background_subtasks table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+$res = addColumnIfNotExist(
+    $pre . 'background_subtasks',
+    'max_retries',
+    'TINYINT(3) UNSIGNED NOT NULL DEFAULT 3'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column max_retries to background_subtasks table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
