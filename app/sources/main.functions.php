@@ -3993,6 +3993,87 @@ function doDataDecryption(string $data, string $key, string $meta = ''): string
 }
 
 /**
+ * Lazily upgrade a legacy (AES-CBC) encrypted value to the AES v2 (authenticated
+ * GCM) format on read, reusing the existing object key so the RSA sharekey layer
+ * stays untouched. Mirrors the phpseclib v1→v3 lazy migration pattern.
+ *
+ * No-op (returns false) unless ALL of these hold:
+ *   - aesV2WriteEnabled() is true (the admin rollback switch),
+ *   - the value is still legacy ($currentMeta === ''),
+ *   - we have a row id, a ciphertext and an object key in hand.
+ *
+ * The object key is reused verbatim (same key material doDataDecryption() feeds
+ * back on the next read), so every existing sharekey keeps decrypting the value
+ * and no sharekey/RSA work is needed. Failures never bubble up to the read path:
+ * the row is left in the legacy format and retried on the next access.
+ *
+ * @param string $table        Logical table name ('items' / 'categories_items')
+ * @param string $dataColumn   Ciphertext column ('pw' / 'data')
+ * @param string $metaColumn   Companion meta column ('pw_iv' / 'data_iv')
+ * @param int    $rowId        Row id to update
+ * @param string $encryptedB64 Current ciphertext (base64) read from $dataColumn
+ * @param string $currentMeta  Current meta read from $metaColumn ('' = legacy)
+ * @param string $objectKeyB64 Object key (base64) already decrypted from the sharekey
+ *
+ * @return bool True when the row was upgraded to v2, false otherwise
+ */
+function doDataReEncryption(
+    string $table,
+    string $dataColumn,
+    string $metaColumn,
+    int $rowId,
+    string $encryptedB64,
+    string $currentMeta,
+    string $objectKeyB64
+): bool {
+    // Only migrate legacy values, and only while v2 writes are enabled.
+    if ($currentMeta !== '' || $rowId <= 0 || $encryptedB64 === '' || $objectKeyB64 === ''
+        || aesV2WriteEnabled() !== true
+    ) {
+        return false;
+    }
+
+    // The raw object key is the exact key material both the legacy decrypt and the
+    // v2 re-encrypt must use (no xss_clean, to guarantee a byte-exact round-trip).
+    $rawObjectKey = base64_decode($objectKeyB64, true);
+    if ($rawObjectKey === false || $rawObjectKey === '') {
+        return false;
+    }
+
+    try {
+        // Recover the exact original bytes (doDataDecryption returns base64 of the
+        // raw plaintext); re-encrypt those same bytes with the same object key.
+        $plaintextB64 = doDataDecryption($encryptedB64, $objectKeyB64, '');
+        if ($plaintextB64 === '') {
+            return false;
+        }
+        $plaintext = base64_decode($plaintextB64, true);
+        if ($plaintext === false) {
+            return false;
+        }
+
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($plaintext, $rawObjectKey);
+
+        DB::update(
+            prefixTable($table),
+            [
+                $dataColumn => base64_encode($v2['ciphertext']),
+                $metaColumn => base64_encode($v2['meta']),
+            ],
+            'id = %i',
+            $rowId
+        );
+
+        return true;
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS doDataReEncryption failed: ' . $e->getMessage());
+        }
+        return false;
+    }
+}
+
+/**
  * Normalize legacy passwords that were historically entity-encoded before
  * encryption. We only decode when the decoded length matches the stored
  * pw_len, which avoids altering legitimate new passwords such as "&lt;".

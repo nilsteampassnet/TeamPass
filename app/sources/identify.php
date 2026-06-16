@@ -1455,6 +1455,23 @@ function prepareUserEncryptionKeys($userInfo, $passwordClear, array $SETTINGS = 
         $updateData['private_key_xss_migration'] = 1;
     }
 
+    // AES v2 migration: when authenticated GCM writes are enabled, transparently
+    // upgrade a legacy (AES-CBC) private key to the v2 format using the cleartext
+    // password available at login. The backup copy stays in the legacy CBC format
+    // (attemptTransparentRecovery decrypts it as CBC) and the RSA sharekey layer is
+    // unaffected. Routed through update_keys_in_db so the single caller write also
+    // refreshes user_private_keys via insertPrivateKeyWithCurrentFlag().
+    if (aesV2WriteEnabled() === true
+        && $privateKeyClear !== ''
+        && strncmp((string) $userInfo['private_key'], 'v2:', 3) !== 0
+    ) {
+        $v2PrivateKey = encryptPrivateKey($passwordClear, $privateKeyClear);
+        if (strncmp($v2PrivateKey, 'v2:', 3) === 0) {
+            $updateData['private_key'] = $v2PrivateKey;
+            $updateData['encryption_version'] = 3;
+        }
+    }
+
     try {
         // If user has seed but no backup, create it on first successful login
         if (!empty($userInfo['user_derivation_seed']) && empty($userInfo['private_key_backup'])) {

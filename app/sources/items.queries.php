@@ -2978,6 +2978,20 @@ switch ($inputData['type']) {
                 $pw = $passwordForMetrics === '' ? '' : base64_encode($passwordForMetrics);
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
+
+                // Lazily upgrade a legacy-encrypted password to AES v2 on read
+                // (no-op unless v2 writes are enabled and the row is still legacy).
+                if ($passwordForMetrics !== '') {
+                    doDataReEncryption(
+                        'items',
+                        'pw',
+                        'pw_iv',
+                        (int) $dataItem['id'],
+                        (string) $dataItem['pw'],
+                        (string) ($dataItem['pw_iv'] ?? ''),
+                        $decryptedObject
+                    );
+                }
             } elseif (isset($userKey) && $userKey['share_key'] !== '') {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
@@ -3271,15 +3285,16 @@ switch ($inputData['type']) {
                         } else {
                             // Data is encrypted in DB and we have a key
                             // Use migration-aware decryption to transparently upgrade v1→v3 sharekeys
+                            $fieldObjectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_fields'
+                            );
                             $decryptedValue = doDataDecryption(
                                 $row['data'],
-                                decryptUserObjectKeyWithMigration(
-                                    $userKey['share_key'],
-                                    $session->get('user-private_key'),
-                                    $session->get('user-public_key'),
-                                    intval($userKey['increment_id']),
-                                    'sharekeys_fields'
-                                ),
+                                $fieldObjectKey,
                                 (string) ($row['data_iv'] ?? '')
                             );
                             if ($decryptedValue === '') {
@@ -3295,6 +3310,18 @@ switch ($inputData['type']) {
                                     'encrypted' => true,
                                     'error' => '',
                                 ];
+
+                                // Lazily upgrade a legacy-encrypted field to AES v2 on read
+                                // (no-op unless v2 writes are enabled and the row is still legacy).
+                                doDataReEncryption(
+                                    'categories_items',
+                                    'data',
+                                    'data_iv',
+                                    (int) $row['id'],
+                                    (string) $row['data'],
+                                    (string) ($row['data_iv'] ?? ''),
+                                    $fieldObjectKey
+                                );
                             }
                         }
 
@@ -4909,19 +4936,34 @@ switch ($inputData['type']) {
         // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
+            $itemObjectKey = decryptUserObjectKeyWithMigration(
+                $dataItem['share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                intval($dataItem['sharekey_id']),
+                'sharekeys_items'
+            );
             $passwordPlain = teampassDecryptPasswordValue(
                 $dataItem['pw'],
-                decryptUserObjectKeyWithMigration(
-                    $dataItem['share_key'],
-                    $session->get('user-private_key'),
-                    $session->get('user-public_key'),
-                    intval($dataItem['sharekey_id']),
-                    'sharekeys_items'
-                ),
+                $itemObjectKey,
                 (int) ($dataItem['pw_len'] ?? 0),
                 (string) ($dataItem['pw_iv'] ?? '')
             );
             $pw = $passwordPlain === '' ? '' : base64_encode($passwordPlain);
+
+            // Lazily upgrade a legacy-encrypted password to AES v2 on read
+            // (no-op unless v2 writes are enabled and the row is still legacy).
+            if ($passwordPlain !== '') {
+                doDataReEncryption(
+                    'items',
+                    'pw',
+                    'pw_iv',
+                    (int) $dataItem['id'],
+                    (string) $dataItem['pw'],
+                    (string) ($dataItem['pw_iv'] ?? ''),
+                    $itemObjectKey
+                );
+            }
         }
 
         $returnValues = array(
