@@ -600,6 +600,49 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="encryption aes gcm authenticated data at rest item password format version 2">
+                            <div class='col-10'>
+                                <?php echo $lang->get('aes_v2_write_enabled'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('aes_v2_write_enabled_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='aes_v2_write_enabled' data-toggle-on='<?php echo isset($SETTINGS['aes_v2_write_enabled']) === true && (int) $SETTINGS['aes_v2_write_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='aes_v2_write_enabled_input' value='<?php echo isset($SETTINGS['aes_v2_write_enabled']) && (int) $SETTINGS['aes_v2_write_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="encryption aes gcm migration progress status item field private key format version 2">
+                            <div class='col-12'>
+                                <h6 class='mb-1'><i class="fa-solid fa-arrows-rotate mr-2"></i><?php echo $lang->get('aes_v2_migration_status_title'); ?></h6>
+                                <small class='form-text text-muted mb-2'>
+                                    <?php echo $lang->get('aes_v2_migration_status_tip'); ?>
+                                </small>
+                                <?php
+                                $aesV2Status = getAesV2MigrationStatus();
+                                $aesV2Rows = [
+                                    'items'        => 'aes_v2_migration_items',
+                                    'fields'       => 'aes_v2_migration_fields',
+                                    'private_keys' => 'aes_v2_migration_private_keys',
+                                ];
+                                foreach ($aesV2Rows as $aesV2Key => $aesV2Label) {
+                                    $aesV2Row = $aesV2Status[$aesV2Key];
+                                    ?>
+                                    <div class='mb-2'>
+                                        <div class='d-flex justify-content-between'>
+                                            <span><?php echo $lang->get($aesV2Label); ?></span>
+                                            <span class='text-muted'><?php echo (int) $aesV2Row['v2'] . ' / ' . (int) $aesV2Row['total'] . ' (' . (int) $aesV2Row['percent'] . '%)'; ?></span>
+                                        </div>
+                                        <div class='progress' style='height:6px;'>
+                                            <div class='progress-bar bg-success' role='progressbar' style='width:<?php echo (int) $aesV2Row['percent']; ?>%;' aria-valuenow='<?php echo (int) $aesV2Row['percent']; ?>' aria-valuemin='0' aria-valuemax='100'></div>
+                                        </div>
+                                    </div>
+                                    <?php
+                                }
+                                ?>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
                     </div>

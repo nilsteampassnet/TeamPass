@@ -3835,6 +3835,66 @@ function aesV2WriteEnabled(): bool
 }
 
 /**
+ * Returns the AES v2 migration progress for the three encrypted stores.
+ *
+ * For each store it counts how many encrypted values still use the legacy CBC
+ * format (companion meta column empty / no "v2:" prefix) versus the v2 GCM
+ * format, plus a completion percentage. Used by the admin Security tab to track
+ * the lazy migration triggered by the aes_v2_write_enabled flag.
+ *
+ * @return array<string, array{legacy: int, v2: int, total: int, percent: int}>
+ */
+function getAesV2MigrationStatus(): array
+{
+    // Items: legacy = has a password but empty pw_iv; v2 = pw_iv carries metadata.
+    $itemsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw_iv != ''"
+    );
+    $itemsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw != '' AND pw_iv = ''"
+    );
+
+    // Custom fields: only encrypted values are concerned (encryption_type set).
+    $fieldsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv != ''",
+        TP_ENCRYPTION_NAME
+    );
+    $fieldsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv = ''",
+        TP_ENCRYPTION_NAME
+    );
+
+    // Private keys: v2 carries the "v2:" prefix. Skip service accounts and
+    // placeholder keys ('none', '') that never go through a password re-encryption.
+    $keysV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " WHERE private_key LIKE 'v2:%'"
+    );
+    $keysLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . "
+        WHERE private_key NOT LIKE 'v2:%'
+        AND private_key != '' AND private_key != 'none'
+        AND id NOT IN %ls",
+        [OTV_USER_ID, SSH_USER_ID, API_USER_ID]
+    );
+
+    $build = static function (int $legacy, int $v2): array {
+        $total = $legacy + $v2;
+        return [
+            'legacy'  => $legacy,
+            'v2'      => $v2,
+            'total'   => $total,
+            'percent' => $total === 0 ? 100 : (int) round($v2 / $total * 100),
+        ];
+    };
+
+    return [
+        'items'        => $build($itemsLegacy, $itemsV2),
+        'fields'       => $build($fieldsLegacy, $fieldsV2),
+        'private_keys' => $build($keysLegacy, $keysV2),
+    ];
+}
+
+/**
  * Encrypts a string using AES.
  *
  * Emits the AES v2 (authenticated GCM, random IV + salt) format when
