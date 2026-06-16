@@ -19,7 +19,7 @@
 
 ```
 Save item:
-1. doDataEncryption() → generate random objectKey (KEY_LENGTH=16 hex, 64-bit entropy),
+1. doDataEncryption() → generate random objectKey (KEY_LENGTH=64 hex, 256-bit entropy — SEC-4),
                         AES-encrypt item data with objectKey
 2. DB::insert('items', { pw: encrypted, pw_iv: '' })
    ↑ pw_iv is always '' (IV is fixed, not stored)
@@ -286,7 +286,7 @@ Status legend: ✅ fixed · ⬜ open. Phase 1 (commit `32a82be8d`) closed SEC-8,
 | SEC-1 | Fixed zero IV in AES-CBC | `CryptoManager.php:199,262` | 🔴 Critical | ⬜ Phase 2 |
 | SEC-2 | PBKDF2 only 1 000 iterations | `CryptoManager.php:205,268` | 🟠 High | ⬜ Phase 2 |
 | SEC-3 | Fixed PBKDF2 salt `'phpseclib/salt'` | `CryptoManager.php:205,268` | 🔴 Critical | ⬜ Phase 2 |
-| SEC-4 | objectKey only 64-bit entropy (`KEY_LENGTH=16`) | `include.php:46` | 🟠 High | ⬜ Phase 3 |
+| SEC-4 | objectKey only 64-bit entropy (`KEY_LENGTH=16`) | `include.php:46` | 🟠 High | ✅ Phase 3 — `KEY_LENGTH=64` ⇒ 256-bit objectKeys; backward-compatible (old 16-hex keys still decrypt) |
 | SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical | ⬜ Phase 2 |
 | SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate | ⬜ Phase 5 |
 | SEC-7 | `decryptUserObjectKey()` (non-migration) used in 12 read call sites | `items.queries.php` | 🟠 High | ✅ Phase 1 — all 12 on `decryptUserObjectKeyWithMigration()` |
