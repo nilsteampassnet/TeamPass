@@ -1,0 +1,2049 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ * 
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ * 
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * 
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      admin.js.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language($session->get('user-language') ?? 'english');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => htmlspecialchars($request->request->get('type', ''), ENT_QUOTES, 'UTF-8'),
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPage('admin') === false) {
+    // Not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
+// Identify TeamPass system users (API/TP/OTV)
+$systemUsersLogins = ['API', 'TP', 'OTV'];
+
+// For Migration Statistics display: exclude TeamPass system users
+$transparentRecoveryTotalUsersNoSystem = (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls',
+    $systemUsersLogins
+);
+$transparentRecoveryMigratedUsersNoSystem = (int) DB::queryFirstField(
+    'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE disabled = 0 AND deleted_at IS NULL AND login NOT IN %ls AND user_derivation_seed IS NOT NULL AND private_key_backup IS NOT NULL',
+    $systemUsersLogins
+);
+
+
+// Define Timezone
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+
+// --------------------------------- //
+
+?>
+
+<script type='text/javascript'>
+
+var requestRunning = false,
+    debugJavascript = false;
+
+// ===================================
+// MIGRATION STATS - I18N + COUNTERS
+// ===================================
+const TP_MIGRATION_STATS_I18N = {
+    title: <?php echo json_encode($lang->get('migration_stats_title')); ?>,
+    transparentRecoveryTitle: <?php echo json_encode($lang->get('perform_transparent_recovery_check')); ?>,
+    personalItemsMigrationTitle: <?php echo json_encode($lang->get('get_personal_items_migration_status')); ?>,
+    migratedUsers: <?php echo json_encode($lang->get('migration_stats_migrated_users')); ?>,
+    pendingUsers: <?php echo json_encode($lang->get('migration_stats_pending_users')); ?>,
+    totalUsers: <?php echo json_encode($lang->get('migration_stats_total_users')); ?>,
+    progress: <?php echo json_encode($lang->get('migration_stats_progress')); ?>,
+    migrationProgress: <?php echo json_encode($lang->get('migration_stats_migration_progress')); ?>,
+    autoRecoveries24h: <?php echo json_encode($lang->get('migration_stats_auto_recoveries_24h')); ?>,
+    totalFailures: <?php echo json_encode($lang->get('migration_stats_total_failures')); ?>,
+    criticalFailures: <?php echo json_encode($lang->get('migration_stats_critical_failures')); ?>,
+    failureRate30d: <?php echo json_encode($lang->get('migration_stats_failure_rate_30d')); ?>,
+    recentEvents: <?php echo json_encode($lang->get('migration_stats_recent_events')); ?>,
+    noRecentEvents: <?php echo json_encode($lang->get('migration_stats_no_recent_events')); ?>,
+    user: <?php echo json_encode($lang->get('migration_stats_user')); ?>,
+    close: <?php echo json_encode($lang->get('close')); ?>,
+    allUsersMigrated: <?php echo json_encode($lang->get('migration_stats_all_users_migrated')); ?>,
+    noUsersMigratedYet: <?php echo json_encode($lang->get('migration_stats_no_users_migrated_yet')); ?>,
+    tableUserId: <?php echo json_encode($lang->get('migration_stats_table_user_id')); ?>,
+    tableLogin: <?php echo json_encode($lang->get('migration_stats_table_login')); ?>,
+    tableEmail: <?php echo json_encode($lang->get('migration_stats_table_email')); ?>,
+    tableLastLogin: <?php echo json_encode($lang->get('migration_stats_table_last_login')); ?>,
+    never: <?php echo json_encode($lang->get('migration_stats_never')); ?>,
+    colorRed: <?php echo json_encode($lang->get('migration_stats_color_red')); ?>,
+    colorGray: <?php echo json_encode($lang->get('migration_stats_color_gray')); ?>,
+    legendNeverLoggedIn: <?php echo json_encode($lang->get('migration_stats_legend_never_logged_in')); ?>,
+    legendInactive30d: <?php echo json_encode($lang->get('migration_stats_legend_inactive_30d')); ?>
+};
+
+const TP_SYSTEM_USER_LOGINS = <?php echo json_encode($systemUsersLogins); ?>;
+
+const TP_TRANSPARENT_RECOVERY_USER_COUNTS = {
+    totalUsers: <?php echo $transparentRecoveryTotalUsersNoSystem; ?>,
+    migratedUsers: <?php echo $transparentRecoveryMigratedUsersNoSystem; ?>
+};
+
+
+/**
+ * ADMIN
+ */
+// <- PREPARE TOGGLES
+$('.toggle').toggles({
+    drag: true,
+    click: true,
+    text: {
+        on: '<?php echo $lang->get('yes'); ?>',
+        off: '<?php echo $lang->get('no'); ?>'
+    },
+    on: true,
+    animate: 250,
+    easing: 'swing',
+    width: 50,
+    height: 20,
+    type: 'compact'
+});
+$('.toggle').on('toggle', function(e, active) {
+    if (active) {
+        $("#" + e.target.id + "_input").val(1);
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", false);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").removeClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").removeClass('hidden');
+        }
+    } else {
+        $("#" + e.target.id + "_input").val(0);
+        if (e.target.id == "allow_print") {
+            $("#roles_allowed_to_print_select").prop("disabled", true);
+        }
+        if (e.target.id == "anyone_can_modify") {
+            $("#form-item-row-modify").addClass('hidden');
+        }
+        if (e.target.id == "restricted_to") {
+            $("#form-item-row-restricted").addClass('hidden');
+        }
+    }
+
+    var data = {
+        "field": e.target.id,
+        "value": $("#" + e.target.id + "_input").val(),
+    }
+    if (debugJavascript === true) {
+        console.log('Sending to server:');
+        console.log(data);
+    }
+    // Store in DB   
+    $.post(
+        "sources/admin.queries.php", {
+            type: "save_option_change",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            if (debugJavascript === true) {
+                console.log('Response from server:');
+                console.log(data);
+            }
+            if (data.error === false) {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('saved'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+            }
+        }
+    );
+});
+// .-> END. TOGGLES
+
+// <- PREPARE SELECT2
+$('.select2').select2({
+    language: '<?php echo $session->get('user-language_code') ?? 'EN'; ?>'
+});
+
+/**
+ * For MULTIPLE select2, we save the value when the dropdown is closed (to avoid multiple saves while user selects options)
+ * or when the field loses focus (click elsewhere, tab, etc.)
+*/
+$('.select2[multiple]').on('select2:close', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+    
+    saveFieldValue($field, field, true);
+});
+
+// Also save when the field loses focus (click elsewhere, tab, etc.)
+$('.select2[multiple]').on('blur', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+
+    // Small delay to ensure Select2 has finished processing
+    setTimeout(function() {
+        saveFieldValue($field, field, true);
+    }, 100);
+});
+
+// For SIMPLE select2 and other fields - save on change
+$(document).on('change', '.form-control-sm:not(.select2[multiple]), .setting-ldap:not(.select2[multiple])', function() {
+    var $field = $(this);
+    var field = $field.attr('id');
+    
+    if (field === '' || field === undefined || $field.hasClass('no-save') === true) {
+        return false;
+    }
+    
+    var isSelect2 = $field.hasClass('select2');
+    
+    saveFieldValue($field, field, isSelect2);
+});
+
+function saveFieldValue($field, field, isSelect2) {
+    // Prevent launch of similar query in case of doubleclick
+    if (requestRunning === true) {
+        return false;
+    }
+    
+    var value = $.isArray($field.val()) === false ? $field.val() : JSON.stringify($field.val().map(Number));
+    
+    // Sanitize value
+    if (isSelect2 === false) {
+        value = fieldDomPurifierWithWarning('#' + field, false, false, false, true);
+    }
+    
+    if (value === false) {
+        return false;
+    }
+    
+    $('#' + field).val(value);
+    
+    requestRunning = true;
+    
+    // Manage special cases
+    if (field === 'tasks_history_delay') {
+        value = parseInt(value) * 3600 * 24;
+    }
+    
+    var data = {
+        "field": field,
+        "value": value,
+    }
+    
+    // Store in DB   
+    $.post(
+        "sources/admin.queries.php", {
+            type: "save_option_change",
+            data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                requestRunning = false;
+                return false;
+            }
+            
+            if (data.error === false) {
+                toastr.remove();
+                toastr.success(
+                    '<?php echo $lang->get('saved'); ?>',
+                    '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    }
+                );
+            }
+            requestRunning = false;
+        }
+    ).fail(function() {
+        requestRunning = false;
+        toastr.error('<?php echo $lang->get('error'); ?>', '', {
+            closeButton: true,
+            positionClass: 'toast-bottom-right'
+        });
+    });
+}
+//<![CDATA[
+
+// ===================================
+// REFRESH MANAGER - Intelligent auto-refresh
+// ===================================
+
+const AdminRefreshManager = {
+    timers: {},
+    isPageVisible: true,
+    
+    /**
+     * Initialize the refresh manager
+     * 
+     * @return {void}
+     */
+    init: function() {
+        // Listen for page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            this.isPageVisible = !document.hidden
+            
+            if (this.isPageVisible) {
+                this.resumeAll()
+            } else {
+                this.pauseAll()
+            }
+        })
+    },
+    
+    /**
+     * Start a new refresh timer
+     * 
+     * @param {string} name - Timer identifier
+     * @param {function} callback - Function to call on refresh
+     * @param {number} interval - Refresh interval in milliseconds
+     * @param {string} countdownElementId - Optional countdown display element
+     * @return {void}
+     */
+    start: function(name, callback, interval, countdownElementId) {
+        if (!this.isPageVisible) {
+            return
+        }
+        
+        // Clear existing timer if any
+        this.stop(name)
+        
+        const intervalSeconds = Math.floor(interval / 1000)
+        let remainingSeconds = intervalSeconds
+        
+        // Execute immediately
+        callback()
+        
+        // Start countdown timer if element provided
+        let countdownTimer = null
+        if (countdownElementId) {
+            countdownTimer = setInterval(() => {
+                remainingSeconds--
+                if (remainingSeconds < 0) remainingSeconds = intervalSeconds
+                $(`#${countdownElementId}`).text(`${remainingSeconds}s`)
+            }, 1000)
+        }
+        
+        // Start main refresh timer
+        const mainTimer = setInterval(() => {
+            callback()
+            remainingSeconds = intervalSeconds
+        }, interval)
+        
+        this.timers[name] = {
+            callback: callback,
+            interval: interval,
+            mainTimer: mainTimer,
+            countdownTimer: countdownTimer,
+            countdownElementId: countdownElementId
+        }
+    },
+    
+    /**
+     * Stop a specific refresh timer
+     * 
+     * @param {string} name - Timer identifier
+     * @return {void}
+     */
+    stop: function(name) {
+        if (this.timers[name]) {
+            clearInterval(this.timers[name].mainTimer)
+            if (this.timers[name].countdownTimer) {
+                clearInterval(this.timers[name].countdownTimer)
+            }
+            delete this.timers[name]
+        }
+    },
+    
+    /**
+     * Pause all timers
+     * 
+     * @return {void}
+     */
+    pauseAll: function() {
+        Object.keys(this.timers).forEach(name => {
+            clearInterval(this.timers[name].mainTimer)
+            if (this.timers[name].countdownTimer) {
+                clearInterval(this.timers[name].countdownTimer)
+            }
+        })
+    },
+    
+    /**
+     * Resume all timers
+     * 
+     * @return {void}
+     */
+    resumeAll: function() {
+        Object.keys(this.timers).forEach(name => {
+            const timer = this.timers[name]
+            
+            // Restart main timer
+            timer.mainTimer = setInterval(timer.callback, timer.interval)
+            
+            // Restart countdown timer if exists
+            if (timer.countdownElementId) {
+                const intervalSeconds = Math.floor(timer.interval / 1000)
+                let remainingSeconds = intervalSeconds
+                
+                timer.countdownTimer = setInterval(() => {
+                    remainingSeconds--
+                    if (remainingSeconds < 0) remainingSeconds = intervalSeconds
+                    $(`#${timer.countdownElementId}`).text(`${remainingSeconds}s`)
+                }, 1000)
+            }
+        })
+    },
+    
+    /**
+     * Stop all timers
+     * 
+     * @return {void}
+     */
+    stopAll: function() {
+        Object.keys(this.timers).forEach(name => this.stop(name))
+    }
+}
+
+// ===================================
+// DASHBOARD FUNCTIONS
+// ===================================
+
+/**
+ * Load dashboard statistics (users, items, folders, logs)
+ * 
+ * @return {void}
+ */
+function loadDashboardStats() {
+    $('#loading-stat-users, #loading-stat-items, #loading-stat-folders, #loading-stat-logs').show()
+    
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'get_dashboard_stats',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                console.log(data)
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+
+            if (data.error === false) {
+                // Users stats
+                $('#stat-users-active').text(data.users.active)
+                $('#stat-users-online').text(data.users.online)
+                $('#stat-users-api-online').text(data.users.api_online !== undefined ? data.users.api_online : '-')
+                $('#stat-users-blocked').text(data.users.blocked)
+                $('#stat-users-warned').text(data.users.warned !== undefined ? data.users.warned : '-')
+                updateSidebarOnlineUsersCounter(data.users.online)
+                if (typeof window.TeamPassOnlineUsers !== 'undefined' && window.TeamPassOnlineUsers.isOpen() === true) {
+                    window.TeamPassOnlineUsers.reloadList(true)
+                }
+                
+                // Items stats
+                $('#stat-items-total').text(data.items.total)
+                $('#stat-items-shared').text(data.items.shared)
+                $('#stat-items-personal').text(data.items.personal)
+                
+                // Folders stats
+                $('#stat-folders-total').text(data.folders.total)
+                $('#stat-folders-public').text(data.folders.public)
+                $('#stat-folders-personal').text(data.folders.personal)
+                
+                // Logs stats
+                $('#stat-logs-actions').text(data.logs.actions)
+                $('#stat-logs-accesses').text(data.logs.accesses)
+                $('#stat-logs-errors').text(data.logs.errors)
+                
+                updateLastRefreshTime()
+            } else {
+                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
+            }
+
+            $('#loading-stat-users, #loading-stat-items, #loading-stat-folders, #loading-stat-logs').hide()
+        }
+    );
+}
+
+/**
+ * Load live activity feed
+ * 
+ * @return {void}
+ */
+function loadLiveActivity() {
+    $('#loading-activity').show()
+    
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'get_live_activity',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+
+            if (data.error === false && data.activities && data.activities.length > 0) {
+                let html = ''
+                
+                data.activities.forEach(activity => {
+                    const iconClass = getActivityIcon(activity.action, activity.source_type)
+                    const sourceHint = getActivitySourceHint(activity.source_type)
+                    const timeAgo = formatTimeAgo(activity.timestamp)
+                    
+                    html += `
+                        <li class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <small class="text-muted">
+                                    <i class="far fa-clock"></i> ${timeAgo}
+                                </small>
+                            </div>
+                            <p class="mb-1">
+                                <i class="${iconClass}"></i> 
+                                <strong>${escapeHtml(activity.user_login)}</strong> 
+                                ${escapeHtml(activity.action_text)}
+                                ${activity.item_label ? `"<em>${escapeHtml(activity.item_label)}</em>"` : ''}
+                                ${sourceHint ? `<small class="text-muted ml-1">${escapeHtml(sourceHint)}</small>` : ''}
+                            </p>
+                        </li>
+                    `
+                })
+                
+                $('#live-activity-list').html(html)
+            } else if (data.activities && data.activities.length === 0) {
+                $('#live-activity-list').html(`
+                    <li class="list-group-item text-center text-muted">
+                        <i class="fas fa-info-circle"></i> <?php echo $lang->get('no_recent_activity'); ?>
+                    </li>
+                `)
+            } else {
+                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
+            }
+            $('#loading-activity').hide();
+        }
+    );
+}
+
+/**
+ * Load system status (CPU, RAM, disk, tasks)
+ * 
+ * @return {void}
+ */
+function loadSystemStatus() {
+    $('#loading-status').show()
+    
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'get_system_status',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            if (data.error === false) {
+                $('#system-tasks').text(data.tasks_queue)
+                $('#system-last-cron').text(data.last_cron)
+            } else {
+                showErrorToast(data.message || '<?php echo $lang->get('error_occurred'); ?>')
+            }
+            $('#loading-status').hide();
+        }
+    );
+}
+
+/**
+ * Load system health information
+ * 
+ * @return {void}
+ */
+function loadSystemHealth() {
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'get_system_health',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            if (data.error === false) {
+                // Pass ID without #
+                updateHealthBadge('health-encryption', data.encryption.status, data.encryption.text)
+                updateHealthBadge('health-sessions', 'info', data.sessions.count + ' active')
+                updateHealthBadge('health-cron', data.cron.status, data.cron.text)
+                // Cron health: show an actionable tooltip for Delayed/Error states
+                const cronInfo = $('#health-cron-info')
+                if (data.cron.tooltip) {
+                    cronInfo.attr('title', data.cron.tooltip).show()
+                } else {
+                    cronInfo.removeAttr('title').hide()
+                }
+                updateHealthBadge('health-unknown-files',
+                    data.unknown_files.count > 0 ? 'warning' : 'success',
+                    data.unknown_files.count
+                )
+                // WebSocket status
+                if (data.websocket) {
+                    updateWebSocketUI(data.websocket)
+                }
+            }
+        }
+    );
+}
+
+/**
+ * Load browser extension licence status asynchronously.
+ * Updates #extension-licence-status if present (i.e. a licence key is configured).
+ *
+ * @return {void}
+ */
+function loadExtensionLicenceInfo() {
+    const $block = $('#extension-licence-status')
+    if ($block.length === 0) return
+
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'get_extension_licence_info',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+            } catch (e) {
+                $block.html('<i class="fas fa-exclamation-triangle text-warning mr-1"></i><small class="text-muted"><?php echo $lang->get('error'); ?></small>')
+                return
+            }
+
+            if (data.error) {
+                $block.html('')
+                return
+            }
+
+            // Helper: show promotional block (server offline, unreachable, or no licence for this key)
+            const showPromo = () => {
+                $block.removeClass('small').addClass('small text-light').html(
+                    '<?php echo addslashes($lang->get('extension_promo_text')); ?>'
+                    + '<br><a href="https://documentation.teampass.net/#/misc/extension" target="_blank" class="ml-1">'
+                    + '<?php echo addslashes($lang->get('learn_more')); ?> <i class="fas fa-external-link-alt fa-xs"></i>'
+                    + '</a>'
+                )
+            }
+
+            // No internet or licence server is down → promo
+            if (!data.server_online) {
+                showPromo()
+                return
+            }
+
+            // Server is reachable but no licence is registered for this key → promo
+            if (!data.licence_status && data.max_users === 0) {
+                showPromo()
+                return
+            }
+
+            // Server status line (online only)
+            const versionHtml = data.server_version
+                ? ' (' + $('<span>').text(data.server_version).html() + ')'
+                : ''
+
+            let html = '<span>'
+                + '<i class="fas fa-circle text-success mr-1"></i>'
+                + '<?php echo $lang->get('licence_server'); ?>: <strong><?php echo $lang->get('online'); ?></strong>'
+                + versionHtml
+                + '</span>'
+
+            // Consumption, expiration and progress bar (only when server is online and info available)
+            if (data.server_online && data.max_users > 0) {
+                const badgeClass = data.licence_status === 'VALID' ? 'success' : 'warning'
+
+                // Status badge + users ratio
+                html += '<br><span class="badge badge-' + badgeClass + ' mr-1">'
+                    + $('<span>').text(data.licence_status).html()
+                    + '</span>'
+                    + '<i class="fas fa-users mr-1"></i>'
+                    + data.consumed + ' / ' + data.max_users + ' <?php echo $lang->get('users'); ?>'
+
+                // Expiration date
+                if (data.expiration_date) {
+                    html += '<br><span>'
+                        + '<i class="fas fa-calendar-alt mr-1"></i>'
+                        + '<?php echo $lang->get('valid_until'); ?>: <strong>'
+                        + $('<span>').text(data.expiration_date).html()
+                        + '</strong></span>'
+                }
+            }
+
+            $block.html(html)
+        }
+    )
+}
+
+/**
+ * Update health badge
+ *
+ * @param {string} id - Element ID (without #)
+ * @param {string} status - Badge status class
+ * @param {string|number} text - Badge text
+ * @return {void}
+ */
+function updateHealthBadge(id, status, text) {
+    try {
+        const badge = $('#' + id)
+        if (!badge.length) return
+        
+        const newText = (text === undefined || text === null) ? '-' : String(text)
+        
+        if (badge.text().trim() !== newText) {
+            badge.text(newText)
+        }
+        
+        if (status) {
+            badge.removeClass('badge-success badge-warning badge-danger badge-info badge-secondary')
+                .addClass('badge-' + status)
+        }
+    } catch (e) {
+        console.error('updateHealthBadge error:', e, 'id:', id, 'status:', status, 'text:', text)
+    }
+}
+
+/**
+ * Update WebSocket status UI
+ *
+ * @param {object} ws - WebSocket status data
+ * @return {void}
+ */
+function updateWebSocketUI(ws) {
+    const badge = $('#health-websocket')
+    const btnAction = $('#btn-websocket-action')
+    const details = $('#websocket-details')
+    const detailsContent = $('#websocket-details-content')
+
+    if (!ws.enabled) {
+        updateHealthBadge('health-websocket', 'secondary', '<?php echo addslashes($lang->get('ws_status_disabled')); ?>')
+        btnAction.hide()
+        details.hide()
+        return
+    }
+
+    if (ws.running) {
+        updateHealthBadge('health-websocket', 'success', ws.text)
+        btnAction
+            .attr('title', '<?php echo addslashes($lang->get('ws_action_stop')); ?>')
+            .data('action', 'stop')
+            .html('<i class="fas fa-stop text-danger"></i>')
+            .show()
+    } else {
+        updateHealthBadge('health-websocket', 'danger', ws.text)
+        btnAction
+            .attr('title', '<?php echo addslashes($lang->get('ws_action_start')); ?>')
+            .data('action', 'start')
+            .html('<i class="fas fa-play text-success"></i>')
+            .show()
+    }
+}
+
+/**
+ * Load detailed WebSocket status
+ *
+ * @return {void}
+ */
+function loadWebSocketStatus() {
+    $('#btn-websocket-refresh').find('i').addClass('fa-spin')
+    $.post(
+        'sources/admin.queries.php', {
+            type: 'websocket_status',
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+            } catch (e) {
+                toastr.error('<?php echo $lang->get('server_answer_error'); ?>')
+                return
+            }
+
+            $('#btn-websocket-refresh').find('i').removeClass('fa-spin')
+
+            if (data.error === false) {
+                updateWebSocketUI(data)
+
+                if (data.running) {
+                    let info = '<i class="fas fa-circle text-success mr-1"></i> '
+                    info += '<strong>' + data.host + ':' + data.port + '</strong>'
+                    if (data.pid) info += ' &middot; PID ' + data.pid
+                    if (data.uptime) info += ' &middot; Uptime ' + data.uptime
+                    if (data.connections !== null) info += ' &middot; ' + data.connections + ' <?php echo addslashes($lang->get('ws_connections_short')); ?>'
+                    $('#websocket-details-content').html(info)
+                    $('#websocket-details').show()
+                } else {
+                    $('#websocket-details-content').html('<i class="fas fa-circle text-danger mr-1"></i> <?php echo addslashes($lang->get('ws_server_not_running')); ?>')
+                    $('#websocket-details').show()
+                }
+            }
+        }
+    )
+}
+
+// WebSocket action button (start/stop)
+$(document).on('click', '#btn-websocket-action', function() {
+    const action = $(this).data('action')
+    const actionType = action === 'start' ? 'websocket_start' : 'websocket_stop'
+    const btn = $(this)
+
+    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>')
+
+    $.post(
+        'sources/admin.queries.php', {
+            type: actionType,
+            key: '<?php echo $session->get('key'); ?>'
+        },
+        function(data) {
+            try {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>')
+            } catch (e) {
+                toastr.error('<?php echo $lang->get('server_answer_error'); ?>')
+                btn.prop('disabled', false)
+                return
+            }
+
+            btn.prop('disabled', false)
+
+            if (data.error) {
+                toastr.error(data.message, '', {timeOut: data.systemd_managed ? 0 : 5000, extendedTimeOut: 0})
+            } else {
+                toastr.success(data.message)
+            }
+
+            // Refresh status after action
+            setTimeout(function() {
+                loadWebSocketStatus()
+            }, 1000)
+        }
+    )
+})
+
+// WebSocket refresh button
+$(document).on('click', '#btn-websocket-refresh', function() {
+    loadWebSocketStatus()
+})
+
+/**
+ * Initialize dashboard tab with auto-refresh
+ *
+ * @return {void}
+ */
+function initDashboardTab() {
+    
+    // Internet connectivity badge (instant, no network call)
+    const online = navigator.onLine
+    $('#internet-status-icon').toggleClass('text-success', online).toggleClass('text-danger', !online)
+    $('#internet-status-badge').toggleClass('badge-success', online).toggleClass('badge-danger', !online)
+    $('#internet-status-check').toggleClass('fa-check', online).toggleClass('fa-times', !online)
+    $('#internet-status-text').text(online ? 'Connected' : 'Disconnected')
+
+    // Load initial data
+    loadDashboardStats()
+    loadLiveActivity()
+    loadSystemStatus()
+    loadSystemHealth()
+    loadExtensionLicenceInfo()
+    
+    // Start auto-refresh timers
+    AdminRefreshManager.start('dashboard_stats', loadDashboardStats, 30000, 'stats-refresh-countdown')
+    AdminRefreshManager.start('live_activity', loadLiveActivity, 10000, 'activity-refresh-countdown')
+    AdminRefreshManager.start('system_status', loadSystemStatus, 60000, 'status-refresh-countdown')
+    AdminRefreshManager.start('system_health', loadSystemHealth, 60000, null)
+}
+
+// ===================================
+// ONLINE USERS SIDEBAR SYNC
+// ===================================
+
+function updateSidebarOnlineUsersCounter(count) {
+    if (typeof window.TeamPassOnlineUsers !== 'undefined' && typeof window.TeamPassOnlineUsers.applyCount === 'function') {
+        window.TeamPassOnlineUsers.applyCount(count)
+    }
+}
+
+// ===================================
+// UTILITY FUNCTIONS
+// ===================================
+
+/**
+ * Update last refresh timestamp
+ * 
+ * @return {void}
+ */
+function updateLastRefreshTime() {
+    const now = new Date()
+    const timeString = now.toLocaleTimeString()
+    $('#last-refresh-time').text(timeString)
+}
+
+/**
+ * Get icon class for activity type
+ * 
+ * @param {string} action - Action type
+ * @param {string} sourceType - Activity source
+ * @return {string} - Icon class
+ */
+function getActivityIcon(action, sourceType = 'item') {
+    const icons = {
+        'at_shown': sourceType === 'kb' ? 'fas fa-book text-info' : 'fas fa-eye text-info',
+        'at_creation': 'fas fa-plus-circle text-success',
+        'at_modification': 'fas fa-edit text-warning',
+        'at_delete': 'fas fa-trash text-danger',
+        'at_restored': 'fas fa-undo text-success',
+        'at_password_shown_edit_form': 'fas fa-edit text-warning',
+        'at_copy': 'fas fa-copy text-primary'
+    }
+    return icons[action] || 'fas fa-info-circle text-muted'
+}
+
+/**
+ * Get a subtle source hint for KB entries
+ *
+ * @param {string} sourceType - Activity source
+ * @return {string} - Source hint
+ */
+function getActivitySourceHint(sourceType) {
+    return sourceType === 'kb' ? '(KB)' : ''
+}
+
+/**
+ * Format timestamp as time ago
+ * 
+ * @param {number} timestamp - Unix timestamp
+ * @return {string} - Formatted time ago string
+ */
+function formatTimeAgo(timestamp) {
+    const now = Math.floor(Date.now() / 1000)
+    const diff = now - timestamp
+    
+    if (diff < 60) return `${diff}s <?php echo $lang->get('ago'); ?>`
+    if (diff < 3600) return `${Math.floor(diff / 60)}m <?php echo $lang->get('ago'); ?>`
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h <?php echo $lang->get('ago'); ?>`
+    return `${Math.floor(diff / 86400)}d <?php echo $lang->get('ago'); ?>`
+}
+
+/**
+ * Escape HTML to prevent XSS
+ * 
+ * @param {string} text - Text to escape
+ * @return {string} - Escaped text
+ */
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    }
+    return String(text).replace(/[&<>"']/g, m => map[m])
+}
+
+/**
+ * Display error toast notification
+ * 
+ * @param {string} message - Error message
+ * @return {void}
+ */
+function showErrorToast(message) {
+    toastr.error(message, '<?php echo $lang->get('error'); ?>', {
+        closeButton: true,
+        progressBar: true,
+        timeOut: 5000,
+        positionClass: 'toast-top-right'
+    })
+}
+
+/**
+ * Display success toast notification
+ * 
+ * @param {string} message - Success message
+ * @return {void}
+ */
+function showSuccessToast(message) {
+    toastr.success(message, '<?php echo $lang->get('success'); ?>', {
+        closeButton: true,
+        progressBar: true,
+        timeOut: 3000,
+        positionClass: 'toast-top-right'
+    })
+}
+
+/**
+ * Handle AJAX errors
+ * 
+ * @param {object} xhr - XMLHttpRequest object
+ * @param {string} status - Error status
+ * @param {string} error - Error message
+ * @return {void}
+ */
+function handleAjaxError(xhr, status, error) {
+    console.error('AJAX Error:', status, error)
+    showErrorToast('<?php echo $lang->get('error_ajax_request'); ?>')
+}
+
+// ===================================
+// TAB MANAGEMENT
+// ===================================
+
+/**
+ * Handle tab change events
+ * 
+ * @param {object} e - Event object
+ * @return {void}
+ */
+function handleTabChange(e) {
+    const tabId = $(e.target).attr('href')
+    
+    // Stop all refresh timers when changing tabs
+    AdminRefreshManager.stopAll()
+    
+    // Initialize content for specific tabs
+    switch(tabId) {
+        case '#tab-dashboard':
+            initDashboardTab()
+            break
+        case '#tab-system':
+            loadSystemSettings()
+            break
+        case '#tab-users':
+            loadUsersContent()
+            break
+        case '#tab-folders':
+            loadFoldersContent()
+            break
+        case '#tab-security':
+            loadSecurityContent()
+            break
+        case '#tab-database':
+            loadDatabaseContent()
+            break
+        case '#tab-tools':
+            loadToolsContent()
+            break
+    }
+}
+
+/**
+ * Load system settings (placeholder)
+ * 
+ * @return {void}
+ */
+function loadSystemSettings() {
+    $('#system-settings-container').html('<p class="text-muted"><?php echo $lang->get('admin_system_settings_placeholder'); ?></p>')
+}
+
+/**
+ * Load users content (placeholder)
+ * 
+ * @return {void}
+ */
+function loadUsersContent() {
+    $('#users-content-container').html('<p class="text-muted"><?php echo $lang->get('admin_users_content_placeholder'); ?></p>')
+}
+
+/**
+ * Load folders content (placeholder)
+ * 
+ * @return {void}
+ */
+function loadFoldersContent() {
+    $('#folders-content-container').html('<p class="text-muted"><?php echo $lang->get('admin_folders_content_placeholder'); ?></p>')
+}
+
+/**
+ * Load security content (placeholder)
+ * 
+ * @return {void}
+ */
+function loadSecurityContent() {
+    $('#security-content-container').html('<p class="text-muted"><?php echo $lang->get('admin_security_content_placeholder'); ?></p>')
+}
+
+/**
+ * Load database content (placeholder)
+ * 
+ * @return {void}
+ */
+function loadDatabaseContent() {
+    $('#database-content-container').html('<p class="text-muted"><?php echo $lang->get('admin_database_content_placeholder'); ?></p>')
+}
+
+/**
+ * Load tools content (placeholder)
+ * 
+ * @return {void}
+ */
+function loadToolsContent() {
+    $('#tools-content-container').html('<p class="text-muted"><?php echo $lang->get('admin_tools_content_placeholder'); ?></p>')
+}
+
+/**
+ * Perform DB integrity check
+ */
+function performDBIntegrityCheck()
+{
+    $.post(
+        "sources/admin.queries.php", {
+            type: "tablesIntegrityCheck",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            let html = '',
+                tablesInError = '',
+                cnt = 0,
+                tables = JSON.parse(data.tables);
+            if (data.error === false) {
+                $.each(tables, function(i, value) {
+                    if (cnt < 5) {
+                        tablesInError += '<li>' + value + '</li>';
+                    } else {
+                        tablesInError += '<li>...</li>';
+                        return false;
+                    }
+                    cnt++;
+                });
+
+                if (tablesInError === '') {
+                    html = '<i class="fa-solid fa-circle-check text-success mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check is successfull';
+                } else {
+                    html = '<i class="fa-solid fa-circle-xmark text-warning mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check has identified issues with the following tables:'
+                        + '<i class="fa-regular fa-circle-question infotip ml-2 text-info" title="You should consider to run Upgrade process to fix this or perform manual changes on tables"></i>';
+                    html += '<ul class="fs-6">' + tablesInError + '</ul>';
+                }
+            } else {
+                html = '<i class="fa-solid fa-circle-xmark text-danger mr-2"></i><span class="badge badge-secondary mr-2">Experimental</span>Database integrity check could not be performed!'
+                    + 'Error returned: ' + data.message;
+            }
+            $('#health-database-integrity').html(html);                
+
+            requestRunning = false;
+
+            performSimulateUserKeyChangeDuration();
+        }
+    );
+}
+
+/**
+ * Perform simulate user key change
+ */
+function performSimulateUserKeyChangeDuration() {
+    $.post(
+        "sources/admin.queries.php", {
+            type: "performSimulateUserKeyChangeDuration",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            let html = '';
+            if (data.error === false) {
+                if (data.setupProposal === false && data.estimatedTime !== null) {
+                    html = '<i class="fa-solid fa-clock text-info mr-2"></i>'
+                        + '<strong>Recommended Action:</strong> This operation requires approximately <strong>' + data.estimatedTime + '</strong> seconds.<br/>'
+                        + 'Please ensure the background task timeout is set to at least <strong>' + data.proposedDuration + '</strong> seconds in the '
+                        + '<a href="index.php?page=tasks#settings" class="alert-link">Task Parameters</a> page.';
+                    
+                    $('#task_duration_status')
+                        .html(html)
+                        .removeClass('hidden');
+                }
+            }
+
+            requestRunning = false;
+        }
+    );
+}
+
+/**
+ * Perform project files integrity check
+ */
+function performProjectFilesIntegrityCheck(refreshingData = false)
+{
+    if (requestRunning === true) {
+        return false;
+    }
+
+    requestRunning = true;
+    $('#check-project-files-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+    // Remove the file from the list
+    if (refreshingData === false) {
+        $('#files-integrity-result').remove();
+        $('#files-integrity-result-container').addClass('hidden');
+    }
+
+    $.post(
+        "sources/admin.queries.php", {
+            type: "filesIntegrityCheck",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            // Build warnings block (directories that could not be scanned)
+            let warningsHtml = '';
+            if (data.warnings && data.warnings.length > 0) {
+                warningsHtml = '<div class="alert alert-warning py-2 mb-2" role="alert">' +
+                    '<i class="fa-solid fa-triangle-exclamation mr-2"></i>' +
+                    '<strong>Warning:</strong> The following directories could not be scanned (permission denied):<ul class="mb-0 mt-1">';
+                data.warnings.forEach(function(w) {
+                    warningsHtml += '<li><code>' + $('<div>').text(w).html() + '</code></li>';
+                });
+                warningsHtml += '</ul></div>';
+            }
+
+            let html = '';
+            if (data.error === false) {
+                html = warningsHtml + '<i class="fa-solid fa-circle-check text-success mr-2"></i>Project files integrity check is successfull';
+            } else {
+                // Create a list
+                let ul = '<div class="border rounded p-2" style="max-height: 400px; overflow-y: auto;"><ul id="files-integrity-result" class="">';
+                let files = JSON.parse(data.files);
+                let numberOfFiles = Object.keys(files).length;
+                $.each(files, function(i, value) {
+                    ul += '<li value="'+i+'">' + value + '</li>';
+                });
+
+                // Prepare the HTML
+                html = warningsHtml + '<b>' + numberOfFiles + '</b> <?php echo $lang->get('files_are_not_expected_ones'); ?>.' +
+                    '<div class="alert alert-light" role="alert" id="files-integrity-result-container">' +
+                    '<div class="alert alert-warning" role="alert"><?php echo $lang->get('unknown_files_should_be_deleted'); ?>' +
+                    '<div class="btn-group ml-2" role="group">'+
+                        '<button type="button" class="btn btn-primary btn-sm infotip" id="refresh_unknown_files" title="<?php echo $lang->get('refresh'); ?>"><i class="fa-solid fa-arrows-rotate"></i></button>' +
+                        '<button type="button" class="btn btn-danger btn-sm infotip" id="delete_unknown_files" title="<?php echo $lang->get('delete'); ?>"><i class="fa-solid fa-trash"></i></button>' +
+                    '</div></div>' +
+                    ul + '</ul></div></div>';                        
+
+                // Create the button to show/hide the list
+                $(document)
+                    .on('click', '#refresh_unknown_files', function(event) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        // Show loader
+                        $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                        // Launch the integrity check
+                        performProjectFilesIntegrityCheck(true);
+                    })
+                    .on('click', '#delete_unknown_files', function(event) {   
+                        event.preventDefault();
+                        event.stopPropagation();                         
+                        // Ask the user if he wants to delete the files
+                        if (confirm('<?php echo $lang->get('delete_unknown_files'); ?>')) {
+                            // Show loader
+                            $('#files-integrity-result').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+                        } else {
+                            // Cancel
+                            return false;
+                        }
+                        // Launch delete unknown files
+                        performDeleteFilesIntegrityCheck();
+                    });
+            }
+            // Display the result
+            //$('#project-files-check-status').html(html);
+
+            // Prepare modal
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-eye fa-lg warning mr-2"></i><?php echo $lang->get('files_integrity_check'); ?>',
+                html,
+                '',
+                '<?php echo $lang->get('close'); ?>',
+                true
+            );
+
+            // Actions on modal buttons
+            $(document).on('click', '#warningModalButtonClose', function() {
+                // Nothing
+            });
+
+            $('#check-project-files-btn').html('<i class="fas fa-caret-right"></i>');
+
+            requestRunning = false;
+        }
+    );
+}
+
+/**
+ * Perform delete unknown files
+ */
+function performDeleteFilesIntegrityCheck()
+{
+    $.post(
+        "sources/admin.queries.php", {
+            type: "deleteFilesIntegrityCheck",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+
+            if (data.deletionResults === '') {
+                // No files to delete
+                $('#files-integrity-result').html('<i class="fa-solid fa-circle-check text-success mr-2"></i><?php echo $session->get('done'); ?>');
+                return false;
+            }
+
+            // Display the result as a list
+            // Initialize the HTML output
+            let output = '<ul style="margin-left:-60px;">';
+            let showSuccessful = true;
+            
+            // Process each file result
+            $.each(data.deletionResults, function(file, result) {
+                // Skip successful operations if not showing them
+                if (!showSuccessful && result.success) {
+                    return true; // continue to next iteration
+                }
+                
+                //const className = result.success ? 'success' : 'error';
+                const icon = result.success ? '<i class="fa-solid fa-check text-success mr-1"></i>' : '<i class="fa-solid fa-xmark text-danger mr-1"></i>';
+                const message = result.success ? '<?php echo $lang->get('server_returned_data');?>' : 'Error: ' + result.error;
+                
+                output += '<li>' + icon + '<b>' + file + '</b><br/>' + message + '</li>';
+            });
+            
+            output += '</ul>';
+
+            $('#files-integrity-result').html(output);
+
+        }
+    );
+}
+
+/**
+ * Build the dialog with Transparent Recovery status
+ */
+function performTransparentRecoveryCheck()
+{
+    if (requestRunning === true) {
+        return false;
+    }
+
+    requestRunning = true;
+    $('#check-transparent-recovery-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+    // Remove the file from the list
+    $('#transparent-recovery-result').remove();
+    $('#transparent-recovery-result-container').addClass('hidden');
+
+    $.post(
+        "sources/admin.queries.php", {
+            type: "transparentRecoveryCheck",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            let stats = data.stats;
+
+// Exclude TeamPass system users from displayed counters (API/TP/OTV)
+const displayedTotalUsers = TP_TRANSPARENT_RECOVERY_USER_COUNTS.totalUsers;
+const displayedMigratedUsers = TP_TRANSPARENT_RECOVERY_USER_COUNTS.migratedUsers;
+const displayedMigrationPercentage = displayedTotalUsers > 0
+    ? ((displayedMigratedUsers / displayedTotalUsers) * 100).toFixed(2)
+    : '100.00';
+
+// Build full html
+            let html = '<div class="container-fluid p-0">';
+            
+            // === Main stats ===
+            html += '<div class="row mb-3">' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-success">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-success mb-0">' + displayedMigratedUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.migratedUsers + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-info">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-info mb-0">' + displayedTotalUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalUsers + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-primary">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-primary mb-0">' + displayedMigrationPercentage + '%</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.progress + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+            // === Progress bar ===
+            html += '<div class="mb-3">' +
+                        '<label class="font-weight-bold mb-1">' + TP_MIGRATION_STATS_I18N.migrationProgress + '</label>' +
+                        '<div class="progress" style="height: 25px;">' +
+                            '<div class="progress-bar progress-bar-striped bg-success" ' +
+                                'role="progressbar" ' +
+                                'style="width: ' + displayedMigrationPercentage + '%">' +
+                                displayedMigrationPercentage + '%' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+            // === Error stats ===
+            html += '<div class="row mb-3">' +
+                        '<div class="col-md-4 mb-2">' +
+                            '<div class="card text-center border-warning">' +
+                                '<div class="card-body py-2">' +
+                                    '<h5 class="text-warning mb-0">' + stats.auto_recoveries_last_24h + '</h5>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.autoRecoveries24h + '</small>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 mb-2">' +
+                            '<div class="card text-center border-danger">' +
+                                '<div class="card-body py-2">' +
+                                    '<h5 class="text-danger mb-0">' + stats.failed_recoveries_total + '</h5>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalFailures + '</small>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                        '<div class="col-md-4 mb-2">' +
+                            '<div class="card text-center border-danger">' +
+                                '<div class="card-body py-2">' +
+                                    '<h5 class="text-danger mb-0">' + stats.critical_failures_total + '</h5>' +
+                                    '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.criticalFailures + '</small>' +
+                                '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+            // === Failure rate ===
+            html += '<div class="mb-3">' +
+                        '<div class="card border-secondary">' +
+                            '<div class="card-body py-2 d-flex justify-content-between align-items-center">' +
+                                '<span class="font-weight-bold">' + TP_MIGRATION_STATS_I18N.failureRate30d + '</span>' +
+                                '<span class="badge badge-secondary badge-pill" style="font-size: 1.1rem;">' +
+                                    stats.failure_rate_30d + '%' +
+                                '</span>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+            // === Recent events ===
+            html += '<div class="card">' +
+                        '<div class="card-header bg-dark text-white py-2">' +
+                            '<h6 class="mb-0">' +
+                                '<i class="fas fa-history mr-2"></i>' +
+                                TP_MIGRATION_STATS_I18N.recentEvents + ' (' + stats.recent_events.length + ')' +
+                            '</h6>' +
+                        '</div>' +
+                        '<div class="card-body p-0">' +
+                            '<div style="max-height: 300px; overflow-y: auto;">';
+            
+            // Events list
+            if (stats.recent_events.length === 0) {
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.noRecentEvents + '</div>';
+            } else {
+                html += '<ul class="list-group list-group-flush">';
+                
+                $.each(stats.recent_events, function(i, event) {
+                    // Format the date
+                    let eventDate = new Date(event.date * 1000);
+                    let formattedDate = eventDate.toLocaleString(undefined, {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                    
+                    // Define icons and badge classes
+                    let iconClass = 'fa-check-circle text-success';
+                    let badgeClass = 'badge-success';
+                    
+                    if (event.label.includes('failure') || event.label.includes('error')) {
+                        iconClass = 'fa-times-circle text-danger';
+                        badgeClass = 'badge-danger';
+                    } else if (event.label.includes('warning')) {
+                        iconClass = 'fa-exclamation-triangle text-warning';
+                        badgeClass = 'badge-warning';
+                    }
+                    
+                    // Build event
+                    html += '<li class="list-group-item py-2">' +
+                                '<div class="d-flex justify-content-between align-items-start">' +
+                                    '<div>' +
+                                        '<i class="fas ' + iconClass + ' mr-2"></i>' +
+                                        '<span class="badge ' + badgeClass + ' mr-2">' + 
+                                            event.label.replace(/_/g, ' ') + 
+                                        '</span>' +
+                                        '<br>' +
+                                        '<small class="text-muted ml-4">' + formattedDate + '</small>' +
+                                    '</div>' +
+                                    '<span class="badge badge-secondary">' + TP_MIGRATION_STATS_I18N.user + ' ' + escapeHtml(event.login) + '</span>' +
+                                '</div>' +
+                            '</li>';
+                });
+                
+                html += '</ul>';
+            }
+            
+            html += '</div>' + // end max-height
+                        '</div>' + // end card-body
+                    '</div>' + // end card
+                    '</div>'; // end container-fluid
+
+            // Show modal
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-chart-bar fa-lg mr-2"></i>' + TP_MIGRATION_STATS_I18N.transparentRecoveryTitle,
+                html,
+                '',
+                TP_MIGRATION_STATS_I18N.close,
+                true
+            );
+
+            // Actions on modal buttons
+            $(document).on('click', '#warningModalButtonClose', function() {
+                // Nothing
+            });
+
+            $('#check-transparent-recovery-btn').html('<i class="fas fa-caret-right"></i>');
+
+            requestRunning = false;
+        }
+    );
+}
+
+/**
+ * Build the dialog with Personal Items Migration status
+ */
+function performPersonalItemsMigrationCheck()
+{
+    if (requestRunning === true) {
+        return false;
+    }
+
+    requestRunning = true;
+    $('#personal-items-migration-btn').html('<i class="fa-solid fa-spinner fa-spin"></i>');
+
+    // Remove the file from the list
+    $('#personal-items-migration-result').remove();
+    $('#personal-items-migration-result-container').addClass('hidden');
+
+    $.post(
+        "sources/admin.queries.php", {
+            type: "personalItemsMigrationCheck",
+            key: "<?php echo $session->get('key'); ?>"
+        },
+        function(data) {
+            // Handle server answer
+            try {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+            } catch (e) {
+                // error
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('server_answer_error') . '<br />' . $lang->get('server_returned_data') . ':<br />'; ?>' + data.error,
+                    '', {
+                        closeButton: true,
+                        positionClass: 'toast-bottom-right'
+                    }
+                );
+                return false;
+            }
+            
+            // Get statistics values
+            let stats = data.stats;
+
+// Exclude TeamPass system users (API/TP/OTV) from the personal items migration statistics
+const systemLogins = Array.isArray(TP_SYSTEM_USER_LOGINS) ? TP_SYSTEM_USER_LOGINS : [];
+const isSystemUser = (login) => systemLogins.includes(login);
+
+const doneUsers = (Array.isArray(stats.doneUsers) ? stats.doneUsers : []).filter((u) => !isSystemUser(u.login));
+const pendingUsers = (Array.isArray(stats.pendingUsers) ? stats.pendingUsers : []).filter((u) => !isSystemUser(u.login));
+
+const displayedTotalUsers = doneUsers.length + pendingUsers.length;
+const displayedProgressPercent = displayedTotalUsers > 0
+    ? (doneUsers.length / displayedTotalUsers) * 100
+    : 100;
+
+// Build full html
+            let html = '<div class="container-fluid p-0">';
+            
+            // === Main stats ===
+            html += '<div class="row mb-3">' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-success">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-success mb-0">' + doneUsers.length + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.migratedUsers + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-warning">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-warning mb-0">' + pendingUsers.length + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.pendingUsers + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+                '<div class="col-md-4 mb-2">' +
+                    '<div class="card text-center border-info">' +
+                        '<div class="card-body py-2">' +
+                            '<h4 class="text-info mb-0">' + displayedTotalUsers + '</h4>' +
+                            '<small class="text-muted">' + TP_MIGRATION_STATS_I18N.totalUsers + '</small>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>' +
+            '</div>';
+
+            // === Progress bar ===
+            html += '<div class="mb-3">' +
+                        '<label class="font-weight-bold mb-1">' + TP_MIGRATION_STATS_I18N.migrationProgress + '</label>' +
+                        '<div class="progress" style="height: 25px;">' +
+                            '<div class="progress-bar progress-bar-striped bg-success" ' +
+                                'role="progressbar" ' +
+                                'style="width: ' + displayedProgressPercent + '%">' +
+                                Math.round(displayedProgressPercent) + '%' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+
+            // === Migrated Users ===
+            html += '<div class="card mb-3">' +
+                        '<div class="card-header bg-success text-white py-2">' +
+                            '<h6 class="mb-0">' +
+                                '<i class="fas fa-check-circle mr-2"></i>' +
+                                TP_MIGRATION_STATS_I18N.migratedUsers + ' (' + doneUsers.length + ')' +
+                            '</h6>' +
+                        '</div>' +
+                        '<div class="card-body p-0">' +
+                            '<div style="max-height: 250px; overflow-y: auto;">';
+            
+            // Migrated users list
+            if (doneUsers.length === 0) {
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.noUsersMigratedYet + '</div>';
+            } else {
+                html += '<table class="table table-sm table-hover mb-0">' +
+                            '<thead class="thead-light">' +
+                                '<tr>' +
+                                    '<th style="width: 15%;">' + TP_MIGRATION_STATS_I18N.tableUserId + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLogin + '</th>' +
+                                    '<th style="width: 35%;">' + TP_MIGRATION_STATS_I18N.tableEmail + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLastLogin + '</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>';
+                
+                $.each(doneUsers, function(i, user) {
+                    // Format the date
+                    let lastLogin = '-';
+                    if (user.last_connexion && user.last_connexion !== '' && user.last_connexion !== null) {
+                        let loginDate = new Date(user.last_connexion * 1000);
+                        lastLogin = loginDate.toLocaleString(undefined, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                    
+                    html += '<tr>' +
+                                '<td><span class="badge badge-secondary">' + user.id + '</span></td>' +
+                                '<td><strong>' + htmlEncode(user.login) + '</strong></td>' +
+                                '<td><small class="text-muted">' + htmlEncode(user.email) + '</small></td>' +
+                                '<td><small>' + lastLogin + '</small></td>' +
+                            '</tr>';
+                });
+                
+                html += '</tbody>' +
+                        '</table>';
+            }
+            
+            html += '</div>' + // end max-height
+                        '</div>' + // end card-body
+                    '</div>'; // end card
+
+            // === Pending Users ===
+            html += '<div class="card">' +
+                        '<div class="card-header bg-warning text-dark py-2">' +
+                            '<h6 class="mb-0">' +
+                                '<i class="fas fa-clock mr-2"></i>' +
+                                TP_MIGRATION_STATS_I18N.pendingUsers + ' (' + pendingUsers.length + ')' +
+                            '</h6>' +
+                        '</div>' +
+                        '<div class="card-body p-0">' +
+                            '<div style="max-height: 250px; overflow-y: auto;">';
+            
+            // Pending users list
+            if (pendingUsers.length === 0) {
+                html += '<div class="text-center p-3 text-muted">' + TP_MIGRATION_STATS_I18N.allUsersMigrated + '</div>';
+            } else {
+                html += '<table class="table table-sm table-hover mb-0">' +
+                            '<thead class="thead-light">' +
+                                '<tr>' +
+                                    '<th style="width: 15%;">' + TP_MIGRATION_STATS_I18N.tableUserId + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLogin + '</th>' +
+                                    '<th style="width: 35%;">' + TP_MIGRATION_STATS_I18N.tableEmail + '</th>' +
+                                    '<th style="width: 25%;">' + TP_MIGRATION_STATS_I18N.tableLastLogin + '</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>';
+                
+                $.each(pendingUsers, function(i, user) {
+                    // Format the date
+                    let lastLogin = '<span class="text-danger font-italic">' + TP_MIGRATION_STATS_I18N.never + '</span>';
+                    let rowClass = '';
+                    
+                    if (user.last_connexion && user.last_connexion !== '' && user.last_connexion !== null) {
+                        let loginDate = new Date(user.last_connexion * 1000);
+                        lastLogin = loginDate.toLocaleString(undefined, {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        // Highlight users who haven't logged in for more than 30 days
+                        let daysSinceLogin = (Date.now() / 1000 - user.last_connexion) / 86400;
+                        if (daysSinceLogin > 30) {
+                            rowClass = 'table-secondary';
+                        }
+                    } else {
+                        rowClass = 'table-danger';
+                    }
+                    
+                    // Highlight system users
+                    if (user.login === 'API' || user.login === 'OTV' || user.login === 'TP') {
+                        rowClass = 'table-info';
+                    }
+                    
+                    html += '<tr class="' + rowClass + '">' +
+                                '<td><span class="badge badge-secondary">' + user.id + '</span></td>' +
+                                '<td><strong>' + htmlEncode(user.login) + '</strong></td>' +
+                                '<td><small class="text-muted">' + htmlEncode(user.email) + '</small></td>' +
+                                '<td><small>' + lastLogin + '</small></td>' +
+                            '</tr>';
+                });
+                
+                html += '</tbody>' +
+                        '</table>';
+            }
+            
+            html += '</div>' + // end max-height
+                        '</div>' + // end card-body
+                    '</div>'; // end card
+
+            // === Legend ===
+            html += '<div class="mt-3">' +
+                        '<small class="text-muted">' +
+                            '<i class="fas fa-info-circle mr-1"></i>' +
+                            '<span class="badge badge-danger mr-1">' + TP_MIGRATION_STATS_I18N.colorRed + '</span> = ' + TP_MIGRATION_STATS_I18N.legendNeverLoggedIn + ' | ' +
+                            '<span class="badge badge-secondary mr-1">' + TP_MIGRATION_STATS_I18N.colorGray + '</span> = ' + TP_MIGRATION_STATS_I18N.legendInactive30d +
+                        '</small>' +
+                    '</div>';
+
+            html += '</div>'; // end container-fluid
+
+            // Show modal
+            showModalDialogBox(
+                '#warningModal',
+                '<i class="fas fa-chart-bar fa-lg mr-2"></i>' + TP_MIGRATION_STATS_I18N.personalItemsMigrationTitle,
+                html,
+                '',
+                TP_MIGRATION_STATS_I18N.close,
+                true
+            );
+
+            // Actions on modal buttons
+            $(document).on('click', '#warningModalButtonClose', function() {
+                // Nothing
+            });
+
+            $('#personal-items-migration-btn').html('<i class="fas fa-caret-right"></i>');
+
+            requestRunning = false;
+        }
+    );
+}
+
+// ===================================
+// DOCUMENT READY
+// ===================================
+
+$(document).ready(function() {    
+    // Initialize refresh manager
+    AdminRefreshManager.init()
+    
+    // Initialize dashboard (active tab)
+    initDashboardTab()
+    
+    // Listen for tab changes
+    $('.nav-tabs a[data-toggle="pill"]').on('shown.bs.tab', handleTabChange)
+    
+    // Perform DB integrity check
+    setTimeout(
+        performDBIntegrityCheck,
+        500
+    );
+})
+
+// Cleanup on page unload
+$(window).on('beforeunload', function() {
+    AdminRefreshManager.stopAll()
+})
+
+/**
+ * Open info modal when clicking on .open-info elements
+ * 
+ * @return {void}
+ */
+$(document).on('click', '.open-info', function(e) {
+    e.preventDefault()
+    
+    // Get content either from data-info or from a target ID
+    let content = $(this).data('info')
+    const target = $(this).data('target')
+    if (target) {
+        content = $(target).html()
+    }
+    
+    const title = $(this).data('title') || '<?php echo $lang->get('information'); ?>'
+    const size = $(this).data('size') || 'lg'
+    
+    const modalDialog = $('#info-modal .modal-dialog')
+    modalDialog.removeClass('modal-sm modal-lg modal-xl').addClass('modal-' + size)
+    
+    $('#info-modal-title').html('<i class="fas fa-info-circle"></i> ' + title)
+    $('#info-modal-body').html(content)
+    $('#info-modal').modal('show')
+})
+//]]>
+</script>
