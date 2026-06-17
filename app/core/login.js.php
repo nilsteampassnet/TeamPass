@@ -948,6 +948,21 @@ declare(strict_types=1);
                             }
                         );
                     }
+                    if (data.mfa_enrollment_started === true) {
+                        var mfaEnrollmentMessage = (
+                            typeof data.email_result !== 'undefined' &&
+                            data.email_result !== ''
+                        ) ? data.email_result : data.mfa_enrollment_message;
+                        toastr.success(
+                            mfaEnrollmentMessage,
+                            '<?php echo $lang->get('success'); ?>',
+                            {
+                                timeOut: 5000,
+                                progressBar: true,
+                                positionClass: "toast-bottom-right"
+                            }
+                        );
+                    }
                     return false;
                 }
 
