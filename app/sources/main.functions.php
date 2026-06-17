@@ -4538,6 +4538,12 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
  * @param array  $objectKeyArray          Array of objects
  * @param int    $all_users_except_id     All users except this one
  * @param int    $apiUserId               API User ID
+ * @param int    $callerOnlyUserId        FUNC-1 — when >= 0 (and the object is public), the sharekey
+ *                                        is created ONLY for this user (the editor) and nothing is
+ *                                        deleted. The full fan-out to all other users and the stale-key
+ *                                        cleanup (deleteAll) are deferred to the background task. Lets
+ *                                        the editor read his change immediately without N×RSA in the
+ *                                        HTTP thread. Ignored for personal objects.
  *
  * @return void
  */
@@ -4550,7 +4556,8 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = [],
     int $all_users_except_id = -1,
-    int $apiUserId = -1
+    int $apiUserId = -1,
+    int $callerOnlyUserId = -1
 ): void {
 
     $session = SessionManager::getSession();
@@ -4614,6 +4621,52 @@ function storeUsersShareKey(
                 $post_object_id,
                 [$userId, (int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID]
             );
+        }
+        return;
+    }
+
+    // FUNC-1 — caller-only synchronous distribution (public objects).
+    // create_item / update_item use this so the editing user can read his change
+    // immediately (1×RSA) while the full fan-out to all other users — and the
+    // deleteAll stale-key cleanup — is deferred to the background task. This branch
+    // is purely additive: it never deletes an existing sharekey (the background
+    // fan-out owns deletion). Reached only for public objects (personal returns above).
+    if ($callerOnlyUserId !== -1) {
+        $caller = DB::queryFirstRow(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i
+            AND public_key != ""',
+            $callerOnlyUserId
+        );
+        if (empty($caller) === false) {
+            $rows = [];
+            if (count($objectKeyArray) === 0) {
+                try {
+                    $rows[] = [
+                        'object_id'          => $post_object_id,
+                        'user_id'            => (int) $caller['id'],
+                        'share_key'          => encryptUserObjectKey($objectKey, $caller['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => (int) $caller['id'],
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $caller['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
+                }
+            }
+            batchUpsertSharekeys(prefixTable($object_name), $rows);
         }
         return;
     }
@@ -6285,7 +6338,12 @@ function createTaskForItem(
             'created_at' => time(),
             'process_type' => $processType,
             'arguments' => json_encode([
-                'all_users_except_id' => (int) $userId,
+                // FUNC-1 — the background fan-out distributes to ALL eligible users
+                // (caller included) and now owns the deleteAll cleanup. The caller must
+                // stay in the recipient set, otherwise deleteAll=true would wipe the
+                // sharekey the synchronous caller-only pass just created. So we no longer
+                // exclude the editor here (-1 = nobody excluded).
+                'all_users_except_id' => -1,
                 'item_id' => (int) $itemId,
                 'object_key' => $objectKey,
                 'author' => (int) $userId,

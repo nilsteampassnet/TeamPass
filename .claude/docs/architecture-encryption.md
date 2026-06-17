@@ -23,14 +23,15 @@ Save item:
                         AES-encrypt item data with objectKey
 2. DB::insert('items', { pw: encrypted, pw_iv: '' })
    ↑ pw_iv is always '' (IV is fixed, not stored)
-3. storeUsersShareKey() [synchronous, only for creator]:
-   a. encryptUserObjectKey(objectKey, creatorPublicKey)
+3. storeUsersShareKey($callerOnlyUserId=editor) [synchronous, caller-only — FUNC-1]:
+   a. encryptUserObjectKey(objectKey, editorPublicKey)  ← 1×RSA only, no delete
       → CryptoManager::rsaEncrypt() with SHA-256/OAEP (phpseclib v3)
    b. batchUpsertSharekeys() → INSERT ... ON DUPLICATE KEY UPDATE
-4. [Non-personal items] storeTask('new_item', ...) → background task for all other users
+4. [Non-personal items] storeTask('new_item', ...) / createTaskForItem('item_update_create_keys', ...)
+   → background task owns the fan-out to ALL eligible users + the deleteAll stale-key cleanup
 
-Background task (background_tasks___worker.php):
-   → generateUserPasswordKeys() → storeUsersShareKey() for all users except creator
+Background task (background_tasks___worker.php) — FUNC-1: deleteAll=true, all_users_except_id=-1:
+   → generateUserPasswordKeys() → storeUsersShareKey() for ALL eligible users (editor included) + deleteAll
    → generateUserFieldKeys()    → storeUsersShareKey() on 'sharekeys_fields'
    → generateUserFileKeys()     → storeUsersShareKey() on 'sharekeys_files'
 
@@ -151,16 +152,18 @@ decryptUserObjectKeyWithMigration(encryptedKey, privateKey, publicKey, sharekeyI
 | `insertOrUpdateSharekey()` | ~4164 | Upsert a single sharekey row in DB |
 | `uniqidReal()` | ~2718 | CSPRNG key generator (random_bytes → hex) |
 
-**storeUsersShareKey() behavior** (SEC-8 fixed — commit `32a82be8d`, branch `improve/encryption-mecanisms`):
-- **`$post_folder_is_personal === 1` (personal object)** → owner-only branch: creates a sharekey **only for the owner and for `TP_USER_ID`** (server-side recovery), then (when `deleteAll=true`) removes any foreign sharekey left on the object. This restores invariant I1 at creation. Consistent with `EnsurePersonalItemHasOnlyKeysForOwner()` and the `migrate_user_personal_items` trait, which both keep `TP_USER_ID`.
-- **`$post_folder_is_personal === 0` (public object)** → unchanged all-eligible-users path:
+**storeUsersShareKey() behavior** (SEC-8 fixed — commit `32a82be8d`; FUNC-1 caller-only added 2026-06-17 — branch `improve/encryption-mecanisms`):
+- **`$post_folder_is_personal === 1` (personal object)** → owner-only branch (evaluated **first**): creates a sharekey **only for the owner and for `TP_USER_ID`** (server-side recovery), then (when `deleteAll=true`) removes any foreign sharekey left on the object. This restores invariant I1 at creation. Consistent with `EnsurePersonalItemHasOnlyKeysForOwner()` and the `migrate_user_personal_items` trait, which both keep `TP_USER_ID`. The `$callerOnlyUserId` param is ignored here (personal branch returns first).
+- **`$callerOnlyUserId !== -1` (public object, caller-only — FUNC-1)** → creates the sharekey **only for that one user** (the editor), with the same FUNC-3 per-user try/catch, and **never deletes anything** (`deleteAll` ignored). Used by the synchronous create/update HTTP path so the editor reads his change with a single RSA op; the full fan-out + cleanup is deferred to the background task. Reached only for public objects (personal returns above).
+- **`$post_folder_is_personal === 0` (public object), no caller-only** → all-eligible-users path (used by the **background fan-out** and by move/copy):
   - Queries all active users with a non-empty public key
   - Excludes special user IDs: `OTV_USER_ID`, `SSH_USER_ID`, `API_USER_ID`, and optionally `all_users_except_id`
   - Calls `encryptUserObjectKey()` for each user → RSA-4096 per user. **FUNC-3 (Phase 4):** each user is wrapped in a per-user try/catch — a failing RSA encryption (invalid public key) is logged and skipped, the user is left out of `$processedUserIds`, and the batch continues for everyone else.
   - Batch-upserts all rows, then deletes stale sharekeys for users no longer eligible. **FUNC-3 guard:** if eligible users existed but *every* encryption failed, the deleteAll is skipped (it would otherwise wipe all keys and orphan the object — invariant I4).
 - ⚠ **`$onlyForUser` (5th param) is DEPRECATED and ignored.** It is **not** the owner-only trigger: every caller historically passed `true` (including on public paths — `update_item` pw/fields), so it is unreliable. The authoritative signal is `$post_folder_is_personal`. Branching on `$onlyForUser` would silently under-distribute public items.
 - **Caller contract:** the personal flag must reflect the real folder. Web (`items.queries.php`) trusts the client `folder_is_personal` POST (residual hardening to derive it server-side is deferred). API (`ItemModel.php`) and import derive it from `personal_folder` server-side and pass `apiUserId` so the owner-only branch resolves the right owner.
-- `deleteAll=TRUE` IS active in both branches: removes sharekeys for users no longer eligible (public) / foreign sharekeys on the object (personal).
+- `deleteAll=TRUE` IS active in the personal branch (foreign-key cleanup) and the all-eligible-users branch (stale-key cleanup); the caller-only branch ignores it.
+- **FUNC-1 — fan-out moved off the HTTP thread (2026-06-17):** public `create_item`/`update_item` (web) pass `$callerOnlyUserId = user-id` → only the editor's sharekey is written synchronously (1×RSA). The background task then distributes to everyone and owns the cleanup: `ItemHandlerTrait::generateUserPasswordKeys/FieldKeys/FileKeys` now pass `deleteAll=true`, and `createTaskForItem()` sets `all_users_except_id = -1` so the editor stays in the fan-out's `$processedUserIds` (otherwise `deleteAll` would wipe the key the sync pass just created). **Trade-off:** on a public **update**, other users hold a stale sharekey (old objectKey) until the fan-out completes; `triggerBackgroundHandler()` fires immediately and FUNC-4 guarantees convergence. Personal items are unaffected (owner-only branch, no background task). The API create path (`ItemModel.php`) still distributes synchronously — its `new_item` task benefits from the `deleteAll=true` fan-out but the caller-only optimization was not applied there (out of FUNC-1 scope).
 
 **Existing-data remediation (SEC-8):** `/scripts/remediate_personal_sharekeys.php` (`--dry-run` by default) strips foreign sharekeys from personal items created before the fix. Owner-only decision logic lives in the DB-free module `/scripts/personal_sharekeys_logic.php` (unit-tested by `tests/Unit/PersonalSharekeysLogicTest.php`). Admin runbook: `docs/install/security-hardening.md`.
 
@@ -290,7 +293,7 @@ Status legend: ✅ fixed · ⬜ open. Phase 1 (commit `32a82be8d`) closed SEC-8,
 | SEC-5 | AES-CBC without authentication (no MAC/GCM) | `CryptoManager.php` | 🔴 Critical | ⬜ Phase 2 |
 | SEC-6 | Password history encrypted with master key, not per-user RSA | `items.queries.php:1211` | 🟡 Moderate | ⬜ Phase 5 |
 | SEC-7 | `decryptUserObjectKey()` (non-migration) used in 12 read call sites | `items.queries.php` | 🟠 High | ✅ Phase 1 — all 12 on `decryptUserObjectKeyWithMigration()` |
-| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `update_item` | `items.queries.php`, `main.functions.php:4269` | 🟡 Performance | ⬜ Phase 4 (deferred — hot-path change, needs `deleteAll` ownership moved to the fan-out task) |
+| FUNC-1 | N×RSA-4096 synchronous in HTTP thread during `create_item`/`update_item` | `items.queries.php`, `main.functions.php` | 🟡 Performance | ✅ Phase 4 — public create/update now distribute the editor's sharekey only (1×RSA) via the new `storeUsersShareKey($callerOnlyUserId)` branch; the full fan-out + `deleteAll` cleanup moved to the background task (`ItemHandlerTrait` fan-out now `deleteAll=true`, `createTaskForItem` `all_users_except_id=-1`) |
 | FUNC-3 | `encryptUserObjectKey()` throws RuntimeException with no per-user catch in batch loop | `main.functions.php` | 🟡 Resilience | ✅ Phase 4 — per-user try/catch in both `storeUsersShareKey()` branches; failed user skipped + logged, kept out of `$processedUserIds`; total-failure guard prevents wiping all keys (I4) |
 | FUNC-4 | No retry logic for failed background subtasks | `background_tasks___worker.php` | 🟡 Resilience | ✅ Phase 4 — `retry_count`/`max_retries` on `background_subtasks`; failed subtask re-queued (paced by the handler resource-key guard, capped at 3) and parent task reset for re-pickup |
 | FUNC-5 | `$onlyForUser` ignored in `storeUsersShareKey()` (was root cause of SEC-8) | `main.functions.php:4269` | 🔴 (reclassified) | ✅ Phase 1 — `$post_folder_is_personal` now effective; `$onlyForUser` deprecated |

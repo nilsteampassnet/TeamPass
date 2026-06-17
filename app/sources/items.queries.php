@@ -489,8 +489,12 @@ switch ($inputData['type']) {
                         (int) $post_folder_is_personal,
                         intval($newID),
                         $cryptedStuff['objectKey'],
-                        true,   // only for the item creator
+                        true,   // onlyForUser (deprecated, ignored)
                         false,  // no delete all
+                        [],     // objectKeyArray
+                        -1,     // all_users_except_id
+                        -1,     // apiUserId
+                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                     );
 
                     // update fields
@@ -532,8 +536,12 @@ switch ($inputData['type']) {
                                         (int) $post_folder_is_personal,
                                         intval($newObjectId),
                                         $cryptedStuff['objectKey'],
-                                        true,   // only for the item creator
-                                        false,  // delete all
+                                        true,   // onlyForUser (deprecated, ignored)
+                                        false,  // no delete all
+                                        [],     // objectKeyArray
+                                        -1,     // all_users_except_id
+                                        -1,     // apiUserId
+                                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                                     );
 
                                     array_push(
@@ -1306,8 +1314,12 @@ switch ($inputData['type']) {
                         (int) $post_folder_is_personal,
                         (int) $inputData['itemId'],
                         $encrypted_password_key,
-                        true,   // only for the item creator
-                        true,   // delete all
+                        true,   // onlyForUser (deprecated, ignored)
+                        true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                        [],     // objectKeyArray
+                        -1,     // all_users_except_id
+                        -1,     // apiUserId
+                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                     );
 
                     // Create a task to create sharekeys for users
@@ -1475,8 +1487,12 @@ switch ($inputData['type']) {
                                     (int) $post_folder_is_personal,
                                     intval($newId),
                                     $cryptedStuff['objectKey'],
-                                    true,   // only for the item creator
-                                    true,   // delete all
+                                    true,   // onlyForUser (deprecated, ignored)
+                                    true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                                    [],     // objectKeyArray
+                                    -1,     // all_users_except_id
+                                    -1,     // apiUserId
+                                    (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                                 );
 
                                 array_push(
@@ -1553,8 +1569,12 @@ switch ($inputData['type']) {
                                         (int) $post_folder_is_personal,
                                         intval($dataTmpCat['field_item_id']),
                                         $cryptedStuff['objectKey'],
-                                        true,   // only for the item creator
-                                        true,   // delete all
+                                        true,   // onlyForUser (deprecated, ignored)
+                                        true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                                        [],     // objectKeyArray
+                                        -1,     // all_users_except_id
+                                        -1,     // apiUserId
+                                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                                     );
 
                                     array_push(

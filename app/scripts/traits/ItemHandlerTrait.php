@@ -37,7 +37,7 @@ trait ItemHandlerTrait {
             (int) $arguments['item_id'],
             (string) (array_key_exists('pwd', $arguments) === true ? $arguments['pwd'] : (array_key_exists('object_key', $arguments) === true ? $arguments['object_key'] : '')),
             false,
-            false,
+            true,   // FUNC-1 — background fan-out owns the deleteAll stale-key cleanup
             [],
             array_key_exists('all_users_except_id', $arguments) === true ? $arguments['all_users_except_id'] : -1
         );
@@ -48,7 +48,7 @@ trait ItemHandlerTrait {
      * Generate keys for user files
      * @param array $taskData
      */
-    private function generateUserFileKeys($taskData) {    
+    private function generateUserFileKeys($taskData) {
         if (LOG_TASKS=== true) $this->logger->log('Processing generateUserFileKeys : '.print_r($taskData, true), 'DEBUG');
         foreach($taskData['files_keys'] as $file) {
             storeUsersShareKey(
@@ -57,7 +57,7 @@ trait ItemHandlerTrait {
                 (int) $file['object_id'],
                 (string) $file['object_key'],
                 false,
-                false,
+                true,   // FUNC-1 — background fan-out owns the deleteAll stale-key cleanup
                 [],
                 array_key_exists('all_users_except_id', $taskData) === true ? $taskData['all_users_except_id'] : -1,
             );
@@ -79,7 +79,7 @@ trait ItemHandlerTrait {
                 (int) $field['object_id'],
                 (string) $field['object_key'],
                 false,
-                false,
+                true,   // FUNC-1 — background fan-out owns the deleteAll stale-key cleanup
                 [],
                 array_key_exists('all_users_except_id', $arguments) === true ? $arguments['all_users_except_id'] : -1,
             );
