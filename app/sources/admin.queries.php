@@ -4167,7 +4167,7 @@ case 'save_sending_statistics':
      * Returns: users, items, folders, and logs statistics
      * 
      * @return array {
-     *   users: {active: int, online: int, blocked: int},
+     *   users: {active: int, online: int, api_online: int, blocked: int},
      *   items: {total: int, shared: int, personal: int},
      *   folders: {total: int, public: int, personal: int},
      *   logs: {actions: int, accesses: int, errors: int}
@@ -4187,6 +4187,19 @@ case 'save_sending_statistics':
     $usersOnline = DB::queryFirstField(
         'SELECT COUNT(*) FROM ' . prefixTable('users') . " 
         WHERE session_end > %i AND disabled = %i AND $usersBaseWhere",
+        time(),
+        0
+    );
+
+    $usersApiOnline = DB::queryFirstField(
+        "SELECT COUNT(DISTINCT aps.user_id)
+        FROM " . prefixTable('api_sessions') . " AS aps
+        INNER JOIN " . prefixTable('users') . " AS u ON (u.id = aps.user_id)
+        WHERE aps.revoked_at IS NULL
+        AND aps.expires_at >= %i
+        AND u.disabled = %i
+        AND u.deleted_at IS NULL
+        AND LOWER(u.login) NOT IN ('tp','otv','api')",
         time(),
         0
     );
@@ -4296,6 +4309,7 @@ case 'save_sending_statistics':
             'users' => array(
                 'active' => intval($usersActive),
                 'online' => intval($usersOnline),
+                'api_online' => intval($usersApiOnline),
                 'blocked' => intval($usersBlocked),
                 'warned' => intval($usersWarned),
             ),
