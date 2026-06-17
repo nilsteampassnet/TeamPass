@@ -261,6 +261,101 @@ function getMfaMethodsForLogin(array $SETTINGS, string $login): array
 }
 
 /**
+ * Count enabled MFA methods returned to the login form.
+ *
+ * @param array<string, mixed> $mfaMethods
+ */
+function countEnabledMfaMethods(array $mfaMethods): int
+{
+    return (int) (($mfaMethods['agses'] ?? false) === true)
+        + (int) (($mfaMethods['google'] ?? false) === true)
+        + (int) (($mfaMethods['yubico'] ?? false) === true)
+        + (int) (($mfaMethods['duo'] ?? false) === true);
+}
+
+/**
+ * Determine if Google MFA has enough data to challenge the user.
+ *
+ * @param array<string, mixed> $userInfo
+ */
+function googleMfaSecretExists(array $userInfo): bool
+{
+    return trim((string) ($userInfo['ga'] ?? '')) !== '';
+}
+
+/**
+ * Start the first Google MFA enrollment after primary authentication succeeds.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function initializeGoogleMfaEnrollment(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    Language $lang
+): array
+{
+    if (googleMfaSecretExists($userInfo) === true) {
+        return [
+            'error' => false,
+            'started' => false,
+        ];
+    }
+
+    if (empty($userInfo['email']) === true) {
+        return [
+            'error' => true,
+            'message' => $lang->get('no_email_set'),
+        ];
+    }
+
+    $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
+    $gaSecretKey = $tfa->createSecret();
+    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true);
+
+    DB::update(
+        prefixTable('users'),
+        [
+            'ga' => $gaSecretKey,
+            'ga_temporary_code' => $gaTemporaryCode,
+        ],
+        'id = %i',
+        $userInfo['id']
+    );
+
+    logEvents(
+        $SETTINGS,
+        'user_connection',
+        'at_2fa_google_code_send_by_email',
+        (string) $userInfo['id'],
+        stripslashes($username),
+        stripslashes($username)
+    );
+
+    prepareSendingEmail(
+        $lang->get('email_ga_subject'),
+        str_replace(
+            '#2FACode#',
+            $gaTemporaryCode,
+            $lang->get('email_ga_text')
+        ),
+        $userInfo['email']
+    );
+
+    return [
+        'error' => false,
+        'started' => true,
+        'message' => $lang->get('mfa_code_send_by_email'),
+        'email_result' => str_replace(
+            '#email#',
+            '<b>' . obfuscateEmail($userInfo['email']) . '</b>',
+            addslashes($lang->get('admin_email_result_ok'))
+        ),
+    ];
+}
+
+/**
  * Complete authentication of user through Teampass
  *
  * @param string $sentData Credentials
@@ -548,6 +643,32 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check if MFA is required after the primary authentication factor is valid.
     if ($mfaMethods['mfa_required'] === true) {
         if (empty($dataReceived['user_2fa_selection']) === true) {
+            $mfaEnrollment = [
+                'error' => false,
+                'started' => false,
+            ];
+
+            if ($mfaMethods['google'] === true && countEnabledMfaMethods($mfaMethods) === 1) {
+                $mfaEnrollment = initializeGoogleMfaEnrollment(
+                    $SETTINGS,
+                    $userInfo,
+                    (string) $username,
+                    $lang
+                );
+
+                if ($mfaEnrollment['error'] === true) {
+                    echo prepareExchangedData(
+                        [
+                            'error' => true,
+                            'message' => $mfaEnrollment['message'],
+                            'mfa_setup_error' => true,
+                        ],
+                        'encode'
+                    );
+                    return false;
+                }
+            }
+
             $session->set('mfa_primary_login_validated', [
                 'login' => $username,
                 'created_at' => time(),
@@ -562,6 +683,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'error' => '2fa_not_set',
                     'message' => $lang->get('select_valid_2fa_credentials'),
                     'mfa_methods' => $mfaMethods,
+                    'mfa_enrollment_started' => $mfaEnrollment['started'],
+                    'mfa_enrollment_message' => $mfaEnrollment['message'] ?? '',
+                    'email_result' => $mfaEnrollment['email_result'] ?? '',
                 ] + $mfaMethods,
                 'encode'
             );
@@ -578,7 +702,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         if ($userMfa['error'] === true) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+            if (($userMfa['mfaData']['mfa_setup_error'] ?? false) !== true) {
+                addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+            }
 
             echo prepareExchangedData(
                 [
@@ -587,6 +713,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                     'mfaStatus' => $userMfa['mfaData']['mfaStatus'] ?? '',
                     'ga_bad_code' => $userMfa['mfaData']['ga_bad_code'] ?? false,
                     'mfa_error' => true,
+                    'mfa_setup_error' => $userMfa['mfaData']['mfa_setup_error'] ?? false,
                 ],
                 'encode'
             );
@@ -2205,9 +2332,23 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
         $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
         // Init
         $firstTime = [];
+        $gaSecret = trim((string) ($userInfo['ga'] ?? ''));
+        $gaTemporaryCode = trim((string) ($userInfo['ga_temporary_code'] ?? ''));
+
+        if ($gaSecret === '') {
+            return [
+                'error' => true,
+                'message' => $lang->get('i_need_to_generate_new_ga_code'),
+                'proceedIdentification' => false,
+                'ga_bad_code' => false,
+                'mfa_setup_error' => true,
+                'firstTime' => $firstTime,
+            ];
+        }
+
         // now check if it is the 1st time the user is using 2FA
-        if ($userInfo['ga_temporary_code'] !== 'none' && $userInfo['ga_temporary_code'] !== 'done') {
-            if ($userInfo['ga_temporary_code'] !== $dataReceived['GACode']) {
+        if ($gaTemporaryCode !== '' && $gaTemporaryCode !== 'none' && $gaTemporaryCode !== 'done') {
+            if (hash_equals($gaTemporaryCode, (string) $dataReceived['GACode']) === false) {
                 return [
                     'error' => true,
                     'message' => $lang->get('ga_bad_code'),
@@ -2223,7 +2364,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             // generate new QR
             $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
                 'Teampass - ' . $username,
-                $userInfo['ga']
+                $gaSecret
             );
             // clear temporary code from DB
             DB::update(
@@ -2244,7 +2385,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             ];
         } else {
             // verify the user GA code
-            if ($tfa->verifyCode($userInfo['ga'], $dataReceived['GACode'])) {
+            if ($tfa->verifyCode($gaSecret, $dataReceived['GACode'])) {
                 $proceedIdentification = true;
             } else {
                 return [
@@ -3428,7 +3569,9 @@ function identifyDoMFAChecks(
                 $SETTINGS
             );
             if ($ret['error'] !== false) {
-                logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                if (($ret['mfa_setup_error'] ?? false) !== true) {
+                    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                }
                 return [
                     'error' => true,
                     'mfaData' => $ret,
