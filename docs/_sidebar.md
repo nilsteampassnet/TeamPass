@@ -7,6 +7,7 @@
 - [Docker](install/docker.md)
 - [File permissions](install/file-permissions.md)
 - [Information](install/encryption.md)
+- [Encryption hardening (3.2)](install/encryption-improvements.md)
 - [Security hardening](install/security-hardening.md)
 - [Extra](install/extra-settings.md)
 - [Performance](install/performance.md)
