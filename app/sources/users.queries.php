@@ -4513,17 +4513,27 @@ function listDeletedUsers(): array
 function countNeverConnectedActiveUsers(): int
 {
     return (int) DB::queryFirstField(
-        "SELECT COUNT(id)
-         FROM " . prefixTable('users') . "
-         WHERE deleted_at IS NULL
-         AND disabled = 0
-         AND LOWER(login) NOT IN ('api','otv','tp')
-         AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
+        "SELECT COUNT(u.id)
+         FROM " . prefixTable('users') . " AS u
+         LEFT JOIN (
+             SELECT id_user, MAX(date) AS last_api_activity_ts
+             FROM " . prefixTable('log_items') . "
+             WHERE action IN %ls
+             AND raison LIKE %ss
+             GROUP BY id_user
+         ) AS api_activity ON api_activity.id_user = u.id
+         WHERE u.deleted_at IS NULL
+         AND u.disabled = 0
+         AND LOWER(u.login) NOT IN ('api','otv','tp')
+         AND (u.last_connexion IS NULL OR u.last_connexion = '' OR u.last_connexion = '0')
+         AND api_activity.last_api_activity_ts IS NULL",
+        teampassApiFunctionalActivityActions(),
+        'tp_src=api'
     );
 }
 
 /**
- * List inactive users based on last_connexion (and never connected).
+ * List inactive users based on their last functional activity.
  *
  * Accepted filters:
  *  - 'never'
@@ -4534,7 +4544,7 @@ function listInactiveUsers(string $filter): array
     $filter = trim($filter);
 
     // Exclude admins and TeamPass system/special accounts
-    $baseWhere = "deleted_at IS NULL AND disabled = 0 AND admin = 0 AND special = 'none' AND LOWER(login) NOT IN ('api','otv','tp')";
+    $baseWhere = "u.deleted_at IS NULL AND u.disabled = 0 AND u.admin = 0 AND u.special = 'none' AND LOWER(u.login) NOT IN ('api','otv','tp')";
 
     // Extract a unix timestamp from last_connexion when possible.
     // Supports:
@@ -4542,32 +4552,43 @@ function listInactiveUsers(string $filter): array
     // - epoch milliseconds (13 digits)
     // - datetime strings parseable by MySQL's UNIX_TIMESTAMP()
     $tsExpr = "CASE
-        WHEN last_connexion REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(last_connexion AS UNSIGNED)/1000)
-        WHEN last_connexion REGEXP '^[0-9]{10}$' THEN CAST(last_connexion AS UNSIGNED)
-        WHEN last_connexion REGEXP '^[0-9]{1,9}$' THEN CAST(last_connexion AS UNSIGNED)
-        ELSE UNIX_TIMESTAMP(last_connexion)
+        WHEN u.last_connexion REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(u.last_connexion AS UNSIGNED)/1000)
+        WHEN u.last_connexion REGEXP '^[0-9]{10}$' THEN CAST(u.last_connexion AS UNSIGNED)
+        WHEN u.last_connexion REGEXP '^[0-9]{1,9}$' THEN CAST(u.last_connexion AS UNSIGNED)
+        ELSE UNIX_TIMESTAMP(u.last_connexion)
     END";
 
     // Same logic for created_at (used for never connected users)
     $createdTsExpr = "CASE
-        WHEN created_at REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(created_at AS UNSIGNED)/1000)
-        WHEN created_at REGEXP '^[0-9]{10}$' THEN CAST(created_at AS UNSIGNED)
-        WHEN created_at REGEXP '^[0-9]{1,9}$' THEN CAST(created_at AS UNSIGNED)
-        ELSE UNIX_TIMESTAMP(created_at)
+        WHEN u.created_at REGEXP '^[0-9]{13}$' THEN FLOOR(CAST(u.created_at AS UNSIGNED)/1000)
+        WHEN u.created_at REGEXP '^[0-9]{10}$' THEN CAST(u.created_at AS UNSIGNED)
+        WHEN u.created_at REGEXP '^[0-9]{1,9}$' THEN CAST(u.created_at AS UNSIGNED)
+        ELSE UNIX_TIMESTAMP(u.created_at)
     END";
+    $apiActivityJoin = "LEFT JOIN (
+            SELECT id_user, MAX(date) AS last_api_activity_ts
+            FROM " . prefixTable('log_items') . "
+            WHERE action IN %ls
+            AND raison LIKE %ss
+            GROUP BY id_user
+        ) AS api_activity ON api_activity.id_user = u.id";
+    $activityTsExpr = "GREATEST(IFNULL(($tsExpr), 0), IFNULL(api_activity.last_api_activity_ts, 0))";
 
     if ($filter === 'never') {
         $users = DB::query(
-            "SELECT id, login, email,
-                    inactivity_warned_at, inactivity_action_at, inactivity_action, inactivity_no_email,
-                    NULL as last_connexion_ts,
+            "SELECT u.id, u.login, u.email,
+                    u.inactivity_warned_at, u.inactivity_action_at, u.inactivity_action, u.inactivity_no_email,
+                    ($activityTsExpr) as last_connexion_ts,
                     1 as never_connected,
                     FLOOR((%i - ($createdTsExpr))/86400) as days_inactive
-             FROM " . prefixTable('users') . "
+             FROM " . prefixTable('users') . " AS u
+             $apiActivityJoin
              WHERE $baseWhere
-             AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')
-             ORDER BY login ASC",
-            time()
+             AND ($activityTsExpr) <= 0
+             ORDER BY u.login ASC",
+            time(),
+            teampassApiFunctionalActivityActions(),
+            'tp_src=api'
         );
     } else {
         $days = (int) $filter;
@@ -4577,18 +4598,20 @@ function listInactiveUsers(string $filter): array
         $cutoff = time() - ($days * 86400);
 
         $users = DB::query(
-            "SELECT id, login, email,
-                    inactivity_warned_at, inactivity_action_at, inactivity_action, inactivity_no_email,
-                    ($tsExpr) as last_connexion_ts,
+            "SELECT u.id, u.login, u.email,
+                    u.inactivity_warned_at, u.inactivity_action_at, u.inactivity_action, u.inactivity_no_email,
+                    ($activityTsExpr) as last_connexion_ts,
                     0 as never_connected,
-                    FLOOR((%i - ($tsExpr))/86400) as days_inactive
-             FROM " . prefixTable('users') . "
+                    FLOOR((%i - ($activityTsExpr))/86400) as days_inactive
+             FROM " . prefixTable('users') . " AS u
+             $apiActivityJoin
              WHERE $baseWhere
-             AND ($tsExpr) IS NOT NULL
-             AND ($tsExpr) > 0
-             AND ($tsExpr) < %i
-             ORDER BY ($tsExpr) ASC",
+             AND ($activityTsExpr) > 0
+             AND ($activityTsExpr) < %i
+             ORDER BY ($activityTsExpr) ASC",
             time(),
+            teampassApiFunctionalActivityActions(),
+            'tp_src=api',
             $cutoff
         );
     }
