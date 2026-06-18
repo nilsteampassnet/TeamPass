@@ -157,12 +157,22 @@ function count_deleted_users() : int
 function count_never_connected_active_users() : int
 {
     return intval(DB::queryFirstField(
-        "SELECT COUNT(id)
-         FROM " . prefixTable('users') . "
-         WHERE deleted_at IS NULL
-         AND disabled = 0
-         AND LOWER(login) NOT IN ('api','otv','tp')
-         AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
+        "SELECT COUNT(u.id)
+         FROM " . prefixTable('users') . " AS u
+         LEFT JOIN (
+             SELECT id_user, MAX(date) AS last_api_activity_ts
+             FROM " . prefixTable('log_items') . "
+             WHERE action IN %ls
+             AND raison LIKE %ss
+             GROUP BY id_user
+         ) AS api_activity ON api_activity.id_user = u.id
+         WHERE u.deleted_at IS NULL
+         AND u.disabled = 0
+         AND LOWER(u.login) NOT IN ('api','otv','tp')
+         AND (u.last_connexion IS NULL OR u.last_connexion = '' OR u.last_connexion = '0')
+         AND api_activity.last_api_activity_ts IS NULL",
+        teampassApiFunctionalActivityActions(),
+        'tp_src=api'
     ));
 }
 
