@@ -36,7 +36,7 @@ The gear icon at the left of each row opens the **action menu** for that user.
 | **Propagate** | Copies the role and folder configuration of one user to a selection of others |
 | **LDAP sync** | Opens the LDAP synchronization assistant (visible if LDAP is enabled) |
 | **OAuth2 sync** | Opens the Azure Entra synchronization assistant (visible if OAuth2 is enabled) |
-| **Inactive users** | Lists accounts that have not logged in for 90, 180, or 365+ days, with a batch deletion option |
+| **Inactive users** | Lists accounts without recent web login or functional API/extension activity for 90, 180, or 365+ days, with a batch deletion option |
 | **Deleted users** | Lists previously deleted accounts with an option to restore them |
 
 ---
@@ -115,7 +115,7 @@ Users authenticated through Azure Entra are created automatically on first login
 
 ### Inactive users
 
-The **Inactive users** view groups accounts by last login date: 90 days, 180 days, and over one year. This helps identify accounts that should be disabled or removed.
+The **Inactive users** view groups accounts by last recorded activity: 90 days, 180 days, and over one year. Web logins and functional API/extension item actions count as activity; authentication, token refresh, settings refresh, and folder list refreshes do not count on their own. This helps identify accounts that should be disabled or removed.
 
 A batch deletion button is available to purge selected accounts permanently.
 
