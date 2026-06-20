@@ -4741,16 +4741,16 @@
         },
         {
             "name": "spomky-labs/otphp",
-            "version": "11.4.2",
+            "version": "11.4.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/Spomky-Labs/otphp.git",
-                "reference": "2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad"
+                "reference": "46663316285bf1f001a31584213b327494b00ae7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad",
-                "reference": "2a1b503fd1c1a5c751ab3c5cd37f2d2d26ab74ad",
+                "url": "https://api.github.com/repos/Spomky-Labs/otphp/zipball/46663316285bf1f001a31584213b327494b00ae7",
+                "reference": "46663316285bf1f001a31584213b327494b00ae7",
                 "shasum": ""
             },
             "require": {
@@ -4795,7 +4795,7 @@
             ],
             "support": {
                 "issues": "https://github.com/Spomky-Labs/otphp/issues",
-                "source": "https://github.com/Spomky-Labs/otphp/tree/11.4.2"
+                "source": "https://github.com/Spomky-Labs/otphp/tree/11.4.3"
             },
             "funding": [
                 {
@@ -4807,7 +4807,7 @@
                     "type": "patreon"
                 }
             ],
-            "time": "2026-01-23T10:53:01+00:00"
+            "time": "2026-05-31T12:42:43+00:00"
         },
         {
             "name": "symfony/console",
@@ -9837,5 +9837,5 @@
     "platform-overrides": {
         "php": "8.2"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
