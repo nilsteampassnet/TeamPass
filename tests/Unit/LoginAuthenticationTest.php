@@ -471,6 +471,36 @@ class LoginAuthenticationTest extends TestCase
         $checks->is2faCodeRequired(0, 1, 0, 1, 1, true, '', true);
     }
 
+    public function testCountsEnabledMfaMethods(): void
+    {
+        $methods = [
+            'mfa_required' => true,
+            'agses' => false,
+            'google' => true,
+            'yubico' => true,
+            'duo' => false,
+        ];
+
+        $this->assertSame(2, countEnabledMfaMethods($methods));
+    }
+
+    public function testMissingMfaMethodKeysAreCountedAsDisabled(): void
+    {
+        $this->assertSame(1, countEnabledMfaMethods(['google' => true]));
+    }
+
+    public function testGoogleMfaSecretExistsWhenSecretIsPresent(): void
+    {
+        $this->assertTrue(googleMfaSecretExists(['ga' => 'ABCDEF123456']));
+    }
+
+    public function testGoogleMfaSecretDoesNotExistWhenSecretIsEmptyOrMissing(): void
+    {
+        $this->assertFalse(googleMfaSecretExists(['ga' => '']));
+        $this->assertFalse(googleMfaSecretExists(['ga' => '   ']));
+        $this->assertFalse(googleMfaSecretExists([]));
+    }
+
     // =========================================================================
     // 7. checkUserPasswordValidity — password expiry logic
     // =========================================================================

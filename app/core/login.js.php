@@ -48,6 +48,17 @@ declare(strict_types=1);
         $('#forgot-local-password-link').prop('disabled', false);
     }
 
+    function resetMfaStep() {
+        mfaStepPending = false;
+        cachedMfaData = null;
+        $('#2fa_user_selection').val('');
+        $('#2fa_methods_selector').addClass('hidden');
+        $('.div-2fa-method').addClass('hidden');
+        $('.2fa_selector_select').prop('checked', false);
+        $('#ga_code').val('').removeClass('ui-state-error');
+        $('#yubico_key, #yubico_user_id, #yubico_user_key').val('').removeClass('ui-state-error');
+    }
+
     function showForgotLocalPasswordLink(login) {
         if (typeof login === 'undefined' || String(login).trim() === '') {
             hideForgotLocalPasswordLink();
@@ -80,7 +91,10 @@ declare(strict_types=1);
 
         // Set focus on login input
         $('#login').focus();
-        $('#login, #pw').on('input', hideForgotLocalPasswordLink);
+        $('#login, #pw').on('input', function() {
+            hideForgotLocalPasswordLink();
+            resetMfaStep();
+        });
 
         // Page has beed reloaded due to session key inconsistency
         if (store.get('teampassUser') !== null && typeof store.get('teampassUser') !== 'undefined' && store.get('teampassUser').page_reload === 1) {
@@ -729,84 +743,16 @@ declare(strict_types=1);
             return;
         }
 
-        // First step: check if this specific user needs MFA based on their roles
-        $.post(
-            'sources/identify.php', {
-                type: 'get2FAMethodsForUser',
-                login: $('#login').val()
-            },
-            function(response) {
-                response = JSON.parse(response);
-
-                if (response.error === true) {
-                    toastr.remove();
-                    toastr.error(
-                        response.message,
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true,
-                            positionClass: "toast-bottom-right"
-                        }
-                    );
-                    return false;
-                }
-
-                if (debugJavascript === true) {
-                    console.log('Received key ' + response.key + ' and local key <?php echo strval($session->get('key')); ?>')
-                }
-                if (response.key !== '<?php echo strval($session->get('key')); ?>') {
-                    store.update(
-                        'teampassUser', {},
-                        function(teampassUser) {
-                            teampassUser.login = $("#login").val();
-                            teampassUser.mfaSelector = $("#select2fa-otp").is(":checked");
-                            teampassUser.mfaCode = $("#ga_code").val();
-                            teampassUser.page_reload = 1;
-                        }
-                    );
-                    document.location.reload(true);
-                    return false;
-                }
-
-                var data;
-                try {
-                    data = prepareExchangedData(response.ret, "decode", response.key);
-                } catch (e) {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('server_answer_error'); ?>',
-                        '<?php echo $lang->get('caution'); ?>', {
-                            timeOut: 5000,
-                            progressBar: true,
-                            positionClass: "toast-bottom-right"
-                        }
-                    );
-                    return false;
-                }
-
-                if (debugJavascript === true) {
-                    console.info('Get 2FA Methods for user answer:');
-                    console.log(data);
-                }
-
-                if (data.mfa_required === false) {
-                    // No MFA needed for this user - proceed directly to authentication
-                    toastr.remove();
-                    toastr.info(
-                        '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
-                        '', {
-                            positionClass: "toast-top-center"
-                        }
-                    );
-                    buildMfaDataAndIdentify(isDuo, redirect, psk, data);
-                } else {
-                    // MFA required - show the appropriate 2FA UI
-                    cachedMfaData = data;
-                    mfaStepPending = true;
-                    showMFAMethodForUser(data);
-                }
+        // First step: submit the primary credentials. The server now requests
+        // MFA only after the password/LDAP/OAuth2 factor has been validated.
+        toastr.remove();
+        toastr.info(
+            '<?php echo $lang->get('in_progress'); ?><i class="fas fa-circle-notch fa-spin fa-2x ml-3"></i>',
+            '', {
+                positionClass: "toast-top-center"
             }
         );
+        buildMfaDataAndIdentify(isDuo, redirect, psk, cachedMfaData);
     }
 
     /**
@@ -815,7 +761,7 @@ declare(strict_types=1);
      * @param {boolean} isDuo
      * @param {string} redirect
      * @param {string} psk
-     * @param {object|null} availableMfaMethods - response from get2FAMethodsForUser
+     * @param {object|null} availableMfaMethods - MFA methods returned after primary auth
      */
     function buildMfaDataAndIdentify(isDuo, redirect, psk, availableMfaMethods) {
         // Clear localstorage
@@ -911,8 +857,6 @@ declare(strict_types=1);
 
     //Identify user
     function identifyUser(redirect, psk, data, randomstring, oauth2Info) {
-        var old_data = data;
-
         // Base64 encode sensitive data
         const sharedData = {
             ...data,
@@ -942,7 +886,24 @@ declare(strict_types=1);
                         "<?php echo strval($session->get('key')); ?>"
                     );
                 } catch (e) {
-                    // error
+                    // The session key baked into the page may be stale (the
+                    // server-side session was regenerated since the page was
+                    // rendered). Reload once to resync the key and restore the
+                    // form before surfacing a generic error.
+                    if (sessionStorage.getItem('teampassKeyResyncDone') !== '1') {
+                        sessionStorage.setItem('teampassKeyResyncDone', '1');
+                        store.update(
+                            'teampassUser', {},
+                            function(teampassUser) {
+                                teampassUser.login = $('#login').val();
+                                teampassUser.mfaSelector = $('#select2fa-otp').is(':checked');
+                                teampassUser.mfaCode = $('#ga_code').val();
+                                teampassUser.page_reload = 1;
+                            }
+                        );
+                        document.location.reload(true);
+                        return false;
+                    }
                     toastr.remove();
                     toastr.error(
                         '<?php echo $lang->get('server_answer_error'); ?>',
@@ -954,7 +915,11 @@ declare(strict_types=1);
                     );
                     return false;
                 }
-                
+
+                // Decode succeeded: clear any pending key-resync guard so a
+                // future genuine key drift can recover again.
+                sessionStorage.removeItem('teampassKeyResyncDone');
+
                 if (debugJavascript === true) {
                     console.info('Identification answer:')
                     console.log('SESSION KEY is: ' + data.session_key);
@@ -974,29 +939,32 @@ declare(strict_types=1);
                     return false;
                 }
 
-                // Server detected that MFA is required but no 2FA code was provided.
-                // This can happen if get2FAMethodsForUser returned mfa_required:false incorrectly.
-                // Show the 2FA form as a fallback.
+                // Server detected that MFA is required after validating the primary factor.
                 if (data.value === '2fa_not_set' || data.error === '2fa_not_set') {
                     toastr.remove();
                     mfaStepPending = true;
+
+                    // The server always returns the available MFA methods with
+                    // the 2fa_not_set response, so use them directly and fall
+                    // back to the cached set only if they are missing.
+                    if (typeof data.mfa_methods !== 'undefined') {
+                        cachedMfaData = data.mfa_methods;
+                    }
                     if (cachedMfaData !== null) {
                         showMFAMethodForUser(cachedMfaData);
-                    } else {
-                        $.post(
-                            'sources/identify.php', {
-                                type: 'get2FAMethodsForUser',
-                                login: old_data.login
-                            },
-                            function(resp) {
-                                resp = JSON.parse(resp);
-                                if (resp.key === '<?php echo strval($session->get('key')); ?>') {
-                                    try {
-                                        var mfaMethods = prepareExchangedData(resp.ret, 'decode', resp.key);
-                                        cachedMfaData = mfaMethods;
-                                        showMFAMethodForUser(mfaMethods);
-                                    } catch (e) { /* ignore */ }
-                                }
+                    }
+                    if (data.mfa_enrollment_started === true) {
+                        const mfaEnrollmentMessage = (
+                            typeof data.email_result !== 'undefined' &&
+                            data.email_result !== ''
+                        ) ? data.email_result : data.mfa_enrollment_message;
+                        toastr.success(
+                            mfaEnrollmentMessage,
+                            '<?php echo $lang->get('success'); ?>',
+                            {
+                                timeOut: 5000,
+                                progressBar: true,
+                                positionClass: "toast-bottom-right"
                             }
                         );
                     }
@@ -1016,6 +984,9 @@ declare(strict_types=1);
                             );
                             return false;
                         } else if (data.extra === 'oauth2_user_not_found') {
+                            if (data.primary_auth_failed === true) {
+                                resetMfaStep();
+                            }
                             toastr.remove();
                             toastr.error(
                                 data.message,
@@ -1039,6 +1010,9 @@ declare(strict_types=1);
                             return false;
                         }
                     }  else if (data.error === true || data.error !== '') {
+                        if (data.primary_auth_failed === true) {
+                            resetMfaStep();
+                        }
                         toastr.remove();
                         toastr.error(
                             data.message,
@@ -1265,9 +1239,9 @@ declare(strict_types=1);
 
     /**
      * Shows the appropriate MFA method UI based on user-specific data
-     * returned by the get2FAMethodsForUser endpoint.
+     * returned after the primary authentication factor succeeds.
      *
-     * @param {object} data - decoded response from get2FAMethodsForUser
+     * @param {object} data - decoded MFA method response
      * @return void
      */
     function showMFAMethodForUser(data) {
