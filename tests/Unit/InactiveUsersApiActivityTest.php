@@ -52,7 +52,7 @@ class InactiveUsersApiActivityTest extends TestCase
         self::assertStringContainsString('function markUserFunctionalActivity(', $src);
         self::assertStringContainsString('function teampassApiFunctionalActivityActions(): array', $src);
         self::assertStringContainsString("'at_shown', 'at_creation', 'at_modification', 'at_delete', 'at_import'", $src);
-        self::assertStringContainsString("markUserFunctionalActivity(\$id_user, 'api', \$eventTime);", $src);
+        self::assertStringContainsString("markUserFunctionalActivity(\$id_user, \$eventTime);", $src);
         self::assertStringContainsString("'last_connexion' => (string) \$timestamp", $src);
         self::assertStringContainsString("'inactivity_warned_at' => null", $src);
     }

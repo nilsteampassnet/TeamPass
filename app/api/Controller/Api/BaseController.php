@@ -83,7 +83,7 @@ class BaseController
             require_once API_ROOT_PATH . '/../sources/main.functions.php';
         }
 
-        markUserFunctionalActivity($userId, 'api');
+        markUserFunctionalActivity($userId);
     }
 
     /**

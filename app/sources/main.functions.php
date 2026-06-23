@@ -1629,12 +1629,9 @@ function teampassParseUserActivityTimestamp(mixed $value): int
  */
 function markUserFunctionalActivity(
     int $userId,
-    string $source = 'api',
     ?int $timestamp = null,
     int $minInterval = 300
 ): void {
-    unset($source);
-
     if ($userId <= 0) {
         return;
     }
@@ -1855,7 +1852,7 @@ function logItems(
         }
 
         if (in_array($action, teampassApiFunctionalActivityActions(), true)) {
-            markUserFunctionalActivity($id_user, 'api', $eventTime);
+            markUserFunctionalActivity($id_user, $eventTime);
         }
     }
 

@@ -4516,11 +4516,16 @@ function countNeverConnectedActiveUsers(): int
         "SELECT COUNT(u.id)
          FROM " . prefixTable('users') . " AS u
          LEFT JOIN (
-             SELECT id_user, MAX(date) AS last_api_activity_ts
-             FROM " . prefixTable('log_items') . "
-             WHERE action IN %ls
-             AND raison LIKE %ss
-             GROUP BY id_user
+             SELECT li.id_user, MAX(li.date) AS last_api_activity_ts
+             FROM " . prefixTable('log_items') . " AS li
+             INNER JOIN " . prefixTable('users') . " AS lu
+                 ON lu.id = li.id_user
+                 AND lu.deleted_at IS NULL
+                 AND lu.disabled = 0
+                 AND LOWER(lu.login) NOT IN ('api','otv','tp')
+             WHERE li.action IN %ls
+             AND li.raison LIKE %ss
+             GROUP BY li.id_user
          ) AS api_activity ON api_activity.id_user = u.id
          WHERE u.deleted_at IS NULL
          AND u.disabled = 0
@@ -4566,11 +4571,18 @@ function listInactiveUsers(string $filter): array
         ELSE UNIX_TIMESTAMP(u.created_at)
     END";
     $apiActivityJoin = "LEFT JOIN (
-            SELECT id_user, MAX(date) AS last_api_activity_ts
-            FROM " . prefixTable('log_items') . "
-            WHERE action IN %ls
-            AND raison LIKE %ss
-            GROUP BY id_user
+            SELECT li.id_user, MAX(li.date) AS last_api_activity_ts
+            FROM " . prefixTable('log_items') . " AS li
+            INNER JOIN " . prefixTable('users') . " AS lu
+                ON lu.id = li.id_user
+                AND lu.deleted_at IS NULL
+                AND lu.disabled = 0
+                AND lu.admin = 0
+                AND lu.special = 'none'
+                AND LOWER(lu.login) NOT IN ('api','otv','tp')
+            WHERE li.action IN %ls
+            AND li.raison LIKE %ss
+            GROUP BY li.id_user
         ) AS api_activity ON api_activity.id_user = u.id";
     $activityTsExpr = "GREATEST(IFNULL(($tsExpr), 0), IFNULL(api_activity.last_api_activity_ts, 0))";
 
