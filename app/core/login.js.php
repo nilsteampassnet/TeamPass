@@ -857,8 +857,6 @@ declare(strict_types=1);
 
     //Identify user
     function identifyUser(redirect, psk, data, randomstring, oauth2Info) {
-        var old_data = data;
-
         // Base64 encode sensitive data
         const sharedData = {
             ...data,
@@ -888,7 +886,24 @@ declare(strict_types=1);
                         "<?php echo strval($session->get('key')); ?>"
                     );
                 } catch (e) {
-                    // error
+                    // The session key baked into the page may be stale (the
+                    // server-side session was regenerated since the page was
+                    // rendered). Reload once to resync the key and restore the
+                    // form before surfacing a generic error.
+                    if (sessionStorage.getItem('teampassKeyResyncDone') !== '1') {
+                        sessionStorage.setItem('teampassKeyResyncDone', '1');
+                        store.update(
+                            'teampassUser', {},
+                            function(teampassUser) {
+                                teampassUser.login = $('#login').val();
+                                teampassUser.mfaSelector = $('#select2fa-otp').is(':checked');
+                                teampassUser.mfaCode = $('#ga_code').val();
+                                teampassUser.page_reload = 1;
+                            }
+                        );
+                        document.location.reload(true);
+                        return false;
+                    }
                     toastr.remove();
                     toastr.error(
                         '<?php echo $lang->get('server_answer_error'); ?>',
@@ -900,7 +915,11 @@ declare(strict_types=1);
                     );
                     return false;
                 }
-                
+
+                // Decode succeeded: clear any pending key-resync guard so a
+                // future genuine key drift can recover again.
+                sessionStorage.removeItem('teampassKeyResyncDone');
+
                 if (debugJavascript === true) {
                     console.info('Identification answer:')
                     console.log('SESSION KEY is: ' + data.session_key);
@@ -925,31 +944,17 @@ declare(strict_types=1);
                     toastr.remove();
                     mfaStepPending = true;
 
+                    // The server always returns the available MFA methods with
+                    // the 2fa_not_set response, so use them directly and fall
+                    // back to the cached set only if they are missing.
                     if (typeof data.mfa_methods !== 'undefined') {
                         cachedMfaData = data.mfa_methods;
+                    }
+                    if (cachedMfaData !== null) {
                         showMFAMethodForUser(cachedMfaData);
-                    } else if (cachedMfaData !== null) {
-                        showMFAMethodForUser(cachedMfaData);
-                    } else {
-                        $.post(
-                            'sources/identify.php', {
-                                type: 'get2FAMethodsForUser',
-                                login: old_data.login
-                            },
-                            function(resp) {
-                                resp = JSON.parse(resp);
-                                if (resp.key === '<?php echo strval($session->get('key')); ?>') {
-                                    try {
-                                        var mfaMethods = prepareExchangedData(resp.ret, 'decode', resp.key);
-                                        cachedMfaData = mfaMethods;
-                                        showMFAMethodForUser(mfaMethods);
-                                    } catch (e) { /* ignore */ }
-                                }
-                            }
-                        );
                     }
                     if (data.mfa_enrollment_started === true) {
-                        var mfaEnrollmentMessage = (
+                        const mfaEnrollmentMessage = (
                             typeof data.email_result !== 'undefined' &&
                             data.email_result !== ''
                         ) ? data.email_result : data.mfa_enrollment_message;
