@@ -580,6 +580,7 @@ return array(
     'error_folder_not_allowed' => 'Selected folder is not allowed',
     'all_fields_mandatory' => 'All fields are mandatory',
     'history_insert_entry' => 'Insert in History',
+    'clear_date' => 'Clear date',
     'clear_form' => 'Clear form',
     'info_about_history_insertion' => 'Caution - This feature permits you to insert manually an event in the item history log. Once added it will not be possible to remove it. Also notice that your account id will be associated to this new entry.',
     'select_all' => 'Select all',
