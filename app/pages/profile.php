@@ -84,6 +84,9 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Prepare GET variables
 $get = [];
 $get['tab'] = $request->query->get('tab') === null ? '' : $request->query->get('tab');
+if ($get['tab'] === 'keys') {
+    $get['tab'] = '';
+}
 // user type
 if ($session->get('user-admin') === 1) {
     $session->set('user-privilege', $lang->get('god'));
@@ -241,7 +244,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                 <a class="nav-link<?php echo empty($get['tab']) === true ? ' active' : ''; ?>" href="#tab_information" data-toggle="tab"><?php echo $lang->get('information'); ?></a>
                             </li>
                             <li class="nav-item"><a class="nav-link<?php echo $get['tab'] === 'settings' ? ' active' : ''; ?>" href="#tab_settings" data-toggle="tab"><?php echo $lang->get('settings'); ?></a></li>
-                            <li class="nav-item"><a class="nav-link<?php echo $get['tab'] === 'keys' ? ' active' : ''; ?>" href="#tab_keys" data-toggle="tab"><?php echo $lang->get('keys_management'); ?></a></li>
                             <li class="nav-item">
                                 <a class="nav-link<?php echo $get['tab'] === 'timeline' ? ' active' : ''; ?>" href="#tab_timeline" data-toggle="tab">Timeline</a>
                             </li>
@@ -553,47 +555,6 @@ foreach ($session->get('user-roles_array') as $role) {
                                     </div>
                                 </form>
 
-                            </div>
-
-                            <!-- KEYS -->
-                            <div class="tab-pane<?php echo $get['tab'] === 'keys' ? ' active' : ''; ?>" id="tab_keys">
-                                <form class="needs-validation" novalidate onsubmit="return false;">
-                                    
-                                    <div class="alert alert-danger hidden" id="keys_not_recovered">
-                                        <h5><i class="icon fa-solid fa-ban ml-2"></i><?php echo $lang->get('keys_not_recovered'); ?></h5>
-                                        <?php echo $lang->get('keys_not_recovered_explanation'); ?>
-                                    </div>
-
-                                    <div class="row">
-                                        <div class="card card-default col-sm-12">
-                                            <div class="card-header">
-                                                <h3 class="card-title">
-                                                <i class="fa-solid fa-download mr-2"></i><?php echo $lang->get('download'); ?>
-                                                </h3>
-                                            </div>
-                                            <!-- /.card-header -->
-                                            <div class="card-body">
-                                                <div class="form-group">
-                                                    <div class="row">
-                                                        <div class="col-sm-offset-8 col-sm-8">
-                                                            <i class="fa-solid fa-calendar-days mr-2"></i><?php echo $lang->get('recovery_keys_download_date'); ?>
-                                                            <span class="badge badge-secondary ml-2" id="profile-keys_download-date"></span>
-                                                        </div>
-                                                        
-                                                    </div>
-                                                </div>
-                                                <div class="form-group">
-                                                    <div class="row">
-                                                        <div class="col-sm-12">
-                                                            <button type="button" class="btn btn-warning float-right ml-2" id="open-dialog-keys-download"><?php echo $lang->get('download_recovery_keys'); ?></button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </form>
                             </div>
                         </div>
                     </div>

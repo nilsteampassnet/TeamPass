@@ -637,7 +637,6 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
     $all_users_can_access = [
         'change_private_key_encryption_password',
         'user_new_keys_generation',
-        'user_recovery_keys_download',
         'generate_temporary_encryption_key'
     ];
 
@@ -807,40 +806,6 @@ function keyHandler(string $post_type, $dataReceived, array $SETTINGS): string
                 (string) filter_var($dataReceived['recovery_public_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (string) filter_var($dataReceived['recovery_private_key'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 (bool) isset($dataReceived['user_has_to_encrypt_personal_items_after']) === true ? filter_var($dataReceived['user_has_to_encrypt_personal_items_after'], FILTER_VALIDATE_BOOLEAN) : false,
-            );
-
-        /*
-         * Launch user recovery download
-         */
-        case 'user_recovery_keys_download'://action_key
-            // Validate user password on local and LDAP accounts before download
-            if ($session->get('user-auth_type') !== 'oauth2') {
-                // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-                $userPassword = $dataReceived['password'];
-
-                // Get current user hash
-                $userHash = DB::queryFirstRow(
-                    "SELECT pw FROM " . prefixtable('users') . " WHERE id = %i;",
-                    $session->get('user-id')
-                )['pw'];
-
-                $passwordManager = new PasswordManager();
-
-                // Verify provided user password
-                if (!$passwordManager->verifyPassword($userHash, $userPassword)) {
-                    return prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_bad_credentials'),
-                        ),
-                        'encode'
-                    );
-                }
-            }
-
-            return handleUserRecoveryKeysDownload(
-                (int) $filtered_user_id,
-                (array) $SETTINGS,
             );
 
         case 'user_only_personal_items_encryption': //action_key

@@ -259,7 +259,6 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
 
                 <!-- /.card-header -->
                 <div class="card-body form user-content with-header-menu <?php echo $showNewUser ? 'hidden' : '';?>" id="users-list" data-content="refresh">
-                    <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><span class="ml-2 pointer"><?php echo $lang->get('display_warning_icons');?></span></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
                             <tr>

@@ -6165,69 +6165,6 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
 }
 
 /**
- * Generate recovery keys file
- *
- * @param integer $userId
- * @param array $SETTINGS
- * @return string
- */
-function handleUserRecoveryKeysDownload(int $userId, array $SETTINGS):string
-{
-    $session = SessionManager::getSession();
-    // Check if user exists
-    $userInfo = DB::queryFirstRow(
-        'SELECT login
-        FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $userId
-    );
-
-    if (DB::count() > 0) {
-        $now = (int) time();
-        // Prepare file content
-        $export_value = file_get_contents(__DIR__."/../includes/core/teampass_ascii.txt")."\n".
-            "Generation date: ".date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now)."\n\n".
-            "RECOVERY KEYS - Not to be shared - To be store safely\n\n".
-            "Public Key:\n".$session->get('user-public_key')."\n\n".
-            "Private Key:\n".$session->get('user-private_key')."\n\n";
-
-        // Update user's keys_recovery_time
-        DB::update(
-            prefixTable('users'),
-            [
-                'keys_recovery_time' => $now,
-            ],
-            'id=%i',
-            $userId
-        );
-        $session->set('user-keys_recovery_time', $now);
-
-        //Log into DB the user's disconnection
-        logEvents($SETTINGS, 'user_mngt', 'at_user_keys_download', (string) $userId, $userInfo['login']);
-        
-        // Return data
-        return prepareExchangedData(
-            array(
-                'error' => false,
-                'datetime' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], $now),
-                'timestamp' => $now,
-                'content' => base64_encode($export_value),
-                'login' => $userInfo['login'],
-            ),
-            'encode'
-        );
-    }
-
-    return prepareExchangedData(
-        array(
-            'error' => true,
-            'datetime' => '',
-        ),
-        'encode'
-    );
-}
-
-/**
  * Permits to load expected classes
  *
  * @param string $className
