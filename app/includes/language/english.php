@@ -75,6 +75,7 @@ return array(
     'dashboard' => 'Dashboard',
     'active_users' => 'Active Users',
     'online' => 'Online',
+    'api_connected_users_short' => 'API',
     'blocked' => 'Blocked',
     'total_items' => 'Total Items',
     'shared' => 'Shared',

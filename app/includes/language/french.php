@@ -1130,6 +1130,7 @@ return array(
     'dashboard' => 'Tableau de bord',
     'active_users' => 'Utilisateurs actifs',
     'online' => 'En ligne',
+    'api_connected_users_short' => 'API',
     'blocked' => 'Bloqués',
     'total_items' => 'Total d’éléments',
     'shared' => 'Partagés',
@@ -2463,5 +2464,4 @@ return array(
     'health_cron_delayed_help' => 'Le cron s’exécute mais les tâches de fond ne sont pas traitées. Le plus souvent, l’utilisateur du serveur web ne peut pas écrire dans storage/logs/ : le gestionnaire de tâches ne peut pas créer son fichier verrou et s’arrête. Vérifiez le log d’erreurs PHP (message « cannot create lock file ») et rendez storage/logs/ accessible en écriture pour l’utilisateur du serveur web. Voir la documentation Permissions des fichiers.',
     'health_cron_stuck_help' => 'Une tâche de fond est bloquée « en cours » depuis plus de 30 minutes. Le worker qui l’a démarrée a probablement planté ou été tué (par exemple le request_terminate_timeout de PHP-FPM a été atteint) : la tâche n’a jamais été libérée et le gestionnaire ne peut pas passer à la suivante. Vérifiez le log d’erreurs PHP et la page Tâches, puis réinitialisez ou supprimez la tâche bloquée pour que la file reprenne.',
     'health_cron_error_help' => 'Aucune exécution du cron détectée depuis 10 minutes. Vérifiez que la tâche cron exécutant app/sources/scheduler.php chaque minute est bien configurée (page Tâches). Voir la documentation Tâches et Permissions des fichiers.',
-
 );
