@@ -1594,6 +1594,115 @@ function parseItemLogReasonSource(?string $reason): array
 }
 
 /**
+ * Parse a TeamPass user timestamp into epoch seconds.
+ *
+ * User timestamps are historically stored as epoch seconds, epoch milliseconds,
+ * or SQL datetime strings depending on the code path.
+ */
+function teampassParseUserActivityTimestamp(mixed $value): int
+{
+    if ($value === null) {
+        return 0;
+    }
+
+    $value = trim((string) $value);
+    if ($value === '' || $value === '0') {
+        return 0;
+    }
+
+    if (preg_match('/^[0-9]{13}$/', $value) === 1) {
+        return (int) floor(((int) $value) / 1000);
+    }
+    if (preg_match('/^[0-9]{1,10}$/', $value) === 1) {
+        return (int) $value;
+    }
+
+    $timestamp = strtotime($value);
+    return $timestamp === false ? 0 : (int) $timestamp;
+}
+
+/**
+ * Mark a real user activity for inactivity management.
+ *
+ * This intentionally represents functional usage, not technical API session
+ * maintenance. It reuses users.last_connexion so no schema migration is needed.
+ */
+function markUserFunctionalActivity(
+    int $userId,
+    ?int $timestamp = null,
+    int $minInterval = 300
+): void {
+    if ($userId <= 0) {
+        return;
+    }
+
+    loadClasses('DB');
+
+    $timestamp = $timestamp ?? time();
+    if ($timestamp <= 0) {
+        return;
+    }
+
+    try {
+        $user = DB::queryFirstRow(
+            'SELECT last_connexion, inactivity_warned_at
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i
+            AND disabled = 0
+            AND (deleted_at IS NULL OR deleted_at = "" OR deleted_at = 0)',
+            $userId
+        );
+    } catch (\Throwable $e) {
+        return;
+    }
+
+    if ($user === null) {
+        return;
+    }
+
+    $lastActivityTs = teampassParseUserActivityTimestamp($user['last_connexion'] ?? null);
+    $warnedAt = teampassParseUserActivityTimestamp($user['inactivity_warned_at'] ?? null);
+    $effectiveActivityTs = max($lastActivityTs, $timestamp);
+
+    $shouldRefreshActivity = $timestamp > $lastActivityTs
+        && (
+            $lastActivityTs <= 0
+            || $timestamp - $lastActivityTs >= $minInterval
+            || $warnedAt > 0
+        );
+    $shouldResetInactivity = $warnedAt > 0 && $effectiveActivityTs > $warnedAt;
+
+    if ($shouldRefreshActivity === false && $shouldResetInactivity === false) {
+        return;
+    }
+
+    $updateData = [];
+    if ($shouldRefreshActivity === true) {
+        $updateData['last_connexion'] = (string) $timestamp;
+    }
+    if ($shouldResetInactivity === true) {
+        $updateData['inactivity_warned_at'] = null;
+        $updateData['inactivity_action_at'] = null;
+        $updateData['inactivity_action'] = null;
+        $updateData['inactivity_no_email'] = 0;
+    }
+
+    try {
+        DB::update(prefixTable('users'), $updateData, 'id = %i', $userId);
+    } catch (\Throwable $e) {
+        return;
+    }
+}
+
+/**
+ * Item log actions that reflect a user-visible API activity.
+ */
+function teampassApiFunctionalActivityActions(): array
+{
+    return ['at_shown', 'at_creation', 'at_modification', 'at_delete', 'at_import'];
+}
+
+/**
  * Permits to log events into DB
  *
  * @param array  $SETTINGS Teampass settings
@@ -1740,6 +1849,10 @@ function logItems(
             if (!empty($existing)) {
                 return;
             }
+        }
+
+        if (in_array($action, teampassApiFunctionalActivityActions(), true)) {
+            markUserFunctionalActivity($id_user, $eventTime);
         }
     }
 
@@ -8956,3 +9069,4 @@ function checkPasswordWithHIBP(string $password): array
 
     return ['pwned' => false, 'count' => 0];
 }
+
