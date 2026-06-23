@@ -108,6 +108,7 @@ return array(
     'error_folder_not_allowed' => 'La sélection n’est pas autorisée',
     'all_fields_mandatory' => 'Tous les champs sont nécessaires',
     'history_insert_entry' => 'Ajouter à l’historique',
+    'clear_date' => 'Effacer la date',
     'clear_form' => 'Vider le formulaire',
     'info_about_history_insertion' => 'Attention - cette fonctionnalité vous permet d’insérer manuellement un événement dans l’historique de l’élément. Une fois l’événement ajouté, il vous sera impossible de le supprimer. Notez également qu’un ID de compte sera associé à cette insertion.',
     'select_all' => 'Tout sélectionner',
