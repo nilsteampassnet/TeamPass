@@ -139,9 +139,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'autoWidth': true,
         'ajax': {
             url: '<?php echo $SETTINGS['cpassman_url']; ?>/sources/users.datatable.php',
-            data: function(d) {
-                d.display_warnings = $('#warnings_display').is(':checked');
-            },
             error: function(d) {
                 loadingToast.remove();
                 toastr.error("<?php echo $lang->get('users_fetch_error'); ?>", '', {timeOut: 5000, progressBar: true, extendedCloseButton: true});
@@ -370,23 +367,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         checkboxClass: 'icheckbox_flat-blue',
         radioClass: 'iradio_flat-blue'
     });
-    $("#warnings_display").on("ifChanged", function() {
-        $('.form').addClass('hidden');
-        $('#users-list').removeClass('hidden');
-        toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-
-        // Force LDAP status refresh (cache) when display settings change
-        tpLdapStatusCache = {};
-        tpLdapStatusRequestInFlight = false;
-
-        oTable.ajax.reload(function() {
-            toastr.remove();
-            scheduleDecorateUsersLdapStatus();
-        }, false);
-    });
-
-
     $('#form-email').change(function() {
         //extract domain from email
         var domain = $(this).val().split('@')[1];
