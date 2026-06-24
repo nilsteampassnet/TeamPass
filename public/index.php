@@ -496,21 +496,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
 
-    /*
-    // OFFLINE MODE menu
-    if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
-        echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="offline" class="nav-link', $get['page'] === 'offline' ? ' active' : '' ,'">
-                        <i class="nav-icon fa-solid fa-plug"></i>
-                        <p>
-                            '.$lang->get('offline').'
-                        </p>
-                        </a>
-                    </li>';
-    }
-    */
-
     if ($session_user_admin === 0) {
         echo '
                     <li class="nav-item">
@@ -1630,8 +1615,6 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/import.js.php';
         } elseif ($get['page'] === 'export') {
             include_once TEAMPASS_APP . '/pages/export.js.php';
-        } elseif ($get['page'] === 'offline') {
-            include_once TEAMPASS_APP . '/pages/offline.js.php';
         } elseif ($get['page'] === 'search') {
             include_once TEAMPASS_APP . '/pages/search.js.php';
         } elseif ($get['page'] === 'profile') {

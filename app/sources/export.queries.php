@@ -37,7 +37,6 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use GibberishAES\GibberishAES;
 
 
 // Load functions
@@ -678,7 +677,7 @@ if (null !== $post_type) {
             break;
 
 
-            //CASE export in HTML format
+            //CASE export in HTML format (offline mode - standalone encrypted file)
         case 'export_to_html_format':
             // Check KEY
             if ($post_key !== $session->get('key')) {
@@ -692,463 +691,159 @@ if (null !== $post_type) {
                 break;
             }
 
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
+            // Make sure offline mode is enabled
+            if (isset($SETTINGS['settings_offline_mode']) === false || (int) $SETTINGS['settings_offline_mode'] !== 1) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                    'encode'
+                );
+                break;
+            }
 
-            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-            $inputData['password'] = (string) $dataReceived['password'];
-            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            
-            // step 1:
-            // - prepare export file
-            // - get full list of objects id to export
-            include TEAMPASS_APP . '/config/include.php';
-            $idsList = array();
+            // Decrypt and retrieve data in JSON format
+            $dataReceived = prepareExchangedData($post_data, 'decode');
 
-            // query
-            $rows = DB::query(
-                'SELECT * 
-                FROM ' . prefixTable('export') . ' 
-                WHERE export_tag = %s',
-                $inputData['export_tag']
-            );
-            $counter = DB::count();
-            if ($counter > 0) {
+            // IMPORTANT: the export password must NOT be sanitized (fix 3.1.5.10)
+            $offlinePassword = (string) ($dataReceived['password'] ?? '');
+            $offlineFolders = array_map('intval', (array) ($dataReceived['ids'] ?? []));
+            if ($offlinePassword === '' || count($offlineFolders) === 0) {
+                echo prepareExchangedData(
+                    array('error' => true, 'message' => $lang->get('error_empty_data')),
+                    'encode'
+                );
+                break;
+            }
+
+            $userPrivateKey = (string) $session->get('user-private_key');
+            $userPublicKey = (string) $session->get('user-public_key');
+            $userRoles = (string) $session->get('user-roles');
+
+            // Build the list of exportable items (same access rules as the CSV export)
+            $offlineItems = array();
+            foreach ($offlineFolders as $folderId) {
+                if (
+                    in_array($folderId, $session->get('user-forbiden_personal_folders')) === true
+                    || in_array($folderId, $session->get('user-accessible_folders')) === false
+                ) {
+                    continue;
+                }
+
+                $rows = DB::query(
+                    'SELECT i.id AS id, i.id_tree AS id_tree, i.restricted_to AS restricted_to,
+                        i.label AS label, i.description AS description, i.login AS login, i.url AS url,
+                        i.email AS email
+                    FROM ' . prefixTable('items') . ' AS i
+                    WHERE i.inactif = %i AND i.id_tree = %i
+                    ORDER BY i.label ASC',
+                    0,
+                    $folderId
+                );
                 foreach ($rows as $record) {
-                    // check if folder allowed
+                    // Item-level restriction check
                     if (
-                        in_array($record['folder_id'], $session->get('user-forbiden_personal_folders')) === false
-                        && in_array($record['folder_id'], $session->get('user-accessible_folders')) === true
-                        && (in_array($record['folder_id'], $session->get('user-no_access_folders')) === false)
-                    ) {
-                        // check if item allowed
-                        $restricted_users_array = is_null($record['restricted_to']) === false ? explode(';', $record['restricted_to']) : '';
-                        if ((
-                                (
-                                    in_array($record['folder_id'], $session->get('user-personal_visible_folders')) === true
-                                    && !((int) $record['perso'] === 1 && $session->get('user-id') === $record['restricted_to'])
-                                    && empty($record['restricted_to']) === false
-                                ) ||
-                                (
-                                    empty($record['restricted_to']) === false && in_array($session->get('user-id'), $restricted_users_array) === false
+                        !(
+                            in_array($record['id_tree'], $session->get('user-personal_visible_folders')) === true
+                            || (
+                                in_array($record['id_tree'], $session->get('user-accessible_folders')) === true
+                                && (
+                                    empty($record['restricted_to']) === true
+                                    || in_array($session->get('user-id'), explode(';', $record['restricted_to'])) === true
                                 )
-                            )                                
-                            && (in_array($record['item_id'], $idsList) === false)
-                        ) {
-                            array_push($idsList, $record['item_id']);
-                        }
+                            )
+                        )
+                    ) {
+                        continue;
                     }
-                }
-            }
-            // prepare export file
-            //save the file
-            $outstream = fopen($SETTINGS['path_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'], 'w');
-            if ($outstream === false) {
-                echo (string) prepareExchangedData(
-                    [
-                        'error' => true,
-                        'message' => $lang->get('error_while_creating_file'),
-                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
-                    ],
-                    'encode'
-                );
-                break;
-            }
-                        
-            fwrite(
-                $outstream,
-                '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-    <head>
-    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-    <title>TeamPass Off-line mode</title>
-    <style>
-    body{font-family:sans-serif; font-size:11pt; background:#DCE0E8;}
-    thead th{font-size:13px; font-weight:bold; background:#344151; padding:4px 10px 4px 10px; font-family:arial; color:#FFFFFF;}
-    tr.line0 td {background-color:#FFFFFF; border-bottom:1px solid #CCCCCC; font-family:arial; font-size:11px;}
-    tr.line1 td {background-color:#F0F0F0; border-bottom:1px solid #CCCCCC; font-family:arial; font-size:11px;}
-    tr.path td {background-color:#C0C0C0; font-family:arial; font-size:11px; font-weight:bold;}
-    #footer{width: 980px; height: 20px; line-height: 16px; margin: 10px auto 0 auto; padding: 10px; font-family: sans-serif; font-size: 10px; color:#000000;}
-    #header{padding:10px; font-size:18px; background:#344151; color:#FFFFFF; border:2px solid #222E3D;}
-    #itemsTable{width:100%;}
-    #information{margin:10px 0 10px 0; background:#344151; color:#FFFFFF; border:2px solid #222E3D;}
-    </style>
-    </head>
-    <body>
-    <input type="hidden" id="generation_date" value="' . GibberishAES::enc(/** @scrutinizer ignore-type */ (string) time(), $inputData['password']) . '" />
-    <div id="header">
-    ' . TP_TOOL_NAME . ' - Off Line mode
-    </div>
-    <div style="margin:10px; font-size:9px;">
-    <i>This page was generated by <b>' . $session->get('user-name') . ' ' . $session->get('user-lastname') . '</b>, the ' . date('Y/m/d H:i:s') . '.</i>
-    <span id="info_page" style="margin-left:20px; font-weight:bold; font-size: 14px; color:red;"></span>
-    </div>
-    <div id="information"></div>
-    <div style="margin:10px;">
-    Enter the decryption key : <input type="password" id="saltkey" onchange="uncryptTable()" />
-    &nbsp;<button onclic="uncryptTable()">Refresh</button>
-    </div>
-    <div>
-    <table id="itemsTable">
-        <thead><tr>
-            <th style="width:15%;">' . $lang->get('label') . '</th>
-            <th style="width:10%;">' . $lang->get('pw') . '</th>
-            <th style="width:30%;">' . $lang->get('description') . '</th>
-            <th style="width:5%;">' . $lang->get('user_login') . '</th>
-            <th style="width:20%;">' . $lang->get('url') . '</th>
-        </tr></thead>
-        <tbody id="itemsTable_tbody">'
-            );
 
-            fclose($outstream);
-
-            // send back and continue
-            echo (string) prepareExchangedData(
-                [
-                    'error' => false,
-                    'loop' => true,
-                    'ids_list' => json_encode($idsList),
-                    'ids_count' => count($idsList),
-                    'file_path' => $SETTINGS['path_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'],
-                    'file_link' => $SETTINGS['url_to_files_folder'] . (substr($SETTINGS['path_to_files_folder'] , -1) === '/' ? '' : '/') . $inputData['filename'],
-                    'export_tag' => $inputData['export_tag'],
-                ],
-                'encode'
-            );
-            break;
-
-        //CASE export in HTML format - Iteration loop
-        case 'export_to_html_format_loop':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
-            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-            $inputData['password'] = (string) $dataReceived['password'];
-            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['idsList'] = filter_var_array($dataReceived['idsList'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['idsListRemaining'] = filter_var_array($dataReceived['idsListRemaining'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['cpt'] = (int) filter_var($dataReceived['cpt'], FILTER_SANITIZE_NUMBER_INT);
-            $inputData['number'] = (int) filter_var($dataReceived['number'], FILTER_SANITIZE_NUMBER_INT);
-            $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['export_tag'] = (string) filter_var($dataReceived['export_tag'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-            $full_listing = array();
-            $items_id_list = array();
-            $outstream = '';
-            include TEAMPASS_APP . '/config/include.php';
-
-            // query
-            $rows = DB::query(
-                'SELECT * 
-                FROM ' . prefixTable('export') . ' 
-                WHERE export_tag = %s AND item_id IN %ls',
-                $inputData['export_tag'],
-                $inputData['idsList']
-            );
-            $counter = DB::count();
-            if ($counter > 0) {
-                //save in export file
-                $outstream = fopen($inputData['filename'].'.txt', 'a');
-                if ($outstream === false) {
-                    echo (string) prepareExchangedData(
-                        [
-                            'error' => true,
-                            'message' => $lang->get('error_while_creating_file'),
-                            'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
-                        ],
-                        'encode'
+                    // Decrypt the password through the user's sharekey (migration-aware)
+                    $dataItem = DB::queryFirstRow(
+                        'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id
+                        FROM ' . prefixTable('items') . ' AS i
+                        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
+                        WHERE s.user_id = %i AND i.id = %i',
+                        $session->get('user-id'),
+                        $record['id']
                     );
-                    break;
-                }
-
-                $lineType = 'line1';
-                foreach ($rows as $record) {
-                    // decrypt PW
-                    if (isHex($record['pw']) === true) {
-                        $pw = cryption(
-                            $record['pw'],
-                            '',
-                            'decrypt',
-                            $SETTINGS
-                        );
+                    if (DB::count() === 0 || empty($dataItem['pw']) === true) {
+                        $pw = '';
                     } else {
-                        $pw = $record['pw'];
-                    }
-
-                    // Build line
-                    $idTree = '';
-                    $arboHtml = '';
-                    $lineType === 'line0' ? $lineType = 'line1' : $lineType = 'line0';
-
-                    // Prepare tree
-                    $arbo = $tree->getPath($record['folder_id'], true);
-                    foreach ($arbo as $folder) {
-                        $arboHtml_tmp = htmlspecialchars(stripslashes($folder->title), ENT_QUOTES);
-                        if (empty($arboHtml)) {
-                            $arboHtml = $arboHtml_tmp;
-                        } else {
-                            $arboHtml .= ' » ' . $arboHtml_tmp;
-                        }
-                    }
-                    fputs(
-                        $outstream,
-                        '
-        <tr class="path"><td colspan="5">' . $arboHtml . '</td></tr>'
-                    );
-                    $idTree = $record['folder_id'];
-
-                    $encPw = GibberishAES::enc($record['pw'], $inputData['password']);
-                    fputs(
-                        $outstream,
-                        '
-        <tr class="' . $lineType . '">
-            <td>' . addslashes($record['label']) . '</td>
-            <td align="center"><span class="span_pw" id="span_' . $record['item_id'] . '"><a href="#" onclick="decryptme(' . $record['item_id'] . ', \'' . $encPw . '\');return false;">Decrypt </a></span><input type="hidden" id="hide_' . $record['item_id'] . '" value="' . $encPw . '" /></td>
-            <td>' . (empty($record['description']) === true ? '&nbsp;' : addslashes(str_replace(array(';', '<br />'), array('|', "\n\r"), stripslashes(mb_convert_encoding($record['description'], 'ISO-8859-1', 'UTF-8'))))) . '</td>
-            <td align="center">' . (empty($record['login']) === true ? '&nbsp;' : addslashes($record['login'])) . '</td>
-            <td align="center">' . (empty($record['url']) === true ? '&nbsp;' : addslashes($record['url'])) . '</td>
-        </tr>'
-                    );
-                }
-            }
-
-            fclose($outstream);
-
-            // send back and continue
-            echo (string) prepareExchangedData(
-                [
-                    'error' => false,
-                    //'message' => 'loop treatment finished',
-                    'loop' => count($inputData['idsListRemaining']) > 0 ? true : false,
-                    'ids_list' => json_encode($inputData['idsListRemaining']),
-                    'ids_count' => count($inputData['idsListRemaining']),
-                    'file_path' => $inputData['filename'],
-                    'file_link' => $inputData['file_link'],
-                    'export_tag' => $inputData['export_tag'],
-                ],
-                'encode'
-            );
-            break;
-
-        //CASE export in HTML format - Iteration loop
-        case 'export_to_html_format_finalize':
-            // Check KEY
-            if ($post_key !== $session->get('key')) {
-                echo prepareExchangedData(
-                    array(
-                        'error' => true,
-                        'message' => $lang->get('key_is_not_correct'),
-                    ),
-                    'encode'
-                );
-                break;
-            }
-
-            // decrypt and retrieve data in JSON format
-            $dataReceived = prepareExchangedData(
-                $post_data,
-                'decode'
-            );
-
-            $inputData['file_link'] = (string) filter_var($dataReceived['file_link'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $inputData['filename'] = (string) filter_var($dataReceived['filename'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            // IMPORTANT: Passwords should NOT be sanitized (fix 3.1.5.10)
-            $inputData['password'] = (string) $dataReceived['password'];
-            
-            // Load includes
-            include TEAMPASS_APP . '/config/include.php';
-
-            // read the content of the temporary file
-            $handle = fopen($inputData['filename'].'.txt', 'r');
-            if ($handle === false) {
-                echo (string) prepareExchangedData(
-                    [
-                        'error' => true,
-                        'message' => $lang->get('error_while_creating_file'),
-                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
-                    ],
-                    'encode'
-                );
-                break;
-            }
-            $contents = fread($handle, filesize($inputData['filename'].'.txt'));
-            if ($contents === false) {
-                echo (string) prepareExchangedData(
-                    [
-                        'error' => true,
-                        'message' => $lang->get('error_while_creating_file'),
-                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
-                    ],
-                    'encode'
-                );
-                break;
-            }
-            fclose($handle);
-            if (is_file($inputData['filename'].'.txt')) {
-                //unlink($inputData['filename'].'.txt');
-            }
-
-            // Encrypt its content
-            $encrypted_text = '';
-            $chunks = explode('|#|#|', chunk_split($contents, 10000, '|#|#|'));
-            foreach ($chunks as $chunk) {
-                if (empty($encrypted_text) === true) {
-                    $encrypted_text = GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $inputData['password'] );
-                } else {
-                    $encrypted_text .= '|#|#|' . GibberishAES::enc(/** @scrutinizer ignore-type */ $chunk, $inputData['password'] );
-                }
-            }
-
-            // open file
-            $outstream = fopen($inputData['filename'], 'a');
-            if ($outstream === false) {
-                echo (string) prepareExchangedData(
-                    [
-                        'error' => true,
-                        'message' => $lang->get('error_while_creating_file'),
-                        'detail' => $SETTINGS['path_to_files_folder'] . $inputData['filename'],
-                    ],
-                    'encode'
-                );
-                break;
-            }
-
-            fputs(
-                $outstream,
-                '</tbody>
-        </table></div>
-        <input type="button" value="Hide all" onclick="hideAll()" />
-        <div id="footer" style="text-align:center;">
-            <a href="https://teampass.net/about/" target="_blank">' . TP_TOOL_NAME . '&nbsp;' . TP_VERSION . '&nbsp;' . TP_COPYRIGHT . '</a>
-        </div>
-        <div id="enc_html" style="display:none;">' . $encrypted_text . '</div>
-        </body>
-    </html>
-    <script type="text/javascript">
-        function uncryptTable()
-        {
-            // uncrypt file generation date
-            try {
-                var file_date = decryptedTable = GibberishAES.dec(
-                    document.getElementById("generation_date").value,
-                    document.getElementById("saltkey").value
-                );
-            }
-            catch(e) {
-                console.info("Key not correct");
-                document.getElementById("itemsTable_tbody").innerHTML = "";
-                document.getElementById("itemsTable").style.display  = "none";
-                document.getElementById("info_page").innerHTML = "ERROR - " + e;
-                return false;
-            }
-
-            // Check date
-            if (~~(Date.now()/ 1000) - parseInt(file_date) < 604800) {
-                console.info("File is valid");
-                document.getElementById("info_page").innerHTML = "";
-
-                // Uncrypt the table
-                try {
-                    var encodedString = document.getElementById("enc_html").innerHTML;
-                    var splitedString = encodedString.split("|#|#|");
-                    var decryptedTable = "";
-                    var i;
-                    for (i = 0; i < splitedString.length; i++) {
-                        decryptedTable += GibberishAES.dec(
-                            splitedString[i],
-                            document.getElementById("saltkey").value
+                        $pw = teampassDecryptPasswordValue(
+                            $dataItem['pw'],
+                            decryptUserObjectKeyWithMigration(
+                                $dataItem['share_key'],
+                                $userPrivateKey,
+                                $userPublicKey,
+                                (int) $dataItem['sharekey_id'],
+                                'sharekeys_items'
+                            ),
+                            (int) ($dataItem['pw_len'] ?? 0)
                         );
                     }
-                }
-                catch(e) {
-                    console.info("Key not correct");
-                    document.getElementById("itemsTable_tbody").innerHTML = "";
-                    document.getElementById("itemsTable").style.display  = "none";
-                    document.getElementById("info_page").innerHTML = "ERROR - " + e;
-                    return false;
-                }
 
-                document.getElementById("itemsTable_tbody").innerHTML = decryptedTable;
-                document.getElementById("itemsTable").style.display  = "block";
-            } else {
-                document.getElementById("info_page").innerHTML = "This file is too old. It cannot be shown anymore!";
-                console.info("File is NOT valid any more!");
-                document.getElementById("itemsTable").style.display  = "none";
-            }
-        }
-        function decryptme(id, string)
-        {
-            if (document.getElementById("saltkey").value != "") {
-                var decryptedPw;
+                    // Tags
+                    $arrTags = array();
+                    foreach (DB::query('SELECT tag FROM ' . prefixTable('tags') . ' WHERE item_id = %i', $record['id']) as $recTag) {
+                        if (empty($recTag['tag']) === false) {
+                            $arrTags[] = $recTag['tag'];
+                        }
+                    }
 
-                try {
-                    decryptedPw = GibberishAES.dec(string, document.getElementById("saltkey").value)
-                }
-                catch(e) {
-                    alert (e);
-                    return decryptedPw;
-                }
+                    // Folder path
+                    $arrPath = array();
+                    foreach ($tree->getPath($record['id_tree'], true) as $folder) {
+                        $arrPath[] = $folder->title;
+                    }
 
-                document.getElementById("span_"+id).innerHTML = "<input type=\"text\" value=\"" +  decryptedPw + "\" id=\"pass_input_" + id + "\">" +
-                    "&nbsp;<a href=\"#\" onclick=\"encryptme("+id+");return false;\"><span style=\"font-size:7px;\">[Hide]</span></a>";
-                document.getElementById("pass_input_"+id).select();
-            } else {
-                alert("Decryption Key is empty!");
+                    // Custom fields (decrypted, role-visibility enforced)
+                    $offlineFields = getOfflineItemCustomFields(
+                        (int) $record['id'],
+                        (int) $record['id_tree'],
+                        (int) $session->get('user-id'),
+                        $userPrivateKey,
+                        $userPublicKey,
+                        $userRoles
+                    );
+
+                    $offlineItems[] = array(
+                        'folder' => implode(' / ', $arrPath),
+                        'label' => empty($record['label']) === true ? '' : html_entity_decode((string) $record['label'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'description' => empty($record['description']) === true ? '' : html_entity_decode(strip_tags((string) $record['description']), ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'login' => empty($record['login']) === true ? '' : html_entity_decode((string) $record['login'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'password' => empty($pw) === true ? '' : html_entity_decode((string) $pw, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'url' => (empty($record['url']) === true || $record['url'] === 'none') ? '' : htmlspecialchars_decode((string) $record['url']),
+                        'email' => (empty($record['email']) === true || $record['email'] === 'none') ? '' : html_entity_decode((string) $record['email'], ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+                        'tags' => implode(' ', $arrTags),
+                        'fields' => $offlineFields,
+                    );
+
+                    // Log the export
+                    logItems(
+                        $SETTINGS,
+                        (int) $record['id'],
+                        (string) $record['label'],
+                        (int) $session->get('user-id'),
+                        'at_export',
+                        $session->get('user-login'),
+                        'html'
+                    );
+                }
             }
-        }
-        function encryptme(id)
-        {
-            document.getElementById("span_"+id).innerHTML = "<a href=\"#\" onclick=\"decryptme("+id+", \'"+document.getElementById("hide_"+id).value+"\')\">Decrypt</a>";
-        }
-        function hideAll()
-        {
-            var elements = document.getElementsByClassName("span_pw");
-            for (var i=0, im=elements.length; im>i; i++) {
-                var dataPw = elements[i].id.split("_");
-                elements[i].innerHTML = "<a href=\"#\" onclick=\"decryptme("+dataPw[1]+", \'"+document.getElementById("hide_"+dataPw[1]).value+"\')\">Decrypt</a>";
-            }
-        }
-        function prepareString(string) {
-            try {
-                    result = decodeURIComponent(string);
-            }
-            catch (e) {
-                    result =  unescape(string);
-            }
-            return result;
-        }
-        (function(e,r){"object"==typeof exports?module.exports=r():"function"==typeof define&&define.amd?define(r):e.GibberishAES=r()})(this,function(){"use strict";var e=14,r=8,n=!1,f=function(e){try{return unescape(encodeURIComponent(e))}catch(r){throw"Error on UTF-8 encode"}},c=function(e){try{return prepareString(escape(e))}catch(r){throw"Bad Key"}},t=function(e){var r,n,f=[];for(16>e.length&&(r=16-e.length,f=[r,r,r,r,r,r,r,r,r,r,r,r,r,r,r,r]),n=0;e.length>n;n++)f[n]=e[n];return f},a=function(e,r){var n,f,c="";if(r){if(n=e[15],n>16)throw"Decryption error: Maybe bad key";if(16===n)return"";for(f=0;16-n>f;f++)c+=String.fromCharCode(e[f])}else for(f=0;16>f;f++)c+=String.fromCharCode(e[f]);return c},o=function(e){var r,n="";for(r=0;e.length>r;r++)n+=(16>e[r]?"0":"")+e[r].toString(16);return n},d=function(e){var r=[];return e.replace(/(..)/g,function(e){r.push(parseInt(e,16))}),r},u=function(e,r){var n,c=[];for(r||(e=f(e)),n=0;e.length>n;n++)c[n]=e.charCodeAt(n);return c},i=function(n){switch(n){case 128:e=10,r=4;break;case 192:e=12,r=6;break;case 256:e=14,r=8;break;default:throw"Invalid Key Size Specified:"+n}},b=function(e){var r,n=[];for(r=0;e>r;r++)n=n.concat(Math.floor(256*Math.random()));return n},h=function(n,f){var c,t=e>=12?3:2,a=[],o=[],d=[],u=[],i=n.concat(f);for(d[0]=L(i),u=d[0],c=1;t>c;c++)d[c]=L(d[c-1].concat(i)),u=u.concat(d[c]);return a=u.slice(0,4*r),o=u.slice(4*r,4*r+16),{key:a,iv:o}},l=function(e,r,n){r=S(r);var f,c=Math.ceil(e.length/16),a=[],o=[];for(f=0;c>f;f++)a[f]=t(e.slice(16*f,16*f+16));for(0===e.length%16&&(a.push([16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16]),c++),f=0;a.length>f;f++)a[f]=0===f?x(a[f],n):x(a[f],o[f-1]),o[f]=s(a[f],r);return o},v=function(e,r,n,f){r=S(r);var t,o=e.length/16,d=[],u=[],i="";for(t=0;o>t;t++)d.push(e.slice(16*t,16*(t+1)));for(t=d.length-1;t>=0;t--)u[t]=p(d[t],r),u[t]=0===t?x(u[t],n):x(u[t],d[t-1]);for(t=0;o-1>t;t++)i+=a(u[t]);return i+=a(u[t],!0),f?i:c(i)},s=function(r,f){n=!1;var c,t=M(r,f,0);for(c=1;e+1>c;c++)t=g(t),t=y(t),e>c&&(t=k(t)),t=M(t,f,c);return t},p=function(r,f){n=!0;var c,t=M(r,f,e);for(c=e-1;c>-1;c--)t=y(t),t=g(t),t=M(t,f,c),c>0&&(t=k(t));return t},g=function(e){var r,f=n?D:B,c=[];for(r=0;16>r;r++)c[r]=f[e[r]];return c},y=function(e){var r,f=[],c=n?[0,13,10,7,4,1,14,11,8,5,2,15,12,9,6,3]:[0,5,10,15,4,9,14,3,8,13,2,7,12,1,6,11];for(r=0;16>r;r++)f[r]=e[c[r]];return f},k=function(e){var r,f=[];if(n)for(r=0;4>r;r++)f[4*r]=F[e[4*r]]^R[e[1+4*r]]^j[e[2+4*r]]^z[e[3+4*r]],f[1+4*r]=z[e[4*r]]^F[e[1+4*r]]^R[e[2+4*r]]^j[e[3+4*r]],f[2+4*r]=j[e[4*r]]^z[e[1+4*r]]^F[e[2+4*r]]^R[e[3+4*r]],f[3+4*r]=R[e[4*r]]^j[e[1+4*r]]^z[e[2+4*r]]^F[e[3+4*r]];else for(r=0;4>r;r++)f[4*r]=E[e[4*r]]^U[e[1+4*r]]^e[2+4*r]^e[3+4*r],f[1+4*r]=e[4*r]^E[e[1+4*r]]^U[e[2+4*r]]^e[3+4*r],f[2+4*r]=e[4*r]^e[1+4*r]^E[e[2+4*r]]^U[e[3+4*r]],f[3+4*r]=U[e[4*r]]^e[1+4*r]^e[2+4*r]^E[e[3+4*r]];return f},M=function(e,r,n){var f,c=[];for(f=0;16>f;f++)c[f]=e[f]^r[n][f];return c},x=function(e,r){var n,f=[];for(n=0;16>n;n++)f[n]=e[n]^r[n];return f},S=function(n){var f,c,t,a,o=[],d=[],u=[];for(f=0;r>f;f++)c=[n[4*f],n[4*f+1],n[4*f+2],n[4*f+3]],o[f]=c;for(f=r;4*(e+1)>f;f++){for(o[f]=[],t=0;4>t;t++)d[t]=o[f-1][t];for(0===f%r?(d=m(w(d)),d[0]^=K[f/r-1]):r>6&&4===f%r&&(d=m(d)),t=0;4>t;t++)o[f][t]=o[f-r][t]^d[t]}for(f=0;e+1>f;f++)for(u[f]=[],a=0;4>a;a++)u[f].push(o[4*f+a][0],o[4*f+a][1],o[4*f+a][2],o[4*f+a][3]);return u},m=function(e){for(var r=0;4>r;r++)e[r]=B[e[r]];return e},w=function(e){var r,n=e[0];for(r=0;4>r;r++)e[r]=e[r+1];return e[3]=n,e},A=function(e,r){var n,f=[];for(n=0;e.length>n;n+=r)f[n/r]=parseInt(e.substr(n,r),16);return f},C=function(e){var r,n=[];for(r=0;e.length>r;r++)n[e[r]]=r;return n},I=function(e,r){var n,f;for(f=0,n=0;8>n;n++)f=1===(1&r)?f^e:f,e=e>127?283^e<<1:e<<1,r>>>=1;return f},O=function(e){var r,n=[];for(r=0;256>r;r++)n[r]=I(e,r);return n},B=A("637c777bf26b6fc53001672bfed7ab76ca82c97dfa5947f0add4a2af9ca472c0b7fd9326363ff7cc34a5e5f171d8311504c723c31896059a071280e2eb27b27509832c1a1b6e5aa0523bd6b329e32f8453d100ed20fcb15b6acbbe394a4c58cfd0efaafb434d338545f9027f503c9fa851a3408f929d38f5bcb6da2110fff3d2cd0c13ec5f974417c4a77e3d645d197360814fdc222a908846eeb814de5e0bdbe0323a0a4906245cc2d3ac629195e479e7c8376d8dd54ea96c56f4ea657aae08ba78252e1ca6b4c6e8dd741f4bbd8b8a703eb5664803f60e613557b986c11d9ee1f8981169d98e949b1e87e9ce5528df8ca1890dbfe6426841992d0fb054bb16",2),D=C(B),K=A("01020408102040801b366cd8ab4d9a2f5ebc63c697356ad4b37dfaefc591",2),E=O(2),U=O(3),z=O(9),R=O(11),j=O(13),F=O(14),G=function(e,r,n){var f,c=b(8),t=h(u(r,n),c),a=t.key,o=t.iv,d=[[83,97,108,116,101,100,95,95].concat(c)];return e=u(e,n),f=l(e,a,o),f=d.concat(f),T.encode(f)},H=function(e,r,n){var f=T.decode(e),c=f.slice(8,16),t=h(u(r,n),c),a=t.key,o=t.iv;return f=f.slice(16,f.length),e=v(f,a,o,n)},L=function(e){function r(e,r){return e<<r|e>>>32-r}function n(e,r){var n,f,c,t,a;return c=2147483648&e,t=2147483648&r,n=1073741824&e,f=1073741824&r,a=(1073741823&e)+(1073741823&r),n&f?2147483648^a^c^t:n|f?1073741824&a?3221225472^a^c^t:1073741824^a^c^t:a^c^t}function f(e,r,n){return e&r|~e&n}function c(e,r,n){return e&n|r&~n}function t(e,r,n){return e^r^n}function a(e,r,n){return r^(e|~n)}function o(e,c,t,a,o,d,u){return e=n(e,n(n(f(c,t,a),o),u)),n(r(e,d),c)}function d(e,f,t,a,o,d,u){return e=n(e,n(n(c(f,t,a),o),u)),n(r(e,d),f)}function u(e,f,c,a,o,d,u){return e=n(e,n(n(t(f,c,a),o),u)),n(r(e,d),f)}function i(e,f,c,t,o,d,u){return e=n(e,n(n(a(f,c,t),o),u)),n(r(e,d),f)}function b(e){for(var r,n=e.length,f=n+8,c=(f-f%64)/64,t=16*(c+1),a=[],o=0,d=0;n>d;)r=(d-d%4)/4,o=8*(d%4),a[r]=a[r]|e[d]<<o,d++;return r=(d-d%4)/4,o=8*(d%4),a[r]=a[r]|128<<o,a[t-2]=n<<3,a[t-1]=n>>>29,a}function h(e){var r,n,f=[];for(n=0;3>=n;n++)r=255&e>>>8*n,f=f.concat(r);return f}var l,v,s,p,g,y,k,M,x,S=[],m=A("67452301efcdab8998badcfe10325476d76aa478e8c7b756242070dbc1bdceeef57c0faf4787c62aa8304613fd469501698098d88b44f7afffff5bb1895cd7be6b901122fd987193a679438e49b40821f61e2562c040b340265e5a51e9b6c7aad62f105d02441453d8a1e681e7d3fbc821e1cde6c33707d6f4d50d87455a14eda9e3e905fcefa3f8676f02d98d2a4c8afffa39428771f6816d9d6122fde5380ca4beea444bdecfa9f6bb4b60bebfbc70289b7ec6eaa127fad4ef308504881d05d9d4d039e6db99e51fa27cf8c4ac5665f4292244432aff97ab9423a7fc93a039655b59c38f0ccc92ffeff47d85845dd16fa87e4ffe2ce6e0a30143144e0811a1f7537e82bd3af2352ad7d2bbeb86d391",8);for(S=b(e),y=m[0],k=m[1],M=m[2],x=m[3],l=0;S.length>l;l+=16)v=y,s=k,p=M,g=x,y=o(y,k,M,x,S[l+0],7,m[4]),x=o(x,y,k,M,S[l+1],12,m[5]),M=o(M,x,y,k,S[l+2],17,m[6]),k=o(k,M,x,y,S[l+3],22,m[7]),y=o(y,k,M,x,S[l+4],7,m[8]),x=o(x,y,k,M,S[l+5],12,m[9]),M=o(M,x,y,k,S[l+6],17,m[10]),k=o(k,M,x,y,S[l+7],22,m[11]),y=o(y,k,M,x,S[l+8],7,m[12]),x=o(x,y,k,M,S[l+9],12,m[13]),M=o(M,x,y,k,S[l+10],17,m[14]),k=o(k,M,x,y,S[l+11],22,m[15]),y=o(y,k,M,x,S[l+12],7,m[16]),x=o(x,y,k,M,S[l+13],12,m[17]),M=o(M,x,y,k,S[l+14],17,m[18]),k=o(k,M,x,y,S[l+15],22,m[19]),y=d(y,k,M,x,S[l+1],5,m[20]),x=d(x,y,k,M,S[l+6],9,m[21]),M=d(M,x,y,k,S[l+11],14,m[22]),k=d(k,M,x,y,S[l+0],20,m[23]),y=d(y,k,M,x,S[l+5],5,m[24]),x=d(x,y,k,M,S[l+10],9,m[25]),M=d(M,x,y,k,S[l+15],14,m[26]),k=d(k,M,x,y,S[l+4],20,m[27]),y=d(y,k,M,x,S[l+9],5,m[28]),x=d(x,y,k,M,S[l+14],9,m[29]),M=d(M,x,y,k,S[l+3],14,m[30]),k=d(k,M,x,y,S[l+8],20,m[31]),y=d(y,k,M,x,S[l+13],5,m[32]),x=d(x,y,k,M,S[l+2],9,m[33]),M=d(M,x,y,k,S[l+7],14,m[34]),k=d(k,M,x,y,S[l+12],20,m[35]),y=u(y,k,M,x,S[l+5],4,m[36]),x=u(x,y,k,M,S[l+8],11,m[37]),M=u(M,x,y,k,S[l+11],16,m[38]),k=u(k,M,x,y,S[l+14],23,m[39]),y=u(y,k,M,x,S[l+1],4,m[40]),x=u(x,y,k,M,S[l+4],11,m[41]),M=u(M,x,y,k,S[l+7],16,m[42]),k=u(k,M,x,y,S[l+10],23,m[43]),y=u(y,k,M,x,S[l+13],4,m[44]),x=u(x,y,k,M,S[l+0],11,m[45]),M=u(M,x,y,k,S[l+3],16,m[46]),k=u(k,M,x,y,S[l+6],23,m[47]),y=u(y,k,M,x,S[l+9],4,m[48]),x=u(x,y,k,M,S[l+12],11,m[49]),M=u(M,x,y,k,S[l+15],16,m[50]),k=u(k,M,x,y,S[l+2],23,m[51]),y=i(y,k,M,x,S[l+0],6,m[52]),x=i(x,y,k,M,S[l+7],10,m[53]),M=i(M,x,y,k,S[l+14],15,m[54]),k=i(k,M,x,y,S[l+5],21,m[55]),y=i(y,k,M,x,S[l+12],6,m[56]),x=i(x,y,k,M,S[l+3],10,m[57]),M=i(M,x,y,k,S[l+10],15,m[58]),k=i(k,M,x,y,S[l+1],21,m[59]),y=i(y,k,M,x,S[l+8],6,m[60]),x=i(x,y,k,M,S[l+15],10,m[61]),M=i(M,x,y,k,S[l+6],15,m[62]),k=i(k,M,x,y,S[l+13],21,m[63]),y=i(y,k,M,x,S[l+4],6,m[64]),x=i(x,y,k,M,S[l+11],10,m[65]),M=i(M,x,y,k,S[l+2],15,m[66]),k=i(k,M,x,y,S[l+9],21,m[67]),y=n(y,v),k=n(k,s),M=n(M,p),x=n(x,g);return h(y).concat(h(k),h(M),h(x))},T=function(){var e="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",r=e.split(""),n=function(e){var n,f,c=[],t="";for(Math.floor(16*e.length/3),n=0;16*e.length>n;n++)c.push(e[Math.floor(n/16)][n%16]);for(n=0;c.length>n;n+=3)t+=r[c[n]>>2],t+=r[(3&c[n])<<4|c[n+1]>>4],t+=void 0!==c[n+1]?r[(15&c[n+1])<<2|c[n+2]>>6]:"=",t+=void 0!==c[n+2]?r[63&c[n+2]]:"=";for(f=t.slice(0,64)+"\n",n=1;Math.ceil(t.length/64)>n;n++)f+=t.slice(64*n,64*n+64)+(Math.ceil(t.length/64)===n+1?"":"\n");return f},f=function(r){r=r.replace(/\n/g,"");var n,f=[],c=[],t=[];for(n=0;r.length>n;n+=4)c[0]=e.indexOf(r.charAt(n)),c[1]=e.indexOf(r.charAt(n+1)),c[2]=e.indexOf(r.charAt(n+2)),c[3]=e.indexOf(r.charAt(n+3)),t[0]=c[0]<<2|c[1]>>4,t[1]=(15&c[1])<<4|c[2]>>2,t[2]=(3&c[2])<<6|c[3],f.push(t[0],t[1],t[2]);return f=f.slice(0,f.length-f.length%16)};return"function"==typeof Array.indexOf&&(e=r),{encode:n,decode:f}}();return{size:i,h2a:d,expandKey:S,encryptBlock:s,decryptBlock:p,Decrypt:n,s2a:u,rawEncrypt:l,rawDecrypt:v,dec:H,openSSLKey:h,a2h:o,enc:G,Hash:{MD5:L},Base64:T}});
-    </script>'
+
+            // Encrypt the dataset with the export password and build the standalone file
+            $offlineBundle = aesGcmEncryptForOffline(
+                (string) json_encode($offlineItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                $offlinePassword
             );
+            $offlineHtml = buildOfflineExportHtml($offlineBundle, $lang, $session);
 
-            fclose($outstream);
-
-            //clean table
-            DB::query('TRUNCATE TABLE ' . prefixTable('export'));
-
-            echo (string) prepareExchangedData(
-                [
+            // base64-encode the HTML so the client-side transport purifier (DOMPurify in
+            // prepareExchangedData/purifyData) cannot strip its tags; the client decodes it back.
+            // deepcode ignore XSS: content is encrypted before being sent to the client
+            echo prepareExchangedData(
+                array(
                     'error' => false,
-                    'filelink' => $inputData['file_link'] ,
-                ],
+                    'html_content' => base64_encode($offlineHtml),
+                ),
                 'encode'
             );
             break;
@@ -1179,4 +874,210 @@ function array2csv($fields, $delimiter = ',', $enclosure = '"', $escape_char = '
     fclose($buffer);
 
     return $csv;
+}
+
+
+/**
+ * Derive a key from the export password and encrypt the JSON payload with AES-256-GCM.
+ *
+ * The returned structure is consumed by the standalone viewer through the WebCrypto API:
+ * PBKDF2-SHA256 derives the key, AES-256-GCM provides authenticated encryption. The ciphertext
+ * and the 16-byte GCM tag are concatenated (WebCrypto layout) before being base64-encoded.
+ *
+ * @param string $json       Plain JSON payload to protect.
+ * @param string $password   User-provided export password.
+ * @param int    $iterations PBKDF2 iteration count.
+ *
+ * @return array{v:int, kdf:string, it:int, salt:string, iv:string, data:string}
+ */
+function aesGcmEncryptForOffline(string $json, string $password, int $iterations = 250000): array
+{
+    $salt = random_bytes(16);
+    $iv = random_bytes(12);
+    $key = hash_pbkdf2('sha256', $password, $salt, $iterations, 32, true);
+    $tag = '';
+    $cipher = openssl_encrypt($json, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+    if ($cipher === false) {
+        throw new RuntimeException('Offline export encryption failed');
+    }
+
+    return [
+        'v' => 1,
+        'kdf' => 'PBKDF2-SHA256',
+        'it' => $iterations,
+        'salt' => base64_encode($salt),
+        'iv' => base64_encode($iv),
+        'data' => base64_encode($cipher . $tag),
+    ];
+}
+
+
+/**
+ * Build the standalone, password-protected HTML export from the encrypted bundle.
+ *
+ * Loads the viewer template and injects the encrypted bundle, the localized UI strings and the
+ * generation metadata. Each dynamic value is escaped for its target context (HTML text vs JSON).
+ *
+ * @param array  $bundle  Encrypted payload from aesGcmEncryptForOffline().
+ * @param object $lang     Language helper.
+ * @param object $session  Current user session.
+ *
+ * @return string
+ */
+function buildOfflineExportHtml(array $bundle, $lang, $session): string
+{
+    $template = (string) file_get_contents(TEAMPASS_APP . '/includes/templates/offline-export.tpl.php');
+
+    // UI strings consumed by the viewer (rendered client-side via textContent)
+    $i18n = [
+        'enter_password' => $lang->get('offline_enter_password'),
+        'unlock' => $lang->get('offline_unlock'),
+        'decrypting' => $lang->get('offline_decrypting'),
+        'wrong_password' => $lang->get('offline_wrong_password'),
+        'password_empty' => $lang->get('password_cannot_be_empty'),
+        'search' => $lang->get('offline_search'),
+        'reveal' => $lang->get('offline_reveal'),
+        'hide' => $lang->get('offline_hide'),
+        'copy' => $lang->get('copy'),
+        'copied' => $lang->get('copied'),
+        'details' => $lang->get('details'),
+        'hide_all' => $lang->get('offline_hide_all'),
+        'lock_duration' => $lang->get('offline_lock_duration'),
+        'extend' => $lang->get('offline_extend'),
+        'locks_in' => $lang->get('offline_locks_in'),
+        'no_webcrypto' => $lang->get('offline_no_webcrypto'),
+        'items' => $lang->get('items'),
+        'col_folder' => $lang->get('folder'),
+        'col_label' => $lang->get('label'),
+        'col_login' => $lang->get('user_login'),
+        'col_password' => $lang->get('password'),
+        'col_url' => $lang->get('url'),
+        'col_email' => $lang->get('email'),
+        'col_description' => $lang->get('description'),
+        'col_tags' => $lang->get('tags'),
+    ];
+    // Decode HTML entities so the strings render correctly as plain text in the viewer
+    $i18n = array_map(
+        static function ($value) {
+            return html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8');
+        },
+        $i18n
+    );
+
+    $jsonFlags = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE;
+
+    $toolName = defined('TP_TOOL_NAME') ? TP_TOOL_NAME : 'TeamPass';
+    $version = defined('TP_VERSION') ? TP_VERSION : '';
+    $heading = (string) $lang->get('offline_heading');
+    $generated = sprintf(
+        (string) $lang->get('offline_generated_by'),
+        trim((string) $session->get('user-name') . ' ' . (string) $session->get('user-lastname')),
+        date('Y-m-d H:i')
+    );
+
+    $replacements = [
+        '{{TITLE}}' => htmlspecialchars($heading, ENT_QUOTES, 'UTF-8'),
+        '{{HEADING}}' => htmlspecialchars($heading, ENT_QUOTES, 'UTF-8'),
+        '{{GENERATED_INFO}}' => htmlspecialchars($generated, ENT_QUOTES, 'UTF-8'),
+        '{{BRANDING}}' => htmlspecialchars(trim($toolName . ' ' . $version), ENT_QUOTES, 'UTF-8'),
+        '{{BUNDLE_JSON}}' => (string) json_encode($bundle, $jsonFlags),
+        '{{I18N_JSON}}' => (string) json_encode($i18n, $jsonFlags),
+    ];
+
+    return strtr($template, $replacements);
+}
+
+
+/**
+ * Read and decrypt the custom fields of an item for the offline export.
+ *
+ * Mirrors ItemModel::getItemCustomFields(): only fields whose category is associated to the
+ * item's folder are returned, fields restricted to roles the user does not hold are skipped, and
+ * encrypted values are decrypted with migration-aware sharekey handling.
+ *
+ * @param int    $itemId         Item ID.
+ * @param int    $folderId       Folder the item belongs to.
+ * @param int    $userId         Requesting user ID.
+ * @param string $userPrivateKey User private key (already decrypted).
+ * @param string $userPublicKey  User public key.
+ * @param string $userRoles      Requesting user roles (';'-separated).
+ *
+ * @return array<int, array{title:string, value:string, masked:int}>
+ */
+function getOfflineItemCustomFields(int $itemId, int $folderId, int $userId, string $userPrivateKey, string $userPublicKey, string $userRoles = ''): array
+{
+    $catRows = DB::query(
+        'SELECT id_category FROM ' . prefixTable('categories_folders') . ' WHERE id_folder = %i',
+        $folderId
+    );
+    if (DB::count() === 0) {
+        return [];
+    }
+    $arrCatList = array_map('intval', array_column($catRows, 'id_category'));
+
+    $rows = DB::query(
+        'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
+            i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
+            c.title AS title, c.masked AS masked, c.role_visibility AS role_visibility
+        FROM ' . prefixTable('categories_items') . ' AS i
+        INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
+        WHERE i.item_id = %i AND c.parent_id IN %li',
+        $itemId,
+        $arrCatList
+    );
+
+    $fields = [];
+    foreach ($rows as $row) {
+        // Skip fields restricted to roles the user does not hold ('all' = everyone)
+        if (
+            $row['role_visibility'] !== 'all'
+            && count(array_intersect(explode(';', $userRoles), explode(',', (string) $row['role_visibility']))) === 0
+        ) {
+            continue;
+        }
+
+        $value = '';
+        $isEncrypted = (int) $row['encrypted_data'] === 1 && $row['encryption_type'] !== 'not_set';
+        if ($isEncrypted === true) {
+            $userKey = DB::queryFirstRow(
+                'SELECT share_key, increment_id
+                FROM ' . prefixTable('sharekeys_fields') . '
+                WHERE user_id = %i AND object_id = %i',
+                $userId,
+                $row['object_id']
+            );
+            if (DB::count() > 0) {
+                try {
+                    $value = (string) base64_decode(
+                        (string) doDataDecryption(
+                            $row['data'],
+                            decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $userPrivateKey,
+                                $userPublicKey,
+                                (int) $userKey['increment_id'],
+                                'sharekeys_fields'
+                            )
+                        )
+                    );
+                } catch (Exception $e) {
+                    $value = '';
+                }
+            }
+        } else {
+            $value = (string) $row['data'];
+        }
+
+        if ($value === '') {
+            continue;
+        }
+
+        $fields[] = [
+            'title' => (string) $row['title'],
+            'value' => html_entity_decode($value, ENT_QUOTES | ENT_XHTML, 'UTF-8'),
+            'masked' => (int) $row['masked'],
+        ];
+    }
+
+    return $fields;
 }
