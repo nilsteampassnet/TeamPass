@@ -197,12 +197,6 @@ if ((int) $session_user_admin === 1) {
                                     <input id="form-item-password" type="password" class="form-control form-item-control" placeholder="<?php echo $lang->get('password'); ?>" data-field-name="pwd" data-change-ongoing="">
                                     <div class="input-group-append">
                                         <span class="input-group-text hidden" id="form-item-password-loader"><i class="fa-solid fa-circle-notch fa-spin"></i></span>
-                                        <!-- Password generator group -->
-                                        <button class="btn btn-secondary btn-no-click infotip password-generate" id="item-button-password-generate" title="<?php echo $lang->get('pw_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-random"></i></button>
-                                        <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-showOptions" title="<?php echo $lang->get('options'); ?>"><i class="fa-solid fa-sliders-h"></i></button>
-                                        <!-- Passphrase generator group -->
-                                        <button class="btn btn-info btn-no-click infotip" id="item-button-passphrase-generate" title="<?php echo $lang->get('passphrase_generate'); ?>" data-id="form-item-password"><i class="fa-solid fa-comment-dots"></i></button>
-                                        <button class="btn btn-info btn-no-click infotip" id="item-button-passphrase-showOptions" title="<?php echo $lang->get('passphrase_options'); ?>"><i class="fa-solid fa-list-ul"></i></button>
                                         <!-- Show/hide password -->
                                         <button class="btn btn-secondary btn-no-click infotip" id="item-button-password-show" title="<?php echo $lang->get('mask_pw'); ?>"><i class="fa-solid fa-low-vision"></i></button>
                                     </div>
@@ -211,12 +205,24 @@ if ((int) $session_user_admin === 1) {
                                     <div class="row">
                                         <div class="col-md-12 justify-content-center">
                                             <div id="form-item-password-strength" class="justify-content-center"></div>
-                                            <div id="form-item-passphrase-coach" class="small text-muted text-center mt-1 hidden"></div>
+                                            <div id="form-item-password-coach" class="small text-muted text-center mt-1" style="min-height:2.6rem;"></div>
                                         </div>
                                     </div>
                                 </div>
                                 <input type="hidden" id="form-item-password-complex" value="0">
-                                <div class="mt-1 hidden" id="form-item-password-options">
+                                <!-- Generator: mode selector (drives which options show) + single generate button -->
+                                <div class="d-flex justify-content-center align-items-center mt-2 mb-1">
+                                    <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons" id="form-item-generator-mode">
+                                        <label class="btn btn-secondary active" data-mode="random">
+                                            <input type="radio" name="generator-mode" autocomplete="off" checked><i class="fa-solid fa-random mr-1"></i><?php echo $lang->get('generator_mode_random'); ?>
+                                        </label>
+                                        <label class="btn btn-secondary" data-mode="passphrase">
+                                            <input type="radio" name="generator-mode" autocomplete="off"><i class="fa-solid fa-comment-dots mr-1"></i><?php echo $lang->get('generator_mode_passphrase'); ?>
+                                        </label>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm" id="item-button-generate" data-id="form-item-password"><i class="fa-solid fa-rotate mr-1"></i><?php echo $lang->get('pw_generate'); ?></button>
+                                </div>
+                                <div class="mt-1" id="form-item-password-options">
                                     <div class="btn-toolbar justify-content-center" role="toolbar" aria-label="Toolbar with button groups">
                                         <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons">
                                             <label class="btn btn-secondary btn-sm">

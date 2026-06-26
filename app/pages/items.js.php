@@ -99,6 +99,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         summary:       <?php echo json_encode($lang->get('passphrase_coach_summary'), JSON_UNESCAPED_UNICODE); ?>,
         add_word_one:  <?php echo json_encode($lang->get('passphrase_coach_add_word_one'), JSON_UNESCAPED_UNICODE); ?>,
         add_word_many: <?php echo json_encode($lang->get('passphrase_coach_add_word_many'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_one:  <?php echo json_encode($lang->get('passphrase_coach_add_char_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_many: <?php echo json_encode($lang->get('passphrase_coach_add_char_many'), JSON_UNESCAPED_UNICODE); ?>,
         strong:        <?php echo json_encode($lang->get('passphrase_coach_strong'), JSON_UNESCAPED_UNICODE); ?>,
         time_instant:   <?php echo json_encode($lang->get('passphrase_coach_time_instant'), JSON_UNESCAPED_UNICODE); ?>,
         time_seconds:   <?php echo json_encode($lang->get('passphrase_coach_time_seconds'), JSON_UNESCAPED_UNICODE); ?>,
@@ -118,6 +120,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         38: { minWords: 3, capitalize: true,  appendSuffix: false },
         48: { minWords: 4, capitalize: true,  appendSuffix: false },
         60: { minWords: 4, capitalize: true,  appendSuffix: true  },
+    };
+
+    // Minimum random-password requirements per folder complexity level.
+    // Mirrors PasswordGeneratorService::COMPLEXITY_PRESETS (server-side enforcement):
+    // the folder can only ADD requirements (forced character classes + minimum length).
+    const TP_PWD_COMPLEXITY_PRESETS = {
+        0:  { minLength: 4,  lowercase: false, uppercase: false, numbers: false, symbols: false },
+        20: { minLength: 8,  lowercase: true,  uppercase: false, numbers: true,  symbols: false },
+        38: { minLength: 12, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        48: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        60: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: true  },
     };
 
     var requestRunning = false,
@@ -1072,7 +1085,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
                 // HIde
-                $('.form-item-copy, #folders-tree-card, .columns-position, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+                $('.form-item-copy, #folders-tree-card, .columns-position, .form-item-action, #form-item-attachments-zone')
                     .addClass('hidden');
                 // Destroy editor
                 $('#form-item-description').summernote('destroy');
@@ -1807,18 +1820,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         );
 
         scrollBackToPosition();
-    });
-
-
-    /**
-     * Show/Hide the Password generation options
-     */
-    $('#item-button-password-showOptions').click(function() {
-        if ($('#form-item-password-options').hasClass('hidden') === true) {
-            $('#form-item-password-options').removeClass('hidden');
-        } else {
-            $('#form-item-password-options').addClass('hidden');
-        }
     });
 
 
@@ -2969,7 +2970,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item').removeClass('was-validated');
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
-        $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+        $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
             .addClass('hidden');
         $('#but_back_top_left, #but_back_top_right').addClass('hidden');
     }
@@ -3450,8 +3451,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     function syncItemPasswordComplexity(passwordValue = null) {
         // Any password change other than a fresh passphrase clears the coaching
-        // line; the passphrase generator re-shows it right after this call.
-        $('#form-item-passphrase-coach').addClass('hidden').empty();
+        // text; the element keeps its reserved height so nothing below shifts.
+        $('#form-item-password-coach').empty();
 
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
@@ -4379,7 +4380,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
                 .removeClass('hidden');
-            $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+            $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
                 .addClass('hidden');
 
             // Initial 'user did a change'
@@ -5151,7 +5152,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                     teampassItem.hasCustomCategories = data.categoriesStructure
                             }
                         );
-                        
+
+                        // Keep both generators' options aligned with the
+                        // selected folder's complexity rules.
+                        syncPassphraseOptionsWithComplexity();
+                        syncRandomOptionsWithComplexity();
+
 
                         // display path of folders
                         $('#form-folder-path').html(
@@ -7961,8 +7967,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
+    // Bound to the generic .password-generate buttons (e.g. server-password field)
+    // and reused by the main item generate button when in "random" mode.
     $('.password-generate').click(function() {
-        var elementId = $(this).data('id');
+        generateRandomPasswordFor($(this).data('id'));
+    });
+
+    /**
+     * Generate a random password (server-side smart generator) into a field.
+     *
+     * @param {string} elementId  Target input id (e.g. 'form-item-password').
+     */
+    function generateRandomPasswordFor(elementId) {
         $('#' + elementId).focus();
         if (debugJavascript === true) console.log(elementId);
 
@@ -8019,6 +8035,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $(sel).prop('checked', checked === true).closest('label').toggleClass('active', checked === true);
                 });
                 syncItemPasswordComplexity(data.key ?? '');
+                passwordCoaching(opts);
             }
 
             // Form has changed
@@ -8028,7 +8045,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // SHow button in sticky footer
             //$('#form-item-buttons').addClass('sticky-footer');
         });
-    });
+    }
 
     /**
      * Generate a BIP-39 passphrase using cryptographically secure randomness.
@@ -8115,21 +8132,37 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Render the coaching line under the password field for a generated passphrase.
-     * Uses the generator's own entropy (uniformly random words) — the honest
-     * measure for a generated secret — plus a single, prioritised nudge.
+     * Render the coaching line (entropy summary + optional nudge) under the bar.
+     * Shared by the passphrase and the random-password generators so the UI is
+     * consistent between both modes.
+     *
+     * @param {number} entropyBits  Estimated entropy of the generated secret.
+     * @param {string} tip          Already-localized nudge, or '' for none.
+     */
+    function renderPasswordCoaching(entropyBits, tip) {
+        const summary = TP_PASSPHRASE_COACH.summary
+            .replace('%bits%', String(entropyBits))
+            .replace('%time%', crackLabel(entropyBits))
+
+        // Two fixed lines (summary + nudge) so the reserved height never changes
+        // and the generate buttons below do not jump when coaching appears.
+        const tipLine = tip !== '' ? '<div>' + tip + '</div>' : ''
+        $('#form-item-password-coach')
+            .html('<div><i class="fa-solid fa-shield-halved mr-1"></i>' + summary + '</div>' + tipLine)
+    }
+
+    /**
+     * Coaching for a generated passphrase. Uses the generator's own entropy
+     * (uniformly random words) — the honest measure for a generated secret —
+     * and nudges the user to add words until the "strong" bucket is reached.
      *
      * @param {number}  wordCount  Number of words actually used.
      * @param {boolean} hasSuffix  Whether a digit+symbol suffix was appended.
      */
-    function updatePassphraseCoaching(wordCount, hasSuffix) {
+    function passphraseCoaching(wordCount, hasSuffix) {
         const bitsPerWord = Math.log2(TP_BIP39_WORDLIST.length || 2048)
         const suffixBits = hasSuffix ? TP_SUFFIX_BITS : 0
         const curBits = Math.round(wordCount * bitsPerWord + suffixBits)
-
-        let summary = TP_PASSPHRASE_COACH.summary
-            .replace('%bits%', String(curBits))
-            .replace('%time%', crackLabel(curBits))
 
         let tip = ''
         if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
@@ -8148,9 +8181,50 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             }
         }
 
-        $('#form-item-passphrase-coach')
-            .html(tip !== '' ? summary + ' — ' + tip : summary)
-            .removeClass('hidden')
+        renderPasswordCoaching(curBits, tip)
+    }
+
+    // Character-class sizes used by the server-side generator (Hackzilla
+    // ComputerPasswordGenerator): lower 26, upper 26, digits 10, symbols 23.
+    function passwordCharsetSize(opts) {
+        let size = 0
+        if (opts.lowercase)  size += 26
+        if (opts.capitalize) size += 26
+        if (opts.numerals)   size += 10
+        if (opts.symbols)    size += 23
+        return size || 26
+    }
+
+    /**
+     * Coaching for a generated random password. Entropy is length × log2(charset)
+     * and the nudge suggests adding characters until the "strong" bucket is reached.
+     *
+     * @param {object} opts  effective_options returned by the generator
+     *                       ({size, lowercase, capitalize, numerals, symbols}).
+     */
+    function passwordCoaching(opts) {
+        const length = parseInt(opts.size, 10) || 0
+        const bitsPerChar = Math.log2(passwordCharsetSize(opts))
+        const curBits = Math.round(length * bitsPerChar)
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra characters that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 64; extra++) {
+                const bits = (length + extra) * bitsPerChar
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_char_one
+                        : TP_PASSPHRASE_COACH.add_char_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        renderPasswordCoaching(curBits, tip)
     }
 
     // Tracks the last folder complexity applied to the passphrase options.
@@ -8198,9 +8272,57 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Passphrase generate button click handler.
+     * Returns the random-password preset for a complexity level (closest lower
+     * preset when the level does not match exactly), mirroring the server.
+     *
+     * @param {number} level  Folder complexity (TP_PW_STRENGTH_* value).
      */
-    $('#item-button-passphrase-generate').click(function() {
+    function pwdPresetForComplexity(level) {
+        let selected = TP_PWD_COMPLEXITY_PRESETS[0]
+        Object.keys(TP_PWD_COMPLEXITY_PRESETS).forEach(function(k) {
+            if (level >= parseInt(k, 10)) selected = TP_PWD_COMPLEXITY_PRESETS[k]
+        })
+        return selected
+    }
+
+    /**
+     * Reflect the folder's complexity in the random-password options: the
+     * character classes it requires are forced ON and locked (disabled), and
+     * lengths below its minimum are disabled — so the selector matches what the
+     * server will actually enforce instead of silently reverting the user's input.
+     */
+    function syncRandomOptionsWithComplexity() {
+        const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
+        const preset = pwdPresetForComplexity(folderComplexity)
+
+        $.each({
+            '#pwd-definition-lcl':     preset.lowercase,
+            '#pwd-definition-ucl':     preset.uppercase,
+            '#pwd-definition-numeric': preset.numbers,
+            '#pwd-definition-symbols': preset.symbols,
+        }, function(sel, required) {
+            const $cb = $(sel)
+            if (required) {
+                $cb.prop('checked', true).prop('disabled', true)
+                   .closest('label').addClass('active disabled')
+            } else {
+                $cb.prop('disabled', false).closest('label').removeClass('disabled')
+            }
+        })
+
+        // Disable lengths below the folder minimum and raise the value if needed.
+        $('#pwd-definition-size option').each(function() {
+            $(this).prop('disabled', parseInt($(this).val(), 10) < preset.minLength)
+        })
+        if ((parseInt($('#pwd-definition-size').val(), 10) || 0) < preset.minLength) {
+            $('#pwd-definition-size').val(String(preset.minLength))
+        }
+    }
+
+    /**
+     * Generate a BIP-39 passphrase into the item password field.
+     */
+    function generateItemPassphrase() {
         syncPassphraseOptionsWithComplexity()
 
         const wordCount = parseInt($('#passphrase-word-count').val(), 10) || 4
@@ -8211,29 +8333,85 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item-password').val(result.passphrase).focus()
 
         syncItemPasswordComplexity(result.passphrase)
-        updatePassphraseCoaching(result.wordCount, result.hasSuffix)
+        passphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
         if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
+    }
+
+    // -------------------------------------------------------------------------
+    // Generator mode (random vs passphrase) — drives which options panel shows
+    // and what the single generate button produces.
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns the active generator mode ('random' or 'passphrase').
+     */
+    function currentGeneratorMode() {
+        return $('#form-item-generator-mode label.active').data('mode') || 'random'
+    }
+
+    /**
+     * Show only the options panel matching the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function showGeneratorOptions(mode) {
+        const isPassphrase = mode === 'passphrase'
+        $('#form-item-password-options').toggleClass('hidden', isPassphrase)
+        $('#form-item-passphrase-options').toggleClass('hidden', !isPassphrase)
+        if (isPassphrase) {
+            syncPassphraseOptionsWithComplexity()
+        } else {
+            syncRandomOptionsWithComplexity()
+        }
+    }
+
+    /**
+     * Apply a mode to both the toggle buttons and the visible options panel.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function applyGeneratorMode(mode) {
+        $('#form-item-generator-mode label').each(function() {
+            const active = $(this).data('mode') === mode
+            $(this).toggleClass('active', active)
+            $(this).find('input[type=radio]').prop('checked', active)
+        })
+        showGeneratorOptions(mode)
+    }
+
+    /**
+     * Generate a secret into the item password field for the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function generateInMode(mode) {
+        if (mode === 'passphrase') {
+            generateItemPassphrase()
+        } else {
+            generateRandomPasswordFor('form-item-password')
+        }
+    }
+
+    // Pick a mode: swap the options panel, remember it, and generate right away
+    // so the field, the strength bar and the coaching always match the mode.
+    $('#form-item-generator-mode label').on('click', function() {
+        const mode = $(this).data('mode')
+        showGeneratorOptions(mode)
+        try { localStorage.setItem('tp_generator_mode', mode) } catch (_) {}
+        generateInMode(mode)
+    })
+
+    // Single generate button: dispatches to the active mode.
+    $('#item-button-generate').click(function() {
+        generateInMode(currentGeneratorMode())
     })
 
     // Manual edits invalidate the generated-passphrase coaching (programmatic
     // .val() does not fire 'input', so the generator's coaching is preserved).
     $('#form-item-password').on('input', function() {
-        $('#form-item-passphrase-coach').addClass('hidden').empty()
-    })
-
-    /**
-     * Show/hide the passphrase options panel.
-     * Syncs word count constraints with folder complexity before showing.
-     */
-    $('#item-button-passphrase-showOptions').click(function() {
-        if ($('#form-item-passphrase-options').hasClass('hidden')) {
-            syncPassphraseOptionsWithComplexity()
-            $('#form-item-passphrase-options').removeClass('hidden')
-        } else {
-            $('#form-item-passphrase-options').addClass('hidden')
-        }
+        $('#form-item-password-coach').empty()
     })
 
     // -------------------------------------------------------------------------
@@ -8241,7 +8419,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // -------------------------------------------------------------------------
 
     /**
-     * Save password generator options to localStorage on any option change.
+     * Save password generator options to localStorage and regenerate the
+     * password so the result always reflects the current settings.
      */
     $('#pwd-definition-size, .password-definition').on('change', function() {
         try {
@@ -8254,20 +8433,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 secure:  $('#pwd-definition-secure').prop('checked'),
             }))
         } catch (_) {}
+        generateRandomPasswordFor('form-item-password')
     })
 
     /**
-     * Save passphrase generator options to localStorage on any option change.
-     * wordCount and capitalize are folder-dependent so they are saved for
-     * within-session use but NOT restored on the next page load.
-     * Only the separator is purely cosmetic and restored across sessions.
+     * Save the passphrase separator to localStorage and regenerate on any
+     * passphrase option change (word count, separator, capitalize).
+     * wordCount and capitalize are folder-dependent so they are NOT restored
+     * on the next page load; only the separator is restored across sessions.
      */
-    $('#passphrase-separator').on('change', function() {
+    $('#passphrase-word-count, #passphrase-separator, #passphrase-capitalize').on('change', function() {
         try {
             localStorage.setItem('tp_passphrase_gen_opts', JSON.stringify({
                 separator: $('#passphrase-separator').val(),
             }))
         } catch (_) {}
+        generateItemPassphrase()
     })
 
     /**
@@ -8298,6 +8479,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (ppOpts && ppOpts.separator !== undefined) {
                 $('#passphrase-separator').val(ppOpts.separator)
             }
+        } catch (_) {}
+
+        try {
+            applyGeneratorMode(localStorage.getItem('tp_generator_mode') || 'random')
         } catch (_) {}
     })()
 
