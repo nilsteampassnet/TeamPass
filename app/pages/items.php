@@ -211,6 +211,7 @@ if ((int) $session_user_admin === 1) {
                                     <div class="row">
                                         <div class="col-md-12 justify-content-center">
                                             <div id="form-item-password-strength" class="justify-content-center"></div>
+                                            <div id="form-item-passphrase-coach" class="small text-muted text-center mt-1 hidden"></div>
                                         </div>
                                     </div>
                                 </div>

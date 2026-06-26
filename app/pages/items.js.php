@@ -94,6 +94,23 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
 
+    // Plain-language coaching strings for the passphrase generator (F9).
+    const TP_PASSPHRASE_COACH = {
+        summary:       <?php echo json_encode($lang->get('passphrase_coach_summary'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_one:  <?php echo json_encode($lang->get('passphrase_coach_add_word_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_many: <?php echo json_encode($lang->get('passphrase_coach_add_word_many'), JSON_UNESCAPED_UNICODE); ?>,
+        strong:        <?php echo json_encode($lang->get('passphrase_coach_strong'), JSON_UNESCAPED_UNICODE); ?>,
+        time_instant:   <?php echo json_encode($lang->get('passphrase_coach_time_instant'), JSON_UNESCAPED_UNICODE); ?>,
+        time_seconds:   <?php echo json_encode($lang->get('passphrase_coach_time_seconds'), JSON_UNESCAPED_UNICODE); ?>,
+        time_minutes:   <?php echo json_encode($lang->get('passphrase_coach_time_minutes'), JSON_UNESCAPED_UNICODE); ?>,
+        time_hours:     <?php echo json_encode($lang->get('passphrase_coach_time_hours'), JSON_UNESCAPED_UNICODE); ?>,
+        time_days:      <?php echo json_encode($lang->get('passphrase_coach_time_days'), JSON_UNESCAPED_UNICODE); ?>,
+        time_months:    <?php echo json_encode($lang->get('passphrase_coach_time_months'), JSON_UNESCAPED_UNICODE); ?>,
+        time_years:     <?php echo json_encode($lang->get('passphrase_coach_time_years'), JSON_UNESCAPED_UNICODE); ?>,
+        time_centuries: <?php echo json_encode($lang->get('passphrase_coach_time_centuries'), JSON_UNESCAPED_UNICODE); ?>,
+        time_ages:      <?php echo json_encode($lang->get('passphrase_coach_time_ages'), JSON_UNESCAPED_UNICODE); ?>,
+    };
+
     // Minimum word count and extra suffix requirements per folder complexity level
     const TP_PASSPHRASE_RULES = {
         0:  { minWords: 3, capitalize: false, appendSuffix: false },
@@ -3432,6 +3449,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     function syncItemPasswordComplexity(passwordValue = null) {
+        // Any password change other than a fresh passphrase clears the coaching
+        // line; the passphrase generator re-shows it right after this call.
+        $('#form-item-passphrase-coach').addClass('hidden').empty();
+
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
             $('#form-item-password').val(normalizedPassword);
@@ -8016,7 +8037,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * @param {number}  wordCount   Requested number of words (may be raised by complexity rules).
      * @param {string}  separator   Word separator ('-', '_', '.', ' ', or '').
      * @param {boolean} capitalize  Whether to capitalise the first letter of each word.
-     * @returns {string}
+     * @returns {{passphrase: string, wordCount: number, hasSuffix: boolean}}
      */
     function generateBip39Passphrase(wordCount, separator, capitalize) {
         const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
@@ -8032,8 +8053,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             return doCapitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word
         })
 
-        const sep = separator === 'space' ? ' ' : separator
-        let passphrase = words.join(sep)
+        let passphrase = words.join(separator)
 
         // Complexity level 60 requires digits + symbols: append a short suffix
         if (rules.appendSuffix) {
@@ -8045,7 +8065,92 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             passphrase += digit + symbol
         }
 
-        return passphrase
+        return { passphrase: passphrase, wordCount: actualWordCount, hasSuffix: rules.appendSuffix }
+    }
+
+    // Crack-time buckets, ordered ascending. Each entry: [upper bound in seconds, i18n key].
+    // A value below a bound falls in that bucket; above the last bound it is "ages".
+    const TP_CRACK_BUCKETS = [
+        [1,            'time_instant'],
+        [60,           'time_seconds'],
+        [3600,         'time_minutes'],
+        [86400,        'time_hours'],
+        [2592000,      'time_days'],      // 30 days
+        [31536000,     'time_months'],    // 1 year
+        [3153600000,   'time_years'],     // 100 years
+        [315360000000, 'time_centuries'], // 10 000 years
+    ]
+    // Index in TP_CRACK_BUCKETS considered "strong enough" (centuries or more).
+    const TP_CRACK_STRONG_INDEX = 7
+    // Bits of entropy added by the digit+symbol suffix (10 digits × 8 symbols).
+    const TP_SUFFIX_BITS = Math.log2(80)
+    // Assumed offline attack rate (GPU-class), used only for the plain-language estimate.
+    const TP_CRACK_GUESSES_PER_SECOND = 1e10
+
+    /**
+     * Returns the bucket index for a given entropy, using the average number of
+     * guesses (2^(bits-1)) divided by the assumed attack rate.
+     *
+     * @param {number} entropyBits
+     * @returns {number} Index into TP_CRACK_BUCKETS, or its length for "ages".
+     */
+    function crackBucketIndex(entropyBits) {
+        const seconds = Math.pow(2, entropyBits - 1) / TP_CRACK_GUESSES_PER_SECOND
+        for (let i = 0; i < TP_CRACK_BUCKETS.length; i++) {
+            if (seconds < TP_CRACK_BUCKETS[i][0]) return i
+        }
+        return TP_CRACK_BUCKETS.length
+    }
+
+    /**
+     * Returns the localized plain-language crack-time label for an entropy value.
+     *
+     * @param {number} entropyBits
+     * @returns {string}
+     */
+    function crackLabel(entropyBits) {
+        const idx = crackBucketIndex(entropyBits)
+        const key = idx < TP_CRACK_BUCKETS.length ? TP_CRACK_BUCKETS[idx][1] : 'time_ages'
+        return TP_PASSPHRASE_COACH[key]
+    }
+
+    /**
+     * Render the coaching line under the password field for a generated passphrase.
+     * Uses the generator's own entropy (uniformly random words) — the honest
+     * measure for a generated secret — plus a single, prioritised nudge.
+     *
+     * @param {number}  wordCount  Number of words actually used.
+     * @param {boolean} hasSuffix  Whether a digit+symbol suffix was appended.
+     */
+    function updatePassphraseCoaching(wordCount, hasSuffix) {
+        const bitsPerWord = Math.log2(TP_BIP39_WORDLIST.length || 2048)
+        const suffixBits = hasSuffix ? TP_SUFFIX_BITS : 0
+        const curBits = Math.round(wordCount * bitsPerWord + suffixBits)
+
+        let summary = TP_PASSPHRASE_COACH.summary
+            .replace('%bits%', String(curBits))
+            .replace('%time%', crackLabel(curBits))
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra words that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 8; extra++) {
+                const bits = (wordCount + extra) * bitsPerWord + suffixBits
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_word_one
+                        : TP_PASSPHRASE_COACH.add_word_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        $('#form-item-passphrase-coach')
+            .html(tip !== '' ? summary + ' — ' + tip : summary)
+            .removeClass('hidden')
     }
 
     // Tracks the last folder complexity applied to the passphrase options.
@@ -8102,13 +8207,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         const separator = $('#passphrase-separator').val()
         const capitalize = $('#passphrase-capitalize').prop('checked')
 
-        const passphrase = generateBip39Passphrase(wordCount, separator, capitalize)
-        $('#form-item-password').val(passphrase).focus()
+        const result = generateBip39Passphrase(wordCount, separator, capitalize)
+        $('#form-item-password').val(result.passphrase).focus()
 
-        syncItemPasswordComplexity(passphrase)
+        syncItemPasswordComplexity(result.passphrase)
+        updatePassphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
-        if (debugJavascript === true) console.log('Passphrase generated: ' + passphrase)
+        if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
+    })
+
+    // Manual edits invalidate the generated-passphrase coaching (programmatic
+    // .val() does not fire 'input', so the generator's coaching is preserved).
+    $('#form-item-password').on('input', function() {
+        $('#form-item-passphrase-coach').addClass('hidden').empty()
     })
 
     /**
