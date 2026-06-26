@@ -1736,6 +1736,29 @@ class DatabaseInstaller
         );
     }
 
+    // Create table import_tracking (per-operation import follow-up)
+    private function import_tracking()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "import_tracking` (
+            `id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+            `operation_id` INT(12) NOT NULL,
+            `user_id` INT(12) NOT NULL,
+            `format` VARCHAR(20) NOT NULL,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'analyzing',
+            `total_items` INT(12) NOT NULL DEFAULT 0,
+            `imported_items` INT(12) NOT NULL DEFAULT 0,
+            `failed_items` INT(12) NOT NULL DEFAULT 0,
+            `folders_count` INT(12) NOT NULL DEFAULT 0,
+            `message` TEXT NULL,
+            `started_at` INT(12) NOT NULL,
+            `finished_at` INT(12) NULL DEFAULT NULL,
+            KEY `operation_id` (`operation_id`),
+            KEY `user_id` (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
     // Create table importations
     private function user_private_keys()
     {

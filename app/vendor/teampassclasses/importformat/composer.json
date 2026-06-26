@@ -1,0 +1,26 @@
+{
+    "name": "teampassclasses/importformat",
+    "description": "Normalise third-party password-manager exports (Bitwarden, LastPass, 1Password, KeePassXC) into TeamPass' import model.",
+    "type": "library",
+    "license": "GPL-3.0-only",
+    "keywords": [
+        "import",
+        "bitwarden",
+        "lastpass",
+        "1password",
+        "keepassxc"
+    ],
+    "authors": [
+        {
+            "name": "Nils Laumaillé"
+        }
+    ],
+    "require": {
+        "php": "^8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "TeampassClasses\\ImportFormat\\": "src/"
+        }
+    }
+}

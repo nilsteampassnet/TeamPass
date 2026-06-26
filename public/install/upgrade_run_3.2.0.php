@@ -569,6 +569,34 @@ mysqli_query(
      ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
 );
 
+// Add the import_tracking table — per-operation follow-up of item imports
+// (format, status, item/folder counts, timestamps). Powers the "import
+// follow-up" panel and history on the Import page.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'import_tracking` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `operation_id` int(12) NOT NULL,
+        `user_id` int(12) NOT NULL,
+        `format` varchar(20) NOT NULL,
+        `status` varchar(20) NOT NULL DEFAULT \'analyzing\',
+        `total_items` int(12) NOT NULL DEFAULT 0,
+        `imported_items` int(12) NOT NULL DEFAULT 0,
+        `failed_items` int(12) NOT NULL DEFAULT 0,
+        `folders_count` int(12) NOT NULL DEFAULT 0,
+        `message` text NULL,
+        `started_at` int(12) NOT NULL,
+        `finished_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `operation_id` (`operation_id`),
+        KEY `user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating import_tracking table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
 // Drop obsolete password migration tracking column (added in 3.1.5, no longer read by app)
 $columnNeedsPwMigrationExists = mysqli_fetch_array(mysqli_query(
     $db_link,
