@@ -1359,17 +1359,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // > END <
             //
         } else if ($(this).data('item-action') === 'otv') {
-            if (debugJavascript === true) console.info('SHOW OTV ITEM');
+            if (debugJavascript === true) console.info('SHOW SECURE SEND ITEM');
             toastr.remove();
 
-            // Generate link
-            $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
-            $('#form-item-otv-views').val('1');
-            prepareOneTimeView();
-
-            $('#form-item-otv-link').val('');
-            // Open OTV modal
-            $('#modal-item-otv').modal('show');
+            // Open the Secure Send modal in item mode (link generated on demand)
+            openSecureSendModal('item');
 
             //
             // > END <
@@ -7634,18 +7628,149 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Undocumented function
+     * Bind the copy-to-clipboard button to a Secure Send URL.
+     *
+     * @param {string} url
+     * @return void
+     */
+    function bindSecureSendClipboard(url) {
+        $('#form-item-otv-copy-button').off('click.securesend').on('click.securesend', async function() {
+            try {
+                if (!url) {
+                    return;
+                }
+                await copyToClipboard(url);
+                toastr.info(
+                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                    '', {
+                        timeOut: 2000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            } catch (error) {
+                toastr.error(
+                    '<?php echo $lang->get("clipboard_error"); ?>',
+                    '', {
+                        timeOut: 3000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Map a Secure Send backend error code to a readable message.
+     *
+     * @param {string} code
+     * @return {string}
+     */
+    function secureSendErrorLabel(code) {
+        var map = {
+            'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
+            'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
+            'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
+            'not_allowed': '<?php echo $lang->get('error'); ?>'
+        };
+        return map[code] || '<?php echo $lang->get('error'); ?>';
+    }
+
+    /**
+     * Load and render the current user's active Secure Send links.
      *
      * @return void
      */
-    function prepareOneTimeView() {
+    function loadSecureSendsList() {
+        $.post(
+            "sources/items.queries.php", {
+                type: "list_secure_sends",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                if (data.error !== "" || data.sends === undefined || data.sends.length === 0) {
+                    $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
+                    return;
+                }
+                var html = '<ul class="list-unstyled mb-0">';
+                data.sends.forEach(function(s) {
+                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
+                    var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
+                    html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
+                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + s.label + lock +
+                        ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
+                        '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
+                        '</li>';
+                });
+                html += '</ul>';
+                $('#secure-send-list').html(html);
+            },
+            "json"
+        );
+    }
+
+    /**
+     * Open the Secure Send modal in the given mode.
+     *
+     * @param {string} mode 'item' or 'note'
+     * @return void
+     */
+    function openSecureSendModal(mode) {
+        $('#form-secure-send-mode').val(mode);
+        // Reset the form
+        $('#form-item-otv-link').val('').data('otv-id', 0);
+        $('#form-secure-send-passphrase').val('');
+        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
+        $('#form-item-otv-views').val('1');
+        $('#secure-send-modal-title').text('<?php echo $lang->get('secure_send'); ?>');
+
+        if (mode === 'note') {
+            $('#secure-send-note-fields').removeClass('hidden');
+            $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
+        } else {
+            $('#secure-send-note-fields').addClass('hidden');
+        }
+
+        loadSecureSendsList();
+        $('#modal-item-otv').modal('show');
+    }
+
+    // Generate a Secure Send link
+    $(document).on('click', '#form-secure-send-generate', function() {
+        var mode = $('#form-secure-send-mode').val();
+        var passphrase = $('#form-secure-send-passphrase').val();
+
         var data = {
-            "id": store.get('teampassItem').id,
+            "send_type": mode,
+            "passphrase": passphrase,
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0
         };
 
-        //Send query
+        if (mode === 'note') {
+            var secret = $('#form-secure-send-secret').val();
+            var note = $('#form-secure-send-note').val();
+            if (secret.trim() === '' && note.trim() === '') {
+                toastr.error('<?php echo $lang->get('secure_send_empty_note_error'); ?>', '', { timeOut: 3000, progressBar: true });
+                return;
+            }
+            data.payload = {
+                "title": $('#form-secure-send-title').val(),
+                "secret": secret,
+                "note": note,
+                "login": $('#form-secure-send-login').val(),
+                "url": $('#form-secure-send-url').val()
+            };
+        } else {
+            data.id = store.get('teampassItem').id;
+        }
+
+        var $btn = $(this);
+        $btn.addClass('disabled');
+
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
@@ -7653,118 +7778,49 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                //check if format error
-                if (data.error == "") {
-                    $('#form-item-otv-link').val(data.url);
-                    $('#form-item-otv-link').data('otv-id', data.otv_id);
-
-                    // prepare clipboard
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
+                $btn.removeClass('disabled');
+                if (data.error === "") {
+                    $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
+                    bindSecureSendClipboard(data.url);
+                    if (data.has_passphrase === 1) {
+                        $('#form-secure-send-passphrase-reminder').removeClass('hidden');
+                    } else {
+                        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+                    }
+                    loadSecureSendsList();
+                } else {
+                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
                 }
             },
             "json"
         );
-    }
+    });
 
-    // Handle update OTV button
-    $(document).on('click', '#form-item-otv-update', function() {
-        var $btn = $(this);
-        $btn.addClass('disabled').html('<i class="fa-solid fa-circle-notch fa-spin"></i><br>');
+    // Open the Secure Send modal in note mode from the top-level entry
+    $(document).on('click', '#secure-send-note-open', function() {
+        openSecureSendModal('note');
+    });
 
+    // Refresh the "My secure sends" list
+    $(document).on('click', '#secure-send-list-refresh', function() {
+        loadSecureSendsList();
+    });
+
+    // Revoke a Secure Send link
+    $(document).on('click', '.secure-send-revoke', function() {
         var data = {
-            "otv_id": $('#form-item-otv-link').data('otv-id'),
-            "days": $('#form-item-otv-days').val(),
-            "views": $('#form-item-otv-views').val(),
-            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
-            "original_link": $('#form-item-otv-link').val(),
+            "id": $(this).data('id')
         };
-
         $.post(
             "sources/items.queries.php", {
-                type: "update_OTV_url",
+                type: "revoke_secure_send",
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                $btn.removeClass('disabled').html('<i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>');
-                // Display new url
-                if (data.new_url !== undefined) {
-                    $('#form-item-otv-link').val(data.new_url);
-
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
-                }
-                toastr.remove();
-                toastr.info(
-                    '<?php echo $lang->get('updated'); ?>',
-                    '', {
-                        timeOut: 2000,
-                        progressBar: true
-                    }
-                );
-            }
+                loadSecureSendsList();
+            },
+            "json"
         );
     });
 

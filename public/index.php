@@ -82,6 +82,17 @@ if (file_exists(TEAMPASS_APP . '/config/settings.php') === false) {
     exit;
 }
 
+// One-Time-View / Secure Send is a public, unauthenticated endpoint. Handle it here
+// — before CSRFGuard and before any authenticated routing — then exit. It performs
+// no session-bound mutation, so it needs no CSRF token (the anonymous recipient has
+// none); because it always exits, a crafted "?otv=" request can never fall through
+// to a CSRF-protected handler. CSRFGuard therefore stays unconditionally enabled for
+// every other index.php request, and the page renders its own self-contained layout.
+if (isset($_GET['otv']) === true && $_GET['otv'] !== '') {
+    require_once TEAMPASS_APP . '/core/otv.php';
+    exit;
+}
+
 // initialise CSRFGuard library
 require_once TEAMPASS_APP . '/includes/libraries/csrfp/libs/csrf/csrfprotector.php';
 csrfProtector::init();

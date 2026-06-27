@@ -705,13 +705,15 @@ if ((int) $session_user_admin === 1) {
             <div class="modal-content">
                 <div class="modal-header bg-primary">
                     <h5 class="modal-title">
-                        <i class="fa-brands fa-slideshare mr-2"></i><?php echo $lang->get('one_time_view'); ?>
+                        <i class="fa-brands fa-slideshare mr-2"></i><span id="secure-send-modal-title"><?php echo $lang->get('one_time_view'); ?></span>
                     </h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" id="form-secure-send-mode" value="item">
+
                     <div class="callout callout-info">
                         <h5><i class="icon fa fa-info mr-2"></i><?php echo $lang->get('information'); ?></h5>
                         <p><?php
@@ -723,28 +725,51 @@ if ((int) $session_user_admin === 1) {
                         ?></p>
                     </div>
 
-                    <div class="form-group">
-                        <label for="form-item-otv-link"><i class="fa-solid fa-link mr-2"></i><?php echo $lang->get('otv_link'); ?></label>
-                        <div class="input-group mb-3">
-                            <input type="text" class="form-control clear-me-val" disabled id="form-item-otv-link" data-otv-id="0">
-                            <div class="input-group-prepend">
-                                <button type="button" class="btn btn-warning btn-copy-clipboard" id="form-item-otv-copy-button"><?php echo $lang->get('copy'); ?></button>
+                    <!-- NOTE MODE FIELDS (ad-hoc secret/note) -->
+                    <div id="secure-send-note-fields" class="hidden">
+                        <div class="form-group">
+                            <label for="form-secure-send-title"><?php echo $lang->get('label'); ?></label>
+                            <input type="text" class="form-control clear-me-val" id="form-secure-send-title">
+                        </div>
+                        <div class="form-group">
+                            <label for="form-secure-send-secret"><?php echo $lang->get('password'); ?></label>
+                            <input type="text" class="form-control clear-me-val" id="form-secure-send-secret">
+                        </div>
+                        <div class="form-group">
+                            <label for="form-secure-send-note"><?php echo $lang->get('description'); ?></label>
+                            <textarea class="form-control clear-me-val" id="form-secure-send-note" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="form-group col-6">
+                                <label for="form-secure-send-login"><?php echo $lang->get('login'); ?></label>
+                                <input type="text" class="form-control clear-me-val" id="form-secure-send-login">
+                            </div>
+                            <div class="form-group col-6">
+                                <label for="form-secure-send-url"><?php echo $lang->get('url'); ?></label>
+                                <input type="text" class="form-control clear-me-val" id="form-secure-send-url">
                             </div>
                         </div>
+                    </div>
+
+                    <!-- PASSPHRASE (optional, or forced by admin) -->
+                    <div class="form-group">
+                        <label for="form-secure-send-passphrase"><i class="fa-solid fa-lock mr-2"></i><?php echo $lang->get('secure_send_passphrase'); ?></label>
+                        <input type="text" class="form-control clear-me-val" id="form-secure-send-passphrase" autocomplete="off" <?php echo (int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 ? 'required' : ''; ?>>
+                        <small class="form-text text-muted"><?php echo $lang->get('secure_send_passphrase_hint'); ?></small>
                     </div>
 
                     <div class="row">
                         <div class="form-group col-4">
                             <label for="form-item-otv-days"><i class="fa-regular fa-calendar-days mr-2"></i><?php echo $lang->get('number_of_days'); ?> (<?php echo $lang->get('maximum').': '.$SETTINGS['otv_expiration_period'];?>)</label>
                             <div class="input-group mb-3">
-                                <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="0" max="<?php echo $SETTINGS['otv_expiration_period'];?>" value="<?php echo $SETTINGS['otv_expiration_period'];?>">
+                                <input type="number" class="form-control clear-me-val" id="form-item-otv-days" min="1" max="<?php echo $SETTINGS['otv_expiration_period'];?>" value="<?php echo $SETTINGS['otv_expiration_period'];?>">
                             </div>
                         </div>
 
                         <div class="form-group col-4">
-                            <label for="form-item-otv-views"><i class="fa-regular fa-hashtag mr-2"></i><?php echo $lang->get('number_of_times'); ?></label>
+                            <label for="form-item-otv-views"><i class="fa-regular fa-hashtag mr-2"></i><?php echo $lang->get('number_of_times'); ?> (<?php echo $lang->get('maximum').': '.(int) ($SETTINGS['secure_send_max_views'] ?? 5);?>)</label>
                             <div class="input-group mb-3">
-                                <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="0">
+                                <input type="number" class="form-control clear-me-val" id="form-item-otv-views" value="1" min="1" max="<?php echo (int) ($SETTINGS['secure_send_max_views'] ?? 5);?>">
                             </div>
                         </div>
 
@@ -762,9 +787,33 @@ if ((int) $session_user_admin === 1) {
                         </div>
 
                         <div class="form-group col-2">
-                            <a class="btn btn-app mt-3" id="form-item-otv-update">
-                                <i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>
+                            <a class="btn btn-app mt-3" id="form-secure-send-generate">
+                                <i class="fa-solid fa-link"></i><br><?php echo $lang->get('generate'); ?>
                             </a>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="form-item-otv-link"><i class="fa-solid fa-link mr-2"></i><?php echo $lang->get('otv_link'); ?></label>
+                        <div class="input-group mb-3">
+                            <input type="text" class="form-control clear-me-val" disabled id="form-item-otv-link" data-otv-id="0">
+                            <div class="input-group-prepend">
+                                <button type="button" class="btn btn-warning btn-copy-clipboard" id="form-item-otv-copy-button"><?php echo $lang->get('copy'); ?></button>
+                            </div>
+                        </div>
+                        <small id="form-secure-send-passphrase-reminder" class="text-info hidden"><i class="fa-solid fa-circle-info mr-1"></i><?php echo $lang->get('secure_send_passphrase_reminder'); ?></small>
+                    </div>
+
+                    <!-- MY SECURE SENDS -->
+                    <div class="card card-outline card-secondary mt-3">
+                        <div class="card-header py-2">
+                            <h6 class="card-title mb-0"><i class="fa-solid fa-paper-plane mr-2"></i><?php echo $lang->get('secure_send_my_sends'); ?></h6>
+                            <div class="card-tools">
+                                <button type="button" class="btn btn-tool" id="secure-send-list-refresh"><i class="fa-solid fa-rotate"></i></button>
+                            </div>
+                        </div>
+                        <div class="card-body p-2">
+                            <div id="secure-send-list" class="text-muted small"><?php echo $lang->get('secure_send_no_active'); ?></div>
                         </div>
                     </div>
                 </div>
@@ -1038,28 +1087,39 @@ if ((int) $session_user_admin === 1) {
                     <div class="card-title w-100">
                         <div class="row">
                             <div class="col">
-                                <div class="btn-group float-left">
-                                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">
-                                        <i class="fa-solid fa-bars"></i>
-                                        <span class="caret"></span>
-                                    </button>
-                                    <div class="dropdown-menu">
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="items-checkbox"><i class="fa-regular fa-square-check mr-2"></i><?php echo $lang->get('item_checkbox'); ?></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="items-delete"><i class="fa-regular fa-trash-can mr-2"></i><?php echo $lang->get('delete_items'); ?></a>
-                                        <a class="dropdown-item tp-action" href="#" data-folder-action="subfolders-show-hide"><i class="fa-regular fa-eye-slash mr-2"></i><?php echo $lang->get('show_hide_folders'); ?></a>
-                                        <div class="dropdown-divider show-delete-checkbox hidden"></div>
-                                        <a class="dropdown-item tp-action show-delete-checkbox hidden" href="#" data-folder-action="">
-                                            <div class="input-group input-group-sm">
-                                                <input type="checkbox" class="flat-blue mr-2" id="items-selection-checkbox">
-                                                <label for="import-keepass-edit-all-checkbox" class="ml-2"><?php echo $lang->get('select_all'); ?></label>
-                                            </div>
-                                        </a>
+                                <div class="btn-group btn-group-sm float-left" role="group">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            <i class="fa-solid fa-bars"></i>
+                                        </button>
+                                        <div class="dropdown-menu">
+                                            <a class="dropdown-item tp-action" href="#" data-folder-action="items-checkbox"><i class="fa-regular fa-square-check mr-2"></i><?php echo $lang->get('item_checkbox'); ?></a>
+                                            <a class="dropdown-item tp-action" href="#" data-folder-action="items-delete"><i class="fa-regular fa-trash-can mr-2"></i><?php echo $lang->get('delete_items'); ?></a>
+                                            <a class="dropdown-item tp-action" href="#" data-folder-action="subfolders-show-hide"><i class="fa-regular fa-eye-slash mr-2"></i><?php echo $lang->get('show_hide_folders'); ?></a>
+                                            <div class="dropdown-divider show-delete-checkbox hidden"></div>
+                                            <a class="dropdown-item tp-action show-delete-checkbox hidden" href="#" data-folder-action="">
+                                                <div class="input-group input-group-sm">
+                                                    <input type="checkbox" class="flat-blue mr-2" id="items-selection-checkbox">
+                                                    <label for="import-keepass-edit-all-checkbox" class="ml-2"><?php echo $lang->get('select_all'); ?></label>
+                                                </div>
+                                            </a>
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="btn-group" id="btn-new-item">
-                                    <button type="button" class="btn btn-primary btn-sm tp-action" data-item-action="new">
-                                        <i class="fa-solid fa-plus mr-2"></i><?php echo $lang->get('new_item'); ?>
+                                    <button type="button" class="btn btn-primary tp-action" id="btn-new-item" data-item-action="new">
+                                        <i class="fa-solid fa-plus mr-2"></i><?php echo $lang->get('new'); ?>
                                     </button>
+                                    <?php
+                                    if (
+                                        isset($SETTINGS['otv_is_enabled']) === true && (int) $SETTINGS['otv_is_enabled'] === 1
+                                        && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) === 1
+                                    ) {
+                                        ?>
+                                        <button type="button" class="btn btn-primary" id="secure-send-note-open" title="<?php echo $lang->get('secure_send_send_a_secret'); ?>">
+                                            <i class="fa-solid fa-paper-plane mr-2"></i><?php echo $lang->get('secure_send_send'); ?>
+                                        </button>
+                                        <?php
+                                    }
+                                    ?>
                                 </div>
                             </div>
                             <div class="col text-right">
@@ -1201,7 +1261,7 @@ if ((int) $session_user_admin === 1) {
                                         ) {
                                             ?>
                                             <li class="nav-item">
-                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fab fa-slideshare mr-1"></i><small><?php echo $lang->get('one_time_view'); ?></small></a>
+                                                <a class="text-navy tp-action ml-3" href="#" data-item-action="otv"><i class="fa-solid fa-paper-plane mr-1"></i><small><?php echo $lang->get('secure_send'); ?></small></a>
                                             </li>
                                         <?php
                                         }
