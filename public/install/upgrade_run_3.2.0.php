@@ -584,6 +584,65 @@ if (!empty($columnNeedsPwMigrationExists[0])) {
     );
 }
 
+// F14 Secure Send: elevate the OTV engine.
+// The otv table must accept ad-hoc note sends (no item) and the optional
+// passphrase-protected key model. All changes are additive and idempotent.
+$otvTable = $pre . 'otv';
+
+// item_id -> nullable (note sends are not bound to an item)
+$itemIdColumn = mysqli_fetch_assoc(mysqli_query(
+    $db_link,
+    "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $otvTable . "'
+     AND COLUMN_NAME = 'item_id'"
+));
+if ($itemIdColumn !== null && strtoupper((string) ($itemIdColumn['IS_NULLABLE'] ?? '')) === 'NO') {
+    if (mysqli_query($db_link, "ALTER TABLE `" . $otvTable . "` MODIFY `item_id` INT(12) NULL DEFAULT NULL") === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error making otv.item_id nullable: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// New columns (added only when missing)
+$otvNewColumns = [
+    'send_type'       => "ADD `send_type` VARCHAR(10) NOT NULL DEFAULT 'item' AFTER `item_id`",
+    'protected_key'   => "ADD `protected_key` TEXT NULL DEFAULT NULL AFTER `encrypted`",
+    'has_passphrase'  => "ADD `has_passphrase` TINYINT(1) NOT NULL DEFAULT 0 AFTER `protected_key`",
+    'failed_attempts' => "ADD `failed_attempts` INT(10) NOT NULL DEFAULT 0 AFTER `has_passphrase`",
+];
+foreach ($otvNewColumns as $columnName => $alterClause) {
+    $columnExists = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = '" . $database . "'
+         AND TABLE_NAME = '" . $otvTable . "'
+         AND COLUMN_NAME = '" . $columnName . "'"
+    ));
+    if (empty($columnExists[0])) {
+        if (mysqli_query($db_link, "ALTER TABLE `" . $otvTable . "` " . $alterClause) === false) {
+            echo '[{"finish":"1", "msg":"", "error":"Error adding otv.' . $columnName . ': ' . addslashes(mysqli_error($db_link)) . '"}]';
+            mysqli_close($db_link);
+            exit();
+        }
+    }
+}
+
+// Seed Secure Send settings (idempotent)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_allow_notes', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_max_views', '5')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_require_passphrase', '0')"
+);
+
 // Close connection
 mysqli_close($db_link);
 
