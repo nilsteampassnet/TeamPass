@@ -671,6 +671,31 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_require_passphrase', '0')"
 );
 
+// F12 First-run onboarding wizard: per-user completion flag (added only when missing).
+// Existing users are marked as completed so the wizard never auto-pops after an upgrade;
+// only accounts created afterwards (DEFAULT 0) trigger it on their first connection.
+$onboardingColumnExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $pre . "users'
+     AND COLUMN_NAME = 'onboarding_completed'"
+));
+if (empty($onboardingColumnExists[0])) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "users`
+         ADD `onboarding_completed` TINYINT(1) NOT NULL DEFAULT 0
+         COMMENT 'First-run onboarding wizard completed (0=no, 1=done/skipped)'"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding users.onboarding_completed: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+    // Backfill existing users once (runs only when the column was just created).
+    mysqli_query($db_link, "UPDATE `" . $pre . "users` SET `onboarding_completed` = 1");
+}
+
 // Close connection
 mysqli_close($db_link);
 

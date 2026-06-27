@@ -114,6 +114,7 @@ if (null !== $post_type) {
         'build_extension_autoconfig',
         'list_api_sessions',
         'revoke_api_session',
+        'set_onboarding_completed',
     ];
 
     // decrypt and retrieve data in JSON format
@@ -533,6 +534,39 @@ if (null !== $post_type) {
                 array(
                     'error'  => false,
                     'bundle' => $bundle,
+                ),
+                'encode'
+            );
+            break;
+
+        /*
+         * F12 ONBOARDING WIZARD: flag the first-run wizard as completed or skipped
+         * for the current user. Allowed to every authenticated user (self only).
+         */
+        case 'set_onboarding_completed':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            DB::update(
+                prefixTable('users'),
+                array('onboarding_completed' => 1),
+                'id = %i',
+                (int) $session->get('user-id')
+            );
+            $session->set('user-onboarding_completed', 1);
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
                 ),
                 'encode'
             );

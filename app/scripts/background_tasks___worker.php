@@ -738,9 +738,10 @@ class TaskWorker {
                 }
                 if (count($activityUpdate) > 0) {
                     DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
-                    if ($hasApiActivityBackfill === true) {
-                        $apiActivityBackfilled++;
-                    }
+                    // In this (non-reset) path $activityUpdate is only ever populated by
+                    // the API-activity backfill above, so reaching here means the row was
+                    // backfilled — count it unconditionally.
+                    $apiActivityBackfilled++;
                 }
 
                 // Apply due action

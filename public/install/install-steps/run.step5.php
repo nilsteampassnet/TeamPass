@@ -864,6 +864,7 @@ class DatabaseInstaller
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
             `show_subfolders` tinyint(1) NOT NULL DEFAULT '0',
+            `onboarding_completed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'First-run onboarding wizard completed (0=no, 1=done/skipped)',
             `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             `phpseclibv3_migration_completed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Forced phpseclib v3 migration status (0=not done, 1=completed)',
             `phpseclibv3_migration_task_id` INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task',

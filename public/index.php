@@ -385,6 +385,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <a class="dropdown-item user-menu" href="#" data-name="profile">
                                     <i class="fa-solid fa-user-circle fa-fw mr-2"></i><?php echo $lang->get('my_profile'); ?>
                                 </a>
+                                <?php if ((int) $session_user_admin === 0) { ?>
+                                <a class="dropdown-item" href="#" id="onboarding-replay">
+                                    <i class="fa-solid fa-compass fa-fw mr-2"></i><?php echo $lang->get('onboarding_replay_menu'); ?>
+                                </a>
+                                <?php } ?>
                                 <?php
                                     if (empty($session_auth_type) === false && $session_auth_type !== 'ldap' && $session_auth_type !== 'oauth2') {
                                         ?>
@@ -1591,6 +1596,13 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
         && (int) $session->get('user-id') > 0
     ) {
         include_once TEAMPASS_APP . '/core/extension-autoconfig.js.php';
+    }
+    // First-run onboarding wizard (non-admin authenticated users only).
+    if (empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
+    ) {
+        include_once TEAMPASS_APP . '/core/onboarding.js.php';
     }
     if ($menuAdmin === true) {
         include_once TEAMPASS_APP . '/pages/admin.js.php';

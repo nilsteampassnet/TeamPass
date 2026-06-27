@@ -987,6 +987,11 @@ function buildUserSession(
     $session->set('user-avatar_thumb', $userInfo['avatar_thumb']);
     $session->set('user-upgrade_needed', $userInfo['upgrade_needed']);
     $session->set('user-is_ready_for_usage', $userInfo['is_ready_for_usage']);
+    // F12 onboarding wizard: completion flag + genuine first-connection signal.
+    // $userInfo still holds the pre-login row here, so an empty last_connexion means
+    // this is the user's very first login (it is set to time() later in finalUpdateData).
+    $session->set('user-onboarding_completed', (int) ($userInfo['onboarding_completed'] ?? 0));
+    $session->set('user-first_connection', empty($userInfo['last_connexion']));
     $session->set('user-personal_folder_enabled', $userInfo['personal_folder']);
     // Global setting (teampass_misc) cached in session so item create/update can
     // honor it without a DB read on every request.
