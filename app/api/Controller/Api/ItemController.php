@@ -562,6 +562,9 @@ class ItemController extends BaseController
 
                     // Empty collection → 200 + [] (a 204 must not carry a body — RFC 9110)
                     $responseData = json_encode($ret);
+                    if (count($ret) > 0) {
+                        $this->markApiFunctionalActivity($userData);
+                    }
                 }
             } catch (Error $e) {
                 error_log('ItemController error: ' . $e->getMessage());
@@ -671,6 +674,7 @@ class ItemController extends BaseController
                                         'expires_in' => $otpExpiresIn,
                                         'item_id' => $itemId
                                     ]);
+                                    $this->markApiFunctionalActivity($userData);
                                 } catch (\RuntimeException $e) {
                                     $strErrorDesc = 'Failed to generate OTP code: ' . $e->getMessage();
                                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';

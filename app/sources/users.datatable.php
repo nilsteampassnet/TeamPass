@@ -295,15 +295,6 @@ foreach ($rows as $record) {
                 )
             .
             (($unlock_at) ? '<i class=\"fas fa-solid text-red fa-lock infotip text-info ml-1\" title=\"'.$lang->get('bruteforce_unlock_at').$unlock_at.'\"></i>' : '');
-        if ($request->query->filter('display_warnings', '', FILTER_VALIDATE_BOOLEAN) === true) {
-            $userDisplayInfos .= '<br>'.
-                ((in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false && (int) $record['admin'] !== 1 && is_null($record['keys_recovery_time']) === true) ? 
-                    '<i class=\"fa-solid fa-download infotip ml-1\" style=\"color:Tomato\" title=\"'.$lang->get('recovery_keys_not_downloaded').'\"></i>' :
-                    ''
-                ).
-                '';
-        }
-
         // Inactive users management icon (yellow card)
         $iumIcon = '';
         if ((int) $record['admin'] !== 1 && in_array($record['id'], [OTV_USER_ID, TP_USER_ID, SSH_USER_ID, API_USER_ID]) === false) {

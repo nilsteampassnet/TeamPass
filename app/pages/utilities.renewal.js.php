@@ -96,8 +96,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'orderCellsTop': true,
         'fixedHeader': true,
         'paging': true,
-        'sPaginationType': 'listbox',
+        'pagingType': 'simple_numbers',
         'searching': true,
+        'dom': "<'row renewal-table-controls align-items-center'<'col-md-6'l><'col-md-6'f>>" +
+            "<'renewal-table-shell table-responsive'tr>" +
+            "<'row renewal-table-footer align-items-center'<'col-md-6'i><'col-md-6'p>>",
         'order': [
             [0, 'asc']
         ],
@@ -155,12 +158,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
 
 
-    $('#renewal-date').addClear({
-        symbolClass: "far fa-times-circle text-danger",
-        onClear: function() {
-            $('#renewal-date').datepicker('clearDates');
-            oTable.ajax.reload();
-        }
+    $('#clear-renewal-date').on('click', function() {
+        $('#renewal-date').datepicker('clearDates').val('');
+        oTable.ajax.reload();
     });
 
 

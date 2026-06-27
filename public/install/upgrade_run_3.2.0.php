@@ -137,6 +137,17 @@ if ($res === false) {
     exit();
 }
 
+// Remove obsolete API key/IP whitelist rows (managed UI tabs were removed; never used by the API).
+$res = mysqli_query(
+    $db_link,
+    "DELETE FROM `" . $pre . "api` WHERE `type` IN ('key', 'ip')"
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error purging obsolete api key/ip rows: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
 // Add enable_local_password_recovery setting, aligned with the legacy visibility flag when present.
 $legacyForgotPwdRecovery = mysqli_query(
     $db_link,

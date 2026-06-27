@@ -266,6 +266,11 @@ switch ($inputData['type']) {
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
+            // Defense in depth: neutralize dangerous URL schemes (javascript:, data:, vbscript:)
+            // that could lead to XSS when the URL is later rendered (e.g. OTV page, item card).
+            if ($post_url !== '' && preg_match('#^\s*(?:javascript|data|vbscript)\s*:#i', $post_url) === 1) {
+                $post_url = '';
+            }
             $post_uploaded_file_id = filter_var($dataReceived['uploaded_file_id'], FILTER_SANITIZE_NUMBER_INT);
             $inputData['userId'] = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_to_be_deleted_after_date = isset($dataReceived['to_be_deleted_after_date']) === true ? filter_var($dataReceived['to_be_deleted_after_date'], FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';

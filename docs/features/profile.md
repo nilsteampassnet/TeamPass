@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **My Profile** page lets every user consult their account information, adjust personal preferences, change their password, and manage their encryption keys. It is accessible from the top-right user menu.
+The **My Profile** page lets every user consult their account information, adjust personal preferences, and change their password. It is accessible from the top-right user menu.
 
 > 🔔 Some fields may be locked by the administrator (e.g. name, timezone, language). When an option is grayed out or absent, it means the administrator has disabled self-editing for that field.
 
@@ -86,27 +86,6 @@ The password change panel is accessible from the **top-right user menu → Chang
 > 🔔 Changing your login password also re-encrypts your private key. If Teampass cannot decrypt your key with the new password, item access may be lost. The operation is safe as long as you enter your current password correctly.
 
 > 🔔 **LDAP and OAuth2 accounts** authenticate against an external directory. The password change form is not available for these accounts — password changes must be done in Active Directory or the identity provider.
-
----
-
-## Keys tab
-
-### Recovery keys
-
-Your **recovery keys** are a backup of your encryption key pair. They allow an administrator to restore your access if your account becomes locked or your keys are corrupted.
-
-> 🔔 Download and store your recovery keys in a safe place (password manager, secure storage). If you lose access to your account and no recovery keys are available, your encrypted items cannot be recovered.
-
-**To download your recovery keys:**
-
-1. Go to the **Keys** tab.
-2. Click **Download recovery keys**.
-3. Enter your current password to confirm.
-4. Save the downloaded file securely.
-
-The date of your last download is shown next to the button. If it shows a warning (no download recorded), download your keys now.
-
-See [Keys management](keys.md) for more details on what recovery keys are and when they are used.
 
 ---
 

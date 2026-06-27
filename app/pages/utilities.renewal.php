@@ -85,6 +85,211 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 ?>
 
+<style>
+    #renewal-page .renewal-card {
+        border-radius: .35rem;
+        overflow: hidden;
+    }
+
+    #renewal-page .renewal-toolbar {
+        align-items: center;
+        background-color: #ffffff;
+        border-bottom: 1px solid #e5e9ef;
+        display: flex;
+        gap: 1rem;
+        justify-content: space-between;
+        padding: 1rem;
+    }
+
+    #renewal-page .renewal-info {
+        align-items: center;
+        color: #3f4b57;
+        display: flex;
+        min-width: 0;
+    }
+
+    #renewal-page .renewal-info-icon {
+        align-items: center;
+        background-color: #e8f6f9;
+        border-radius: 50%;
+        color: #138496;
+        display: inline-flex;
+        flex: 0 0 32px;
+        height: 32px;
+        justify-content: center;
+        margin-right: .75rem;
+        width: 32px;
+    }
+
+    #renewal-page .renewal-date-filter {
+        flex: 0 0 360px;
+        max-width: 100%;
+    }
+
+    #renewal-page .renewal-date-label {
+        color: #3f4b57;
+        font-weight: 600;
+        margin-bottom: .35rem;
+    }
+
+    #renewal-page .renewal-date-filter .input-group-text,
+    #renewal-page .renewal-date-filter .btn,
+    #renewal-page .renewal-date-filter .form-control {
+        height: calc(1.8125rem + 2px);
+    }
+
+    #renewal-page .renewal-date-filter .btn {
+        align-items: center;
+        display: inline-flex;
+        justify-content: center;
+        min-width: 36px;
+    }
+
+    #renewal-page .renewal-table-section {
+        padding: 1rem;
+    }
+
+    #renewal-page .renewal-table-controls {
+        background-color: #f8fafc;
+        border: 1px solid #e5e9ef;
+        border-bottom: 0;
+        border-radius: .35rem .35rem 0 0;
+        margin: 0;
+        padding: .75rem 1rem;
+    }
+
+    #renewal-page .renewal-table-shell {
+        border: 1px solid #e5e9ef;
+        border-radius: 0;
+        overflow: hidden;
+    }
+
+    #renewal-page .renewal-table-footer {
+        background-color: #ffffff;
+        border: 1px solid #e5e9ef;
+        border-radius: 0 0 .35rem .35rem;
+        border-top: 0;
+        margin: 0;
+        padding: .75rem 1rem;
+    }
+
+    #renewal-page #table-renewal {
+        margin-bottom: 0 !important;
+    }
+
+    #renewal-page #table-renewal thead th {
+        background-color: #f3f5f7;
+        border-bottom: 1px solid #d9dee5;
+        border-top: 0;
+        color: #343a40;
+        font-weight: 600;
+        padding: .75rem;
+    }
+
+    #renewal-page #table-renewal tbody td {
+        padding: .85rem .75rem;
+        vertical-align: middle;
+    }
+
+    #renewal-page .dataTables_length label,
+    #renewal-page .dataTables_filter label {
+        align-items: center;
+        color: #3f4b57;
+        display: flex;
+        font-weight: 600;
+        margin-bottom: 0;
+    }
+
+    #renewal-page .dataTables_length select,
+    #renewal-page .dataTables_filter input {
+        border: 1px solid #ced4da;
+        border-radius: .2rem;
+        display: inline-block;
+        font-size: .875rem;
+        height: calc(1.8125rem + 2px);
+        padding: .25rem .5rem;
+        width: auto !important;
+    }
+
+    #renewal-page .dataTables_length select {
+        margin: 0 .5rem;
+        min-width: 72px;
+    }
+
+    #renewal-page .dataTables_filter {
+        text-align: right;
+    }
+
+    #renewal-page .dataTables_filter label {
+        justify-content: flex-end;
+    }
+
+    #renewal-page .dataTables_filter input {
+        margin-left: .5rem;
+        min-width: 220px;
+    }
+
+    #renewal-page .dataTables_info {
+        color: #6c757d;
+        padding-top: .25rem;
+    }
+
+    #renewal-page .dataTables_paginate {
+        text-align: right;
+    }
+
+    #renewal-page .dataTables_paginate .pagination {
+        justify-content: flex-end;
+        margin-bottom: 0;
+    }
+
+    #renewal-page .dataTables_empty {
+        background-color: #fbfcfd;
+        color: #6c757d;
+        padding: 1.5rem .75rem !important;
+    }
+
+    @media (max-width: 991.98px) {
+        #renewal-page .renewal-toolbar {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        #renewal-page .renewal-date-filter {
+            flex-basis: auto;
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        #renewal-page .dataTables_filter {
+            margin-top: .75rem;
+            text-align: left;
+        }
+
+        #renewal-page .dataTables_filter label {
+            align-items: flex-start;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        #renewal-page .dataTables_filter input {
+            margin-left: 0;
+            margin-top: .35rem;
+            min-width: 0;
+            width: 100% !important;
+        }
+
+        #renewal-page .dataTables_paginate {
+            margin-top: .75rem;
+            text-align: left;
+        }
+
+        #renewal-page .dataTables_paginate .pagination {
+            justify-content: flex-start;
+        }
+    }
+</style>
+
 <!-- Content Header (Page header) -->
 <div class="content-header">
     <div class="container-fluid">
@@ -99,47 +304,43 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 
 <!-- Main content -->
-<div class="content">
+<div class="content" id="renewal-page">
     <div class="container-fluid">
         <div class="row">
             <div class="col-lg-12">
-                <div class="card card-outline card-primary">
-                    <div class="card-header">
-                        <h3 class="card-title">
-                            <i class="fas fa-clock mr-2"></i><?php echo $lang->get('renewal'); ?>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <div class="callout callout-info mb-3">
-                            <div class="d-flex align-items-start">
-                                <i class="fas fa-lightbulb text-info fa-lg mr-3 mt-1"></i>
-                                <div><?php echo $lang->get('renewal_page_info'); ?></div>
-                            </div>
+                <div class="card card-outline card-primary shadow-sm renewal-card">
+                    <div class="renewal-toolbar">
+                        <div class="renewal-info">
+                            <span class="renewal-info-icon">
+                                <i class="fas fa-lightbulb"></i>
+                            </span>
+                            <span><?php echo $lang->get('renewal_page_info'); ?></span>
                         </div>
-
-                        <div class="row align-items-end mb-3">
-                            <div class="col-md-6 col-lg-4">
-                                <label for="renewal-date"><?php echo $lang->get('select_date_showing_items_expiration'); ?></label>
-                                <div class="input-group date">
-                                    <div class="input-group-prepend">
-                                        <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
-                                    </div>
-                                    <input type="text" class="form-control" id="renewal-date" autocomplete="off">
+                        <div class="renewal-date-filter">
+                            <label class="renewal-date-label" for="renewal-date"><?php echo $lang->get('select_date_showing_items_expiration'); ?></label>
+                            <div class="input-group input-group-sm date">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-calendar-day"></i></span>
+                                </div>
+                                <input type="text" class="form-control" id="renewal-date" autocomplete="off">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-secondary" id="clear-renewal-date" aria-label="<?php echo $lang->get('clear_date'); ?>">
+                                        <i class="fas fa-times"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover table-responsive-sm nowrap" id="table-renewal" style="width:100%;">
-                                <thead>
-                                    <tr>
-                                        <th><?php echo $lang->get('label'); ?></th>
-                                        <th><?php echo $lang->get('expiration_date'); ?></th>
-                                        <th><?php echo $lang->get('folder'); ?></th>
-                                    </tr>
-                                </thead>
-                            </table>
-                        </div>
+                    </div>
+                    <div class="renewal-table-section">
+                        <table class="table table-striped table-hover nowrap" id="table-renewal" style="width:100%;">
+                            <thead>
+                                <tr>
+                                    <th><?php echo $lang->get('label'); ?></th>
+                                    <th><?php echo $lang->get('expiration_date'); ?></th>
+                                    <th><?php echo $lang->get('folder'); ?></th>
+                                </tr>
+                            </thead>
+                        </table>
                     </div>
                 </div>
             </div>

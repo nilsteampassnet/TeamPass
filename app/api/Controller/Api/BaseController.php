@@ -67,6 +67,26 @@ class BaseController
     }
 
     /**
+     * Mark functional API usage for inactivity management.
+     *
+     * Authentication, token refresh and settings refresh deliberately do not call
+     * this helper. Only user-visible actions should refresh inactivity state.
+     */
+    protected function markApiFunctionalActivity(array $userData): void
+    {
+        $userId = (int) ($userData['id'] ?? 0);
+        if ($userId <= 0) {
+            return;
+        }
+
+        if (function_exists('markUserFunctionalActivity') === false) {
+            require_once API_ROOT_PATH . '/../sources/main.functions.php';
+        }
+
+        markUserFunctionalActivity($userId);
+    }
+
+    /**
      * Send an RFC 9457 application/problem+json error response.
      *
      * The legacy 'error' member is kept alongside 'title'/'detail' so existing

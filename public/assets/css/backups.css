@@ -1,3 +1,44 @@
 /* Fun restore progress: a little cat that moves along the progress bar */
 .tp-restore-progress-track { position: relative; overflow: visible; }
 .tp-restore-progress-cat { position: absolute; top: -18px; left: 2%; transform: translateX(-50%); font-size: 18px; }
+
+#scheduled-backups-table,
+#externalized-backups-table {
+    min-width: 560px;
+}
+
+#scheduled-backups-table th:first-child,
+#scheduled-backups-table td:first-child,
+#externalized-backups-table th:first-child,
+#externalized-backups-table td:first-child {
+    min-width: 190px;
+}
+
+#scheduled-backups-table th:nth-child(2),
+#scheduled-backups-table td:nth-child(2),
+#externalized-backups-table th:nth-child(2),
+#externalized-backups-table td:nth-child(2) {
+    min-width: 90px;
+}
+
+#scheduled-backups-table th:nth-child(3),
+#scheduled-backups-table td:nth-child(3),
+#externalized-backups-table th:nth-child(3),
+#externalized-backups-table td:nth-child(3) {
+    min-width: 135px;
+}
+
+#scheduled-backups-table th:nth-child(4),
+#scheduled-backups-table td:nth-child(4),
+#externalized-backups-table th:nth-child(4),
+#externalized-backups-table td:nth-child(4) {
+    width: 86px;
+}
+
+.tp-backup-documents-indicator {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25rem;
+    vertical-align: middle;
+}

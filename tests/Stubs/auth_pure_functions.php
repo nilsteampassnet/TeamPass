@@ -111,6 +111,29 @@ function identifyGetUserCredentials(
 }
 
 /**
+ * Count enabled MFA methods returned to the login form.
+ *
+ * @param array<string, mixed> $mfaMethods
+ */
+function countEnabledMfaMethods(array $mfaMethods): int
+{
+    return (int) (($mfaMethods['agses'] ?? false) === true)
+        + (int) (($mfaMethods['google'] ?? false) === true)
+        + (int) (($mfaMethods['yubico'] ?? false) === true)
+        + (int) (($mfaMethods['duo'] ?? false) === true);
+}
+
+/**
+ * Determine if Google MFA has enough data to challenge the user.
+ *
+ * @param array<string, mixed> $userInfo
+ */
+function googleMfaSecretExists(array $userInfo): bool
+{
+    return trim((string) ($userInfo['ga'] ?? '')) !== '';
+}
+
+/**
  * Return true when needle-based permission adjustments should be considered
  * for the given user.
  */
