@@ -449,6 +449,19 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <nav class="mt-2" style="margin-bottom:40px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
+                                // SECURITY POSTURE DASHBOARD (F1) - visible to all users when enabled
+                                if (isset($SETTINGS['security_dashboard_enabled']) === true && (int) $SETTINGS['security_dashboard_enabled'] === 1) {
+                                    echo '
+                    <li class="nav-item">
+                        <a href="#" data-name="dashboard" class="nav-link', $get['page'] === 'dashboard' ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-shield-halved"></i>
+                        <p>
+                            ' . $lang->get('security_dashboard') . '
+                        </p>
+                        </a>
+                    </li>';
+                                }
+
                                 if ($session_user_admin === 0) {
                                     // ITEMS & SEARCH
                                     echo '
@@ -1611,6 +1624,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {
             include_once TEAMPASS_APP . '/pages/items.js.php';
+        } elseif ($get['page'] === 'dashboard') {
+            include_once TEAMPASS_APP . '/pages/dashboard.js.php';
         } elseif ($get['page'] === 'import') {
             include_once TEAMPASS_APP . '/pages/import.js.php';
         } elseif ($get['page'] === 'export') {
