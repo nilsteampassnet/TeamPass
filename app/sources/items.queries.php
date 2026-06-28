@@ -3065,12 +3065,28 @@ switch ($inputData['type']) {
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
-            $arrData['pw_length'] = strlen($passwordForMetrics);
-            // Password security badge: OWASP ASVS aligned policy (min length 12, max TeamPass complexity level)
-            if (strlen($passwordForMetrics) === 0) {
-                $arrData['pw_is_secure'] = null; // empty password → no badge
+            $pwLength = strlen($passwordForMetrics);
+            $arrData['pw_length'] = $pwLength;
+            // Per-item health marker (replaces the old binary pw_is_secure shield): the same
+            // posture signals used by the Security Posture Dashboard (F1), surfaced on the card.
+            // - weak: complexity below "medium" (TP_PW_STRENGTH_3) OR length < 12 (card-only,
+            //   uses the decrypted value available here — the dashboard has no plaintext).
+            // - reused: from the per-user scan (item_health), only when the dashboard is enabled.
+            // breached is intentionally excluded — the HIBP badge already shows it on the card.
+            if ($pwLength === 0) {
+                $arrData['pw_health'] = null; // empty password → no marker
             } else {
-                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= TP_PW_STRENGTH_5;
+                $flagWeak = (intval($dataItem['complexity_level']) < TP_PW_STRENGTH_3 || $pwLength < 12) ? 1 : 0;
+                $flagReused = 0;
+                if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1) {
+                    $flagReused = (int) DB::queryFirstField(
+                        'SELECT COALESCE(flag_reused, 0) FROM ' . prefixTable('item_health') . '
+                        WHERE user_id = %i AND item_id = %i',
+                        (int) $session->get('user-id'),
+                        (int) $inputData['id']
+                    );
+                }
+                $arrData['pw_health'] = ['weak' => $flagWeak, 'reused' => $flagReused];
             }
 
             // HIBP cached status (no API call here — async check is triggered by the JS)

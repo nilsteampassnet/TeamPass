@@ -756,7 +756,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             .html('<?php echo $var['hidden_asterisk']; ?>')
             .removeClass('pointer_none');
 
-        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger');
+        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
     }
 
 
@@ -2939,7 +2939,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
         );
         $('#item-hibp-badge').addClass('hidden');
-        $('#card-item-pwd-security-badge').addClass('hidden');
+        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
     }
 
     /**
@@ -6411,20 +6411,23 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
 
-                    // Password security badge
+                    // Password health marker (replaces the old binary secure/not-secure shield):
+                    // surfaces the same posture signals as the dashboard (weak / reused). breached
+                    // is not shown here — the HIBP badge already covers it on the card.
                     const $pwBadge = $('#card-item-pwd-security-badge')
-                    if (data.pw_is_secure === true) {
+                    const pwHealth = data.pw_health
+                    if (pwHealth && (pwHealth.weak === 1 || pwHealth.reused === 1)) {
+                        const pwIssues = []
+                        if (pwHealth.weak === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_weak')); ?>')
+                        if (pwHealth.reused === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_reused')); ?>')
                         $pwBadge
-                            .removeClass('hidden badge-danger')
-                            .addClass('badge-success')
-                            .html('<i class="fa-solid fa-shield mr-1 infotip" title="<?php echo $lang->get('secure'); ?>"></i>')
-                    } else if (data.pw_is_secure === false) {
-                        $pwBadge
-                            .removeClass('hidden badge-success')
-                            .addClass('badge-danger')
-                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
+                            .removeClass('hidden badge-success badge-danger')
+                            .addClass('badge-warning')
+                            .attr('title', '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>' + ' — ' + pwIssues.join(', '))
+                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip"></i>')
+                        $pwBadge.find('.infotip').tooltip()
                     } else {
-                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger')
+                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning')
                     }
 
                     $('#card-item-login').html(data.login);
