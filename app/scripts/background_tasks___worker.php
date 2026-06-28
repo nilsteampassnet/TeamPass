@@ -737,10 +737,11 @@ class TaskWorker {
                     continue;
                 }
                 if (count($activityUpdate) > 0) {
+                    // Reaching here with a non-empty update means the only change is the
+                    // API-activity backfill (last_connexion); any other update path above
+                    // has already continued the loop.
                     DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
-                    if ($hasApiActivityBackfill === true) {
-                        $apiActivityBackfilled++;
-                    }
+                    $apiActivityBackfilled++;
                 }
 
                 // Apply due action

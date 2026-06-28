@@ -204,6 +204,7 @@ switch ($inputData['type']) {
 
         // Configuration du parser CSV
         $config = new LexerConfig();
+        $config->setEscape(''); // RFC 4180: no backslash escaping; embedded quotes via "" 
         $lexer = new Lexer($config);
         $config->setIgnoreHeaderLine(true);
 
@@ -315,6 +316,12 @@ switch ($inputData['type']) {
         $continue_on_next_line = false;
         $comment = "";
         foreach ($valuesToImport as $row) {
+            // Preserve the raw password BEFORE any XSS/HTML sanitization.
+            // Passwords are stored encrypted and never output as HTML, so escaping
+            // them corrupts the value (" -> &quot;, & -> &amp;, etc.). This mirrors the
+            // standard item-creation flow, which keeps the password verbatim.
+            $rawPassword = (string) $row['Password'];
+
             // Sanitize row data to prevent XSS
             $row = secureStringWithAntiXss($row, $antiXss);
 
@@ -331,73 +338,39 @@ switch ($inputData['type']) {
             // CLean data
             $label    = cleanInput($row['Label']);
             $login    = cleanInput($row['Login']);
-            $pwd      = cleanInput($row['Password']);
+            $pwd      = $rawPassword; // keep verbatim — never HTML-escape passwords
             $url      = cleanInput($row['url']);
             $folder   = cleanInput($row['Folder']);
             $comments = cleanInput($row['Comments']);
 
-            // Handle multiple lignes description
-            if (strpos($comments, '<br>') !== false || strpos($label, '<br>') !== false) {
-                $continue_on_next_line = true;
-                $comment .= " " . $label . " " . $comments;
-            } else {
-                // Insert previous line if changing line
-                if (!empty($label)) {
-                    $items_number++;
-
-                    // Insert in batch
-                    $batchInsert[] = array(
-                        'label'        => $label,
-                        'description'  => $comment . $comments,
-                        'pwd'          => $pwd,
-                        'url'          => $url,
-                        'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
-                        'login'        => $login,
-                        'operation_id' => $post_operation_id,
-                    );
-
-                    // Store unique folders
-                    // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-                    $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
-                    foreach ($folders as $folder) {
-                        if (!empty($folder)) {
-                            $uniqueFolders[$folder] = $folder;
-                        }
-                    }
-                    $label = '';
-                }
-                // Update current variables
-                $comment = '';
-                $continue_on_next_line = false;
+            // One CSV record = one item.
+            // The CSV lexer already reassembles multi-line quoted fields (RFC 4180),
+            // so do NOT merge rows based on '<br>': descriptions legitimately contain
+            // '<br>' and the old merge logic silently dropped every such item.
+            if (empty($label)) {
+                continue;
             }
-        }
 
-        // Insert last line
-        if (!empty($label)) {
             $items_number++;
 
             // Insert in batch
             $batchInsert[] = array(
                 'label'        => $label,
-                'description'  => $comment . (isset($comments) ? $comments : ''),
-                'pwd'          => isset($pwd) ? $pwd : '',
-                'url'          => isset($url) ? $url : '',
-                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? (isset($folder) ? $folder : '') : '',
-                'login'        => isset($login) ? $login : '',
+                'description'  => $comments,
+                'pwd'          => $pwd,
+                'url'          => $url,
+                'folder'       => ((int) $session->get('user-admin') === 1 || (int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1) ? $folder : '',
+                'login'        => $login,
                 'operation_id' => $post_operation_id,
             );
 
             // Store unique folders
             // Each folder is the unique element of the path located inside $folder and delimited by '/' or '\'
-            if (isset($folder)) {
-                $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
-                foreach ($folders as $folder) {
-                    if (!empty($folder)) {
-                        $uniqueFolders[$folder] = $folder;
-                    }
+            $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
+            foreach ($folders as $folderPart) {
+                if (!empty($folderPart)) {
+                    $uniqueFolders[$folderPart] = $folderPart;
                 }
-            } else {
-                $uniqueFolders = [];
             }
         }
 
@@ -589,43 +562,65 @@ switch ($inputData['type']) {
                         'copyCustomFieldsCategories' => false,
                         'refreshCacheForUsersWithSimilarRoles' => true,
                     ];
-                    $creationStatus = $folderManager->createNewFolder($params, $options);
-                    $folderCreationDone = $creationStatus['error'];
 
-                    if ((int) $folderCreationDone === 0) {
+                    // Capture unexpected failures (DB constraint, encoding, ...) instead of bubbling a 500
+                    try {
+                        $creationStatus = $folderManager->createNewFolder($params, $options);
+                    } catch (Throwable $e) {
+                        $creationStatus = ['error' => true, 'newId' => '', 'message' => $e->getMessage()];
+                    }
+
+                    if ((int) ($creationStatus['error'] ?? true) === 0) {
+                        // Success — unchanged
                         $newFolderId = $creationStatus['newId'];
-                        // User created the folder
-                        // Add new ID to list of visible ones
-                        if ((int) $session->get('user-admin') === 0 && $creationStatus['error'] === false && $newFolderId !== 0) {
+                        if ((int) $session->get('user-admin') === 0 && $newFolderId !== 0) {
                             SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$newFolderId], 'add');
                         }
-
-                        // Save ID in map to avoid recreating it
                         $folderIdMap[$currentPath] = $newFolderId;
                         if ((int) $personalFolder === 0) {
                             $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
                         }
                         $parentId = $newFolderId;
-                    } elseif ($creationStatus['error'] === true && $creationStatus['message'] !== '' && empty($creationStatus['newId'])) {
-                        // Error during folder creation
-                        $folderCreationError[] = [
-                            'path' => $currentPath,
-                            'message' => $creationStatus['message'],
-                            'importId' => $importId,
-                        ];
                     } else {
-                        // Get ID of existing folder
-                        $ret = DB::queryFirstRow(
-                            'SELECT *
-                            FROM ' . prefixTable('nested_tree') . '
-                            WHERE title = %s',
-                            $currentFolder
+                        // Not created. Reuse an existing folder under the SAME parent if any...
+                        $existing = DB::queryFirstRow(
+                            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE title = %s AND parent_id = %i',
+                            $currentFolder,
+                            $parentId
                         );
-                        $newFolderId = $ret['id'];
-                        if ((int) $personalFolder === 0) {
-                            $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+
+                        if (!empty($existing['id'])) {
+                            $newFolderId = (int) $existing['id'];
+                            if ((int) $personalFolder === 0) {
+                                $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
+                            }
+                            $folderIdMap[$currentPath] = $newFolderId;
+                            $parentId = $newFolderId;
+                        } else {
+                            // ...otherwise it is a genuine error → build a NEVER-empty reason
+                            $reason = trim((string) ($creationStatus['message'] ?? ''));
+                            if ($reason === '') {
+                                // createNewFolder() returned error without message (e.g. canCreateFolder() false)
+                                $reason = $lang->get('error_folder_not_allowed_for_this_user');
+                            }
+
+                            // Server-side trace for intermittent diagnosis
+                            error_log(sprintf(
+                                '[TeamPass import] Folder creation failed — path="%s" folder="%s" parentId=%d reason="%s"',
+                                $currentPath, $currentFolder, (int) $parentId, $reason
+                            ));
+
+                            $folderCreationError[] = [
+                                'path'       => $currentPath,
+                                'folderName' => $currentFolder,
+                                'parentId'   => (int) $parentId,
+                                'message'    => $reason,
+                                'importId'   => $importId,
+                            ];
+
+                            // Stop descending into a path whose parent could not be created
+                            break;
                         }
-                        $parentId = $newFolderId;
                     }
                 }
             }
@@ -648,7 +643,9 @@ switch ($inputData['type']) {
                     $existingPaths[$path] = true;
                     
                     $errorMessage[] = [
-                        'errorPath' => $path,
+                        'errorPath'    => $path,
+                        'errorFolder'  => $error['folderName'],
+                        'errorParent'  => $error['parentId'],
                         'errorMessage' => $error['message'],
                     ];
                 }
@@ -726,7 +723,7 @@ switch ($inputData['type']) {
             $items = DB::query(
                 'SELECT ii.label, ii.login, ii.pwd, ii.url, ii.description, ii.folder_id, ii.increment_id, nt.title
                 FROM '.prefixTable('items_importations').' AS ii
-                INNER JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
+                LEFT JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
                 WHERE ii.operation_id = %i
                 LIMIT %i, %i',
                 $dataReceived['csvOperationId'],
