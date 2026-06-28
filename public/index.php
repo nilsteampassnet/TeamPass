@@ -1594,6 +1594,15 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/extension-autoconfig.js.php';
     }
+    // Proactive Health Nudges (F8): in-app banner for authenticated users when both the
+    // Security posture dashboard (F1) and the nudges feature are enabled by an admin.
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1
+        && (int) ($SETTINGS['security_nudges_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+    ) {
+        include_once TEAMPASS_APP . '/core/security-nudges.js.php';
+    }
     if ($menuAdmin === true) {
         include_once TEAMPASS_APP . '/pages/admin.js.php';
         if ($get['page'] === '2fa') {

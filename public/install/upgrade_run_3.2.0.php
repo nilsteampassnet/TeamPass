@@ -601,6 +601,41 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_dashboard_overshared_threshold', '10')"
 );
 
+// Add the user_nudges table — per-user email-digest bookkeeping for the
+// Proactive Health Nudges (F8). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'user_nudges` (
+        `user_id` int(12) NOT NULL,
+        `last_digest_at` int(12) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating user_nudges table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Proactive Health Nudges toggles (F8): master switch, opt-in email
+// digest, digest cadence (days) and the stale-scan threshold (days). All off /
+// conservative by default — admin opt-in, and gated by security_dashboard_enabled.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_email_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_email_frequency_days', '7')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_stale_scan_days', '14')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

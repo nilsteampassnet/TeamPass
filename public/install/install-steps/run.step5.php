@@ -522,6 +522,10 @@ class DatabaseInstaller
             array('admin', 'pw_life_duration', '0'),
             array('admin', 'security_dashboard_enabled', '0'),
             array('admin', 'security_dashboard_overshared_threshold', '10'),
+            array('admin', 'security_nudges_enabled', '0'),
+            array('admin', 'security_nudges_email_enabled', '0'),
+            array('admin', 'security_nudges_email_frequency_days', '7'),
+            array('admin', 'security_nudges_stale_scan_days', '14'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1689,6 +1693,18 @@ class DatabaseInstaller
             UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
             KEY `idx_user_id` (`user_id`),
             KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_nudges (Proactive Health Nudges - F8: email-digest bookkeeping)
+    private function user_nudges()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_nudges` (
+            `user_id` INT(12) NOT NULL,
+            `last_digest_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

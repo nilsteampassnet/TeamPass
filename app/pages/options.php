@@ -1219,6 +1219,54 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="security nudges proactive breach alert badge">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_security_nudges'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_security_nudges_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='security_nudges_enabled' data-toggle-on='<?php echo isset($SETTINGS['security_nudges_enabled']) === true && (int) $SETTINGS['security_nudges_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='security_nudges_enabled_input' value='<?php echo isset($SETTINGS['security_nudges_enabled']) && (int) $SETTINGS['security_nudges_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="security nudges email digest summary">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_security_nudges_email'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_security_nudges_email_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='security_nudges_email_enabled' data-toggle-on='<?php echo isset($SETTINGS['security_nudges_email_enabled']) === true && (int) $SETTINGS['security_nudges_email_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='security_nudges_email_enabled_input' value='<?php echo isset($SETTINGS['security_nudges_email_enabled']) && (int) $SETTINGS['security_nudges_email_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="security nudges email digest frequency days">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_security_nudges_email_frequency'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_security_nudges_email_frequency_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' class='form-control form-control-sm' id='security_nudges_email_frequency_days' value='<?php echo htmlspecialchars($SETTINGS['security_nudges_email_frequency_days'] ?? '7'); ?>'>
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="security nudges stale scan threshold days">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_security_nudges_stale'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_security_nudges_stale_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' class='form-control form-control-sm' id='security_nudges_stale_scan_days' value='<?php echo htmlspecialchars($SETTINGS['security_nudges_stale_scan_days'] ?? '14'); ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>

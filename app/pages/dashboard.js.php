@@ -88,7 +88,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             noIssues: <?php echo json_encode($lang->get('security_dashboard_no_issues'), JSON_UNESCAPED_UNICODE); ?>,
             scanning: <?php echo json_encode($lang->get('security_dashboard_scanning'), JSON_UNESCAPED_UNICODE); ?>,
             scanButton: <?php echo json_encode($lang->get('security_dashboard_scan_button'), JSON_UNESCAPED_UNICODE); ?>,
-            done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>
+            done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>,
+            fix: <?php echo json_encode($lang->get('security_nudges_fix_worst'), JSON_UNESCAPED_UNICODE); ?>
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -144,6 +145,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     tdBadges.append($('<span>').addClass('badge ' + TP_DASH.flags[f].cls + ' mr-1').text(TP_DASH.flags[f].label));
                 }
             });
+            // F8: one-click "fix" — deep-link straight to the item editor (generator ready).
+            tdBadges.append(
+                $('<a>').attr('href', itemLink + '&action=edit')
+                    .addClass('btn btn-xs btn-outline-danger ml-1 infotip')
+                    .attr('title', TP_DASH.strings.fix)
+                    .html('<i class="fa-solid fa-wrench"></i>')
+            );
             tr.append(tdBadges);
             tbody.append(tr);
         });

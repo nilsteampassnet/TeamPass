@@ -485,6 +485,19 @@ switch ($post_type) {
             $userId
         );
 
+        // F8: push the fresh actionable posture to the user live so the in-app nudge
+        // reacts without a page reload (no plaintext — counts only).
+        if ((int) ($SETTINGS['security_nudges_enabled'] ?? 0) === 1) {
+            $nudgeCounts = securityNudgeComputeCounts($userId);
+            emitWebSocketEvent('security_nudge', 'user', $userId, [
+                'breached' => $nudgeCounts['breached'],
+                'weak' => $nudgeCounts['weak'],
+                'reused' => $nudgeCounts['reused'],
+                'overdue' => $nudgeCounts['overdue'],
+                'total' => $nudgeCounts['total_flagged'],
+            ]);
+        }
+
         echo (string) prepareExchangedData(['error' => false], 'encode');
         break;
 
@@ -560,6 +573,109 @@ switch ($post_type) {
             ],
             'encode'
         );
+        break;
+
+    /*
+     * CASE
+     * F8 — actionable posture summary for the proactive in-app nudge. Returns counts
+     * for the four user-fixable triggers (breached/weak/reused/overdue), the worst
+     * flagged item for a deep-link, and whether the last scan is stale. Metadata-only.
+     */
+    case 'get_nudge_summary':
+        if ((int) ($SETTINGS['security_nudges_enabled'] ?? 0) !== 1) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+
+        $counts = securityNudgeComputeCounts($userId);
+        $staleDays = (int) ($SETTINGS['security_nudges_stale_scan_days'] ?? 14);
+        if ($staleDays <= 0) {
+            $staleDays = 14;
+        }
+        $stale = ($counts['last_scan'] <= 0) || (($nowTs - $counts['last_scan']) > $staleDays * TP_ONE_DAY_SECONDS);
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'counts' => [
+                    'breached' => $counts['breached'],
+                    'weak' => $counts['weak'],
+                    'reused' => $counts['reused'],
+                    'overdue' => $counts['overdue'],
+                    'total' => $counts['total_flagged'],
+                ],
+                'worst_item' => $counts['worst_item'],
+                'last_scan' => $counts['last_scan'],
+                'stale' => $stale,
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * CASE
+     * F8 — per-item health flags for the items-list badge. Complements (never
+     * duplicates) the item-card HIBP badge by marking at-risk rows at a glance.
+     * Input: item_ids (CSV). Output: { item_id: {breached,weak,reused,overdue} }
+     * for flagged items only. Metadata-only, scoped to the user's own entitlement.
+     */
+    case 'get_folder_flags':
+        if ((int) ($SETTINGS['security_nudges_enabled'] ?? 0) !== 1) {
+            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+
+        $post_item_ids = (string) $request->request->filter('item_ids', '', FILTER_SANITIZE_SPECIAL_CHARS);
+        $itemIds = [];
+        foreach (explode(',', $post_item_ids) as $rawId) {
+            $iid = (int) trim($rawId);
+            if ($iid > 0) {
+                $itemIds[] = $iid;
+            }
+        }
+        $itemIds = array_values(array_unique($itemIds));
+        if (count($itemIds) === 0) {
+            echo (string) prepareExchangedData(['error' => false, 'flags' => []], 'encode');
+            break;
+        }
+        // Bound the payload (defensive).
+        if (count($itemIds) > 500) {
+            $itemIds = array_slice($itemIds, 0, 500);
+        }
+
+        // Placeholder order: %i (sharekeys) · %s %s %s (log) · %i (item_health) · IN %li.
+        $flagRows = DB::query(
+            'SELECT i.id,
+                ' . $flagWeakSql . ' AS flag_weak,
+                ' . $flagOverdueSql . ' AS flag_overdue,
+                ' . $flagBreachedSql . ' AS flag_breached,
+                COALESCE(ih.flag_reused, 0) AS flag_reused
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+            $logJoinSql . '
+            LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND i.id IN %li',
+            $userId, 'at_creation', 'at_modification', 'at_pw%', $userId, $itemIds
+        );
+
+        $flags = [];
+        foreach ($flagRows as $fr) {
+            $w = (int) $fr['flag_weak'];
+            $o = (int) $fr['flag_overdue'];
+            $b = (int) $fr['flag_breached'];
+            $re = (int) $fr['flag_reused'];
+            if ($w + $o + $b + $re > 0) {
+                $flags[(string) (int) $fr['id']] = [
+                    'breached' => $b,
+                    'weak' => $w,
+                    'reused' => $re,
+                    'overdue' => $o,
+                ];
+            }
+        }
+
+        echo (string) prepareExchangedData(['error' => false, 'flags' => $flags], 'encode');
         break;
 
     default:

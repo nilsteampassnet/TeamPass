@@ -1094,6 +1094,97 @@ function prepareSendingEmail(
 }
 
 /**
+ * Compute the four actionable security-posture counts for a single user (F8).
+ *
+ * Mirrors the metadata SQL of the Security Posture Dashboard (`dashboard.queries.php`):
+ * weak / overdue / breached are derived live from non-encrypted columns (no decryption),
+ * while reused comes from the persisted per-user `item_health` table (populated by the
+ * in-session deep scan). It therefore runs both in the user's web session and in the CLI
+ * background worker (which has no private key). It never decrypts and never returns any
+ * plaintext — only counts and the worst flagged item's identifiers for a deep-link.
+ *
+ * @param int $userId User to compute the posture for.
+ *
+ * @return array{weak:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
+ */
+function securityNudgeComputeCounts(int $userId): array
+{
+    $nowTs = time();
+    $weakThreshold = TP_PW_STRENGTH_3;
+
+    // Metadata-only flag expressions (identical semantics to the dashboard).
+    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $flagWeakSql = "(CASE WHEN i.complexity_level <> '' AND CAST(i.complexity_level AS SIGNED) >= 0 AND CAST(i.complexity_level AS SIGNED) < " . (int) $weakThreshold . " THEN 1 ELSE 0 END)";
+    $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
+    $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
+
+    $logJoinSql = '
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)';
+
+    // Per-item view of the four actionable triggers (weak/overdue/breached live, reused persisted).
+    // Placeholder order: %i (sharekeys user) · %s %s %s (log) · %i (item_health user).
+    $innerSql =
+        'SELECT i.id, i.id_tree,
+            ' . $flagWeakSql . ' AS flag_weak,
+            ' . $flagOverdueSql . ' AS flag_overdue,
+            ' . $flagBreachedSql . ' AS flag_breached,
+            COALESCE(ih.flag_reused, 0) AS flag_reused
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+        $logJoinSql . '
+        LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL';
+
+    $agg = DB::queryFirstRow(
+        'SELECT
+            COALESCE(SUM(t.flag_weak), 0) AS weak,
+            COALESCE(SUM(t.flag_overdue), 0) AS overdue,
+            COALESCE(SUM(t.flag_breached), 0) AS breached,
+            COALESCE(SUM(t.flag_reused), 0) AS reused,
+            COALESCE(SUM(CASE WHEN (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0 THEN 1 ELSE 0 END), 0) AS total_flagged
+        FROM (' . $innerSql . ') AS t',
+        $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+    );
+
+    // Worst flagged item (severity: breached > reused > weak > overdue) for the "fix it now" deep-link.
+    $worstItem = null;
+    if ((int) ($agg['total_flagged'] ?? 0) > 0) {
+        $worst = DB::queryFirstRow(
+            'SELECT t.id, t.id_tree
+            FROM (' . $innerSql . ') AS t
+            WHERE (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0
+            ORDER BY t.flag_breached DESC, t.flag_reused DESC, t.flag_weak DESC, t.flag_overdue DESC, t.id DESC
+            LIMIT 1',
+            $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+        );
+        if (is_array($worst) === true && isset($worst['id']) === true) {
+            $worstItem = ['id' => (int) $worst['id'], 'folder_id' => (int) $worst['id_tree']];
+        }
+    }
+
+    $lastScan = (int) DB::queryFirstField(
+        'SELECT COALESCE(MAX(last_scan_at), 0) FROM ' . prefixTable('item_health') . ' WHERE user_id = %i',
+        $userId
+    );
+
+    return [
+        'weak' => (int) ($agg['weak'] ?? 0),
+        'overdue' => (int) ($agg['overdue'] ?? 0),
+        'breached' => (int) ($agg['breached'] ?? 0),
+        'reused' => (int) ($agg['reused'] ?? 0),
+        'total_flagged' => (int) ($agg['total_flagged'] ?? 0),
+        'last_scan' => $lastScan,
+        'worst_item' => $worstItem,
+    ];
+}
+
+/**
  * Returns the email body.
  *
  * @param string $textMail Text for the email

@@ -527,7 +527,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // Is this a short url
     var queryDict = {},
         showItemOnPageLoad = false,
-        itemIdToShow = '';
+        itemIdToShow = '',
+        itemActionOnLoad = 'show';
     location.search.substr(1).split("&").forEach(function(item) {
         queryDict[item.split("=")[0]] = item.split("=")[1]
     });
@@ -564,6 +565,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         showItemOnPageLoad = true;
         itemIdToShow = queryDict['id'];
         startedItemsListQuery = true;
+
+        // F8 "Fix it now" deep-link: open the item straight in edit mode so the
+        // password generator is ready (index.php?page=items&group=..&id=..&action=edit).
+        if (queryDict['action'] === 'edit') {
+            itemActionOnLoad = 'edit';
+        }
     }
 
     // Close on escape key
@@ -605,9 +612,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Show details of item
     if (showItemOnPageLoad === true) {
-        // Display item details
+        // Display item details (or jump straight to edit for an F8 "Fix it now" deep-link)
         $.when(
-            Details(itemIdToShow, 'show', true)
+            Details(itemIdToShow, itemActionOnLoad, true)
         ).then(function() {
             // Force previous view to Tree folders
             store.update(
@@ -5522,6 +5529,64 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 window.tpWsSetItemViewers(parseInt(itemId), window.tpViewingItems[itemId])
             })
         }
+<?php if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) ($SETTINGS['security_nudges_enabled'] ?? 0) === 1) { ?>
+        // F8: mark at-risk rows in the list (complements the item-card HIBP badge).
+        applyHealthBadges();
+<?php } ?>
+    }
+
+    /**
+     * F8 — decorate at-risk items in the current list with a single health marker.
+     * Complements (never duplicates) the item-card HIBP badge shown only when an item
+     * is opened. Metadata-only; driven by the per-user item_health flags via get_folder_flags.
+     */
+    function applyHealthBadges() {
+        var ids = [];
+        $('#teampass_items_list tr[data-item-id]').each(function () {
+            var id = parseInt($(this).data('item-id'), 10);
+            if (id > 0) ids.push(id);
+        });
+        if (ids.length === 0) return;
+
+        var nudgeLabels = {
+            breached: '<?php echo addslashes($lang->get('security_dashboard_breached')); ?>',
+            weak: '<?php echo addslashes($lang->get('security_dashboard_weak')); ?>',
+            reused: '<?php echo addslashes($lang->get('security_dashboard_reused')); ?>',
+            overdue: '<?php echo addslashes($lang->get('security_dashboard_overdue')); ?>'
+        };
+        var badgeTitlePrefix = '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>';
+        var nudgeSessionKey = '<?php echo $session->get('key'); ?>';
+
+        $.post('sources/dashboard.queries.php', { type: 'get_folder_flags', item_ids: ids.join(','), key: nudgeSessionKey }, function (response) {
+            var data;
+            try {
+                data = prepareExchangedData(response, 'decode', nudgeSessionKey);
+            } catch (e) {
+                return;
+            }
+            if (!data || data.error === true || !data.flags) return;
+
+            Object.keys(data.flags).forEach(function (itemId) {
+                var f = data.flags[itemId];
+                var labels = [];
+                if (f.breached === 1) labels.push(nudgeLabels.breached);
+                if (f.weak === 1) labels.push(nudgeLabels.weak);
+                if (f.reused === 1) labels.push(nudgeLabels.reused);
+                if (f.overdue === 1) labels.push(nudgeLabels.overdue);
+                if (labels.length === 0) return;
+
+                var $container = $('#list-item-row_' + itemId + ' .icon-container');
+                if ($container.length === 0 || $container.find('.tp-item-health-marker').length > 0) return;
+
+                var cls = f.breached === 1 ? 'text-danger' : 'text-warning';
+                $container.append(
+                    $('<i>')
+                        .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
+                        .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
+                );
+                $container.find('.tp-item-health-marker').tooltip();
+            });
+        });
     }
 
     $(document).on('click', '.open-folder', function() {
