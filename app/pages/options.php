@@ -1502,6 +1502,33 @@ if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_descr
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="secure send note secret link">
+                            <div class='col-10'>
+                                <?php echo $lang->get('secure_send_allow_notes'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_allow_notes' data-toggle-on='<?php echo isset($SETTINGS['secure_send_allow_notes']) === true && (int) $SETTINGS['secure_send_allow_notes'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_allow_notes_input' value='<?php echo isset($SETTINGS['secure_send_allow_notes']) && (int) $SETTINGS['secure_send_allow_notes'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="secure send passphrase link">
+                            <div class='col-10'>
+                                <?php echo $lang->get('secure_send_require_passphrase'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='secure_send_require_passphrase' data-toggle-on='<?php echo isset($SETTINGS['secure_send_require_passphrase']) === true && (int) $SETTINGS['secure_send_require_passphrase'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='secure_send_require_passphrase_input' value='<?php echo isset($SETTINGS['secure_send_require_passphrase']) && (int) $SETTINGS['secure_send_require_passphrase'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="secure send views link">
+                            <div class='col-10'>
+                                <?php echo $lang->get('secure_send_max_views'); ?>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' min='1' class='form-control form-control-sm' id='secure_send_max_views' value='<?php echo htmlspecialchars($SETTINGS['secure_send_max_views'] ?? '5'); ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="export print">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_printing'); ?>

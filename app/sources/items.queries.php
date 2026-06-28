@@ -6478,11 +6478,106 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Master gate: Secure Send relies on the OTV engine
+        if (isset($SETTINGS['otv_is_enabled']) === false || (int) $SETTINGS['otv_is_enabled'] !== 1) {
+            echo json_encode(array('error' => 'not_allowed'));
+            break;
+        }
+
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
             $inputData['data'],
             'decode'
         );
+
+        // Determine the kind of send: an existing item or an ad-hoc note/secret
+        $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
+        if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
+            echo json_encode(array('error' => 'notes_not_allowed'));
+            break;
+        }
+
+        // Optional recipient passphrase (transmitted out-of-band by the sender)
+        $secureSendPassphrase = (string) ($dataReceived['passphrase'] ?? '');
+        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && $secureSendPassphrase === '') {
+            echo json_encode(array('error' => 'passphrase_required'));
+            break;
+        }
+
+        // Clamp expiry (days) and view count to the administrator policy
+        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
+        if ($secureSendMaxDays < 1) {
+            $secureSendMaxDays = 7;
+        }
+        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
+        if ($secureSendDays < 1) {
+            $secureSendDays = 1;
+        }
+        if ($secureSendDays > $secureSendMaxDays) {
+            $secureSendDays = $secureSendMaxDays;
+        }
+
+        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
+        if ($secureSendMaxViewsCap < 1) {
+            $secureSendMaxViewsCap = 1;
+        }
+        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
+        if ($secureSendViews < 1) {
+            $secureSendViews = 1;
+        }
+        if ($secureSendViews > $secureSendMaxViewsCap) {
+            $secureSendViews = $secureSendMaxViewsCap;
+        }
+
+        // Build the plaintext payload to share
+        if ($secureSendType === 'item') {
+            // Item send: re-encrypt the item password; the recipient page reads the
+            // other fields (label, login, url, description) from the item via item_id.
+            $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
+            $itemQ = DB::queryFirstRow(
+                'SELECT s.share_key, i.pw, i.pw_len
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
+                WHERE s.user_id = %i AND s.object_id = %i',
+                $session->get('user-id'),
+                $secureSendItemId
+            );
+            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
+                // No share key found
+                $secureSendPlaintext = '';
+            } else {
+                $secureSendPlaintext = teampassDecryptPasswordValue(
+                    $itemQ['pw'],
+                    decryptUserObjectKey(
+                        $itemQ['share_key'],
+                        $session->get('user-private_key')
+                    ),
+                    (int) ($itemQ['pw_len'] ?? 0)
+                );
+            }
+        } else {
+            // Note send: self-contained encrypted JSON, not bound to any item
+            $secureSendItemId = null;
+            $secureSendPayload = (isset($dataReceived['payload']) === true && is_array($dataReceived['payload']) === true)
+                ? $dataReceived['payload']
+                : array();
+            if (trim((string) ($secureSendPayload['secret'] ?? '')) === ''
+                && trim((string) ($secureSendPayload['note'] ?? '')) === ''
+            ) {
+                echo json_encode(array('error' => 'empty_note'));
+                break;
+            }
+            $secureSendPlaintext = json_encode(
+                array(
+                    'title'  => trim((string) ($secureSendPayload['title'] ?? '')),
+                    'secret' => (string) ($secureSendPayload['secret'] ?? ''),
+                    'note'   => (string) ($secureSendPayload['note'] ?? ''),
+                    'login'  => trim((string) ($secureSendPayload['login'] ?? '')),
+                    'url'    => trim((string) ($secureSendPayload['url'] ?? '')),
+                ),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+        }
 
         // delete all existing old otv codes
         DB::delete(
@@ -6491,87 +6586,83 @@ switch ($inputData['type']) {
             time()
         );
 
-        // generate session
+        // Generate the lookup code and the link secret carried in the URL.
+        // The Defuse key that encrypts the payload is wrapped by the link secret
+        // (and, when set, the passphrase) so the URL alone is not enough to decrypt.
         $otv_code = GenerateCryptKey(32, false, true, true, false, true);
-        $otv_key = GenerateCryptKey(32, false, true, true, false, true);
+        $secureSendLinkSecret = GenerateCryptKey(32, false, true, true, false, true);
+        $secureSendWrapPassword = $secureSendPassphrase === ''
+            ? $secureSendLinkSecret
+            : hash('sha256', $secureSendLinkSecret . '|' . $secureSendPassphrase);
 
-        // Generate Defuse key
-        $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);
-
-        // check if psk is correct.
-        $otv_key_encoded = defuse_validate_personal_key(
-            $otv_key,
-            $otv_user_code_encrypted
+        $secureSendProtectedKey = defuse_generate_personal_key($secureSendWrapPassword);
+        $secureSendKeyEncoded = defuse_validate_personal_key(
+            $secureSendWrapPassword,
+            $secureSendProtectedKey
         );
 
-        // Decrypt the pwd
-        // Should we log a password change?
-        $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, i.pw, i.pw_len
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
-            WHERE s.user_id = %i AND s.object_id = %i',
-            $session->get('user-id'),
-            $dataReceived['id']
-        );
-        if (DB::count() === 0 || empty($itemQ['pw']) === true) {
-            // No share key found
-            $pw = '';
-        } else {
-            $pw = teampassDecryptPasswordValue(
-                $itemQ['pw'],
-                decryptUserObjectKey(
-                    $itemQ['share_key'],
-                    $session->get('user-private_key')
-                ),
-                (int) ($itemQ['pw_len'] ?? 0)
-            );
-        }
-
-        // Encrypt it with DEFUSE using the generated code as key
-        // This is required as the OTV is used by someone without any Teampass account
+        // Encrypt the payload with DEFUSE using the wrapped key
         $passwd = cryption(
-            $pw,
-            $otv_key_encoded,
+            $secureSendPlaintext,
+            $secureSendKeyEncoded,
             'encrypt',
             $SETTINGS
         );
         $timestampReference = time();
 
+        // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
+        $secureSendShared = ($secureSendType === 'item'
+            && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
+            && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
+
         DB::insert(
             prefixTable('otv'),
             array(
                 'id' => null,
-                'item_id' => $dataReceived['id'],
+                'item_id' => $secureSendItemId,
+                'send_type' => $secureSendType,
                 'timestamp' => $timestampReference,
                 'originator' => intval($session->get('user-id')),
                 'code' => $otv_code,
                 'encrypted' => $passwd['string'],
-                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => (int) $dataReceived['views'],
-                'shared_globaly' => 0,
+                'protected_key' => $secureSendProtectedKey,
+                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'failed_attempts' => 0,
+                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
+                'max_views' => $secureSendViews,
+                'shared_globaly' => $secureSendShared,
             )
         );
         $newID = DB::insertId();
 
-        // Prepare URL content
+        // Prepare URL content (the URL carries the link secret, not the Defuse key)
         $otv_session = array(
             'otv' => true,
             'code' => $otv_code,
-            'key' => $otv_key_encoded,
+            'key' => $secureSendLinkSecret,
             'stamp' => $timestampReference,
         );
 
-        if (isset($SETTINGS['otv_expiration_period']) === false) {
-            $SETTINGS['otv_expiration_period'] = 7;
+        if ($secureSendShared === 1) {
+            // Inject the configured subdomain into the host
+            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
+            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
+            if (str_contains((string) $domain_host, 'www.') === true) {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr((string) $domain_host, 4);
+            } else {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
+            }
+            $url = $domain_scheme . '://' . $domain_host . '/index.php?' . http_build_query($otv_session);
+        } else {
+            $url = rtrim((string) $SETTINGS['cpassman_url'], '/') . '/index.php?' . http_build_query($otv_session);
         }
-        $url = $SETTINGS['cpassman_url'] . '/index.php?' . http_build_query($otv_session);
 
         echo json_encode(
             array(
                 'error' => '',
                 'url' => $url,
                 'otv_id' => $newID,
+                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
             )
         );
         break;
@@ -6656,6 +6747,84 @@ switch ($inputData['type']) {
             ),
             'encode'
         );
+        break;
+
+    /*
+     * CASE
+     * List the current user's active Secure Send links (My secure sends)
+     */
+    case 'list_secure_sends':
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        // Drop expired links opportunistically
+        DB::delete(
+            prefixTable('otv'),
+            'time_limit < %i',
+            time()
+        );
+
+        $secureSendRows = DB::query(
+            'SELECT o.id, o.send_type, o.item_id, o.has_passphrase, o.views, o.max_views, o.time_limit, i.label AS item_label
+            FROM ' . prefixTable('otv') . ' AS o
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)
+            WHERE o.originator = %i
+            ORDER BY o.id DESC',
+            $session->get('user-id')
+        );
+
+        $secureSends = array();
+        foreach ($secureSendRows as $secureSendRow) {
+            $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
+            $secureSends[] = array(
+                'id' => (int) $secureSendRow['id'],
+                'send_type' => $isNote === true ? 'note' : 'item',
+                'label' => $isNote === true
+                    ? $lang->get('secure_send_note')
+                    : htmlspecialchars(strip_tags((string) ($secureSendRow['item_label'] ?? '')), ENT_QUOTES, 'UTF-8'),
+                'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
+                'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
+                'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
+            );
+        }
+
+        echo json_encode(array('error' => '', 'sends' => $secureSends));
+        break;
+
+    /*
+     * CASE
+     * Revoke (delete) one of the current user's Secure Send links
+     */
+    case 'revoke_secure_send':
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+        $secureSendId = (int) ($dataReceived['id'] ?? 0);
+
+        // Verify the current user owns this link before deleting it
+        $secureSendOwner = DB::queryFirstRow(
+            'SELECT originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
+            $secureSendId
+        );
+        if (DB::count() === 0 || (int) $secureSendOwner['originator'] !== (int) $session->get('user-id')) {
+            echo json_encode(array('error' => 'not_allowed'));
+            break;
+        }
+
+        DB::delete(prefixTable('otv'), 'id = %i', $secureSendId);
+
+        echo json_encode(array('error' => '', 'id' => $secureSendId));
         break;
 
 

@@ -18,6 +18,7 @@ return array(
     'TeampassClasses\\PerformChecks\\' => array($vendorDir . '/teampassclasses/performchecks/src'),
     'TeampassClasses\\PasswordManager\\' => array($vendorDir . '/teampassclasses/passwordmanager/src'),
     'TeampassClasses\\PasswordGeneratorService\\' => array($vendorDir . '/teampassclasses/passwordgeneratorservice/src'),
+    'TeampassClasses\\ImportFormat\\' => array($vendorDir . '/teampassclasses/importformat/src'),
     'TeampassClasses\\OAuth2Controller\\' => array($vendorDir . '/teampassclasses/oauth2controller/src'),
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
     'TeampassClasses\\LdapExtra\\' => array($vendorDir . '/teampassclasses/ldapextra/src'),

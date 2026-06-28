@@ -40,6 +40,7 @@ use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
+use TeampassClasses\ImportFormat\ImportFormat;
 
 // Load functions
 require_once 'main.functions.php';
@@ -388,6 +389,15 @@ switch ($inputData['type']) {
             DB::query($sql);
         }
 
+        // Create import tracking record (user follow-up)
+        importTrackingCreate(
+            (int) $post_operation_id,
+            (int) $session->get('user-id'),
+            'csv',
+            (int) $items_number,
+            count($uniqueFolders)
+        );
+
         // Display results
         echo prepareExchangedData(
             array('error' => false,
@@ -401,6 +411,220 @@ switch ($inputData['type']) {
 
         // Delete file after processing
         unlink($file);
+        break;
+
+    // Check & parse an export from a third-party password manager
+    // (Bitwarden JSON, LastPass CSV, 1Password CSV, KeePassXC CSV).
+    // The parsed rows are normalised into the items_importations model so the
+    // existing folder/item creation pipeline can be reused unchanged.
+    case 'import_file_format_universal':
+        // Check KEY and rights
+        if ($inputData['key'] !== $session->get('key')) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('key_is_not_correct')),
+                'encode'
+            );
+            break;
+        }
+
+        // Decrypt and retrieve data in JSON format
+        $receivedParameters = prepareExchangedData($inputData['data'], 'decode');
+        $post_operation_id = (int) filter_var($receivedParameters['file'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+        $post_format = isset($receivedParameters['format'])
+            ? strtolower((string) preg_replace('/[^a-z0-9]/i', '', (string) $receivedParameters['format']))
+            : '';
+
+        // Validate the requested format
+        if (in_array($post_format, ImportFormat::supportedFormats(), true) === false) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_unknown_format')),
+                'encode'
+            );
+            break;
+        }
+
+        // Get filename from database
+        $dataFile = DB::queryFirstRow(
+            'SELECT valeur
+            FROM ' . prefixTable('misc') . '
+            WHERE increment_id = %i AND type = "temp_file"',
+            $post_operation_id
+        );
+
+        // Delete operation id
+        DB::delete(
+            prefixTable('misc'),
+            'increment_id = %i AND type = "temp_file"',
+            $post_operation_id
+        );
+
+        if (empty($dataFile)) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('cannot_open_file')),
+                'encode'
+            );
+            break;
+        }
+
+        $file = $SETTINGS['path_to_files_folder'] . '/' . $dataFile['valeur'];
+        if (!file_exists($file) || !is_readable($file)) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('cannot_open_file')),
+                'encode'
+            );
+            break;
+        }
+
+        // Read and remove the uploaded file
+        $content = file_get_contents($file);
+        unlink($file);
+        if ($content === false || trim($content) === '') {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
+                'encode'
+            );
+            break;
+        }
+
+        // Parse using the matching format adapter
+        $parsed = ImportFormat::parse($post_format, $content);
+        if ($parsed['error'] === true) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get($parsed['message'])),
+                'encode'
+            );
+            break;
+        }
+        if (empty($parsed['items'])) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
+                'encode'
+            );
+            break;
+        }
+
+        // Only managers/admins may create the folder structure; others import flat.
+        $userCanManageFolders = ((int) $session->get('user-admin') === 1
+            || (int) $session->get('user-manager') === 1
+            || (int) $session->get('user-can_manage_all_users') === 1) ? 1 : 0;
+
+        // Sanitize and prepare batch insert into items_importations
+        $batchInsert = [];
+        $uniqueFolders = [];
+        $items_number = 0;
+        foreach ($parsed['items'] as $row) {
+            // Sanitize row data to prevent XSS
+            $row = secureStringWithAntiXss($row, $antiXss);
+
+            $label = cleanInput($row['label'] ?? '');
+            if ($label === '') {
+                continue;
+            }
+            $login    = cleanInput($row['login'] ?? '');
+            $pwd      = cleanInput($row['pwd'] ?? '');
+            $url      = cleanInput($row['url'] ?? '');
+            $comments = cleanInput($row['description'] ?? '');
+            $folder   = $userCanManageFolders === 1 ? cleanInput($row['folder'] ?? '') : '';
+
+            $items_number++;
+            $batchInsert[] = array(
+                'label'        => $label,
+                'description'  => $comments,
+                'pwd'          => $pwd,
+                'url'          => $url,
+                'folder'       => $folder,
+                'login'        => $login,
+                'operation_id' => $post_operation_id,
+            );
+
+            // Collect unique folder names (path split on / or \)
+            if ($folder !== '') {
+                $folders = preg_split('/[\/\\\\]/', $folder) ?: [];
+                foreach ($folders as $part) {
+                    if ($part !== '') {
+                        $uniqueFolders[$part] = $part;
+                    }
+                }
+            }
+        }
+
+        if (empty($batchInsert)) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('import_error_no_read_possible')),
+                'encode'
+            );
+            break;
+        }
+
+        // Insert rows (parameterised, avoids manual escaping pitfalls)
+        foreach ($batchInsert as $rowToInsert) {
+            DB::insert(prefixTable('items_importations'), $rowToInsert);
+        }
+
+        // Create import tracking record (user follow-up)
+        importTrackingCreate(
+            (int) $post_operation_id,
+            (int) $session->get('user-id'),
+            $post_format,
+            (int) $items_number,
+            count($uniqueFolders)
+        );
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'operation_id' => $post_operation_id,
+                'items_number' => $items_number,
+                'folders_number' => count($uniqueFolders),
+                'userCanManageFolders' => $userCanManageFolders,
+            ),
+            'encode'
+        );
+        break;
+
+    // Return the current status of an import operation, or the user's recent
+    // import history (used by the "import follow-up" panel).
+    case 'import_tracking_status':
+        if ($inputData['key'] !== $session->get('key')) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('key_is_not_correct')),
+                'encode'
+            );
+            break;
+        }
+
+        $receivedParameters = prepareExchangedData($inputData['data'], 'decode');
+        $trackingUserId = (int) $session->get('user-id');
+        $trackingOpId = isset($receivedParameters['operationId']) ? (int) $receivedParameters['operationId'] : 0;
+
+        if ($trackingOpId > 0) {
+            $trackingRow = DB::queryFirstRow(
+                'SELECT operation_id, format, status, total_items, imported_items, failed_items, folders_count, message, started_at, finished_at
+                FROM ' . prefixTable('import_tracking') . '
+                WHERE operation_id = %i AND user_id = %i',
+                $trackingOpId,
+                $trackingUserId
+            );
+            echo prepareExchangedData(
+                array('error' => false, 'tracking' => $trackingRow ?: null),
+                'encode'
+            );
+            break;
+        }
+
+        // History: the user's recent imports
+        $trackingHistory = DB::query(
+            'SELECT operation_id, format, status, total_items, imported_items, failed_items, folders_count, started_at, finished_at
+            FROM ' . prefixTable('import_tracking') . '
+            WHERE user_id = %i
+            ORDER BY id DESC
+            LIMIT 10',
+            $trackingUserId
+        );
+        echo prepareExchangedData(
+            array('error' => false, 'history' => $trackingHistory),
+            'encode'
+        );
         break;
 
     // Create new folders
@@ -437,6 +661,9 @@ switch ($inputData['type']) {
 
         // Is this a personal folder?
         $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+
+        // Track follow-up: folder creation phase
+        importTrackingSet((int) ($dataReceived['csvOperationId'] ?? 0), array('status' => 'creating_folders'));
 
         // Get all folders from objects in DB
         $itemsPath = DB::query(
@@ -870,6 +1097,17 @@ switch ($inputData['type']) {
             }
         }
 
+        // Track follow-up: items import phase (imported = cumulative, failed = this batch)
+        importTrackingSet(
+            (int) ($dataReceived['csvOperationId'] ?? 0),
+            array('status' => 'importing_items', 'imported_items' => (int) $insertedItems)
+        );
+        importTrackingIncrement(
+            (int) ($dataReceived['csvOperationId'] ?? 0),
+            'failed_items',
+            count($failedItems)
+        );
+
         echo prepareExchangedData(
             array(
                 'error' => false,
@@ -900,6 +1138,12 @@ switch ($inputData['type']) {
             'decode'
         );
         $csvOperationId = filter_var($receivedParameters['csvOperationId'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+        // Track follow-up: import completed
+        importTrackingSet(
+            (int) $csvOperationId,
+            array('status' => 'completed', 'finished_at' => time())
+        );
 
         // Delete operation id
         DB::delete(
@@ -1557,6 +1801,85 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     }
 
     return $existingId;
+}
+
+/**
+ * Create an import tracking record for an operation (user follow-up).
+ *
+ * @param int    $operationId  The import operation id (items_importations.operation_id).
+ * @param int    $userId       The user owning the import.
+ * @param string $format       Source format (csv, bitwarden, lastpass, 1password, keepassxc).
+ * @param int    $totalItems   Number of items detected in the source file.
+ * @param int    $foldersCount Number of distinct folders detected.
+ *
+ * @return void
+ */
+function importTrackingCreate(int $operationId, int $userId, string $format, int $totalItems, int $foldersCount = 0): void
+{
+    if ($operationId <= 0) {
+        return;
+    }
+
+    DB::insert(
+        prefixTable('import_tracking'),
+        array(
+            'operation_id'  => $operationId,
+            'user_id'       => $userId,
+            'format'        => substr($format, 0, 20),
+            'status'        => 'ready',
+            'total_items'   => $totalItems,
+            'folders_count' => $foldersCount,
+            'started_at'    => time(),
+        )
+    );
+}
+
+/**
+ * Update fields of the tracking record for an operation.
+ * No-op when the operation has no tracking row.
+ *
+ * @param int                  $operationId The import operation id.
+ * @param array<string,mixed>  $fields      Columns to update.
+ *
+ * @return void
+ */
+function importTrackingSet(int $operationId, array $fields): void
+{
+    if ($operationId <= 0 || $fields === []) {
+        return;
+    }
+
+    DB::update(
+        prefixTable('import_tracking'),
+        $fields,
+        'operation_id = %i',
+        $operationId
+    );
+}
+
+/**
+ * Atomically increase a counter column of the tracking record.
+ *
+ * @param int    $operationId The import operation id.
+ * @param string $column      One of imported_items, failed_items, folders_count.
+ * @param int    $amount      Amount to add.
+ *
+ * @return void
+ */
+function importTrackingIncrement(int $operationId, string $column, int $amount): void
+{
+    $allowed = array('imported_items', 'failed_items', 'folders_count');
+    if ($operationId <= 0 || $amount === 0 || in_array($column, $allowed, true) === false) {
+        return;
+    }
+
+    DB::query(
+        'UPDATE ' . prefixTable('import_tracking') . '
+        SET ' . $column . ' = ' . $column . ' + %i
+        WHERE operation_id = %i',
+        $amount,
+        $operationId
+    );
 }
 
 /**

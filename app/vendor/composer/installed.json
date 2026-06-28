@@ -9594,6 +9594,47 @@
             "install-path": "../teampassclasses/passwordgeneratorservice"
         },
         {
+            "name": "teampassclasses/importformat",
+            "version": "dev-preparing/3.2.0.0",
+            "version_normalized": "dev-preparing/3.2.0.0",
+            "dist": {
+                "type": "path",
+                "url": "app/includes/libraries/teampassclasses/importformat",
+                "reference": ""
+            },
+            "require": {
+                "php": "^8.1"
+            },
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "TeampassClasses\\ImportFormat\\": "src/"
+                }
+            },
+            "license": [
+                "GPL-3.0-only"
+            ],
+            "authors": [
+                {
+                    "name": "Nils Laumaillé"
+                }
+            ],
+            "description": "Normalise third-party password-manager exports (Bitwarden, LastPass, 1Password, KeePassXC) into TeamPass' import model.",
+            "keywords": [
+                "1password",
+                "bitwarden",
+                "import",
+                "keepassxc",
+                "lastpass"
+            ],
+            "transport-options": {
+                "symlink": false,
+                "relative": true
+            },
+            "install-path": "../teampassclasses/importformat"
+        },
+        {
             "name": "teampassclasses/passwordmanager",
             "version": "dev-preparing/3.2.0.0",
             "version_normalized": "dev-preparing/3.2.0.0",

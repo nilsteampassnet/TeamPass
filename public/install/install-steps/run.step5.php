@@ -603,6 +603,9 @@ class DatabaseInstaller
             array('admin', 'manager_move_item', '0'),
             array('admin', 'create_item_without_password', '0'),
             array('admin', 'otv_is_enabled', '0'),
+            array('admin', 'secure_send_allow_notes', '0'),
+            array('admin', 'secure_send_max_views', '5'),
+            array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
             array('admin', 'saltkey_ante_2127', 'none'),
@@ -861,6 +864,7 @@ class DatabaseInstaller
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
             `show_subfolders` tinyint(1) NOT NULL DEFAULT '0',
+            `onboarding_completed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'First-run onboarding wizard completed (0=no, 1=done/skipped)',
             `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             `phpseclibv3_migration_completed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Forced phpseclib v3 migration status (0=not done, 1=completed)',
             `phpseclibv3_migration_task_id` INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task',
@@ -1424,9 +1428,13 @@ class DatabaseInstaller
             `id` int(10) NOT NULL AUTO_INCREMENT,
             `timestamp` text NOT NULL,
             `code` varchar(100) NOT NULL,
-            `item_id` int(12) NOT NULL,
+            `item_id` int(12) NULL DEFAULT NULL,
+            `send_type` varchar(10) NOT NULL DEFAULT 'item',
             `originator` int(12) NOT NULL,
             `encrypted` text NOT NULL,
+            `protected_key` text NULL DEFAULT NULL,
+            `has_passphrase` tinyint(1) NOT NULL DEFAULT '0',
+            `failed_attempts` int(10) NOT NULL DEFAULT '0',
             `views` INT(10) NOT NULL DEFAULT '0',
             `max_views` INT(10) NULL DEFAULT NULL,
             `time_limit` varchar(100) DEFAULT NULL,
@@ -1732,6 +1740,29 @@ class DatabaseInstaller
             `folder_id` INT(12) NULL DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `imported_at` INT(12) NULL DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table import_tracking (per-operation import follow-up)
+    private function import_tracking()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "import_tracking` (
+            `id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+            `operation_id` INT(12) NOT NULL,
+            `user_id` INT(12) NOT NULL,
+            `format` VARCHAR(20) NOT NULL,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'analyzing',
+            `total_items` INT(12) NOT NULL DEFAULT 0,
+            `imported_items` INT(12) NOT NULL DEFAULT 0,
+            `failed_items` INT(12) NOT NULL DEFAULT 0,
+            `folders_count` INT(12) NOT NULL DEFAULT 0,
+            `message` TEXT NULL,
+            `started_at` INT(12) NOT NULL,
+            `finished_at` INT(12) NULL DEFAULT NULL,
+            KEY `operation_id` (`operation_id`),
+            KEY `user_id` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

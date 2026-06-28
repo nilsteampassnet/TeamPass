@@ -94,6 +94,25 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
 
+    // Plain-language coaching strings for the passphrase generator (F9).
+    const TP_PASSPHRASE_COACH = {
+        summary:       <?php echo json_encode($lang->get('passphrase_coach_summary'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_one:  <?php echo json_encode($lang->get('passphrase_coach_add_word_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_many: <?php echo json_encode($lang->get('passphrase_coach_add_word_many'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_one:  <?php echo json_encode($lang->get('passphrase_coach_add_char_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_many: <?php echo json_encode($lang->get('passphrase_coach_add_char_many'), JSON_UNESCAPED_UNICODE); ?>,
+        strong:        <?php echo json_encode($lang->get('passphrase_coach_strong'), JSON_UNESCAPED_UNICODE); ?>,
+        time_instant:   <?php echo json_encode($lang->get('passphrase_coach_time_instant'), JSON_UNESCAPED_UNICODE); ?>,
+        time_seconds:   <?php echo json_encode($lang->get('passphrase_coach_time_seconds'), JSON_UNESCAPED_UNICODE); ?>,
+        time_minutes:   <?php echo json_encode($lang->get('passphrase_coach_time_minutes'), JSON_UNESCAPED_UNICODE); ?>,
+        time_hours:     <?php echo json_encode($lang->get('passphrase_coach_time_hours'), JSON_UNESCAPED_UNICODE); ?>,
+        time_days:      <?php echo json_encode($lang->get('passphrase_coach_time_days'), JSON_UNESCAPED_UNICODE); ?>,
+        time_months:    <?php echo json_encode($lang->get('passphrase_coach_time_months'), JSON_UNESCAPED_UNICODE); ?>,
+        time_years:     <?php echo json_encode($lang->get('passphrase_coach_time_years'), JSON_UNESCAPED_UNICODE); ?>,
+        time_centuries: <?php echo json_encode($lang->get('passphrase_coach_time_centuries'), JSON_UNESCAPED_UNICODE); ?>,
+        time_ages:      <?php echo json_encode($lang->get('passphrase_coach_time_ages'), JSON_UNESCAPED_UNICODE); ?>,
+    };
+
     // Minimum word count and extra suffix requirements per folder complexity level
     const TP_PASSPHRASE_RULES = {
         0:  { minWords: 3, capitalize: false, appendSuffix: false },
@@ -101,6 +120,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         38: { minWords: 3, capitalize: true,  appendSuffix: false },
         48: { minWords: 4, capitalize: true,  appendSuffix: false },
         60: { minWords: 4, capitalize: true,  appendSuffix: true  },
+    };
+
+    // Minimum random-password requirements per folder complexity level.
+    // Mirrors PasswordGeneratorService::COMPLEXITY_PRESETS (server-side enforcement):
+    // the folder can only ADD requirements (forced character classes + minimum length).
+    const TP_PWD_COMPLEXITY_PRESETS = {
+        0:  { minLength: 4,  lowercase: false, uppercase: false, numbers: false, symbols: false },
+        20: { minLength: 8,  lowercase: true,  uppercase: false, numbers: true,  symbols: false },
+        38: { minLength: 12, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        48: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        60: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: true  },
     };
 
     var requestRunning = false,
@@ -1055,7 +1085,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
                 // HIde
-                $('.form-item-copy, #folders-tree-card, .columns-position, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+                $('.form-item-copy, #folders-tree-card, .columns-position, .form-item-action, #form-item-attachments-zone')
                     .addClass('hidden');
                 // Destroy editor
                 $('#form-item-description').summernote('destroy');
@@ -1329,17 +1359,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // > END <
             //
         } else if ($(this).data('item-action') === 'otv') {
-            if (debugJavascript === true) console.info('SHOW OTV ITEM');
+            if (debugJavascript === true) console.info('SHOW SECURE SEND ITEM');
             toastr.remove();
 
-            // Generate link
-            $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
-            $('#form-item-otv-views').val('1');
-            prepareOneTimeView();
-
-            $('#form-item-otv-link').val('');
-            // Open OTV modal
-            $('#modal-item-otv').modal('show');
+            // Open the Secure Send modal in item mode (link generated on demand)
+            openSecureSendModal('item');
 
             //
             // > END <
@@ -1790,18 +1814,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         );
 
         scrollBackToPosition();
-    });
-
-
-    /**
-     * Show/Hide the Password generation options
-     */
-    $('#item-button-password-showOptions').click(function() {
-        if ($('#form-item-password-options').hasClass('hidden') === true) {
-            $('#form-item-password-options').removeClass('hidden');
-        } else {
-            $('#form-item-password-options').addClass('hidden');
-        }
     });
 
 
@@ -2952,7 +2964,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item').removeClass('was-validated');
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
-        $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+        $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
             .addClass('hidden');
         $('#but_back_top_left, #but_back_top_right').addClass('hidden');
     }
@@ -3432,6 +3444,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     function syncItemPasswordComplexity(passwordValue = null) {
+        // Any password change other than a fresh passphrase clears the coaching
+        // text; the element keeps its reserved height so nothing below shifts.
+        $('#form-item-password-coach').empty();
+
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
             $('#form-item-password').val(normalizedPassword);
@@ -4358,7 +4374,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
                 .removeClass('hidden');
-            $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+            $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
                 .addClass('hidden');
 
             // Initial 'user did a change'
@@ -5130,7 +5146,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                     teampassItem.hasCustomCategories = data.categoriesStructure
                             }
                         );
-                        
+
+                        // Keep both generators' options aligned with the
+                        // selected folder's complexity rules.
+                        syncPassphraseOptionsWithComplexity();
+                        syncRandomOptionsWithComplexity();
+
 
                         // display path of folders
                         $('#form-folder-path').html(
@@ -7607,18 +7628,149 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Undocumented function
+     * Bind the copy-to-clipboard button to a Secure Send URL.
+     *
+     * @param {string} url
+     * @return void
+     */
+    function bindSecureSendClipboard(url) {
+        $('#form-item-otv-copy-button').off('click.securesend').on('click.securesend', async function() {
+            try {
+                if (!url) {
+                    return;
+                }
+                await copyToClipboard(url);
+                toastr.info(
+                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                    '', {
+                        timeOut: 2000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            } catch (error) {
+                toastr.error(
+                    '<?php echo $lang->get("clipboard_error"); ?>',
+                    '', {
+                        timeOut: 3000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Map a Secure Send backend error code to a readable message.
+     *
+     * @param {string} code
+     * @return {string}
+     */
+    function secureSendErrorLabel(code) {
+        var map = {
+            'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
+            'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
+            'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
+            'not_allowed': '<?php echo $lang->get('error'); ?>'
+        };
+        return map[code] || '<?php echo $lang->get('error'); ?>';
+    }
+
+    /**
+     * Load and render the current user's active Secure Send links.
      *
      * @return void
      */
-    function prepareOneTimeView() {
+    function loadSecureSendsList() {
+        $.post(
+            "sources/items.queries.php", {
+                type: "list_secure_sends",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                if (data.error !== "" || data.sends === undefined || data.sends.length === 0) {
+                    $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
+                    return;
+                }
+                var html = '<ul class="list-unstyled mb-0">';
+                data.sends.forEach(function(s) {
+                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
+                    var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
+                    html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
+                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + s.label + lock +
+                        ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
+                        '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
+                        '</li>';
+                });
+                html += '</ul>';
+                $('#secure-send-list').html(html);
+            },
+            "json"
+        );
+    }
+
+    /**
+     * Open the Secure Send modal in the given mode.
+     *
+     * @param {string} mode 'item' or 'note'
+     * @return void
+     */
+    function openSecureSendModal(mode) {
+        $('#form-secure-send-mode').val(mode);
+        // Reset the form
+        $('#form-item-otv-link').val('').data('otv-id', 0);
+        $('#form-secure-send-passphrase').val('');
+        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
+        $('#form-item-otv-views').val('1');
+        $('#secure-send-modal-title').text('<?php echo $lang->get('secure_send'); ?>');
+
+        if (mode === 'note') {
+            $('#secure-send-note-fields').removeClass('hidden');
+            $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
+        } else {
+            $('#secure-send-note-fields').addClass('hidden');
+        }
+
+        loadSecureSendsList();
+        $('#modal-item-otv').modal('show');
+    }
+
+    // Generate a Secure Send link
+    $(document).on('click', '#form-secure-send-generate', function() {
+        var mode = $('#form-secure-send-mode').val();
+        var passphrase = $('#form-secure-send-passphrase').val();
+
         var data = {
-            "id": store.get('teampassItem').id,
+            "send_type": mode,
+            "passphrase": passphrase,
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0
         };
 
-        //Send query
+        if (mode === 'note') {
+            var secret = $('#form-secure-send-secret').val();
+            var note = $('#form-secure-send-note').val();
+            if (secret.trim() === '' && note.trim() === '') {
+                toastr.error('<?php echo $lang->get('secure_send_empty_note_error'); ?>', '', { timeOut: 3000, progressBar: true });
+                return;
+            }
+            data.payload = {
+                "title": $('#form-secure-send-title').val(),
+                "secret": secret,
+                "note": note,
+                "login": $('#form-secure-send-login').val(),
+                "url": $('#form-secure-send-url').val()
+            };
+        } else {
+            data.id = store.get('teampassItem').id;
+        }
+
+        var $btn = $(this);
+        $btn.addClass('disabled');
+
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
@@ -7626,118 +7778,49 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                //check if format error
-                if (data.error == "") {
-                    $('#form-item-otv-link').val(data.url);
-                    $('#form-item-otv-link').data('otv-id', data.otv_id);
-
-                    // prepare clipboard
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
+                $btn.removeClass('disabled');
+                if (data.error === "") {
+                    $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
+                    bindSecureSendClipboard(data.url);
+                    if (data.has_passphrase === 1) {
+                        $('#form-secure-send-passphrase-reminder').removeClass('hidden');
+                    } else {
+                        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+                    }
+                    loadSecureSendsList();
+                } else {
+                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
                 }
             },
             "json"
         );
-    }
+    });
 
-    // Handle update OTV button
-    $(document).on('click', '#form-item-otv-update', function() {
-        var $btn = $(this);
-        $btn.addClass('disabled').html('<i class="fa-solid fa-circle-notch fa-spin"></i><br>');
+    // Open the Secure Send modal in note mode from the top-level entry
+    $(document).on('click', '#secure-send-note-open', function() {
+        openSecureSendModal('note');
+    });
 
+    // Refresh the "My secure sends" list
+    $(document).on('click', '#secure-send-list-refresh', function() {
+        loadSecureSendsList();
+    });
+
+    // Revoke a Secure Send link
+    $(document).on('click', '.secure-send-revoke', function() {
         var data = {
-            "otv_id": $('#form-item-otv-link').data('otv-id'),
-            "days": $('#form-item-otv-days').val(),
-            "views": $('#form-item-otv-views').val(),
-            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
-            "original_link": $('#form-item-otv-link').val(),
+            "id": $(this).data('id')
         };
-
         $.post(
             "sources/items.queries.php", {
-                type: "update_OTV_url",
+                type: "revoke_secure_send",
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                $btn.removeClass('disabled').html('<i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>');
-                // Display new url
-                if (data.new_url !== undefined) {
-                    $('#form-item-otv-link').val(data.new_url);
-
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
-                }
-                toastr.remove();
-                toastr.info(
-                    '<?php echo $lang->get('updated'); ?>',
-                    '', {
-                        timeOut: 2000,
-                        progressBar: true
-                    }
-                );
-            }
+                loadSecureSendsList();
+            },
+            "json"
         );
     });
 
@@ -7940,8 +8023,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
+    // Bound to the generic .password-generate buttons (e.g. server-password field)
+    // and reused by the main item generate button when in "random" mode.
     $('.password-generate').click(function() {
-        var elementId = $(this).data('id');
+        generateRandomPasswordFor($(this).data('id'));
+    });
+
+    /**
+     * Generate a random password (server-side smart generator) into a field.
+     *
+     * @param {string} elementId  Target input id (e.g. 'form-item-password').
+     */
+    function generateRandomPasswordFor(elementId) {
         $('#' + elementId).focus();
         if (debugJavascript === true) console.log(elementId);
 
@@ -7998,6 +8091,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $(sel).prop('checked', checked === true).closest('label').toggleClass('active', checked === true);
                 });
                 syncItemPasswordComplexity(data.key ?? '');
+                passwordCoaching(opts);
             }
 
             // Form has changed
@@ -8007,7 +8101,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // SHow button in sticky footer
             //$('#form-item-buttons').addClass('sticky-footer');
         });
-    });
+    }
 
     /**
      * Generate a BIP-39 passphrase using cryptographically secure randomness.
@@ -8016,7 +8110,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * @param {number}  wordCount   Requested number of words (may be raised by complexity rules).
      * @param {string}  separator   Word separator ('-', '_', '.', ' ', or '').
      * @param {boolean} capitalize  Whether to capitalise the first letter of each word.
-     * @returns {string}
+     * @returns {{passphrase: string, wordCount: number, hasSuffix: boolean}}
      */
     function generateBip39Passphrase(wordCount, separator, capitalize) {
         const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
@@ -8032,8 +8126,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             return doCapitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word
         })
 
-        const sep = separator === 'space' ? ' ' : separator
-        let passphrase = words.join(sep)
+        let passphrase = words.join(separator)
 
         // Complexity level 60 requires digits + symbols: append a short suffix
         if (rules.appendSuffix) {
@@ -8045,7 +8138,149 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             passphrase += digit + symbol
         }
 
-        return passphrase
+        return { passphrase: passphrase, wordCount: actualWordCount, hasSuffix: rules.appendSuffix }
+    }
+
+    // Crack-time buckets, ordered ascending. Each entry: [upper bound in seconds, i18n key].
+    // A value below a bound falls in that bucket; above the last bound it is "ages".
+    const TP_CRACK_BUCKETS = [
+        [1,            'time_instant'],
+        [60,           'time_seconds'],
+        [3600,         'time_minutes'],
+        [86400,        'time_hours'],
+        [2592000,      'time_days'],      // 30 days
+        [31536000,     'time_months'],    // 1 year
+        [3153600000,   'time_years'],     // 100 years
+        [315360000000, 'time_centuries'], // 10 000 years
+    ]
+    // Index in TP_CRACK_BUCKETS considered "strong enough" (centuries or more).
+    const TP_CRACK_STRONG_INDEX = 7
+    // Bits of entropy added by the digit+symbol suffix (10 digits × 8 symbols).
+    const TP_SUFFIX_BITS = Math.log2(80)
+    // Assumed offline attack rate (GPU-class), used only for the plain-language estimate.
+    const TP_CRACK_GUESSES_PER_SECOND = 1e10
+
+    /**
+     * Returns the bucket index for a given entropy, using the average number of
+     * guesses (2^(bits-1)) divided by the assumed attack rate.
+     *
+     * @param {number} entropyBits
+     * @returns {number} Index into TP_CRACK_BUCKETS, or its length for "ages".
+     */
+    function crackBucketIndex(entropyBits) {
+        const seconds = Math.pow(2, entropyBits - 1) / TP_CRACK_GUESSES_PER_SECOND
+        for (let i = 0; i < TP_CRACK_BUCKETS.length; i++) {
+            if (seconds < TP_CRACK_BUCKETS[i][0]) return i
+        }
+        return TP_CRACK_BUCKETS.length
+    }
+
+    /**
+     * Returns the localized plain-language crack-time label for an entropy value.
+     *
+     * @param {number} entropyBits
+     * @returns {string}
+     */
+    function crackLabel(entropyBits) {
+        const idx = crackBucketIndex(entropyBits)
+        const key = idx < TP_CRACK_BUCKETS.length ? TP_CRACK_BUCKETS[idx][1] : 'time_ages'
+        return TP_PASSPHRASE_COACH[key]
+    }
+
+    /**
+     * Render the coaching line (entropy summary + optional nudge) under the bar.
+     * Shared by the passphrase and the random-password generators so the UI is
+     * consistent between both modes.
+     *
+     * @param {number} entropyBits  Estimated entropy of the generated secret.
+     * @param {string} tip          Already-localized nudge, or '' for none.
+     */
+    function renderPasswordCoaching(entropyBits, tip) {
+        const summary = TP_PASSPHRASE_COACH.summary
+            .replace('%bits%', String(entropyBits))
+            .replace('%time%', crackLabel(entropyBits))
+
+        // Two fixed lines (summary + nudge) so the reserved height never changes
+        // and the generate buttons below do not jump when coaching appears.
+        const tipLine = tip !== '' ? '<div>' + tip + '</div>' : ''
+        $('#form-item-password-coach')
+            .html('<div><i class="fa-solid fa-shield-halved mr-1"></i>' + summary + '</div>' + tipLine)
+    }
+
+    /**
+     * Coaching for a generated passphrase. Uses the generator's own entropy
+     * (uniformly random words) — the honest measure for a generated secret —
+     * and nudges the user to add words until the "strong" bucket is reached.
+     *
+     * @param {number}  wordCount  Number of words actually used.
+     * @param {boolean} hasSuffix  Whether a digit+symbol suffix was appended.
+     */
+    function passphraseCoaching(wordCount, hasSuffix) {
+        const bitsPerWord = Math.log2(TP_BIP39_WORDLIST.length || 2048)
+        const suffixBits = hasSuffix ? TP_SUFFIX_BITS : 0
+        const curBits = Math.round(wordCount * bitsPerWord + suffixBits)
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra words that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 8; extra++) {
+                const bits = (wordCount + extra) * bitsPerWord + suffixBits
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_word_one
+                        : TP_PASSPHRASE_COACH.add_word_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        renderPasswordCoaching(curBits, tip)
+    }
+
+    // Character-class sizes used by the server-side generator (Hackzilla
+    // ComputerPasswordGenerator): lower 26, upper 26, digits 10, symbols 23.
+    function passwordCharsetSize(opts) {
+        let size = 0
+        if (opts.lowercase)  size += 26
+        if (opts.capitalize) size += 26
+        if (opts.numerals)   size += 10
+        if (opts.symbols)    size += 23
+        return size || 26
+    }
+
+    /**
+     * Coaching for a generated random password. Entropy is length × log2(charset)
+     * and the nudge suggests adding characters until the "strong" bucket is reached.
+     *
+     * @param {object} opts  effective_options returned by the generator
+     *                       ({size, lowercase, capitalize, numerals, symbols}).
+     */
+    function passwordCoaching(opts) {
+        const length = parseInt(opts.size, 10) || 0
+        const bitsPerChar = Math.log2(passwordCharsetSize(opts))
+        const curBits = Math.round(length * bitsPerChar)
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra characters that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 64; extra++) {
+                const bits = (length + extra) * bitsPerChar
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_char_one
+                        : TP_PASSPHRASE_COACH.add_char_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        renderPasswordCoaching(curBits, tip)
     }
 
     // Tracks the last folder complexity applied to the passphrase options.
@@ -8093,35 +8328,146 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Passphrase generate button click handler.
+     * Returns the random-password preset for a complexity level (closest lower
+     * preset when the level does not match exactly), mirroring the server.
+     *
+     * @param {number} level  Folder complexity (TP_PW_STRENGTH_* value).
      */
-    $('#item-button-passphrase-generate').click(function() {
+    function pwdPresetForComplexity(level) {
+        let selected = TP_PWD_COMPLEXITY_PRESETS[0]
+        Object.keys(TP_PWD_COMPLEXITY_PRESETS).forEach(function(k) {
+            if (level >= parseInt(k, 10)) selected = TP_PWD_COMPLEXITY_PRESETS[k]
+        })
+        return selected
+    }
+
+    /**
+     * Reflect the folder's complexity in the random-password options: the
+     * character classes it requires are forced ON and locked (disabled), and
+     * lengths below its minimum are disabled — so the selector matches what the
+     * server will actually enforce instead of silently reverting the user's input.
+     */
+    function syncRandomOptionsWithComplexity() {
+        const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
+        const preset = pwdPresetForComplexity(folderComplexity)
+
+        $.each({
+            '#pwd-definition-lcl':     preset.lowercase,
+            '#pwd-definition-ucl':     preset.uppercase,
+            '#pwd-definition-numeric': preset.numbers,
+            '#pwd-definition-symbols': preset.symbols,
+        }, function(sel, required) {
+            const $cb = $(sel)
+            if (required) {
+                $cb.prop('checked', true).prop('disabled', true)
+                   .closest('label').addClass('active disabled')
+            } else {
+                $cb.prop('disabled', false).closest('label').removeClass('disabled')
+            }
+        })
+
+        // Disable lengths below the folder minimum and raise the value if needed.
+        $('#pwd-definition-size option').each(function() {
+            $(this).prop('disabled', parseInt($(this).val(), 10) < preset.minLength)
+        })
+        if ((parseInt($('#pwd-definition-size').val(), 10) || 0) < preset.minLength) {
+            $('#pwd-definition-size').val(String(preset.minLength))
+        }
+    }
+
+    /**
+     * Generate a BIP-39 passphrase into the item password field.
+     */
+    function generateItemPassphrase() {
         syncPassphraseOptionsWithComplexity()
 
         const wordCount = parseInt($('#passphrase-word-count').val(), 10) || 4
         const separator = $('#passphrase-separator').val()
         const capitalize = $('#passphrase-capitalize').prop('checked')
 
-        const passphrase = generateBip39Passphrase(wordCount, separator, capitalize)
-        $('#form-item-password').val(passphrase).focus()
+        const result = generateBip39Passphrase(wordCount, separator, capitalize)
+        $('#form-item-password').val(result.passphrase).focus()
 
-        syncItemPasswordComplexity(passphrase)
+        syncItemPasswordComplexity(result.passphrase)
+        passphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
-        if (debugJavascript === true) console.log('Passphrase generated: ' + passphrase)
-    })
+        if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
+    }
+
+    // -------------------------------------------------------------------------
+    // Generator mode (random vs passphrase) — drives which options panel shows
+    // and what the single generate button produces.
+    // -------------------------------------------------------------------------
 
     /**
-     * Show/hide the passphrase options panel.
-     * Syncs word count constraints with folder complexity before showing.
+     * Returns the active generator mode ('random' or 'passphrase').
      */
-    $('#item-button-passphrase-showOptions').click(function() {
-        if ($('#form-item-passphrase-options').hasClass('hidden')) {
+    function currentGeneratorMode() {
+        return $('#form-item-generator-mode label.active').data('mode') || 'random'
+    }
+
+    /**
+     * Show only the options panel matching the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function showGeneratorOptions(mode) {
+        const isPassphrase = mode === 'passphrase'
+        $('#form-item-password-options').toggleClass('hidden', isPassphrase)
+        $('#form-item-passphrase-options').toggleClass('hidden', !isPassphrase)
+        if (isPassphrase) {
             syncPassphraseOptionsWithComplexity()
-            $('#form-item-passphrase-options').removeClass('hidden')
         } else {
-            $('#form-item-passphrase-options').addClass('hidden')
+            syncRandomOptionsWithComplexity()
         }
+    }
+
+    /**
+     * Apply a mode to both the toggle buttons and the visible options panel.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function applyGeneratorMode(mode) {
+        $('#form-item-generator-mode label').each(function() {
+            const active = $(this).data('mode') === mode
+            $(this).toggleClass('active', active)
+            $(this).find('input[type=radio]').prop('checked', active)
+        })
+        showGeneratorOptions(mode)
+    }
+
+    /**
+     * Generate a secret into the item password field for the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function generateInMode(mode) {
+        if (mode === 'passphrase') {
+            generateItemPassphrase()
+        } else {
+            generateRandomPasswordFor('form-item-password')
+        }
+    }
+
+    // Pick a mode: swap the options panel, remember it, and generate right away
+    // so the field, the strength bar and the coaching always match the mode.
+    $('#form-item-generator-mode label').on('click', function() {
+        const mode = $(this).data('mode')
+        showGeneratorOptions(mode)
+        try { localStorage.setItem('tp_generator_mode', mode) } catch (_) {}
+        generateInMode(mode)
+    })
+
+    // Single generate button: dispatches to the active mode.
+    $('#item-button-generate').click(function() {
+        generateInMode(currentGeneratorMode())
+    })
+
+    // Manual edits invalidate the generated-passphrase coaching (programmatic
+    // .val() does not fire 'input', so the generator's coaching is preserved).
+    $('#form-item-password').on('input', function() {
+        $('#form-item-password-coach').empty()
     })
 
     // -------------------------------------------------------------------------
@@ -8129,7 +8475,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // -------------------------------------------------------------------------
 
     /**
-     * Save password generator options to localStorage on any option change.
+     * Save password generator options to localStorage and regenerate the
+     * password so the result always reflects the current settings.
      */
     $('#pwd-definition-size, .password-definition').on('change', function() {
         try {
@@ -8142,20 +8489,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 secure:  $('#pwd-definition-secure').prop('checked'),
             }))
         } catch (_) {}
+        generateRandomPasswordFor('form-item-password')
     })
 
     /**
-     * Save passphrase generator options to localStorage on any option change.
-     * wordCount and capitalize are folder-dependent so they are saved for
-     * within-session use but NOT restored on the next page load.
-     * Only the separator is purely cosmetic and restored across sessions.
+     * Save the passphrase separator to localStorage and regenerate on any
+     * passphrase option change (word count, separator, capitalize).
+     * wordCount and capitalize are folder-dependent so they are NOT restored
+     * on the next page load; only the separator is restored across sessions.
      */
-    $('#passphrase-separator').on('change', function() {
+    $('#passphrase-word-count, #passphrase-separator, #passphrase-capitalize').on('change', function() {
         try {
             localStorage.setItem('tp_passphrase_gen_opts', JSON.stringify({
                 separator: $('#passphrase-separator').val(),
             }))
         } catch (_) {}
+        generateItemPassphrase()
     })
 
     /**
@@ -8186,6 +8535,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             if (ppOpts && ppOpts.separator !== undefined) {
                 $('#passphrase-separator').val(ppOpts.separator)
             }
+        } catch (_) {}
+
+        try {
+            applyGeneratorMode(localStorage.getItem('tp_generator_mode') || 'random')
         } catch (_) {}
     })()
 

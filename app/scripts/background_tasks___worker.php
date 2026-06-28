@@ -741,6 +741,9 @@ class TaskWorker {
                     // API-activity backfill (last_connexion); any other update path above
                     // has already continued the loop.
                     DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
+                    // In this (non-reset) path $activityUpdate is only ever populated by
+                    // the API-activity backfill above, so reaching here means the row was
+                    // backfilled — count it unconditionally.
                     $apiActivityBackfilled++;
                 }
 

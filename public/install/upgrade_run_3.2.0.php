@@ -569,6 +569,34 @@ mysqli_query(
      ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
 );
 
+// Add the import_tracking table — per-operation follow-up of item imports
+// (format, status, item/folder counts, timestamps). Powers the "import
+// follow-up" panel and history on the Import page.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'import_tracking` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `operation_id` int(12) NOT NULL,
+        `user_id` int(12) NOT NULL,
+        `format` varchar(20) NOT NULL,
+        `status` varchar(20) NOT NULL DEFAULT \'analyzing\',
+        `total_items` int(12) NOT NULL DEFAULT 0,
+        `imported_items` int(12) NOT NULL DEFAULT 0,
+        `failed_items` int(12) NOT NULL DEFAULT 0,
+        `folders_count` int(12) NOT NULL DEFAULT 0,
+        `message` text NULL,
+        `started_at` int(12) NOT NULL,
+        `finished_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `operation_id` (`operation_id`),
+        KEY `user_id` (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating import_tracking table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
 // Drop obsolete password migration tracking column (added in 3.1.5, no longer read by app)
 $columnNeedsPwMigrationExists = mysqli_fetch_array(mysqli_query(
     $db_link,
@@ -582,6 +610,90 @@ if (!empty($columnNeedsPwMigrationExists[0])) {
         $db_link,
         "ALTER TABLE `" . $pre . "users` DROP COLUMN `needs_password_migration`"
     );
+}
+
+// F14 Secure Send: elevate the OTV engine.
+// The otv table must accept ad-hoc note sends (no item) and the optional
+// passphrase-protected key model. All changes are additive and idempotent.
+$otvTable = $pre . 'otv';
+
+// item_id -> nullable (note sends are not bound to an item)
+$itemIdColumn = mysqli_fetch_assoc(mysqli_query(
+    $db_link,
+    "SELECT IS_NULLABLE FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $otvTable . "'
+     AND COLUMN_NAME = 'item_id'"
+));
+if ($itemIdColumn !== null && strtoupper((string) ($itemIdColumn['IS_NULLABLE'] ?? '')) === 'NO') {
+    if (mysqli_query($db_link, "ALTER TABLE `" . $otvTable . "` MODIFY `item_id` INT(12) NULL DEFAULT NULL") === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error making otv.item_id nullable: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// New columns (added only when missing)
+$otvNewColumns = [
+    'send_type'       => "ADD `send_type` VARCHAR(10) NOT NULL DEFAULT 'item' AFTER `item_id`",
+    'protected_key'   => "ADD `protected_key` TEXT NULL DEFAULT NULL AFTER `encrypted`",
+    'has_passphrase'  => "ADD `has_passphrase` TINYINT(1) NOT NULL DEFAULT 0 AFTER `protected_key`",
+    'failed_attempts' => "ADD `failed_attempts` INT(10) NOT NULL DEFAULT 0 AFTER `has_passphrase`",
+];
+foreach ($otvNewColumns as $columnName => $alterClause) {
+    $columnExists = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = '" . $database . "'
+         AND TABLE_NAME = '" . $otvTable . "'
+         AND COLUMN_NAME = '" . $columnName . "'"
+    ));
+    if (empty($columnExists[0])) {
+        if (mysqli_query($db_link, "ALTER TABLE `" . $otvTable . "` " . $alterClause) === false) {
+            echo '[{"finish":"1", "msg":"", "error":"Error adding otv.' . $columnName . ': ' . addslashes(mysqli_error($db_link)) . '"}]';
+            mysqli_close($db_link);
+            exit();
+        }
+    }
+}
+
+// Seed Secure Send settings (idempotent)
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_allow_notes', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_max_views', '5')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'secure_send_require_passphrase', '0')"
+);
+
+// F12 First-run onboarding wizard: per-user completion flag (added only when missing).
+// Existing users are marked as completed so the wizard never auto-pops after an upgrade;
+// only accounts created afterwards (DEFAULT 0) trigger it on their first connection.
+$onboardingColumnExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $pre . "users'
+     AND COLUMN_NAME = 'onboarding_completed'"
+));
+if (empty($onboardingColumnExists[0])) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "users`
+         ADD `onboarding_completed` TINYINT(1) NOT NULL DEFAULT 0
+         COMMENT 'First-run onboarding wizard completed (0=no, 1=done/skipped)'"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding users.onboarding_completed: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+    // Backfill existing users once (runs only when the column was just created).
+    mysqli_query($db_link, "UPDATE `" . $pre . "users` SET `onboarding_completed` = 1");
 }
 
 // Close connection

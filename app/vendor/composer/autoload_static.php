@@ -65,6 +65,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
             'TeampassClasses\\LdapExtra\\' => 26,
             'TeampassClasses\\Language\\' => 25,
             'TeampassClasses\\FolderServices\\' => 31,
+            'TeampassClasses\\ImportFormat\\' => 29,
             'TeampassClasses\\Encryption\\' => 27,
             'TeampassClasses\\EmailService\\' => 29,
             'TeampassClasses\\CryptoManager\\' => 30,
@@ -252,9 +253,13 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/passwordmanager/src',
         ),
-        'TeampassClasses\\PasswordGeneratorService\\' => 
+        'TeampassClasses\\PasswordGeneratorService\\' =>
         array (
             0 => __DIR__ . '/..' . '/teampassclasses/passwordgeneratorservice/src',
+        ),
+        'TeampassClasses\\ImportFormat\\' =>
+        array (
+            0 => __DIR__ . '/..' . '/teampassclasses/importformat/src',
         ),
         'TeampassClasses\\OAuth2Controller\\' => 
         array (
@@ -5281,7 +5286,7 @@ class ComposerStaticInite3f3ee27f81ca21f7bd7499d7b935c11
         'voku\\helper\\AntiXSS' => __DIR__ . '/..' . '/voku/anti-xss/src/voku/helper/AntiXSS.php',
         'voku\\helper\\Bootup' => __DIR__ . '/..' . '/voku/portable-utf8/src/voku/helper/Bootup.php',
         'voku\\helper\\UTF8' => __DIR__ . '/..' . '/voku/portable-utf8/src/voku/helper/UTF8.php',
-        '©' => __DIR__ . '/..' . '/symfony/cache/Traits/ValueWrapper.php',
+        'ï¿½' => __DIR__ . '/..' . '/symfony/cache/Traits/ValueWrapper.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

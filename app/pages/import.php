@@ -116,19 +116,26 @@ if ((int) $session->get('user-admin') === 1) {
                     <div class="callout callout-primary mb-3">
                         <?php echo $lang->get('data_type_for_import'); ?>
                     </div>
-                    <ul class="nav nav-tabs mb-3" id="import-type">
-                        <li class="nav-item">
-                            <a class="nav-link active" data-toggle="tab" href="#csv" role="tab" aria-controls="csv" aria-selected="true"><?php echo $lang->get('csv'); ?></a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-toggle="tab" href="#keepass" role="tab" aria-controls="keepass" aria-selected="false"><?php echo $lang->get('keepass'); ?></a>
-                        </li>
-                    </ul>
+
+                    <!-- Single source selector (replaces the former CSV/Keepass/Managers tabs) -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="import-source"><?php echo $lang->get('import_select_source'); ?></label>
+                            <select id="import-source" class="form-control select2" style="width:100%;">
+                                <option value="csv"><?php echo $lang->get('csv'); ?></option>
+                                <option value="keepass"><?php echo $lang->get('keepass'); ?></option>
+                                <option value="bitwarden"><?php echo $lang->get('import_format_bitwarden'); ?></option>
+                                <option value="lastpass"><?php echo $lang->get('import_format_lastpass'); ?></option>
+                                <option value="1password"><?php echo $lang->get('import_format_1password'); ?></option>
+                                <option value="keepassxc"><?php echo $lang->get('import_format_keepassxc'); ?></option>
+                            </select>
+                        </div>
+                    </div>
 
 
-                    <div class="tab-content mt-1" id="myTabContent">
+                    <div class="mt-1" id="import-zones">
                         <!-- CSV -->
-                        <div class="tab-pane fade show active" id="csv" role="tabpanel" aria-labelledby="csv-tab">
+                        <div class="import-zone" id="csv">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
                                 <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
@@ -236,7 +243,7 @@ echo isset($folderOptions) ? $folderOptions : '';
                         </div>
 
                         <!-- KEEPASS -->
-                        <div class="tab-pane fade" id="keepass" role="tabpanel" aria-labelledby="keepass-tab">
+                        <div class="import-zone hidden" id="keepass">
                             <div class="callout callout-info">
                                 <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
                                 <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
@@ -285,6 +292,149 @@ echo isset($folderOptions) ? $folderOptions : '';
                             </div>
                         </div>
 
+                        <!-- OTHER PASSWORD MANAGERS (Bitwarden / LastPass / 1Password / KeePassXC) -->
+                        <div class="import-zone hidden" id="managers">
+                            <div class="callout callout-info">
+                                <i class="far fa-lightbulb text-warning fa-lg mr-2"></i>
+                                <a href="<?php echo READTHEDOC_URL; ?>" target="_blank" class="text-info"><?php echo $lang->get('get_tips_about_importation'); ?></a>
+                            </div>
+
+                            <!-- Selected format is driven by the source selector above -->
+                            <input type="hidden" id="import-mgr-format" value="bitwarden">
+
+                            <!-- Export instructions for the selected manager -->
+                            <div class="row mt-3">
+                                <div class="col-md-8">
+                                    <div class="callout callout-info mb-0 p-2" id="import-mgr-format-hint"></div>
+                                </div>
+                            </div>
+
+                            <!-- FILE -->
+                            <div class="row mt-3">
+                                <div class="col-6" id="import-mgr-upload-zone">
+                                    <h5><?php echo $lang->get('select_file'); ?></h5>
+                                    <div>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="import-mgr-attach-pickfile">
+                                            <label class="custom-file-label" for="import-mgr-attach-pickfile" id="import-mgr-attach-pickfile-text"><?php echo $lang->get('select_file'); ?></label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ITEMS TO IMPORT -->
+                            <div class="row mt-4 hidden mgr-setup">
+                                <div class="col-12">
+                                    <div class="card card-primary">
+                                        <div class="card-header">
+                                            <h4 class="card-title" id="mgr-file-info"></h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- OPTIONS -->
+                            <div class="row mt-2 hidden mgr-setup">
+                                <div class="col-12">
+                                    <h5><?php echo $lang->get('options'); ?></h5>
+
+                                    <div class="form-group">
+                                        <label for="import-mgr-keys-strategy"><?php echo $lang->get('import_csv_keys_generation_strategy'); ?></label>
+                                        <span class="ml-2 text-muted"><?php echo $lang->get('import_csv_keys_generation_strategy_tip'); ?></span>
+                                        <select id="import-mgr-keys-strategy" class="form-control form-item-control select2" style="width:100%;">
+                                            <option value="import"><?php echo $lang->get('during_import'); ?></option>
+                                            <option value="tasksHandler"><?php echo $lang->get('with_tasks_handler'); ?></option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <input type="checkbox" class="flat-blue import-mgr-cb" id="import-mgr-edit-all-checkbox">
+                                        <label for="import-mgr-edit-all-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_txt'); ?></label>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <input type="checkbox" class="flat-blue import-mgr-cb" id="import-mgr-edit-role-checkbox">
+                                        <label for="import-mgr-edit-role-checkbox" class="ml-2"><?php echo $lang->get('import_csv_anyone_can_modify_in_role_txt'); ?></label>
+                                    </div>
+
+                                    <div class="form-group mgr-folder">
+                                        <label for="import-mgr-complexity"><?php echo $lang->get('password_minimal_complexity_target_for_folders'); ?></label>
+                                        <select id="import-mgr-complexity" class="form-control form-item-control select2" style="width:100%;">
+                                        <?php
+$complexitySelectMgr = '';
+foreach (TP_PW_COMPLEXITY as $level) {
+    $complexitySelectMgr .= '<option value="' . $level[0] . '">' . $level[1] . '</option>';
+}
+echo $complexitySelectMgr;
+                                        ?>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group mgr-folder">
+                                        <label for="import-mgr-access-right"><?php echo $lang->get('access_right_for_roles_for_folders'); ?></label>
+                                        <select id="import-mgr-access-right" class="form-control form-item-control select2" style="width:100%;">
+                                            <option value=""><?php echo $lang->get('no_access'); ?></option>
+                                            <option value="R"><?php echo $lang->get('read'); ?></option>
+                                            <option value="W"><?php echo $lang->get('write'); ?></option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="import-mgr-target-folder"><?php echo $lang->get('target_folder'); ?></label>
+                                        <select id="import-mgr-target-folder" class="form-control form-item-control select2" style="width:100%;">
+<?php
+echo isset($folderOptions) ? $folderOptions : '';
+?>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PROGRESS BAR -->
+                            <div class="row mt-2 hidden" id="mgr-setup-progress">
+                                <div class="form-group col-12">
+                                    <h5><?php echo $lang->get('progress'); ?></h5>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" id="import-mgr-progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%"></div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <div class="text-muted text-center" id="import-mgr-progress-text"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- IMPORT FOLLOW-UP (recent imports history) -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="card card-outline card-secondary">
+                                <div class="card-header py-2">
+                                    <h5 class="card-title mb-0"><i class="fas fa-clock-rotate-left mr-2"></i><?php echo $lang->get('import_followup_title'); ?></h5>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" id="import-followup-refresh" title="<?php echo $lang->get('refresh'); ?>"><i class="fas fa-sync-alt"></i></button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <table class="table table-sm table-hover mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th><?php echo $lang->get('import_followup_format'); ?></th>
+                                                <th><?php echo $lang->get('import_followup_status'); ?></th>
+                                                <th class="text-center"><?php echo $lang->get('import_followup_items'); ?></th>
+                                                <th class="text-center"><?php echo $lang->get('import_followup_failed'); ?></th>
+                                                <th class="text-center"><?php echo $lang->get('import_followup_folders'); ?></th>
+                                                <th><?php echo $lang->get('import_followup_date'); ?></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="import-followup-body">
+                                            <tr><td colspan="6" class="text-center text-muted py-3" id="import-followup-empty"><?php echo $lang->get('import_followup_empty'); ?></td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- FEEDBACK -->

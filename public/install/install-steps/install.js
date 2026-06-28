@@ -309,7 +309,8 @@ function performStep5() {
         { id: 'check60', action: 'items_corruption' },
         { id: 'check62', action: 'api_tokens' },
         { id: 'check63', action: 'api_sessions' },
-        { id: 'check64', action: 'api_rate_limit' }
+        { id: 'check64', action: 'api_rate_limit' },
+        { id: 'check65', action: 'import_tracking' }
     ];
     
     let errorOccurred = false; // Variable to track errors

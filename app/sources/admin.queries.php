@@ -1294,6 +1294,9 @@ switch ($post_type) {
             $intValue = (int) $post_value;
             $post_value = (string) max(1, $intValue === 0 ? 10 : $intValue);
         }
+        if ($post_field === 'secure_send_max_views') {
+            $post_value = (string) max(1, (int) $post_value);
+        }
         
         require_once 'main.functions.php';
 
