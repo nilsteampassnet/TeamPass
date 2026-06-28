@@ -485,6 +485,27 @@ switch ($post_type) {
             $userId
         );
 
+        // F10: freeze the score snapshot so the dashboard can show "+N since last scan".
+        // Computed after the reuse flags are finalised, so `reused` is accurate.
+        $freshScore = (int) securityScoreCompute($userId)['score'];
+        $prevScore = DB::queryFirstField(
+            'SELECT last_score FROM ' . prefixTable('user_nudges') . ' WHERE user_id = %i',
+            $userId
+        );
+        $scoreDelta = ($prevScore !== null) ? ($freshScore - (int) $prevScore) : null;
+        DB::query(
+            'INSERT INTO ' . prefixTable('user_nudges') . ' (user_id, last_score, last_score_delta, last_score_at)
+            VALUES (%i, %i, %i, %i)
+            ON DUPLICATE KEY UPDATE
+                last_score = VALUES(last_score),
+                last_score_delta = VALUES(last_score_delta),
+                last_score_at = VALUES(last_score_at)',
+            $userId,
+            $freshScore,
+            $scoreDelta,
+            $nowTs
+        );
+
         // F8: push the fresh actionable posture to the user live so the in-app nudge
         // reacts without a page reload (no plaintext — counts only).
         if ((int) ($SETTINGS['security_nudges_enabled'] ?? 0) === 1) {
@@ -695,6 +716,8 @@ switch ($post_type) {
                 'total_items' => $scoreData['total_items'],
                 'scanned' => $scoreData['scanned'],
                 'last_scan' => $scoreData['last_scan'],
+                'delta' => $scoreData['delta'],
+                'delta_at' => $scoreData['delta_at'],
                 'counts' => $scoreData['counts'],
                 'top3' => $scoreData['top3'],
                 'worst_item' => $scoreData['worst_item'],

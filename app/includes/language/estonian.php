@@ -2605,5 +2605,6 @@ Path: %s',
     'security_score_band_good' => 'Good',
     'security_score_band_fair' => 'Needs attention',
     'security_score_band_poor' => 'Critical',
+    'security_score_delta_since' => 'since last scan',
 
 );

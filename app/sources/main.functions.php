@@ -1196,9 +1196,13 @@ function securityNudgeComputeCounts(int $userId): array
  * Score model: penalty = Σ weight·count, score = 100 − min(100, round(100·penalty /
  * (total_items · MAX_WEIGHT))). The weights are tunable constants below.
  *
+ * The progress delta (`delta`) is the score change frozen at the most recent scan
+ * relative to the previous scan (persisted in `user_nudges` by `finalize_scan`), so it
+ * gives the "+N since last scan" gamification feedback without recomputing history.
+ *
  * @param int $userId User to score.
  *
- * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityScoreCompute(int $userId): array
 {
@@ -1261,12 +1265,24 @@ function securityScoreCompute(int $userId): array
         }
     }
 
+    // Progress delta, frozen at the last scan by finalize_scan (NULL before the first scan).
+    $nudgeRow = DB::queryFirstRow(
+        'SELECT last_score_delta, last_score_at FROM ' . prefixTable('user_nudges') . ' WHERE user_id = %i',
+        $userId
+    );
+    $delta = (is_array($nudgeRow) === true && $nudgeRow['last_score_delta'] !== null)
+        ? (int) $nudgeRow['last_score_delta']
+        : null;
+    $deltaAt = (is_array($nudgeRow) === true) ? (int) ($nudgeRow['last_score_at'] ?? 0) : 0;
+
     return [
         'score' => $score,
         'band' => $band,
         'total_items' => $totalItems,
         'scanned' => ($counts['last_scan'] > 0),
         'last_scan' => (int) $counts['last_scan'],
+        'delta' => $delta,
+        'delta_at' => $deltaAt,
         'counts' => [
             'breached' => (int) $counts['breached'],
             'reused' => (int) $counts['reused'],

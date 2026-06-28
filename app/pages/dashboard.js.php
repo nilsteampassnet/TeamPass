@@ -95,7 +95,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             bandExcellent: <?php echo json_encode($lang->get('security_score_band_excellent'), JSON_UNESCAPED_UNICODE); ?>,
             bandGood: <?php echo json_encode($lang->get('security_score_band_good'), JSON_UNESCAPED_UNICODE); ?>,
             bandFair: <?php echo json_encode($lang->get('security_score_band_fair'), JSON_UNESCAPED_UNICODE); ?>,
-            bandPoor: <?php echo json_encode($lang->get('security_score_band_poor'), JSON_UNESCAPED_UNICODE); ?>
+            bandPoor: <?php echo json_encode($lang->get('security_score_band_poor'), JSON_UNESCAPED_UNICODE); ?>,
+            deltaSince: <?php echo json_encode($lang->get('security_score_delta_since'), JSON_UNESCAPED_UNICODE); ?>
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -136,6 +137,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#dashboard-score-band')
             .removeClass('score-band-excellent score-band-good score-band-fair score-band-poor')
             .addClass(meta.cls).text(meta.label).show();
+
+        // Progress delta frozen at the last scan ("+N since last scan"). Hidden when
+        // unknown (no previous scan) or zero (no change), to stay constructive.
+        const $delta = $('#dashboard-score-delta');
+        const delta = (data.delta === null || typeof data.delta === 'undefined') ? null : parseInt(data.delta, 10);
+        if (delta !== null && delta !== 0) {
+            const up = delta > 0;
+            $delta.html(
+                '<i class="fa-solid ' + (up ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down') + ' mr-1"></i>' +
+                (up ? '+' : '') + delta + ' ' + TP_DASH.strings.deltaSince
+            ).css('color', up ? '#28a745' : '#dc3545').show();
+        } else {
+            $delta.hide();
+        }
 
         // Honest hint: reuse/breach are only fresh once a deep scan has run.
         if (data.scanned !== true) {

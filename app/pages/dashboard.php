@@ -146,6 +146,7 @@ $isAdmin = (int) $session->get('user-admin') === 1;
                         <div class="mt-2">
                             <span class="badge badge-pill score-band-poor" id="dashboard-score-band" style="display:none;"></span>
                         </div>
+                        <div class="mt-1 small" id="dashboard-score-delta" style="display:none;"></div>
                         <p class="text-muted small mt-2 mb-0" id="dashboard-score-hint" style="display:none;"></p>
                     </div>
                     <div class="col-md-8 col-12">

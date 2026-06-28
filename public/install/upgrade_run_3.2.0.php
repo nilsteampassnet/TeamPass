@@ -608,12 +608,40 @@ $res = mysqli_query(
     'CREATE TABLE IF NOT EXISTS `' . $pre . 'user_nudges` (
         `user_id` int(12) NOT NULL,
         `last_digest_at` int(12) NOT NULL DEFAULT 0,
+        `last_score` tinyint unsigned NULL DEFAULT NULL,
+        `last_score_delta` smallint NULL DEFAULT NULL,
+        `last_score_at` int(12) NOT NULL DEFAULT 0,
         PRIMARY KEY (`user_id`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
 );
 if ($res === false) {
     echo '[{"finish":"1", "msg":"", "error":"Error creating user_nudges table: ' . addslashes(mysqli_error($db_link)) . '"}]';
     exit;
+}
+
+// F10 Personal Security Score: add the score-snapshot columns when missing, so an
+// install that already created user_nudges for F8 gets the new columns on upgrade.
+$nudgesTable = $pre . 'user_nudges';
+$nudgesNewColumns = [
+    'last_score'       => 'ADD `last_score` TINYINT UNSIGNED NULL DEFAULT NULL AFTER `last_digest_at`',
+    'last_score_delta' => 'ADD `last_score_delta` SMALLINT NULL DEFAULT NULL AFTER `last_score`',
+    'last_score_at'    => 'ADD `last_score_at` INT(12) NOT NULL DEFAULT 0 AFTER `last_score_delta`',
+];
+foreach ($nudgesNewColumns as $columnName => $alterClause) {
+    $columnExists = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+         WHERE TABLE_SCHEMA = '" . $database . "'
+         AND TABLE_NAME = '" . $nudgesTable . "'
+         AND COLUMN_NAME = '" . $columnName . "'"
+    ));
+    if (empty($columnExists[0])) {
+        if (mysqli_query($db_link, "ALTER TABLE `" . $nudgesTable . "` " . $alterClause) === false) {
+            echo '[{"finish":"1", "msg":"", "error":"Error adding user_nudges.' . $columnName . ': ' . addslashes(mysqli_error($db_link)) . '"}]';
+            mysqli_close($db_link);
+            exit();
+        }
+    }
 }
 
 // Add the Proactive Health Nudges toggles (F8): master switch, opt-in email

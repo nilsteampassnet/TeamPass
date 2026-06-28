@@ -2604,5 +2604,6 @@ return array(
     'security_score_band_good' => 'Bon',
     'security_score_band_fair' => 'À surveiller',
     'security_score_band_poor' => 'Critique',
+    'security_score_delta_since' => 'depuis le dernier scan',
 
 );

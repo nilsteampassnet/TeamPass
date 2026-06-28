@@ -1712,6 +1712,9 @@ class DatabaseInstaller
             "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_nudges` (
             `user_id` INT(12) NOT NULL,
             `last_digest_at` INT(12) NOT NULL DEFAULT 0,
+            `last_score` TINYINT UNSIGNED NULL DEFAULT NULL,
+            `last_score_delta` SMALLINT NULL DEFAULT NULL,
+            `last_score_at` INT(12) NOT NULL DEFAULT 0,
             PRIMARY KEY (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
