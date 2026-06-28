@@ -92,6 +92,7 @@ class BackgroundTasksHandler {
             $this->handleScheduledDatabaseBackup();
             $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
+            $this->handleScheduledSecurityNudgeDigest();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
@@ -426,6 +427,60 @@ class BackgroundTasksHandler {
 
         $newNext = $this->computeNextDailyRunAt($now + 60, $timeStr);
         $this->upsertSettingValue('inactive_users_mgmt_next_run_at', (string)$newNext);
+    }
+
+    /**
+     * Scheduler: enqueue a daily security_nudge_digest task when F8 email digests are
+     * enabled. The worker enforces the per-user cadence (security_nudges_email_frequency_days);
+     * this only guarantees a single daily sweep is queued.
+     */
+    private function handleScheduledSecurityNudgeDigest(): void
+    {
+        $dashboardEnabled = (int) ($this->settings['security_dashboard_enabled'] ?? 0);
+        $nudgesEnabled = (int) ($this->settings['security_nudges_enabled'] ?? 0);
+        $emailEnabled = (int) ($this->settings['security_nudges_email_enabled'] ?? 0);
+        if ($dashboardEnabled !== 1 || $nudgesEnabled !== 1 || $emailEnabled !== 1) {
+            return;
+        }
+
+        $timeStr = '03:30';
+        $now = time();
+        $nextRunAt = (int) $this->getSettingValue('security_nudges_next_run_at', '0');
+
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now, $timeStr));
+            return;
+        }
+
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        $pending = intval(DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s
+            AND is_in_progress IN (0,1)
+            AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+            'security_nudge_digest'
+        ));
+        if ($pending > 0) {
+            $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now + 60, $timeStr));
+            return;
+        }
+
+        DB::insert(
+            prefixTable('background_tasks'),
+            [
+                'created_at' => (string) $now,
+                'process_type' => 'security_nudge_digest',
+                'arguments' => json_encode(['source' => 'scheduler'], JSON_UNESCAPED_SLASHES),
+                'is_in_progress' => 0,
+                'status' => 'new',
+            ]
+        );
+
+        $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now + 60, $timeStr));
     }
 
     /**

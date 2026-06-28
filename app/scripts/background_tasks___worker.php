@@ -39,6 +39,7 @@ require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
 require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
 require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
+require_once __DIR__.'/traits/SecurityNudgeTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -47,6 +48,7 @@ class TaskWorker {
     use EmailTrait;
     use MigrateUserHandlerTrait;
     use PhpseclibV3MigrationTrait;
+    use SecurityNudgeTrait;
 
     private int $taskId;
     private string $processType;
@@ -108,6 +110,9 @@ class TaskWorker {
                     break;
                 case 'inactive_users_housekeeping':
                     $this->handleInactiveUsersHousekeeping();
+                    break;
+                case 'security_nudge_digest':
+                    $this->handleSecurityNudgeDigest();
                     break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");

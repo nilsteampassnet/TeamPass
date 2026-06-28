@@ -520,6 +520,12 @@ class DatabaseInstaller
             array('admin', 'url_to_files_folder', rtrim($this->installConfig['teampassUrl'], '/') . '/storage/files'),
             array('admin', 'activate_expiration', '0'),
             array('admin', 'pw_life_duration', '0'),
+            array('admin', 'security_dashboard_enabled', '0'),
+            array('admin', 'security_dashboard_overshared_threshold', '10'),
+            array('admin', 'security_nudges_enabled', '0'),
+            array('admin', 'security_nudges_email_enabled', '0'),
+            array('admin', 'security_nudges_email_frequency_days', '7'),
+            array('admin', 'security_nudges_stale_scan_days', '14'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1670,6 +1676,43 @@ class DatabaseInstaller
             KEY `idx_is_active` (`is_active`),
             KEY `idx_last_detected_at` (`last_detected_at`),
             KEY `idx_is_personal` (`is_personal`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table item_health (Security Posture Dashboard - F1)
+    private function item_health()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "item_health` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `user_id` INT(12) NOT NULL,
+            `flag_weak` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_reused` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_breached` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_overdue` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_no_expiry` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_overshared` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_orphaned` TINYINT(1) NOT NULL DEFAULT 0,
+            `reuse_group` VARCHAR(32) NULL DEFAULT NULL,
+            `last_scan_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
+            KEY `idx_user_id` (`user_id`),
+            KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_nudges (Proactive Health Nudges - F8: email-digest bookkeeping)
+    private function user_nudges()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_nudges` (
+            `user_id` INT(12) NOT NULL,
+            `last_digest_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

@@ -562,6 +562,80 @@ mysqli_query(
     "UPDATE `" . $pre . "cache_tree` SET `invalidated_at` = " . time()
 );
 
+// Add the item_health table — per-user security posture flags for the Security
+// Posture Dashboard (F1). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'item_health` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `item_id` int(12) NOT NULL,
+        `user_id` int(12) NOT NULL,
+        `flag_weak` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_reused` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_breached` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_overdue` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_no_expiry` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_overshared` tinyint(1) NOT NULL DEFAULT 0,
+        `flag_orphaned` tinyint(1) NOT NULL DEFAULT 0,
+        `reuse_group` varchar(32) NULL DEFAULT NULL,
+        `last_scan_at` int(12) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
+        KEY `idx_user_id` (`user_id`),
+        KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating item_health table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Security Posture Dashboard toggle (disabled by default; admin opt-in)
+// and the "over-shared" threshold used by the dashboard scan.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_dashboard_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_dashboard_overshared_threshold', '10')"
+);
+
+// Add the user_nudges table — per-user email-digest bookkeeping for the
+// Proactive Health Nudges (F8). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'user_nudges` (
+        `user_id` int(12) NOT NULL,
+        `last_digest_at` int(12) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`user_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating user_nudges table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Proactive Health Nudges toggles (F8): master switch, opt-in email
+// digest, digest cadence (days) and the stale-scan threshold (days). All off /
+// conservative by default — admin opt-in, and gated by security_dashboard_enabled.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_email_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_email_frequency_days', '7')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_stale_scan_days', '14')"
+);
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,

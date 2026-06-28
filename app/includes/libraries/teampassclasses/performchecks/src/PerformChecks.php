@@ -194,7 +194,7 @@ class PerformChecks
         // Definition
         $pagesRights = array(
             'user' => array(
-                'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'offline',
+                'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'profile', 'import', 'export', 'offline', 'dashboard',
             ),
             'manager' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
