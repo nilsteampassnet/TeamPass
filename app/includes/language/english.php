@@ -2596,4 +2596,12 @@ return array(
     'settings_security_nudges_email_frequency_tip' => 'Minimum number of days between two digest emails for a given user.',
     'settings_security_nudges_stale' => 'Stale scan threshold (days)',
     'settings_security_nudges_stale_tip' => 'When a user\'s last scan is older than this, the in-app nudge invites them to run a new scan.',
+    'security_score_badge_title' => 'Security score',
+    'security_score_top3' => 'Top 3 things to fix',
+    'security_score_all_good' => 'Everything looks good — no urgent issues.',
+    'security_score_scan_hint' => 'Run a scan to include reused and breached passwords in your score.',
+    'security_score_band_excellent' => 'Excellent',
+    'security_score_band_good' => 'Good',
+    'security_score_band_fair' => 'Needs attention',
+    'security_score_band_poor' => 'Critical',
     );

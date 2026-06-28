@@ -1626,6 +1626,14 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/security-nudges.js.php';
     }
+    // Personal Security Score (F10): always-on topbar badge for authenticated users when
+    // the Security posture dashboard (F1) is enabled by an admin (rides on the same gate).
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+    ) {
+        include_once TEAMPASS_APP . '/core/security-score.js.php';
+    }
     if ($menuAdmin === true) {
         include_once TEAMPASS_APP . '/pages/admin.js.php';
         if ($get['page'] === '2fa') {

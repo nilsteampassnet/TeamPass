@@ -101,6 +101,15 @@ $isAdmin = (int) $session->get('user-admin') === 1;
     .dashboard-card.active-filter { box-shadow: 0 0 0 3px rgba(0, 0, 0, .5) inset; transform: translateY(-2px); }
     .dashboard-card-loader { position: absolute; top: 6px; right: 10px; z-index: 5; display: none; color: rgba(255, 255, 255, .9); font-size: .9rem; }
     .dashboard-card.loading .dashboard-card-loader { display: block; }
+    /* F10 Personal Security Score gauge (CSS-only, no external library). */
+    .score-gauge { width: 130px; height: 130px; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; background: conic-gradient(#adb5bd 0deg, #e9ecef 0deg); transition: background .4s ease; }
+    .score-gauge-inner { width: 100px; height: 100px; border-radius: 50%; background: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .score-gauge-value { font-size: 2.1rem; font-weight: 700; line-height: 1; }
+    .score-gauge-max { font-size: .75rem; color: #6c757d; }
+    .score-band-excellent { background-color: #28a745; color: #fff; }
+    .score-band-good { background-color: #20c997; color: #fff; }
+    .score-band-fair { background-color: #ffc107; color: #212529; }
+    .score-band-poor { background-color: #dc3545; color: #fff; }
 </style>
 
 <!-- Main content -->
@@ -125,6 +134,31 @@ $isAdmin = (int) $session->get('user-admin') === 1;
                 </div>
             </div>
             <div class="card-body">
+                <!-- F10: Personal Security Score (hero) -->
+                <div class="row mb-4 align-items-center" id="dashboard-score-wrap">
+                    <div class="col-md-4 col-12 text-center mb-3 mb-md-0">
+                        <div class="score-gauge" id="dashboard-score-gauge">
+                            <div class="score-gauge-inner">
+                                <span class="score-gauge-value" id="dashboard-score-value">—</span>
+                                <span class="score-gauge-max">/ 100</span>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge badge-pill score-band-poor" id="dashboard-score-band" style="display:none;"></span>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0" id="dashboard-score-hint" style="display:none;"></p>
+                    </div>
+                    <div class="col-md-8 col-12">
+                        <h5 class="mb-2"><i class="fa-solid fa-list-ol mr-2"></i><?php echo $lang->get('security_score_top3'); ?></h5>
+                        <ul class="list-unstyled mb-2" id="dashboard-score-top3">
+                            <li class="text-muted"><?php echo $lang->get('security_score_all_good'); ?></li>
+                        </ul>
+                        <a href="#" id="dashboard-score-fix" class="btn btn-sm btn-outline-danger" style="display:none;">
+                            <i class="fa-solid fa-wrench mr-1"></i><?php echo $lang->get('security_nudges_fix_worst'); ?>
+                        </a>
+                    </div>
+                </div>
+
                 <!-- Scan progress -->
                 <div id="dashboard-progress-wrap" class="progress mb-3" style="display:none;">
                     <div id="dashboard-progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width:0%;">0%</div>

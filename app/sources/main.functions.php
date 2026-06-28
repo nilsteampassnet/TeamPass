@@ -1185,6 +1185,101 @@ function securityNudgeComputeCounts(int $userId): array
 }
 
 /**
+ * Compute the per-user Personal Security Score (F10) — light gamification.
+ *
+ * Pure presentation layer over the F8 posture counts (securityNudgeComputeCounts):
+ * a single 0–100 score, a qualitative band, and the worst three issue categories to
+ * fix. Severity-weighted (breached > reused > weak > overdue) and normalised by the
+ * number of credentials the user can read. Metadata only — it never decrypts and never
+ * returns any plaintext — so it runs in the user's web session and in the CLI worker alike.
+ *
+ * Score model: penalty = Σ weight·count, score = 100 − min(100, round(100·penalty /
+ * (total_items · MAX_WEIGHT))). The weights are tunable constants below.
+ *
+ * @param int $userId User to score.
+ *
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ */
+function securityScoreCompute(int $userId): array
+{
+    // Severity weights (breached hurts most). Tunable without behavioural risk.
+    $weights = ['breached' => 10, 'reused' => 4, 'weak' => 3, 'overdue' => 2];
+    $maxWeight = 10;
+
+    $counts = securityNudgeComputeCounts($userId);
+
+    // Total credentials the user can read — the score denominator.
+    $totalItems = (int) DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL',
+        $userId
+    );
+
+    $penalty =
+        $weights['breached'] * (int) $counts['breached']
+        + $weights['reused'] * (int) $counts['reused']
+        + $weights['weak'] * (int) $counts['weak']
+        + $weights['overdue'] * (int) $counts['overdue'];
+
+    if ($totalItems <= 0) {
+        // No credentials to assess — nothing at risk.
+        $score = 100;
+    } else {
+        $score = 100 - (int) min(100, (int) round(100 * $penalty / ($totalItems * $maxWeight)));
+    }
+    if ($score < 0) {
+        $score = 0;
+    }
+
+    // Qualitative band (constructive, never shaming).
+    if ($score >= 90) {
+        $band = 'excellent';
+    } elseif ($score >= 70) {
+        $band = 'good';
+    } elseif ($score >= 40) {
+        $band = 'fair';
+    } else {
+        $band = 'poor';
+    }
+
+    // Worst three issue categories by weighted contribution (count > 0 only).
+    $contrib = [
+        ['key' => 'breached', 'count' => (int) $counts['breached'], 'w' => $weights['breached'] * (int) $counts['breached']],
+        ['key' => 'reused', 'count' => (int) $counts['reused'], 'w' => $weights['reused'] * (int) $counts['reused']],
+        ['key' => 'weak', 'count' => (int) $counts['weak'], 'w' => $weights['weak'] * (int) $counts['weak']],
+        ['key' => 'overdue', 'count' => (int) $counts['overdue'], 'w' => $weights['overdue'] * (int) $counts['overdue']],
+    ];
+    usort($contrib, static function (array $a, array $b): int {
+        return $b['w'] <=> $a['w'];
+    });
+    $top3 = [];
+    foreach ($contrib as $c) {
+        if ($c['count'] > 0 && count($top3) < 3) {
+            $top3[] = ['key' => (string) $c['key'], 'count' => (int) $c['count']];
+        }
+    }
+
+    return [
+        'score' => $score,
+        'band' => $band,
+        'total_items' => $totalItems,
+        'scanned' => ($counts['last_scan'] > 0),
+        'last_scan' => (int) $counts['last_scan'],
+        'counts' => [
+            'breached' => (int) $counts['breached'],
+            'reused' => (int) $counts['reused'],
+            'weak' => (int) $counts['weak'],
+            'overdue' => (int) $counts['overdue'],
+            'total' => (int) $counts['total_flagged'],
+        ],
+        'top3' => $top3,
+        'worst_item' => $counts['worst_item'],
+    ];
+}
+
+/**
  * Returns the email body.
  *
  * @param string $textMail Text for the email

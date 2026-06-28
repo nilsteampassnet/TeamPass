@@ -89,7 +89,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             scanning: <?php echo json_encode($lang->get('security_dashboard_scanning'), JSON_UNESCAPED_UNICODE); ?>,
             scanButton: <?php echo json_encode($lang->get('security_dashboard_scan_button'), JSON_UNESCAPED_UNICODE); ?>,
             done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>,
-            fix: <?php echo json_encode($lang->get('security_nudges_fix_worst'), JSON_UNESCAPED_UNICODE); ?>
+            fix: <?php echo json_encode($lang->get('security_nudges_fix_worst'), JSON_UNESCAPED_UNICODE); ?>,
+            allGood: <?php echo json_encode($lang->get('security_score_all_good'), JSON_UNESCAPED_UNICODE); ?>,
+            scoreHint: <?php echo json_encode($lang->get('security_score_scan_hint'), JSON_UNESCAPED_UNICODE); ?>,
+            bandExcellent: <?php echo json_encode($lang->get('security_score_band_excellent'), JSON_UNESCAPED_UNICODE); ?>,
+            bandGood: <?php echo json_encode($lang->get('security_score_band_good'), JSON_UNESCAPED_UNICODE); ?>,
+            bandFair: <?php echo json_encode($lang->get('security_score_band_fair'), JSON_UNESCAPED_UNICODE); ?>,
+            bandPoor: <?php echo json_encode($lang->get('security_score_band_poor'), JSON_UNESCAPED_UNICODE); ?>
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -108,6 +114,70 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $.post('sources/dashboard.queries.php', payload, function (data) {
             data = prepareExchangedData(data, 'decode', TP_DASH.key);
             callback(data);
+        });
+    }
+
+    // F10: score band -> presentation (label + gauge colour, kept in sync with the CSS).
+    const TP_SCORE_BANDS = {
+        excellent: { cls: 'score-band-excellent', label: TP_DASH.strings.bandExcellent, color: '#28a745' },
+        good: { cls: 'score-band-good', label: TP_DASH.strings.bandGood, color: '#20c997' },
+        fair: { cls: 'score-band-fair', label: TP_DASH.strings.bandFair, color: '#ffc107' },
+        poor: { cls: 'score-band-poor', label: TP_DASH.strings.bandPoor, color: '#dc3545' }
+    };
+
+    // F10: render the Personal Security Score hero (gauge + band + top 3 to fix).
+    function dashboardRenderScore(data) {
+        const score = parseInt(data.score, 10) || 0;
+        const meta = TP_SCORE_BANDS[String(data.band)] || TP_SCORE_BANDS.poor;
+        const deg = Math.round(score * 3.6);
+        $('#dashboard-score-gauge').css('background',
+            'conic-gradient(' + meta.color + ' ' + deg + 'deg, #e9ecef ' + deg + 'deg)');
+        $('#dashboard-score-value').text(score);
+        $('#dashboard-score-band')
+            .removeClass('score-band-excellent score-band-good score-band-fair score-band-poor')
+            .addClass(meta.cls).text(meta.label).show();
+
+        // Honest hint: reuse/breach are only fresh once a deep scan has run.
+        if (data.scanned !== true) {
+            $('#dashboard-score-hint').text(TP_DASH.strings.scoreHint).show();
+        } else {
+            $('#dashboard-score-hint').hide();
+        }
+
+        // Top 3 issue categories to fix (reuses the flag labels already loaded).
+        const ul = $('#dashboard-score-top3');
+        ul.empty();
+        if (!data.top3 || data.top3.length === 0) {
+            ul.append($('<li>').addClass('text-muted').text(TP_DASH.strings.allGood));
+        } else {
+            data.top3.forEach(function (cat) {
+                const flagMeta = TP_DASH.flags['flag_' + cat.key];
+                const label = flagMeta ? flagMeta.label : cat.key;
+                const cls = flagMeta ? flagMeta.cls : 'badge-secondary';
+                ul.append($('<li>').addClass('mb-1').append(
+                    $('<span>').addClass('badge ' + cls + ' mr-2').text(parseInt(cat.count, 10) || 0),
+                    $('<span>').text(label)
+                ));
+            });
+        }
+
+        // Primary CTA: jump straight to the most urgent item's editor (F8 deep-link).
+        const fix = $('#dashboard-score-fix');
+        if (data.worst_item && parseInt(data.worst_item.id, 10) > 0) {
+            const fid = parseInt(data.worst_item.folder_id, 10) || 0;
+            const iid = parseInt(data.worst_item.id, 10) || 0;
+            fix.attr('href', 'index.php?page=items&group=' + fid + '&id=' + iid + '&action=edit').show();
+        } else {
+            fix.hide();
+        }
+    }
+
+    function dashboardLoadScore() {
+        dashboardPost({ type: 'get_score' }, function (data) {
+            if (!data || data.error === true) {
+                return;
+            }
+            dashboardRenderScore(data);
         });
     }
 
@@ -251,11 +321,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         }
         dashboardLoadSummary();
         dashboardLoadAdmin();
+        dashboardLoadScore();
     }
 
     $(function () {
         dashboardLoadSummary();
         dashboardLoadAdmin();
+        dashboardLoadScore();
 
         $('#dashboard-scan-btn').on('click', function () {
             const includeHibp = $('#dashboard-include-hibp').is(':checked') ? 1 : 0;

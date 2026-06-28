@@ -2596,5 +2596,13 @@ return array(
     'settings_security_nudges_email_frequency_tip' => 'Nombre minimum de jours entre deux e-mails de résumé pour un même utilisateur.',
     'settings_security_nudges_stale' => 'Seuil d’analyse obsolète (jours)',
     'settings_security_nudges_stale_tip' => 'Lorsque la dernière analyse d’un utilisateur est plus ancienne que ce seuil, l’alerte dans l’application l’invite à lancer une nouvelle analyse.',
+    'security_score_badge_title' => 'Score de sécurité',
+    'security_score_top3' => 'Top 3 des points à corriger',
+    'security_score_all_good' => 'Tout semble en ordre — aucun point urgent.',
+    'security_score_scan_hint' => 'Lancez une analyse pour inclure les mots de passe réutilisés et compromis dans votre score.',
+    'security_score_band_excellent' => 'Excellent',
+    'security_score_band_good' => 'Bon',
+    'security_score_band_fair' => 'À surveiller',
+    'security_score_band_poor' => 'Critique',
 
 );

@@ -678,6 +678,31 @@ switch ($post_type) {
         echo (string) prepareExchangedData(['error' => false, 'flags' => $flags], 'encode');
         break;
 
+    /*
+     * CASE
+     * F10 — Personal Security Score. Single 0–100 score + qualitative band + the
+     * worst three issue categories, computed by the canonical server-side helper so
+     * the dashboard gauge and the always-on topbar badge always show the same number.
+     * Metadata-only (no decryption), scoped to the user's own entitlement.
+     */
+    case 'get_score':
+        $scoreData = securityScoreCompute($userId);
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'score' => $scoreData['score'],
+                'band' => $scoreData['band'],
+                'total_items' => $scoreData['total_items'],
+                'scanned' => $scoreData['scanned'],
+                'last_scan' => $scoreData['last_scan'],
+                'counts' => $scoreData['counts'],
+                'top3' => $scoreData['top3'],
+                'worst_item' => $scoreData['worst_item'],
+            ],
+            'encode'
+        );
+        break;
+
     default:
         echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
         break;
