@@ -604,12 +604,6 @@ switch ($inputData['type']) {
                                 $reason = $lang->get('error_folder_not_allowed_for_this_user');
                             }
 
-                            // Server-side trace for intermittent diagnosis
-                            error_log(sprintf(
-                                '[TeamPass import] Folder creation failed — path="%s" folder="%s" parentId=%d reason="%s"',
-                                $currentPath, $currentFolder, (int) $parentId, $reason
-                            ));
-
                             $folderCreationError[] = [
                                 'path'       => $currentPath,
                                 'folderName' => $currentFolder,
