@@ -440,10 +440,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         // If user can manage folders, process folders first
         if ($('#userCanManageFolders').val() === '1') {
-            // Set total folder count and start recursive processing
+            // The folders phase walks EVERY item row (each row's folder_id must be set
+            // before the items INNER JOIN can see it), so the loop bound is the number
+            // of ITEMS, not the number of unique folders. Using the folder count here
+            // stopped the walk after the first batch (e.g. 100 >= 73) and left the
+            // remaining rows with folder_id = NULL, which the items query then dropped.
             totalFolders = parseInt($('#csv-folders-number').text()) || 0;
-            if (totalFolders > 0 && processedFolders <= totalFolders) {
-                processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSizeFolders,);
+            let totalItemsToWalk = parseInt($('#csv-items-number').text()) || 0;
+            if (totalFolders > 0 && totalItemsToWalk > 0) {
+                processCsvFoldersBatch(csvOperationId, folderId, processedFolders, totalItemsToWalk, batchSizeFolders);
             } else {
                 toastr.info(
                     '<i class="fa-solid fa-info-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('import_no_folders_to_process')); ?>',
@@ -495,31 +500,37 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 if (response.error === true) {
                     toastr.remove();
+
+                    let errorMessages = [];
+                    try {
+                        errorMessages = JSON.parse(response.message) || [];
+                    } catch (e) {
+                        errorMessages = [{ errorPath: '', errorMessage: response.message || '' }];
+                    }
+
+                    let errorHtml = '<ul>';
+                    let reasons = [];
+                    errorMessages.forEach(function(error) {
+                        const reason = (error.errorMessage && error.errorMessage.trim() !== '')
+                            ? error.errorMessage
+                            : '<?php echo addslashes($lang->get('none')); ?>';
+                        errorHtml += '<li><?php echo addslashes($lang->get('import_error_folder_creation')); ?> "<b>' +
+                            (error.errorPath || '') + '</b>": ' + reason + '</li>';
+                        if (reasons.indexOf(reason) === -1) reasons.push(reason);
+                    });
+                    errorHtml += '</ul>';
+
+                    // Reason now visible directly in the toast, not only in the feedback panel
                     toastr.error(
-                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>',
-                        '', {
-                            timeOut: 10000,
-                            closeButton: true,
-                            progressBar: true
-                        }
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>' +
+                        '<br><small>' + reasons.join('<br>') + '</small>',
+                        '', { timeOut: 15000, closeButton: true, progressBar: true }
                     );
 
                     $('#csv-setup-progress').addClass('hidden');
                     $('#import-feedback').removeClass('hidden');
-
-                    // Display error message
-                    const errorMessages = JSON.parse(response.message);
-                    let errorHtml = '<ul>';
-                    errorMessages.forEach(function(error) {
-                        errorHtml += '<li><?php echo $lang->get('import_error_folder_creation');?> "<b>'+error.errorPath+'</b>": '+error.errorMessage+'</li>';
-                    });
-
-                    $('#import-feedback-progress-text').html(
-                        errorHtml
-                    );
-
+                    $('#import-feedback-progress-text').html(errorHtml);
                     $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
-
                     return;
                 }
 

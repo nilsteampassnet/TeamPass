@@ -1048,7 +1048,21 @@ if (
                             } else {
                                 $('#new-otp').val(data.secret);
                                 if (withQrCode === true) {
-                                    $('#new-otp-qrcode').html('<img class="text-center" src="' + data.qrcode + '" />');
+                                    // Render the QR code locally from the otpauth:// URI (no external service)
+                                    $('#new-otp-qrcode').html('<div class="d-inline-block" id="new-otp-qrcode-canvas"></div>');
+                                    var otpQrEl = document.getElementById('new-otp-qrcode-canvas');
+                                    if (otpQrEl !== null && typeof data.qr_text !== 'undefined' && data.qr_text !== '') {
+                                        if (typeof QRCode !== 'undefined') {
+                                            new QRCode(otpQrEl, {
+                                                text: data.qr_text,
+                                                width: 200,
+                                                height: 200,
+                                                correctLevel: QRCode.CorrectLevel.M
+                                            });
+                                        } else {
+                                            otpQrEl.textContent = data.qr_text;
+                                        }
+                                    }
                                 } else {
                                     $('#new-otp-qrcode').html('');
                                 }
