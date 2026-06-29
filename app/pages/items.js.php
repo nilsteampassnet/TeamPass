@@ -3430,6 +3430,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     };
     $('#form-item-password').pwstrength(pwdOptions);
 
+    // Live quality coaching for anything typed in the password field. Generators set
+    // their own (richer) coaching via passphraseCoaching/passwordCoaching and write the
+    // field with .val() (which does not fire 'input'), so they are not overridden here.
+    $('#form-item-password').on('input', function () {
+        showFieldPasswordCoaching($(this).val());
+    });
+
     function normalizeGeneratedPassword(generatedPassword) {
         if (Array.isArray(generatedPassword) === true) {
             return generatedPassword.length > 0 ? String(generatedPassword[0] ?? '') : '';
@@ -4336,7 +4343,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#form-item-password-loader').addClass('hidden');
                 $('#form-item-password').attr('placeholder', '<?php echo $lang->get('password'); ?>');
                 if (item_pwd || item_pwd === '') {
-                    syncItemPasswordComplexity(item_pwd);
+                    syncItemPasswordComplexity(item_pwd).then(function () {
+                        // Surface the existing password's quality without regenerating one.
+                        showFieldPasswordCoaching(item_pwd);
+                    });
                 }
             }, 0);
         });
@@ -6422,7 +6432,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         if (pwHealth.reused === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_reused')); ?>')
                         $pwBadge
                             .removeClass('hidden badge-success badge-danger')
-                            .addClass('badge-warning')
+                            .addClass('badge-warning infotip')
                             .attr('title', '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>' + ' — ' + pwIssues.join(', '))
                             .html('<i class="fa-solid fa-shield-halved mr-1 infotip"></i>')
                         $pwBadge.find('.infotip').tooltip()
@@ -7128,7 +7138,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // reuse the pre-fetched promise — no second network request.
                             $.when(editPasswordPromise).then(function(item_pwd) {
                                 if (item_pwd || item_pwd === '') {
-                                    syncItemPasswordComplexity(item_pwd);
+                                    syncItemPasswordComplexity(item_pwd).then(function () {
+                                        // Keep the existing password's quality line after the re-sync.
+                                        showFieldPasswordCoaching(item_pwd);
+                                    });
                                 }
                             });
                         }
@@ -8273,6 +8286,51 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         const tipLine = tip !== '' ? '<div>' + tip + '</div>' : ''
         $('#form-item-password-coach')
             .html('<div><i class="fa-solid fa-shield-halved mr-1"></i>' + summary + '</div>' + tipLine)
+    }
+
+    /**
+     * Estimate the entropy (bits) of an arbitrary, already-existing password using
+     * zxcvbn — the honest measure for a non-generated secret — with a charset-based
+     * fallback when zxcvbn is unavailable.
+     *
+     * @param {string} pw
+     * @returns {number} Estimated entropy in bits.
+     */
+    function estimatePasswordBits(pw) {
+        if (typeof zxcvbn === 'function') {
+            try {
+                const z = zxcvbn(pw)
+                if (z && z.guesses && z.guesses > 1) {
+                    return Math.round(Math.log2(z.guesses))
+                }
+            } catch (e) { /* fall through to the charset estimate */ }
+        }
+        let charset = 0
+        if (/[a-z]/.test(pw)) charset += 26
+        if (/[A-Z]/.test(pw)) charset += 26
+        if (/[0-9]/.test(pw)) charset += 10
+        if (/[^a-zA-Z0-9]/.test(pw)) charset += 23
+        return Math.round(pw.length * Math.log2(charset || 26))
+    }
+
+    /**
+     * Show the coaching line (entropy + plain-language crack time) for whatever
+     * password is currently in the edit field. This makes the quality of the
+     * EXISTING password visible when an item is opened for edition, without having
+     * to regenerate one, and keeps the line fresh while the user types. Empties the
+     * line for an empty field.
+     *
+     * @param {string} passwordValue
+     */
+    function showFieldPasswordCoaching(passwordValue) {
+        const pw = normalizeGeneratedPassword(passwordValue)
+        if (pw === '') {
+            $('#form-item-password-coach').empty()
+            return
+        }
+        const bits = estimatePasswordBits(pw)
+        const tip = crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX ? TP_PASSPHRASE_COACH.strong : ''
+        renderPasswordCoaching(bits, tip)
     }
 
     /**
