@@ -465,8 +465,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     <nav class="mt-2" style="margin-bottom:40px;">
                         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
                             <?php
-                                // SECURITY POSTURE DASHBOARD (F1) - visible to all users when enabled
-                                if (isset($SETTINGS['security_dashboard_enabled']) === true && (int) $SETTINGS['security_dashboard_enabled'] === 1) {
+                                // SECURITY POSTURE DASHBOARD (F1) - visible to non-admin users only
+                                // (admins have no access to items, so the dashboard is irrelevant for them).
+                                if (isset($SETTINGS['security_dashboard_enabled']) === true && (int) $SETTINGS['security_dashboard_enabled'] === 1
+                                    && $session_user_admin === 0) {
                                     echo '
                     <li class="nav-item">
                         <a href="#" data-name="dashboard" class="nav-link', $get['page'] === 'dashboard' ? ' active' : '', '">
@@ -1626,11 +1628,13 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/security-nudges.js.php';
     }
-    // Personal Security Score (F10): always-on topbar badge for authenticated users when
-    // the Security posture dashboard (F1) is enabled by an admin (rides on the same gate).
+    // Personal Security Score (F10): always-on topbar badge for authenticated non-admin users
+    // when the Security posture dashboard (F1) is enabled by an admin (rides on the same gate).
+    // Admins have no access to items, so the personal score does not apply to them.
     if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1
         && empty($session->get('user-id')) === false
         && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
     ) {
         include_once TEAMPASS_APP . '/core/security-score.js.php';
     }

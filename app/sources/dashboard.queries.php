@@ -88,7 +88,10 @@ set_time_limit(0);
 require_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
 
 // Feature gate: the Security Posture Dashboard must be enabled by an admin.
-if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
+// Admins have no access to items, so none of these handlers apply to them.
+if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1
+    || (int) $session->get('user-admin') === 1
+) {
     echo (string) prepareExchangedData(
         ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
         'encode'
@@ -520,80 +523,6 @@ switch ($post_type) {
         }
 
         echo (string) prepareExchangedData(['error' => false], 'encode');
-        break;
-
-    /*
-     * CASE
-     * Admin organisation-wide aggregate. Counts/flags only — never any plaintext,
-     * preserving zero-knowledge between users.
-     */
-    case 'get_admin_aggregate':
-        if ((int) $session->get('user-admin') !== 1) {
-            echo (string) prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
-            break;
-        }
-
-        // Live metadata over ALL active items (metadata columns are not encrypted).
-        $meta = DB::queryFirstRow(
-            'SELECT
-                COUNT(*) AS total,
-                SUM(' . $flagWeakSql . ') AS weak,
-                SUM(' . $flagNoExpirySql . ') AS no_expiry,
-                SUM(' . $flagOverdueSql . ') AS overdue,
-                SUM(' . $flagOversharedSql . ') AS overshared,
-                SUM(' . $flagBreachedSql . ') AS breached
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
-            $logJoinSql . $shareCountJoinSql . '
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL',
-            'at_creation',
-            'at_modification',
-            'at_pw%'
-        );
-
-        // Per-user-context flags can only come from users' own scans.
-        $health = DB::queryFirstRow(
-            'SELECT
-                COUNT(DISTINCT user_id) AS scanned_users,
-                COALESCE(SUM(flag_reused), 0) AS reused_items,
-                COUNT(DISTINCT CASE WHEN flag_reused = 1 THEN user_id END) AS users_with_reuse,
-                COALESCE(SUM(flag_orphaned), 0) AS orphaned_items,
-                COALESCE(MAX(last_scan_at), 0) AS last_scan
-            FROM ' . prefixTable('item_health')
-        );
-
-        $totalUsers = (int) DB::queryFirstField(
-            'SELECT COUNT(*) FROM ' . prefixTable('users') . '
-            WHERE deleted_at IS NULL AND disabled = 0
-            AND id NOT IN (%i, %i, %i, %i)',
-            OTV_USER_ID,
-            SSH_USER_ID,
-            API_USER_ID,
-            TP_USER_ID
-        );
-
-        echo (string) prepareExchangedData(
-            [
-                'error' => false,
-                'metadata' => [
-                    'total' => (int) ($meta['total'] ?? 0),
-                    'weak' => (int) ($meta['weak'] ?? 0),
-                    'no_expiry' => (int) ($meta['no_expiry'] ?? 0),
-                    'overdue' => (int) ($meta['overdue'] ?? 0),
-                    'overshared' => (int) ($meta['overshared'] ?? 0),
-                    'breached' => (int) ($meta['breached'] ?? 0),
-                ],
-                'health' => [
-                    'scanned_users' => (int) ($health['scanned_users'] ?? 0),
-                    'total_users' => $totalUsers,
-                    'reused_items' => (int) ($health['reused_items'] ?? 0),
-                    'users_with_reuse' => (int) ($health['users_with_reuse'] ?? 0),
-                    'orphaned_items' => (int) ($health['orphaned_items'] ?? 0),
-                    'last_scan' => (int) ($health['last_scan'] ?? 0),
-                ],
-            ],
-            'encode'
-        );
         break;
 
     /*

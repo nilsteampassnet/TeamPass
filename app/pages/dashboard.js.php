@@ -81,7 +81,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Language strings + per-flag presentation for the Security Posture Dashboard.
     const TP_DASH = {
         key: '<?php echo $session->get('key'); ?>',
-        isAdmin: <?php echo (int) $session->get('user-admin') === 1 ? 'true' : 'false'; ?>,
         chunk: 50,
         strings: {
             never: <?php echo json_encode($lang->get('security_dashboard_never'), JSON_UNESCAPED_UNICODE); ?>,
@@ -289,26 +288,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     }
 
-    function dashboardLoadAdmin() {
-        if (TP_DASH.isAdmin !== true) {
-            return;
-        }
-        dashboardPost({ type: 'get_admin_aggregate' }, function (data) {
-            if (!data || data.error === true) {
-                return;
-            }
-            $('#admin-total').text(data.metadata.total);
-            $('#admin-weak').text(data.metadata.weak);
-            $('#admin-breached').text(data.metadata.breached);
-            $('#admin-overdue').text(data.metadata.overdue);
-            $('#admin-no_expiry').text(data.metadata.no_expiry);
-            $('#admin-overshared').text(data.metadata.overshared);
-            $('#admin-reused').text(data.health.reused_items);
-            $('#admin-scanned-users').text(data.health.scanned_users);
-            $('#admin-total-users').text(data.health.total_users);
-        });
-    }
-
     function dashboardScanChunk(offset, includeHibp) {
         dashboardPost({ type: 'deep_scan_chunk', offset: offset, limit: TP_DASH.chunk, include_hibp: includeHibp }, function (data) {
             if (!data || data.error === true) {
@@ -335,13 +314,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.success(TP_DASH.strings.done);
         }
         dashboardLoadSummary();
-        dashboardLoadAdmin();
         dashboardLoadScore();
     }
 
     $(function () {
         dashboardLoadSummary();
-        dashboardLoadAdmin();
         dashboardLoadScore();
 
         $('#dashboard-scan-btn').on('click', function () {

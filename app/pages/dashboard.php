@@ -68,6 +68,8 @@ if (
     $checkUserAccess->checkSession() === false
     || $checkUserAccess->userAccessPage('dashboard') === false
     || (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1
+    // Admins have no access to items: the Security posture dashboard does not apply to them.
+    || (int) $session->get('user-admin') === 1
 ) {
     // Not allowed page
     $session->set('system-error_code', ERR_NOT_ALLOWED);
@@ -80,8 +82,6 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 // Set header properties
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, no-store, must-revalidate');
-
-$isAdmin = (int) $session->get('user-admin') === 1;
 ?>
 
 <!-- Content Header (Page header) -->
@@ -230,36 +230,6 @@ $isAdmin = (int) $session->get('user-admin') === 1;
                 </table>
             </div>
         </div>
-
-        <?php if ($isAdmin === true) { ?>
-        <!-- Admin organisation-wide posture (counts only, no plaintext) -->
-        <div class="card card-outline card-danger">
-            <div class="card-header">
-                <h3 class="card-title"><i class="fa-solid fa-building-shield mr-2"></i><?php echo $lang->get('security_dashboard_admin_view'); ?></h3>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <table class="table table-sm">
-                            <tr><td><?php echo $lang->get('security_dashboard_total_items'); ?></td><td class="text-right"><strong id="admin-total">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_weak'); ?></td><td class="text-right"><strong id="admin-weak">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_breached'); ?></td><td class="text-right"><strong id="admin-breached">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_overdue'); ?></td><td class="text-right"><strong id="admin-overdue">0</strong></td></tr>
-                        </table>
-                    </div>
-                    <div class="col-md-6">
-                        <table class="table table-sm">
-                            <tr><td><?php echo $lang->get('security_dashboard_no_expiry'); ?></td><td class="text-right"><strong id="admin-no_expiry">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_overshared'); ?></td><td class="text-right"><strong id="admin-overshared">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_reused'); ?></td><td class="text-right"><strong id="admin-reused">0</strong></td></tr>
-                            <tr><td><?php echo $lang->get('security_dashboard_scanned_users'); ?></td><td class="text-right"><strong id="admin-scanned-users">0</strong> / <span id="admin-total-users">0</span></td></tr>
-                        </table>
-                    </div>
-                </div>
-                <p class="text-muted small mb-0"><i class="fa-solid fa-lock mr-1"></i><?php echo $lang->get('security_dashboard_admin_zk_note'); ?></p>
-            </div>
-        </div>
-        <?php } ?>
 
     </div>
 </section>
