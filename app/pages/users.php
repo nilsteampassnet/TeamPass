@@ -157,12 +157,27 @@ function count_deleted_users() : int
 function count_never_connected_active_users() : int
 {
     return intval(DB::queryFirstField(
-        "SELECT COUNT(id)
-         FROM " . prefixTable('users') . "
-         WHERE deleted_at IS NULL
-         AND disabled = 0
-         AND LOWER(login) NOT IN ('api','otv','tp')
-         AND (last_connexion IS NULL OR last_connexion = '' OR last_connexion = '0')"
+        "SELECT COUNT(u.id)
+         FROM " . prefixTable('users') . " AS u
+         LEFT JOIN (
+             SELECT li.id_user, MAX(li.date) AS last_api_activity_ts
+             FROM " . prefixTable('log_items') . " AS li
+             INNER JOIN " . prefixTable('users') . " AS lu
+                 ON lu.id = li.id_user
+                 AND lu.deleted_at IS NULL
+                 AND lu.disabled = 0
+                 AND LOWER(lu.login) NOT IN ('api','otv','tp')
+             WHERE li.action IN %ls
+             AND li.raison LIKE %ss
+             GROUP BY li.id_user
+         ) AS api_activity ON api_activity.id_user = u.id
+         WHERE u.deleted_at IS NULL
+         AND u.disabled = 0
+         AND LOWER(u.login) NOT IN ('api','otv','tp')
+         AND (u.last_connexion IS NULL OR u.last_connexion = '' OR u.last_connexion = '0')
+         AND api_activity.last_api_activity_ts IS NULL",
+        teampassApiFunctionalActivityActions(),
+        'tp_src=api'
     ));
 }
 
@@ -259,7 +274,6 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
 
                 <!-- /.card-header -->
                 <div class="card-body form user-content with-header-menu <?php echo $showNewUser ? 'hidden' : '';?>" id="users-list" data-content="refresh">
-                    <label><input type="checkbox" id="warnings_display" class="tp-action pointer" data-action="refresh"><span class="ml-2 pointer"><?php echo $lang->get('display_warning_icons');?></span></label>
                     <table id="table-users" class="table table-striped nowrap table-responsive-sm">
                         <thead>
                             <tr>

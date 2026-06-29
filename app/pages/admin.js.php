@@ -543,6 +543,7 @@ function loadDashboardStats() {
                 // Users stats
                 $('#stat-users-active').text(data.users.active)
                 $('#stat-users-online').text(data.users.online)
+                $('#stat-users-api-online').text(data.users.api_online !== undefined ? data.users.api_online : '-')
                 $('#stat-users-blocked').text(data.users.blocked)
                 $('#stat-users-warned').text(data.users.warned !== undefined ? data.users.warned : '-')
                 updateSidebarOnlineUsersCounter(data.users.online)

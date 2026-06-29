@@ -682,6 +682,9 @@ class TaskWorker {
             $users = DB::query($sql);
         }
 
+        $apiActivityByUser = $this->getApiFunctionalActivityByUser(
+            array_map(static fn ($user): int => (int) ($user['id'] ?? 0), $users)
+        );
         $warnCutoff = $now - ($inactivityDays * 86400);
 
         $warned = 0;
@@ -692,6 +695,7 @@ class TaskWorker {
         $purged = 0;
         $errors = 0;
         $reset = 0;
+        $apiActivityBackfilled = 0;
 
         foreach ($users as $u) {
             $userId = intval($u['id'] ?? 0);
@@ -699,23 +703,45 @@ class TaskWorker {
 
             try {
                 $lastConnexionTs = $this->parseUserTs($u['last_connexion'] ?? null);
+                $apiActivityTs = (int) ($apiActivityByUser[$userId] ?? 0);
                 $createdAtTs = $this->parseUserTs($u['created_at'] ?? null);
-                $lastActivityTs = $lastConnexionTs > 0 ? $lastConnexionTs : ($createdAtTs > 0 ? $createdAtTs : 0);
+                $lastActivityTs = max($lastConnexionTs, $apiActivityTs);
+                if ($lastActivityTs <= 0 && $createdAtTs > 0) {
+                    $lastActivityTs = $createdAtTs;
+                }
 
                 $warnedAt = $this->parseUserTs($u['inactivity_warned_at'] ?? null);
                 $actionAt = $this->parseUserTs($u['inactivity_action_at'] ?? null);
                 $storedAction = strval($u['inactivity_action'] ?? '');
 
-                // Reset tracking if user logged in after a warning
-                if ($warnedAt > 0 && $lastConnexionTs > 0 && $lastConnexionTs > $warnedAt) {
-                    DB::update(prefixTable('users'), [
+                $activityUpdate = [];
+                $hasApiActivityBackfill = false;
+                if ($apiActivityTs > $lastConnexionTs) {
+                    $activityUpdate['last_connexion'] = (string) $apiActivityTs;
+                    $hasApiActivityBackfill = true;
+                }
+
+                // Reset tracking if the user had functional activity after a warning.
+                if ($warnedAt > 0 && $lastActivityTs > $warnedAt) {
+                    $activityUpdate = array_merge($activityUpdate, [
                         'inactivity_warned_at' => null,
                         'inactivity_action_at' => null,
                         'inactivity_action' => null,
                         'inactivity_no_email' => 0,
-                    ], 'id = %i', $userId);
+                    ]);
+                    DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
+                    if ($hasApiActivityBackfill === true) {
+                        $apiActivityBackfilled++;
+                    }
                     $reset++;
                     continue;
+                }
+                if (count($activityUpdate) > 0) {
+                    // Reaching here with a non-empty update means the only change is the
+                    // API-activity backfill (last_connexion); any other update path above
+                    // has already continued the loop.
+                    DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
+                    $apiActivityBackfilled++;
                 }
 
                 // Apply due action
@@ -794,6 +820,7 @@ class TaskWorker {
             'purged' => $purged,
             'errors' => $errors,
             'reset' => $reset,
+            'api_activity_backfilled' => $apiActivityBackfilled,
             'inactivity_days' => $inactivityDays,
             'grace_days' => $graceDays,
             'action' => $defaultAction,
@@ -824,6 +851,42 @@ class TaskWorker {
 
         $ts = strtotime($v);
         return $ts !== false ? (int)$ts : 0;
+    }
+
+    private function getApiFunctionalActivityByUser(array $userIds): array
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds), static fn ($id): bool => $id > 0)));
+        if (count($userIds) === 0) {
+            return [];
+        }
+
+        try {
+            $rows = DB::query(
+                'SELECT id_user, MAX(date) AS last_api_activity
+                FROM ' . prefixTable('log_items') . '
+                WHERE id_user IN %li
+                AND action IN %ls
+                AND raison LIKE %ss
+                GROUP BY id_user',
+                $userIds,
+                teampassApiFunctionalActivityActions(),
+                'tp_src=api'
+            );
+        } catch (Throwable $e) {
+            if (LOG_TASKS === true) $this->logger->log('inactive_users_housekeeping api activity lookup error: ' . $e->getMessage(), 'ERROR');
+            return [];
+        }
+
+        $activity = [];
+        foreach ($rows as $row) {
+            $userId = (int) ($row['id_user'] ?? 0);
+            $timestamp = (int) ($row['last_api_activity'] ?? 0);
+            if ($userId > 0 && $timestamp > 0) {
+                $activity[$userId] = $timestamp;
+            }
+        }
+
+        return $activity;
     }
 
     private function applyInactivityAction(int $userId, string $action, int $now): void

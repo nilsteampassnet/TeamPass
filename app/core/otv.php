@@ -173,10 +173,10 @@ if (empty($request->query->get('code')) === false
                 $SETTINGS
             );
             // get data
-            $label = strip_tags($dataItem['label']);
-            $url = strval($dataItem['url'] ?? '');
+            $label = htmlspecialchars(strip_tags($dataItem['label']), ENT_QUOTES, 'UTF-8');
+            $url = htmlspecialchars(strval($dataItem['url'] ?? ''), ENT_QUOTES, 'UTF-8');
             $description = preg_replace('/(?<!\\r)\\n+(?!\\r)/', '', strip_tags(strval($dataItem['description'] ?? ''), TP_ALLOWED_TAGS));
-            $login = str_replace('"', '&quot;', $dataItem['login']);
+            $login = htmlspecialchars(strval($dataItem['login'] ?? ''), ENT_QUOTES, 'UTF-8');
             // display data
             $html = '<div class="text-center">
                 <h3>One-Time item view page</h3>
@@ -184,7 +184,7 @@ if (empty($request->query->get('code')) === false
                 <div class="mt-5">
                 <table class="table text-left" style="margin: 0 auto;">
                 <tr><th>Label:</th><td>'.$label.'</td></tr>
-                <tr><th>Password:</th><td>'.addslashes($password_decrypted['string']).'</td></tr>
+                <tr><th>Password:</th><td>'.htmlspecialchars($password_decrypted['string'], ENT_QUOTES, 'UTF-8').'</td></tr>
                 <tr><th>Description:</th><td>'.$description.'</td></tr>
                 <tr><th>login:</th><td>'.$login.'</td></tr>
                 <tr><th>URL:</th><td>'.$url.'</td></tr>

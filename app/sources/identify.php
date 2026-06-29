@@ -109,64 +109,22 @@ if ($post_type === 'identify_user') {
     return false;
 } elseif ($post_type === 'get2FAMethodsForUser') {
     //--------
-    // Get MFA methods required for a specific user based on their roles
+    // Get MFA methods required for a specific user after primary auth succeeded
     //--------
     //
 
     $login = empty($post_login) === false ? $post_login : '';
-
-    $needsMfa = false;
-    $anyMfaEnabled = isOneVarOfArrayEqualToValue(
-        [
-            (int) ($SETTINGS['google_authentication'] ?? 0),
-            (int) ($SETTINGS['yubico_authentication'] ?? 0),
-            (int) ($SETTINGS['duo'] ?? 0),
-            (int) ($SETTINGS['agses_authentication_enabled'] ?? 0),
-        ],
-        1
-    );
-
-    if ($anyMfaEnabled === true && empty($login) === false) {
-        $userInfo = DB::queryFirstRow(
-            'SELECT u.admin, u.mfa_enabled,
-                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END SEPARATOR ";") AS fonction_id,
-                GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END SEPARATOR ";") AS roles_from_ad_groups
-            FROM ' . prefixTable('users') . ' AS u
-            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
-            WHERE u.login=%s AND u.disabled=0 AND u.deleted_at IS NULL
-            GROUP BY u.id',
-            $login
-        );
-
-        if ($userInfo !== null) {
-            // Merge manual roles and AD-sourced roles, same as identifyUserDetails()
-            $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
-            if (empty($userInfo['roles_from_ad_groups']) === false) {
-                $fonctionId = empty($fonctionId) === true
-                    ? (string) $userInfo['roles_from_ad_groups']
-                    : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
-            }
-
-            $mfaForRoles = is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles'];
-            $userNeedsMfaByRole = mfa_auth_requested_roles($fonctionId, $mfaForRoles);
-
-            $isAdmin = (int) $userInfo['admin'] === 1;
-            $adminMfaRequired = isKeyExistingAndEqual('admin_2fa_required', 1, $SETTINGS) === true;
-
-            $needsMfa = ($isAdmin === false && (int) $userInfo['mfa_enabled'] === 1 && $userNeedsMfaByRole === true)
-                || ($isAdmin === true && $adminMfaRequired === true);
-        }
-    }
+    $validatedPrimaryLogin = $session->get('mfa_primary_login_validated') ?? [];
+    $canReturnUserMfaMethods = is_array($validatedPrimaryLogin) === true
+        && empty($login) === false
+        && hash_equals((string) ($validatedPrimaryLogin['login'] ?? ''), $login) === true
+        && time() - (int) ($validatedPrimaryLogin['created_at'] ?? 0) <= 300;
 
     echo json_encode([
         'ret' => prepareExchangedData(
-            [
-                'mfa_required' => $needsMfa,
-                'agses'  => $needsMfa === true && isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true,
-                'google' => $needsMfa === true && isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true,
-                'yubico' => $needsMfa === true && isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true,
-                'duo'    => $needsMfa === true && isKeyExistingAndEqual('duo', 1, $SETTINGS) === true,
-            ],
+            $canReturnUserMfaMethods === true
+                ? getMfaMethodsForLogin($SETTINGS, $login)
+                : buildMfaMethodsResponse($SETTINGS, false),
             'encode'
         ),
         'key' => $session->get('key'),
@@ -201,6 +159,200 @@ if ($post_type === 'identify_user') {
         'encode'
     );
     return false;
+}
+
+/**
+ * Return the MFA methods that can be used for the current request.
+ *
+ * @param array<string, mixed> $SETTINGS
+ */
+function buildMfaMethodsResponse(array $SETTINGS, bool $needsMfa): array
+{
+    return [
+        'mfa_required' => $needsMfa,
+        'agses'  => $needsMfa === true && isKeyExistingAndEqual('agses_authentication_enabled', 1, $SETTINGS) === true,
+        'google' => $needsMfa === true && isKeyExistingAndEqual('google_authentication', 1, $SETTINGS) === true,
+        'yubico' => $needsMfa === true && isKeyExistingAndEqual('yubico_authentication', 1, $SETTINGS) === true,
+        'duo'    => $needsMfa === true && isKeyExistingAndEqual('duo', 1, $SETTINGS) === true,
+    ];
+}
+
+/**
+ * Determine if a user must complete MFA after primary authentication succeeds.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function userNeedsMfa(array $SETTINGS, array $userInfo): bool
+{
+    if (
+        isOneVarOfArrayEqualToValue(
+            [
+                (int) ($SETTINGS['yubico_authentication'] ?? 0),
+                (int) ($SETTINGS['google_authentication'] ?? 0),
+                (int) ($SETTINGS['duo'] ?? 0),
+            ],
+            1
+        ) !== true
+    ) {
+        return false;
+    }
+
+    $isAdmin = (int) ($userInfo['admin'] ?? 0) === 1;
+    if ($isAdmin === true) {
+        return isKeyExistingAndEqual('admin_2fa_required', 1, $SETTINGS) === true;
+    }
+
+    if ((int) ($userInfo['mfa_enabled'] ?? 0) !== 1) {
+        return false;
+    }
+
+    if (array_key_exists('mfa_auth_requested_roles', $userInfo) === true) {
+        return filter_var($userInfo['mfa_auth_requested_roles'], FILTER_VALIDATE_BOOLEAN) === true;
+    }
+
+    $fonctionId = (string) ($userInfo['fonction_id'] ?? '');
+    if (empty($userInfo['roles_from_ad_groups']) === false) {
+        $fonctionId = empty($fonctionId) === true
+            ? (string) $userInfo['roles_from_ad_groups']
+            : $fonctionId . ';' . (string) $userInfo['roles_from_ad_groups'];
+    }
+
+    return mfa_auth_requested_roles(
+        $fonctionId,
+        is_null($SETTINGS['mfa_for_roles'] ?? null) === true ? '' : (string) $SETTINGS['mfa_for_roles']
+    );
+}
+
+/**
+ * Return MFA methods for an authenticated primary-login attempt.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function getMfaMethodsForUserInfo(array $SETTINGS, array $userInfo): array
+{
+    return buildMfaMethodsResponse($SETTINGS, userNeedsMfa($SETTINGS, $userInfo));
+}
+
+/**
+ * Return MFA methods for a login after primary authentication was confirmed.
+ *
+ * @param array<string, mixed> $SETTINGS
+ */
+function getMfaMethodsForLogin(array $SETTINGS, string $login): array
+{
+    $userInfo = DB::queryFirstRow(
+        'SELECT u.admin, u.mfa_enabled,
+            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END SEPARATOR ";") AS fonction_id,
+            GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END SEPARATOR ";") AS roles_from_ad_groups
+        FROM ' . prefixTable('users') . ' AS u
+        LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+        WHERE u.login=%s AND u.disabled=0 AND u.deleted_at IS NULL
+        GROUP BY u.id',
+        $login
+    );
+
+    if (is_array($userInfo) === false) {
+        return buildMfaMethodsResponse($SETTINGS, false);
+    }
+
+    return getMfaMethodsForUserInfo($SETTINGS, $userInfo);
+}
+
+/**
+ * Count enabled MFA methods returned to the login form.
+ *
+ * @param array<string, mixed> $mfaMethods
+ */
+function countEnabledMfaMethods(array $mfaMethods): int
+{
+    return (int) (($mfaMethods['agses'] ?? false) === true)
+        + (int) (($mfaMethods['google'] ?? false) === true)
+        + (int) (($mfaMethods['yubico'] ?? false) === true)
+        + (int) (($mfaMethods['duo'] ?? false) === true);
+}
+
+/**
+ * Determine if Google MFA has enough data to challenge the user.
+ *
+ * @param array<string, mixed> $userInfo
+ */
+function googleMfaSecretExists(array $userInfo): bool
+{
+    return trim((string) ($userInfo['ga'] ?? '')) !== '';
+}
+
+/**
+ * Start the first Google MFA enrollment after primary authentication succeeds.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfo
+ */
+function initializeGoogleMfaEnrollment(
+    array $SETTINGS,
+    array $userInfo,
+    string $username,
+    Language $lang
+): array
+{
+    if (googleMfaSecretExists($userInfo) === true) {
+        return [
+            'error' => false,
+            'started' => false,
+        ];
+    }
+
+    if (empty($userInfo['email']) === true) {
+        return [
+            'error' => true,
+            'message' => $lang->get('no_email_set'),
+        ];
+    }
+
+    $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
+    $gaSecretKey = $tfa->createSecret();
+    $gaTemporaryCode = GenerateCryptKey(12, false, true, true, false, true);
+
+    DB::update(
+        prefixTable('users'),
+        [
+            'ga' => $gaSecretKey,
+            'ga_temporary_code' => $gaTemporaryCode,
+        ],
+        'id = %i',
+        $userInfo['id']
+    );
+
+    logEvents(
+        $SETTINGS,
+        'user_connection',
+        'at_2fa_google_code_send_by_email',
+        (string) $userInfo['id'],
+        stripslashes($username),
+        stripslashes($username)
+    );
+
+    prepareSendingEmail(
+        $lang->get('email_ga_subject'),
+        str_replace(
+            '#2FACode#',
+            $gaTemporaryCode,
+            $lang->get('email_ga_text')
+        ),
+        $userInfo['email']
+    );
+
+    return [
+        'error' => false,
+        'started' => true,
+        'message' => $lang->get('mfa_code_send_by_email'),
+        'email_result' => str_replace(
+            '#email#',
+            '<b>' . obfuscateEmail($userInfo['email']) . '</b>',
+            addslashes($lang->get('admin_email_result_ok'))
+        ),
+    ];
 }
 
 /**
@@ -291,6 +443,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         ]);
         return false;
     }
+
+    if (empty($dataReceived['user_2fa_selection']) === true) {
+        $session->remove('mfa_primary_login_validated');
+    }
     
     // prepare variables
     // IMPORTANT: Do NOT sanitize passwords - they should be treated as opaque binary data
@@ -345,6 +501,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $sessionPwdAttempts
     );
     if ($userLdap['error'] === true) {
+        $session->remove('mfa_primary_login_validated');
         // Log LDAP/AD failed authentication into teampass_log_system
         logEvents(
             $SETTINGS,
@@ -414,6 +571,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         (int) $userLdap['user_info']['has_been_created']
     );
     if ($userOauth2['error'] === true) {
+        $session->remove('mfa_primary_login_validated');
         $session->set('userOauth2Info', '');
 
         // Add failed authentication log
@@ -427,6 +585,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'error' => true,
                 'message' => $lang->get($userOauth2['message']),
                 'extra' => 'oauth2_user_not_found',
+                'primary_auth_failed' => true,
             ],
             'encode'
         );
@@ -452,6 +611,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     // Check user and password
     $authResult = checkCredentials($passwordClear, $userInfo);
     if ($userLdap['userPasswordVerified'] === false && $userOauth2['userPasswordVerified'] === false && $authResult['authenticated'] !== true) {
+        $session->remove('mfa_primary_login_validated');
         // Log failure (wrong password on existing account) into teampass_log_system
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
@@ -466,6 +626,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
                 'error' => true,
                 'message' => $lang->get('error_bad_credentials'),
                 'forgot_password_available' => $forgotLocalPasswordContext['available'],
+                'primary_auth_failed' => true,
             ],
             'encode'
         );
@@ -477,19 +638,60 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         $userInfo['private_key'] = $authResult['private_key_reencrypted'];
     }
     
-    // Check if MFA is required
-    if ((
-        isOneVarOfArrayEqualToValue(
-            [
-                (int) $SETTINGS['yubico_authentication'],
-                (int) $SETTINGS['google_authentication'],
-                (int) $SETTINGS['duo']
-            ],
-            1
-        ) === true)
-        && (((int) $userInfo['admin'] !== 1 && (int) $userInfo['mfa_enabled'] === 1 && $userInfo['mfa_auth_requested_roles'] === true)
-        || ((int) $SETTINGS['admin_2fa_required'] === 1 && (int) $userInfo['admin'] === 1))
-    ) {
+    $mfaMethods = getMfaMethodsForUserInfo($SETTINGS, $userInfo);
+
+    // Check if MFA is required after the primary authentication factor is valid.
+    if ($mfaMethods['mfa_required'] === true) {
+        if (empty($dataReceived['user_2fa_selection']) === true) {
+            $mfaEnrollment = [
+                'error' => false,
+                'started' => false,
+            ];
+
+            if ($mfaMethods['google'] === true && countEnabledMfaMethods($mfaMethods) === 1) {
+                $mfaEnrollment = initializeGoogleMfaEnrollment(
+                    $SETTINGS,
+                    $userInfo,
+                    (string) $username,
+                    $lang
+                );
+
+                if ($mfaEnrollment['error'] === true) {
+                    echo prepareExchangedData(
+                        [
+                            'error' => true,
+                            'message' => $mfaEnrollment['message'],
+                            'mfa_setup_error' => true,
+                        ],
+                        'encode'
+                    );
+                    return false;
+                }
+            }
+
+            $session->set('mfa_primary_login_validated', [
+                'login' => $username,
+                'created_at' => time(),
+            ]);
+
+            echo prepareExchangedData(
+                [
+                    'value' => '2fa_not_set',
+                    'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
+                    'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
+                    'pwd_attempts' => (int) $sessionPwdAttempts,
+                    'error' => '2fa_not_set',
+                    'message' => $lang->get('select_valid_2fa_credentials'),
+                    'mfa_methods' => $mfaMethods,
+                    'mfa_enrollment_started' => $mfaEnrollment['started'],
+                    'mfa_enrollment_message' => $mfaEnrollment['message'] ?? '',
+                    'email_result' => $mfaEnrollment['email_result'] ?? '',
+                ] + $mfaMethods,
+                'encode'
+            );
+            return false;
+        }
+
         // Check user against MFA method if selected
         $userMfa = identifyDoMFAChecks(
             $SETTINGS,
@@ -500,13 +702,18 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
         if ($userMfa['error'] === true) {
             // Add failed authentication log
-            addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+            if (($userMfa['mfaData']['mfa_setup_error'] ?? false) !== true) {
+                addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+            }
 
             echo prepareExchangedData(
                 [
                     'error' => true,
                     'message' => $userMfa['mfaData']['message'],
-                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'],
+                    'mfaStatus' => $userMfa['mfaData']['mfaStatus'] ?? '',
+                    'ga_bad_code' => $userMfa['mfaData']['ga_bad_code'] ?? false,
+                    'mfa_error' => true,
+                    'mfa_setup_error' => $userMfa['mfaData']['mfa_setup_error'] ?? false,
                 ],
                 'encode'
             );
@@ -546,6 +753,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             return false;
         }
     }
+    $session->remove('mfa_primary_login_validated');
 
     // Can connect if
     // 1- no LDAP mode + user enabled + pw ok
@@ -2124,9 +2332,23 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
         $tfa = new TwoFactorAuth($SETTINGS['ga_website_name']);
         // Init
         $firstTime = [];
+        $gaSecret = trim((string) ($userInfo['ga'] ?? ''));
+        $gaTemporaryCode = trim((string) ($userInfo['ga_temporary_code'] ?? ''));
+
+        if ($gaSecret === '') {
+            return [
+                'error' => true,
+                'message' => $lang->get('i_need_to_generate_new_ga_code'),
+                'proceedIdentification' => false,
+                'ga_bad_code' => false,
+                'mfa_setup_error' => true,
+                'firstTime' => $firstTime,
+            ];
+        }
+
         // now check if it is the 1st time the user is using 2FA
-        if ($userInfo['ga_temporary_code'] !== 'none' && $userInfo['ga_temporary_code'] !== 'done') {
-            if ($userInfo['ga_temporary_code'] !== $dataReceived['GACode']) {
+        if ($gaTemporaryCode !== '' && $gaTemporaryCode !== 'none' && $gaTemporaryCode !== 'done') {
+            if (hash_equals($gaTemporaryCode, (string) $dataReceived['GACode']) === false) {
                 return [
                     'error' => true,
                     'message' => $lang->get('ga_bad_code'),
@@ -2142,7 +2364,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             // generate new QR
             $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
                 'Teampass - ' . $username,
-                $userInfo['ga']
+                $gaSecret
             );
             // clear temporary code from DB
             DB::update(
@@ -2163,7 +2385,7 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             ];
         } else {
             // verify the user GA code
-            if ($tfa->verifyCode($userInfo['ga'], $dataReceived['GACode'])) {
+            if ($tfa->verifyCode($gaSecret, $dataReceived['GACode'])) {
                 $proceedIdentification = true;
             } else {
                 return [
@@ -2792,31 +3014,6 @@ function identifyDoInitialChecks(
         is_null($SETTINGS['mfa_for_roles']) === true ? '' : (string) $SETTINGS['mfa_for_roles']
     );
 
-    // Check if 2FA code is requested
-    try {
-        $checks->is2faCodeRequired(
-            $SETTINGS['yubico_authentication'],
-            $SETTINGS['google_authentication'],
-            $SETTINGS['duo'],
-            $userInfo['admin'],
-            $SETTINGS['admin_2fa_required'],
-            $userInfo['mfa_auth_requested_roles'],
-            $user2faSelection,
-            $userInfo['mfa_enabled']
-        );
-    } catch (Exception $e) {
-        return [
-            'error' => true,
-            'array' => [
-                'value' => '2fa_not_set',
-                'user_admin' => (int) $sessionAdmin,
-                'initial_url' => $sessionUrl,
-                'pwd_attempts' => (int) $sessionPwdAttempts,
-                'error' => '2fa_not_set',
-                'message' => $lang->get('select_valid_2fa_credentials'),
-            ]
-        ];
-    }
     // If admin user then check if folder install exists
     // if yes then refuse connection
     try {
@@ -2921,6 +3118,7 @@ function identifyDoLDAPChecks(
                     'pwd_attempts' => (int) $sessionPwdAttempts,
                     'error' => true,
                     'message' => $errorMessage,
+                    'primary_auth_failed' => true,
                 ]
             ];
         }
@@ -3371,7 +3569,9 @@ function identifyDoMFAChecks(
                 $SETTINGS
             );
             if ($ret['error'] !== false) {
-                logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                if (($ret['mfa_setup_error'] ?? false) !== true) {
+                    logEvents($SETTINGS, 'failed_auth', 'wrong_mfa_code', '', stripslashes($username), stripslashes($username));
+                }
                 return [
                     'error' => true,
                     'mfaData' => $ret,

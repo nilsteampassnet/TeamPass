@@ -293,12 +293,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // ---
             // ---
         } else if ($('#export-format').val() === 'html') {
-            var currentID = ids[0],
-                counterRemainingFolders = ids.length,
-                totalFolders = counterRemainingFolders + 1;
-            
-            ids.shift();
-            pollExport('html', ids, currentID, counterRemainingFolders, totalFolders, CreateRandomString(20));
+            // Offline mode: build a single self-contained, password-encrypted HTML file
+            generateOfflineFile(ids);
         } else if ($('#export-format').val() === 'csv') {
             // Export to CSV
             $.post(
@@ -454,15 +450,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             };
                             xhr.send(data);
 
-                        } else if (export_format === 'html') {
-                            // Prepare
-                            var dataLocal = {
-                                password: $("#export-password").val(),
-                                filename : $('#export-filename').val() + '.html',
-                                export_tag : exportTag,
-                            };
-                            
-                            generateOfflineFile(dataLocal);
                         }
                     }
                 }
@@ -473,200 +460,74 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     //----- OFFLINE MODE -----
     /*
-    * Export to Offline mode file - step 1
-    */
-    function generateOfflineFile(vars)
+     * Offline mode: request the standalone encrypted HTML file and download it.
+     * Everything is built in a single request (like the CSV export); the file is
+     * AES-256-GCM encrypted server-side and decrypted in the browser with the export password.
+     */
+    function generateOfflineFile(folders)
     {
-        if (vars.password == "") {
+        var password = $('#export-password').val();
+
+        // Password is mandatory and must meet the configured minimum strength
+        if (password === '') {
+            $('#form-item-export-perform').removeAttr('disabled');
+            $('#export-progress').addClass('hidden').find('span').html('');
             toastr.remove();
-            toastr.error(
-                '<?php echo $lang->get('password_cannot_be_empty'); ?>',
-                '', {
-                    timeOut: 2000
-                }
-            );
+            toastr.error('<?php echo $lang->get('password_cannot_be_empty'); ?>', '', { timeOut: 2000 });
+            return;
+        }
+        var minComplex = <?php echo (int) ($SETTINGS['offline_key_level'] ?? 0); ?>;
+        if (parseInt($('#export-password-complex').val() || 0) < minComplex) {
+            $('#form-item-export-perform').removeAttr('disabled');
+            $('#export-progress').addClass('hidden').find('span').html('');
+            toastr.remove();
+            toastr.error('<?php echo $lang->get('complexity_level_not_reached'); ?>', '', { timeOut: 2000 });
             return;
         }
 
-        if (parseInt($("#offline_pw_strength_value").val()) < parseInt($("#min_offline_pw_strength_value").val())) {
-            toastr.remove();
-            toastr.error(
-                '<?php echo $lang->get('error_complex_not_enought'); ?>',
-                '', {
-                    timeOut: 2000
-                }
-            );
-            return;
-        }
-
-        //Send query
         $.post(
             'sources/export.queries.php', {
                 type: 'export_to_html_format',
+                // purify=false: the export password must be transmitted untouched (it may
+                // contain <, > or & which the purifier would otherwise strip)
                 data: prepareExchangedData(
-                    JSON.stringify(vars),
+                    JSON.stringify({
+                        password: password,
+                        ids: folders,
+                    }),
                     'encode',
-                    '<?php echo $session->get('key'); ?>'
+                    '<?php echo $session->get('key'); ?>',
+                    '', '', false
                 ),
                 key: '<?php echo $session->get('key'); ?>'
             },
             function(data) {
-                //decrypt data
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                //console.log(data);
+                // purify=false: html_content is server-generated, trusted HTML
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>', '', '', false);
+
+                $('#form-item-export-perform').removeAttr('disabled');
+                $('#export-progress').addClass('hidden').find('span').html('');
 
                 if (data.error === true) {
                     toastr.remove();
-                    toastr.error(
-                        data.detail,
-                        data.message,
-                        {
-                            timeOut: 3000
-                        }
-                    );
+                    toastr.error(data.message || '', '<?php echo $lang->get('error'); ?>', { timeOut: 3000 });
                     return;
                 }
-                
 
-                if (data.loop !== null && data.loop === true) {
-                    exportHTMLLoop(
-                        data.ids_list,
-                        data.file_path,
-                        data.ids_count,
-                        vars.password,
-                        data.file_link,
-                        data.export_tag
-                    );
-                } else {
-                    toastr.remove();
-                    toastr.error(
-                        '<?php echo $lang->get('error_unknown'); ?>',
-                        '',
-                        {
-                            timeOut: 3000
-                        }
-                    );
-                    return;
+                // html_content is base64-encoded server-side; decode it back to exact UTF-8 bytes
+                // (the transport purifier cannot touch base64, so the HTML survives intact)
+                var binary = window.atob(data.html_content);
+                var bytes = new Uint8Array(binary.length);
+                for (var i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
                 }
+
+                // Trigger the download of the standalone file
+                download(new Blob([bytes], { type: 'text/html;charset=utf-8' }), $('#export-filename').val() + '.html', 'text/html');
+
+                toastr.remove();
+                toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
             }
         );
     }
-
-    /*
-     * Loading Item details step 2
-     */
-    function exportHTMLLoop(idsList, file, number, password, file_link, export_tag)
-    {
-        var numberInLoop = 10;
-        // prpare list of ids to treat during this run
-        if (idsList != "") {
-            idsArray = JSON.parse(idsList);
-            idsToTreat = idsArray.slice(0, numberInLoop);
-            idsArray = idsArray.slice(numberInLoop);
-            cpt = parseInt(idsToTreat.length);
-
-            $('#export-progress').find('span').html('<i class="fas fa-cog fa-spin mr-2"></i><?php echo $lang->get('please_wait'); ?> - ' + Math.round((parseInt(cpt)*100)/parseInt(number)) + "%");
-
-            jqData = {
-                idsList : idsToTreat,
-                idsListRemaining : idsArray,
-                filename : file,
-                cpt : cpt,
-                password : password,
-                file_link : file_link,
-                number : number,
-                export_tag : export_tag,
-            };
-            $.post(
-                "sources/export.queries.php",
-                {
-                    type    : "export_to_html_format_loop",
-                        data: prepareExchangedData(
-                        JSON.stringify(jqData),
-                        'encode',
-                        '<?php echo $session->get('key'); ?>'
-                    ),
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    //decrypt data
-                    data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                    //console.log(data);
-
-                    if (data.error === true) {
-                        toastr.remove();
-                        toastr.error(
-                            data.detail,
-                            data.message,
-                            {
-                                timeOut: 3000
-                            }
-                        );
-                        return;
-                    }
-
-                    if (data.loop === true) {
-                        // relaunch for next run
-                        exportHTMLLoop (
-                            data.ids_list,
-                            file,
-                            data.ids_count,
-                            password,
-                            file_link,
-                            export_tag
-                        );
-                    } else {
-                        // clean Export table
-                        $.post(
-                            'sources/export.queries.php', {
-                                type: 'clean_export_table',
-                                data: prepareExchangedData(
-                                    JSON.stringify({
-                                        export_tag: export_tag,
-                                    }),
-                                    'encode',
-                                    '<?php echo $session->get('key'); ?>'
-                                ),
-                                key: '<?php echo $session->get('key'); ?>'
-                            }
-                        );
-
-                        // end - do file finalization
-                        $.post(
-                            'sources/export.queries.php', {
-                                type: 'export_to_html_format_finalize',
-                                data: prepareExchangedData(
-                                    JSON.stringify({
-                                        filename: file,
-                                        file_link: file_link,
-                                        password : password,
-                                    }),
-                                    'encode',
-                                    '<?php echo $session->get('key'); ?>'
-                                ),
-                                key: '<?php echo $session->get('key'); ?>'
-                            },
-                            function(data) {
-                                //decrypt data
-                                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-
-                                $('#export-progress').find('span').html('');
-                                $('#export-progress').addClass('hidden')
-                                $('#download-export-file').attr('href', data.filelink).removeClass('hidden');
-
-                                toastr.remove();
-                                toastr.success(
-                                    '<?php echo $lang->get('done'); ?>',
-                                    '',
-                                    {
-                                        timeOut: 1000
-                                    }
-                                );
-                            }
-                        );
-                    }
-                }
-            );
-        }
-    };
 </script>

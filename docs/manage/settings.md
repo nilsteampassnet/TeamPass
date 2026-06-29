@@ -205,16 +205,18 @@ Check item passwords against the Have I Been Pwned database. Disabled by default
 
 ## Inactive Users
 
-Automated management of accounts that have not logged in for an extended period.
+Automated management of accounts without recent web login or functional API/extension activity.
 
 | Option | Description |
 |--------|-------------|
 | **Enable inactive user management** | Activates the automatic inactivity handling |
-| **Inactivity threshold** | Days without login before an account is considered inactive (default: 90) |
+| **Inactivity threshold** | Days without recorded activity before an account is considered inactive (default: 90) |
 | **Grace period** | Additional days before the action is applied (default: 7) |
 | **Action** | What happens at threshold + grace period: `Disable`, `Soft delete`, or `Hard delete` |
 | **Execution time** | Time of day at which the background job runs (default: 02:00) |
 
 The **Run now** button executes the inactive user check immediately. The status panel shows the last run time, result, and a summary of affected accounts.
+
+Functional API/extension activity includes user-visible item actions such as item reads, item search results, OTP retrieval, creations, updates, deletions, and imports. Authentication, token refresh, settings refresh, and folder list refreshes do not count as activity on their own.
 
 > 🔔 **Hard delete** permanently removes the account and all its data. Use `Disable` or `Soft delete` if you may need to restore inactive accounts.
