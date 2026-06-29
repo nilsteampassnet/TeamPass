@@ -1286,6 +1286,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     <script type="text/javascript" src="./plugins/bootstrap-add-clear/bootstrap-add-clear.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
     <!-- DOMPurify -->
     <script type="text/javascript" src="./plugins/DOMPurify/purify.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
+    <!-- QRCode generator (offline, client-side) -->
+    <script type="text/javascript" src="./plugins/qrcodejs/qrcode.min.js?v=<?php echo TP_VERSION . '.' . TP_VERSION_MINOR; ?>"></script>
 
     <?php
     $get['page'] = $request->query->filter('page', null, FILTER_SANITIZE_SPECIAL_CHARS);

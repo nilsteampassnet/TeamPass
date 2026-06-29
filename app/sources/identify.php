@@ -724,6 +724,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             echo prepareExchangedData(
                 [
                     'value' => $userMfa['mfaData']['value'],
+                    'qr_text' => $userMfa['mfaData']['qr_text'] ?? '',
                     'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : 0,
                     'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                     'pwd_attempts' => (int) $sessionPwdAttempts,
@@ -2346,8 +2347,14 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
             ];
         }
 
-        // now check if it is the 1st time the user is using 2FA
-        if ($gaTemporaryCode !== '' && $gaTemporaryCode !== 'none' && $gaTemporaryCode !== 'done') {
+        // 2FA enrollment is a small state machine driven by ga_temporary_code:
+        //   <temp code>          : the e-mailed code has not been entered yet
+        //   'pending_validation' : QR shown, waiting for the first valid TOTP
+        //   'done' / 'none'      : enrolled, normal TOTP verification
+        if ($gaTemporaryCode !== '' && $gaTemporaryCode !== 'none'
+            && $gaTemporaryCode !== 'done' && $gaTemporaryCode !== 'pending_validation'
+        ) {
+            // STATE 1 - the user must first enter the e-mailed temporary code
             if (hash_equals($gaTemporaryCode, (string) $dataReceived['GACode']) === false) {
                 return [
                     'error' => true,
@@ -2358,33 +2365,62 @@ function googleMFACheck(string $username, array $userInfo, $dataReceived, array 
                 ];
             }
 
-            // If first time with MFA code
+            // Temporary code is correct: display the QR and move to the
+            // "pending_validation" state. Enrollment is NOT completed yet - it
+            // is finished only once a valid TOTP has been verified (STATE 2).
+            // Keeping the user out of the 'done' state until then means the QR
+            // can always be re-issued (login-page link / admin), so a failed
+            // or missed scan can never lock the user out.
             $proceedIdentification = false;
-            
-            // generate new QR
-            $new_2fa_qr = $tfa->getQRCodeImageAsDataUri(
+
+            // Build the otpauth:// provisioning URI. The QR image is rendered
+            // client-side (offline) - no external web service is contacted.
+            $new_2fa_qr_text = $tfa->getQRText(
                 'Teampass - ' . $username,
                 $gaSecret
             );
-            // clear temporary code from DB
             DB::update(
                 prefixTable('users'),
                 [
-                    'ga_temporary_code' => 'done',
+                    'ga_temporary_code' => 'pending_validation',
                 ],
                 'id=%i',
                 $userInfo['id']
             );
             $firstTime = [
-                'value' => '<img src="' . $new_2fa_qr . '">',
+                'value' => '',
+                'qr_text' => $new_2fa_qr_text,
                 'user_admin' => isset($sessionAdmin) ? (int) $sessionAdmin : '',
                 'initial_url' => isset($sessionUrl) === true ? $sessionUrl : '',
                 'pwd_attempts' => (int) $sessionPwdAttempts,
                 'message' => $lang->get('ga_flash_qr_and_login'),
                 'mfaStatus' => 'ga_temporary_code_correct',
             ];
+        } elseif ($gaTemporaryCode === 'pending_validation') {
+            // STATE 2 - QR has been shown, complete enrollment on the first
+            // valid TOTP. While here the user is not yet 'done', so the
+            // login-page reset link remains available if the scan failed.
+            if ($tfa->verifyCode($gaSecret, (string) $dataReceived['GACode'])) {
+                DB::update(
+                    prefixTable('users'),
+                    [
+                        'ga_temporary_code' => 'done',
+                    ],
+                    'id=%i',
+                    $userInfo['id']
+                );
+                $proceedIdentification = true;
+            } else {
+                return [
+                    'error' => true,
+                    'message' => $lang->get('ga_bad_code'),
+                    'proceedIdentification' => false,
+                    'ga_bad_code' => true,
+                    'firstTime' => $firstTime,
+                ];
+            }
         } else {
-            // verify the user GA code
+            // STATE 3 - 'done' / 'none': normal TOTP verification
             if ($tfa->verifyCode($gaSecret, $dataReceived['GACode'])) {
                 $proceedIdentification = true;
             } else {

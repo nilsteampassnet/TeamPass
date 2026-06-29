@@ -1460,6 +1460,7 @@ return array(
     'share_rights_destination' => 'Destination users',
     'ga_reset_by_user' => 'User can reset his 2FA code',
     'ga_reset_by_user_tip' => 'If enabled, the user will have the possibility to reset his 2FA code using the link in the login page. This could be useful in case he has changed mobile device for example. If not enabled, the user will have to ask the Administrator to generate a new code.',
+    'ga_reset_blocked_by_admin' => 'Your administrator has disabled self-reset of the 2FA code. Please ask them to send you a new code.',
     'enable_massive_move_delete' => 'Allow user to perform massive move and delete operations',
     'enable_massive_move_delete_tip' => 'When enabled, this option permits a user to perform a massive move and/or delete operation in one time. The user will only be able to perform this on Items on which he is allowed to.',
     'mass_operation' => 'Mass operation on Items',
