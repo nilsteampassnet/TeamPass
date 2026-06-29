@@ -1,5 +1,34 @@
 <!-- docs/install/upgrade.md -->
 
+## Upgrading an existing 3.2.x installation
+
+> You are **already running 3.2.x** and want to move to a newer 3.2.x release
+> (e.g. `3.2.0.4` → `3.2.0.5`). This is the common, recurring case.
+
+The 3.2.0 directory layout (`app/` / `public/` / `storage/` / `secrets/`) is already in place,
+so the procedure is short — only three of the steps from
+[Upgrading to version 3.2.x](#upgrading-to-version-32x) apply:
+
+1. [**Step 1 — Back up your instance**](#step-1--back-up-your-instance)
+2. [**Step 2 — Get the new code**](#step-2--get-the-new-code)
+3. [**Step 4a — Run the web-based upgrade wizard**](#step-4a--run-the-web-based-upgrade-wizard)
+   — followed by [Step 4b](#step-4b--restart-websocket-daemon-if-websocket-is-enabled) only if
+   the WebSocket feature is enabled.
+
+There is **nothing else to do.** The following 3.2.0-only steps must be **skipped** because your
+installation has already been migrated:
+
+| Skipped step | Why it no longer applies |
+|---|---|
+| [Step 3 — Filesystem migration (`migrate_3.2.x.php`)](#step-3--run-the-filesystem-migration-script-320-only) | The `app/` / `storage/` layout is already in place |
+| [Step 5 — Apache / Nginx `DocumentRoot` change](#step-5--update-apache--nginx-configuration-320-only) | Your `DocumentRoot` already points to `public/` |
+| [Step 5b — Lock down the install directory](#step-5b--lock-down-the-install-directory) | Already done during your first 3.2.0 upgrade |
+
+> The web-based wizard only applies the database schema deltas between your current patch
+> release and the new one — no file moves, no permission changes, no web server reconfiguration.
+
+---
+
 ## Upgrading to version 3.2.x
 
 > You want to upgrade your current Teampass installation to the latest 3.2.x release.
@@ -119,11 +148,11 @@ php migrate_3.2.x.php
 
 > **Important:** If the upgrade page detects that the database version is still below 3.2.0 while the code is already at 3.2.0, it will display a blocking warning and refuse to start until this script has been executed.
 
-Once the script completes successfully, refresh the upgrade page and proceed to Step 4.
+Once the script completes successfully, refresh the upgrade page and proceed to Step 4a.
 
 ---
 
-### Step 4 — Run the web-based upgrade wizard
+### Step 4a — Run the web-based upgrade wizard
 
 * Browse to `https://<your_teampass_instance>/install/upgrade.php`
 * Authenticate with your **Administrator** account
