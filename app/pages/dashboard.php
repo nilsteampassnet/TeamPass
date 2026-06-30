@@ -110,6 +110,8 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
     .score-band-good { background-color: #20c997; color: #fff; }
     .score-band-fair { background-color: #ffc107; color: #212529; }
     .score-band-poor { background-color: #dc3545; color: #fff; }
+    /* Wider, left-aligned tooltip for the score methodology help. */
+    .dashboard-score-tooltip .tooltip-inner { max-width: 320px; text-align: left; }
 </style>
 
 <!-- Main content -->
@@ -148,6 +150,11 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         </div>
                         <div class="mt-1 small" id="dashboard-score-delta" style="display:none;"></div>
                         <p class="text-muted small mt-2 mb-0" id="dashboard-score-hint" style="display:none;"></p>
+                        <p class="mt-2 mb-0">
+                            <a href="#" id="dashboard-score-info" class="text-muted small" role="button" tabindex="0" onclick="return false;">
+                                <i class="fa-solid fa-circle-info mr-1"></i><?php echo $lang->get('security_score_how_calculated'); ?>
+                            </a>
+                        </p>
                     </div>
                     <div class="col-md-8 col-12">
                         <h5 class="mb-2"><i class="fa-solid fa-list-ol mr-2"></i><?php echo $lang->get('security_score_top3'); ?></h5>
@@ -228,6 +235,12 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <tr><td colspan="3" class="text-center text-muted p-3"><?php echo $lang->get('security_dashboard_no_issues'); ?></td></tr>
                     </tbody>
                 </table>
+            </div>
+            <div class="card-footer text-center" id="dashboard-load-more-wrap" style="display:none;">
+                <button type="button" class="btn btn-sm btn-default" id="dashboard-load-more-btn">
+                    <i class="fa-solid fa-chevron-down mr-1"></i><?php echo $lang->get('security_dashboard_load_more'); ?>
+                    <span class="badge badge-secondary ml-1" id="dashboard-load-more-count">0</span>
+                </button>
             </div>
         </div>
 

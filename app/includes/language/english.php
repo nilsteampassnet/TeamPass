@@ -2573,6 +2573,7 @@ return array(
     'security_dashboard_filter' => 'Filter',
     'security_dashboard_all_groupings' => 'All groupings',
     'security_dashboard_clear_filter' => 'Clear filter',
+    'security_dashboard_load_more' => 'Load more',
     'settings_security_dashboard' => 'Security posture dashboard',
     'settings_security_dashboard_tip' => 'Enable the per-user Security posture dashboard and the organisation-wide admin view.',
     'settings_security_dashboard_overshared' => 'Widely-shared threshold (users)',
@@ -2605,4 +2606,8 @@ return array(
     'security_score_band_fair' => 'Needs attention',
     'security_score_band_poor' => 'Critical',
     'security_score_delta_since' => 'since last scan',
+    'security_score_how_calculated' => 'How is this score calculated?',
+    'security_score_calc_intro' => 'Your score runs from 0 (worst) to 100 (best). It reflects the share of the passwords you can read that are affected by these issues, weighted by severity:',
+    'security_score_calc_not_counted' => 'Shown for information only — these do not affect the score:',
+    'security_score_calc_scan_note' => 'Reuse and breach figures become accurate only after you run a scan.',
     );

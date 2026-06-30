@@ -161,38 +161,7 @@ switch ($post_type) {
         // Grouping (folder) scope. id_tree is an int, safe to embed; filters the list only.
         $folderClauseSql = $post_filter_folder > 0 ? ' AND i.id_tree = ' . $post_filter_folder : '';
 
-        // Metadata counts over the user's entitled items (global posture, not filtered).
-        $summary = DB::queryFirstRow(
-            'SELECT
-                COUNT(*) AS total,
-                SUM(' . $flagWeakSql . ') AS weak,
-                SUM(' . $flagNoExpirySql . ') AS no_expiry,
-                SUM(' . $flagOverdueSql . ') AS overdue,
-                SUM(' . $flagOversharedSql . ') AS overshared,
-                SUM(' . $flagBreachedSql . ') AS breached
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
-            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
-            $logJoinSql . $shareCountJoinSql . '
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL',
-            $userId,
-            'at_creation',
-            'at_modification',
-            'at_pw%'
-        );
-
-        // Reused/orphaned and last-scan come from the persisted per-user table.
-        $healthAgg = DB::queryFirstRow(
-            'SELECT
-                COALESCE(SUM(flag_reused), 0) AS reused,
-                COALESCE(SUM(flag_orphaned), 0) AS orphaned,
-                COALESCE(MAX(last_scan_at), 0) AS last_scan
-            FROM ' . prefixTable('item_health') . '
-            WHERE user_id = %i',
-            $userId
-        );
-
-        // Inner flagged-items SELECT — reused by the paged list and the groupings dropdown.
+        // Inner flagged-items SELECT — reused by the paged list, the total count and the dropdown.
         $flaggedInnerSql =
             'SELECT i.id, i.label, i.id_tree,
                 ' . $flagWeakSql . ' AS flag_weak,
@@ -210,9 +179,11 @@ switch ($post_type) {
             WHERE i.inactif = 0 AND i.deleted_at IS NULL';
         $flagSumSql = '(t.flag_weak + t.flag_no_expiry + t.flag_overdue + t.flag_overshared + t.flag_breached + t.flag_reused + t.flag_orphaned)';
 
-        // Paged list of flagged items, filtered by grouping + issue type.
+        // Paging window for the flagged-items list (incremental "load more").
         $listLimit = ($post_limit > 0 && $post_limit <= 200) ? $post_limit : 50;
         $listOffset = $post_offset >= 0 ? $post_offset : 0;
+
+        // Paged list of flagged items, filtered by grouping + issue type.
         $rows = DB::query(
             'SELECT t.* FROM (' . $flaggedInnerSql . $folderClauseSql . ') AS t
             WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql . '
@@ -221,28 +192,14 @@ switch ($post_type) {
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId, $listLimit, $listOffset
         );
 
-        // Distinct groupings (folders) holding flagged items — unfiltered, drives the dropdown.
-        $folderRows = DB::query(
-            'SELECT DISTINCT t.id_tree FROM (' . $flaggedInnerSql . ') AS t WHERE ' . $flagSumSql . ' > 0',
+        // Total flagged items matching the current filters — drives the "load more" button.
+        $listTotal = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM (' . $flaggedInnerSql . $folderClauseSql . ') AS t
+            WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql,
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
         );
 
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-
-        // Build the groupings dropdown (folder id + readable path).
-        $folders = [];
-        foreach ($folderRows as $fr) {
-            $fid = (int) $fr['id_tree'];
-            $fpath = [];
-            foreach ($tree->getPath($fid, true) as $t) {
-                // Raw value: the client escapes it at render time via .text().
-                $fpath[] = (string) $t->title;
-            }
-            $folders[] = ['id' => $fid, 'path' => implode(' › ', $fpath)];
-        }
-        usort($folders, static function (array $a, array $b): int {
-            return strcasecmp((string) $a['path'], (string) $b['path']);
-        });
 
         $list = [];
         foreach ($rows as $r) {
@@ -266,27 +223,85 @@ switch ($post_type) {
             ];
         }
 
-        echo (string) prepareExchangedData(
-            [
-                'error' => false,
-                'counts' => [
-                    'total' => (int) ($summary['total'] ?? 0),
-                    'weak' => (int) ($summary['weak'] ?? 0),
-                    'no_expiry' => (int) ($summary['no_expiry'] ?? 0),
-                    'overdue' => (int) ($summary['overdue'] ?? 0),
-                    'overshared' => (int) ($summary['overshared'] ?? 0),
-                    'breached' => (int) ($summary['breached'] ?? 0),
-                    'reused' => (int) ($healthAgg['reused'] ?? 0),
-                    'orphaned' => (int) ($healthAgg['orphaned'] ?? 0),
-                ],
-                'last_scan' => (int) ($healthAgg['last_scan'] ?? 0),
-                'list' => $list,
-                'folders' => $folders,
-                'offset' => $listOffset,
-                'limit' => $listLimit,
-            ],
-            'encode'
-        );
+        $response = [
+            'error' => false,
+            'list' => $list,
+            'offset' => $listOffset,
+            'limit' => $listLimit,
+            'list_total' => $listTotal,
+        ];
+
+        // First page only: the global posture counts, the groupings dropdown and the
+        // last-scan stamp don't change while paging, so they are computed once (offset 0)
+        // and skipped on every "load more" request to keep paging cheap.
+        if ($listOffset === 0) {
+            // Metadata counts over the user's entitled items (global posture, not filtered).
+            $summary = DB::queryFirstRow(
+                'SELECT
+                    COUNT(*) AS total,
+                    SUM(' . $flagWeakSql . ') AS weak,
+                    SUM(' . $flagNoExpirySql . ') AS no_expiry,
+                    SUM(' . $flagOverdueSql . ') AS overdue,
+                    SUM(' . $flagOversharedSql . ') AS overshared,
+                    SUM(' . $flagBreachedSql . ') AS breached
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+                INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+                $logJoinSql . $shareCountJoinSql . '
+                WHERE i.inactif = 0 AND i.deleted_at IS NULL',
+                $userId,
+                'at_creation',
+                'at_modification',
+                'at_pw%'
+            );
+
+            // Reused/orphaned and last-scan come from the persisted per-user table.
+            $healthAgg = DB::queryFirstRow(
+                'SELECT
+                    COALESCE(SUM(flag_reused), 0) AS reused,
+                    COALESCE(SUM(flag_orphaned), 0) AS orphaned,
+                    COALESCE(MAX(last_scan_at), 0) AS last_scan
+                FROM ' . prefixTable('item_health') . '
+                WHERE user_id = %i',
+                $userId
+            );
+
+            // Distinct groupings (folders) holding flagged items — unfiltered, drives the dropdown.
+            $folderRows = DB::query(
+                'SELECT DISTINCT t.id_tree FROM (' . $flaggedInnerSql . ') AS t WHERE ' . $flagSumSql . ' > 0',
+                $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+            );
+
+            // Build the groupings dropdown (folder id + readable path).
+            $folders = [];
+            foreach ($folderRows as $fr) {
+                $fid = (int) $fr['id_tree'];
+                $fpath = [];
+                foreach ($tree->getPath($fid, true) as $t) {
+                    // Raw value: the client escapes it at render time via .text().
+                    $fpath[] = (string) $t->title;
+                }
+                $folders[] = ['id' => $fid, 'path' => implode(' › ', $fpath)];
+            }
+            usort($folders, static function (array $a, array $b): int {
+                return strcasecmp((string) $a['path'], (string) $b['path']);
+            });
+
+            $response['counts'] = [
+                'total' => (int) ($summary['total'] ?? 0),
+                'weak' => (int) ($summary['weak'] ?? 0),
+                'no_expiry' => (int) ($summary['no_expiry'] ?? 0),
+                'overdue' => (int) ($summary['overdue'] ?? 0),
+                'overshared' => (int) ($summary['overshared'] ?? 0),
+                'breached' => (int) ($summary['breached'] ?? 0),
+                'reused' => (int) ($healthAgg['reused'] ?? 0),
+                'orphaned' => (int) ($healthAgg['orphaned'] ?? 0),
+            ];
+            $response['last_scan'] = (int) ($healthAgg['last_scan'] ?? 0);
+            $response['folders'] = $folders;
+        }
+
+        echo (string) prepareExchangedData($response, 'encode');
         break;
 
     /*
@@ -648,6 +663,7 @@ switch ($post_type) {
                 'delta' => $scoreData['delta'],
                 'delta_at' => $scoreData['delta_at'],
                 'counts' => $scoreData['counts'],
+                'weights' => $scoreData['weights'],
                 'top3' => $scoreData['top3'],
                 'worst_item' => $scoreData['worst_item'],
             ],

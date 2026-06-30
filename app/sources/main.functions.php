@@ -1202,7 +1202,7 @@ function securityNudgeComputeCounts(int $userId): array
  *
  * @param int $userId User to score.
  *
- * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityScoreCompute(int $userId): array
 {
@@ -1289,6 +1289,13 @@ function securityScoreCompute(int $userId): array
             'weak' => (int) $counts['weak'],
             'overdue' => (int) $counts['overdue'],
             'total' => (int) $counts['total_flagged'],
+        ],
+        // Surfaced so the dashboard help text always matches the algorithm (no drift).
+        'weights' => [
+            'breached' => (int) $weights['breached'],
+            'reused' => (int) $weights['reused'],
+            'weak' => (int) $weights['weak'],
+            'overdue' => (int) $weights['overdue'],
         ],
         'top3' => $top3,
         'worst_item' => $counts['worst_item'],

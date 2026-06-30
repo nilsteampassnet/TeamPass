@@ -82,6 +82,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     const TP_DASH = {
         key: '<?php echo $session->get('key'); ?>',
         chunk: 50,
+        listPage: 100,
         strings: {
             never: <?php echo json_encode($lang->get('security_dashboard_never'), JSON_UNESCAPED_UNICODE); ?>,
             noIssues: <?php echo json_encode($lang->get('security_dashboard_no_issues'), JSON_UNESCAPED_UNICODE); ?>,
@@ -95,7 +96,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             bandGood: <?php echo json_encode($lang->get('security_score_band_good'), JSON_UNESCAPED_UNICODE); ?>,
             bandFair: <?php echo json_encode($lang->get('security_score_band_fair'), JSON_UNESCAPED_UNICODE); ?>,
             bandPoor: <?php echo json_encode($lang->get('security_score_band_poor'), JSON_UNESCAPED_UNICODE); ?>,
-            deltaSince: <?php echo json_encode($lang->get('security_score_delta_since'), JSON_UNESCAPED_UNICODE); ?>
+            deltaSince: <?php echo json_encode($lang->get('security_score_delta_since'), JSON_UNESCAPED_UNICODE); ?>,
+            howCalculated: <?php echo json_encode($lang->get('security_score_how_calculated'), JSON_UNESCAPED_UNICODE); ?>,
+            calcIntro: <?php echo json_encode($lang->get('security_score_calc_intro'), JSON_UNESCAPED_UNICODE); ?>,
+            calcNotCounted: <?php echo json_encode($lang->get('security_score_calc_not_counted'), JSON_UNESCAPED_UNICODE); ?>,
+            calcScanNote: <?php echo json_encode($lang->get('security_score_calc_scan_note'), JSON_UNESCAPED_UNICODE); ?>
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -124,6 +129,47 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         fair: { cls: 'score-band-fair', label: TP_DASH.strings.bandFair, color: '#ffc107' },
         poor: { cls: 'score-band-poor', label: TP_DASH.strings.bandPoor, color: '#dc3545' }
     };
+
+    // F10: build the "how is this score calculated?" help, driven by the server-supplied
+    // weights so the explanation can never drift from securityScoreCompute().
+    function dashboardScoreInfoContent(weights) {
+        const esc = function (s) { return $('<div>').text(String(s)).html(); };
+        const w = weights || {};
+        let scored = '';
+        ['breached', 'reused', 'weak', 'overdue'].forEach(function (k) {
+            const meta = TP_DASH.flags['flag_' + k];
+            const label = meta ? meta.label : k;
+            scored += '<li>' + esc(label) + ' <span class="text-muted">(×' + (parseInt(w[k], 10) || 0) + ')</span></li>';
+        });
+        let notCounted = '';
+        ['no_expiry', 'overshared'].forEach(function (k) {
+            const meta = TP_DASH.flags['flag_' + k];
+            notCounted += '<li>' + esc(meta ? meta.label : k) + '</li>';
+        });
+        return '<p class="mb-1">' + esc(TP_DASH.strings.calcIntro) + '</p>'
+            + '<ul class="pl-3 mb-2">' + scored + '</ul>'
+            + '<p class="mb-1">' + esc(TP_DASH.strings.calcNotCounted) + '</p>'
+            + '<ul class="pl-3 mb-2">' + notCounted + '</ul>'
+            + '<p class="text-muted mb-0">' + esc(TP_DASH.strings.calcScanNote) + '</p>';
+    }
+
+    // Init the score-help tooltip once (weights are constant across reloads/scan).
+    function dashboardScoreInfoInit(weights) {
+        const $info = $('#dashboard-score-info');
+        if ($info.length === 0 || $info.data('tp-info-ready') === true || typeof $info.tooltip !== 'function') {
+            return;
+        }
+        $info
+            .attr('title', dashboardScoreInfoContent(weights))
+            .tooltip({
+                html: true,
+                trigger: 'hover focus',
+                placement: 'right',
+                boundary: 'window',
+                template: '<div class="tooltip dashboard-score-tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>'
+            });
+        $info.data('tp-info-ready', true);
+    }
 
     // F10: render the Personal Security Score hero (gauge + band + top 3 to fix).
     function dashboardRenderScore(data) {
@@ -184,6 +230,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else {
             fix.hide();
         }
+
+        // Score methodology help (server-supplied weights → no drift with the algorithm).
+        dashboardScoreInfoInit(data.weights);
     }
 
     function dashboardLoadScore() {
@@ -205,16 +254,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#dashboard-total-items').text(counts.total);
     }
 
-    function dashboardRenderList(list) {
+    function dashboardRenderList(list, append) {
         const tbody = $('#dashboard-flagged-tbody');
-        tbody.empty();
-        if (!list || list.length === 0) {
+        if (append !== true) {
+            tbody.empty();
+        }
+        if ((!list || list.length === 0) && append !== true) {
             tbody.append($('<tr>').append(
                 $('<td>').attr('colspan', 3).addClass('text-center text-muted p-3').text(TP_DASH.strings.noIssues)
             ));
             return;
         }
-        list.forEach(function (item) {
+        (list || []).forEach(function (item) {
             const folderId = parseInt(item.folder_id, 10) || 0;
             const itemId = parseInt(item.id, 10) || 0;
             const itemLink = 'index.php?page=items&group=' + folderId + '&id=' + itemId;
@@ -245,6 +296,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let dashboardFilterFolder = 0;
     let dashboardFilterFlag = '';
 
+    // Incremental list paging state ("load more").
+    let dashboardListShown = 0;
+    let dashboardListTotal = 0;
+
     function dashboardBuildFolders(folders) {
         const sel = $('#dashboard-folder-filter');
         const current = String(dashboardFilterFolder);
@@ -273,18 +328,51 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     function dashboardLoadSummary() {
-        dashboardPost({ type: 'get_summary', offset: 0, limit: 200, filter_flag: dashboardFilterFlag, filter_folder: dashboardFilterFolder }, function (data) {
+        dashboardPost({ type: 'get_summary', offset: 0, limit: TP_DASH.listPage, filter_flag: dashboardFilterFlag, filter_folder: dashboardFilterFolder }, function (data) {
             $('.dashboard-card').removeClass('loading');
             if (!data || data.error === true) {
                 return;
             }
             dashboardRenderCounts(data.counts);
             dashboardBuildFolders(data.folders);
-            dashboardRenderList(data.list);
+            dashboardRenderList(data.list, false);
+            dashboardListShown = (data.list || []).length;
+            dashboardListTotal = parseInt(data.list_total, 10) || 0;
+            dashboardUpdateLoadMore();
             dashboardApplyFilterUI();
             $('#dashboard-last-scan').text(
                 data.last_scan > 0 ? new Date(data.last_scan * 1000).toLocaleString() : TP_DASH.strings.never
             );
+        });
+    }
+
+    // Show/update the "load more" footer based on how many flagged items remain unshown.
+    function dashboardUpdateLoadMore() {
+        const remaining = dashboardListTotal - dashboardListShown;
+        if (remaining > 0) {
+            $('#dashboard-load-more-count').text(remaining);
+            $('#dashboard-load-more-wrap').show();
+        } else {
+            $('#dashboard-load-more-wrap').hide();
+        }
+    }
+
+    // Append the next page of flagged items, reusing the current filters. The global
+    // posture counts and groupings are not recomputed (the server skips them past offset 0).
+    function dashboardLoadMore() {
+        const btn = $('#dashboard-load-more-btn');
+        btn.prop('disabled', true);
+        dashboardPost({ type: 'get_summary', offset: dashboardListShown, limit: TP_DASH.listPage, filter_flag: dashboardFilterFlag, filter_folder: dashboardFilterFolder }, function (data) {
+            btn.prop('disabled', false);
+            if (!data || data.error === true) {
+                return;
+            }
+            dashboardRenderList(data.list, true);
+            dashboardListShown += (data.list || []).length;
+            if (typeof data.list_total !== 'undefined') {
+                dashboardListTotal = parseInt(data.list_total, 10) || dashboardListTotal;
+            }
+            dashboardUpdateLoadMore();
         });
     }
 
@@ -320,6 +408,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     $(function () {
         dashboardLoadSummary();
         dashboardLoadScore();
+
+        $('#dashboard-load-more-btn').on('click', dashboardLoadMore);
 
         $('#dashboard-scan-btn').on('click', function () {
             const includeHibp = $('#dashboard-include-hibp').is(':checked') ? 1 : 0;
