@@ -2615,5 +2615,9 @@ Path: %s',
     'restore_missing_sharekeys_unrecoverable_tip' => 'Some objects have no usable reference key: neither the TP internal account nor your account can decrypt them. Ask a user who can still open these objects to re-save them; this recreates the keys for everyone.',
     'restore_missing_sharekeys_task_exists' => 'A sharekeys repair task is already pending or running. Please wait for it to complete.',
     'restore_missing_sharekeys_task_launched' => 'The repair task has been launched. The missing sharekeys are being recreated in the background; progress is visible on the Tasks page.',
+    'restore_missing_sharekeys_details' => 'Show details',
+    'restore_missing_sharekeys_key_holders' => 'Users with a valid key',
+    'restore_missing_sharekeys_no_holder' => 'No user has a valid key',
+    'restore_missing_sharekeys_details_limit' => 'Only the first 100 objects of each type are listed.',
 
 );

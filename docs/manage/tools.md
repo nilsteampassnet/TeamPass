@@ -24,6 +24,8 @@ Missing sharekeys can appear after an interrupted background task, a failure dur
    * the number of objects for which the internal `TP` account has no reference key,
    * the number of objects that cannot be repaired automatically.
 
+   When objects without a `TP` reference key are found, a **Show details** button lists them (first 100 per type) with, for each one, the users still holding a valid sharekey. This tells you exactly who to ask to re-save an object that the tool cannot repair automatically; an object with no key holder at all is highlighted — its content cannot be recovered.
+
 2. **Repair** — a two-phase operation:
    * First, the missing reference keys of the internal `TP` account are recreated using **your own account's keys** (this runs in your browser session, because your private key only exists there).
    * Then a **background task** (`restore_missing_sharekeys`, visible on the Tasks page) walks all shared objects and recreates every missing user sharekey, using the `TP` account key as reference.

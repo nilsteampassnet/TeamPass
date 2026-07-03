@@ -2614,5 +2614,9 @@ return array(
     'restore_missing_sharekeys_unrecoverable_tip' => 'Certains objets n’ont aucune clé de référence utilisable : ni le compte interne TP ni votre compte ne peuvent les déchiffrer. Demandez à un utilisateur qui peut encore ouvrir ces objets de les réenregistrer ; cela recrée les clés pour tout le monde.',
     'restore_missing_sharekeys_task_exists' => 'Une tâche de réparation des clés de partage est déjà en attente ou en cours. Veuillez attendre qu’elle se termine.',
     'restore_missing_sharekeys_task_launched' => 'La tâche de réparation a été lancée. Les clés de partage manquantes sont recréées en arrière-plan ; la progression est visible sur la page Tâches.',
+    'restore_missing_sharekeys_details' => 'Voir le détail',
+    'restore_missing_sharekeys_key_holders' => 'Utilisateurs disposant d’une clé valide',
+    'restore_missing_sharekeys_no_holder' => 'Aucun utilisateur ne dispose d’une clé valide',
+    'restore_missing_sharekeys_details_limit' => 'Seuls les 100 premiers objets de chaque type sont listés.',
 
 );

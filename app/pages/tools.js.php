@@ -686,6 +686,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                     var totalMissing = 0,
                         totalSeedable = 0,
+                        totalTpMissing = 0,
                         totalUnrecoverable = 0;
                     var html = '<table class="table table-sm table-bordered"><thead><tr>' +
                         '<th></th>' +
@@ -697,6 +698,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     $.each(data.analysis, function(scope, row) {
                         totalMissing += row.missing_pairs;
                         totalSeedable += row.admin_seedable;
+                        totalTpMissing += row.tp_missing;
                         totalUnrecoverable += row.unrecoverable;
                         html += '<tr><td>' + scope + '</td>' +
                             '<td>' + row.objects + '</td>' +
@@ -715,7 +717,74 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     if (totalUnrecoverable > 0) {
                         html += '<div class="alert alert-warning"><i class="fas fa-exclamation-triangle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_unrecoverable_tip'); ?></div>';
                     }
+                    if (totalTpMissing > 0) {
+                        html += '<button type="button" class="btn btn-secondary btn-sm tp-action" id="restore_missing_sharekeys_details_but" data-action="restore_missing_sharekeys_details_but">' +
+                            '<i class="fas fa-list mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_details'); ?></button>' +
+                            '<div id="restore_missing_sharekeys_details"></div>';
+                    }
                     $('#restore_missing_sharekeys_results').html(html);
+                }
+            );
+        }
+
+        /**
+         * Restore missing sharekeys -> DETAILS
+         * Lists the objects without TP_USER reference key and the users
+         * still holding a valid sharekey for each of them.
+         */
+        else if ($(this).data('action') === 'restore_missing_sharekeys_details_but') {
+            $(this).prop('disabled', true);
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fas fa-circle-notch fa-spin fa-2x"></i>');
+
+            $.post(
+                'sources/tools.queries.php', {
+                    type: 'restore_missing_sharekeys-details',
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(ret) {
+                    ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
+                    $('#restore_missing_sharekeys_details_but').prop('disabled', false);
+                    toastr.remove();
+
+                    if (ret.error === true) {
+                        toastr.error(
+                            ret.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                progressBar: true
+                            }
+                        );
+                        return;
+                    }
+
+                    var truncated = false;
+                    var html = '<table class="table table-sm table-bordered mt-2"><thead><tr>' +
+                        '<th><?php echo $lang->get('type'); ?></th>' +
+                        '<th>ID</th>' +
+                        '<th><?php echo $lang->get('label'); ?></th>' +
+                        '<th><?php echo $lang->get('restore_missing_sharekeys_key_holders'); ?></th>' +
+                        '</tr></thead><tbody>';
+                    $.each(ret.details, function(scope, block) {
+                        if (block.total > block.objects.length) {
+                            truncated = true;
+                        }
+                        $.each(block.objects, function(index, obj) {
+                            var label = restoreSharekeysEscape(obj.label) +
+                                (obj.extra !== '' ? ' <span class="text-muted">(' + restoreSharekeysEscape(obj.extra) + ')</span>' : '');
+                            var holders = obj.key_holders_count > 0 ?
+                                restoreSharekeysEscape(obj.key_holders) + ' <span class="badge badge-secondary ml-1">' + obj.key_holders_count + '</span>' :
+                                '<span class="badge badge-danger"><?php echo $lang->get('restore_missing_sharekeys_no_holder'); ?></span>';
+                            html += '<tr><td>' + scope + '</td>' +
+                                '<td>' + obj.id + '</td>' +
+                                '<td>' + label + '</td>' +
+                                '<td>' + holders + '</td></tr>';
+                        });
+                    });
+                    html += '</tbody></table>';
+                    if (truncated === true) {
+                        html += '<div class="alert alert-info"><i class="fas fa-info-circle mr-2"></i><?php echo $lang->get('restore_missing_sharekeys_details_limit'); ?></div>';
+                    }
+                    $('#restore_missing_sharekeys_details').html(html);
                 }
             );
         }
@@ -734,6 +803,13 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             restoreSharekeysSeedScope(['items', 'fields', 'files'], 0);
         }
     });
+
+    /**
+     * Escape a value for safe insertion in HTML.
+     */
+    function restoreSharekeysEscape(value) {
+        return $('<div>').text(value === null || value === undefined ? '' : String(value)).html();
+    }
 
     /**
      * Seed the missing TP_USER reference keys, one scope at a time, then

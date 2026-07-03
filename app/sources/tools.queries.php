@@ -943,6 +943,115 @@ case 'perform_fix_pf_items-step3':
         break;
 
     /*
+    * RESTORE MISSING SHAREKEYS - Details of objects without TP_USER reference key
+    * For each object, lists the users still holding a valid sharekey so the
+    * admin knows who can re-save an unrecoverable object.
+    */
+    case 'restore_missing_sharekeys-details':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $specialUserIds = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+        $detailsLimit = 100;
+
+        // Per-scope label columns (object aliased "o", parent item aliased "i" when joined)
+        $detailDefs = [
+            'items' => [
+                'label' => 'o.label AS label',
+                'extra' => '"" AS extra',
+                'extraJoin' => '',
+            ],
+            'fields' => [
+                'label' => 'i.label AS label',
+                'extra' => 'IFNULL(c.title, "") AS extra',
+                'extraJoin' => ' LEFT JOIN ' . prefixTable('categories') . ' AS c ON c.id = o.field_id',
+            ],
+            'files' => [
+                'label' => 'i.label AS label',
+                'extra' => 'o.name AS extra',
+                'extraJoin' => '',
+            ],
+        ];
+
+        $details = [];
+        foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {
+            $total = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL'
+            );
+
+            $rows = [];
+            if ($total > 0) {
+                $rows = DB::query(
+                    'SELECT o.id AS object_id, ' . $detailDefs[$scopeName]['label'] . ', ' . $detailDefs[$scopeName]['extra'] . ',
+                        (SELECT GROUP_CONCAT(DISTINCT u.login SEPARATOR ", ")
+                        FROM ' . prefixTable($def['table']) . ' AS skh
+                        INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = skh.user_id
+                        WHERE skh.object_id = o.id AND skh.share_key != "" AND u.id NOT IN %li) AS key_holders,
+                        (SELECT COUNT(DISTINCT skh2.user_id)
+                        FROM ' . prefixTable($def['table']) . ' AS skh2
+                        INNER JOIN ' . prefixTable('users') . ' AS u2 ON u2.id = skh2.user_id
+                        WHERE skh2.object_id = o.id AND skh2.share_key != "" AND u2.id NOT IN %li) AS key_holders_count
+                    FROM ' . $def['from'] . $detailDefs[$scopeName]['extraJoin'] . '
+                    LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                    WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL
+                    ORDER BY o.id ASC
+                    LIMIT %i',
+                    $specialUserIds,
+                    $specialUserIds,
+                    $detailsLimit
+                );
+            }
+
+            $details[$scopeName] = [
+                'total' => $total,
+                'objects' => array_map(
+                    static function (array $row): array {
+                        return [
+                            'id' => (int) $row['object_id'],
+                            'label' => (string) $row['label'],
+                            'extra' => (string) $row['extra'],
+                            'key_holders' => (string) ($row['key_holders'] ?? ''),
+                            'key_holders_count' => (int) $row['key_holders_count'],
+                        ];
+                    },
+                    $rows
+                ),
+            ];
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'limit' => $detailsLimit,
+                'details' => $details,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
     * RESTORE MISSING SHAREKEYS - STEP 2 - Seed TP_USER reference keys
     * Recreates missing TP_USER sharekeys using the executing admin's own keys
     * (the admin private key only exists in the web session, hence this
@@ -1032,7 +1141,7 @@ case 'perform_fix_pf_items-step3':
                 insertOrUpdateSharekey(
                     prefixTable($def['table']),
                     (int) $record['object_id'],
-                    TP_USER_ID,
+                    (int) TP_USER_ID,
                     encryptUserObjectKey($objectKey, $tpUserPublicKey)
                 );
                 $seeded++;
