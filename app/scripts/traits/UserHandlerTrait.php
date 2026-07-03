@@ -214,7 +214,8 @@ trait UserHandlerTrait {
             $taskData['index'],
             $taskData['nb']
         );
-        
+
+        $skippedObjects = [];
         foreach ($rows as $record) {
             // Get itemKey from current user
             $itemShareKey = DB::queryFirstRow(
@@ -227,6 +228,10 @@ trait UserHandlerTrait {
 
             // do we have any input? (#3481)
             if ($itemShareKey === null || count($itemShareKey) === 0) {
+                // Personal items of other users legitimately have no owner sharekey
+                if ((int) $record['perso'] !== 1) {
+                    $skippedObjects[] = (int) $record['id'];
+                }
                 continue;
             }
             
@@ -255,6 +260,10 @@ trait UserHandlerTrait {
 
         // Commit transaction
         DB::commit();
+
+        if (count($skippedObjects) > 0) {
+            $this->logger->log('generateNewUserStep20: ' . count($skippedObjects) . ' item(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey for items [' . implode(',', $skippedObjects) . ']', 'WARNING');
+        }
     }
 
 
@@ -287,6 +296,7 @@ trait UserHandlerTrait {
             ORDER BY increment_id ASC
             LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
         );
+        $skippedObjects = 0;
         foreach ($rows as $record) {
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
@@ -299,6 +309,7 @@ trait UserHandlerTrait {
 
             // do we have any input? (#3481)
             if ($currentUserKey === null || count($currentUserKey) === 0) {
+                $skippedObjects++;
                 continue;
             }
 
@@ -319,6 +330,10 @@ trait UserHandlerTrait {
 
         // Commit transaction
         DB::commit();
+
+        if ($skippedObjects > 0) {
+            $this->logger->log('generateNewUserStep30: ' . $skippedObjects . ' log entry(ies) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey (personal items are expected to be skipped)', 'WARNING');
+        }
     }
 
 
@@ -353,6 +368,7 @@ trait UserHandlerTrait {
             $taskData['index'],
             $taskData['nb']
         );
+        $skippedObjects = 0;
         foreach ($rows as $record) {
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
@@ -365,6 +381,7 @@ trait UserHandlerTrait {
 
             // do we have any input?
             if ($currentUserKey === null || count($currentUserKey) === 0) {
+                $skippedObjects++;
                 continue;
             }
             
@@ -385,6 +402,10 @@ trait UserHandlerTrait {
 
         // Commit transaction
         DB::commit();
+
+        if ($skippedObjects > 0) {
+            $this->logger->log('generateNewUserStep40: ' . $skippedObjects . ' field(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey (personal items are expected to be skipped)', 'WARNING');
+        }
     }
 
 
@@ -418,6 +439,7 @@ trait UserHandlerTrait {
             $taskData['index'],
             $taskData['nb']
         );
+        $skippedObjects = 0;
         foreach ($rows as $record) {
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
@@ -430,6 +452,7 @@ trait UserHandlerTrait {
 
             // do we have any input? (#3481)
             if ($currentUserKey === null || count($currentUserKey) === 0) {
+                $skippedObjects++;
                 continue;
             }
 
@@ -450,6 +473,10 @@ trait UserHandlerTrait {
 
         // Commit transaction
         DB::commit();
+
+        if ($skippedObjects > 0) {
+            $this->logger->log('generateNewUserStep50: ' . $skippedObjects . ' suggestion(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey', 'WARNING');
+        }
     }
 
 
@@ -484,6 +511,7 @@ trait UserHandlerTrait {
             $taskData['index'],
             $taskData['nb']
         ); //aes_encryption
+        $skippedObjects = 0;
         foreach ($rows as $record) {
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
@@ -496,6 +524,9 @@ trait UserHandlerTrait {
 
             // do we have any input? (#3481)
             if ($currentUserKey === null || count($currentUserKey) === 0) {
+                if (intval($record['perso']) === 0) {
+                    $skippedObjects++;
+                }
                 continue;
             }
 
@@ -525,6 +556,10 @@ trait UserHandlerTrait {
 
         // Commit transaction
         DB::commit();
+
+        if ($skippedObjects > 0) {
+            $this->logger->log('generateNewUserStep60: ' . $skippedObjects . ' file(s) skipped for user #' . $arguments['new_user_id'] . ' - owner #' . $arguments['owner_id'] . ' has no sharekey', 'WARNING');
+        }
     }
 
 

@@ -861,4 +861,408 @@ case 'perform_fix_pf_items-step3':
             );
             break;
 
+    /*
+    * RESTORE MISSING SHAREKEYS - STEP 1 - Analyze (dry-run, no write)
+    * Counts missing sharekeys for eligible users on non-personal objects.
+    */
+    case 'restore_missing_sharekeys-analyze':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $specialUserIds = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+
+        // Number of users expected to own a sharekey for every shared object
+        // (same eligibility rule as storeUsersShareKey)
+        $eligibleUsersCount = (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('users') . ' WHERE id NOT IN %li AND public_key != ""',
+            $specialUserIds
+        );
+
+        $analysis = [];
+        foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {
+            $objectsCount = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . ' WHERE ' . $def['where']
+            );
+            $existingKeys = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                INNER JOIN ' . prefixTable($def['table']) . ' AS sk ON sk.object_id = o.id
+                INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = sk.user_id
+                WHERE ' . $def['where'] . ' AND sk.share_key != "" AND u.public_key != "" AND u.id NOT IN %li',
+                $specialUserIds
+            );
+            $tpMissing = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL'
+            );
+            $adminSeedable = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                INNER JOIN ' . prefixTable($def['table']) . ' AS ska ON (ska.object_id = o.id AND ska.user_id = %i AND ska.share_key != "")
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL',
+                (int) $session->get('user-id')
+            );
+
+            $analysis[$scopeName] = [
+                'objects' => $objectsCount,
+                'missing_pairs' => max(0, $objectsCount * $eligibleUsersCount - $existingKeys),
+                'tp_missing' => $tpMissing,
+                'admin_seedable' => $adminSeedable,
+                'unrecoverable' => max(0, $tpMissing - $adminSeedable),
+            ];
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'eligible_users' => $eligibleUsersCount,
+                'analysis' => $analysis,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * RESTORE MISSING SHAREKEYS - Details of objects without TP_USER reference key
+    * For each object, lists the users still holding a valid sharekey so the
+    * admin knows who can re-save an unrecoverable object.
+    */
+    case 'restore_missing_sharekeys-details':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        $specialUserIds = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
+        $detailsLimit = 100;
+
+        // Per-scope label columns (object aliased "o", parent item aliased "i" when joined)
+        $detailDefs = [
+            'items' => [
+                'label' => 'o.label AS label',
+                'extra' => '"" AS extra',
+                'extraJoin' => '',
+            ],
+            'fields' => [
+                'label' => 'i.label AS label',
+                'extra' => 'IFNULL(c.title, "") AS extra',
+                'extraJoin' => ' LEFT JOIN ' . prefixTable('categories') . ' AS c ON c.id = o.field_id',
+            ],
+            'files' => [
+                'label' => 'i.label AS label',
+                'extra' => 'o.name AS extra',
+                'extraJoin' => '',
+            ],
+        ];
+
+        $details = [];
+        foreach (restoreSharekeysScopeDefs() as $scopeName => $def) {
+            $total = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . $def['from'] . '
+                LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL'
+            );
+
+            $rows = [];
+            if ($total > 0) {
+                $rows = DB::query(
+                    'SELECT o.id AS object_id, ' . $detailDefs[$scopeName]['label'] . ', ' . $detailDefs[$scopeName]['extra'] . ',
+                        (SELECT GROUP_CONCAT(DISTINCT u.login SEPARATOR ", ")
+                        FROM ' . prefixTable($def['table']) . ' AS skh
+                        INNER JOIN ' . prefixTable('users') . ' AS u ON u.id = skh.user_id
+                        WHERE skh.object_id = o.id AND skh.share_key != "" AND u.id NOT IN %li) AS key_holders,
+                        (SELECT COUNT(DISTINCT skh2.user_id)
+                        FROM ' . prefixTable($def['table']) . ' AS skh2
+                        INNER JOIN ' . prefixTable('users') . ' AS u2 ON u2.id = skh2.user_id
+                        WHERE skh2.object_id = o.id AND skh2.share_key != "" AND u2.id NOT IN %li) AS key_holders_count
+                    FROM ' . $def['from'] . $detailDefs[$scopeName]['extraJoin'] . '
+                    LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+                    WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL
+                    ORDER BY o.id ASC
+                    LIMIT %i',
+                    $specialUserIds,
+                    $specialUserIds,
+                    $detailsLimit
+                );
+            }
+
+            $details[$scopeName] = [
+                'total' => $total,
+                'objects' => array_map(
+                    static function (array $row): array {
+                        return [
+                            'id' => (int) $row['object_id'],
+                            'label' => (string) $row['label'],
+                            'extra' => (string) $row['extra'],
+                            'key_holders' => (string) ($row['key_holders'] ?? ''),
+                            'key_holders_count' => (int) $row['key_holders_count'],
+                        ];
+                    },
+                    $rows
+                ),
+            ];
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'limit' => $detailsLimit,
+                'details' => $details,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * RESTORE MISSING SHAREKEYS - STEP 2 - Seed TP_USER reference keys
+    * Recreates missing TP_USER sharekeys using the executing admin's own keys
+    * (the admin private key only exists in the web session, hence this
+    * synchronous, JS-batched step). Called in a loop per scope until finished.
+    */
+    case 'restore_missing_sharekeys-seed':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // decrypt and retrieve data in JSON format
+        $dataReceived = prepareExchangedData(
+            $post_data,
+            'decode'
+        );
+        $scopeName = filter_var($dataReceived['scope'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $lastId = (int) filter_var($dataReceived['lastId'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+
+        $scopeDefs = restoreSharekeysScopeDefs();
+        if (isset($scopeDefs[$scopeName]) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => 'Unknown scope',
+                ),
+                'encode'
+            );
+            break;
+        }
+        $def = $scopeDefs[$scopeName];
+        $batchSize = 25;
+
+        // Objects the admin can decrypt but for which TP_USER has no valid key
+        $rows = DB::query(
+            'SELECT o.id AS object_id, ska.share_key AS admin_share_key, ska.increment_id AS admin_key_id
+            FROM ' . $def['from'] . '
+            INNER JOIN ' . prefixTable($def['table']) . ' AS ska ON (ska.object_id = o.id AND ska.user_id = %i AND ska.share_key != "")
+            LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+            WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND o.id > %i
+            ORDER BY o.id ASC
+            LIMIT %i',
+            (int) $session->get('user-id'),
+            $lastId,
+            $batchSize
+        );
+
+        $tpUserPublicKey = (string) DB::queryFirstField(
+            'SELECT public_key FROM ' . prefixTable('users') . ' WHERE id = %i',
+            TP_USER_ID
+        );
+
+        $seeded = 0;
+        $failed = 0;
+        foreach ($rows as $record) {
+            $lastId = (int) $record['object_id'];
+            $objectKey = decryptUserObjectKeyWithMigration(
+                (string) $record['admin_share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                (int) $record['admin_key_id'],
+                $def['table']
+            );
+            if (empty($objectKey)) {
+                $failed++;
+                continue;
+            }
+            try {
+                insertOrUpdateSharekey(
+                    prefixTable($def['table']),
+                    (int) $record['object_id'],
+                    (int) TP_USER_ID,
+                    encryptUserObjectKey($objectKey, $tpUserPublicKey)
+                );
+                $seeded++;
+            } catch (Exception $e) {
+                $failed++;
+                error_log('TEAMPASS Error - restore_missing_sharekeys-seed - object #' . $record['object_id'] . ' (' . $def['table'] . '): ' . $e->getMessage());
+            }
+        }
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'scope' => $scopeName,
+                'seeded' => $seeded,
+                'failed' => $failed,
+                'lastId' => $lastId,
+                'finished' => count($rows) < $batchSize,
+            ),
+            'encode'
+        );
+        break;
+
+    /*
+    * RESTORE MISSING SHAREKEYS - STEP 3 - Launch the background repair task
+    * The task distributes the missing sharekeys to all eligible users using
+    * TP_USER as reference (server-side decryptable).
+    */
+    case 'restore_missing_sharekeys-launch':
+        // Check KEY
+        if (!hash_equals((string) $session->get('key'), (string) $post_key)) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Is admin?
+        if ((int) $session->get('user-admin') !== 1) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Refuse concurrent repair tasks
+        DB::query(
+            'SELECT increment_id FROM ' . prefixTable('background_tasks') . '
+            WHERE process_type = %s AND (finished_at IS NULL OR finished_at = "")',
+            'restore_missing_sharekeys'
+        );
+        if (DB::count() > 0) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('restore_missing_sharekeys_task_exists'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        DB::insert(
+            prefixTable('background_tasks'),
+            array(
+                'created_at' => time(),
+                'process_type' => 'restore_missing_sharekeys',
+                'arguments' => json_encode([
+                    'author' => (int) $session->get('user-id'),
+                ]),
+            )
+        );
+        $taskId = DB::insertId();
+
+        logEvents($SETTINGS, 'admin_action', 'restore_missing_sharekeys_started', (string) $session->get('user-id'), $session->get('user-login'));
+
+        // Trigger immediate execution of the background handler
+        triggerBackgroundHandler();
+
+        echo prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => $lang->get('restore_missing_sharekeys_task_launched'),
+                'taskId' => $taskId,
+            ),
+            'encode'
+        );
+        break;
+
+}
+
+/**
+ * Definition of the object scopes handled by the "Restore missing sharekeys"
+ * tool. Each scope maps an object source (aliased "o", personal items excluded)
+ * to its sharekeys table.
+ *
+ * @return array<string, array{table: string, from: string, where: string}>
+ */
+function restoreSharekeysScopeDefs(): array
+{
+    return [
+        'items' => [
+            'table' => 'sharekeys_items',
+            'from' => prefixTable('items') . ' AS o',
+            'where' => 'o.perso = 0',
+        ],
+        'fields' => [
+            'table' => 'sharekeys_fields',
+            'from' => prefixTable('categories_items') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id AND i.perso = 0)',
+            'where' => 'o.encryption_type = "' . TP_ENCRYPTION_NAME . '"',
+        ],
+        'files' => [
+            'table' => 'sharekeys_files',
+            'from' => prefixTable('files') . ' AS o INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.id_item AND i.perso = 0)',
+            'where' => 'o.status = "' . TP_ENCRYPTION_NAME . '"',
+        ],
+    ];
 }

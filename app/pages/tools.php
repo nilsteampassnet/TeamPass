@@ -341,6 +341,43 @@ foreach ($backups as $bck) {
             </form>
         </div>
 
+        <div class='card card-primary'>
+            <div class='card-header'>
+                <h3 class='card-title'><?php echo $lang->get('restore_missing_sharekeys'); ?></h3>
+            </div>
+            <!-- /.card-header -->
+            <!-- form start -->
+            <form role='form-horizontal'>
+                <div class='card-body'>
+
+                    <div class='row mb-3'>
+                        <div class='col-12'>
+                            <small class='form-text text-muted'>
+                                <?php echo $lang->get('restore_missing_sharekeys_tip'); ?>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div class='row mb-3'>
+                        <button type='button' class='btn btn-primary btn-sm tp-action mr-2' id='restore_missing_sharekeys_analyze_but' data-action='restore_missing_sharekeys_analyze_but'>
+                            <i class='fas fa-magnifying-glass mr-2'></i><?php echo $lang->get('restore_missing_sharekeys_analyze'); ?>
+                        </button>
+                        <button type='button' class='btn btn-danger btn-sm tp-action mr-2' id='restore_missing_sharekeys_repair_but' data-action='restore_missing_sharekeys_repair_but' disabled>
+                            <i class='fas fa-wrench mr-2'></i><?php echo $lang->get('restore_missing_sharekeys_repair'); ?>
+                        </button>
+                    </div>
+
+                    <div class='row mb-2'>
+                        <div class='col-12'>
+                            <div id='restore_missing_sharekeys_results'>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+
     </div><!-- /.container-fluid -->
 </div>
 <!-- /.content -->

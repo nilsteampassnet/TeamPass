@@ -639,10 +639,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . $lang->get('tasks') . '</p>
                         </a>
-                    </li>';
-        
-        if (WIP === true) {
-            echo '
+                    </li>
+
                     <li class="nav-item">
                         <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-person-drowning"></i>
@@ -650,9 +648,8 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             ' . $lang->get('tools') . '
                         </p>
                         </a>
-                    </li>';
-        }
-        echo '
+                    </li>
+                    
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-import"></i>

@@ -39,6 +39,7 @@ require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
 require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
 require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
+require_once __DIR__.'/traits/SharekeysRepairTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -47,6 +48,7 @@ class TaskWorker {
     use EmailTrait;
     use MigrateUserHandlerTrait;
     use PhpseclibV3MigrationTrait;
+    use SharekeysRepairTrait;
 
     private int $taskId;
     private string $processType;
@@ -103,6 +105,9 @@ class TaskWorker {
                     break;
                 case 'phpseclibv3_migration':
                     $this->migratePhpseclibV3($this->taskData);
+                    break;
+                case 'restore_missing_sharekeys':
+                    $this->handleRestoreMissingSharekeys($this->taskData);
                     break;
                 case 'database_backup':
                     $this->handleDatabaseBackup($this->taskData);
@@ -1630,6 +1635,7 @@ class TaskWorker {
         }
     
         // Process each subtask
+        $failedSubtasks = [];
         foreach ($subtasks as $subtask) {
             try {
                 // Get the subtask data
@@ -1710,10 +1716,20 @@ class TaskWorker {
                         $subtask['increment_id']
                     );
                     $this->logger->log('processSubTasks : subtask ' . (int) $subtask['increment_id'] . ' permanently failed after ' . $maxRetries . ' retries : ' . $e->getMessage(), 'ERROR');
+                    // A permanently failed subtask must mark the whole task as failed
+                    // (visible in the Tasks page) instead of being silently absorbed
+                    // by a 'completed' status.
+                    $failedSubtasks[] = strval($subtaskData['step'] ?? $subtask['increment_id']) . ': ' . $e->getMessage();
                 }
             }
         }
-    
+
+        // A failed subtask must mark the whole task as failed (visible in the Tasks page)
+        // instead of being silently absorbed by a 'completed' status.
+        if (count($failedSubtasks) > 0) {
+            throw new Exception('Subtask(s) failed - ' . implode(' | ', $failedSubtasks));
+        }
+
         // Are all subtasks completed?
         $remainingSubtasks = DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
