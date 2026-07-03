@@ -1061,6 +1061,7 @@ class BackgroundTasksHandler {
             'migrate_user_personal_items', // modifies personal item sharekeys
             'database_backup',             // disconnects users, heavy I/O
             'externalized_backup',         // disconnects users, heavy I/O
+            'restore_missing_sharekeys',   // iterates all sharekeys tables
         ], true);
     }
 

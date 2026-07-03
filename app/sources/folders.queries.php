@@ -1208,6 +1208,7 @@ if (null !== $post_type) {
             $nodeDescendants = $tree->getDescendants($post_source_folder_id, true, false, false);
             $parentId = '';
             $tabNodes = [];
+            $errorItems = [];
             foreach ($nodeDescendants as $node) {
                 // step1 - copy folder
 
@@ -1354,8 +1355,7 @@ if (null !== $post_type) {
                     $decryptedData = cryption($userTpInfo['pw'], '', 'decrypt', $SETTINGS);
                     $userTpPwd = $decryptedData['string'] ?? '';
                     $userTpPrivateKey = decryptPrivateKey($userTpPwd, $userTpInfo['private_key']);
-                    
-                    $errorItems = [];
+
                     $rows = DB::query(
                         'SELECT *
                         FROM ' . prefixTable('items') . '
@@ -1430,15 +1430,42 @@ if (null !== $post_type) {
                                 );
                                 $newItemId = DB::insertId();
 
+                                // Create sharekeys synchronously for the copier and TP_USER so the
+                                // copied item is immediately usable and stays recoverable when user
+                                // keys are regenerated later. Other users are handled by the
+                                // item_copy background task.
+                                try {
+                                    insertOrUpdateSharekey(
+                                        prefixTable('sharekeys_items'),
+                                        (int) $newItemId,
+                                        (int) $session->get('user-id'),
+                                        encryptUserObjectKey($cryptedStuff['objectKey'], $session->get('user-public_key'))
+                                    );
+                                    if ((int) $nodeInfo->personal_folder !== 1 && (int) $session->get('user-id') !== (int) TP_USER_ID) {
+                                        insertOrUpdateSharekey(
+                                            prefixTable('sharekeys_items'),
+                                            (int) $newItemId,
+                                            (int) TP_USER_ID,
+                                            encryptUserObjectKey($cryptedStuff['objectKey'], $userTpInfo['public_key'])
+                                        );
+                                    }
+                                } catch (Exception $e) {
+                                    // The background task below still covers the distribution
+                                    error_log('TEAMPASS Error - copy_folder - Cannot create synchronous sharekey for item #' . $newItemId . ': ' . $e->getMessage());
+                                }
+
                                 // Create task for the new item
-                                storeTask(
-                                    'item_copy',
-                                    $session->get('user-id'),
-                                    (int) $nodeInfo->personal_folder,
-                                    (int) $newFolderId,
-                                    (int) $newItemId,
-                                    $cryptedStuff['objectKey'],
-                                );
+                                // Personal items must not have their sharekeys distributed to other users
+                                if ((int) $nodeInfo->personal_folder !== 1) {
+                                    storeTask(
+                                        'item_copy',
+                                        $session->get('user-id'),
+                                        (int) $nodeInfo->personal_folder,
+                                        (int) $newFolderId,
+                                        (int) $newItemId,
+                                        $cryptedStuff['objectKey'],
+                                    );
+                                }
 
                                 // Add this duplicate in logs
                                 logItems(
@@ -1461,6 +1488,10 @@ if (null !== $post_type) {
 
                                 // Add item to cache table
                                 updateCacheTable('add_value', (int) $newItemId);
+                            } else {
+                                // TP_USER has no sharekey for this item: it cannot be decrypted, item is skipped
+                                $errorItems[] = $record['label'];
+                                error_log('TEAMPASS Error - copy_folder - No TP_USER sharekey for item #' . $record['id'] . ' (' . $record['label'] . ') - item not copied');
                             }
                         }
                     }
