@@ -39,6 +39,7 @@ require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
 require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
 require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
+require_once __DIR__.'/traits/SharekeysRepairTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -47,6 +48,7 @@ class TaskWorker {
     use EmailTrait;
     use MigrateUserHandlerTrait;
     use PhpseclibV3MigrationTrait;
+    use SharekeysRepairTrait;
 
     private int $taskId;
     private string $processType;
@@ -99,6 +101,9 @@ class TaskWorker {
                     break;
                 case 'phpseclibv3_migration':
                     $this->migratePhpseclibV3($this->taskData);
+                    break;
+                case 'restore_missing_sharekeys':
+                    $this->handleRestoreMissingSharekeys($this->taskData);
                     break;
                 case 'database_backup':
                     $this->handleDatabaseBackup($this->taskData);

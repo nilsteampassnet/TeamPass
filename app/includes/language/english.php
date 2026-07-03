@@ -29,6 +29,19 @@
  */
 
 return array(
+    'restore_missing_sharekeys' => 'Restore missing sharekeys',
+    'restore_missing_sharekeys_tip' => 'This tool detects and recreates missing encryption sharekeys (items, custom fields and files). Users without a sharekey see the object but cannot decrypt it (crossed-out password icon). The analysis is a read-only pass. The repair first restores the missing TP internal account reference keys using your own account, then a background task distributes the missing keys to every user. Only missing keys are created - existing keys are never modified. Personal items are excluded.',
+    'restore_missing_sharekeys_analyze' => 'Analyze',
+    'restore_missing_sharekeys_repair' => 'Repair',
+    'restore_missing_sharekeys_objects' => 'Objects',
+    'restore_missing_sharekeys_missing_pairs' => 'Missing sharekeys',
+    'restore_missing_sharekeys_tp_missing' => 'Objects without reference key',
+    'restore_missing_sharekeys_unrecoverable' => 'Not automatically recoverable',
+    'restore_missing_sharekeys_no_missing' => 'No missing sharekey detected. Nothing to repair.',
+    'restore_missing_sharekeys_found' => 'Missing sharekeys were detected. Click the Repair button to recreate them.',
+    'restore_missing_sharekeys_unrecoverable_tip' => 'Some objects have no usable reference key: neither the TP internal account nor your account can decrypt them. Ask a user who can still open these objects to re-save them; this recreates the keys for everyone.',
+    'restore_missing_sharekeys_task_exists' => 'A sharekeys repair task is already pending or running. Please wait for it to complete.',
+    'restore_missing_sharekeys_task_launched' => 'The repair task has been launched. The missing sharekeys are being recreated in the background; progress is visible on the Tasks page.',
     'remaining_lock_time' => 'Remaining lock time',
     'extension_promo_text' => 'Enhance your TeamPass experience and access the passwords directly from your browser!',
     'learn_more' => 'Learn more',
