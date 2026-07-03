@@ -1620,6 +1620,7 @@ class TaskWorker {
         }
     
         // Process each subtask
+        $failedSubtasks = [];
         foreach ($subtasks as $subtask) {
             try {
                 // Get the subtask data
@@ -1678,15 +1679,22 @@ class TaskWorker {
                 );
         
                 $this->logger->log('processSubTasks : ' . $e->getMessage(), 'ERROR');
+                $failedSubtasks[] = strval($subtaskData['step'] ?? $subtask['increment_id']) . ': ' . $e->getMessage();
             }
         }
-    
+
+        // A failed subtask must mark the whole task as failed (visible in the Tasks page)
+        // instead of being silently absorbed by a 'completed' status.
+        if (count($failedSubtasks) > 0) {
+            throw new Exception('Subtask(s) failed - ' . implode(' | ', $failedSubtasks));
+        }
+
         // Are all subtasks completed?
         $remainingSubtasks = DB::queryFirstField(
             'SELECT COUNT(*) FROM ' . prefixTable('background_subtasks') . ' WHERE task_id = %i AND is_in_progress = 0',
             $this->taskId
         );
-    
+
         if (intval($remainingSubtasks) === 0) {
             $this->completeTask();
         }

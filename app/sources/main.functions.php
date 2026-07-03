@@ -4414,29 +4414,37 @@ function storeUsersShareKey(
     $rows = [];
     $processedUserIds = [];
     foreach ($users as $user) {
-        if (count($objectKeyArray) === 0) {
-            if (WIP === true) {
-                error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
-            }
-            $rows[] = [
-                'object_id'          => $post_object_id,
-                'user_id'            => (int) $user['id'],
-                'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
-                'encryption_version' => 3,
-            ];
-        } else {
-            foreach ($objectKeyArray as $object) {
+        try {
+            if (count($objectKeyArray) === 0) {
                 if (WIP === true) {
-                    error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                    error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
                 }
                 $rows[] = [
-                    'object_id'          => (int) $object['objectId'],
+                    'object_id'          => $post_object_id,
                     'user_id'            => (int) $user['id'],
-                    'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
+                    'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
                     'encryption_version' => 3,
                 ];
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    if (WIP === true) {
+                        error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                    }
+                    $rows[] = [
+                        'object_id'          => (int) $object['objectId'],
+                        'user_id'            => (int) $user['id'],
+                        'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                }
             }
+        } catch (Exception $e) {
+            // One user with an invalid public key must not abort the distribution
+            // to all the other users. Log and continue with the next user.
+            error_log('TEAMPASS Error - storeUsersShareKey - Cannot encrypt object key for user #' . $user['id'] . ' (' . $object_name . ' / object ' . $post_object_id . '): ' . $e->getMessage());
         }
+        // The user stays in the eligible list even on encryption failure so the
+        // stale-key cleanup below never deletes an existing sharekey.
         $processedUserIds[] = (int) $user['id'];
     }
 
