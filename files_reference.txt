@@ -56,7 +56,7 @@ app/api/inc/jwt_utils.php c4fdb16d884ae2f661f1bf263bd095b2
 app/api/index.php dc8ac9bf3867769240cb185cdd7aa818
 app/api/openapi.json 66b578346b4a8571b8ee3494a195afea
 app/config/.htaccess 81594a7af3d0a392c24aada056204b79
-app/config/include.php 2db610f340d5bf546bfc83a02741e9b0
+app/config/include.php bf4aff63de5b753eae490243b1d16ead
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 app/core/extension-autoconfig.js.php 55768fb83ec46e63557dcb0bb247d22d
@@ -390,7 +390,8 @@ app/scripts/background_tasks___worker.php 5da8a9b07f714d587b76eff689391e3a
 app/scripts/fix_integrity_hash.php f7483329917bbe00bf7ba5b74825bd8f
 app/scripts/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/scripts/migrate_tp_user_to_v3.php 80a279dd0f24edcd4d2982e0c5a9330f
-app/scripts/repair_phpseclib_migration.php 877dca42f476703babad102f23b8fce2
+app/scripts/read-db-version.php 8a3ef889ad775d3ca860a8031f69311c
+app/scripts/repair_phpseclib_migration.php deab217c6273e229c69abfe2a44c5294
 app/scripts/repair_unencrypted_fields.php bd1e7f659549ea1eb3d798a4795e6a9f
 app/scripts/restore.php 7b7ee5bdf106cb61a83a249bd88c0dd3
 app/scripts/scan_corrupted_items.php 8ed13a89439a07991402abed8774b736
@@ -404,7 +405,7 @@ app/scripts/traits/EmailTrait.php 343c0d521fc58129b140757e59e5d56b
 app/scripts/traits/ItemHandlerTrait.php fa320a09dd304072fcebb8c6c915a074
 app/scripts/traits/MigrateUserHandlerTrait.php c60107fd75653b603f1394e763ed29b0
 app/scripts/traits/PhpseclibV3MigrationTrait.php a53a411cb0a916331a1448312eb48292
-app/scripts/traits/SharekeysRepairTrait.php 23daca7d12bb2f15b8232340650e6bb8
+app/scripts/traits/SharekeysRepairTrait.php bd55c537af3d35368369b485dd8c2df4
 app/scripts/traits/UserHandlerTrait.php 219137996751323b828ab09001d53c3b
 app/sources/.rnd 6627d0aac5e5c898db3a5ec8dc7e97c2
 app/sources/admin.queries.php 9e081b26fdc327c7f34bc7f7e26a6c7a
@@ -436,7 +437,7 @@ app/sources/phpseclibv3_migration.queries.php 9da371c5ab6849c541bd95633071e360
 app/sources/roles.queries.php 3798a5741f849c28e2e62fc46972a74f
 app/sources/scheduler.php d6d6b9a8f6483028a8aa0c19e3397435
 app/sources/tasks.queries.php ff8579deabd2325706047544696f7768
-app/sources/tools.queries.php 5747293660e38949d9e9a6b5e991e864
+app/sources/tools.queries.php 7c6bad7f17536671b696acb48957bf06
 app/sources/tree.php 38307a41a72907abfb82f4331c372b96
 app/sources/upload.attachments.php 75ec94510593e030ad0d1dfa0f2b1900
 app/sources/upload.files.php 1a9610eeddaaee649a5cab7e8741e3cb
@@ -7711,7 +7712,7 @@ docker/docker-compose/.env cd0657fd00afd8fc3aefae8545059550
 docker/docker-compose/.env.example 113391f611f45d8218c0060450bffb8e
 docker/docker-compose/docker-compose.with-proxy.yml 83d375ae0c3327217d8b74977963ef23
 docker/docker-compose/docker-compose.yml b86e4abdaa7dd796781997156e281fcd
-docker/docker-entrypoint.sh f43a68a47edb23210776d1832ece8a31
+docker/docker-entrypoint.sh 5c6a1e45a33c892352cf40099df29b0d
 docker/mariadb/custom.cnf 1a8ddebad57033b7337aff9d59ff8138
 docker/nginx/nginx.conf f84d0d0bd251af0f394bb06564478e52
 docker/nginx/proxy-client-max-body-size.conf 1e52356bd7d5adea5bb39e2c38c9c3c7
@@ -7999,8 +8000,8 @@ public/install/libs/aesctr.php 55082d6316daf9c3a92490e8e81f3343
 public/install/migrate_users_to_v3.php 4b95d793a8018d3ba0eda02bd9f63917
 public/install/scripts/websocket_migration.php 843d196f778685e09eff82b681ca5a13
 public/install/tp.functions.php c9d3d80cd6c14f2309ff6b9a411ed190
-public/install/upgrade.php 9f42ae5e84e5d0e3bc9cceed87a93991
-public/install/upgrade_ajax.php c18444fd2bb2921405b1bac0111ebfd6
+public/install/upgrade.php 166a549c7c849bfd2b9002a6caae205a
+public/install/upgrade_ajax.php e0427c10acb4d704d578dc3f3f01ebf0
 public/install/upgrade_operations.php 0fc863953957aaac8de3786677c80514
 public/install/upgrade_run_3.0.0.php 5fe1ed29b3dd30adad1d35390fd933eb
 public/install/upgrade_run_3.0.0_fields.php 44db97cd185fa8e7da64bd3de281e3c9
