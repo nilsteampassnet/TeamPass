@@ -362,6 +362,7 @@ if (isset($post_type)) {
             $okTasksManager        = true;
             $okTUsersPasswordsSymfony = true;
             $okEncryptKey          = true;
+            $okEngines             = true;
             $checks                = [];
 
             // ── Directories ──────────────────────────────────────────────
@@ -474,6 +475,33 @@ if (isset($post_type)) {
             }
             $checks[] = ['id' => 'upg-chk-mysql-version', 'status' => $ok ? 'ok' : 'error', 'fix' => ''];
 
+            // Database storage engine — every TeamPass table must be InnoDB.
+            // MyISAM caps an index key at 1000 bytes while the upgrade scripts create
+            // indexes sized for InnoDB's 3072-byte prefix limit; on a legacy MyISAM
+            // install the migration aborts with "Specified key was too long" (issue #5268).
+            $badEngineTables = [];
+            $engineRes = mysqli_query(
+                $db_link,
+                "SELECT TABLE_NAME, ENGINE
+                 FROM information_schema.TABLES
+                 WHERE TABLE_SCHEMA = '" . mysqli_real_escape_string($db_link, $database) . "'
+                   AND TABLE_NAME LIKE '" . mysqli_real_escape_string($db_link, $pre) . "%'
+                   AND ENGINE IS NOT NULL
+                   AND ENGINE <> 'InnoDB'"
+            );
+            if ($engineRes !== false) {
+                while ($engineRow = mysqli_fetch_assoc($engineRes)) {
+                    $badEngineTables[] = $engineRow['TABLE_NAME'] . ' (' . $engineRow['ENGINE'] . ')';
+                }
+                mysqli_free_result($engineRes);
+            }
+            $okEngines = count($badEngineTables) === 0;
+            $checks[] = [
+                'id'     => 'upg-chk-db-engine',
+                'status' => $okEngines ? 'ok' : 'error',
+                'fix'    => $okEngines ? '' : implode(', ', $badEngineTables),
+            ];
+
             // Encryption key — check that the key file actually exists and is readable
             $okEncryptKey = file_exists(TEAMPASS_SECRETS.'/'.SECUREFILE) && is_readable(TEAMPASS_SECRETS.'/'.SECUREFILE);
             $checks[] = ['id' => 'upg-chk-encrypt-key', 'status' => $okEncryptKey ? 'ok' : 'error', 'fix' => ''];
@@ -533,7 +561,7 @@ if (isset($post_type)) {
             $checks[] = ['id' => 'upg-chk-redis', 'status' => extension_loaded('redis') ? 'ok' : 'info', 'fix' => ''];
 
             // ── Final error state ─────────────────────────────────────────
-            if ($okWritable && $okExtensions && $okEncryptKey && $okTasksManager && $okTUsersPasswordsSymfony) {
+            if ($okWritable && $okExtensions && $okEncryptKey && $okTasksManager && $okTUsersPasswordsSymfony && $okEngines) {
                 $error    = '';
                 $nextStep = 2;
             } else {

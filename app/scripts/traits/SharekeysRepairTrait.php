@@ -29,10 +29,12 @@
 trait SharekeysRepairTrait {
 
     /**
-     * Restore missing sharekeys for all eligible users, using TP_USER as the
-     * reference key holder. Personal items are excluded. Only missing (or empty)
-     * sharekeys are created - existing keys are never overwritten, making the
-     * operation idempotent and safe to relaunch.
+     * Restore missing or broken sharekeys for all eligible users, using TP_USER
+     * as the reference key holder. Personal items are excluded. Missing, empty
+     * and legacy v1 sharekeys are (re)built from the TP_USER object key; valid
+     * v3 keys are never overwritten, so the operation stays idempotent and safe
+     * to relaunch. Rebuilding leftover v1 keys also clears the "inconsistent
+     * user" state that leaves custom fields unreadable after an upgrade (#5252).
      *
      * Launched from the Tools page ('restore_missing_sharekeys' background task).
      *
@@ -98,7 +100,7 @@ trait SharekeysRepairTrait {
                 (string) $userTpInfo['public_key'],
                 $users
             );
-            $summary[] = $scopeName . ': ' . $result['created'] . ' key(s) created, '
+            $summary[] = $scopeName . ': ' . $result['created'] . ' key(s) created/rebuilt, '
                 . $result['unrecoverable'] . ' object(s) without reference key';
         }
         $summaryText = implode(' | ', $summary);
@@ -112,10 +114,12 @@ trait SharekeysRepairTrait {
     }
 
     /**
-     * Restore missing sharekeys for one object type (items, fields or files).
-     * Objects are walked in id-ascending batches; for each object missing at
-     * least one user key, the object key is decrypted with the TP_USER sharekey
-     * and re-encrypted for every missing user.
+     * Restore missing or broken sharekeys for one object type (items, fields or
+     * files). Objects are walked in id-ascending batches; for each object with
+     * at least one user key missing or still in legacy v1 encryption, the object
+     * key is decrypted with the TP_USER sharekey and re-encrypted (as v3) for
+     * every such user. A legacy v1 row is overwritten in place via the
+     * (object_id, user_id) unique key.
      *
      * @param string $objectsQuery Paginated query returning object ids (placeholders: lastId, limit)
      * @param string $sharekeysTable Sharekeys table name (without prefix)
@@ -155,12 +159,17 @@ trait SharekeysRepairTrait {
             }
             $lastId = max($objectIds);
 
-            // Map of existing valid sharekeys for the batch (object -> users)
+            // Map of existing VALID sharekeys for the batch (object -> users).
+            // Only non-empty v3 keys count as valid: a legacy v1 key that
+            // survived a "completed" migration is very likely broken (it never
+            // self-migrated on access), which leaves custom fields unreadable
+            // (issue #5252). Missing, empty and v1 keys are all rebuilt in place
+            // from the authoritative TP_USER object key below.
             $existing = [];
             $pairs = DB::query(
                 'SELECT object_id, user_id
                 FROM ' . prefixTable($sharekeysTable) . '
-                WHERE object_id IN %li AND share_key != ""',
+                WHERE object_id IN %li AND share_key != "" AND encryption_version = 3',
                 $objectIds
             );
             foreach ($pairs as $pair) {
@@ -182,13 +191,15 @@ trait SharekeysRepairTrait {
 
             $newRows = [];
             foreach ($objectIds as $objectId) {
-                $missingUserIds = [];
+                // Users with no valid v3 key: either missing entirely or still
+                // holding a broken/legacy v1 key that must be rebuilt.
+                $rebuildUserIds = [];
                 foreach ($eligibleIds as $userId) {
                     if (isset($existing[$objectId][$userId]) === false) {
-                        $missingUserIds[] = $userId;
+                        $rebuildUserIds[] = $userId;
                     }
                 }
-                if (count($missingUserIds) === 0) {
+                if (count($rebuildUserIds) === 0) {
                     continue;
                 }
                 if (isset($tpRefs[$objectId]) === false) {
@@ -210,7 +221,7 @@ trait SharekeysRepairTrait {
                     continue;
                 }
 
-                foreach ($missingUserIds as $userId) {
+                foreach ($rebuildUserIds as $userId) {
                     try {
                         $newRows[] = [
                             'object_id'          => $objectId,

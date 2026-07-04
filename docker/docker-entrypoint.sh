@@ -235,26 +235,19 @@ auto_install() {
 }
 
 # Read the TeamPass version recorded in the database.
-# Tries the current key (teampass_version) first, then the legacy key
-# (cpassman_version) used by TeamPass 3.1.5.x and earlier — so a database
-# migrated from an older on-premise install is detected correctly (issue #5238).
+# Delegates to a PHP helper that connects with the credentials stored in
+# app/config/settings.php (the installed source of truth) using the bundled
+# mysqli extension. This avoids depending on the "mysql" client binary, which
+# is not part of the image and made the auto-upgrade fail silently (issue
+# #5266), and removes the reliance on environment variables for the upgrade.
+# The helper already tries the current key (teampass_version) then the legacy
+# key (cpassman_version) used by TeamPass 3.1.5.x and earlier (issue #5238).
 # Echoes the version string, or nothing when it cannot be read.
 read_db_version() {
-    if [ -z "$DB_PASSWORD" ]; then
-        return 0
+    _helper="/var/www/html/app/scripts/read-db-version.php"
+    if [ -f "$_helper" ]; then
+        php "$_helper" 2>/dev/null || true
     fi
-
-    _db_version=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-        "$DB_NAME" --skip-column-names --silent \
-        -e "SELECT valeur FROM ${DB_PREFIX}misc WHERE type='admin' AND intitule='teampass_version' LIMIT 1" 2>/dev/null || true)
-
-    if [ -z "$_db_version" ]; then
-        _db_version=$(mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" \
-            "$DB_NAME" --skip-column-names --silent \
-            -e "SELECT valeur FROM ${DB_PREFIX}misc WHERE type='admin' AND intitule='cpassman_version' LIMIT 1" 2>/dev/null || true)
-    fi
-
-    echo "$_db_version"
 }
 
 # Function to run pending database migrations when the container image is
@@ -262,12 +255,9 @@ read_db_version() {
 # idempotent (CREATE TABLE IF NOT EXISTS / ALTER ... IF NOT EXISTS), so it is
 # safe to re-run them on an already up-to-date database.
 auto_upgrade() {
-    if [ -z "$DB_PASSWORD" ]; then
-        echo -e "${YELLOW}⚠️  DB_PASSWORD not set, skipping auto-upgrade check${NC}"
-        return 0
-    fi
-
-    # Read the version stored in the database (current or legacy key)
+    # Read the version stored in the database (current or legacy key). The
+    # helper reads the DB credentials from settings.php, so no environment
+    # variable is required here for an already-installed instance.
     DB_VERSION=$(read_db_version)
 
     if [ -z "$DB_VERSION" ]; then
@@ -291,13 +281,10 @@ auto_upgrade() {
         return 0
     fi
 
-    php "$UPGRADE_SCRIPT" \
-        --db-host="$DB_HOST" \
-        --db-port="$DB_PORT" \
-        --db-name="$DB_NAME" \
-        --db-user="$DB_USER" \
-        --db-password="$DB_PASSWORD" \
-        --db-prefix="$DB_PREFIX"
+    # The upgrade script bootstraps through loadClasses('DB'), which reads the
+    # connection parameters (and decrypts the DB password) from settings.php,
+    # so no --db-* arguments / environment variables are needed here.
+    php "$UPGRADE_SCRIPT"
 
     if [ $? -eq 0 ]; then
         echo -e "${GREEN}✅ Database upgrade to ${IMAGE_VERSION} completed${NC}"
@@ -365,15 +352,18 @@ main() {
         # version is newer than the version recorded in teampass_misc.
         auto_upgrade
 
-        # Remove the install directory only when the database is already at the
-        # image version. While an upgrade is pending (e.g. a database migrated
-        # from an older on-premise install), the install directory is kept so
-        # that /install/upgrade.php remains reachable to finish the upgrade
-        # through the web wizard (issue #5238). If the version cannot be read,
-        # the directory is removed (preserves the previous hardening default).
+        # Remove the install directory only when the database is confirmed to be
+        # already at the image version. While an upgrade is pending (e.g. a
+        # database migrated from an older on-premise install), the install
+        # directory is kept so that /install/upgrade.php remains reachable to
+        # finish the upgrade through the web wizard (issue #5238). If the version
+        # cannot be read, the directory is also kept: removing it would strand a
+        # possibly-pending upgrade with no way to recover (issue #5266).
         if [ -d "/var/www/html/public/install" ]; then
             CURRENT_DB_VERSION=$(read_db_version)
-            if [ -n "$CURRENT_DB_VERSION" ] && [ "$CURRENT_DB_VERSION" != "${TP_VERSION:-${TEAMPASS_VERSION}}" ]; then
+            if [ -z "$CURRENT_DB_VERSION" ]; then
+                echo -e "${YELLOW}⚠️  Could not read DB version; keeping install directory so /install/upgrade.php stays reachable${NC}"
+            elif [ "$CURRENT_DB_VERSION" != "${TP_VERSION:-${TEAMPASS_VERSION}}" ]; then
                 echo -e "${YELLOW}⏳ Upgrade pending (DB ${CURRENT_DB_VERSION} → ${TP_VERSION:-${TEAMPASS_VERSION}}); keeping install directory for /install/upgrade.php${NC}"
             else
                 echo -e "${BLUE}🗑️  Removing install directory...${NC}"

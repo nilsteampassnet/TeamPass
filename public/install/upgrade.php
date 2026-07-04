@@ -456,6 +456,7 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                 <li class="mb-1 ml-3"></span><span class="text-muted">PHP max_execution_time &ge; 30&thinsp;s</span> <span class="badge badge-secondary">required</span><span id="upg-chk-exec-time" style="min-width:20px" class="ml-2"></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">PHP version &ge; '.MIN_PHP_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-php-version" style="min-width:20px" class="ml-2"></span></li>
                                 <li class="mb-1 ml-3"></span><span class="text-muted">MySQL &ge; '.MIN_MYSQL_VERSION.' / MariaDB &ge; '.MIN_MARIADB_VERSION.'</span> <span class="badge badge-secondary">required</span><span id="upg-chk-mysql-version" style="min-width:20px" class="ml-2"></li>
+                                <li class="mb-1 ml-3"><span class="text-muted">Database storage engine (all tables on <code>InnoDB</code>)</span> <span class="badge badge-secondary">required</span><span id="upg-chk-db-engine" style="min-width:20px" class="ml-2"></span><div id="upg-chk-db-engine-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i>The following tables use an unsupported engine: <code id="upg-chk-db-engine-list"></code>. Convert each one with <code>ALTER TABLE &lt;table&gt; ENGINE=InnoDB;</code> before upgrading.</div></li>
                                 <li class="mb-1 ml-3"></span><span class="text-muted">Encryption key (TEAMPASS_SECRETS)</span> <span class="badge badge-secondary">required</span><span id="upg-chk-encrypt-key" style="min-width:20px" class="ml-2"></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">Background tasks queue is empty</span> <span class="badge badge-secondary">required</span><span id="upg-chk-tasks" style="min-width:20px" class="ml-2"></span></li>
                                 <li class="mb-1 ml-3"><span class="text-muted">User password hashes compatibility</span> <span class="badge badge-light border">verified</span><span id="upg-chk-passwords" style="min-width:20px" class="ml-2"></span><div id="upg-chk-passwords-hint" class="text-danger small d-none mt-1"><i class="fas fa-wrench mr-1"></i><code>Some users still have their password hashed with the old algorithm. They need to log in to have their password automatically updated.</code></div></li>
@@ -988,6 +989,9 @@ $(function(){
                             $('#' + chk.id).html(iconMapErr[chk.status] || '')
                             if (chk.fix && chk.status !== 'ok') {
                                 $('#' + chk.id + '-hint').removeClass('d-none')
+                                if ($('#' + chk.id + '-list').length) {
+                                    $('#' + chk.id + '-list').text(chk.fix)
+                                }
                             }
                         })
                         $('#res_step1').removeClass('hidden')
@@ -1021,6 +1025,9 @@ $(function(){
                                 $('#' + chk.id).html(iconMap[chk.status] || '')
                                 if (chk.fix && chk.status !== 'ok') {
                                     $('#' + chk.id + '-hint').removeClass('d-none')
+                                    if ($('#' + chk.id + '-list').length) {
+                                        $('#' + chk.id + '-list').text(chk.fix)
+                                    }
                                 }
                             })
                         }
