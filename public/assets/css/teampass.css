@@ -267,6 +267,124 @@
     bottom: 0px;
 }
 
+.tp-brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 57px;
+    overflow: hidden;
+}
+
+.tp-brand-home-link {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    color: inherit;
+    text-decoration: none !important;
+}
+
+.tp-brand-home-link:hover,
+.tp-brand-home-link:focus {
+    color: inherit;
+    text-decoration: none !important;
+}
+
+.tp-brand-home-link .brand-image {
+    float: none;
+    position: static;
+    margin: 0 0.5rem 0 0.2rem;
+    flex: 0 0 auto;
+}
+
+.tp-brand-home-link .brand-text {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.tp-sidebar-version-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    min-height: 22px;
+    max-width: 92px;
+    padding: 2px 7px;
+    margin-right: 8px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    overflow: hidden;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    white-space: nowrap;
+    color: #212529 !important;
+    background: #ffc107;
+    box-shadow: inset 0 0 0 1px rgba(33, 37, 41, 0.08);
+    text-decoration: none !important;
+}
+
+.tp-sidebar-version-badge span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tp-sidebar-version-badge:hover,
+.tp-sidebar-version-badge:focus {
+    color: #212529 !important;
+    background: #e0a800;
+    text-decoration: none !important;
+}
+
+.sidebar-collapse .tp-sidebar-version-badge,
+.sidebar-closed .tp-sidebar-version-badge {
+    display: none !important;
+}
+
+.tp-admin-version-alert {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    vertical-align: middle;
+    max-width: 100%;
+    margin: 0 0 0 0.7rem;
+    padding: 0.22rem 0.5rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 0.2rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
+    font-size: 0.86rem;
+    line-height: 1.25;
+}
+
+.tp-admin-version-alert i {
+    margin-right: 0 !important;
+    opacity: 0.85;
+    font-size: 0.8rem;
+}
+
+.tp-admin-version-alert-link {
+    margin-left: 0.2rem !important;
+    color: #fff !important;
+    font-weight: 600;
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 2px;
+    white-space: nowrap;
+}
+
+.tp-admin-version-alert-link:hover,
+.tp-admin-version-alert-link:focus {
+    color: #fff !important;
+    text-decoration: underline;
+}
+
 #sidebar-footer {
     display: flex;
     align-items: center;
@@ -398,6 +516,10 @@
 }
 
 @media (max-width: 767.98px) {
+    .tp-sidebar-version-badge {
+        display: none !important;
+    }
+
     .tp-online-users-drawer {
         width: min(340px, calc(100vw - 1rem));
     }
