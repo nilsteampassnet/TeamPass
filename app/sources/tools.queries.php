@@ -1103,12 +1103,16 @@ case 'perform_fix_pf_items-step3':
         $def = $scopeDefs[$scopeName];
         $batchSize = 25;
 
-        // Objects the admin can decrypt but for which TP_USER has no valid key
+        // Objects the admin can decrypt but for which TP_USER has no valid v3 key.
+        // A leftover legacy v1 key on TP_USER is treated as "not good enough"
+        // (it may be broken and fail to decrypt server-side): the admin's
+        // in-session key re-seeds TP_USER as v3, so the object stays recoverable
+        // by the background task even when TP_USER's own key was broken (#5252).
         $rows = DB::query(
             'SELECT o.id AS object_id, ska.share_key AS admin_share_key, ska.increment_id AS admin_key_id
             FROM ' . $def['from'] . '
             INNER JOIN ' . prefixTable($def['table']) . ' AS ska ON (ska.object_id = o.id AND ska.user_id = %i AND ska.share_key != "")
-            LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "")
+            LEFT JOIN ' . prefixTable($def['table']) . ' AS sk ON (sk.object_id = o.id AND sk.user_id = ' . TP_USER_ID . ' AND sk.share_key != "" AND sk.encryption_version = 3)
             WHERE ' . $def['where'] . ' AND sk.increment_id IS NULL AND o.id > %i
             ORDER BY o.id ASC
             LIMIT %i',
