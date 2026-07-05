@@ -111,6 +111,16 @@ $chunk = $request->request->filter('chunk', 0, FILTER_SANITIZE_NUMBER_INT);
 $chunks = $request->request->filter('chunks', 0, FILTER_SANITIZE_NUMBER_INT);
 $fileName = $request->request->filter('name', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
+// Security (GHSA-wwxq-c766-v93w): the destination path is built from this value, so it must be a
+// bare file name. FILTER_SANITIZE_FULL_SPECIAL_CHARS does not strip path separators, so reject any
+// traversal attempt and keep only the base name before it is ever concatenated to a path.
+$fileName = str_replace('\\', '/', $fileName);
+if ($fileName === '' || $fileName === '.' || $fileName === '..' || strpos($fileName, '/') !== false) {
+    echo handleUploadError('Invalid file name.');
+    return false;
+}
+$fileName = basename($fileName);
+
 // token check
 if (null === $post_user_token) {
     echo handleUploadError('No user token found.');
@@ -241,8 +251,10 @@ if ($file) {
     // Check that file is a valid string
     $originalName = $file->getClientOriginalName();
     if (is_string($originalName)) {
-        // Get file extension
-        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        // Security (GHSA-wwxq-c766-v93w): validate the extension against the value actually used to
+        // name the file on disk ($fileName), not the client-supplied multipart name, so the two
+        // identifiers can no longer diverge to bypass the allow-list.
+        $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
     } else {
         // Case where the file name is not a string
         error_log('Invalid file name: ' . $file_name . '.');
@@ -311,6 +323,17 @@ if ($chunks < 2 && file_exists($targetDir . DIRECTORY_SEPARATOR . $fileName)) {
 }
 
 $filePath = $targetDir . DIRECTORY_SEPARATOR . $fileName;
+
+// Defense in depth (GHSA-wwxq-c766-v93w): make sure the resolved destination directory stays inside
+// the storage directory before any write, rejecting anything that would escape it.
+$resolvedDir = realpath(dirname($filePath));
+if (
+    $resolvedDir === false
+    || strpos($resolvedDir . DIRECTORY_SEPARATOR, $targetDir . DIRECTORY_SEPARATOR) !== 0
+) {
+    echo handleUploadError('Invalid file path.');
+    return false;
+}
 
 // Create target dir
 if (!file_exists($targetDir)) {
