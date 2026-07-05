@@ -283,7 +283,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             // F8: one-click "fix" — deep-link straight to the item editor (generator ready).
             tdBadges.append(
                 $('<a>').attr('href', itemLink + '&action=edit')
-                    .addClass('btn btn-xs btn-outline-danger ml-1 infotip')
+                    .addClass('btn btn-xs btn-light ml-1 infotip')
                     .attr('title', TP_DASH.strings.fix)
                     .html('<i class="fa-solid fa-wrench"></i>')
             );
