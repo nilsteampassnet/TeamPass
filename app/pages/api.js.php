@@ -83,6 +83,29 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     $('[data-mask]').inputmask();
 
+    function filterApiUsersTable() {
+        const criteria = ($('#api-users-search').val() || '').toString().trim().toLowerCase();
+        const $rows = $('#table-api-keys tbody tr');
+        let visibleRows = 0;
+
+        $rows.each(function() {
+            const userIdentity = $(this).find('td:first').text().toLowerCase();
+            const isVisible = criteria === '' || userIdentity.indexOf(criteria) !== -1;
+
+            $(this).toggleClass('hidden', isVisible === false);
+            if (isVisible === true) {
+                visibleRows++;
+            }
+        });
+
+        $('#api-search-no-results').toggleClass(
+            'hidden',
+            criteria === '' || visibleRows > 0 || $rows.length === 0
+        );
+    }
+
+    $(document).on('input keyup search', '#api-users-search', filterApiUsersTable);
+
     /**
      * TOGGLE API STATUS (ENABLED/DISABLED)
      */
