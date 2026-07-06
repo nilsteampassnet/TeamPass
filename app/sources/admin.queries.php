@@ -2387,7 +2387,22 @@ case 'save_sending_statistics':
             );
             break;
         }
-        
+
+        // SECURITY (GHSA-x8jf-9g87-j232): the column name comes from the request, so restrict it to
+        // the toggle fields exposed by the API users table. This page is admin-only, but the
+        // allow-list prevents any arbitrary column from being written into the api table.
+        $writableApiFields = ['enabled', 'allowed_to_create', 'allowed_to_read', 'allowed_to_update', 'allowed_to_delete'];
+        if (in_array($post_field, $writableApiFields, true) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //update.
         DB::debugMode(false);
         DB::update(

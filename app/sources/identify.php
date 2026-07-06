@@ -551,10 +551,10 @@ function identifyUser(string $sentData, array $SETTINGS): bool
             // must be re-injected after every DB reload; otherwise shouldUserAuthWithOauth2()
             // treats the request as a plain-password attempt and returns error_bad_credentials
             // for any user whose auth_type is 'oauth2'.
-            $userInfo['oauth2_login_ongoing'] = filter_var(
-                $session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false,
-                FILTER_VALIDATE_BOOLEAN
-            );
+            // The flag is honored only when the submitted login matches the authenticated
+            // OAuth2 subject stored in session, otherwise it could be replayed against any
+            // account (GHSA-2mvr-v9w8-34c7).
+            $userInfo['oauth2_login_ongoing'] = isOauth2LoginBoundToUser((string) $username);
         }
     }
 
@@ -2897,8 +2897,11 @@ class initialChecks {
             throw new Exception("error_user_deleted_exists");
         }
 
-        // We cannot create a user with LDAP if the OAuth2 login is ongoing
-        $data['oauth2_login_ongoing'] = filter_var($session->get('userOauth2Info')['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN);
+        // We cannot create a user with LDAP if the OAuth2 login is ongoing.
+        // The flag is honored only when the submitted login matches the authenticated
+        // OAuth2 subject stored in session, otherwise it could be replayed against any
+        // account or drive an unintended user creation (GHSA-2mvr-v9w8-34c7).
+        $data['oauth2_login_ongoing'] = isOauth2LoginBoundToUser((string) $login);
     
         $data['ldap_user_to_be_created'] = (
             filter_var($enable_ad_user_auto_creation, FILTER_VALIDATE_BOOLEAN) &&
@@ -3186,12 +3189,77 @@ function identifyDoLDAPChecks(
 }
 
 
+/**
+ * Return the TeamPass login bound to the current OAuth2 session subject.
+ *
+ * The authenticated OAuth2 identity is asserted by the provider (not the client)
+ * and stored in the PHP session as 'userPrincipalName'. TeamPass derives the local
+ * login from the part before '@', mirroring includes/core/login.php. Returns an
+ * empty string when no OAuth2 round-trip is in progress or no subject is available.
+ *
+ * @return string Canonical login of the OAuth2 subject, or '' when none.
+ */
+function oauth2SessionSubjectLogin(): string
+{
+    $session = SessionManager::getSession();
+    $oauth2Info = $session->get('userOauth2Info');
+
+    if (is_array($oauth2Info) === false
+        || filter_var($oauth2Info['oauth2LoginOngoing'] ?? false, FILTER_VALIDATE_BOOLEAN) !== true
+    ) {
+        return '';
+    }
+
+    $subject = (string) ($oauth2Info['userPrincipalName'] ?? '');
+    if ($subject === '') {
+        return '';
+    }
+
+    // Use the local part before '@' when present (Azure UPN / email),
+    // otherwise the full identifier (e.g. Keycloak preferred_username).
+    $localPart = strstr($subject, '@', true);
+    return $localPart === false ? $subject : $localPart;
+}
+
+/**
+ * Check that the submitted login matches the authenticated OAuth2 session subject.
+ *
+ * Prevents an attacker who completed an OAuth2 round-trip as themselves from
+ * replaying the 'oauth2LoginOngoing' session flag against another user's login
+ * (GHSA-2mvr-v9w8-34c7). The 'oauth2_login_ongoing' flag must only ever be honored
+ * when its authenticated subject is the very account being authenticated.
+ * Comparison is case-insensitive and trimmed.
+ *
+ * @param string $submittedLogin Login submitted on the primary login form.
+ * @return bool True only when an OAuth2 round-trip is in progress AND its subject
+ *              matches the submitted login.
+ */
+function isOauth2LoginBoundToUser(string $submittedLogin): bool
+{
+    $subjectLogin = oauth2SessionSubjectLogin();
+    if ($subjectLogin === '') {
+        return false;
+    }
+
+    return strcasecmp(trim($submittedLogin), trim($subjectLogin)) === 0;
+}
+
 function shouldUserAuthWithOauth2(
     array $SETTINGS,
     array $userInfo,
     string $username
 ): array
 {
+    // Defense in depth (GHSA-2mvr-v9w8-34c7): never honor the OAuth2 "login ongoing"
+    // flag for a login that does not match the authenticated OAuth2 subject. This
+    // guards the persistent auth_type change and the userPasswordVerified grant below
+    // even if an upstream caller passes an unbound flag.
+    if (filter_var($userInfo['oauth2_login_ongoing'] ?? false, FILTER_VALIDATE_BOOLEAN) === true
+        && isOauth2LoginBoundToUser($username) === false
+    ) {
+        $userInfo['oauth2_login_ongoing'] = false;
+    }
+
     // Security issue without this return if an user auth_type == oauth2 and
     // oauth2 disabled : we can login as a valid user by using hashUserId(username)
     // as password in the login the form.
