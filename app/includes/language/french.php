@@ -2092,6 +2092,8 @@ return array(
     'not_secure' => 'Non sécurisé',
     'admin_update_badge' => 'Mise à jour',
     'admin_new_version_available' => 'version %s disponible',
+    'admin_new_version_alert' => 'Nouvelle version TeamPass disponible : %s',
+    'admin_view_release' => 'Voir la release',
     'passphrase_generate' => 'Générer une phrase de passe',
     'passphrase_options' => 'Options de la phrase de passe',
     'passphrase_words' => 'Mots',

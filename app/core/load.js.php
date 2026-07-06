@@ -112,16 +112,22 @@ if (
     );
 
     /**
-     * Apply version badge data to the DOM element.
-     * Hides the badge when no update is available or data is invalid.
+     * Apply latest release notification data to the sidebar badge and admin dashboard alert.
+     * Hides both notification surfaces when no update is available or data is invalid.
      *
      * @param {jQuery} $badge
      * @param {object} data  - decoded server response
      * @returns {void}
      */
-    function applyVersionBadge($badge, data) {
+    function applyVersionNotifications($badge, data) {
+        const $adminAlert = $('#tp-admin-version-alert');
+        const $adminAlertText = $adminAlert.find('.tp-admin-version-alert-text');
+        const $adminAlertLink = $('#tp-admin-version-link');
+
         if (
-            data.error === true
+            data === null
+            || typeof data !== 'object'
+            || data.error === true
             || data.has_update !== true
             || typeof data.latest_version !== 'string'
             || data.latest_version.length === 0
@@ -129,6 +135,7 @@ if (
             || data.release_url.length === 0
         ) {
             $badge.addClass('d-none').tooltip('dispose');
+            $adminAlert.addClass('d-none');
             return;
         }
 
@@ -136,13 +143,26 @@ if (
         tooltipText = tooltipText.replace('%s', data.latest_version);
 
         $badge
-            .text(<?php echo json_encode($lang->get('admin_update_badge')); ?>)
+            .empty()
+            .append($('<i>', {'class': 'fas fa-circle-up', 'aria-hidden': 'true'}))
+            .append($('<span>').text(<?php echo json_encode($lang->get('admin_update_badge')); ?>))
             .attr('href', data.release_url)
             .attr('title', tooltipText)
             .attr('aria-label', tooltipText)
             .removeClass('d-none')
             .tooltip('dispose')
             .tooltip({container: 'body'});
+
+        if ($adminAlert.length > 0) {
+            let alertText = <?php echo json_encode($lang->get('admin_new_version_alert')); ?>;
+            alertText = alertText.replace('%s', data.latest_version);
+
+            $adminAlertText.text(alertText);
+            $adminAlertLink
+                .text(<?php echo json_encode($lang->get('admin_view_release')); ?>)
+                .attr('href', data.release_url);
+            $adminAlert.removeClass('d-none');
+        }
     }
 
     /**
@@ -172,7 +192,7 @@ if (
                     && typeof cached === 'object'
                     && (Date.now() - cached.ts) < CACHE_TTL
                 ) {
-                    applyVersionBadge($badge, cached.data);
+                    applyVersionNotifications($badge, cached.data);
                     return;
                 }
             }
@@ -201,7 +221,7 @@ if (
                     // Quota exceeded or unavailable — ignore
                 }
 
-                applyVersionBadge($badge, data);
+                applyVersionNotifications($badge, data);
             }
         );
     }

@@ -127,6 +127,11 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                             <?php echo $lang->get('admin_view_changelog_github'); ?>
                         </a>
                     </span>
+                    <div id="tp-admin-version-alert" class="tp-admin-version-alert d-none" role="status" aria-live="polite">
+                        <i class="fas fa-circle-up mr-2" aria-hidden="true"></i>
+                        <span class="tp-admin-version-alert-text"></span>
+                        <a id="tp-admin-version-link" href="#" target="_blank" rel="noopener noreferrer" class="tp-admin-version-alert-link ml-2"></a>
+                    </div>
                 </div>
             </div>
             <div class="col-5">
