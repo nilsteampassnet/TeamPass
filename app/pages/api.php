@@ -217,32 +217,46 @@ function getDomainFromSettingsUrl(string $url): string
 
                         <div class="tab-content">
                             <div class="tab-pane fade show active" id="users" role="tabpanel" aria-labelledby="keys-tab">
+                                <?php
+                                $rowsKeys = DB::query(
+                                    'SELECT a.*, u.name, u.lastname, u.login
+                                    FROM ' . prefixTable('api') . ' AS a
+                                    INNER JOIN ' . prefixTable('users') . ' AS u ON a.user_id = u.id
+                                    WHERE a.type = %s AND u.disabled = %i AND u.deleted_at IS NULL AND u.id NOT IN %li AND u.admin = %i
+                                    ORDER BY u.login ASC',
+                                    'user',
+                                    0,
+                                    [API_USER_ID, SSH_USER_ID, SSH_USER_ID, TP_USER_ID],
+                                    0
+                                );
+                                $apiKeysCount = count($rowsKeys);
+                                ?>
                                 <div class="row mb-4 mt-4">
-                                    <div class="col-6 text-muted">
+                                    <div class="col-12 col-lg-8 text-muted mb-2 mb-lg-0">
                                         <?php echo $lang->get('users_api_access_info'); ?>
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-12 col-lg-4 text-lg-right">
                                         <button type="button" class="btn btn-default pointer infotip" title="<?php echo $lang->get('build_missing_api_keys'); ?>" id="button-refresh-users-api">
                                             <i class="fas fa-sync-alt"></i>
                                         </button>
                                     </div>
                                 </div>
+
+                                <div class="row mb-3<?php echo $apiKeysCount > 0 ? '' : ' hidden'; ?>">
+                                    <div class="col-12 col-lg-6">
+                                        <div class="input-group input-group-sm">
+                                            <div class="input-group-prepend">
+                                                <div class="input-group-text">
+                                                    <i class="fas fa-search"></i>
+                                                </div>
+                                            </div>
+                                            <input type="search" class="form-control" placeholder="<?php echo $lang->get('find'); ?>" aria-label="<?php echo $lang->get('find'); ?>" id="api-users-search">
+                                        </div>
+                                    </div>
+                                </div>
                                 
                                 <div class="mt-4">
-                                    <?php
-                                    $rowsKeys = DB::query(
-                                        'SELECT a.*, u.name, u.lastname, u.login
-                                        FROM ' . prefixTable('api') . ' AS a
-                                        INNER JOIN ' . prefixTable('users') . ' AS u ON a.user_id = u.id
-                                        WHERE a.type = %s AND u.disabled = %i AND u.deleted_at IS NULL AND u.id NOT IN %li AND u.admin = %i
-                                        ORDER BY u.login ASC',
-                                        'user',
-                                        0,
-                                        [API_USER_ID, SSH_USER_ID, SSH_USER_ID, TP_USER_ID],
-                                        0
-                                    );
-                                    ?>
-                                    <table class="table table-hover table-striped<?php echo DB::count() > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
+                                    <table class="table table-hover table-striped<?php echo $apiKeysCount > 0 ? '' : ' hidden'; ?> table-responsive" style="width:100%" id="table-api-keys">
                                         <thead>
                                             <tr>
                                                 <th><?php echo $lang->get('user'); ?></th>
@@ -269,7 +283,11 @@ function getDomainFromSettingsUrl(string $url): string
                                         </tbody>
                                     </table>
 
-                                    <div class="mt-2<?php echo DB::count() > 0 ? ' hidden' : ''; ?>" id="api-no-keys">
+                                    <div class="mt-2 hidden" id="api-search-no-results">
+                                        <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_item_to_display'); ?>
+                                    </div>
+
+                                    <div class="mt-2<?php echo $apiKeysCount > 0 ? ' hidden' : ''; ?>" id="api-no-keys">
                                         <i class="fas fa-info mr-2 text-warning"></i><?php echo $lang->get('no_data_defined'); ?>
                                     </div>
 
