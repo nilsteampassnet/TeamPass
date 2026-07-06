@@ -2627,6 +2627,14 @@ if (null !== $post_type) {
 
             // Manage specific case of api key
             if($post_field === 'user_api_key') {
+                // SECURITY (GHSA-8mvg-rv84-jwgg / GHSA-x8jf-9g87-j232): regenerating the personal API
+                // key is strictly a self-service operation — the new value is encrypted with the
+                // caller's own public key and stored in the caller's own session. The target row must
+                // therefore always be the caller's own record, never an attacker-supplied user_id.
+                // Standard users already have user_id forced to self earlier, but this action is in
+                // $all_users_can_access and a manager/admin bypasses that force, so pin the target
+                // here to close a cross-user overwrite of another account's api row.
+                $apiKeyOwnerId = (int) $session->get('user-id');
                 $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $session->get('user-public_key'));
                 $session->set('user-api_key', $post_new_value);
 
@@ -2635,7 +2643,7 @@ if (null !== $post_type) {
                     'SELECT value
                     FROM ' . prefixTable('api') . '
                     WHERE user_id = %i',
-                    $post_user_id
+                    $apiKeyOwnerId
                 );
                 if ($data_user) {
                     // update
@@ -2646,7 +2654,7 @@ if (null !== $post_type) {
                             'timestamp' => time()
                         ),
                         'user_id = %i',
-                        $post_user_id
+                        $apiKeyOwnerId
                     );
                 } else {
                     // insert
@@ -2654,7 +2662,7 @@ if (null !== $post_type) {
                         prefixTable('api'),
                         array(
                             'type' => 'user',
-                            'user_id' => $post_user_id,
+                            'user_id' => $apiKeyOwnerId,
                             'value' => $encrypted_key,
                             'timestamp' => time()
                         )
