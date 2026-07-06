@@ -389,6 +389,16 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         );
     }
 
+    // When the login page has been idle long enough for the server-side
+    // session to be garbage-collected, the encryption key is gone and the
+    // exchanged data cannot be decoded (it stays a raw/undecodable string).
+    // Emit the session-expired marker so the client shows the "log in again"
+    // dialog instead of hitting a fatal TypeError in sanitizeData().
+    if (is_array($dataReceived) === false) {
+        echo 'ERROR SESSION EXPIRED';
+        return false;
+    }
+
     // Sanitize input data
     $toClean = [
         'login' => 'trim|escape',
