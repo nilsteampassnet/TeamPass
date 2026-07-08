@@ -280,6 +280,8 @@ class ItemModel
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $fields, $data, $SETTINGS);
 
+            updateCacheTable('add_value', $newID, $userId);
+
             // Notify WebSocket subscribers so other users viewing this folder see the new item
             emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
 
@@ -1350,6 +1352,8 @@ class ItemModel
             $label = isset($updateData['label']) ? $updateData['label'] : $currentItem['label'];
             logItems($SETTINGS, $itemId, $label, $userData['id'], 'at_modification', $userData['username']);
 
+            updateCacheTable('update_value', $itemId, (int) $userData['id']);
+
             // Success response
             return [
                 'error' => false,
@@ -1412,6 +1416,8 @@ class ItemModel
             );
 
             logItems($SETTINGS, $itemId, $currentItem['label'], $userData['id'], 'at_delete', $userData['username']);
+
+            updateCacheTable('delete_value', $itemId);
 
             // Success response
             return [

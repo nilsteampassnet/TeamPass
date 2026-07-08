@@ -656,20 +656,21 @@ function identUserGetPFList(
  *
  * @param string $action   What to do
  * @param int    $ident    Ident format
+ * @param int    $authorId User id to store as cache author. Useful outside web sessions.
  *
  * @return void
  */
-function updateCacheTable(string $action, ?int $ident = null): void
+function updateCacheTable(string $action, ?int $ident = null, ?int $authorId = null): void
 {
     if ($action === 'reload') {
         // Rebuild full cache table
         cacheTableRefresh();
     } elseif ($action === 'update_value' && is_null($ident) === false) {
         // UPDATE an item
-        cacheTableUpdate($ident);
+        cacheTableUpdate($ident, $authorId);
     } elseif ($action === 'add_value' && is_null($ident) === false) {
         // ADD an item
-        cacheTableAdd($ident);
+        cacheTableAdd($ident, $authorId);
     } elseif ($action === 'delete_value' && is_null($ident) === false) {
         // DELETE an item
         DB::delete(prefixTable('cache'), 'id = %i', $ident);
@@ -781,12 +782,18 @@ function cacheTableRefresh(): void
  * Cache table - update existing value.
  *
  * @param int    $ident    Ident format
+ * @param int    $authorId User id to store as cache author. Useful outside web sessions.
  * 
  * @return void
  */
-function cacheTableUpdate(?int $ident = null): void
+function cacheTableUpdate(?int $ident = null, ?int $authorId = null): void
 {
-    $session = SessionManager::getSession();
+    $cacheAuthorId = $authorId;
+    if ($cacheAuthorId === null) {
+        $session = SessionManager::getSession();
+        $cacheAuthorId = (int) $session->get('user-id');
+    }
+
     loadClasses('DB');
 
     //Load Tree
@@ -855,26 +862,46 @@ function cacheTableUpdate(?int $ident = null): void
             'restricted_to' => isset($data['restricted_to']) && ! empty($data['restricted_to']) ? $data['restricted_to'] : '0',
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
-            'author' => $session->get('user-id'),
+            'author' => $cacheAuthorId,
             'renewal_period' => $data['renewal_period'] ?? '0',
             'timestamp' => $data['date'] ?? '0',
         ],
         'id = %i',
         $ident
     );
+
+    // Self-heal: recreate the cache row when it is missing (e.g. an item created
+    // through the API before it synchronized the cache). DB::affectedRows() is 0
+    // both when no row matched and when the row exists but no cache column changed.
+    // The COUNT (an index lookup on the unique cache.id) only runs when the update
+    // changed nothing and merely avoids the heavier rebuild for an unchanged row;
+    // correctness against a concurrent insert is guaranteed by the UNIQUE(id)
+    // constraint, since cacheTableAdd() uses INSERT IGNORE.
+    if (DB::affectedRows() === 0
+        && (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('cache') . ' WHERE id = %i',
+            $ident
+        ) === 0
+    ) {
+        cacheTableAdd($ident, $cacheAuthorId);
+    }
 }
 
 /**
  * Cache table - add new value.
  *
  * @param int    $ident    Ident format
+ * @param int    $authorId User id to store as cache author. Useful outside web sessions.
  * 
  * @return void
  */
-function cacheTableAdd(?int $ident = null): void
+function cacheTableAdd(?int $ident = null, ?int $authorId = null): void
 {
-    $session = SessionManager::getSession();
-    $globalsUserId = $session->get('user-id');
+    $cacheAuthorId = $authorId;
+    if ($cacheAuthorId === null) {
+        $session = SessionManager::getSession();
+        $cacheAuthorId = (int) $session->get('user-id');
+    }
 
     // Load class DB
     loadClasses('DB');
@@ -932,8 +959,10 @@ function cacheTableAdd(?int $ident = null): void
         // Build path
         array_push($folder, stripslashes($elem->title));
     }
-    // finaly update
-    DB::insert(
+    // finaly insert. INSERT IGNORE relies on the UNIQUE(id) constraint to stay a
+    // no-op when a concurrent request already created the row, so a self-heal from
+    // two parallel updates can never produce a duplicate cache entry.
+    DB::insertIgnore(
         prefixTable('cache'),
         [
             'id' => $data['id'],
@@ -946,7 +975,7 @@ function cacheTableAdd(?int $ident = null): void
             'restricted_to' => isset($data['restricted_to']) && empty($data['restricted_to']) === false ? $data['restricted_to'] : '0',
             'login' => $data['login'] ?? '',
             'folder' => implode(' » ', $folder),
-            'author' => $globalsUserId,
+            'author' => $cacheAuthorId,
             'renewal_period' => $data['renewal_period'] ?? '0',
             'timestamp' => $data['date'],
         ]
@@ -9077,4 +9106,3 @@ function checkPasswordWithHIBP(string $password): array
 
     return ['pwned' => false, 'count' => 0];
 }
-
