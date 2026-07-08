@@ -796,14 +796,6 @@ function cacheTableUpdate(?int $ident = null, ?int $authorId = null): void
 
     loadClasses('DB');
 
-    if ((int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('cache') . ' WHERE id = %i',
-        $ident
-    ) === 0) {
-        cacheTableAdd($ident, $authorId);
-        return;
-    }
-
     //Load Tree
     $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
     // get new value from db
@@ -877,6 +869,22 @@ function cacheTableUpdate(?int $ident = null, ?int $authorId = null): void
         'id = %i',
         $ident
     );
+
+    // Self-heal: recreate the cache row when it is missing (e.g. an item created
+    // through the API before it synchronized the cache). DB::affectedRows() is 0
+    // both when no row matched and when the row exists but no cache column changed.
+    // The COUNT (an index lookup on the unique cache.id) only runs when the update
+    // changed nothing and merely avoids the heavier rebuild for an unchanged row;
+    // correctness against a concurrent insert is guaranteed by the UNIQUE(id)
+    // constraint, since cacheTableAdd() uses INSERT IGNORE.
+    if (DB::affectedRows() === 0
+        && (int) DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('cache') . ' WHERE id = %i',
+            $ident
+        ) === 0
+    ) {
+        cacheTableAdd($ident, $cacheAuthorId);
+    }
 }
 
 /**
@@ -951,8 +959,10 @@ function cacheTableAdd(?int $ident = null, ?int $authorId = null): void
         // Build path
         array_push($folder, stripslashes($elem->title));
     }
-    // finaly update
-    DB::insert(
+    // finaly insert. INSERT IGNORE relies on the UNIQUE(id) constraint to stay a
+    // no-op when a concurrent request already created the row, so a self-heal from
+    // two parallel updates can never produce a duplicate cache entry.
+    DB::insertIgnore(
         prefixTable('cache'),
         [
             'id' => $data['id'],

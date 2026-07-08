@@ -3362,7 +3362,7 @@ case 'get_extension_licence_info':
         $serverOnline  = ($serverData['status'] ?? '') === 'online';
         $serverVersion = $serverData['version'] ?? '';
     }
-
+//error_log('DEBUG: Licence server online: ' . ($serverOnline ? 'yes' : 'no') . ', version: ' . $serverVersion);
     if (!$serverOnline) {
         $result = [
             'error'           => false,
@@ -3393,7 +3393,8 @@ case 'get_extension_licence_info':
         'instance_fqdn' => $licenceFqdn,
         'license_token' => $licenceKey,
     ]);
-    $infoRaw     = $curlPost('https://licence.teampass.net/api/v1.1/info.php', $postData);
+    //error_log('DEBUG: Sending licence info request to https://licence.teampass.net/api/v1.2/info.php with payload: ' . $postData);
+    $infoRaw     = $curlPost('https://licence.teampass.net/api/v1.2/info.php', $postData);
     $licenceInfo = ($infoRaw !== false) ? json_decode($infoRaw, true) : null;
 
     $result = [
