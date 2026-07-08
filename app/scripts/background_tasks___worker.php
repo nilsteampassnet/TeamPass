@@ -1706,24 +1706,23 @@ class TaskWorker {
     }
 }
 
-// Prepare the environment
-// Get the task ID and process type from command line arguments
-if ($argc < 3) {
-    error_log("Usage: php background_tasks___worker.php <task_id> <process_type> [<task_data>]");
-    exit(1);
-}
-$taskId = (int)$argv[1];
-$processType = $argv[2];
-$taskData = $argv[3] ?? null;
-if ($taskData) {
-    $taskData = json_decode($taskData, true);
-    if (!is_array($taskData)) {
+// Only execute when called directly as a CLI script, not when included by the handler
+if (PHP_SAPI === 'cli') {
+    if ($argc < 3) {
+        error_log("Usage: php background_tasks___worker.php <task_id> <process_type> [<task_data>]");
+        exit(1);
+    }
+    $taskId = (int)$argv[1];
+    $processType = $argv[2];
+    $taskData = $argv[3] ?? null;
+    if ($taskData) {
+        $taskData = json_decode($taskData, true);
+        if (!is_array($taskData)) {
+            $taskData = [];
+        }
+    } else {
         $taskData = [];
     }
-} else {
-    $taskData = [];
+    $worker = new TaskWorker($taskId, $processType, $taskData);
+    $worker->execute();
 }
-
-// Initialize the worker
-$worker = new TaskWorker($taskId, $processType, $taskData);
-$worker->execute();

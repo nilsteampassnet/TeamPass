@@ -554,32 +554,29 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
     
     /**
      * Add a cron job
-     * 
+     *
      * @return array
      */
     function cronJob(): array
     {
+        // public/ dir (for existence check) and project root (for scheduler path)
+        $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
+        $rootPath = TEAMPASS_ROOT;
+        if (!is_dir($absolutePath)) {
+            return [
+                'success' => false,
+                'message' => "Invalid Teampass absolute path: $absolutePath",
+            ];
+        }
+
+        // Get the PHP binary location for the manual command hint
+        include_once(__DIR__ . '/../tp.functions.php');
+        $phpLocation = findPhpBinary();
+        $phpBin = ($phpLocation['error'] === false) ? $phpLocation['path'] : 'php';
+        $schedulerPath = $rootPath . '/app/sources/scheduler.php';
+        $manualCmd = "* * * * * $phpBin $schedulerPath";
+
         try {
-            // Get the PHP binary location
-            include_once(__DIR__ . '/../tp.functions.php');
-            $phpLocation = findPhpBinary();
-            if ($phpLocation['error'] === true) {
-                return [
-                    'success' => false,
-                    'message' => "Unable to locate PHP binary. Error: " . ($phpLocation['message'] ?? 'Unknown error'),
-                ];
-            }
-
-            // public/ dir (for existence check) and project root (for scheduler path)
-            $absolutePath = rtrim($this->installConfig['teampassAbsolutePath'], '/');
-            $rootPath = TEAMPASS_ROOT;
-            if (!is_dir($absolutePath)) {
-                return [
-                    'success' => false,
-                    'message' => "Invalid Teampass absolute path: $absolutePath",
-                ];
-            }
-
             // Initialize the crontab repository
             $crontabRepository = new CrontabRepository(new CrontabAdapter());
 
@@ -600,10 +597,9 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
                 ->setDayOfMonth('*')
                 ->setMonths('*')
                 ->setDayOfWeek('*')
-                ->setTaskCommandLine($phpLocation['path'] . ' ' . $rootPath . '/app/sources/scheduler.php')
+                ->setTaskCommandLine($phpBin . ' ' . $schedulerPath)
                 ->setComments('Teampass scheduler');
 
-            // Ajouter et enregistrer la tâche dans le crontab
             $crontabRepository->addJob($crontabJob);
             $crontabRepository->persist();
 
@@ -612,9 +608,16 @@ if (isset($_SESSION[\'settings\'][\'timezone\']) === true) {
             ];
 
         } catch (Exception $e) {
+            // On shared hosting, crontab access is often restricted.
+            // Return success with a warning so the install can continue;
+            // the admin must add the cron entry manually or via an external service.
             return [
-                'success' => false,
-                'message' => $e->getMessage(),
+                'success' => true,
+                'warning' => "Cron job could not be added automatically ("
+                    . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8')
+                    . "). Please add the following entry to your cron or use an external scheduler (e.g. cron-job.org) to call the scheduler URL every minute:<br><code>"
+                    . htmlspecialchars($manualCmd, ENT_QUOTES, 'UTF-8')
+                    . "</code>",
             ];
         }
     }

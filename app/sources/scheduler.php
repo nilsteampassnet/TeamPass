@@ -58,17 +58,24 @@ DB::query(
     time()
 );
 
-// Configuration des tâches de fond avec des fréquences dynamiques
-$backgroundTasks = [
-    'items_statistics' => [
-        'script' => __DIR__.'/../scripts/background_tasks___do_calculation.php',
-        'frequency' => $SETTINGS['items_statistics_job_frequency'] ?? 5
-    ],
-    'items_handler' => [
-        'script' => __DIR__.'/../scripts/background_tasks___handler.php',
-        'frequency' => $SETTINGS['items_ops_job_frequency'] ?? 1
-    ]
-];
+// Send HTTP 200 to cron-job.org immediately so the connection closes,
+// then continue processing in the background (fastcgi_finish_request).
+// This prevents the web server from killing the PHP process mid-task.
+http_response_code(200);
+header('Content-Type: text/plain');
+header('Content-Length: 2');
+echo 'OK';
+if (function_exists('fastcgi_finish_request')) {
+    fastcgi_finish_request();
+} elseif (function_exists('litespeed_finish_request')) {
+    litespeed_finish_request();
+}
+set_time_limit(0);
+ignore_user_abort(true);
+
+// Run background task handler directly — no exec()/proc_open() required.
+// The handler has its own flock-based concurrency guard.
+require_once __DIR__.'/../scripts/background_tasks___handler.php';
 
 // Ajout dynamique des tâches de maintenance
 $maintenanceTasks = [
@@ -89,11 +96,6 @@ $maintenanceTasks = [
         'setting' => 'reload_cache_table_task'
     ]
 ];
-
-// Ajouter les tâches de fond
-foreach ($backgroundTasks as $taskName => $taskConfig) {
-    $scheduler->php($taskConfig['script'])->everyMinute($taskConfig['frequency']);
-}
 
 // Ajouter les tâches de maintenance configurées
 foreach ($maintenanceTasks as $taskName => $taskConfig) {

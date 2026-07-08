@@ -908,39 +908,45 @@ class BackgroundTasksHandler {
             escapeshellarg((string) $task['arguments'])
         );
 
-        $process = Process::fromShellCommandline($cmd);
-        $process->setTimeout($this->maxExecutionTime);
+        // Always run inline: avoids PHP-binary detection issues under cgi-fcgi
+        // where PHP_BINARY points to the CGI binary, not the CLI binary.
+        // fastcgi_finish_request() in scheduler.php already sent the HTTP response,
+        // so the process can run as long as needed (max_execution_time=0 set there).
+        return $this->runTaskInline($task);
+    }
 
+    /**
+     * Run a task worker inline in the current process.
+     * Used as last-resort fallback when proc_open/exec are unavailable (shared hosting).
+     *
+     * @param array $task Task row from the database.
+     * @return null Always returns null (task handled synchronously).
+     */
+    private function runTaskInline(array $task): ?Process {
+        // Remove time limit and keep running even if the HTTP client disconnects
+        set_time_limit(0);
+        ignore_user_abort(true);
+
+        if (LOG_TASKS === true) $this->logger->log(
+            'Running task ' . $task['increment_id'] . ' (' . $task['process_type'] . ') inline',
+            'INFO'
+        );
         try {
-            $process->start();
-            return $process;
-        } catch (Throwable $e) {
-            // Symfony Process failed to start, try exec() fallback (blocking)
-            if (LOG_TASKS === true) $this->logger->log(
-                'Process::start() failed for task ' . $task['increment_id'] . ': ' . $e->getMessage() . ', trying exec fallback',
-                'WARNING'
-            );
-
-            $out = [];
-            $rc = 0;
-            exec($cmd . ' 2>&1', $out, $rc);
-
-            if ($rc === 0) {
-                // Worker ran successfully via fallback and updated the DB itself
-                if (LOG_TASKS === true) $this->logger->log(
-                    'Fallback exec succeeded for task ' . $task['increment_id'],
-                    'INFO'
-                );
-                return null; // Already completed, nothing to poll
+            require_once __DIR__ . '/background_tasks___worker.php';
+            $taskData = json_decode((string)($task['arguments'] ?? '{}'), true);
+            if (!is_array($taskData)) {
+                $taskData = [];
             }
-
-            $msg = $e->getMessage()
-                . ' | fallback_exit=' . $rc
-                . ' | fallback_out=' . implode("\n", array_slice($out, -30));
-
-            $this->markTaskFailed((int) $task['increment_id'], $msg);
-            return null;
+            $worker = new TaskWorker((int)$task['increment_id'], (string)$task['process_type'], $taskData);
+            $worker->execute();
+            if (LOG_TASKS === true) $this->logger->log(
+                'Inline execution succeeded for task ' . $task['increment_id'],
+                'INFO'
+            );
+        } catch (Throwable $e) {
+            $this->markTaskFailed((int)$task['increment_id'], 'Inline execution failed: ' . $e->getMessage());
         }
+        return null;
     }
 
     /**
