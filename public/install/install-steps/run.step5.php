@@ -1048,7 +1048,8 @@ class DatabaseInstaller
             `timestamp` varchar(50) DEFAULT NULL,
             `url` text NULL DEFAULT NULL,
             `encryption_type` VARCHAR(50) NULL DEFAULT NULL,
-            PRIMARY KEY (`increment_id`)
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `idx_cache_id_unique` (`id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

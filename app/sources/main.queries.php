@@ -1353,32 +1353,18 @@ function generateQRCode(
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
 
-    // is this allowed by setting
-    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
-        && (null === $post_demand_origin || $post_demand_origin !== 'users_management_list')
-    ) {
-        // User cannot ask for a new code
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => "113 ".$lang->get('error_not_allowed_to')." - ".isKeyExistingAndEqual('ga_reset_by_user', 1, $SETTINGS),
-            ),
-            'encode'
-        );
-    }
-    
     // Check if user exists
     if (isValueSetNullEmpty($post_id) === true) {
         // Get data about user
         $dataUser = DB::queryFirstRow(
-            'SELECT id, email, pw
+            'SELECT id, email, pw, ga, ga_temporary_code
             FROM ' . prefixTable('users') . '
             WHERE login = %s',
             $post_login
         );
     } else {
         $dataUser = DB::queryFirstRow(
-            'SELECT id, login, email, pw
+            'SELECT id, login, email, pw, ga, ga_temporary_code
             FROM ' . prefixTable('users') . '
             WHERE id = %i',
             $post_id
@@ -1419,7 +1405,28 @@ function generateQRCode(
             'encode'
         );
     }
-    
+
+    // A user who has already completed MFA enrollment can only regenerate a
+    // code by themselves when the admin allows it (ga_reset_by_user). First
+    // time enrollment (no secret yet, or temporary code still pending) is
+    // always permitted, otherwise the user could never set up MFA. The admin
+    // "users management" path is always allowed.
+    $userAlreadyEnrolled = empty($dataUser['ga']) === false
+        && (string) $dataUser['ga_temporary_code'] === 'done';
+    if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
+        && $post_demand_origin !== 'users_management_list'
+        && $userAlreadyEnrolled === true
+    ) {
+        // User is not allowed to reset an existing code by themselves
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('ga_reset_blocked_by_admin'),
+            ),
+            'encode'
+        );
+    }
+
     if (empty($dataUser['email']) === true) {
         return prepareExchangedData(
             array(
@@ -3731,21 +3738,23 @@ function generateAnOTP(string $label, bool $with_qrcode = false, string $secretK
         $secretKey = $tfa->createSecret();
     }
 
-    // generate new QR
+    // Build the otpauth:// provisioning URI. The QR image is rendered
+    // client-side (offline) - no external web service is contacted.
+    $qrText = '';
     if ($with_qrcode === true) {
-        $qrcode = $tfa->getQRCodeImageAsDataUri(
+        $qrText = $tfa->getQRText(
             $label,
             $secretKey
         );
     }
 
-    // ERROR
     return prepareExchangedData(
         array(
             'error' => false,
             'message' => '',
             'secret' => $secretKey,
-            'qrcode' => $qrcode ?? '',
+            'qrcode' => '',
+            'qr_text' => $qrText,
         ),
         'encode'
     );

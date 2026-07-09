@@ -1047,9 +1047,11 @@ declare(strict_types=1);
                     $('#div-2fa-google-qr')
                         .removeClass('hidden')
                         .html('<div class="col-12 alert alert-info">' +
-                            '<p class="text-center">' + data.value + '</p>' +
-                            '<p class="text-center"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
+                            '<div class="d-flex justify-content-center" id="div-2fa-google-qr-canvas"></div>' +
+                            '<p class="text-center mt-2"><i class="fas fa-mobile-alt fa-lg mr-1"></i>' +
                             '<?php echo $lang->get('mfa_flash'); ?></p></div>');
+                    // Render the QR code locally from the otpauth:// URI (no external service)
+                    renderTotpQrCode('div-2fa-google-qr-canvas', data.qr_text);
                     $('#ga_code')
                         .val('')
                         .focus();
@@ -1118,6 +1120,28 @@ declare(strict_types=1);
                 }
             }
         );
+    }
+
+    /**
+     * Render a TOTP otpauth:// URI as a QR code, entirely client-side (offline).
+     * Falls back to showing the raw URI as text if the QRCode library is missing.
+     */
+    function renderTotpQrCode(elementId, qrText) {
+        var container = document.getElementById(elementId);
+        if (container === null || typeof qrText === "undefined" || qrText === "") {
+            return;
+        }
+        container.innerHTML = "";
+        if (typeof QRCode === "undefined") {
+            container.textContent = qrText;
+            return;
+        }
+        new QRCode(container, {
+            text: qrText,
+            width: 200,
+            height: 200,
+            correctLevel: QRCode.CorrectLevel.M
+        });
     }
 
     function getGASynchronization() {

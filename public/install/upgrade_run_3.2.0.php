@@ -382,6 +382,30 @@ checkIndexExist(
     'ADD INDEX idx_files_item_confirmed (id_item, confirmed)'
 );
 
+// Enforce a UNIQUE constraint on cache.id so the API cache self-heal insert is
+// atomic (closes the duplicate-row race) and lookups by item id use an index.
+// Any pre-existing duplicate rows must be removed before the constraint can be
+// added, keeping the most recent (highest increment_id) row per item id. The
+// de-duplication only runs when the constraint is not present yet, so re-running
+// the upgrade does not repeat the self-join DELETE.
+$cacheUniqueIndex = mysqli_query(
+    $db_link,
+    "SHOW INDEX FROM `" . $pre . "cache` WHERE key_name = 'idx_cache_id_unique'"
+);
+if ($cacheUniqueIndex !== false && mysqli_num_rows($cacheUniqueIndex) === 0) {
+    mysqli_query(
+        $db_link,
+        "DELETE c1 FROM `" . $pre . "cache` c1
+         INNER JOIN `" . $pre . "cache` c2
+            ON c1.id = c2.id AND c1.increment_id < c2.increment_id"
+    );
+    checkIndexExist(
+        $pre . 'cache',
+        'idx_cache_id_unique',
+        'ADD UNIQUE KEY idx_cache_id_unique (id)'
+    );
+}
+
 // Migrate path_to_upload_folder and path_to_files_folder to storage/ subdirectories
 // if they still point to the old root-level locations ({root}/upload and {root}/files).
 $row = mysqli_fetch_assoc(mysqli_query($db_link, "SELECT valeur FROM `" . $pre . "misc` WHERE type='admin' AND intitule='cpassman_dir'"));

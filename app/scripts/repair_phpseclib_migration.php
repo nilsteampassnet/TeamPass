@@ -121,13 +121,25 @@ if (isset($options['diagnose']) || isset($options['repair'])) {
     echo "\n";
 
     // 3. Find users marked as migrated but with v1 sharekeys
+    // Scan ALL sharekeys tables (not only sharekeys_items): a user may still
+    // hold legacy v1 keys on custom fields, files, logs or suggestions while
+    // being flagged as migrated. Such field-only inconsistencies were not
+    // detected before and left custom field values unreadable after an
+    // upgrade (issue #5252).
     echo "[3] Users with Inconsistent Migration State:\n";
+    $sharekeysV1UnionParts = [];
+    foreach ($sharekeysTablesList as $table) {
+        // Table names come from the fixed $sharekeysTablesList + prefixTable (safe)
+        $sharekeysV1UnionParts[] = "SELECT user_id FROM " . prefixTable($table) . " WHERE encryption_version = 1";
+    }
+    $sharekeysV1Union = implode("\nUNION\n", $sharekeysV1UnionParts);
     $inconsistentUsers = DB::query(
         "SELECT DISTINCT u.id, u.login, u.encryption_version, u.phpseclibv3_migration_completed
         FROM " . prefixTable('users') . " u
-        INNER JOIN " . prefixTable('sharekeys_items') . " sk ON sk.user_id = u.id
+        INNER JOIN (
+            " . $sharekeysV1Union . "
+        ) sk ON sk.user_id = u.id
         WHERE u.phpseclibv3_migration_completed = 1
-        AND sk.encryption_version = 1
         AND u.id NOT IN (%i, %i, %i)
         ORDER BY u.id",
         OTV_USER_ID,

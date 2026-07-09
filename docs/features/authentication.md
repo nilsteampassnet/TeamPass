@@ -127,6 +127,58 @@ If disabled for a user, a red fingerprint symbol is shown in the users list.
 
 ![Settings tasks options](../_media/tp3_auth_mfa_3.png)
 
+### Google Authenticator enrollment
+
+When `Google Authenticator` is the selected MFA protocol, a user has to enroll their
+authenticator app (Google Authenticator, FreeOTP, Authy, etc.) the first time. The flow is:
+
+1. A **temporary code** is sent to the user by e-mail (automatically when MFA is first required,
+   or when an administrator generates one — see below).
+2. On the login page the user enters their **login**, **password** and this **temporary code**.
+3. Once the temporary code is accepted, Teampass displays a **QR code**. The user scans it with
+   their authenticator app.
+4. The user logs in again, this time entering the **6-digit code** produced by the app.
+   Enrollment is complete only at this step.
+
+> **Anti-lockout** — the account is marked as fully enrolled **only after the first valid 6-digit
+> code has been verified**, not as soon as the QR code is shown. As long as enrollment is not
+> finished, a new QR code can still be issued (login-page link or administrator). A failed or
+> missed scan can therefore never leave a user enrolled without a working authenticator.
+
+### QR code generation (offline)
+
+The QR code is built from the standard `otpauth://` provisioning URI and **rendered entirely in
+the user's browser**. Teampass does **not** contact any external service (such as
+`api.qrserver.com` or the discontinued `chart.googleapis.com`) to draw it.
+
+👉 This means the QR code works on **on-premise and air-gapped servers with no outbound internet
+access**. Nothing has to be configured for this — it is the default behaviour.
+
+If the user prefers manual entry, the same secret can be typed into the authenticator app instead
+of scanning.
+
+### Resetting a user's Google Authenticator code
+
+If a user changes phone or loses their authenticator, a new code can be issued. Who is allowed to
+do this is controlled by the **User can reset his 2FA code** option (`Settings → MFA`):
+
+| `User can reset his 2FA code` | Behaviour |
+|---|---|
+| **Enabled** | The user can request a new code themselves, using the dedicated link on the login page. |
+| **Disabled** (default) | The user **cannot** reset their own code. They see the message *"Your administrator has disabled self-reset of the 2FA code. Please ask them to send you a new code."* and must contact an administrator. |
+
+**Administrator reset** — from the `Users` page, select the user and use the action that sends a
+Google Authenticator code by e-mail. This **always works**, regardless of the *User can reset his
+2FA code* option, and puts the user back at step 1 of the enrollment flow above.
+
+### Troubleshooting
+
+| Symptom | Cause / resolution |
+|---|---|
+| The QR code does not appear (not even a broken image) | Make sure the page fully loaded; do a hard refresh (the QR library is served with a version query string). The QR is generated locally, so no internet access is required. |
+| *"Your administrator has disabled self-reset of the 2FA code…"* | The **User can reset his 2FA code** option is disabled. Ask an administrator to send a new code, or enable the option in `Settings → MFA`. |
+| A user is enrolled but has no working code | An administrator must reset the user's code from the `Users` page (see above). |
+
 
 ## Oauth2 with Microsoft Entra (Azure)
 
