@@ -2387,7 +2387,22 @@ case 'save_sending_statistics':
             );
             break;
         }
-        
+
+        // SECURITY (GHSA-x8jf-9g87-j232): the column name comes from the request, so restrict it to
+        // the toggle fields exposed by the API users table. This page is admin-only, but the
+        // allow-list prevents any arbitrary column from being written into the api table.
+        $writableApiFields = ['enabled', 'allowed_to_create', 'allowed_to_read', 'allowed_to_update', 'allowed_to_delete'];
+        if (in_array($post_field, $writableApiFields, true) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         //update.
         DB::debugMode(false);
         DB::update(
@@ -3347,7 +3362,7 @@ case 'get_extension_licence_info':
         $serverOnline  = ($serverData['status'] ?? '') === 'online';
         $serverVersion = $serverData['version'] ?? '';
     }
-
+//error_log('DEBUG: Licence server online: ' . ($serverOnline ? 'yes' : 'no') . ', version: ' . $serverVersion);
     if (!$serverOnline) {
         $result = [
             'error'           => false,
@@ -3378,7 +3393,8 @@ case 'get_extension_licence_info':
         'instance_fqdn' => $licenceFqdn,
         'license_token' => $licenceKey,
     ]);
-    $infoRaw     = $curlPost('https://licence.teampass.net/api/v1.1/info.php', $postData);
+    //error_log('DEBUG: Sending licence info request to https://licence.teampass.net/api/v1.2/info.php with payload: ' . $postData);
+    $infoRaw     = $curlPost('https://licence.teampass.net/api/v1.2/info.php', $postData);
     $licenceInfo = ($infoRaw !== false) ? json_decode($infoRaw, true) : null;
 
     $result = [

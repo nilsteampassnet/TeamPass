@@ -2538,10 +2538,61 @@ if (null !== $post_type) {
             $post_user_id = filter_var($dataReceived['user_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_field = filter_var($dataReceived['field'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
             $post_new_value = filter_var($dataReceived['value'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-            $post_context = filter_var($dataReceived['context'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+            $post_context = filter_var($dataReceived['context'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+
+            // SECURITY (GHSA-x8jf-9g87-j232): this action is listed in $all_users_can_access and
+            // therefore skips the manager/admin target-scope guard applied to other actions. Each
+            // sub-path below that writes a user record must consequently enforce, on its own, that
+            // the caller is entitled to modify $post_user_id. The closure returns true for an
+            // administrator, and for a manager acting within their scope on a non-privileged target;
+            // false for everyone else. The self-service api-key path is intentionally exempt (a user
+            // may always regenerate their own API key, and it is scoped to self above).
+            $callerIsAdmin = (int) $session->get('user-admin') === 1;
+            $callerMayManageTargetUser = static function (int $targetUserId) use ($session, $callerIsAdmin): bool {
+                if ($callerIsAdmin === true) {
+                    return true;
+                }
+                // Standard users may never manage a user record through this action.
+                if ((int) $session->get('user-manager') !== 1
+                    && (int) $session->get('user-can_manage_all_users') !== 1) {
+                    return false;
+                }
+                $target = DB::queryFirstRow(
+                    'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole
+                    FROM ' . prefixTable('users') . '
+                    WHERE id = %i',
+                    $targetUserId
+                );
+                // Unknown target, or a manager attempting to act on an administrator or another
+                // manager, is always refused.
+                if (DB::count() === 0
+                    || (int) $target['admin'] === 1
+                    || (int) $target['can_manage_all_users'] === 1
+                    || (int) $target['gestionnaire'] === 1) {
+                    return false;
+                }
+                // A plain manager is limited to users administrated by one of their own roles.
+                if ((int) $session->get('user-manager') === 1
+                    && in_array($target['isAdministratedByRole'], $session->get('user-roles_array')) === false) {
+                    return false;
+                }
+                return true;
+            };
 
             // If adding a role to user, use the users_roles table directly
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
+                // Only an administrator or an in-scope manager may assign a role to this user.
+                if ($callerMayManageTargetUser((int) $post_user_id) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break;
+                }
+
                 // Check if user exists
                 $data_user = DB::queryFirstRow(
                     'SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i',
@@ -2576,6 +2627,14 @@ if (null !== $post_type) {
 
             // Manage specific case of api key
             if($post_field === 'user_api_key') {
+                // SECURITY (GHSA-8mvg-rv84-jwgg / GHSA-x8jf-9g87-j232): regenerating the personal API
+                // key is strictly a self-service operation — the new value is encrypted with the
+                // caller's own public key and stored in the caller's own session. The target row must
+                // therefore always be the caller's own record, never an attacker-supplied user_id.
+                // Standard users already have user_id forced to self earlier, but this action is in
+                // $all_users_can_access and a manager/admin bypasses that force, so pin the target
+                // here to close a cross-user overwrite of another account's api row.
+                $apiKeyOwnerId = (int) $session->get('user-id');
                 $encrypted_key = encryptUserObjectKey(base64_encode($post_new_value), $session->get('user-public_key'));
                 $session->set('user-api_key', $post_new_value);
 
@@ -2584,7 +2643,7 @@ if (null !== $post_type) {
                     'SELECT value
                     FROM ' . prefixTable('api') . '
                     WHERE user_id = %i',
-                    $post_user_id
+                    $apiKeyOwnerId
                 );
                 if ($data_user) {
                     // update
@@ -2595,7 +2654,7 @@ if (null !== $post_type) {
                             'timestamp' => time()
                         ),
                         'user_id = %i',
-                        $post_user_id
+                        $apiKeyOwnerId
                     );
                 } else {
                     // insert
@@ -2603,7 +2662,7 @@ if (null !== $post_type) {
                         prefixTable('api'),
                         array(
                             'type' => 'user',
-                            'user_id' => $post_user_id,
+                            'user_id' => $apiKeyOwnerId,
                             'value' => $encrypted_key,
                             'timestamp' => time()
                         )
@@ -2619,6 +2678,23 @@ if (null !== $post_type) {
                     'encode'
                 );
 
+                break;
+            }
+
+            // SECURITY (GHSA-x8jf-9g87-j232): the column name below comes from the request. Restrict
+            // it to an explicit allow-list of non-privileged fields so it can never be used to write
+            // admin, gestionnaire, can_manage_all_users, read_only, pw, private_key, api_key, ... and
+            // confirm the caller is entitled to modify this specific user.
+            $writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'fonction_id', 'auth_type'];
+            if (in_array($post_field, $writableUserFields, true) === false
+                || $callerMayManageTargetUser((int) $post_user_id) === false) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
                 break;
             }
 

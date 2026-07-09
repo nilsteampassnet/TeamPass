@@ -2618,5 +2618,8 @@ return array(
     'restore_missing_sharekeys_key_holders' => 'Utilisateurs disposant d’une clé valide',
     'restore_missing_sharekeys_no_holder' => 'Aucun utilisateur ne dispose d’une clé valide',
     'restore_missing_sharekeys_details_limit' => 'Seuls les 100 premiers objets de chaque type sont listés.',
+    'error_item_not_found' => 'Élément introuvable.',
+    'all_items_deleted_successfully' => 'Tous les éléments ont été supprimés avec succès.',
+    'some_items_failed_to_delete' => 'Certains éléments n’ont pas pu être supprimés.',
 
 );

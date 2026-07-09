@@ -105,8 +105,6 @@ $data = [
     'letter' => $request->query->filter('letter', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'search' => json_encode($request->query->filter('search', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
     'order' => json_encode($request->query->filter('order', '', FILTER_SANITIZE_SPECIAL_CHARS, FILTER_REQUIRE_ARRAY)),
-    'column' => $request->query->filter('column', '', FILTER_SANITIZE_SPECIAL_CHARS),
-    'dir' => $request->query->filter('dir', '', FILTER_SANITIZE_SPECIAL_CHARS),
     'userId' => $request->query->filter('userId', '', FILTER_SANITIZE_NUMBER_INT),
     'draw' => $request->query->filter('draw', '', FILTER_SANITIZE_NUMBER_INT),
 ];
@@ -117,8 +115,6 @@ $filters = [
     'letter' => 'trim|escape',
     'search' => 'cast:array',
     'order' => 'cast:array',
-    'column' => 'trim|escape',
-    'dir' => 'trim|escape',
     'userId' => 'cast:integer',
     'draw' => 'cast:integer',
 ];
@@ -138,19 +134,19 @@ if (isset($inputData['length']) && (int) $inputData['length'] !== -1) {
 }
 
 // Ordering
+// Build the ORDER BY clause only from the fixed server-side column map and a
+// direction that is strictly validated against the allow-list. No request
+// value is ever concatenated verbatim, which prevents SQL injection.
 $sOrder = '';
 $order = $inputData['order'][0] ?? null;
-if ($order && in_array($order['dir'], $aSortTypes)) {
-    $sOrder = ' ORDER BY  ';
-    if (isset($order['column']) && preg_match('#^(asc|desc)$#i', $order['dir'])) {
-        $columnIndex = $order['column'];
-        $dir = $inputData['dir'];
-        $sOrder .= $aColumns[$columnIndex] . ' ' . $dir . ', ';
-    }
-
-    $sOrder = substr_replace($sOrder, '', -2);
-    if ($sOrder === ' ORDER BY') {
-        $sOrder = '';
+if ($order !== null && isset($order['column'], $order['dir'])) {
+    $columnIndex = (int) $order['column'];
+    if (
+        isset($aColumns[$columnIndex])
+        && in_array(strtolower((string) $order['dir']), $aSortTypes, true)
+    ) {
+        $dir = strtoupper((string) $order['dir']);
+        $sOrder = ' ORDER BY ' . $aColumns[$columnIndex] . ' ' . $dir;
     }
 }
 

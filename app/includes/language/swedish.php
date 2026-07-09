@@ -2619,5 +2619,8 @@ Path: %s',
     'restore_missing_sharekeys_key_holders' => 'Users with a valid key',
     'restore_missing_sharekeys_no_holder' => 'No user has a valid key',
     'restore_missing_sharekeys_details_limit' => 'Only the first 100 objects of each type are listed.',
+    'error_item_not_found' => 'Item not found.',
+    'all_items_deleted_successfully' => 'All items deleted successfully.',
+    'some_items_failed_to_delete' => 'Some items could not be deleted.',
 
 );

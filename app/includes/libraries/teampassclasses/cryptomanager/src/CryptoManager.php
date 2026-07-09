@@ -450,6 +450,35 @@ class CryptoManager
     }
 
     /**
+     * Decrypt a file that was encrypted with phpseclib v1 (legacy attachments).
+     *
+     * Files uploaded before the v1 -> v3 migration were encrypted with v1's
+     * parameterless setPassword(), which derives a different AES key than v3 for
+     * the same object key. This reproduces the original v1 key derivation so old
+     * attachments stay downloadable after the upgrade.
+     *
+     * @param string $ciphertext Raw encrypted file content
+     * @param string $objectKey  Object key used at encryption time
+     * @return string Decrypted file content
+     * @throws Exception
+     */
+    public static function decryptFileLegacyV1(string $ciphertext, string $objectKey): string
+    {
+        if (class_exists('Crypt_AES') === false) {
+            throw new Exception('phpseclib v1 is not available to decrypt legacy attachments');
+        }
+
+        $cipher = new \Crypt_AES();
+        $cipher->setPassword($objectKey);
+        // enableContinuousBuffer() lives in the v1 base class (excluded from static
+        // analysis); invoke it dynamically so the unresolved method is not flagged.
+        $enableContinuousBuffer = 'enableContinuousBuffer';
+        $cipher->$enableContinuousBuffer();
+
+        return (string) $cipher->decrypt($ciphertext);
+    }
+
+    /**
      * Load RSA key (public or private)
      *
      * @param string $key Key data (base64 encoded or plain PEM)
