@@ -7778,13 +7778,9 @@ switch ($inputData['type']) {
                 );
 
                 if ($checkRights['error'] || !$checkRights['delete']) {
-                    echo (string) prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        ),
-                        'encode'
-                    );
+                    // No delete right on this folder: skip and report, never delete (#5275)
+                    $failedDeletions[$itemId] = $lang->get('error_not_allowed_to');
+                    continue;
                 }
 
                 // delete item consists in disabling it
