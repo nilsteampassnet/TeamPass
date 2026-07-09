@@ -520,9 +520,6 @@ return array(
     'email_subject_new_user' => '[TeamPass] Votre nouveau compte',
     'error_empty_data' => 'Aucune donnée à traiter !',
     'error_not_allowed_to' => 'Vous n’etes pas autorisé à faire cela !',
-    'error_item_not_found' => 'Élément introuvable.',
-    'all_items_deleted_successfully' => 'Tous les éléments ont été supprimés avec succès.',
-    'some_items_failed_to_delete' => 'Certains éléments n’ont pas pu être supprimés.',
     'request_access_ot_item' => 'Demander un accès au créateur',
     'email_request_access_subject' => '[TeamPass] Demande d’accès à un élément',
     'email_request_access_mail' => 'Bonjour,<br><br>Ceci est un email généré par Teampass.<br><br>L’utilisateur #tp_user# a demandé un accès à ’#tp_item#’.<br>Cette demande est accompagnée du justificatif suivant:<br><br><i>"#tp_reason#"</i><br><br>Merci de revoir et confirmer ou pas l’accès.<br><br>Cordialement.',
@@ -2095,8 +2092,6 @@ return array(
     'not_secure' => 'Non sécurisé',
     'admin_update_badge' => 'Mise à jour',
     'admin_new_version_available' => 'version %s disponible',
-    'admin_new_version_alert' => 'Nouvelle version TeamPass disponible : %s',
-    'admin_view_release' => 'Voir la release',
     'passphrase_generate' => 'Générer une phrase de passe',
     'passphrase_options' => 'Options de la phrase de passe',
     'passphrase_words' => 'Mots',
@@ -2623,5 +2618,8 @@ return array(
     'restore_missing_sharekeys_key_holders' => 'Utilisateurs disposant d’une clé valide',
     'restore_missing_sharekeys_no_holder' => 'Aucun utilisateur ne dispose d’une clé valide',
     'restore_missing_sharekeys_details_limit' => 'Seuls les 100 premiers objets de chaque type sont listés.',
+    'error_item_not_found' => 'Élément introuvable.',
+    'all_items_deleted_successfully' => 'Tous les éléments ont été supprimés avec succès.',
+    'some_items_failed_to_delete' => 'Certains éléments n’ont pas pu être supprimés.',
 
 );
