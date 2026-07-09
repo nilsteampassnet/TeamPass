@@ -250,6 +250,13 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'hibp_check_interval_days', '7')"
 );
 
+// Phase 2 AES v2 (authenticated GCM) write switch. Disabled by default: when off, new data
+// keeps the legacy CBC format. Existing v2-aware read paths can already decrypt v2 data.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'aes_v2_write_enabled', '0')"
+);
+
 // Add knowledge base comments support.
 $res = addColumnIfNotExist(
     $pre . 'kb',
@@ -687,6 +694,28 @@ mysqli_query(
     $db_link,
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_stale_scan_days', '14')"
 );
+
+// FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
+$res = addColumnIfNotExist(
+    $pre . 'background_subtasks',
+    'retry_count',
+    'TINYINT(3) UNSIGNED NOT NULL DEFAULT 0'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column retry_count to background_subtasks table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+$res = addColumnIfNotExist(
+    $pre . 'background_subtasks',
+    'max_retries',
+    'TINYINT(3) UNSIGNED NOT NULL DEFAULT 3'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error adding column max_retries to background_subtasks table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
 
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(

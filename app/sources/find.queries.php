@@ -667,7 +667,7 @@ if (null === $request->query->get('type')) {
             && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1
         ) {
             $data_item = DB::queryFirstRow(
-                'SELECT i.pw AS pw, s.share_key AS share_key
+                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, s.share_key AS share_key
                 FROM ' . prefixTable('items') . ' AS i
                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                 WHERE i.id = %i AND s.user_id = %i',
@@ -684,7 +684,8 @@ if (null === $request->query->get('type')) {
                     decryptUserObjectKey(
                         $data_item['share_key'],
                         $session->get('user-private_key')
-                    )
+                    ),
+                    (string) ($data_item['pw_iv'] ?? '')
                 );
             }
 

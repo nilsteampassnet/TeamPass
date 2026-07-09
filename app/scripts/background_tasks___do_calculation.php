@@ -127,9 +127,9 @@ $zxcvbn = new Zxcvbn();
 
 // Update item password length and complexity
 $items = DB::query(
-    'SELECT i.id as itemId, i.pw, i.pw_len, i.complexity_level
+    'SELECT i.id as itemId, i.pw, i.pw_iv, i.pw_len, i.complexity_level
     FROM '.prefixTable('items').' AS i
-    WHERE i.pw != "" 
+    WHERE i.pw != ""
     AND i.perso = 0
     AND ((i.pw_len = %i OR i.pw_len IS NULL) OR (i.complexity_level = %i OR i.complexity_level IS NULL))
     LIMIT 0, 100',
@@ -158,7 +158,8 @@ foreach ($items as $item) {
             $itemKey['share_key'],
             $userPrivateKey,
         ),
-        (int) ($item['pw_len'] ?? 0)
+        (int) ($item['pw_len'] ?? 0),
+        (string) ($item['pw_iv'] ?? '')
     );
 
 

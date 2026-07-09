@@ -3166,6 +3166,7 @@ function migrateTo3_DoUserPersonalItemsEncryption(
                         prefixTable('items'),
                         array(
                             'pw' => $cryptedStuff['encrypted'],
+                            'pw_iv' => $cryptedStuff['meta'],
                             'encryption_type' => 'teampass_aes',
                         ),
                         'id = %i',

@@ -706,6 +706,7 @@ class DatabaseInstaller
             array('admin', 'tasks_history_delay', '604800'),
             array('admin', 'cli_php_binary_path', ''),
             array('admin', 'enable_fastcgi_finish_request', '1'),
+            array('admin', 'aes_v2_write_enabled', '0'),
             array('admin', 'oauth_new_user_is_administrated_by', '0'),
             array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
             array('admin', 'oauth_self_register_groups', ''),
@@ -1582,6 +1583,8 @@ class DatabaseInstaller
             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
+            `retry_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
+            `max_retries` tinyint(3) unsigned NOT NULL DEFAULT 3,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (finished_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"

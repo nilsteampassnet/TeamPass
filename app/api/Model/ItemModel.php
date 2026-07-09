@@ -78,9 +78,9 @@ class ItemModel
 
         // Get items
         $rows = DB::query(
-            "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
+            "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
-                t.title as folder_label, 
+                t.title as folder_label,
                 io.secret as otp_secret,
                 (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
                  FROM " . prefixTable('tags') . " AS tg 
@@ -121,7 +121,8 @@ class ItemModel
                             $userPublicKey,
                             (int) $userKey['increment_id'],
                             'sharekeys_items'
-                        )
+                        ),
+                        (string) ($row['pw_iv'] ?? '')
                     )
                 );
             } catch (Exception $e) {
@@ -268,6 +269,7 @@ class ItemModel
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
+            $passwordIv = $cryptedData['meta'] ?? '';
 
             // Generate favicon URL if URL is provided and favicon_url is empty
             if (empty($data['url']) === false) {
@@ -275,7 +277,7 @@ class ItemModel
             }
 
             // Step 8: Insert the new item into the database
-            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel);
+            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel, $passwordIv);
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $fields, $data, $SETTINGS);
@@ -527,6 +529,7 @@ class ItemModel
         return [
             'encrypted' => $cryptedStuff['encrypted'],
             'passwordKey' => $cryptedStuff['objectKey'],
+            'meta' => $cryptedStuff['meta'],
         ];
     }
 
@@ -536,9 +539,10 @@ class ItemModel
      * @param string $password - The encrypted password
      * @param array $itemInfos - Folder-specific settings
      * @param int $complexityLevel - Complexity level computed from the plaintext password by checkPasswordComplexity()
+     * @param string $passwordIv - v2 metadata (pw_iv) returned by encryptPassword(); empty for legacy data
      * @return int - Returns the ID of the newly created item
      */
-    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel) : int
+    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel, string $passwordIv = '') : int
     {
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
 
@@ -548,7 +552,7 @@ class ItemModel
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'pw' => $password,
-                'pw_iv' => '',
+                'pw_iv' => $passwordIv,
                 'pw_len' => strlen($data['password']),
                 'email' => $data['email'],
                 'url' => $data['url'],
@@ -739,7 +743,7 @@ class ItemModel
 
         // Field values for this item, restricted to the folder's categories
         $rows = DB::query(
-            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
+            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
                 i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
                 c.title AS title, c.type AS type, c.masked AS masked,
                 c.role_visibility AS role_visibility
@@ -791,7 +795,8 @@ class ItemModel
                                     $userPublicKey,
                                     (int) $userKey['increment_id'],
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($row['data_iv'] ?? '')
                             )
                         );
                     } catch (Exception $e) {
@@ -877,7 +882,7 @@ class ItemModel
                         'item_id' => $newID,
                         'field_id' => $fieldId,
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ]
                 );
@@ -973,7 +978,7 @@ class ItemModel
             }
 
             $existing = DB::queryFirstRow(
-                'SELECT i.id AS object_id, i.data AS data, i.encryption_type AS encryption_type,
+                'SELECT i.id AS object_id, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type,
                     c.encrypted_data AS encrypted_data, c.title AS title
                 FROM ' . prefixTable('categories_items') . ' AS i
                 INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
@@ -992,7 +997,7 @@ class ItemModel
                             'item_id' => $itemId,
                             'field_id' => $fieldId,
                             'data' => $cryptedStuff['encrypted'],
-                            'data_iv' => '',
+                            'data_iv' => $cryptedStuff['meta'],
                             'encryption_type' => 'teampass_aes',
                         ]
                     );
@@ -1046,7 +1051,8 @@ class ItemModel
                                 $userPublicKey,
                                 (int) $userKey['increment_id'],
                                 'sharekeys_fields'
-                            )
+                            ),
+                            (string) ($existing['data_iv'] ?? '')
                         )
                     );
                 }
@@ -1064,7 +1070,7 @@ class ItemModel
                     prefixTable('categories_items'),
                     [
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ],
                     'item_id = %i AND field_id = %i',
@@ -1259,6 +1265,7 @@ class ItemModel
                 $cryptedData = $this->encryptPassword($newPassword);
                 $passwordKey = $cryptedData['passwordKey'];
                 $updateData['pw'] = $cryptedData['encrypted'];
+                $updateData['pw_iv'] = $cryptedData['meta'] ?? '';
                 $updateData['pw_len'] = strlen($newPassword);
                 $updateData['complexity_level'] = $complexityLevel;
             }

@@ -3430,6 +3430,32 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     // making future logins use Pass 1 only.
 
     if (empty($userPwd) === false) {
+        // AES v2 (authenticated GCM): value is "v2:<base64(meta)>:<base64(ciphertext)>".
+        // v2 keys are always written with the raw password (post xss-fix) and the GCM tag
+        // authenticates, so a single attempt is enough (no PKCS7 false-positive guard needed).
+        if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+            $parts = explode(':', $userPrivateKey, 3);
+            if (count($parts) === 3) {
+                try {
+                    $decrypted = (string) \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                        base64_decode($parts[2]),
+                        base64_decode($parts[1]),
+                        $userPwd,
+                        '',
+                        'pbkdf2'
+                    );
+                    if (strpos($decrypted, '-----BEGIN') !== false) {
+                        return base64_encode($decrypted);
+                    }
+                } catch (Exception $e) {
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS decryptPrivateKey v2 failed: ' . $e->getMessage());
+                    }
+                }
+            }
+            return '';
+        }
+
         $keyRaw = base64_decode($userPrivateKey);
 
         /**
@@ -3498,7 +3524,14 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     // chars but is removed for consistency and to avoid confusion.
     if (empty($userPwd) === false) {
         try {
-            // Encrypt using CryptoManager (phpseclib v3, SHA-256)
+            if (aesV2WriteEnabled() === true) {
+                // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
+                // companion column, so the metadata is encoded in the value with a "v2:" prefix.
+                $v2 = CryptoManager::aesGcmEncrypt(base64_decode($userPrivateKey), $userPwd, '', 'pbkdf2');
+                return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+            }
+
+            // Legacy format (AES-CBC, SHA-256) — unchanged
             $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
                 $userPwd,
@@ -3554,6 +3587,43 @@ function decryptPrivateKeyWithMigration(
     //
     // Return array includes:
     //   'needs_xss_migration' (bool) — true when Pass 2 was needed (re-encrypt required)
+
+    // AES v2 (authenticated GCM): self-describing "v2:" prefix — already the current format,
+    // so no migration is needed. The GCM tag authenticates the password (clean failure on a
+    // wrong password). version_used stays 3 (the RSA sharekey layer is v3, unaffected).
+    if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+        $parts = explode(':', $userPrivateKey, 3);
+        if (count($parts) === 3) {
+            try {
+                $decrypted = (string) CryptoManager::aesGcmDecrypt(
+                    base64_decode($parts[2]),
+                    base64_decode($parts[1]),
+                    $userPwd,
+                    '',
+                    'pbkdf2'
+                );
+                if (strpos($decrypted, '-----BEGIN') !== false) {
+                    return [
+                        'private_key_clear'   => base64_encode($decrypted),
+                        'migration_error'     => false,
+                        'needs_migration'     => false,
+                        'needs_xss_migration' => false,
+                        'version_used'        => 3,
+                    ];
+                }
+            } catch (Exception $e) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Error - User ' . $userId . ' v2 private key decryption failed: ' . $e->getMessage());
+                }
+            }
+        }
+        return [
+            'private_key_clear'   => '',
+            'migration_error'     => true,
+            'needs_migration'     => false,
+            'needs_xss_migration' => false,
+        ];
+    }
 
     $keyRaw = base64_decode($userPrivateKey);
 
@@ -4098,14 +4168,100 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
 }
 
 /**
+ * Whether new item/field/file data must be written in the AES v2 (authenticated
+ * GCM) format. Gated by the admin setting `aes_v2_write_enabled` (default 0).
+ *
+ * When OFF, doDataEncryption() keeps emitting the legacy CBC format (meta='')
+ * so behaviour is unchanged. Turning it ON is the rollback switch for Phase 2.
+ *
+ * @return bool
+ */
+function aesV2WriteEnabled(): bool
+{
+    if (class_exists('TeampassClasses\ConfigManager\ConfigManager') === true) {
+        $configManager = new ConfigManager();
+        return (int) ($configManager->getSetting('aes_v2_write_enabled') ?? 0) === 1;
+    }
+    return false;
+}
+
+/**
+ * Returns the AES v2 migration progress for the three encrypted stores.
+ *
+ * For each store it counts how many encrypted values still use the legacy CBC
+ * format (companion meta column empty / no "v2:" prefix) versus the v2 GCM
+ * format, plus a completion percentage. Used by the admin Security tab to track
+ * the lazy migration triggered by the aes_v2_write_enabled flag.
+ *
+ * @return array<string, array{legacy: int, v2: int, total: int, percent: int}>
+ */
+function getAesV2MigrationStatus(): array
+{
+    // Items: legacy = has a password but empty pw_iv; v2 = pw_iv carries metadata.
+    $itemsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw_iv != ''"
+    );
+    $itemsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw != '' AND pw_iv = ''"
+    );
+
+    // Custom fields: only encrypted values are concerned (encryption_type set).
+    $fieldsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv != ''",
+        TP_ENCRYPTION_NAME
+    );
+    $fieldsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv = ''",
+        TP_ENCRYPTION_NAME
+    );
+
+    // Private keys: v2 carries the "v2:" prefix. Skip service accounts and
+    // placeholder keys ('none', '') that never go through a password re-encryption.
+    $keysV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " WHERE private_key LIKE 'v2:%'"
+    );
+    $keysLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . "
+        WHERE private_key NOT LIKE 'v2:%'
+        AND private_key != '' AND private_key != 'none'
+        AND id NOT IN %ls",
+        [OTV_USER_ID, SSH_USER_ID, API_USER_ID]
+    );
+
+    $build = static function (int $legacy, int $v2): array {
+        $total = $legacy + $v2;
+        return [
+            'legacy'  => $legacy,
+            'v2'      => $v2,
+            'total'   => $total,
+            'percent' => $total === 0 ? 100 : (int) round($v2 / $total * 100),
+        ];
+    };
+
+    return [
+        'items'        => $build($itemsLegacy, $itemsV2),
+        'fields'       => $build($fieldsLegacy, $fieldsV2),
+        'private_keys' => $build($keysLegacy, $keysV2),
+    ];
+}
+
+/**
  * Encrypts a string using AES.
  *
- * @param string $data String to encrypt
- * @param string $key
+ * Emits the AES v2 (authenticated GCM, random IV + salt) format when
+ * aesV2WriteEnabled() is true, otherwise the legacy CBC format. The returned
+ * 'meta' MUST be stored in the companion column (pw_iv / data_iv): it is empty
+ * for legacy data and carries the v2 nonce/salt otherwise.
  *
- * @return array
+ * @param string      $data              String to encrypt
+ * @param string|null $key               Reuse an existing object key (base64) instead of generating one
+ * @param bool        $forceLegacyFormat Force the legacy CBC format even when v2 writes are enabled.
+ *                                       Use only for storage targets that have no companion meta column
+ *                                       (e.g. items_change.pw) and never go through doDataDecryption($meta).
+ *
+ * @return array{encrypted: string, objectKey: string, meta: string}
  */
-function doDataEncryption(string $data, ?string $key = null): array
+function doDataEncryption(string $data, ?string $key = null, bool $forceLegacyFormat = false): array
 {
     // Passwords are secrets: do NOT sanitize before encryption or HTML-sensitive chars get corrupted.
     // XSS protection applies at output (HTML rendering), never at the encryption boundary.
@@ -4114,29 +4270,48 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
 
-    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    if ($forceLegacyFormat === false && aesV2WriteEnabled() === true) {
+        // AES v2: authenticated GCM with random nonce + salt; meta carries nonce/salt.
+        // Key material is the raw objectKey string (same value the legacy path feeds to aesEncrypt).
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($data, $objectKey);
+
+        return [
+            'encrypted' => base64_encode($v2['ciphertext']),
+            'objectKey' => base64_encode($objectKey),
+            'meta' => base64_encode($v2['meta']),
+        ];
+    }
+
+    // Legacy format (AES-CBC) — unchanged
     $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
 
     return [
         'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
+        'meta' => '',
     ];
 }
 
 /**
  * Decrypts a string using AES.
  *
- * @param string $data Encrypted data
- * @param string $key  Key to uncrypt
+ * Dispatches on $meta (the pw_iv / data_iv column value):
+ *   - $meta === '' → legacy format (AES-CBC, fixed IV/salt) — behaviour unchanged.
+ *   - $meta !== '' → AES v2 (authenticated GCM); nonce + salt are carried in $meta.
+ *
+ * @param string $data Encrypted data (base64)
+ * @param string $key  Object key to decrypt with (base64)
+ * @param string $meta Base64 v2 metadata (pw_iv / data_iv); empty for legacy data
  *
  * @return string Empty string on decryption failure
  */
-function doDataDecryption(string $data, string $key): string
+function doDataDecryption(string $data, string $key, string $meta = ''): string
 {
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
+    // $meta is base64 of binary (version|nonce|salt) — not user-facing text, left untouched.
 
     // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
     if (empty($key)) {
@@ -4144,11 +4319,20 @@ function doDataDecryption(string $data, string $key): string
     }
 
     try {
-        // Decrypt using CryptoManager (phpseclib v3)
-        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-            base64_decode($data),
-            base64_decode($key)
-        );
+        if ($meta === '') {
+            // Legacy format (AES-CBC) — unchanged
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($data),
+                base64_decode($key)
+            );
+        } else {
+            // AES v2 (authenticated GCM) — nonce/salt carried in $meta (pw_iv/data_iv)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                base64_decode($data),
+                base64_decode($meta),
+                base64_decode($key)
+            );
+        }
 
         return base64_encode((string) $decrypted);
     } catch (Exception $e) {
@@ -4156,6 +4340,87 @@ function doDataDecryption(string $data, string $key): string
             error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
         }
         return '';
+    }
+}
+
+/**
+ * Lazily upgrade a legacy (AES-CBC) encrypted value to the AES v2 (authenticated
+ * GCM) format on read, reusing the existing object key so the RSA sharekey layer
+ * stays untouched. Mirrors the phpseclib v1→v3 lazy migration pattern.
+ *
+ * No-op (returns false) unless ALL of these hold:
+ *   - aesV2WriteEnabled() is true (the admin rollback switch),
+ *   - the value is still legacy ($currentMeta === ''),
+ *   - we have a row id, a ciphertext and an object key in hand.
+ *
+ * The object key is reused verbatim (same key material doDataDecryption() feeds
+ * back on the next read), so every existing sharekey keeps decrypting the value
+ * and no sharekey/RSA work is needed. Failures never bubble up to the read path:
+ * the row is left in the legacy format and retried on the next access.
+ *
+ * @param string $table        Logical table name ('items' / 'categories_items')
+ * @param string $dataColumn   Ciphertext column ('pw' / 'data')
+ * @param string $metaColumn   Companion meta column ('pw_iv' / 'data_iv')
+ * @param int    $rowId        Row id to update
+ * @param string $encryptedB64 Current ciphertext (base64) read from $dataColumn
+ * @param string $currentMeta  Current meta read from $metaColumn ('' = legacy)
+ * @param string $objectKeyB64 Object key (base64) already decrypted from the sharekey
+ *
+ * @return bool True when the row was upgraded to v2, false otherwise
+ */
+function doDataReEncryption(
+    string $table,
+    string $dataColumn,
+    string $metaColumn,
+    int $rowId,
+    string $encryptedB64,
+    string $currentMeta,
+    string $objectKeyB64
+): bool {
+    // Only migrate legacy values, and only while v2 writes are enabled.
+    if ($currentMeta !== '' || $rowId <= 0 || $encryptedB64 === '' || $objectKeyB64 === ''
+        || aesV2WriteEnabled() !== true
+    ) {
+        return false;
+    }
+
+    // The raw object key is the exact key material both the legacy decrypt and the
+    // v2 re-encrypt must use (no xss_clean, to guarantee a byte-exact round-trip).
+    $rawObjectKey = base64_decode($objectKeyB64, true);
+    if ($rawObjectKey === false || $rawObjectKey === '') {
+        return false;
+    }
+
+    try {
+        // Recover the exact original bytes (doDataDecryption returns base64 of the
+        // raw plaintext); re-encrypt those same bytes with the same object key.
+        $plaintextB64 = doDataDecryption($encryptedB64, $objectKeyB64, '');
+        if ($plaintextB64 === '') {
+            return false;
+        }
+        $plaintext = base64_decode($plaintextB64, true);
+        if ($plaintext === false) {
+            return false;
+        }
+
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($plaintext, $rawObjectKey);
+
+        DB::update(
+            prefixTable($table),
+            [
+                $dataColumn => base64_encode($v2['ciphertext']),
+                $metaColumn => base64_encode($v2['meta']),
+            ],
+            'id = %i',
+            $rowId
+        );
+
+        return true;
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS doDataReEncryption failed: ' . $e->getMessage());
+        }
+        return false;
     }
 }
 
@@ -4236,10 +4501,15 @@ function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = fa
 /**
  * Decrypt an item password and normalize legacy entity-encoded values when
  * pw_len proves that the decoded form is the original one.
+ *
+ * @param string   $encryptedPassword Encrypted password (base64)
+ * @param string   $objectKey         Object key (base64)
+ * @param int|null $storedLength      Stored pw_len for legacy entity normalization
+ * @param string   $meta              Base64 v2 metadata (items.pw_iv); empty for legacy data
  */
-function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null): string
+function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null, string $meta = ''): string
 {
-    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey);
+    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey, $meta);
     if ($decryptedB64 === '') {
         return '';
     }
@@ -4616,15 +4886,26 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
 /**
  * Permit to store the sharekey of an object for users.
  *
+ * When $post_folder_is_personal === 1, the object is personal: the sharekey is created only for
+ * the owner and for TP_USER_ID (server-side recovery). Otherwise, it is created for every eligible
+ * user (all active users with a public key, except the OTV/SSH/API system accounts).
+ *
  * @param string $object_name             Type for table selection
- * @param int    $post_folder_is_personal Personal
+ * @param int    $post_folder_is_personal 1 = personal object (owner + TP_USER_ID only), 0 = public
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
- * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
- * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
+ * @param bool   $onlyForUser             DEPRECATED — ignored. Callers pass true on public paths too,
+ *                                        so it is unreliable; $post_folder_is_personal is the signal.
+ * @param bool   $deleteAll               If is TRUE, then stale/foreign entries are deleted
  * @param array  $objectKeyArray          Array of objects
  * @param int    $all_users_except_id     All users except this one
  * @param int    $apiUserId               API User ID
+ * @param int    $callerOnlyUserId        FUNC-1 — when >= 0 (and the object is public), the sharekey
+ *                                        is created ONLY for this user (the editor) and nothing is
+ *                                        deleted. The full fan-out to all other users and the stale-key
+ *                                        cleanup (deleteAll) are deferred to the background task. Lets
+ *                                        the editor read his change immediately without N×RSA in the
+ *                                        HTTP thread. Ignored for personal objects.
  *
  * @return void
  */
@@ -4637,7 +4918,8 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = [],
     int $all_users_except_id = -1,
-    int $apiUserId = -1
+    int $apiUserId = -1,
+    int $callerOnlyUserId = -1
 ): void {
 
     $session = SessionManager::getSession();
@@ -4645,6 +4927,111 @@ function storeUsersShareKey(
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
+
+    // SEC-8 — Personal object: distribute the sharekey ONLY to the owner and to TP_USER_ID
+    // (server-side recovery key). $onlyForUser is intentionally NOT used as the decision signal:
+    // callers historically pass it as true on public paths too, so it is unreliable. The personal
+    // folder flag is the authoritative signal. See encryption-improvement-roadmap.md §5.1.
+    if ($post_folder_is_personal === 1) {
+        $personalRecipients = [$userId, (int) TP_USER_ID];
+        $recipients = DB::query(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id IN %li
+            AND public_key != ""',
+            $personalRecipients
+        );
+
+        // FUNC-3 — isolate each recipient: a single invalid public key must not
+        // abort the whole batch. On failure we log and skip that recipient only.
+        $rows = [];
+        foreach ($recipients as $recipient) {
+            $recipientId = (int) $recipient['id'];
+            if (count($objectKeyArray) === 0) {
+                try {
+                    $rows[] = [
+                        'object_id'          => $post_object_id,
+                        'user_id'            => $recipientId,
+                        'share_key'          => encryptUserObjectKey($objectKey, $recipient['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => $recipientId,
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $recipient['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+        batchUpsertSharekeys(prefixTable($object_name), $rows);
+
+        // Remove any foreign sharekey left on this personal object (legacy over-distribution).
+        if ($deleteAll === true && count($objectKeyArray) === 0) {
+            DB::delete(
+                prefixTable($object_name),
+                'object_id = %i AND user_id NOT IN %li',
+                $post_object_id,
+                [$userId, (int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID]
+            );
+        }
+        return;
+    }
+
+    // FUNC-1 — caller-only synchronous distribution (public objects).
+    // create_item / update_item use this so the editing user can read his change
+    // immediately (1×RSA) while the full fan-out to all other users — and the
+    // deleteAll stale-key cleanup — is deferred to the background task. This branch
+    // is purely additive: it never deletes an existing sharekey (the background
+    // fan-out owns deletion). Reached only for public objects (personal returns above).
+    if ($callerOnlyUserId !== -1) {
+        $caller = DB::queryFirstRow(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i
+            AND public_key != ""',
+            $callerOnlyUserId
+        );
+        if (empty($caller) === false) {
+            $rows = [];
+            if (count($objectKeyArray) === 0) {
+                try {
+                    $rows[] = [
+                        'object_id'          => $post_object_id,
+                        'user_id'            => (int) $caller['id'],
+                        'share_key'          => encryptUserObjectKey($objectKey, $caller['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => (int) $caller['id'],
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $caller['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
+                }
+            }
+            batchUpsertSharekeys(prefixTable($object_name), $rows);
+        }
+        return;
+    }
 
     // Create sharekey for each user
     $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
@@ -4659,42 +5046,52 @@ function storeUsersShareKey(
         $user_ids
     );
 
-    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert
+    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert.
+    // FUNC-3 — each user is isolated: a failing RSA encryption (invalid public key)
+    // is logged and skipped instead of aborting the whole batch. A user is added to
+    // $processedUserIds only when at least one of his sharekeys was produced, so the
+    // deleteAll pass below never wipes a key it could not regenerate.
     $rows = [];
     $processedUserIds = [];
     foreach ($users as $user) {
-        try {
-            if (count($objectKeyArray) === 0) {
-                if (WIP === true) {
-                    error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
-                }
+        $loopUserId = (int) $user['id'];
+        $userProcessed = false;
+        if (count($objectKeyArray) === 0) {
+            if (WIP === true) {
+                error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
+            }
+            try {
                 $rows[] = [
                     'object_id'          => $post_object_id,
-                    'user_id'            => (int) $user['id'],
+                    'user_id'            => $loopUserId,
                     'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
                     'encryption_version' => 3,
                 ];
-            } else {
-                foreach ($objectKeyArray as $object) {
-                    if (WIP === true) {
-                        error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
-                    }
+                $userProcessed = true;
+            } catch (Throwable $e) {
+                error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+            }
+        } else {
+            foreach ($objectKeyArray as $object) {
+                if (WIP === true) {
+                    error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                }
+                try {
                     $rows[] = [
                         'object_id'          => (int) $object['objectId'],
-                        'user_id'            => (int) $user['id'],
+                        'user_id'            => $loopUserId,
                         'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
                         'encryption_version' => 3,
                     ];
+                    $userProcessed = true;
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
                 }
             }
-        } catch (Exception $e) {
-            // One user with an invalid public key must not abort the distribution
-            // to all the other users. Log and continue with the next user.
-            error_log('TEAMPASS Error - storeUsersShareKey - Cannot encrypt object key for user #' . $user['id'] . ' (' . $object_name . ' / object ' . $post_object_id . '): ' . $e->getMessage());
         }
-        // The user stays in the eligible list even on encryption failure so the
-        // stale-key cleanup below never deletes an existing sharekey.
-        $processedUserIds[] = (int) $user['id'];
+        if ($userProcessed === true) {
+            $processedUserIds[] = $loopUserId;
+        }
     }
 
     // Single batched upsert instead of N individual queries
@@ -4711,13 +5108,19 @@ function storeUsersShareKey(
                 $post_object_id,
                 $processedUserIds
             );
-        } else {
-            // No eligible users found: remove all sharekeys for this object
+        } elseif (empty($users)) {
+            // No eligible users at all: remove all sharekeys for this object
             DB::delete(
                 prefixTable($object_name),
                 'object_id = %i',
                 $post_object_id
             );
+        } else {
+            // FUNC-3 — eligible users existed but every RSA encryption failed.
+            // Do NOT wipe the existing sharekeys: that would orphan the object
+            // (invariant I4 — no encrypted object without a live key). Keep them
+            // for retry/repair and surface the anomaly in the log.
+            error_log('TEAMPASS Error - storeUsersShareKey: all RSA encryptions failed for object ' . $post_object_id . ' on ' . $object_name . '; skipping deleteAll to avoid orphaning the object.');
         }
     }
 }
@@ -6297,7 +6700,12 @@ function createTaskForItem(
             'created_at' => time(),
             'process_type' => $processType,
             'arguments' => json_encode([
-                'all_users_except_id' => (int) $userId,
+                // FUNC-1 — the background fan-out distributes to ALL eligible users
+                // (caller included) and now owns the deleteAll cleanup. The caller must
+                // stay in the recipient set, otherwise deleteAll=true would wipe the
+                // sharekey the synchronous caller-only pass just created. So we no longer
+                // exclude the editor here (-1 = nobody excluded).
+                'all_users_except_id' => -1,
                 'item_id' => (int) $itemId,
                 'object_key' => $objectKey,
                 'author' => (int) $userId,

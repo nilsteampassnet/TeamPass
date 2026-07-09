@@ -43,7 +43,7 @@ define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 1000);
 define('WIP', (bool) getenv('TEAMPASS_DEBUG'));
 define('UPGRADE_SEND_EMAILS', true);
-define('KEY_LENGTH', 16);
+define('KEY_LENGTH', 64);   // objectKey entropy: 64 hex chars = 256 bits (SEC-4). Backward-compatible: existing 16-hex keys keep decrypting; only re-encryption upgrades old objects.
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
 define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 300);  // Lock expires after 5 minutes without heartbeat renewal
 define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server

@@ -341,7 +341,7 @@ switch ($post_type) {
         );
 
         $rows = DB::query(
-            'SELECT i.id, i.pw, i.complexity_level, i.created_at, i.hibp_status,
+            'SELECT i.id, i.pw, i.pw_iv, i.complexity_level, i.created_at, i.hibp_status,
                 n.renewal_period,
                 ' . $lastRelevantSql . ' AS last_relevant_date,
                 COALESCE(sc.share_count, 0) AS share_count,
@@ -389,7 +389,7 @@ switch ($post_type) {
             if ($objectKey === '') {
                 $flagOrphaned = 1;
             } else {
-                $plaintext = (string) base64_decode(doDataDecryption((string) $r['pw'], $objectKey));
+                $plaintext = (string) base64_decode(doDataDecryption((string) $r['pw'], $objectKey, (string) ($r['pw_iv'] ?? '')));
                 if ($plaintext === '' && (string) $r['pw'] !== '') {
                     $flagOrphaned = 1;
                 }
