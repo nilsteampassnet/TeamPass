@@ -4343,8 +4343,9 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
     $safeFileName = $antiXSS->xss_clean(base64_decode($fileName));
 
     // Set the object key
+    $objectKey = base64_decode($key);
     $cipher->setIV(str_repeat("\0", 16));
-    $cipher->setPassword(base64_decode($key));
+    $cipher->setPassword($objectKey);
     // Prevent against out of memory
     $cipher->enableContinuousBuffer();
     // Get file content
@@ -4361,8 +4362,18 @@ function decryptFile(string $fileName, string $filePath, string $key): string|ar
 
     if (WIP) error_log('DEBUG: File image url -> '.filter_var($safeFilePath, FILTER_SANITIZE_URL));
 
-    // Decrypt file content and return
-    return base64_encode($cipher->decrypt($ciphertext));
+    // Decrypt file content and return.
+    // Attachments uploaded before the phpseclib v1 -> v3 migration were encrypted with
+    // v1's parameterless setPassword(), which derives a different AES key than v3 for the
+    // same object key. Try v3 first, then transparently fall back to v1 for legacy files.
+    try {
+        return base64_encode($cipher->decrypt($ciphertext));
+    } catch (\Throwable $e) {
+        // Legacy phpseclib v1 attachment: reproduce the original key derivation.
+        return base64_encode(
+            \TeampassClasses\CryptoManager\CryptoManager::decryptFileLegacyV1($ciphertext, $objectKey)
+        );
+    }
 }
 
 /**
