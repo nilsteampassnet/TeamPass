@@ -5782,6 +5782,9 @@ switch ($inputData['type']) {
         // Accumulate per-folder counter deltas, applied once after the loop (#5221)
         $folderCounterDeltas = [];
 
+        // Track items skipped because the user lacks the required rights (#5275)
+        $deniedItems = 0;
+
         // loop on items to move
         foreach (explode(';', $post_item_ids) as $item_id) {
             if (empty($item_id) === false) {
@@ -5793,20 +5796,37 @@ switch ($inputData['type']) {
                     WHERE i.id=%i',
                     $item_id
                 );
+                if ($dataSource === null) {
+                    continue;
+                }
 
-                // Check that user can access this folder
+                // Check that user can access both source and destination folders
                 if (
                     in_array($dataSource['id_tree'], $session->get('user-accessible_folders')) === false
                     || in_array($inputData['folderId'], $session->get('user-accessible_folders')) === false
                 ) {
-                    echo (string) prepareExchangedData(
-                        array(
-                            'error' => true,
-                            'message' => $lang->get('error_not_allowed_to'),
-                        ),
-                        'encode'
-                    );
-                    exit;
+                    $deniedItems++;
+                    continue;
+                }
+
+                // Enforce move rights like the single move_item path (#5275):
+                // delete right on the source folder AND edit right on the destination.
+                $sourceRights = getCurrentAccessRights(
+                    (int) $session->get('user-id'),
+                    (int) $item_id,
+                    (int) $dataSource['id_tree']
+                );
+                $destinationRights = getCurrentAccessRights(
+                    (int) $session->get('user-id'),
+                    (int) $item_id,
+                    (int) $inputData['folderId']
+                );
+                if (
+                    $sourceRights['error'] === true || $sourceRights['delete'] === false
+                    || $destinationRights['error'] === true || $destinationRights['edit'] === false
+                ) {
+                    $deniedItems++;
+                    continue;
                 }
 
                 // get data about new folder
@@ -6084,10 +6104,11 @@ switch ($inputData['type']) {
             adjustFolderItemsCounter((int) $folderId, (int) $folderDelta);
         }
 
+        // Report a partial denial when at least one item was skipped for lack of rights (#5275)
         echo (string) prepareExchangedData(
             array(
-                'error' => false,
-                'message' => '',
+                'error' => $deniedItems > 0,
+                'message' => $deniedItems > 0 ? $lang->get('error_not_allowed_to') : '',
             ),
             'encode'
         );
