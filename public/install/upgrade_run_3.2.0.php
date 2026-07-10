@@ -788,6 +788,33 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'access_reviews_enabled', '0')"
 );
 
+// Add the data_classification table — Data Classification & Ownership (F4,
+// Enterprise governance). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'data_classification` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `item_id` int(12) NOT NULL,
+        `level` tinyint(1) NOT NULL DEFAULT 0,
+        `owner_id` int(12) NULL DEFAULT NULL,
+        `updated_by` int(12) NOT NULL DEFAULT 0,
+        `updated_at` int(12) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `uk_item` (`item_id`),
+        KEY `idx_level` (`level`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating data_classification table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Data classification toggle (F4). Off by default — admin opt-in.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'data_classification_enabled', '0')"
+);
+
 // FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
 $res = addColumnIfNotExist(
     $pre . 'background_subtasks',

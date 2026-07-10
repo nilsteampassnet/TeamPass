@@ -315,7 +315,8 @@ function performStep5() {
         { id: 'check67', action: 'user_nudges' },
         { id: 'check68', action: 'rotation_flags' },
         { id: 'check69', action: 'access_reviews' },
-        { id: 'check70', action: 'access_review_items' }
+        { id: 'check70', action: 'access_review_items' },
+        { id: 'check71', action: 'data_classification' }
     ];
     
     let errorOccurred = false; // Variable to track errors

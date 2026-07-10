@@ -108,6 +108,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['flagged_at', '<?php echo $lang->get('date'); ?>'],
             ['status', '<?php echo $lang->get('status'); ?>'],
         ],
+        'classification': [
+            ['level', '<?php echo $lang->get('classification'); ?>'],
+            ['items', '<?php echo $lang->get('items'); ?>'],
+            ['percent', '%'],
+        ],
     }
 
     const tpReportTips = {
@@ -115,6 +120,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'access_changes': '<?php echo $lang->get('compliance_report_access_changes_tip'); ?>',
         'posture_summary': '<?php echo $lang->get('compliance_report_posture_summary_tip'); ?>',
         'rotation_evidence': '<?php echo $lang->get('compliance_report_rotation_evidence_tip'); ?>',
+        'classification': '<?php echo $lang->get('compliance_report_classification_tip'); ?>',
     }
 
     let tpReportCsv = ''

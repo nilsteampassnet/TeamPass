@@ -2684,5 +2684,15 @@ return array(
     'at_review_started' => 'Campagne de recertification lancée',
     'at_review_closed' => 'Campagne de recertification clôturée',
     'at_review_access_revoked' => 'Accès révoqué pendant la recertification',
+    'classification' => 'Classification',
+    'classification_level_unclassified' => 'Non classifié',
+    'classification_level_public' => 'Public',
+    'classification_level_internal' => 'Interne',
+    'classification_level_confidential' => 'Confidentiel',
+    'classification_level_restricted' => 'Restreint',
+    'settings_data_classification' => 'Étiquettes de classification des données',
+    'settings_data_classification_tip' => 'Permettre aux utilisateurs d’étiqueter les éléments Public / Interne / Confidentiel / Restreint depuis la fiche de l’élément. Les étiquettes sont des métadonnées (jamais du contenu chiffré) et alimentent les rapports de conformité.',
+    'compliance_report_classification' => 'Couverture de classification',
+    'compliance_report_classification_tip' => 'Combien d’éléments partagés portent chaque étiquette de classification, et combien restent non classifiés. Comptages uniquement.',
 
 );

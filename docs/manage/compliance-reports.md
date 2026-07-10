@@ -30,6 +30,10 @@ Aggregated counts from the [Security Posture Dashboard](../features/breach-detec
 
 Every credential flagged for rotation by the [Leaver risk](../features/leaver-risk.md) workflow, with the item, folder, leaver, author, date, and the **current state** (pending / rotated / dismissed). This closes the audit loop: "you flagged 37 credentials on the leaver's departure — were they actually rotated?"
 
+### Classification coverage
+
+Available when [Data classification](../features/classification.md) is enabled: how many shared items carry each classification label (Public / Internal / Confidential / Restricted) and how many are still **unclassified**. Counts only.
+
 ---
 
 ## CSV export

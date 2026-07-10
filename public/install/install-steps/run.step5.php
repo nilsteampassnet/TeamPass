@@ -530,6 +530,7 @@ class DatabaseInstaller
             array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'compliance_reports_enabled', '0'),
             array('admin', 'access_reviews_enabled', '0'),
+            array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1771,6 +1772,24 @@ class DatabaseInstaller
             PRIMARY KEY (`id`),
             UNIQUE KEY `uk_review_grant` (`review_id`, `role_id`, `folder_id`),
             KEY `idx_review_decision` (`review_id`, `decision`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table data_classification (Data Classification & Ownership - F4)
+    private function data_classification()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "data_classification` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `level` TINYINT(1) NOT NULL DEFAULT 0,
+            `owner_id` INT(12) NULL DEFAULT NULL,
+            `updated_by` INT(12) NOT NULL DEFAULT 0,
+            `updated_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_level` (`level`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

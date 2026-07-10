@@ -32,6 +32,7 @@
 - [Knowledge Base](features/knowledge-base.md)
 - [Breach Detection](features/breach-detection.md)
 - [Leaver Risk](features/leaver-risk.md)
+- [Classification](features/classification.md)
 - **Manage**
 - [Settings](manage/settings.md)
 - [Compliance Reports](manage/compliance-reports.md)

@@ -43,6 +43,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 require_once 'main.functions.php';
 require_once __DIR__ . '/reports.functions.php';
 require_once __DIR__ . '/leaver.functions.php';
+require_once __DIR__ . '/classification.functions.php';
 
 // init
 loadClasses('DB');
@@ -309,6 +310,63 @@ switch ($post_type) {
                     ['Item', 'Folder', 'Leaver', 'Flagged by', 'Flagged at', 'Status'],
                     $rows,
                     ['label', 'folder', 'leaver', 'flagged_by', 'flagged_at', 'status']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * CLASSIFICATION COVERAGE — items per classification level (F4)
+     */
+    case 'report_classification':
+        // Total active shared items (the classifiable population)
+        $totalItems = (int) DB::queryFirstField(
+            'SELECT COUNT(*)
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON n.id = i.id_tree
+            WHERE i.inactif = %i AND i.deleted_at IS NULL AND i.perso = %i AND n.personal_folder = %i',
+            0,
+            0,
+            0
+        );
+
+        // Classified counts per level (active shared items only)
+        $levelRecords = DB::query(
+            'SELECT dc.level, COUNT(*) AS nb
+            FROM ' . prefixTable('data_classification') . ' AS dc
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = dc.item_id
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON n.id = i.id_tree
+            WHERE i.inactif = %i AND i.deleted_at IS NULL AND i.perso = %i AND n.personal_folder = %i
+            GROUP BY dc.level',
+            0,
+            0,
+            0
+        );
+        $levelCounts = [];
+        foreach ($levelRecords as $levelRecord) {
+            $levelCounts[(int) $levelRecord['level']] = (int) $levelRecord['nb'];
+        }
+
+        $rows = [];
+        foreach (classificationCoverage($levelCounts, $totalItems) as $row) {
+            $translated = $lang->get('classification_level_' . $row['slug']);
+            $rows[] = [
+                'level' => empty($translated) === false ? $translated : (string) $row['slug'],
+                'items' => $row['items'],
+                'percent' => $row['percent'],
+            ];
+        }
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'total_items' => $totalItems,
+                'rows' => $rows,
+                'csv' => reportsBuildCsv(
+                    ['Classification', 'Items', 'Percent'],
+                    $rows,
+                    ['level', 'items', 'percent']
                 ),
             ],
             'encode'

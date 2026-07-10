@@ -125,6 +125,9 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
                                     <option value='access_changes'><?php echo $lang->get('compliance_report_access_changes'); ?></option>
                                     <option value='posture_summary'><?php echo $lang->get('compliance_report_posture_summary'); ?></option>
                                     <option value='rotation_evidence'><?php echo $lang->get('compliance_report_rotation_evidence'); ?></option>
+<?php if ((int) ($SETTINGS['data_classification_enabled'] ?? 0) === 1) : ?>
+                                    <option value='classification'><?php echo $lang->get('compliance_report_classification'); ?></option>
+<?php endif; ?>
                                 </select>
                                 <small class='form-text text-muted' id='report-type-tip'></small>
                             </div>
