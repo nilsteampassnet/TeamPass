@@ -666,6 +666,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             <p>' . $lang->get('statistics') . '</p>
                         </a>
                     </li><li class="nav-item">
+                        <a href="#" data-name="reports" class="nav-link', $get['page'] === 'reports' ? ' active' : '', '">
+                            <i class="fa-solid fa-file-contract nav-icon"></i>
+                            <p>' . $lang->get('compliance_reports') . '</p>
+                        </a>
+                    </li><li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . $lang->get('tasks') . '</p>
@@ -1663,6 +1668,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/oauth.js.php';        
         } elseif ($get['page'] === 'tools') {
             include_once TEAMPASS_APP . '/pages/tools.js.php';
+        } elseif ($get['page'] === 'reports') {
+            include_once TEAMPASS_APP . '/pages/reports.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {

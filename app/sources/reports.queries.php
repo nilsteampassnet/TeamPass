@@ -1,0 +1,324 @@
+<?php
+
+declare(strict_types=1);
+
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      reports.queries.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ *
+ * Compliance Reports & Evidence Export (F6 — Enterprise governance).
+ * Admin-only, metadata-only aggregations. No password value ever leaves
+ * this handler.
+ */
+
+use TeampassClasses\SessionManager\SessionManager;
+use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
+use TeampassClasses\Language\Language;
+use TeampassClasses\PerformChecks\PerformChecks;
+use TeampassClasses\ConfigManager\ConfigManager;
+
+// Load functions
+require_once 'main.functions.php';
+require_once __DIR__ . '/reports.functions.php';
+require_once __DIR__ . '/leaver.functions.php';
+
+// init
+loadClasses('DB');
+$session = SessionManager::getSession();
+$request = SymfonyRequest::createFromGlobals();
+$lang = new Language($session->get('user-language') ?? 'english');
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+// Do checks
+$checkUserAccess = new PerformChecks(
+    dataSanitizer(
+        [
+            'type' => null !== $request->request->get('type') ? htmlspecialchars($request->request->get('type')) : '',
+        ],
+        [
+            'type' => 'trim|escape',
+        ],
+    ),
+    [
+        'user_id' => returnIfSet($session->get('user-id'), null),
+        'user_key' => returnIfSet($session->get('key', 'SESSION'), null),
+    ]
+);
+// Handle the case
+echo $checkUserAccess->caseHandler();
+if (
+    $checkUserAccess->userAccessPage('reports') === false ||
+    $checkUserAccess->checkSession() === false
+) {
+    // Not allowed page
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
+// Define Timezone
+date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
+
+// Set header properties
+header('Content-type: text/html; charset=utf-8');
+header('Cache-Control: no-cache, no-store, must-revalidate');
+error_reporting(E_ERROR);
+
+require_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
+
+// Feature + role gate: compliance reports are admin-only and must be enabled.
+if ((int) ($SETTINGS['compliance_reports_enabled'] ?? 0) !== 1
+    || (int) $session->get('user-admin') !== 1
+) {
+    echo (string) prepareExchangedData(
+        ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+        'encode'
+    );
+    exit;
+}
+
+// --------------------------------- //
+
+// Read POST variables
+$post_type = (string) $request->request->filter('type', '', FILTER_SANITIZE_SPECIAL_CHARS);
+$post_key = (string) $request->request->filter('key', '', FILTER_SANITIZE_SPECIAL_CHARS);
+$post_start = (string) $request->request->filter('start', '', FILTER_SANITIZE_NUMBER_INT);
+$post_end = (string) $request->request->filter('end', '', FILTER_SANITIZE_NUMBER_INT);
+
+// Check KEY on every action
+if ($post_key !== $session->get('key')) {
+    echo (string) prepareExchangedData(
+        ['error' => true, 'message' => $lang->get('key_is_not_correct')],
+        'encode'
+    );
+    exit;
+}
+
+switch ($post_type) {
+    /*
+     * ACCESS MATRIX — one row per (user, role, folder) grant
+     */
+    case 'report_access_matrix':
+        // Active human users with at least one role
+        $users = DB::query(
+            'SELECT id, login, name, lastname, fonction_id
+            FROM ' . prefixTable('users') . '
+            WHERE deleted_at IS NULL
+            AND id NOT IN %li
+            ORDER BY login ASC',
+            [(int) TP_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
+        );
+
+        // Role → folder grants (non-personal folders only)
+        $roleFolders = DB::query(
+            'SELECT rv.role_id, rt.title AS role_title, rv.folder_id, nt.title AS folder_title, rv.type
+            FROM ' . prefixTable('roles_values') . ' AS rv
+            INNER JOIN ' . prefixTable('roles_title') . ' AS rt ON rt.id = rv.role_id
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS nt ON nt.id = rv.folder_id
+            WHERE nt.personal_folder = %i
+            ORDER BY rt.title ASC, nt.title ASC',
+            0
+        );
+
+        $matrix = reportsBuildAccessMatrix($users, $roleFolders);
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'rows' => $matrix,
+                'csv' => reportsBuildCsv(
+                    ['Login', 'Name', 'Role', 'Folder id', 'Folder', 'Access'],
+                    $matrix,
+                    ['login', 'name', 'role', 'folder_id', 'folder', 'access']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * ACCESS CHANGES IN PERIOD — user management events from the system log
+     */
+    case 'report_access_changes':
+        $bounds = reportsPeriodBounds(
+            $post_start !== '' ? $post_start : null,
+            $post_end !== '' ? $post_end : null,
+            time()
+        );
+
+        $records = DB::query(
+            'SELECT ls.date, ls.label, ls.qui, ls.field_1,
+                u1.login AS author_login, u2.login AS target_login
+            FROM ' . prefixTable('log_system') . ' AS ls
+            LEFT JOIN ' . prefixTable('users') . ' AS u1 ON u1.id = ls.qui
+            LEFT JOIN ' . prefixTable('users') . ' AS u2 ON u2.id = ls.field_1
+            WHERE ls.type = %s
+            AND CAST(ls.date AS UNSIGNED) BETWEEN %i AND %i
+            ORDER BY CAST(ls.date AS UNSIGNED) DESC',
+            'user_mngt',
+            $bounds['start'],
+            $bounds['end']
+        );
+
+        $rows = [];
+        foreach ($records as $record) {
+            $translated = $lang->get((string) $record['label']);
+            $rows[] = [
+                'date' => date('Y-m-d H:i:s', (int) $record['date']),
+                'action' => empty($translated) === false ? $translated : (string) $record['label'],
+                'author' => empty($record['author_login']) === false ? $record['author_login'] : (string) $record['qui'],
+                'target' => empty($record['target_login']) === false ? $record['target_login'] : (string) ($record['field_1'] ?? ''),
+            ];
+        }
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'period' => $bounds,
+                'rows' => $rows,
+                'csv' => reportsBuildCsv(
+                    ['Date', 'Action', 'Author', 'Target'],
+                    $rows,
+                    ['date', 'action', 'author', 'target']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * POSTURE SUMMARY — aggregated health flags (metadata only, no item name)
+     */
+    case 'report_posture_summary':
+        $agg = DB::queryFirstRow(
+            'SELECT
+                COUNT(DISTINCT CASE WHEN flag_weak = 1 THEN item_id END) AS weak,
+                COUNT(DISTINCT CASE WHEN flag_reused = 1 THEN item_id END) AS reused,
+                COUNT(DISTINCT CASE WHEN flag_breached = 1 THEN item_id END) AS breached,
+                COUNT(DISTINCT CASE WHEN flag_overdue = 1 THEN item_id END) AS overdue,
+                COUNT(DISTINCT CASE WHEN flag_no_expiry = 1 THEN item_id END) AS no_expiry,
+                COUNT(DISTINCT CASE WHEN flag_overshared = 1 THEN item_id END) AS overshared,
+                COUNT(DISTINCT CASE WHEN flag_orphaned = 1 THEN item_id END) AS orphaned,
+                COUNT(DISTINCT item_id) AS scanned,
+                COALESCE(MAX(last_scan_at), 0) AS last_scan
+            FROM ' . prefixTable('item_health')
+        );
+
+        $summary = reportsPostureSummary(
+            [
+                'weak' => (int) ($agg['weak'] ?? 0),
+                'reused' => (int) ($agg['reused'] ?? 0),
+                'breached' => (int) ($agg['breached'] ?? 0),
+                'overdue' => (int) ($agg['overdue'] ?? 0),
+                'no_expiry' => (int) ($agg['no_expiry'] ?? 0),
+                'overshared' => (int) ($agg['overshared'] ?? 0),
+                'orphaned' => (int) ($agg['orphaned'] ?? 0),
+            ],
+            (int) ($agg['scanned'] ?? 0),
+            (int) ($agg['last_scan'] ?? 0)
+        );
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'scanned_items' => $summary['scanned_items'],
+                'last_scan_at' => $summary['last_scan_at'],
+                'rows' => $summary['issues'],
+                'csv' => reportsBuildCsv(
+                    ['Issue', 'Items', 'Percent'],
+                    $summary['issues'],
+                    ['issue', 'items', 'percent']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * ROTATION EVIDENCE — leaver rotation flags and their current state (F3)
+     */
+    case 'report_rotation_evidence':
+        $records = DB::query(
+            'SELECT rf.item_id, rf.flagged_at, rf.status AS flag_status,
+                i.label, n.title AS folder_title,
+                u1.login AS flagged_by_login, u2.login AS leaver_login,
+                COALESCE(l.last_relevant_date, NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0) AS last_pw_change
+            FROM ' . prefixTable('rotation_flags') . ' AS rf
+            INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = rf.item_id
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON n.id = i.id_tree
+            LEFT JOIN ' . prefixTable('users') . ' AS u1 ON u1.id = rf.flagged_by
+            LEFT JOIN ' . prefixTable('users') . ' AS u2 ON u2.id = rf.leaver_id
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON l.id_item = i.id
+            ORDER BY rf.flagged_at DESC',
+            'at_creation',
+            'at_modification',
+            'at_pw%'
+        );
+
+        $rows = [];
+        foreach ($records as $record) {
+            $rows[] = [
+                'label' => (string) $record['label'],
+                'folder' => (string) $record['folder_title'],
+                'leaver' => (string) ($record['leaver_login'] ?? ''),
+                'flagged_by' => (string) ($record['flagged_by_login'] ?? ''),
+                'flagged_at' => date('Y-m-d H:i:s', (int) $record['flagged_at']),
+                'status' => leaverRiskItemDisplayStatus(
+                    (int) $record['flagged_at'],
+                    (int) $record['last_pw_change'],
+                    (string) $record['flag_status']
+                ),
+            ];
+        }
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'rows' => $rows,
+                'csv' => reportsBuildCsv(
+                    ['Item', 'Folder', 'Leaver', 'Flagged by', 'Flagged at', 'Status'],
+                    $rows,
+                    ['label', 'folder', 'leaver', 'flagged_by', 'flagged_at', 'status']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    default:
+        echo (string) prepareExchangedData(
+            ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+            'encode'
+        );
+        break;
+}

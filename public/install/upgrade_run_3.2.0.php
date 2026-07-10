@@ -729,6 +729,13 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'leaver_risk_auto_flag', '0')"
 );
 
+// Add the Compliance reports toggle (F6): admin Reports page (access matrix,
+// access changes, posture summary, rotation evidence). Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'compliance_reports_enabled', '0')"
+);
+
 // FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
 $res = addColumnIfNotExist(
     $pre . 'background_subtasks',

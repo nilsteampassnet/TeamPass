@@ -528,6 +528,7 @@ class DatabaseInstaller
             array('admin', 'security_nudges_stale_scan_days', '14'),
             array('admin', 'leaver_risk_enabled', '0'),
             array('admin', 'leaver_risk_auto_flag', '0'),
+            array('admin', 'compliance_reports_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),

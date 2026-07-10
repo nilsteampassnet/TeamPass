@@ -1334,6 +1334,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="compliance reports audit evidence governance">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_compliance_reports'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_compliance_reports_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='compliance_reports_enabled' data-toggle-on='<?php echo isset($SETTINGS['compliance_reports_enabled']) === true && (int) $SETTINGS['compliance_reports_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='compliance_reports_enabled_input' value='<?php echo isset($SETTINGS['compliance_reports_enabled']) && (int) $SETTINGS['compliance_reports_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>

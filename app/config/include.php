@@ -137,6 +137,7 @@ $mngPages = array(
     'uploads' => 'uploads.php',
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
+    'reports' => 'reports.php',
 );
 
 // Utilities Pages

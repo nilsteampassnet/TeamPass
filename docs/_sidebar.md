@@ -34,6 +34,7 @@
 - [Leaver Risk](features/leaver-risk.md)
 - **Manage**
 - [Settings](manage/settings.md)
+- [Compliance Reports](manage/compliance-reports.md)
 - [Tasks](manage/tasks.md)
 - [Tools](manage/tools.md)
 - [Network ACL](manage/network-acl.md)
