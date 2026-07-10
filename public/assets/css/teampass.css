@@ -90,6 +90,21 @@
     flex: 1;
 }
 
+/*
+ * The favorite-star placeholder stays as an empty Font Awesome <i> until the
+ * item is flagged as favorite (the "fa-star" class is toggled at runtime).
+ * Font Awesome still reserves ~1.25em for that empty element, which pushed the
+ * item label far away from the drag/health icons. Collapse it while empty and
+ * keep a small, consistent ml-2 gap before the label.
+ */
+.item-favorite-star:not(.fa-star) {
+    display: none;
+}
+
+.list-item-row-description {
+    margin-left: 0.5rem;
+}
+
 .list-item-row-description-extend {
     flex: 1;
 }
