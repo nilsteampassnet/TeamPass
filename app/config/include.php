@@ -138,6 +138,7 @@ $mngPages = array(
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
     'reports' => 'reports.php',
+    'reviews' => 'reviews.php',
 );
 
 // Utilities Pages

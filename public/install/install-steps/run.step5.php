@@ -529,6 +529,7 @@ class DatabaseInstaller
             array('admin', 'leaver_risk_enabled', '0'),
             array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'compliance_reports_enabled', '0'),
+            array('admin', 'access_reviews_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1728,6 +1729,48 @@ class DatabaseInstaller
             UNIQUE KEY `uk_item` (`item_id`),
             KEY `idx_leaver` (`leaver_id`),
             KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_reviews (Access Recertification Campaigns - F2)
+    private function access_reviews()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_reviews` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `label` VARCHAR(255) NOT NULL,
+            `folder_scope` INT(12) NOT NULL DEFAULT 0,
+            `started_by` INT(12) NOT NULL DEFAULT 0,
+            `started_at` INT(12) NOT NULL DEFAULT 0,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+            `closed_by` INT(12) NULL DEFAULT NULL,
+            `closed_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_review_items (Access Recertification Campaigns - F2: grant snapshot + decisions)
+    private function access_review_items()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_review_items` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `review_id` INT(12) NOT NULL,
+            `role_id` INT(12) NOT NULL,
+            `role_title` VARCHAR(255) NOT NULL DEFAULT '',
+            `folder_id` INT(12) NOT NULL,
+            `folder_title` VARCHAR(500) NOT NULL DEFAULT '',
+            `access_type` VARCHAR(10) NOT NULL DEFAULT '',
+            `decision` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            `decided_by` INT(12) NULL DEFAULT NULL,
+            `decided_at` INT(12) NULL DEFAULT NULL,
+            `comment` VARCHAR(500) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_review_grant` (`review_id`, `role_id`, `folder_id`),
+            KEY `idx_review_decision` (`review_id`, `decision`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

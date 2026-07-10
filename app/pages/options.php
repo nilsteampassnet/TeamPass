@@ -1346,6 +1346,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="access reviews recertification attestation governance audit">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_access_reviews'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_access_reviews_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='access_reviews_enabled' data-toggle-on='<?php echo isset($SETTINGS['access_reviews_enabled']) === true && (int) $SETTINGS['access_reviews_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='access_reviews_enabled_input' value='<?php echo isset($SETTINGS['access_reviews_enabled']) && (int) $SETTINGS['access_reviews_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>
