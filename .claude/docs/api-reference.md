@@ -272,13 +272,52 @@ List all folders accessible to the user with label, level, and read-only flag.
 
 ### `POST /api/folder/create`
 
-Create a new folder.
+Create a new folder (shared or personal, root or subfolder). Delegates to the shared `FolderManager` create engine — the same one used by the web UI — so the new folder is fully wired: nested tree rebuilt, `roles_values` populated, and same-role users' `cache_tree` refreshed. A WebSocket `folder_created` event is emitted.
 
-**Body:** `title`, `parent_id`, `complexity` (required → `400` listing missing fields), `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`, `access_rights`.
+**Body:** `title`, `parent_id`, `complexity` (required → `400` listing missing fields), `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`, `access_rights`, `private`.
 
-**Response 201:** `{ error: false, newId }` — no `Location` header (no folder get-by-id endpoint yet). Invalid `complexity`/`access_rights` → `422`.
+- **`personal_folder` is never accepted from the client** — it is derived server-side from the resolved parent. A `parent_id` inside the caller's own personal tree yields a personal folder.
+- **`private` (optional boolean):** convenience for the extension to create a personal folder without knowing the personal-root id. When `true`: personal folders must be enabled for the user (`403` otherwise); `parent_id` is optional (defaults to the caller's personal root) and, when given, must be inside the caller's own personal tree (`422` otherwise); `complexity` is optional (personal folders skip the complexity ceiling).
+- Creating **inside a read-only parent** or **another user's personal tree** → `403`.
+
+**Response 201:** `{ error: false, newId }` — no `Location` header (no folder get-by-id endpoint yet). Invalid `complexity`/`access_rights`, numeric title, duplicate title, or complexity below the parent ceiling → `422`.
 
 **Permissions:** `allowed_to_create` + admin/manager checks. Returns 403 if not allowed, or if the user has no accessible folders.
+
+---
+
+### `PUT /api/folder/update`
+
+Update an existing folder. **Only PUT is accepted** — other methods return 405 + `Allow: PUT`. Delegates the write to `FolderManager::updateFolder()`; a WebSocket `folder_updated` event is emitted.
+
+**Body:** `id` (required); every other field optional — **partial update**, unspecified fields keep their current value: `title`, `parent_id` (move), `complexity`, `duration`, `create_auth_without`, `edit_auth_without`, `icon`, `icon_selected`. At least one updatable field must be present → else `400 'Nothing to update'`.
+
+- **`access_rights` is not updatable here** — editing the rights of an existing folder is a roles-management operation (`roles_values`), not a folder-form field (mirrors the web `update_folder`, which also ignores it on update).
+- **`personal_folder` is derived**, never client-controlled.
+- **Personal ROOT folders cannot be renamed or moved** → `403`.
+- **Move guards:** a folder cannot be moved into itself or into one of its descendants (`422`); the target parent must be accessible, not read-only, and inside the caller's own personal tree (`403`). **Cross-domain moves (personal ↔ shared) are rejected** with `422 'Moving a folder between personal and shared trees is not supported'`.
+- Numeric title, duplicate title (when `duplicate_folder = 0`), or complexity below the parent ceiling → `422`.
+
+**Response 200:** `{ error: false, message: "Folder updated", id }`.
+
+**Permissions:** `allowed_to_update`. The folder (and, on a move, the target parent) must not be read-only for the user.
+
+---
+
+### `DELETE /api/folder/delete`
+
+Soft-delete a folder and **all its descendants** into the recycle bin; every contained item is soft-deleted. The `nested_tree` rows are removed but preserved as JSON in `misc` (`type='folder_deleted'`), restorable from **Utilities → Recycled bin** — the byte-compatible format the web delete produces. **Only DELETE is accepted** — other methods return 405 + `Allow: DELETE`. A WebSocket `folder_deleted` event is emitted per removed folder.
+
+**Params:** `id` (single folder id — query string `?id=N` or JSON body). `id = 0` (root) is rejected with `400`.
+
+- **Personal ROOT folders cannot be deleted** → `403`.
+- Inaccessible / read-only / another user's personal tree → `403`.
+
+**Response 200:** `{ error: false, message: "Folder deleted", deleted_folders: [57, 58, 61], deleted_items_count: 12 }` — `deleted_folders` lists the folder plus every descendant that was removed.
+
+**Sharekeys note:** soft-deleted items keep their `sharekeys_items` rows so a restore works — no sharekey work is performed.
+
+**Permissions:** `allowed_to_delete`. Blocked with 403 if the folder is read-only.
 
 ---
 
@@ -360,7 +399,7 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 
 **Items:** move, copy, history, favorites (toggle), attachments (upload/download/delete), OTV (one-time view link), request_access, edition_lock.
 
-**Folders:** update, delete, copy.
+**Folders:** copy. ~~update, delete~~ — done (`PUT /api/v1/folder/update`, `DELETE /api/v1/folder/delete`).
 
 **Users (admin scope):** create, update, delete, disable, folder_rights.
 

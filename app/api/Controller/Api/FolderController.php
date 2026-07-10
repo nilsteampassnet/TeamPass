@@ -116,9 +116,16 @@ class FolderController extends BaseController
                     // get parameters
                     $arrQueryStringParams = $this->getQueryStringParams();
 
-                    // Validate required parameters — avoids PHP warnings and gives a clear 400
+                    // Optional convenience flag: create a private (personal) folder
+                    // without knowing the personal root id. Never trusts a client
+                    // personal_folder flag — the model derives it server-side.
+                    $private = filter_var($arrQueryStringParams['private'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
+                    // Validate required parameters — avoids PHP warnings and gives a clear 400.
+                    // For a private folder, parent_id and complexity are optional (§3.2).
+                    $requiredParams = $private === true ? ['title'] : ['title', 'parent_id', 'complexity'];
                     $missingParams = [];
-                    foreach (['title', 'parent_id', 'complexity'] as $requiredParam) {
+                    foreach ($requiredParams as $requiredParam) {
                         if (isset($arrQueryStringParams[$requiredParam]) === false
                             || $arrQueryStringParams[$requiredParam] === ''
                         ) {
@@ -134,8 +141,8 @@ class FolderController extends BaseController
                         $folderModel = new FolderModel();
                         $arrFolder = $folderModel->createFolder(
                             (string) $arrQueryStringParams['title'],
-                            (int) $arrQueryStringParams['parent_id'],
-                            (int) $arrQueryStringParams['complexity'],
+                            (int) ($arrQueryStringParams['parent_id'] ?? 0),
+                            (int) ($arrQueryStringParams['complexity'] ?? 0),
                             (int) ($arrQueryStringParams['duration'] ?? 0),
                             (int) ($arrQueryStringParams['create_auth_without'] ?? 0),
                             (int) ($arrQueryStringParams['edit_auth_without'] ?? 0),
@@ -149,6 +156,9 @@ class FolderController extends BaseController
                             (int) $userData['user_can_manage_all_users'],
                             (int) $userData['id'],
                             (string) $userData['roles'],
+                            $private,
+                            (int) ($userData['pf_enabled'] ?? 0),
+                            (string) $userData['username'],
                         );
 
                         if (($arrFolder['error'] ?? false) === true) {
@@ -159,6 +169,7 @@ class FolderController extends BaseController
                             // get-by-id endpoint yet (the body carries newId)
                             $responseData = json_encode($arrFolder);
                             $intSuccessStatus = 201;
+                            $this->markApiFunctionalActivity($userData);
                         }
                     } catch (Error $e) {
                         error_log('[API] FolderController::createAction error: ' . $e->getMessage());
@@ -253,4 +264,149 @@ class FolderController extends BaseController
         }
     }
     //end writableFoldersAction()
+
+    /**
+     * Update an existing folder (partial update).
+     *
+     * PUT only. All access/business validation lives in FolderModel::updateFolder().
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function updateAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $strErrorHeader = $responseData = '';
+        $arrErrorHeaders = [];
+
+        if (strtoupper($requestMethod) === 'PUT') {
+            if ((int) $userData['allowed_to_update'] !== 1) {
+                $strErrorDesc = 'Access denied: insufficient permissions to update a folder';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                if (is_array($arrQueryStringParams) === false) {
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                } elseif (isset($arrQueryStringParams['id']) === false || (int) $arrQueryStringParams['id'] <= 0) {
+                    $strErrorDesc = 'Folder id is mandatory';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                } else {
+                    // At least one updatable field must be present
+                    $updatableFields = ['title', 'parent_id', 'complexity', 'duration', 'create_auth_without', 'edit_auth_without', 'icon', 'icon_selected'];
+                    $hasUpdateField = false;
+                    foreach ($updatableFields as $field) {
+                        if (array_key_exists($field, $arrQueryStringParams) === true) {
+                            $hasUpdateField = true;
+                            break;
+                        }
+                    }
+
+                    if ($hasUpdateField === false) {
+                        $strErrorDesc = 'Nothing to update (provide at least one of: ' . implode(', ', $updatableFields) . ')';
+                        $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                    } else {
+                        try {
+                            $folderModel = new FolderModel();
+                            $ret = $folderModel->updateFolder($arrQueryStringParams, $userData);
+
+                            if (($ret['error'] ?? false) === true) {
+                                $strErrorDesc = (string) ($ret['error_message'] ?? 'Folder update failed');
+                                $strErrorHeader = (string) ($ret['error_header'] ?? 'HTTP/1.1 422 Unprocessable Entity');
+                            } else {
+                                $responseData = json_encode($ret);
+                                $this->markApiFunctionalActivity($userData);
+                            }
+                        } catch (Error $e) {
+                            error_log('[API] FolderController::updateAction error: ' . $e->getMessage());
+                            $strErrorDesc = 'An internal error occurred. Please contact support.';
+                            $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                        }
+                    }
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: PUT';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
+        }
+    }
+    //end updateAction()
+
+    /**
+     * Soft-delete a folder and its descendants.
+     *
+     * DELETE only. All access/business validation lives in FolderModel::deleteFolder().
+     *
+     * @param array $userData User data from JWT token
+     * @return void
+     */
+    public function deleteAction(array $userData): void
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $strErrorHeader = $responseData = '';
+        $arrErrorHeaders = [];
+
+        if (strtoupper($requestMethod) === 'DELETE') {
+            if ((int) $userData['allowed_to_delete'] !== 1) {
+                $strErrorDesc = 'Access denied: insufficient permissions to delete a folder';
+                $strErrorHeader = 'HTTP/1.1 403 Forbidden';
+            } else {
+                $arrQueryStringParams = $this->getQueryStringParams();
+
+                if (is_array($arrQueryStringParams) === false) {
+                    $strErrorDesc = 'Data not consistent';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                } elseif (isset($arrQueryStringParams['id']) === false || (int) $arrQueryStringParams['id'] <= 0) {
+                    $strErrorDesc = 'Folder id is mandatory and must be greater than 0';
+                    $strErrorHeader = 'HTTP/1.1 400 Bad Request';
+                } else {
+                    try {
+                        $folderModel = new FolderModel();
+                        $ret = $folderModel->deleteFolder((int) $arrQueryStringParams['id'], $userData);
+
+                        if (($ret['error'] ?? false) === true) {
+                            $strErrorDesc = (string) ($ret['error_message'] ?? 'Folder deletion failed');
+                            $strErrorHeader = (string) ($ret['error_header'] ?? 'HTTP/1.1 500 Internal Server Error');
+                        } else {
+                            $responseData = json_encode($ret);
+                            $this->markApiFunctionalActivity($userData);
+                        }
+                    } catch (Error $e) {
+                        error_log('[API] FolderController::deleteAction error: ' . $e->getMessage());
+                        $strErrorDesc = 'An internal error occurred. Please contact support.';
+                        $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                    }
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: DELETE';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                ['Content-Type: application/json', 'HTTP/1.1 200 OK']
+            );
+        } else {
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
+        }
+    }
+    //end deleteAction()
 }
