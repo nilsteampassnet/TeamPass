@@ -1179,6 +1179,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         } else if ($(this).data('item-action') === 'edit') {
             const item_tree_id = store.get('teampassItem').tree_id;
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
+            // Set the save action immediately so it can never be lost if the async
+            // showItemEditForm() path takes the error branch (which skips line 4370).
+            // Mirrors the list-pencil path, which sets it synchronously before Details().
+            $('#form-item-button-save').data('action', 'update_item');
             // Reset item
             store.update(
                 'teampassItem',
@@ -3765,15 +3769,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         if ($('#form-item-button-save').data('action') === '' ||
             $('#form-item-button-save').data('action') === undefined
         ) {
-            toastr.remove();
-            toastr.error(
-                '<?php echo $lang->get('error_no_action_identified'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
-            return false;
+            // Defensive fallback: the flag may have been lost if the edit form was
+            // entered through an async path that never set it. Infer it from the
+            // current item state rather than blocking a legitimate save.
+            const _item = store.get('teampassItem');
+            const _formVisible = !$('.form-item').hasClass('hidden');
+            if (_formVisible && parseInt(_item.isNewItem, 10) === 1) {
+                $('#form-item-button-save').data('action', 'new_item');
+            } else if (_formVisible && parseInt(_item.id, 10) > 0) {
+                $('#form-item-button-save').data('action', 'update_item');
+            } else {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_no_action_identified'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
         }
 
         // Don't save if no change
