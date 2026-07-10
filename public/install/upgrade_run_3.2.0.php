@@ -695,6 +695,40 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_stale_scan_days', '14')"
 );
 
+// Add the rotation_flags table — Leaver / Offboarding Risk view (F3, Enterprise
+// governance). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'rotation_flags` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `item_id` int(12) NOT NULL,
+        `flagged_at` int(12) NOT NULL DEFAULT 0,
+        `flagged_by` int(12) NOT NULL DEFAULT 0,
+        `leaver_id` int(12) NOT NULL DEFAULT 0,
+        `reason` varchar(50) NOT NULL DEFAULT \'leaver\',
+        `status` varchar(20) NOT NULL DEFAULT \'pending\',
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `uk_item` (`item_id`),
+        KEY `idx_leaver` (`leaver_id`),
+        KEY `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating rotation_flags table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Leaver risk toggles (F3): master switch and the auto-flag-on-disable
+// behaviour. Both off by default — admin opt-in.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'leaver_risk_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'leaver_risk_auto_flag', '0')"
+);
+
 // FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
 $res = addColumnIfNotExist(
     $pre . 'background_subtasks',

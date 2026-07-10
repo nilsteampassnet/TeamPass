@@ -1310,6 +1310,30 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="leaver offboarding risk rotation governance">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_leaver_risk'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_leaver_risk_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='leaver_risk_enabled' data-toggle-on='<?php echo isset($SETTINGS['leaver_risk_enabled']) === true && (int) $SETTINGS['leaver_risk_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='leaver_risk_enabled_input' value='<?php echo isset($SETTINGS['leaver_risk_enabled']) && (int) $SETTINGS['leaver_risk_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="leaver offboarding risk rotation auto flag disable">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_leaver_risk_auto_flag'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_leaver_risk_auto_flag_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='leaver_risk_auto_flag' data-toggle-on='<?php echo isset($SETTINGS['leaver_risk_auto_flag']) === true && (int) $SETTINGS['leaver_risk_auto_flag'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='leaver_risk_auto_flag_input' value='<?php echo isset($SETTINGS['leaver_risk_auto_flag']) && (int) $SETTINGS['leaver_risk_auto_flag'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>

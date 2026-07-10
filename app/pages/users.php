@@ -648,6 +648,38 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
         </div>
     </div>
 
+    <!-- LEAVER RISK REPORT (F3) — modal -->
+    <div class="modal fade" id="modal-leaver-risk" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <?php echo $lang->get('leaver_risk_report_for'); ?> &mdash; <b><span id="leaver-risk-title"></span></b>
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+
+                <div class="modal-body">
+                    <div class="alert alert-info py-2">
+                        <i class="fa-solid fa-circle-info mr-2"></i><?php echo $lang->get('leaver_risk_intro'); ?>
+                    </div>
+                    <div id="leaver-risk-results"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-warning" id="leaver-risk-flag-all">
+                        <i class="fa-solid fa-rotate mr-2"></i><?php echo $lang->get('leaver_risk_flag_all'); ?>
+                    </button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?php echo $lang->get('cancel'); ?></button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- PROPAGATE USER RIGHTS -->
     <div class="row hidden extra-form user-content with-header-menu" id="row-propagate" data-content="propagate">
         <div class="col-12">

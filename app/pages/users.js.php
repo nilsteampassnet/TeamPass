@@ -169,6 +169,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-action="qrcode"><i class="fa-solid fa-qrcode mr-2"></i><?php echo $lang->get('user_ga_code'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="visible-folders"><i class="fa-solid fa-sitemap mr-2"></i><?php echo $lang->get('user_folders_rights'); ?></li>' +
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="disable-user"><i class="fa-solid fa-user-slash text-warning mr-2" disabled></i><?php echo $lang->get('disable_enable'); ?></li>' +
+                        <?php echo (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1 ? "'<li class=\"dropdown-item pointer tp-action\" data-id=\"' + \$(data).data('id') + '\" data-fullname=\"' + \$(data).data('fullname') + '\" data-action=\"leaver-risk\"><i class=\"fa-solid fa-person-walking-arrow-right text-warning mr-2\"></i>" . $lang->get('leaver_risk') . "</li>' +" : ''; ?>
                         '<li class="dropdown-item pointer tp-action" data-id="' + $(data).data('id') + '" data-fullname="' + $(data).data('fullname') + '"data-action="delete-user"><i class="fa-solid fa-user-minus text-danger mr-2" disabled></i><?php echo $lang->get('delete'); ?></li>' +
                         '</ul>' +
                         '</div>';
@@ -1537,6 +1538,45 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             //
             // --- END
             //
+        } else if ($(this).data('action') === 'leaver-risk') {
+            // LEAVER RISK REPORT (F3) — shared credentials this account could read
+            var leaverUserId = $(this).data('id')
+            $('#leaver-risk-title').text($(this).data('fullname'))
+            $('#leaver-risk-results').html('')
+            $('#leaver-risk-flag-all').data('user-id', leaverUserId).prop('disabled', true)
+            $('#modal-leaver-risk').modal('show')
+
+            toastr.remove();
+            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+            $.post(
+                'sources/users.queries.php', {
+                    type: 'get_leaver_risk_report',
+                    user_id: leaverUserId,
+                    key: '<?php echo $session->get('key'); ?>'
+                },
+                function(data) {
+                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                    if (debugJavascript === true) console.log(data);
+
+                    toastr.remove();
+                    if (data.error !== false) {
+                        toastr.error(
+                            data.message,
+                            '<?php echo $lang->get('caution'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        return;
+                    }
+
+                    renderLeaverRiskTable(data.items);
+                    $('#leaver-risk-flag-all').prop('disabled', data.items.length === 0);
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
+                }
+            );
+
         } else if ($(this).data('action') === 'disable-user') {
             var userID = $(this).data('id'),
                 disabledStatus = $('#user-disable-'+userID).data('disabled') === 1 ? ' checked' : '';
@@ -4169,6 +4209,109 @@ function refreshListInactiveUsers(filterValue) {
         if (allFolderData.length > 0) {
             renderFolderRightsTable(allFolderData)
         }
+    })
+
+    /**
+     * Render the leaver risk report table (F3).
+     * @param {Array} items - Shared items as returned by get_leaver_risk_report
+     */
+    function renderLeaverRiskTable(items) {
+        if (!Array.isArray(items) || items.length === 0) {
+            $('#leaver-risk-results').html('<div class="alert alert-success mb-0"><i class="fa-solid fa-check mr-2"></i><?php echo $lang->get('leaver_risk_no_items'); ?></div>')
+            return
+        }
+
+        const statusBadge = {
+            'not_flagged': '<span class="badge badge-secondary"><?php echo $lang->get('leaver_risk_status_not_flagged'); ?></span>',
+            'pending':     '<span class="badge badge-warning"><?php echo $lang->get('leaver_risk_status_pending'); ?></span>',
+            'resolved':    '<span class="badge badge-success"><?php echo $lang->get('leaver_risk_status_resolved'); ?></span>',
+            'dismissed':   '<span class="badge badge-light"><?php echo $lang->get('leaver_risk_status_dismissed'); ?></span>',
+        }
+
+        let html = '<table class="table table-bordered table-striped" style="width:100%">' +
+            '<thead><tr>' +
+            '<th><?php echo $lang->get('label'); ?></th>' +
+            '<th><?php echo $lang->get('folder'); ?></th>' +
+            '<th><?php echo $lang->get('leaver_risk_other_users'); ?></th>' +
+            '<th><?php echo $lang->get('leaver_risk_last_pw_change'); ?></th>' +
+            '<th><?php echo $lang->get('status'); ?></th>' +
+            '</tr></thead><tbody>'
+
+        items.forEach(item => {
+            const lastChange = item.last_pw_change > 0 ?
+                new Date(item.last_pw_change * 1000).toLocaleDateString() :
+                '-'
+            html += '<tr>' +
+                '<td>' + htmlEncode(item.label) + '</td>' +
+                '<td>' + htmlEncode(item.folder_title) + '</td>' +
+                '<td class="text-center">' + parseInt(item.other_users) + '</td>' +
+                '<td>' + lastChange + '</td>' +
+                '<td>' + (statusBadge[item.display_status] || '') + '</td>' +
+                '</tr>'
+        })
+
+        html += '</tbody></table>'
+        $('#leaver-risk-results').html(html)
+    }
+
+    // LEAVER RISK — flag every listed credential for rotation (F3)
+    $(document).on('click', '#leaver-risk-flag-all', function() {
+        const leaverUserId = $(this).data('user-id')
+        if (!leaverUserId) {
+            return
+        }
+
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        const data = {
+            'user_id': parseInt(leaverUserId),
+            'flag_all': 1,
+        }
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'flag_leaver_items_for_rotation',
+                data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                toastr.remove();
+                if (data.error !== false) {
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+
+                toastr.success(
+                    '<?php echo $lang->get('leaver_risk_flagged'); ?> (' + data.flagged_count + ')',
+                    '', { timeOut: 2000 }
+                );
+
+                // Refresh the report so the new pending badges show up
+                $.post(
+                    'sources/users.queries.php', {
+                        type: 'get_leaver_risk_report',
+                        user_id: leaverUserId,
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(reportData) {
+                        reportData = prepareExchangedData(reportData, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (reportData.error === false) {
+                            renderLeaverRiskTable(reportData.items)
+                        }
+                    }
+                );
+            }
+        );
     })
 
     //]]>

@@ -31,6 +31,7 @@
 - [Profile](features/profile.md)
 - [Knowledge Base](features/knowledge-base.md)
 - [Breach Detection](features/breach-detection.md)
+- [Leaver Risk](features/leaver-risk.md)
 - **Manage**
 - [Settings](manage/settings.md)
 - [Tasks](manage/tasks.md)

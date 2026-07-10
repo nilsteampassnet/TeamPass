@@ -526,6 +526,8 @@ class DatabaseInstaller
             array('admin', 'security_nudges_email_enabled', '0'),
             array('admin', 'security_nudges_email_frequency_days', '7'),
             array('admin', 'security_nudges_stale_scan_days', '14'),
+            array('admin', 'leaver_risk_enabled', '0'),
+            array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1705,6 +1707,26 @@ class DatabaseInstaller
             UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
             KEY `idx_user_id` (`user_id`),
             KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table rotation_flags (Leaver / Offboarding Risk view - F3)
+    private function rotation_flags()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "rotation_flags` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `flagged_at` INT(12) NOT NULL DEFAULT 0,
+            `flagged_by` INT(12) NOT NULL DEFAULT 0,
+            `leaver_id` INT(12) NOT NULL DEFAULT 0,
+            `reason` VARCHAR(50) NOT NULL DEFAULT 'leaver',
+            `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_leaver` (`leaver_id`),
+            KEY `idx_status` (`status`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

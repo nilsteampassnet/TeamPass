@@ -3650,6 +3650,31 @@ if (null !== $post_type) {
                         'reason' => 'account_disabled',
                     ]);
                 }
+
+                // Leaver risk (F3): optionally auto-flag for rotation every shared
+                // credential the disabled account could read.
+                if ((int) $post_user_disabled === 1
+                    && (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1
+                    && (int) ($SETTINGS['leaver_risk_auto_flag'] ?? 0) === 1
+                ) {
+                    require_once __DIR__ . '/leaver.functions.php';
+                    $leaverItems = leaverRiskSharedItems((int) $post_id);
+                    $flaggedCount = leaverRiskFlagItems(
+                        array_column($leaverItems, 'item_id'),
+                        (int) $post_id,
+                        (int) $session->get('user-id')
+                    );
+                    if ($flaggedCount > 0) {
+                        logEvents(
+                            $SETTINGS,
+                            'user_mngt',
+                            'at_leaver_items_flagged',
+                            (string) $session->get('user-id'),
+                            $session->get('user-login'),
+                            (string) $post_id
+                        );
+                    }
+                }
             } else {
                 echo prepareExchangedData(
                     array(
@@ -3665,6 +3690,181 @@ if (null !== $post_type) {
                 array(
                     'message' => '',
                     'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * LEAVER RISK REPORT (F3)
+         * Shared credentials a (disabled/leaving) user could read.
+         */
+        case 'get_leaver_risk_report':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Is this user allowed to do this?
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature gate
+            if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $post_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+            if ($post_id <= 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__ . '/leaver.functions.php';
+            $leaverItems = leaverRiskSharedItems($post_id);
+
+            // Return metadata only (labels + folder + counters — never any password)
+            $reportRows = [];
+            foreach ($leaverItems as $leaverItem) {
+                $reportRows[] = [
+                    'item_id' => (int) $leaverItem['item_id'],
+                    'label' => $leaverItem['label'],
+                    'folder_title' => $leaverItem['folder_title'],
+                    'other_users' => (int) $leaverItem['other_users'],
+                    'last_pw_change' => (int) $leaverItem['last_pw_change'],
+                    'display_status' => $leaverItem['display_status'],
+                ];
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'items' => $reportRows,
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * LEAVER RISK — FLAG ITEMS FOR ROTATION (F3)
+         */
+        case 'flag_leaver_items_for_rotation':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Is this user allowed to do this?
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature gate
+            if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $post_leaver_id = (int) filter_var($dataReceived['user_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+            $post_item_ids = isset($dataReceived['item_ids']) === true && is_array($dataReceived['item_ids']) === true
+                ? $dataReceived['item_ids'] : [];
+            $post_flag_all = (int) filter_var($dataReceived['flag_all'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+
+            if ($post_leaver_id <= 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__ . '/leaver.functions.php';
+
+            // Recompute the eligible set server-side — the client cannot flag
+            // items the leaver had no access to.
+            $eligibleIds = array_column(leaverRiskSharedItems($post_leaver_id), 'item_id');
+            $itemIdsToFlag = $post_flag_all === 1
+                ? array_map('intval', $eligibleIds)
+                : leaverRiskValidateItemIds($post_item_ids, $eligibleIds);
+
+            $flaggedCount = leaverRiskFlagItems($itemIdsToFlag, $post_leaver_id, (int) $session->get('user-id'));
+
+            if ($flaggedCount > 0) {
+                logEvents(
+                    $SETTINGS,
+                    'user_mngt',
+                    'at_leaver_items_flagged',
+                    (string) $session->get('user-id'),
+                    $session->get('user-login'),
+                    (string) $post_leaver_id
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'flagged_count' => $flaggedCount,
                 ),
                 'encode'
             );

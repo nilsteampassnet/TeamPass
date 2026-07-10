@@ -312,7 +312,8 @@ function performStep5() {
         { id: 'check64', action: 'api_rate_limit' },
         { id: 'check65', action: 'import_tracking' },
         { id: 'check66', action: 'item_health' },
-        { id: 'check67', action: 'user_nudges' }
+        { id: 'check67', action: 'user_nudges' },
+        { id: 'check68', action: 'rotation_flags' }
     ];
     
     let errorOccurred = false; // Variable to track errors
