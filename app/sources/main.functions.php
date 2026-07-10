@@ -1214,6 +1214,184 @@ function securityNudgeComputeCounts(int $userId): array
 }
 
 /**
+ * Re-derive the per-user `reused` flags in item_health from the stored reuse buckets.
+ *
+ * Resets flag_reused for the user, then sets it back to 1 for every item whose
+ * reuse_group has more than one member. Shared by the dashboard deep scan
+ * (`dashboard.queries.php` `finalize_scan`) and the save-time incremental refresh
+ * (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused"
+ * and never drift.
+ *
+ * @param int $userId User whose reuse flags are recomputed.
+ *
+ * @return void
+ */
+function finalizeUserReuseFlags(int $userId): void
+{
+    // Reset, then flag every item whose bucket has more than one member.
+    DB::query(
+        'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 0 WHERE user_id = %i',
+        $userId
+    );
+    DB::query(
+        'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 1
+        WHERE user_id = %i AND reuse_group <> %s AND reuse_group IN (
+            SELECT rg FROM (
+                SELECT reuse_group AS rg
+                FROM ' . prefixTable('item_health') . '
+                WHERE user_id = %i AND reuse_group <> %s
+                GROUP BY reuse_group
+                HAVING COUNT(*) > 1
+            ) AS d
+        )',
+        $userId,
+        '',
+        $userId,
+        ''
+    );
+}
+
+/**
+ * Refresh the per-user security posture (item_health) for one item right after its
+ * password is created/updated, so the "needs attention" shield reflects the new
+ * password without waiting for a manual dashboard deep scan.
+ *
+ * Mirrors the per-item logic of the dashboard deep scan (`dashboard.queries.php`
+ * `deep_scan_chunk`) for a single (item_id, user_id) row, then re-derives the user's
+ * `reused` flags via finalizeUserReuseFlags(). No decryption is needed: the caller
+ * passes the plaintext password it already holds, hashed into the same reuse bucket the
+ * scan uses. The item's cached HIBP status is reset so the client-side async check
+ * re-evaluates the new password (stale "breached" clears).
+ *
+ * No-op when the Security Posture Dashboard is disabled.
+ *
+ * @param int    $itemId            Item whose posture is refreshed.
+ * @param int    $userId            User the posture row belongs to (the editor).
+ * @param string $plaintextPassword The new cleartext password (may be empty).
+ * @param array  $SETTINGS          Application settings.
+ *
+ * @return void
+ */
+function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextPassword, array $SETTINGS): void
+{
+    // Feature off → item_health is unused, nothing to refresh.
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
+        return;
+    }
+    if ($itemId <= 0 || $userId <= 0) {
+        return;
+    }
+
+    $nowTs = time();
+    $weakThreshold = TP_PW_STRENGTH_3;
+    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
+    if ($oversharedThreshold <= 0) {
+        $oversharedThreshold = 10;
+    }
+
+    // Reset the item's cached HIBP status so the stale "breached" flag clears and the
+    // client-side async check re-evaluates the new password (items.js.php re-checks when
+    // hibp_status === 0). hibp_status is a per-item column shared by all holders, which is
+    // correct here: the password changed for everyone.
+    DB::update(
+        prefixTable('items'),
+        [
+            'hibp_status' => 0,
+            'hibp_count' => 0,
+            'hibp_checked_at' => '',
+        ],
+        'id = %i',
+        $itemId
+    );
+
+    // Recompute the metadata flags for this single item (no decryption). Same fragments as
+    // the dashboard scan, scoped to one item.
+    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $logJoinSql = '
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)';
+    $shareCountJoinSql = '
+        LEFT JOIN (
+            SELECT object_id, COUNT(*) AS share_count
+            FROM ' . prefixTable('sharekeys_items') . '
+            GROUP BY object_id
+        ) AS sc ON (sc.object_id = i.id)';
+
+    $row = DB::queryFirstRow(
+        'SELECT i.complexity_level,
+            n.renewal_period,
+            COALESCE(sc.share_count, 0) AS share_count,
+            ' . $lastRelevantSql . ' AS last_relevant_date
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+        $logJoinSql . $shareCountJoinSql . '
+        WHERE i.id = %i',
+        'at_creation',
+        'at_modification',
+        'at_pw%',
+        $itemId
+    );
+    if (is_array($row) === false) {
+        // Item vanished (deleted mid-flight) — nothing to store.
+        return;
+    }
+
+    $cl = (string) $row['complexity_level'];
+    $flagWeak = ($cl !== '' && (int) $cl >= 0 && (int) $cl < $weakThreshold) ? 1 : 0;
+    $renewal = (int) $row['renewal_period'];
+    $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
+    $base = (int) $row['last_relevant_date'];
+    $flagOverdue = ($renewal > 0 && $base > 0 && ($base + $renewal * TP_ONE_DAY_SECONDS) <= $nowTs) ? 1 : 0;
+    $flagOvershared = ((int) $row['share_count'] > $oversharedThreshold) ? 1 : 0;
+    // HIBP was just reset (unknown) → not breached until the async check runs.
+    $flagBreached = 0;
+    // The saving user holds a valid sharekey (they just re-encrypted) → not orphaned.
+    $flagOrphaned = 0;
+
+    // Same per-install, per-user reuse bucket the scan uses (deep_scan_chunk). The stored
+    // password decrypts to exactly this plaintext, so an identical HMAC matches the scan.
+    $reuseGroup = '';
+    if ($plaintextPassword !== '') {
+        $reuseSalt = (string) @file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE) . '|item-health|' . $userId;
+        $reuseGroup = substr(hash_hmac('sha256', $plaintextPassword, $reuseSalt), 0, 32);
+    }
+
+    // Upsert the row. flag_reused is left to finalizeUserReuseFlags(); last_scan_at is NOT
+    // bumped (insert 0, omit from the update) so the dashboard's "last full scan" /
+    // staleness (MAX(last_scan_at)) stays honest for a single-item refresh.
+    DB::query(
+        'INSERT INTO ' . prefixTable('item_health') . '
+            (item_id, user_id, flag_weak, flag_breached, flag_overdue, flag_no_expiry, flag_overshared, flag_orphaned, reuse_group, last_scan_at)
+            VALUES (%i, %i, %i, %i, %i, %i, %i, %i, %s, 0)
+        ON DUPLICATE KEY UPDATE
+            flag_weak = VALUES(flag_weak),
+            flag_breached = VALUES(flag_breached),
+            flag_overdue = VALUES(flag_overdue),
+            flag_no_expiry = VALUES(flag_no_expiry),
+            flag_overshared = VALUES(flag_overshared),
+            flag_orphaned = VALUES(flag_orphaned),
+            reuse_group = VALUES(reuse_group)',
+        $itemId,
+        $userId,
+        $flagWeak,
+        $flagBreached,
+        $flagOverdue,
+        $flagNoExpiry,
+        $flagOvershared,
+        $flagOrphaned,
+        $reuseGroup
+    );
+
+    // Re-derive `reused` across the user's buckets so both the old bucket (now possibly a
+    // singleton → its sibling un-flags) and the new bucket are corrected.
+    finalizeUserReuseFlags($userId);
+}
+
+/**
  * Compute the per-user Personal Security Score (F10) — light gamification.
  *
  * Pure presentation layer over the F8 posture counts (securityNudgeComputeCounts):
