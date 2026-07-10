@@ -266,6 +266,8 @@ class ItemModel
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
 
             // Step 7: Encrypt password if provided
+            // Keep the plaintext for the post-insert security-posture refresh (reuse hashing).
+            $plaintextPasswordForHealth = $password;
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
@@ -286,6 +288,10 @@ class ItemModel
 
             // Notify WebSocket subscribers so other users viewing this folder see the new item
             emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
+
+            // Refresh the caller's security posture so a reused/weak password is flagged without
+            // waiting for a manual dashboard scan (no-op when the dashboard is disabled).
+            refreshItemHealthAfterSave((int) $newID, $userId, (string) $plaintextPasswordForHealth, $SETTINGS);
 
             // Success response
             return [
@@ -1352,6 +1358,15 @@ class ItemModel
                     [],
                     -1,
                     $userData['id']
+                );
+
+                // Refresh the caller's security posture so the "needs attention" shield reflects
+                // the new password without waiting for a manual dashboard scan (no-op when off).
+                refreshItemHealthAfterSave(
+                    $itemId,
+                    (int) $userData['id'],
+                    (string) $newPassword,
+                    $SETTINGS
                 );
             }
 

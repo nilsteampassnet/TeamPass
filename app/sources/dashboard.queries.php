@@ -473,27 +473,9 @@ switch ($post_type) {
             break;
         }
 
-        // Reset, then flag every item whose bucket has more than one member.
-        DB::query(
-            'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 0 WHERE user_id = %i',
-            $userId
-        );
-        DB::query(
-            'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 1
-            WHERE user_id = %i AND reuse_group <> %s AND reuse_group IN (
-                SELECT rg FROM (
-                    SELECT reuse_group AS rg
-                    FROM ' . prefixTable('item_health') . '
-                    WHERE user_id = %i AND reuse_group <> %s
-                    GROUP BY reuse_group
-                    HAVING COUNT(*) > 1
-                ) AS d
-            )',
-            $userId,
-            '',
-            $userId,
-            ''
-        );
+        // Reset, then flag every item whose bucket has more than one member
+        // (canonical logic shared with the save-time refresh).
+        finalizeUserReuseFlags($userId);
 
         // Hygiene: drop rows for items the user can no longer access.
         DB::query(
