@@ -1722,6 +1722,14 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/security-score.js.php';
     }
+    // Notification Centre (D2): navbar bell + inbox for all authenticated users
+    // when the feature is enabled by an admin.
+    if ((int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+    ) {
+        include_once TEAMPASS_APP . '/core/notification-center.js.php';
+    }
     // Data Classification (F4): item-card badge + selector for authenticated non-admin
     // users when the feature is enabled by an admin.
     if ((int) ($SETTINGS['data_classification_enabled'] ?? 0) === 1

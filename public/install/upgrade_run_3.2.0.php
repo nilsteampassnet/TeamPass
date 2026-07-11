@@ -744,6 +744,35 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'rotation_tracking_enabled', '0')"
 );
 
+// Add the user_notifications table — in-app Notification Centre (D2, Scale &
+// polish). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'user_notifications` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `user_id` int(12) NOT NULL,
+        `created_at` int(12) NOT NULL DEFAULT 0,
+        `event_type` varchar(50) NOT NULL,
+        `payload` text NULL,
+        `is_read` tinyint(1) NOT NULL DEFAULT 0,
+        `read_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`increment_id`),
+        KEY `idx_user_unread` (`user_id`, `is_read`, `increment_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating user_notifications table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Notification centre toggle (D2): navbar bell + inbox persisting
+// user-target events (scan results, task completions, permission changes).
+// Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'notification_center_enabled', '0')"
+);
+
 // Add the access_reviews + access_review_items tables — Access Recertification
 // Campaigns (F2, Enterprise governance). Companion tables: additive, no ALTER
 // on hot tables. Titles are denormalised on purpose (evidence stability).

@@ -1382,6 +1382,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="notification centre center bell inbox alerts">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_notification_center'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_notification_center_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='notification_center_enabled' data-toggle-on='<?php echo isset($SETTINGS['notification_center_enabled']) === true && (int) $SETTINGS['notification_center_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='notification_center_enabled_input' value='<?php echo isset($SETTINGS['notification_center_enabled']) && (int) $SETTINGS['notification_center_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>
