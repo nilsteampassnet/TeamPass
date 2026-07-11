@@ -8424,19 +8424,14 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         renderPasswordCoaching(curBits, tip)
     }
 
-    // Tracks the last folder complexity applied to the passphrase options.
-    // null means "never synced" and triggers a reset on the first call.
-    let lastSyncedPassphraseComplexity = null
-
     /**
      * Sync the passphrase options with the current folder's complexity rules.
      *
-     * - When the folder complexity CHANGES (including on first open): resets word count
-     *   to the folder minimum and sets capitalize according to folder rules.
-     * - When the folder complexity is UNCHANGED: only enforces the minimum floor
-     *   so the user's manual adjustments within a session are preserved.
-     *
-     * Options below the folder minimum are always disabled in the selector.
+     * The user's last-used word count and capitalize choice (restored from
+     * localStorage) are preserved; the folder rules only tighten them: the word
+     * count is raised to the folder minimum when it is below it, and capitalize
+     * is forced on when the folder requires it. Options below the folder minimum
+     * are disabled in the selector.
      */
     function syncPassphraseOptionsWithComplexity() {
         const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
@@ -8448,23 +8443,15 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $(this).prop('disabled', parseInt($(this).val(), 10) < minWords)
         })
 
-        if (lastSyncedPassphraseComplexity !== folderComplexity) {
-            // Folder changed (or first call): reset to folder minimum
+        // Keep the user's last-used word count, only raised to the folder floor.
+        const currentVal = parseInt($('#passphrase-word-count').val(), 10) || minWords
+        if (currentVal < minWords) {
             $('#passphrase-word-count').val(String(minWords))
-            $('#passphrase-capitalize')
-                .prop('checked', rules.capitalize)
-                .closest('label').toggleClass('active', rules.capitalize)
-            lastSyncedPassphraseComplexity = folderComplexity
-        } else {
-            // Same folder: only raise word count if it fell below minimum
-            const currentVal = parseInt($('#passphrase-word-count').val(), 10) || minWords
-            if (currentVal < minWords) {
-                $('#passphrase-word-count').val(String(minWords))
-            }
-            // Folder requiring uppercase must always stay checked
-            if (rules.capitalize) {
-                $('#passphrase-capitalize').prop('checked', true).closest('label').addClass('active')
-            }
+        }
+
+        // A folder requiring uppercase forces it on; otherwise keep the user's choice.
+        if (rules.capitalize) {
+            $('#passphrase-capitalize').prop('checked', true).closest('label').addClass('active')
         }
     }
 
@@ -8641,15 +8628,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     })
 
     /**
-     * Save the passphrase separator to localStorage and regenerate on any
-     * passphrase option change (word count, separator, capitalize).
-     * wordCount and capitalize are folder-dependent so they are NOT restored
-     * on the next page load; only the separator is restored across sessions.
+     * Save all passphrase options to localStorage and regenerate on any
+     * passphrase option change (word count, separator, capitalize). The saved
+     * values are the user's last-used preferences and are restored on the next
+     * page load; folder complexity only tightens them (raises the word count to
+     * the folder minimum, forces capitalize when required).
      */
     $('#passphrase-word-count, #passphrase-separator, #passphrase-capitalize').on('change', function() {
         try {
             localStorage.setItem('tp_passphrase_gen_opts', JSON.stringify({
-                separator: $('#passphrase-separator').val(),
+                wordCount:  $('#passphrase-word-count').val(),
+                separator:  $('#passphrase-separator').val(),
+                capitalize: $('#passphrase-capitalize').prop('checked'),
             }))
         } catch (_) {}
         generateItemPassphrase()
@@ -8658,8 +8648,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     /**
      * Load generator options from localStorage on page load.
      * - Password generator: all options restored (size, character types).
-     * - Passphrase generator: only separator restored; word count and capitalize
-     *   are always derived from folder complexity via syncPassphraseOptionsWithComplexity().
+     * - Passphrase generator: word count, separator and capitalize restored;
+     *   folder complexity only tightens them via syncPassphraseOptionsWithComplexity().
      */
     ;(function loadGeneratorOptionsFromStorage() {
         try {
@@ -8680,8 +8670,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
         try {
             const ppOpts = JSON.parse(localStorage.getItem('tp_passphrase_gen_opts') || 'null')
-            if (ppOpts && ppOpts.separator !== undefined) {
-                $('#passphrase-separator').val(ppOpts.separator)
+            if (ppOpts) {
+                if (ppOpts.separator !== undefined) {
+                    $('#passphrase-separator').val(ppOpts.separator)
+                }
+                if (ppOpts.wordCount !== undefined) {
+                    $('#passphrase-word-count').val(String(ppOpts.wordCount))
+                }
+                if (ppOpts.capitalize !== undefined) {
+                    $('#passphrase-capitalize').prop('checked', !!ppOpts.capitalize)
+                        .closest('label').toggleClass('active', !!ppOpts.capitalize)
+                }
             }
         } catch (_) {}
 
