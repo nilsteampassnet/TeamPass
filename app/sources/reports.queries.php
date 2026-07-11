@@ -217,16 +217,58 @@ switch ($post_type) {
 
     /*
      * POSTURE SUMMARY — aggregated health flags (metadata only, no item name)
+     *
+     * Metadata-derived flags (weak, breached, overshared, overdue, no_expiry)
+     * are recomputed LIVE here so the report is always current — no dependency
+     * on when the last deep scan ran. Only reused/orphaned genuinely require
+     * the deep scan (a decryption context the report handler does not have),
+     * so they are read from the item_health snapshot and dated accordingly.
      */
     case 'report_posture_summary':
-        $agg = DB::queryFirstRow(
+        $nowTs = time();
+        $weakThreshold = (int) TP_PW_STRENGTH_3;
+        $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
+        if ($oversharedThreshold <= 0) {
+            $oversharedThreshold = 10;
+        }
+
+        // Live metadata flags over all active items in non-personal folders.
+        // Integer thresholds/timestamps are cast and embedded as literals (same
+        // pattern as dashboard.queries.php); only string actions are bound.
+        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+        $live = DB::queryFirstRow(
             'SELECT
-                COUNT(DISTINCT CASE WHEN flag_weak = 1 THEN item_id END) AS weak,
+                COUNT(*) AS total,
+                SUM(CASE WHEN i.complexity_level <> \'\' AND CAST(i.complexity_level AS SIGNED) >= 0
+                    AND CAST(i.complexity_level AS SIGNED) < ' . $weakThreshold . ' THEN 1 ELSE 0 END) AS weak,
+                SUM(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END) AS breached,
+                SUM(CASE WHEN COALESCE(sc.share_count, 0) > ' . $oversharedThreshold . ' THEN 1 ELSE 0 END) AS overshared,
+                SUM(CASE WHEN n.renewal_period <= 0 THEN 1 ELSE 0 END) AS no_expiry,
+                SUM(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0
+                    AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS overdue
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON (l.id_item = i.id)
+            LEFT JOIN (
+                SELECT object_id, COUNT(*) AS share_count
+                FROM ' . prefixTable('sharekeys_items') . '
+                GROUP BY object_id
+            ) AS sc ON (sc.object_id = i.id)
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND n.personal_folder = 0',
+            'at_creation',
+            'at_modification',
+            'at_pw%'
+        );
+
+        // Scan-bound flags (need a decryption context) come from the snapshot.
+        $scan = DB::queryFirstRow(
+            'SELECT
                 COUNT(DISTINCT CASE WHEN flag_reused = 1 THEN item_id END) AS reused,
-                COUNT(DISTINCT CASE WHEN flag_breached = 1 THEN item_id END) AS breached,
-                COUNT(DISTINCT CASE WHEN flag_overdue = 1 THEN item_id END) AS overdue,
-                COUNT(DISTINCT CASE WHEN flag_no_expiry = 1 THEN item_id END) AS no_expiry,
-                COUNT(DISTINCT CASE WHEN flag_overshared = 1 THEN item_id END) AS overshared,
                 COUNT(DISTINCT CASE WHEN flag_orphaned = 1 THEN item_id END) AS orphaned,
                 COUNT(DISTINCT item_id) AS scanned,
                 COALESCE(MAX(last_scan_at), 0) AS last_scan
@@ -235,28 +277,32 @@ switch ($post_type) {
 
         $summary = reportsPostureSummary(
             [
-                'weak' => (int) ($agg['weak'] ?? 0),
-                'reused' => (int) ($agg['reused'] ?? 0),
-                'breached' => (int) ($agg['breached'] ?? 0),
-                'overdue' => (int) ($agg['overdue'] ?? 0),
-                'no_expiry' => (int) ($agg['no_expiry'] ?? 0),
-                'overshared' => (int) ($agg['overshared'] ?? 0),
-                'orphaned' => (int) ($agg['orphaned'] ?? 0),
+                'weak' => (int) ($live['weak'] ?? 0),
+                'breached' => (int) ($live['breached'] ?? 0),
+                'overshared' => (int) ($live['overshared'] ?? 0),
+                'overdue' => (int) ($live['overdue'] ?? 0),
+                'no_expiry' => (int) ($live['no_expiry'] ?? 0),
             ],
-            (int) ($agg['scanned'] ?? 0),
-            (int) ($agg['last_scan'] ?? 0)
+            (int) ($live['total'] ?? 0),
+            [
+                'reused' => (int) ($scan['reused'] ?? 0),
+                'orphaned' => (int) ($scan['orphaned'] ?? 0),
+            ],
+            (int) ($scan['scanned'] ?? 0),
+            (int) ($scan['last_scan'] ?? 0)
         );
 
         echo (string) prepareExchangedData(
             [
                 'error' => false,
+                'total_items' => $summary['total_items'],
                 'scanned_items' => $summary['scanned_items'],
                 'last_scan_at' => $summary['last_scan_at'],
                 'rows' => $summary['issues'],
                 'csv' => reportsBuildCsv(
-                    ['Issue', 'Items', 'Percent'],
+                    ['Issue', 'Items', 'Percent', 'Source'],
                     $summary['issues'],
-                    ['issue', 'items', 'percent']
+                    ['issue', 'items', 'percent', 'source']
                 ),
             ],
             'encode'

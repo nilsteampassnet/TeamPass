@@ -115,22 +115,49 @@ class ComplianceReportsLogicTest extends TestCase
 
     public function testPostureSummaryComputesPercentAndSortsBySeverity(): void
     {
-        $summary = reportsPostureSummary(['weak' => 5, 'breached' => 20], 200, 12345);
+        // Live flags use $totalItems (200); scan flags use $scannedItems (50)
+        $summary = reportsPostureSummary(
+            ['weak' => 5, 'breached' => 20],
+            200,
+            ['reused' => 8, 'orphaned' => 2],
+            50,
+            12345
+        );
 
-        $this->assertSame(200, $summary['scanned_items']);
+        $this->assertSame(200, $summary['total_items']);
+        $this->assertSame(50, $summary['scanned_items']);
         $this->assertSame(12345, $summary['last_scan_at']);
-        // breached (20) must come before weak (5)
+
+        // Live family first, sorted by count: breached (20) then weak (5)
         $this->assertSame('breached', $summary['issues'][0]['issue']);
-        $this->assertSame(10.0, $summary['issues'][0]['percent']);
+        $this->assertSame('live', $summary['issues'][0]['source']);
+        $this->assertSame(0, $summary['issues'][0]['as_of']);
+        $this->assertSame(10.0, $summary['issues'][0]['percent']);   // 20 / 200
         $this->assertSame('weak', $summary['issues'][1]['issue']);
-        $this->assertSame(2.5, $summary['issues'][1]['percent']);
+        $this->assertSame(2.5, $summary['issues'][1]['percent']);    // 5 / 200
+
+        // Scan family after, sorted by count: reused (8) then orphaned (2)
+        $this->assertSame('reused', $summary['issues'][2]['issue']);
+        $this->assertSame('scan', $summary['issues'][2]['source']);
+        $this->assertSame(12345, $summary['issues'][2]['as_of']);
+        $this->assertSame(16.0, $summary['issues'][2]['percent']);   // 8 / 50
+        $this->assertSame('orphaned', $summary['issues'][3]['issue']);
     }
 
-    public function testPostureSummaryWithNoScannedItemsHasZeroPercent(): void
+    public function testPostureSummaryWithNoItemsHasZeroPercent(): void
     {
-        $summary = reportsPostureSummary(['weak' => 0], 0, 0);
+        $summary = reportsPostureSummary(['weak' => 0], 0, ['reused' => 0], 0, 0);
 
         $this->assertSame(0.0, $summary['issues'][0]['percent']);
+        $this->assertSame(0, $summary['total_items']);
+    }
+
+    public function testPostureSummaryClampsNegativeCounts(): void
+    {
+        // A stale/inconsistent negative count must not appear as negative
+        $summary = reportsPostureSummary(['weak' => -3], 100, [], 0, 0);
+
+        $this->assertSame(0, $summary['issues'][0]['items']);
     }
 
     // -------------------------------------------------------------------

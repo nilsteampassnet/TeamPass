@@ -99,6 +99,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['issue', '<?php echo $lang->get('compliance_report_issue'); ?>'],
             ['items', '<?php echo $lang->get('items'); ?>'],
             ['percent', '%'],
+            ['source_display', '<?php echo $lang->get('compliance_report_freshness'); ?>'],
         ],
         'rotation_evidence': [
             ['label', '<?php echo $lang->get('label'); ?>'],
@@ -213,11 +214,19 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const rows = Array.isArray(data.rows) ? data.rows : []
 
         let title = $('#report-type option[value="' + reportType + '"]').text()
-        if (reportType === 'posture_summary' && data.scanned_items !== undefined) {
-            title += ' — ' + data.scanned_items + ' <?php echo $lang->get('items'); ?>'
-            if (parseInt(data.last_scan_at) > 0) {
-                title += ' (' + new Date(data.last_scan_at * 1000).toLocaleString() + ')'
-            }
+        if (reportType === 'posture_summary') {
+            // Live metadata flags are recomputed on every run; only reused/orphaned
+            // are bound to the last deep scan, so their freshness is shown per row.
+            const totalItems = data.total_items !== undefined ? data.total_items : data.scanned_items
+            title += ' — ' + totalItems + ' <?php echo $lang->get('items'); ?>'
+            const scanLabel = parseInt(data.last_scan_at) > 0
+                ? '<?php echo $lang->get('compliance_report_source_scan'); ?> · ' + new Date(data.last_scan_at * 1000).toLocaleString()
+                : '<?php echo $lang->get('compliance_report_scan_never'); ?>'
+            rows.forEach(row => {
+                row.source_display = row.source === 'scan'
+                    ? scanLabel
+                    : '<?php echo $lang->get('compliance_report_source_live'); ?>'
+            })
         }
         $('#report-results-title').text(title)
 

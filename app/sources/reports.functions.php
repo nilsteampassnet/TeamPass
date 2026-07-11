@@ -121,36 +121,58 @@ function reportsPeriodBounds(?string $start, ?string $end, int $now): array
 }
 
 /**
- * Shape the vault posture summary from aggregated flag counts.
+ * Shape the vault posture summary, distinguishing live flags from scan flags.
  *
  * Metadata only — the input is counters, never a password or an item name,
  * preserving zero-knowledge between users in the admin view.
  *
- * @param array<string, int> $flagCounts   Per-flag distinct item counts (e.g. ['weak' => 4])
- * @param int                $scannedItems Total distinct items covered by the health scan
+ * The report separates two families of flags:
+ *  - **live** flags (weak, breached, overshared, overdue, no_expiry) are
+ *    recomputed from item metadata at report time — always current, no scan
+ *    needed. Their percentage base is the whole live population.
+ *  - **scan** flags (reused, orphaned) can only come from the deep health
+ *    scan (they need a decryption context), so they reflect the last scan.
+ *    Their base is the scanned population and each row carries the scan date.
+ *
+ * @param array<string, int> $liveCounts   Metadata flags recomputed now
+ * @param int                $totalItems   Live population (base for live %)
+ * @param array<string, int> $scanCounts   Flags from the last deep scan
+ * @param int                $scannedItems Scanned population (base for scan %)
  * @param int                $lastScanAt   Timestamp of the most recent scan (0 = never)
  *
- * @return array{scanned_items: int, last_scan_at: int, issues: array<int, array<string, int|string|float>>}
+ * @return array{total_items: int, scanned_items: int, last_scan_at: int, issues: array<int, array<string, int|string|float>>}
  */
-function reportsPostureSummary(array $flagCounts, int $scannedItems, int $lastScanAt): array
+function reportsPostureSummary(array $liveCounts, int $totalItems, array $scanCounts, int $scannedItems, int $lastScanAt): array
 {
-    $rows = [];
-    foreach ($flagCounts as $issue => $count) {
-        $count = (int) $count;
-        $rows[] = [
-            'issue' => (string) $issue,
-            'items' => $count,
-            'percent' => $scannedItems > 0 ? round($count * 100 / $scannedItems, 1) : 0.0,
-        ];
-    }
+    $buildRows = static function (array $counts, int $base, string $source) use ($lastScanAt): array {
+        $rows = [];
+        foreach ($counts as $issue => $count) {
+            $count = max(0, (int) $count);
+            $rows[] = [
+                'issue' => (string) $issue,
+                'items' => $count,
+                'percent' => $base > 0 ? round($count * 100 / $base, 1) : 0.0,
+                'source' => $source,
+                'as_of' => $source === 'scan' ? $lastScanAt : 0,
+            ];
+        }
+        // Most impacted first within each family — that is what the auditor reads
+        usort($rows, static fn (array $a, array $b): int => $b['items'] <=> $a['items']);
 
-    // Most impacted first — that is what the auditor reads
-    usort($rows, fn (array $a, array $b): int => $b['items'] <=> $a['items']);
+        return $rows;
+    };
+
+    // Live flags first (always current), then the scan-bound ones
+    $issues = array_merge(
+        $buildRows($liveCounts, $totalItems, 'live'),
+        $buildRows($scanCounts, $scannedItems, 'scan')
+    );
 
     return [
+        'total_items' => $totalItems,
         'scanned_items' => $scannedItems,
         'last_scan_at' => $lastScanAt,
-        'issues' => $rows,
+        'issues' => $issues,
     ];
 }
 

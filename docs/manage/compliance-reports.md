@@ -22,7 +22,16 @@ All **user management events** recorded in the system log over a selectable peri
 
 ### Vault posture summary
 
-Aggregated counts from the [Security Posture Dashboard](../features/breach-detection.md) health scan: how many items are **weak**, **reused**, **breached**, **overdue**, without expiry, over-shared or orphaned — with percentages over the scanned population.
+Aggregated posture counts: how many items are **weak**, **breached**, **over-shared**, **overdue**, without expiry, **reused** or **orphaned** — with percentages.
+
+**Always fresh where it can be.** The report separates two families of flags:
+
+| Flag | Source | Freshness |
+|------|--------|-----------|
+| weak · breached · over-shared · overdue · no-expiry | **Live** | Recomputed from item metadata **every time you run the report** — never stale. Base: all active items in non-personal folders. |
+| reused · orphaned | **Last scan** | Come from the [Security Posture Dashboard](../features/breach-detection.md) deep scan, which needs a live decryption context (a background job cannot read passwords). Each such row shows the **date of the last scan**. Base: the scanned population. |
+
+The **Freshness** column tells the two apart. This is why a full deep-scan "refresh at report time" is neither offered nor needed: the flags that *can* be recomputed cheaply always are, and the two that genuinely require decryption (reused/orphaned) are clearly dated — run a new scan from the Security dashboard to refresh them.
 
 **Zero-knowledge preserved:** this report contains counts only. No password value and no item name ever appears — the admin view aggregates metadata flags, never cross-user plaintext.
 
