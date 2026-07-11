@@ -2697,5 +2697,11 @@ return array(
     'leaver_risk_folder_filter' => 'Limit the report to specific folders',
     'leaver_risk_folder_filter_tip' => 'No selection = all folders. Hold Ctrl/Cmd to select several. "Flag all" only covers the filtered report.',
     'leaver_risk_include_children' => 'Include subfolders of the selected folders',
+    'menu_access' => 'Access',
+    'menu_governance' => 'Governance',
+    'menu_configuration' => 'Configuration',
+    'menu_authentication' => 'Authentication',
+    'menu_operations' => 'Operations',
+    'menu_supervision' => 'Monitoring',
 
 );

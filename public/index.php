@@ -582,205 +582,272 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
     }
 
-    // Admin menu
-    if ($session_user_admin === 1) {
+    // -------------------------------------------------------------------------
+    // Management sidebar (grouped by domain).
+    // Routing (data-name) and role visibility are unchanged; only the
+    // presentation is reorganised into domain drawers. A drawer is rendered
+    // only when at least one of its entries is visible for the current user.
+    // -------------------------------------------------------------------------
+    $isAdmin = $session_user_admin === 1;
+    $canManage = $session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1;
+
+    // Keep the drawer holding the active page expanded on load.
+    $currentPage = $get['page'];
+    $menuAccess = in_array($currentPage, ['users', 'roles', 'folders'], true);
+    $menuGovernance = in_array($currentPage, ['reviews', 'reports'], true);
+    $menuConfiguration = in_array($currentPage, ['options', 'fields', 'emails', 'uploads'], true);
+    $menuAuthentication = in_array($currentPage, ['2fa', 'ldap', 'oauth', 'api'], true);
+    $menuOperations = in_array($currentPage, ['tasks', 'backups', 'utilities.database', 'import', 'utilities.renewal', 'utilities.deletion'], true);
+    $menuMonitoring = in_array($currentPage, ['statistics', 'utilities.logs', 'utilities.health', 'tools'], true);
+
+    // DASHBOARD (admin only)
+    if ($isAdmin === true) {
         echo '
                     <li class="nav-item">
-                        <a href="#" data-name="admin" class="nav-link', $get['page'] === 'admin' ? ' active' : '', '">
+                        <a href="#" data-name="admin" class="nav-link', $currentPage === 'admin' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-info"></i>
-                        <p>
-                            ' . $lang->get('dashboard') . '
-                        </p>
+                        <p>' . $lang->get('dashboard') . '</p>
                         </a>
-                    </li>
-                    <li class="nav-item has-treeview', $menuAdmin === true ? ' menu-open' : '', '">
+                    </li>';
+    }
+
+    // ACCESS - Users, Roles, Folders (admin / manager / HR)
+    if ($canManage === true) {
+        echo '
+                    <li class="nav-item has-treeview', $menuAccess === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                            <i class="nav-icon fa-solid fa-wrench"></i>
-                            <p>
-                                ' . $lang->get('settings') . '
-                                <i class="fa-solid fa-angle-left right"></i>
-                            </p>
+                            <i class="nav-icon fa-solid fa-users-gear"></i>
+                            <p>' . $lang->get('menu_access') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
-                        <ul class="nav-item nav-treeview">
+                        <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="#" data-name="options" class="nav-link', $get['page'] === 'options' ? ' active' : '', '">
+                                <a href="#" data-name="users" class="nav-link', $currentPage === 'users' ? ' active' : '', '">
+                                    <i class="fa-solid fa-users nav-icon"></i>
+                                    <p>' . $lang->get('users') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="roles" class="nav-link', $currentPage === 'roles' ? ' active' : '', '">
+                                    <i class="fa-solid fa-graduation-cap nav-icon"></i>
+                                    <p>' . $lang->get('roles') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="folders" class="nav-link', $currentPage === 'folders' ? ' active' : '', '">
+                                    <i class="fa-solid fa-folder-open nav-icon"></i>
+                                    <p>' . $lang->get('folders') . '</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>';
+    }
+
+    // GOVERNANCE - Access reviews (admin / manager / HR) + Compliance reports (admin)
+    if ($canManage === true) {
+        echo '
+                    <li class="nav-item has-treeview', $menuGovernance === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fa-solid fa-shield-halved"></i>
+                            <p>' . $lang->get('menu_governance') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="reviews" class="nav-link', $currentPage === 'reviews' ? ' active' : '', '">
+                                    <i class="fa-solid fa-clipboard-check nav-icon"></i>
+                                    <p>' . $lang->get('access_reviews') . '</p>
+                                </a>
+                            </li>';
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="reports" class="nav-link', $currentPage === 'reports' ? ' active' : '', '">
+                                    <i class="fa-solid fa-file-contract nav-icon"></i>
+                                    <p>' . $lang->get('compliance_reports') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
+                        </ul>
+                    </li>';
+    }
+
+    // CONFIGURATION - Options, Fields, Emails, Uploads (admin)
+    if ($isAdmin === true) {
+        echo '
+                    <li class="nav-item has-treeview', $menuConfiguration === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fa-solid fa-sliders"></i>
+                            <p>' . $lang->get('menu_configuration') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="options" class="nav-link', $currentPage === 'options' ? ' active' : '', '">
                                     <i class="fa-solid fa-check-double nav-icon"></i>
                                     <p>' . $lang->get('options') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="2fa" class="nav-link', $get['page'] === '2fa' ? ' active' : '', '">
-                                    <i class="fa-solid fa-qrcode nav-icon"></i>
-                                    <p>' . $lang->get('mfa_short') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="api" class="nav-link', $get['page'] === 'api' ? ' active' : '', '">
-                                    <i class="fa-solid fa-cubes nav-icon"></i>
-                                    <p>' . $lang->get('api') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="backups" class="nav-link', $get['page'] === 'backups' ? ' active' : '', '">
-                                    <i class="fa-solid fa-database nav-icon"></i>
-                                    <p>' . $lang->get('backups') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="emails" class="nav-link', $get['page'] === 'emails' ? ' active' : '', '">
-                                    <i class="fa-solid fa-envelope nav-icon"></i>
-                                    <p>' . $lang->get('emails') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="fields" class="nav-link', $get['page'] === 'fields' ? ' active' : '', '">
+                                <a href="#" data-name="fields" class="nav-link', $currentPage === 'fields' ? ' active' : '', '">
                                     <i class="fa-solid fa-keyboard nav-icon"></i>
                                     <p>' . $lang->get('fields') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="ldap" class="nav-link', $get['page'] === 'ldap' ? ' active' : '', '">
-                                    <i class="fa-solid fa-id-card nav-icon"></i>
-                                    <p>' . $lang->get('ldap') . '</p>
+                                <a href="#" data-name="emails" class="nav-link', $currentPage === 'emails' ? ' active' : '', '">
+                                    <i class="fa-solid fa-envelope nav-icon"></i>
+                                    <p>' . $lang->get('emails') . '</p>
                                 </a>
                             </li>
-
                             <li class="nav-item">
-                                <a href="#" data-name="oauth" class="nav-link', $get['page'] === 'oauth' ? ' active' : '', '">
-                                    <i class="fa-solid fa-plug nav-icon"></i>
-                                    <p>' . $lang->get('oauth') . '</p>
-                                </a>
-                            </li>
-                            
-                            <li class="nav-item">
-                                <a href="#" data-name="uploads" class="nav-link', $get['page'] === 'uploads' ? ' active' : '', '">
+                                <a href="#" data-name="uploads" class="nav-link', $currentPage === 'uploads' ? ' active' : '', '">
                                     <i class="fa-solid fa-file-upload nav-icon"></i>
                                     <p>' . $lang->get('uploads') . '</p>
                                 </a>
                             </li>
                         </ul>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" data-name="statistics" class="nav-link', $get['page'] === 'statistics' ? ' active' : '', '">
-                            <i class="fa-solid fa-chart-bar nav-icon"></i>
-                            <p>' . $lang->get('statistics') . '</p>
-                        </a>
-                    </li><li class="nav-item">
-                        <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
-                        <i class="fa-solid fa-tasks nav-icon"></i>
-                        <p>' . $lang->get('tasks') . '</p>
-                        </a>
-                    </li>                    
-                    <li class="nav-item">
-                        <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-file-import"></i>
-                        <p>
-                            ' . $lang->get('import') . '
-                        </p>
-                        </a>
                     </li>';
     }
 
-    if (
-        $session_user_admin === 1
-        || $session_user_manager === 1
-        || $session_user_human_resources === 1
-    ) {
+    // AUTHENTICATION - MFA, LDAP, OAuth, API (admin)
+    if ($isAdmin === true) {
         echo '
-                    <li class="nav-item">
-                        <a href="#" data-name="folders" class="nav-link', $get['page'] === 'folders' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-folder-open"></i>
-                        <p>
-                            ' . $lang->get('folders') . '
-                        </p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" data-name="roles" class="nav-link', $get['page'] === 'roles' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-graduation-cap"></i>
-                        <p>
-                            ' . $lang->get('roles') . '
-                        </p>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="#" data-name="users" class="nav-link', $get['page'] === 'users' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-users"></i>
-                        <p>
-                            ' . $lang->get('users') . '
-                        </p>
-                        </a>
-                    </li>
-                    <li class="nav-item has-treeview', $menuUtilities === true ? ' menu-open' : '', '">
+                    <li class="nav-item has-treeview', $menuAuthentication === true ? ' menu-open' : '', '">
                         <a href="#" class="nav-link">
-                        <i class="nav-icon fa-solid fa-cubes"></i>
-                        <p>' . $lang->get('utils') . '<i class="fa-solid fa-angle-left right"></i></p>
+                            <i class="nav-icon fa-solid fa-lock"></i>
+                            <p>' . $lang->get('menu_authentication') . '<i class="fa-solid fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item">
-                                <a href="#" data-name="utilities.renewal" class="nav-link', $get['page'] === 'utilities.renewal' ? ' active' : '', '">
-                                <i class="far fa-calendar-alt nav-icon"></i>
-                                <p>' . $lang->get('renewal') . '</p>
+                                <a href="#" data-name="2fa" class="nav-link', $currentPage === '2fa' ? ' active' : '', '">
+                                    <i class="fa-solid fa-qrcode nav-icon"></i>
+                                    <p>' . $lang->get('mfa_short') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="utilities.deletion" class="nav-link', $get['page'] === 'utilities.deletion' ? ' active' : '', '">
-                                <i class="fa-solid fa-trash-alt nav-icon"></i>
-                                <p>' . $lang->get('deletion') . '</p>
+                                <a href="#" data-name="ldap" class="nav-link', $currentPage === 'ldap' ? ' active' : '', '">
+                                    <i class="fa-solid fa-id-card nav-icon"></i>
+                                    <p>' . $lang->get('ldap') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="utilities.logs" class="nav-link', $get['page'] === 'utilities.logs' ? ' active' : '', '">
-                                <i class="fa-solid fa-history nav-icon"></i>
-                                <p>' . $lang->get('logs') . '</p>
+                                <a href="#" data-name="oauth" class="nav-link', $currentPage === 'oauth' ? ' active' : '', '">
+                                    <i class="fa-solid fa-plug nav-icon"></i>
+                                    <p>' . $lang->get('oauth') . '</p>
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="utilities.database" class="nav-link', $get['page'] === 'utilities.database' ? ' active' : '', '">
-                                <i class="fa-solid fa-database nav-icon"></i>
-                                <p>' . $lang->get('database') . '</p>
-                                </a>
-                            </li>';
-    }
-    if ($session_user_admin === 1) {
-        echo '
-                            <li class="nav-item">
-                                <a href="#" data-name="reports" class="nav-link', $get['page'] === 'reports' ? ' active' : '', '">
-                                    <i class="fa-solid fa-file-contract nav-icon"></i>
-                                    <p>' . $lang->get('compliance_reports') . '</p>
+                                <a href="#" data-name="api" class="nav-link', $currentPage === 'api' ? ' active' : '', '">
+                                    <i class="fa-solid fa-cubes nav-icon"></i>
+                                    <p>' . $lang->get('api') . '</p>
                                 </a>
                             </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="utilities.health" class="nav-link'. ($get['page'] === 'utilities.health' ? ' active' : ''). '">
-                                <i class="fa-solid fa-heart-pulse nav-icon"></i>
-                                <p>' . $lang->get('system_health') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
-                                <i class="nav-icon fa-solid fa-person-drowning"></i>
-                                <p>
-                                    ' . $lang->get('tools') . '
-                                </p>
-                                </a>
-                            </li>';
-    }
-    if (
-        $session_user_admin === 1
-        || $session_user_manager === 1
-        || $session_user_human_resources === 1
-    ) {
-        echo '
-                            <li class="nav-item">
-                                <a href="#" data-name="reviews" class="nav-link', $get['page'] === 'reviews' ? ' active' : '', '">
-                                    <i class="fa-solid fa-clipboard-check nav-icon"></i>
-                                    <p>' . $lang->get('access_reviews') . '</p>
-                                </a>
-                            </li>';
-    }
-    echo '
                         </ul>
                     </li>';
+    }
+
+    // OPERATIONS - Tasks/Backups/Import (admin) + Database/Renewal/Deletion (admin / manager / HR)
+    if ($canManage === true) {
+        echo '
+                    <li class="nav-item has-treeview', $menuOperations === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fa-solid fa-gears"></i>
+                            <p>' . $lang->get('menu_operations') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">';
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="tasks" class="nav-link', $currentPage === 'tasks' ? ' active' : '', '">
+                                    <i class="fa-solid fa-tasks nav-icon"></i>
+                                    <p>' . $lang->get('tasks') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="backups" class="nav-link', $currentPage === 'backups' ? ' active' : '', '">
+                                    <i class="fa-solid fa-database nav-icon"></i>
+                                    <p>' . $lang->get('backups') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.database" class="nav-link', $currentPage === 'utilities.database' ? ' active' : '', '">
+                                    <i class="fa-solid fa-database nav-icon"></i>
+                                    <p>' . $lang->get('database') . '</p>
+                                </a>
+                            </li>';
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="import" class="nav-link', $currentPage === 'import' ? ' active' : '', '">
+                                    <i class="fa-solid fa-file-import nav-icon"></i>
+                                    <p>' . $lang->get('import') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.renewal" class="nav-link', $currentPage === 'utilities.renewal' ? ' active' : '', '">
+                                    <i class="far fa-calendar-alt nav-icon"></i>
+                                    <p>' . $lang->get('renewal') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.deletion" class="nav-link', $currentPage === 'utilities.deletion' ? ' active' : '', '">
+                                    <i class="fa-solid fa-trash-alt nav-icon"></i>
+                                    <p>' . $lang->get('deletion') . '</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>';
+    }
+
+    // MONITORING - Statistics/Health/Recovery tools (admin) + Logs (admin / manager / HR)
+    if ($canManage === true) {
+        echo '
+                    <li class="nav-item has-treeview', $menuMonitoring === true ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fa-solid fa-gauge-high"></i>
+                            <p>' . $lang->get('menu_supervision') . '<i class="fa-solid fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">';
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="statistics" class="nav-link', $currentPage === 'statistics' ? ' active' : '', '">
+                                    <i class="fa-solid fa-chart-bar nav-icon"></i>
+                                    <p>' . $lang->get('statistics') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.logs" class="nav-link', $currentPage === 'utilities.logs' ? ' active' : '', '">
+                                    <i class="fa-solid fa-history nav-icon"></i>
+                                    <p>' . $lang->get('logs') . '</p>
+                                </a>
+                            </li>';
+        if ($isAdmin === true) {
+            echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="utilities.health" class="nav-link', $currentPage === 'utilities.health' ? ' active' : '', '">
+                                    <i class="fa-solid fa-heart-pulse nav-icon"></i>
+                                    <p>' . $lang->get('system_health') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="tools" class="nav-link', $currentPage === 'tools' ? ' active' : '', '">
+                                    <i class="fa-solid fa-person-drowning nav-icon"></i>
+                                    <p>' . $lang->get('tools') . '</p>
+                                </a>
+                            </li>';
+        }
+        echo '
+                        </ul>
+                    </li>';
+    }
     ?>
                         </ul>
                     </nav>
