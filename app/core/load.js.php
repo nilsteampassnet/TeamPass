@@ -243,10 +243,11 @@ if (
         // Check theme on page load
         applyTheme(false);
         
-        // Switch light/dark theme button
-        $('#switch-theme').on('click', function() {
+        // Switch light/dark theme button (anchor inside: prevent the # jump)
+        $('#switch-theme').on('click', function(event) {
+            event.preventDefault();
             applyTheme(true);
-        });        
+        });
 
         // Select all objects with the class .fa-clickable-login
         $(document).on('click', '.clipboard-copy', async function(event) {
@@ -2359,8 +2360,12 @@ if (
      * @param {bool} switch_theme
      */
     function applyTheme(switch_theme) {
-        // Read actual theme (default = light)
-        let mode = $.cookie('teampass_theme') !== null ? $.cookie('teampass_theme') : 'light';
+        // Read actual theme; on first visit (no cookie yet) respect the OS
+        // preference (prefers-color-scheme) instead of forcing light.
+        let mode = $.cookie('teampass_theme');
+        if (mode !== 'dark' && mode !== 'light') {
+            mode = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+        }
 
         // Switch mode value if page loading
         if (switch_theme) {

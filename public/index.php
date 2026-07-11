@@ -352,6 +352,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
+        <a class="tp-skip-link" href="#tp-main-content"><?php echo $lang->get('a11y_skip_to_content'); ?></a>
         <div class="wrapper">
 
             <!-- Navbar -->
@@ -364,7 +365,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- Left navbar links -->
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa-solid fa-bars"></i></a>
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="<?php echo $lang->get('a11y_toggle_menu'); ?>"><i class="fa-solid fa-bars" aria-hidden="true"></i></a>
                     </li>
                 </ul>
 
@@ -429,10 +430,10 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                         <span class="align-middle infotip ml-2 text-info" title="<?php echo $lang->get('index_expiration_in'); ?>" id="countdown"></span>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fa-solid fa-th-large"></i></a>
+                        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar" aria-label="<?php echo $lang->get('a11y_open_sidebar'); ?>"><i class="fa-solid fa-th-large" aria-hidden="true"></i></a>
                     </li>
                     <li id="switch-theme" class="nav-item pointer">
-                        <i class="fa-solid fa-circle-half-stroke m-2 m-2"></i>
+                        <a class="nav-link" href="#" role="button" aria-label="<?php echo $lang->get('a11y_toggle_theme'); ?>"><i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i></a>
                     </li>
                 </ul>
             </nav>
@@ -906,7 +907,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             </aside>
 
             <!-- Content Wrapper. Contains page content -->
-            <div class="content-wrapper">
+            <div class="content-wrapper" id="tp-main-content" role="main">
 
                 <!-- DEFECT REPORT -->
                 <div class="card card-danger m-2 hidden" id="dialog-bug-report">

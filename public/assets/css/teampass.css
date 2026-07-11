@@ -770,3 +770,85 @@
 #items-details-container.tp-panel-appearing {
     animation: tp-panel-fadein 180ms ease-out forwards;
 }
+
+/* ============================================================
+   Accessibility (D4)
+   ============================================================ */
+
+/* Skip-to-content link: invisible until focused via keyboard */
+.tp-skip-link {
+    position: absolute;
+    left: -9999px;
+    top: 0;
+    z-index: 11000;
+    background-color: #007bff;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 0 0 4px 0;
+    text-decoration: none;
+}
+.tp-skip-link:focus {
+    left: 0;
+    color: #fff;
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+}
+
+/* Visible keyboard focus everywhere (mouse clicks stay outline-free) */
+a:focus-visible,
+button:focus-visible,
+[role="button"]:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.form-control:focus-visible {
+    outline: 2px solid #1f6feb;
+    outline-offset: 1px;
+}
+body.dark-mode a:focus-visible,
+body.dark-mode button:focus-visible,
+body.dark-mode [role="button"]:focus-visible,
+body.dark-mode input:focus-visible,
+body.dark-mode select:focus-visible,
+body.dark-mode textarea:focus-visible,
+body.dark-mode .form-control:focus-visible {
+    outline-color: #58a6ff;
+}
+
+/* ============================================================
+   Small screens (D5) — most-used flows: login, search, item view
+   ============================================================ */
+@media (max-width: 767.98px) {
+    /* Compact page headers */
+    .content-header h1 {
+        font-size: 1.35rem;
+    }
+
+    /* Item detail / forms: let action buttons wrap without overflowing */
+    .card-footer .btn,
+    #form-item-buttons .btn {
+        margin-bottom: 0.35rem;
+    }
+
+    /* Modals fill the viewport comfortably */
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+
+    /* Injected overlays stay within the viewport */
+    #tp-palette-box {
+        max-width: 94vw !important;
+        margin-top: 6vh !important;
+    }
+    .navbar-nav .dropdown-menu-lg {
+        max-width: 92vw;
+    }
+    #toast-container > div {
+        max-width: 92vw;
+    }
+
+    /* Folder tree stacks above the items list: keep a breathing gap */
+    #folders-tree-card {
+        margin-bottom: 0.75rem;
+    }
+}
