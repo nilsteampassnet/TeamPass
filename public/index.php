@@ -1664,7 +1664,12 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/item-classification.js.php';
     }
-    if ($menuAdmin === true) {
+    if ($menuAdmin === true && $session_user_admin !== 1 && $get['page'] === 'reviews') {
+        // Delegated manager on the Recertification page: load only its own JS.
+        // admin.js.php must NOT be included here — its userAccessPage('admin')
+        // guard rejects non-admins and ends the session (ERR_NOT_ALLOWED).
+        include_once TEAMPASS_APP . '/pages/reviews.js.php';
+    } elseif ($menuAdmin === true) {
         include_once TEAMPASS_APP . '/pages/admin.js.php';
         if ($get['page'] === '2fa') {
             include_once TEAMPASS_APP . '/pages/2fa.js.php';
