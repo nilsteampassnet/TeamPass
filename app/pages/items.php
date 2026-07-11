@@ -212,11 +212,11 @@ if ((int) $session_user_admin === 1) {
                                 <input type="hidden" id="form-item-password-complex" value="0">
                                 <!-- Generator: mode selector (drives which options show) + single generate button -->
                                 <div class="d-flex justify-content-center align-items-center mt-2 mb-1">
-                                    <div class="btn-group btn-group-sm btn-group-toggle mr-2" data-toggle="buttons" id="form-item-generator-mode">
-                                        <label class="btn btn-secondary active" data-mode="random">
+                                    <div class="btn-group btn-group-sm btn-group-toggle mr-2" id="form-item-generator-mode">
+                                        <label class="btn btn-primary active" data-mode="random">
                                             <input type="radio" name="generator-mode" autocomplete="off" checked><i class="fa-solid fa-random mr-1"></i><?php echo $lang->get('generator_mode_random'); ?>
                                         </label>
-                                        <label class="btn btn-secondary" data-mode="passphrase">
+                                        <label class="btn btn-outline-secondary" data-mode="passphrase">
                                             <input type="radio" name="generator-mode" autocomplete="off"><i class="fa-solid fa-comment-dots mr-1"></i><?php echo $lang->get('generator_mode_passphrase'); ?>
                                         </label>
                                     </div>

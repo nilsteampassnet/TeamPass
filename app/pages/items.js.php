@@ -8572,7 +8572,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     function applyGeneratorMode(mode) {
         $('#form-item-generator-mode label').each(function() {
             const active = $(this).data('mode') === mode
-            $(this).toggleClass('active', active)
+            // Selected mode: solid primary button. Unselected: muted outline.
+            // Keeps the visible panel, the .active class and the button colour
+            // always in sync (currentGeneratorMode() reads label.active).
+            $(this).toggleClass('active btn-primary', active)
+                   .toggleClass('btn-outline-secondary', !active)
             $(this).find('input[type=radio]').prop('checked', active)
         })
         showGeneratorOptions(mode)
@@ -8593,9 +8597,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Pick a mode: swap the options panel, remember it, and generate right away
     // so the field, the strength bar and the coaching always match the mode.
-    $('#form-item-generator-mode label').on('click', function() {
-        const mode = $(this).data('mode')
-        showGeneratorOptions(mode)
+    // Bound on the radio 'change' (fires exactly once) rather than the label
+    // 'click' (label-wrapped radios fire click twice, which desynced the
+    // .active class from the shown panel and made Generate use the wrong mode).
+    $('#form-item-generator-mode input[type=radio]').on('change', function() {
+        const mode = $(this).closest('label').data('mode')
+        applyGeneratorMode(mode)
         try { localStorage.setItem('tp_generator_mode', mode) } catch (_) {}
         generateInMode(mode)
     })
