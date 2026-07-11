@@ -125,13 +125,16 @@ switch ($post_type) {
      * ACCESS MATRIX — one row per (user, role, folder) grant
      */
     case 'report_access_matrix':
-        // Active human users with at least one role
+        // Active human users with their roles (all sources: manual, AD, LDAP, OAuth2)
         $users = DB::query(
-            'SELECT id, login, name, lastname, fonction_id
-            FROM ' . prefixTable('users') . '
-            WHERE deleted_at IS NULL
-            AND id NOT IN %li
-            ORDER BY login ASC',
+            'SELECT u.id, u.login, u.name, u.lastname,
+                GROUP_CONCAT(DISTINCT ur.role_id ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+            FROM ' . prefixTable('users') . ' AS u
+            LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
+            WHERE u.deleted_at IS NULL
+            AND u.id NOT IN %li
+            GROUP BY u.id, u.login, u.name, u.lastname
+            ORDER BY u.login ASC',
             [(int) TP_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID]
         );
 
