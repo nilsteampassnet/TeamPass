@@ -36,6 +36,7 @@
 - **Manage**
 - [Settings](manage/settings.md)
 - [Compliance Reports](manage/compliance-reports.md)
+- [Rotation Tracking](manage/rotation-tracking.md)
 - [Access Reviews](manage/access-reviews.md)
 - [Tasks](manage/tasks.md)
 - [Tools](manage/tools.md)

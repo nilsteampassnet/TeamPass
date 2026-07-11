@@ -736,6 +736,14 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'compliance_reports_enabled', '0')"
 );
 
+// Add the Rotation tracking toggle (F5): overdue rotations + SLA coverage
+// reports on the Reports page, driven by the per-folder renewal_period.
+// Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'rotation_tracking_enabled', '0')"
+);
+
 // Add the access_reviews + access_review_items tables — Access Recertification
 // Campaigns (F2, Enterprise governance). Companion tables: additive, no ALTER
 // on hot tables. Titles are denormalised on purpose (evidence stability).

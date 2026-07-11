@@ -1334,6 +1334,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="rotation policy tracking sla overdue governance">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_rotation_tracking'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_rotation_tracking_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='rotation_tracking_enabled' data-toggle-on='<?php echo isset($SETTINGS['rotation_tracking_enabled']) === true && (int) $SETTINGS['rotation_tracking_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='rotation_tracking_enabled_input' value='<?php echo isset($SETTINGS['rotation_tracking_enabled']) && (int) $SETTINGS['rotation_tracking_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="compliance reports audit evidence governance">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_compliance_reports'); ?>

@@ -529,6 +529,7 @@ class DatabaseInstaller
             array('admin', 'leaver_risk_enabled', '0'),
             array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'compliance_reports_enabled', '0'),
+            array('admin', 'rotation_tracking_enabled', '0'),
             array('admin', 'access_reviews_enabled', '0'),
             array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
