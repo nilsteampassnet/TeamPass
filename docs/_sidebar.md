@@ -32,6 +32,7 @@
 - [Knowledge Base](features/knowledge-base.md)
 - [Breach Detection](features/breach-detection.md)
 - [Notification Centre](features/notification-center.md)
+- [Real-time Collaboration](features/collaboration.md)
 - [Leaver Risk](features/leaver-risk.md)
 - [Classification](features/classification.md)
 - **Manage**

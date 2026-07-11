@@ -5749,6 +5749,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Prepare copy to clipboard
             PrepareCopyToClipboard();
+
+            // WebSocket: list fully rendered — let the realtime layer re-apply
+            // its presence badges (edition locks, viewers) on the fresh rows.
+            $(document).trigger('teampass:items:rendered');
         }
     }
 
