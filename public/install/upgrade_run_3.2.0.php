@@ -780,6 +780,13 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'command_palette_enabled', '0')"
 );
 
+// Add the Micro-learning toggle (F11): contextual, dismissible security tips
+// at the moment of action + a daily rotation. Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'micro_learning_enabled', '0')"
+);
+
 // Add the access_reviews + access_review_items tables — Access Recertification
 // Campaigns (F2, Enterprise governance). Companion tables: additive, no ALTER
 // on hot tables. Titles are denormalised on purpose (evidence stability).

@@ -34,6 +34,7 @@
 - [Breach Detection](features/breach-detection.md)
 - [Notification Centre](features/notification-center.md)
 - [Real-time Collaboration](features/collaboration.md)
+- [Micro-learning](features/micro-learning.md)
 - [Leaver Risk](features/leaver-risk.md)
 - [Classification](features/classification.md)
 - **Manage**

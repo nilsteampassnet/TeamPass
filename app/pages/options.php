@@ -1382,6 +1382,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="micro learning tips education security awareness">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_micro_learning'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_micro_learning_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='micro_learning_enabled' data-toggle-on='<?php echo isset($SETTINGS['micro_learning_enabled']) === true && (int) $SETTINGS['micro_learning_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='micro_learning_enabled_input' value='<?php echo isset($SETTINGS['micro_learning_enabled']) && (int) $SETTINGS['micro_learning_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="command palette search keyboard ctrl k shortcut">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_command_palette'); ?>

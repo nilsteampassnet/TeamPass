@@ -532,6 +532,7 @@ class DatabaseInstaller
             array('admin', 'rotation_tracking_enabled', '0'),
             array('admin', 'notification_center_enabled', '0'),
             array('admin', 'command_palette_enabled', '0'),
+            array('admin', 'micro_learning_enabled', '0'),
             array('admin', 'access_reviews_enabled', '0'),
             array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
