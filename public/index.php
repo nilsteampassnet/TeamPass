@@ -1722,6 +1722,15 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
     ) {
         include_once TEAMPASS_APP . '/core/security-score.js.php';
     }
+    // Command Palette (F15): Ctrl+K global search for authenticated non-admin
+    // users when the feature is enabled by an admin (admins have no item access).
+    if ((int) ($SETTINGS['command_palette_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
+    ) {
+        include_once TEAMPASS_APP . '/core/command-palette.js.php';
+    }
     // Notification Centre (D2): navbar bell + inbox for all authenticated users
     // when the feature is enabled by an admin.
     if ((int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1

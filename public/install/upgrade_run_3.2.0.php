@@ -773,6 +773,13 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'notification_center_enabled', '0')"
 );
 
+// Add the Command palette toggle (F15): Ctrl+K keyboard-first global search
+// over items, folders and pages. Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'command_palette_enabled', '0')"
+);
+
 // Add the access_reviews + access_review_items tables — Access Recertification
 // Campaigns (F2, Enterprise governance). Companion tables: additive, no ALTER
 // on hot tables. Titles are denormalised on purpose (evidence stability).

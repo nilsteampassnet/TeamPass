@@ -1382,6 +1382,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="command palette search keyboard ctrl k shortcut">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_command_palette'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_command_palette_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='command_palette_enabled' data-toggle-on='<?php echo isset($SETTINGS['command_palette_enabled']) === true && (int) $SETTINGS['command_palette_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='command_palette_enabled_input' value='<?php echo isset($SETTINGS['command_palette_enabled']) && (int) $SETTINGS['command_palette_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="notification centre center bell inbox alerts">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_notification_center'); ?>

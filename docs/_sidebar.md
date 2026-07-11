@@ -18,6 +18,7 @@
 - [Backups](features/backups.md)
 - [Items](features/items.md)
 - [Search](features/search.md)
+- [Command Palette](features/command-palette.md)
 - [Favourites](features/favourites.md)
 - [Custom Fields](features/custom-fields.md)
 - [Renewal](features/renewal.md)
