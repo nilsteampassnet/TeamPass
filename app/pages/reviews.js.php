@@ -83,9 +83,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     let tpCurrentReviewId = 0
 
     const tpDecisionBadge = {
-        'pending': '<span class="badge badge-warning"><?php echo $lang->get('access_reviews_decision_pending'); ?></span>',
-        'attested': '<span class="badge badge-success"><?php echo $lang->get('access_reviews_decision_attested'); ?></span>',
-        'revoked': '<span class="badge badge-danger"><?php echo $lang->get('access_reviews_decision_revoked'); ?></span>',
+        'pending': '<span class="badge badge-warning"><?php echo addslashes($lang->get('access_reviews_decision_pending')); ?></span>',
+        'attested': '<span class="badge badge-success"><?php echo addslashes($lang->get('access_reviews_decision_attested')); ?></span>',
+        'revoked': '<span class="badge badge-danger"><?php echo addslashes($lang->get('access_reviews_decision_revoked')); ?></span>',
     }
 
     // Initial load
@@ -110,42 +110,42 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 if (data.error !== false) {
                     toastr.remove();
-                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', { timeOut: 5000 });
+                    toastr.error(data.message, '<?php echo addslashes($lang->get('caution')); ?>', { timeOut: 5000 });
                     return;
                 }
 
                 if (!Array.isArray(data.reviews) || data.reviews.length === 0) {
-                    $('#reviews-list').html('<div class="alert alert-info m-3"><?php echo $lang->get('access_reviews_none'); ?></div>')
+                    $('#reviews-list').html('<div class="alert alert-info m-3"><?php echo addslashes($lang->get('access_reviews_none')); ?></div>')
                     return
                 }
 
                 let html = '<table class="table table-bordered table-striped table-sm mb-0"><thead><tr>' +
-                    '<th><?php echo $lang->get('label'); ?></th>' +
-                    '<th><?php echo $lang->get('date'); ?></th>' +
-                    '<th><?php echo $lang->get('author'); ?></th>' +
-                    '<th><?php echo $lang->get('access_reviews_progress'); ?></th>' +
-                    '<th><?php echo $lang->get('status'); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('label')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('date')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('author')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('access_reviews_progress')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('status')); ?></th>' +
                     '<th></th>' +
                     '</tr></thead><tbody>'
 
                 data.reviews.forEach(review => {
                     const statusBadge = review.status === 'open' ?
-                        '<span class="badge badge-info"><?php echo $lang->get('access_reviews_open'); ?></span>' :
-                        '<span class="badge badge-secondary"><?php echo $lang->get('access_reviews_closed'); ?></span>'
+                        '<span class="badge badge-info"><?php echo addslashes($lang->get('access_reviews_open')); ?></span>' :
+                        '<span class="badge badge-secondary"><?php echo addslashes($lang->get('access_reviews_closed')); ?></span>'
 
                     html += '<tr>' +
                         '<td>' + htmlEncode(review.label) + '</td>' +
                         '<td>' + htmlEncode(review.started_at) + '</td>' +
                         '<td>' + htmlEncode(review.started_by) + '</td>' +
                         '<td>' + review.percent + '% (' + (review.attested + review.revoked) + '/' + review.total + ')' +
-                            (review.revoked > 0 ? ' <span class="badge badge-danger">' + review.revoked + ' <?php echo $lang->get('access_reviews_decision_revoked'); ?></span>' : '') +
+                            (review.revoked > 0 ? ' <span class="badge badge-danger">' + review.revoked + ' <?php echo addslashes($lang->get('access_reviews_decision_revoked')); ?></span>' : '') +
                         '</td>' +
                         '<td>' + statusBadge + '</td>' +
                         '<td class="text-right">' +
                             '<button class="btn btn-sm btn-primary review-open mr-1" data-id="' + review.id + '" data-label="' + htmlEncode(review.label) + '"><i class="fas fa-eye"></i></button>' +
                             '<button class="btn btn-sm btn-default review-export mr-1" data-id="' + review.id + '" data-label="' + htmlEncode(review.label) + '"><i class="fas fa-file-csv"></i></button>' +
                             (review.status === 'open' && review.pending === 0 ?
-                                '<button class="btn btn-sm btn-success review-close" data-id="' + review.id + '"><i class="fas fa-check"></i> <?php echo $lang->get('access_reviews_close'); ?></button>' : '') +
+                                '<button class="btn btn-sm btn-success review-close" data-id="' + review.id + '"><i class="fas fa-check"></i> <?php echo addslashes($lang->get('access_reviews_close')); ?></button>' : '') +
                         '</td>' +
                         '</tr>'
                 })
@@ -173,7 +173,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 if (data.error !== false) {
                     toastr.remove();
-                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', { timeOut: 5000 });
+                    toastr.error(data.message, '<?php echo addslashes($lang->get('caution')); ?>', { timeOut: 5000 });
                     return;
                 }
 
@@ -183,10 +183,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 const reviewOpen = data.review.status === 'open'
 
                 let html = '<table class="table table-bordered table-striped table-sm mb-0"><thead><tr>' +
-                    '<th><?php echo $lang->get('role'); ?></th>' +
-                    '<th><?php echo $lang->get('folder'); ?></th>' +
-                    '<th><?php echo $lang->get('accesses'); ?></th>' +
-                    '<th><?php echo $lang->get('access_reviews_decision'); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('role')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('folder')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('accesses')); ?></th>' +
+                    '<th><?php echo addslashes($lang->get('access_reviews_decision')); ?></th>' +
                     '<th></th>' +
                     '</tr></thead><tbody>'
 
@@ -203,10 +203,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<td>' + decisionCell + '</td>' +
                         '<td class="text-right">' +
                             (reviewOpen && item.decision === 'pending' ?
-                                '<button class="btn btn-sm btn-success review-attest mr-1" data-id="' + item.id + '"><i class="fas fa-check mr-1"></i><?php echo $lang->get('access_reviews_attest'); ?></button>' +
+                                '<button class="btn btn-sm btn-success review-attest mr-1" data-id="' + item.id + '"><i class="fas fa-check mr-1"></i><?php echo addslashes($lang->get('access_reviews_attest')); ?></button>' +
                                 (item.can_revoke === true ?
-                                    '<button class="btn btn-sm btn-danger review-revoke" data-id="' + item.id + '"><i class="fas fa-ban mr-1"></i><?php echo $lang->get('access_reviews_revoke'); ?></button>'
-                                    : '<span class="badge badge-light infotip" title="<?php echo $lang->get('access_reviews_revoke_readonly'); ?>"><i class="fas fa-lock mr-1"></i><?php echo $lang->get('read_only'); ?></span>')
+                                    '<button class="btn btn-sm btn-danger review-revoke" data-id="' + item.id + '"><i class="fas fa-ban mr-1"></i><?php echo addslashes($lang->get('access_reviews_revoke')); ?></button>'
+                                    : '<span class="badge badge-light infotip" title="<?php echo addslashes($lang->get('access_reviews_revoke_readonly')); ?>"><i class="fas fa-lock mr-1"></i><?php echo addslashes($lang->get('read_only')); ?></span>')
                                 : '') +
                         '</td>' +
                         '</tr>'
@@ -226,7 +226,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      */
     function tpDecideReviewItem(itemId, decision) {
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         const data = {
             'item_id': itemId,
@@ -245,11 +245,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 toastr.remove();
                 if (data.error !== false) {
-                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', { timeOut: 5000 });
+                    toastr.error(data.message, '<?php echo addslashes($lang->get('caution')); ?>', { timeOut: 5000 });
                     return;
                 }
 
-                toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
+                toastr.success('<?php echo addslashes($lang->get('done')); ?>', '', { timeOut: 1000 });
                 tpLoadReviewItems(tpCurrentReviewId)
                 tpLoadReviews()
             }
@@ -261,12 +261,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const label = $('#review-label').val().trim()
         if (label === '') {
             toastr.remove();
-            toastr.warning('<?php echo $lang->get('error_empty_data'); ?>', '', { timeOut: 3000 });
+            toastr.warning('<?php echo addslashes($lang->get('error_empty_data')); ?>', '', { timeOut: 3000 });
             return
         }
 
         toastr.remove();
-        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+        toastr.info('<?php echo addslashes($lang->get('in_progress')); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
         const data = {
             'label': label,
@@ -285,12 +285,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 toastr.remove();
                 if (data.error !== false) {
-                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', { timeOut: 5000 });
+                    toastr.error(data.message, '<?php echo addslashes($lang->get('caution')); ?>', { timeOut: 5000 });
                     return;
                 }
 
                 $('#review-label').val('')
-                toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
+                toastr.success('<?php echo addslashes($lang->get('done')); ?>', '', { timeOut: 1000 });
                 tpLoadReviews()
                 tpLoadReviewItems(data.review_id)
             }
@@ -317,8 +317,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const itemId = $(this).data('id')
         toastr.remove();
         toastr.warning(
-            '&nbsp;<button type="button" class="btn clear btn-toastr review-revoke-confirm" data-id="' + itemId + '" style="width:100%;"><?php echo $lang->get('please_confirm'); ?></button>',
-            '<?php echo $lang->get('access_reviews_confirm_revoke'); ?>', {
+            '&nbsp;<button type="button" class="btn clear btn-toastr review-revoke-confirm" data-id="' + itemId + '" style="width:100%;"><?php echo addslashes($lang->get('please_confirm')); ?></button>',
+            '<?php echo addslashes($lang->get('access_reviews_confirm_revoke')); ?>', {
                 positionClass: 'toast-top-center',
                 closeButton: true
             }
@@ -346,11 +346,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 toastr.remove();
                 if (data.error !== false) {
-                    toastr.error(data.message, '<?php echo $lang->get('caution'); ?>', { timeOut: 5000 });
+                    toastr.error(data.message, '<?php echo addslashes($lang->get('caution')); ?>', { timeOut: 5000 });
                     return;
                 }
 
-                toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
+                toastr.success('<?php echo addslashes($lang->get('done')); ?>', '', { timeOut: 1000 });
                 tpLoadReviews()
                 $('#review-detail-card').hide()
             }
@@ -374,7 +374,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 if (data.error !== false || !data.csv) {
                     toastr.remove();
-                    toastr.error(data.message || '<?php echo $lang->get('error_unknown'); ?>', '', { timeOut: 5000 });
+                    toastr.error(data.message || '<?php echo addslashes($lang->get('error_unknown')); ?>', '', { timeOut: 5000 });
                     return;
                 }
 
