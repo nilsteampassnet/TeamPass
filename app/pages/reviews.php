@@ -83,15 +83,37 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 
 $reviewsEnabled = (int) ($SETTINGS['access_reviews_enabled'] ?? 0) === 1;
 
+// A manager is limited to the folders they can access; an admin sees all.
+require_once __DIR__ . '/../sources/reviews.functions.php';
+$isAdminReviewer = (int) $session->get('user-admin') === 1;
+$accessibleFolders = $session->get('user-accessible_folders');
+$personalFolders = $session->get('user-personal_visible_folders');
+$reviewerScope = reviewsReviewerFolderScope(
+    $isAdminReviewer,
+    is_array($accessibleFolders) === true ? $accessibleFolders : [],
+    is_array($personalFolders) === true ? $personalFolders : []
+);
+
 // Non-personal folders for the campaign scope selector
 $scopeFolders = [];
 if ($reviewsEnabled === true) {
-    $scopeFolders = DB::query(
-        'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
-        WHERE personal_folder = %i
-        ORDER BY nleft ASC',
-        0
-    );
+    if ($isAdminReviewer === true) {
+        $scopeFolders = DB::query(
+            'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
+            WHERE personal_folder = %i
+            ORDER BY nleft ASC',
+            0
+        );
+    } elseif (count($reviewerScope) > 0) {
+        // Manager: only the folders inside their perimeter
+        $scopeFolders = DB::query(
+            'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
+            WHERE personal_folder = %i AND id IN %li
+            ORDER BY nleft ASC',
+            0,
+            $reviewerScope
+        );
+    }
 }
 
 ?>
@@ -128,6 +150,11 @@ if ($reviewsEnabled === true) {
                         <h3 class='card-title'><?php echo $lang->get('access_reviews_launch'); ?></h3>
                     </div>
                     <div class='card-body'>
+<?php if ($isAdminReviewer === false) : ?>
+                        <div class='alert alert-info py-2'>
+                            <i class='fas fa-user-shield mr-2'></i><?php echo $lang->get('access_reviews_manager_scope_note'); ?>
+                        </div>
+<?php endif; ?>
                         <div class='row'>
                             <div class='col-md-5'>
                                 <label for='review-label'><?php echo $lang->get('label'); ?></label>
@@ -137,7 +164,7 @@ if ($reviewsEnabled === true) {
                             <div class='col-md-5'>
                                 <label for='review-folder'><?php echo $lang->get('access_reviews_scope'); ?></label>
                                 <select class='form-control' id='review-folder'>
-                                    <option value='0'><?php echo $lang->get('access_reviews_all_folders'); ?></option>
+                                    <option value='0'><?php echo $isAdminReviewer === true ? $lang->get('access_reviews_all_folders') : $lang->get('access_reviews_all_my_folders'); ?></option>
 <?php foreach ($scopeFolders as $scopeFolder) : ?>
                                     <option value='<?php echo (int) $scopeFolder['id']; ?>'><?php echo str_repeat('&nbsp;&nbsp;', max(0, (int) $scopeFolder['nlevel'] - 1)) . htmlspecialchars((string) $scopeFolder['title']); ?></option>
 <?php endforeach; ?>

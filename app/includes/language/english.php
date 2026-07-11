@@ -2684,6 +2684,8 @@ return array(
     'access_reviews_scope' => 'Scope',
     'access_reviews_scope_tip' => 'The campaign covers every role/folder grant in the selected folder and its subfolders.',
     'access_reviews_all_folders' => 'All folders',
+    'access_reviews_all_my_folders' => 'All my folders',
+    'access_reviews_manager_scope_note' => 'As a manager, you can review and revoke access only within the folders you manage. Campaigns you start are private to you.',
     'access_reviews_launch_btn' => 'Launch campaign',
     'access_reviews_list' => 'Campaigns',
     'access_reviews_none' => 'No campaign yet. Launch one to snapshot the current access grants.',

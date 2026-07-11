@@ -2662,6 +2662,8 @@ return array(
     'access_reviews_scope' => 'Périmètre',
     'access_reviews_scope_tip' => 'La campagne couvre chaque attribution rôle/dossier du dossier sélectionné et de ses sous-dossiers.',
     'access_reviews_all_folders' => 'Tous les dossiers',
+    'access_reviews_all_my_folders' => 'Tous mes dossiers',
+    'access_reviews_manager_scope_note' => 'En tant que gestionnaire, vous ne pouvez examiner et révoquer les accès que dans les dossiers que vous gérez. Les campagnes que vous lancez vous sont privées.',
     'access_reviews_launch_btn' => 'Lancer la campagne',
     'access_reviews_list' => 'Campagnes',
     'access_reviews_none' => 'Aucune campagne pour le moment. Lancez-en une pour figer les attributions d’accès actuelles.',

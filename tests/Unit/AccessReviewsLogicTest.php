@@ -139,4 +139,64 @@ class AccessReviewsLogicTest extends TestCase
         $this->assertSame(0, $progress['total']);
         $this->assertSame(0.0, $progress['percent']);
     }
+
+    // -------------------------------------------------------------------
+    // reviewsReviewerFolderScope() — manager delegation perimeter
+    // -------------------------------------------------------------------
+
+    public function testAdminHasNoFolderRestriction(): void
+    {
+        // Admin => empty array means "no restriction"; the input is ignored.
+        $this->assertSame([], reviewsReviewerFolderScope(true, [1, 2, 3], [2]));
+    }
+
+    public function testManagerScopeExcludesPersonalFolders(): void
+    {
+        $scope = reviewsReviewerFolderScope(false, [10, 11, 12, 13], [11, 13]);
+
+        $this->assertSame([10, 12], $scope);
+    }
+
+    public function testManagerScopeCastsAndDeduplicates(): void
+    {
+        $scope = reviewsReviewerFolderScope(false, ['5', 5, '7', 0, -3, ''], []);
+
+        $this->assertSame([5, 7], $scope);
+    }
+
+    public function testManagerWithNoAccessibleFolderHasEmptyScope(): void
+    {
+        $this->assertSame([], reviewsReviewerFolderScope(false, [], []));
+    }
+
+    // -------------------------------------------------------------------
+    // reviewsCanActOnFolder()
+    // -------------------------------------------------------------------
+
+    public function testAdminCanActOnAnyFolder(): void
+    {
+        $this->assertTrue(reviewsCanActOnFolder(999, true, []));
+    }
+
+    public function testManagerCanActOnlyWithinPerimeter(): void
+    {
+        $this->assertTrue(reviewsCanActOnFolder(12, false, [10, 12]));
+        $this->assertFalse(reviewsCanActOnFolder(11, false, [10, 12]));
+        $this->assertFalse(reviewsCanActOnFolder(12, false, []));
+    }
+
+    // -------------------------------------------------------------------
+    // reviewsCanManageCampaign() — ownership of a campaign
+    // -------------------------------------------------------------------
+
+    public function testAdminManagesAnyCampaign(): void
+    {
+        $this->assertTrue(reviewsCanManageCampaign(true, 42, 7));
+    }
+
+    public function testManagerManagesOnlyOwnCampaigns(): void
+    {
+        $this->assertTrue(reviewsCanManageCampaign(false, 7, 7));
+        $this->assertFalse(reviewsCanManageCampaign(false, 42, 7));
+    }
 }

@@ -93,9 +93,14 @@ error_reporting(E_ERROR);
 
 require_once TEAMPASS_APP . '/includes/language/' . $session->get('user-language') . '.php';
 
-// Feature + role gate: recertification campaigns are admin-only and must be enabled.
+// Feature + role gate: recertification is open to administrators and to
+// managers (delegated, restricted to the folders they can access).
+$isAdminReviewer = (int) $session->get('user-admin') === 1;
+$isManagerReviewer = (int) $session->get('user-manager') === 1
+    || (int) $session->get('user-can_manage_all_users') === 1;
+
 if ((int) ($SETTINGS['access_reviews_enabled'] ?? 0) !== 1
-    || (int) $session->get('user-admin') !== 1
+    || ($isAdminReviewer === false && $isManagerReviewer === false)
 ) {
     echo (string) prepareExchangedData(
         ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
@@ -103,6 +108,15 @@ if ((int) ($SETTINGS['access_reviews_enabled'] ?? 0) !== 1
     );
     exit;
 }
+
+// Folder perimeter for delegated managers (empty & unused for admins)
+$accessibleFolders = $session->get('user-accessible_folders');
+$personalFolders = $session->get('user-personal_visible_folders');
+$reviewerScope = reviewsReviewerFolderScope(
+    $isAdminReviewer,
+    is_array($accessibleFolders) === true ? $accessibleFolders : [],
+    is_array($personalFolders) === true ? $personalFolders : []
+);
 
 // --------------------------------- //
 
@@ -151,10 +165,32 @@ switch ($post_type) {
         // Scope: all non-personal folders, or a folder subtree
         $scopeFolderIds = [];
         if ($post_folder_id > 0) {
+            // A manager may only start a campaign on a folder in their perimeter
+            if (reviewsCanActOnFolder($post_folder_id, $isAdminReviewer, $reviewerScope) === false) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                    'encode'
+                );
+                break;
+            }
             $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
             $scopeFolderIds[] = $post_folder_id;
             foreach ($tree->getDescendants($post_folder_id) as $node) {
                 $scopeFolderIds[] = (int) $node->id;
+            }
+            // Descendants outside the manager perimeter are dropped
+            if ($isAdminReviewer === false) {
+                $scopeFolderIds = array_values(array_intersect($scopeFolderIds, $reviewerScope));
+            }
+        } elseif ($isAdminReviewer === false) {
+            // "All folders" for a manager means their whole perimeter
+            $scopeFolderIds = $reviewerScope;
+            if (count($scopeFolderIds) === 0) {
+                echo (string) prepareExchangedData(
+                    ['error' => true, 'message' => $lang->get('access_reviews_no_grants')],
+                    'encode'
+                );
+                break;
             }
         }
 
@@ -229,7 +265,9 @@ switch ($post_type) {
      * LIST CAMPAIGNS with progress counters
      */
     case 'list_reviews':
-        $records = DB::query(
+        // Managers only see the campaigns they own; admins see them all
+        $ownerFilterSql = $isAdminReviewer === true ? '' : ' WHERE r.started_by = %i';
+        $listSql =
             'SELECT r.id, r.label, r.folder_scope, r.started_at, r.status, r.closed_at,
                 u.login AS started_by_login,
                 SUM(CASE WHEN ri.decision = %s THEN 1 ELSE 0 END) AS pending,
@@ -237,13 +275,13 @@ switch ($post_type) {
                 SUM(CASE WHEN ri.decision = %s THEN 1 ELSE 0 END) AS revoked
             FROM ' . prefixTable('access_reviews') . ' AS r
             LEFT JOIN ' . prefixTable('users') . ' AS u ON u.id = r.started_by
-            LEFT JOIN ' . prefixTable('access_review_items') . ' AS ri ON ri.review_id = r.id
+            LEFT JOIN ' . prefixTable('access_review_items') . ' AS ri ON ri.review_id = r.id' .
+            $ownerFilterSql . '
             GROUP BY r.id, r.label, r.folder_scope, r.started_at, r.status, r.closed_at, u.login
-            ORDER BY r.started_at DESC',
-            'pending',
-            'attested',
-            'revoked'
-        );
+            ORDER BY r.started_at DESC';
+        $records = $isAdminReviewer === true
+            ? DB::query($listSql, 'pending', 'attested', 'revoked')
+            : DB::query($listSql, 'pending', 'attested', 'revoked', $currentUserId);
 
         $reviews = [];
         foreach ($records as $record) {
@@ -277,10 +315,12 @@ switch ($post_type) {
         $post_review_id = (int) filter_input(INPUT_POST, 'review_id', FILTER_SANITIZE_NUMBER_INT);
 
         $review = DB::queryFirstRow(
-            'SELECT id, label, status FROM ' . prefixTable('access_reviews') . ' WHERE id = %i',
+            'SELECT id, label, status, started_by FROM ' . prefixTable('access_reviews') . ' WHERE id = %i',
             $post_review_id
         );
-        if ($review === null) {
+        if ($review === null
+            || reviewsCanManageCampaign($isAdminReviewer, (int) $review['started_by'], $currentUserId) === false
+        ) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
                 'encode'
@@ -342,7 +382,8 @@ switch ($post_type) {
         }
 
         $item = DB::queryFirstRow(
-            'SELECT ri.id, ri.review_id, ri.role_id, ri.folder_id, ri.decision, r.status AS review_status
+            'SELECT ri.id, ri.review_id, ri.role_id, ri.folder_id, ri.decision,
+                r.status AS review_status, r.started_by
             FROM ' . prefixTable('access_review_items') . ' AS ri
             INNER JOIN ' . prefixTable('access_reviews') . ' AS r ON r.id = ri.review_id
             WHERE ri.id = %i',
@@ -353,6 +394,18 @@ switch ($post_type) {
         ) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('access_reviews_decision_not_allowed')],
+                'encode'
+            );
+            break;
+        }
+
+        // Delegated managers may only decide on their own campaigns, and only
+        // on grants whose folder is within their current perimeter.
+        if (reviewsCanManageCampaign($isAdminReviewer, (int) $item['started_by'], $currentUserId) === false
+            || reviewsCanActOnFolder((int) $item['folder_id'], $isAdminReviewer, $reviewerScope) === false
+        ) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
                 'encode'
             );
             break;
@@ -427,10 +480,12 @@ switch ($post_type) {
         $post_review_id = (int) filter_var($dataReceived['review_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
 
         $review = DB::queryFirstRow(
-            'SELECT id, status FROM ' . prefixTable('access_reviews') . ' WHERE id = %i',
+            'SELECT id, status, started_by FROM ' . prefixTable('access_reviews') . ' WHERE id = %i',
             $post_review_id
         );
-        if ($review === null) {
+        if ($review === null
+            || reviewsCanManageCampaign($isAdminReviewer, (int) $review['started_by'], $currentUserId) === false
+        ) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
                 'encode'
@@ -484,6 +539,21 @@ switch ($post_type) {
      */
     case 'export_review':
         $post_review_id = (int) filter_input(INPUT_POST, 'review_id', FILTER_SANITIZE_NUMBER_INT);
+
+        // Delegated managers may only export the campaigns they own
+        $exportReview = DB::queryFirstRow(
+            'SELECT started_by FROM ' . prefixTable('access_reviews') . ' WHERE id = %i',
+            $post_review_id
+        );
+        if ($exportReview === null
+            || reviewsCanManageCampaign($isAdminReviewer, (int) $exportReview['started_by'], $currentUserId) === false
+        ) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
 
         $records = DB::query(
             'SELECT ri.role_title, ri.folder_title, ri.access_type, ri.decision,

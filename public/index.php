@@ -751,12 +751,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a href="#" data-name="reviews" class="nav-link', $get['page'] === 'reviews' ? ' active' : '', '">
-                                    <i class="fa-solid fa-clipboard-check nav-icon"></i>
-                                    <p>' . $lang->get('access_reviews') . '</p>
-                                </a>
-                            </li>
-                            <li class="nav-item">
                                 <a href="#" data-name="utilities.health" class="nav-link'. ($get['page'] === 'utilities.health' ? ' active' : ''). '">
                                 <i class="fa-solid fa-heart-pulse nav-icon"></i>
                                 <p>' . $lang->get('system_health') . '</p>
@@ -768,6 +762,19 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                 <p>
                                     ' . $lang->get('tools') . '
                                 </p>
+                                </a>
+                            </li>';
+    }
+    if (
+        $session_user_admin === 1
+        || $session_user_manager === 1
+        || $session_user_human_resources === 1
+    ) {
+        echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="reviews" class="nav-link', $get['page'] === 'reviews' ? ' active' : '', '">
+                                    <i class="fa-solid fa-clipboard-check nav-icon"></i>
+                                    <p>' . $lang->get('access_reviews') . '</p>
                                 </a>
                             </li>';
     }

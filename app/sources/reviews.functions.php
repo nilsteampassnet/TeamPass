@@ -124,6 +124,74 @@ function reviewsBuildSnapshotRows(array $grants, int $reviewId): array
 }
 
 /**
+ * Resolve the folder perimeter a reviewer may act within.
+ *
+ * Recertification can be delegated to managers: an administrator has no
+ * restriction (every folder), while a manager is limited to the
+ * non-personal folders they can access. The empty array returned for an
+ * admin means "no restriction" and callers must branch on $isAdmin, not on
+ * the array being empty (a manager with no accessible folder also yields []).
+ *
+ * @param bool  $isAdmin           The reviewer is a full administrator
+ * @param array $accessibleFolders Folder ids the user can access (session)
+ * @param array $personalFolders   Personal folder ids to exclude (session)
+ *
+ * @return int[] Folder ids the manager may act on (meaningless for an admin)
+ */
+function reviewsReviewerFolderScope(bool $isAdmin, array $accessibleFolders, array $personalFolders): array
+{
+    if ($isAdmin === true) {
+        return [];
+    }
+
+    $personal = array_map('intval', $personalFolders);
+    $scope = [];
+    foreach ($accessibleFolders as $folderId) {
+        $folderId = (int) $folderId;
+        if ($folderId > 0 && in_array($folderId, $personal, true) === false) {
+            $scope[$folderId] = $folderId;
+        }
+    }
+
+    return array_values($scope);
+}
+
+/**
+ * May a reviewer act on a specific folder?
+ *
+ * @param int   $folderId Target folder id
+ * @param bool  $isAdmin  The reviewer is a full administrator
+ * @param int[] $scope    Manager perimeter (see reviewsReviewerFolderScope)
+ *
+ * @return bool True for an admin, or when the folder is inside the perimeter
+ */
+function reviewsCanActOnFolder(int $folderId, bool $isAdmin, array $scope): bool
+{
+    if ($isAdmin === true) {
+        return true;
+    }
+
+    return in_array($folderId, array_map('intval', $scope), true);
+}
+
+/**
+ * May a reviewer see/manage a campaign?
+ *
+ * Delegated managers only handle the campaigns they started; administrators
+ * see every campaign.
+ *
+ * @param bool $isAdmin        The reviewer is a full administrator
+ * @param int  $startedBy      The campaign owner (started_by)
+ * @param int  $currentUserId  The requesting user
+ *
+ * @return bool
+ */
+function reviewsCanManageCampaign(bool $isAdmin, int $startedBy, int $currentUserId): bool
+{
+    return $isAdmin === true || $startedBy === $currentUserId;
+}
+
+/**
  * Compute campaign progress from decision counters.
  *
  * @param int $pending  Items still pending

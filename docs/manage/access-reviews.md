@@ -6,7 +6,7 @@
 
 A campaign takes a **snapshot** of the role ↔ folder access grants at launch. Each grant is then reviewed and either **attested** (access is still needed) or **revoked** (the grant is removed from TeamPass, for real). Every decision is stored with its author and timestamp: the campaign itself is the least-privilege evidence you hand to the auditor.
 
-> 🔔 This feature must be enabled by an administrator (**Settings → Options → Access recertification campaigns**). It is disabled by default. The Recertification page is **admin-only** in this version.
+> 🔔 This feature must be enabled by an administrator (**Settings → Options → Access recertification campaigns**). It is disabled by default. Both **administrators** and **managers** can run campaigns — see *Delegation to managers* below.
 
 ---
 
@@ -38,6 +38,25 @@ Each campaign can be exported to **CSV** (button in the campaigns list): one row
 ## What is in scope
 
 The snapshot covers **role → folder grants** (`W`, `ND`, `NE`, `NDNE`, `R`) on non-personal folders — the same grants managed on the Roles page. Personal folders are never included. User-specific folder allowances/denials (per-user overrides) are not part of the campaign in this version.
+
+---
+
+## Delegation to managers
+
+Recertification can be delegated: a **manager** (a user flagged *Manager* or *Can manage all users*) can run campaigns without being a full administrator, but only within the folders they are entitled to.
+
+| Capability | Administrator | Manager (delegated) |
+|------------|---------------|---------------------|
+| Folders they can scope a campaign to | Every non-personal folder | Only the non-personal folders they can access |
+| *"All folders"* scope means | The whole vault | **All my folders** (their perimeter only) |
+| Campaigns they can see / open / close / export | Every campaign | **Only the campaigns they started** |
+| Grants they can attest / revoke | Any grant | Only grants whose folder is inside their perimeter |
+
+The perimeter is the manager's set of accessible non-personal folders (the same set they see on the Folders and Roles pages). It is enforced **server-side** on every action — start, list, view, decide, close and export — so a manager can neither see another team's campaign nor revoke a grant outside their scope, even by tampering with the request.
+
+Campaigns started by a manager are **private to that manager**; administrators still see every campaign, including those started by managers, for oversight.
+
+> "Owner per folder" in TeamPass terms means *a manager whose perimeter includes the folder* — there is no separate per-folder owner role.
 
 ---
 

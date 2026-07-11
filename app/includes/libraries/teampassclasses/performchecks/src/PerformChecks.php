@@ -199,12 +199,12 @@ class PerformChecks
             'manager' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'human_resources' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'admin' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
