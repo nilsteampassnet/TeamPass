@@ -6549,7 +6549,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         html_kbs = '';
 
                     $(data.tags).each(function(index, value) {
-                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-tag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
+                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
                     });
                     if (html_tags === '') {
                         $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');

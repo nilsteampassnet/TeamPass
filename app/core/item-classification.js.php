@@ -51,6 +51,15 @@ $lang = new Language($session->get('user-language') ?? 'english');
         var sessionKey = '<?php echo $session->get('key'); ?>'
         var isReadOnly = <?php echo (int) $session->get('user-read_only') === 1 ? 'true' : 'false'; ?>
 
+        // Whether the currently opened item can be modified by this user.
+        // Blocks classification changes when the user is globally read-only
+        // or has read-only access to the item (folder-level or item-level).
+        function itemIsModifiable() {
+            if (isReadOnly === true) return false
+            var item = store.get('teampassItem')
+            return !!(item && parseInt(item.user_can_modify) === 1)
+        }
+
         var LEVELS = {
             0: { label: <?php echo json_encode($lang->get('classification_level_unclassified'), JSON_UNESCAPED_UNICODE); ?>, color: '#6c757d' },
             1: { label: <?php echo json_encode($lang->get('classification_level_public'), JSON_UNESCAPED_UNICODE); ?>, color: '#28a745' },
@@ -68,10 +77,11 @@ $lang = new Language($session->get('user-language') ?? 'english');
             var info = LEVELS[level] || LEVELS[0]
             var $badge = $('#tp-classification-badge')
             if ($badge.length === 0) {
-                $badge = $('<span class="badge ml-2 pointer" id="tp-classification-badge"></span>')
+                $badge = $('<span class="badge ml-2" id="tp-classification-badge"></span>')
                 $anchor.after($badge)
             }
             $badge
+                .toggleClass('pointer', itemIsModifiable())
                 .css({ 'background-color': info.color, 'color': '#fff' })
                 .attr('title', TITLE)
                 .data('item-id', itemId)
@@ -133,7 +143,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
         // Level menu on badge click.
         $(document).on('click', '#tp-classification-badge', function (e) {
             e.stopPropagation()
-            if (isReadOnly === true) return
+            if (itemIsModifiable() === false) return
 
             var $badge = $(this)
             var itemId = parseInt($badge.data('item-id'))

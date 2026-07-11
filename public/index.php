@@ -666,31 +666,11 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             <p>' . $lang->get('statistics') . '</p>
                         </a>
                     </li><li class="nav-item">
-                        <a href="#" data-name="reports" class="nav-link', $get['page'] === 'reports' ? ' active' : '', '">
-                            <i class="fa-solid fa-file-contract nav-icon"></i>
-                            <p>' . $lang->get('compliance_reports') . '</p>
-                        </a>
-                    </li><li class="nav-item">
-                        <a href="#" data-name="reviews" class="nav-link', $get['page'] === 'reviews' ? ' active' : '', '">
-                            <i class="fa-solid fa-clipboard-check nav-icon"></i>
-                            <p>' . $lang->get('access_reviews') . '</p>
-                        </a>
-                    </li><li class="nav-item">
                         <a href="#" data-name="tasks" class="nav-link', $get['page'] === 'tasks' ? ' active' : '', '">
                         <i class="fa-solid fa-tasks nav-icon"></i>
                         <p>' . $lang->get('tasks') . '</p>
                         </a>
-                    </li>
-
-                    <li class="nav-item">
-                        <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
-                        <i class="nav-icon fa-solid fa-person-drowning"></i>
-                        <p>
-                            ' . $lang->get('tools') . '
-                        </p>
-                        </a>
-                    </li>
-                    
+                    </li>                    
                     <li class="nav-item">
                         <a href="#" data-name="import" class="nav-link', $get['page'] === 'import' ? ' active' : '', '">
                         <i class="nav-icon fa-solid fa-file-import"></i>
@@ -765,9 +745,29 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
     if ($session_user_admin === 1) {
         echo '
                             <li class="nav-item">
+                                <a href="#" data-name="reports" class="nav-link', $get['page'] === 'reports' ? ' active' : '', '">
+                                    <i class="fa-solid fa-file-contract nav-icon"></i>
+                                    <p>' . $lang->get('compliance_reports') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="reviews" class="nav-link', $get['page'] === 'reviews' ? ' active' : '', '">
+                                    <i class="fa-solid fa-clipboard-check nav-icon"></i>
+                                    <p>' . $lang->get('access_reviews') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
                                 <a href="#" data-name="utilities.health" class="nav-link'. ($get['page'] === 'utilities.health' ? ' active' : ''). '">
                                 <i class="fa-solid fa-heart-pulse nav-icon"></i>
                                 <p>' . $lang->get('system_health') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="tools" class="nav-link', $get['page'] === 'tools' ? ' active' : '', '">
+                                <i class="nav-icon fa-solid fa-person-drowning"></i>
+                                <p>
+                                    ' . $lang->get('tools') . '
+                                </p>
                                 </a>
                             </li>';
     }

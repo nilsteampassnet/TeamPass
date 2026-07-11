@@ -192,15 +192,6 @@ switch ($post_type) {
      * SET the classification of one item (level 0 clears it)
      */
     case 'set_item_classification':
-        // Read-only users cannot classify
-        if ((int) $session->get('user-read_only') === 1) {
-            echo (string) prepareExchangedData(
-                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
-                'encode'
-            );
-            break;
-        }
-
         if (classificationValidLevel($post_level) === false) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
@@ -211,6 +202,19 @@ switch ($post_type) {
 
         $item = $loadAccessibleItem($post_item_id);
         if ($item === null) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
+
+        // Read-only users cannot classify — global flag or read-only access
+        // to the item's folder (same signal as the frontend Edit gate).
+        $readOnlyFolders = array_map('intval', $session->get('user-read_only_folders') ?? []);
+        if ((int) $session->get('user-read_only') === 1
+            || in_array((int) $item['id_tree'], $readOnlyFolders, true) === true
+        ) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
                 'encode'

@@ -204,7 +204,7 @@ class PerformChecks
             'human_resources' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs1', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
             ),
             'admin' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',

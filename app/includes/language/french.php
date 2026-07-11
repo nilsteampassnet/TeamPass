@@ -2633,9 +2633,6 @@ return array(
     'leaver_risk_status_dismissed' => 'Ignoré',
     'leaver_risk_other_users' => 'Autres utilisateurs ayant accès',
     'leaver_risk_last_pw_change' => 'Dernier changement de mot de passe',
-    'leaver_risk_folder_filter' => 'Limiter le rapport à certains répertoires',
-    'leaver_risk_folder_filter_tip' => 'Aucune sélection = tous les répertoires. Maintenir Ctrl/Cmd pour en sélectionner plusieurs. « Tout marquer » ne couvre que le rapport filtré.',
-    'leaver_risk_include_children' => 'Inclure les sous-répertoires des répertoires sélectionnés',
     'settings_leaver_risk' => 'Vue risque de départ / offboarding',
     'settings_leaver_risk_tip' => 'Sur la page Utilisateurs, afficher les identifiants partagés qu’un compte désactivé pouvait lire, et permettre de les marquer pour rotation.',
     'settings_leaver_risk_auto_flag' => 'Marquer automatiquement les identifiants à la désactivation d’un utilisateur',
@@ -2697,5 +2694,8 @@ return array(
     'settings_data_classification_tip' => 'Permettre aux utilisateurs d’étiqueter les éléments Public / Interne / Confidentiel / Restreint depuis la fiche de l’élément. Les étiquettes sont des métadonnées (jamais du contenu chiffré) et alimentent les rapports de conformité.',
     'compliance_report_classification' => 'Couverture de classification',
     'compliance_report_classification_tip' => 'Combien d’éléments partagés portent chaque étiquette de classification, et combien restent non classifiés. Comptages uniquement.',
+    'leaver_risk_folder_filter' => 'Limiter le rapport à certains répertoires',
+    'leaver_risk_folder_filter_tip' => 'Aucune sélection = tous les répertoires. Maintenir Ctrl/Cmd pour en sélectionner plusieurs. « Tout marquer » ne couvre que le rapport filtré.',
+    'leaver_risk_include_children' => 'Inclure les sous-répertoires des répertoires sélectionnés',
 
 );
