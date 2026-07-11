@@ -204,7 +204,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         '<td class="text-right">' +
                             (reviewOpen && item.decision === 'pending' ?
                                 '<button class="btn btn-sm btn-success review-attest mr-1" data-id="' + item.id + '"><i class="fas fa-check mr-1"></i><?php echo $lang->get('access_reviews_attest'); ?></button>' +
-                                '<button class="btn btn-sm btn-danger review-revoke" data-id="' + item.id + '"><i class="fas fa-ban mr-1"></i><?php echo $lang->get('access_reviews_revoke'); ?></button>'
+                                (item.can_revoke === true ?
+                                    '<button class="btn btn-sm btn-danger review-revoke" data-id="' + item.id + '"><i class="fas fa-ban mr-1"></i><?php echo $lang->get('access_reviews_revoke'); ?></button>'
+                                    : '<span class="badge badge-light infotip" title="<?php echo $lang->get('access_reviews_revoke_readonly'); ?>"><i class="fas fa-lock mr-1"></i><?php echo $lang->get('read_only'); ?></span>')
                                 : '') +
                         '</td>' +
                         '</tr>'

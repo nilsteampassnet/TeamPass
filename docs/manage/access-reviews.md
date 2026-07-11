@@ -50,9 +50,12 @@ Recertification can be delegated: a **manager** (a user flagged *Manager* or *Ca
 | Folders they can scope a campaign to | Every non-personal folder | Only the non-personal folders they can access |
 | *"All folders"* scope means | The whole vault | **All my folders** (their perimeter only) |
 | Campaigns they can see / open / close / export | Every campaign | **Only the campaigns they started** |
-| Grants they can attest / revoke | Any grant | Only grants whose folder is inside their perimeter |
+| Grants they can **attest** | Any grant | Any grant whose folder is inside their perimeter (read access is enough) |
+| Grants they can **revoke** | Any grant | Only grants whose folder they can **write** to — read-only folders can be attested but not revoked |
 
-The perimeter is the manager's set of accessible non-personal folders (the same set they see on the Folders and Roles pages). It is enforced **server-side** on every action — start, list, view, decide, close and export — so a manager can neither see another team's campaign nor revoke a grant outside their scope, even by tampering with the request.
+The perimeter is the manager's set of accessible non-personal folders (the same set they see on the Folders and Roles pages). Revocation additionally requires **write** authority: reviewing (attesting) is a read-level oversight action, but revoking mutates access, so a manager with read-only visibility on a folder can confirm a grant but not remove it. On a read-only folder the revoke button is replaced by a *read-only* marker, and the rule is also enforced server-side.
+
+Every action — start, list, view, decide, close and export — is enforced **server-side**, so a manager can neither see another team's campaign nor revoke a grant outside their write scope, even by tampering with the request.
 
 Campaigns started by a manager are **private to that manager**; administrators still see every campaign, including those started by managers, for oversight.
 

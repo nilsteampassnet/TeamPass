@@ -1148,17 +1148,18 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                             include __DIR__ . '/error.php';
                         }
                     } elseif (in_array($get['page'], array_keys($mngPages)) === true) {
+                        // Management pages a manager may open (delegated); all
+                        // other management pages stay administrator-only.
+                        $managerMngPages = ['reviews'];
                         // Define if user is allowed to see management pages
                         if ($session_user_admin === 1) {
                             // deepcode ignore FileInclusion: $get['page'] is secured through usage of array_keys test bellow
                             include TEAMPASS_APP . '/pages/' . basename($mngPages[$get['page']]);
-                        } elseif ($session_user_manager === 1 || $session_user_human_resources === 1) {
-                            if ($get['page'] === 'manage_main' || $get['page'] === 'manage_settings'
-                            ) {
-                                $session->set('system-error_code', ERR_NOT_ALLOWED);
-                                //not allowed page
-                                include __DIR__ . '/error.php';
-                            }
+                        } elseif (
+                            ($session_user_manager === 1 || $session_user_human_resources === 1)
+                            && in_array($get['page'], $managerMngPages, true) === true
+                        ) {
+                            include TEAMPASS_APP . '/pages/' . basename($mngPages[$get['page']]);
                         } else {
                             $session->set('system-error_code', ERR_NOT_ALLOWED);
                             //not allowed page

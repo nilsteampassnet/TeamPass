@@ -175,6 +175,36 @@ function reviewsCanActOnFolder(int $folderId, bool $isAdmin, array $scope): bool
 }
 
 /**
+ * Restrict a reviewer perimeter to the folders they can write to.
+ *
+ * Revoking a grant mutates access, so it requires **write** authority on the
+ * folder: read-only visibility is enough to attest, but not to revoke.
+ *
+ * @param bool  $isAdmin          The reviewer is a full administrator
+ * @param int[] $scope            The reviewer read perimeter (reviewsReviewerFolderScope)
+ * @param array $readOnlyFolders  Folder ids the user only has read access to
+ *
+ * @return int[] Folders the reviewer may revoke on (meaningless for an admin)
+ */
+function reviewsReviewerWriteScope(bool $isAdmin, array $scope, array $readOnlyFolders): array
+{
+    if ($isAdmin === true) {
+        return [];
+    }
+
+    $readOnly = array_map('intval', $readOnlyFolders);
+    $writeScope = [];
+    foreach ($scope as $folderId) {
+        $folderId = (int) $folderId;
+        if ($folderId > 0 && in_array($folderId, $readOnly, true) === false) {
+            $writeScope[] = $folderId;
+        }
+    }
+
+    return array_values($writeScope);
+}
+
+/**
  * May a reviewer see/manage a campaign?
  *
  * Delegated managers only handle the campaigns they started; administrators

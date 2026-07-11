@@ -186,6 +186,39 @@ class AccessReviewsLogicTest extends TestCase
     }
 
     // -------------------------------------------------------------------
+    // reviewsReviewerWriteScope() — revocation needs write access
+    // -------------------------------------------------------------------
+
+    public function testAdminWriteScopeIsUnrestricted(): void
+    {
+        $this->assertSame([], reviewsReviewerWriteScope(true, [1, 2, 3], [2]));
+    }
+
+    public function testManagerWriteScopeExcludesReadOnlyFolders(): void
+    {
+        // Perimeter 10,11,12 with 11 read-only -> can revoke only on 10,12
+        $writeScope = reviewsReviewerWriteScope(false, [10, 11, 12], [11]);
+
+        $this->assertSame([10, 12], $writeScope);
+    }
+
+    public function testManagerCanAttestReadOnlyButNotRevoke(): void
+    {
+        $readScope = [10, 11];        // both visible (can attest)
+        $writeScope = reviewsReviewerWriteScope(false, $readScope, [11]); // 11 read-only
+
+        // Attest allowed on both, revoke only on the writable one
+        $this->assertTrue(reviewsCanActOnFolder(11, false, $readScope));
+        $this->assertFalse(reviewsCanActOnFolder(11, false, $writeScope));
+        $this->assertTrue(reviewsCanActOnFolder(10, false, $writeScope));
+    }
+
+    public function testManagerWriteScopeEmptyWhenAllReadOnly(): void
+    {
+        $this->assertSame([], reviewsReviewerWriteScope(false, [10, 11], [10, 11]));
+    }
+
+    // -------------------------------------------------------------------
     // reviewsCanManageCampaign() — ownership of a campaign
     // -------------------------------------------------------------------
 

@@ -118,6 +118,15 @@ $reviewerScope = reviewsReviewerFolderScope(
     is_array($personalFolders) === true ? $personalFolders : []
 );
 
+// Write subset of the perimeter — revocation requires write authority. A
+// globally read-only user has no write folder at all.
+$readOnlyFolders = $session->get('user-read_only_folders');
+$reviewerWriteScope = reviewsReviewerWriteScope(
+    $isAdminReviewer,
+    (int) $session->get('user-read_only') === 1 ? [] : $reviewerScope,
+    is_array($readOnlyFolders) === true ? $readOnlyFolders : []
+);
+
 // --------------------------------- //
 
 // Read POST variables
@@ -329,7 +338,7 @@ switch ($post_type) {
         }
 
         $records = DB::query(
-            'SELECT ri.id, ri.role_title, ri.folder_title, ri.access_type, ri.decision,
+            'SELECT ri.id, ri.role_title, ri.folder_id, ri.folder_title, ri.access_type, ri.decision,
                 ri.decided_at, u.login AS decided_by_login
             FROM ' . prefixTable('access_review_items') . ' AS ri
             LEFT JOIN ' . prefixTable('users') . ' AS u ON u.id = ri.decided_by
@@ -348,6 +357,8 @@ switch ($post_type) {
                 'decision' => (string) $record['decision'],
                 'decided_by' => (string) ($record['decided_by_login'] ?? ''),
                 'decided_at' => empty($record['decided_at']) === false ? date('Y-m-d H:i', (int) $record['decided_at']) : '',
+                // Revocation needs write authority on the folder (admins: always)
+                'can_revoke' => reviewsCanActOnFolder((int) $record['folder_id'], $isAdminReviewer, $reviewerWriteScope),
             ];
         }
 
@@ -406,6 +417,18 @@ switch ($post_type) {
         ) {
             echo (string) prepareExchangedData(
                 ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
+
+        // Revoking removes access, so it needs write authority on the folder —
+        // a manager can attest a read-only folder but not revoke on it.
+        if ($post_decision === 'revoked'
+            && reviewsCanActOnFolder((int) $item['folder_id'], $isAdminReviewer, $reviewerWriteScope) === false
+        ) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('access_reviews_revoke_readonly')],
                 'encode'
             );
             break;
