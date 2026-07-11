@@ -40,6 +40,8 @@ declare(strict_types=1);
  * DB-backed helpers used by users.queries.php.
  */
 
+use TeampassClasses\NestedTree\NestedTree;
+
 // -------------------------------------------------------------------------
 // Pure logic — DB-free, unit-tested
 // -------------------------------------------------------------------------
@@ -126,6 +128,51 @@ function leaverRiskBuildFlagRows(array $itemIds, int $leaverId, int $flaggedBy, 
 }
 
 /**
+ * Sanitize a list of folder ids coming from the client.
+ *
+ * @param array $ids Raw ids (strings/ints, possibly duplicated or invalid)
+ *
+ * @return int[] Positive unique ids, re-indexed, insertion order preserved
+ */
+function leaverRiskNormalizeFolderIds(array $ids): array
+{
+    $out = [];
+    foreach ($ids as $id) {
+        $id = (int) $id;
+        if ($id > 0) {
+            $out[$id] = $id;
+        }
+    }
+
+    return array_values($out);
+}
+
+/**
+ * Merge selected folder ids with their descendant id lists.
+ *
+ * Pure counterpart of the "include subfolders" option: the caller resolves
+ * each selected folder's descendants (NestedTree) and passes them here.
+ *
+ * @param array $selectedIds     Folder ids picked by the admin
+ * @param array $descendantLists One list of descendant ids per selected folder
+ *
+ * @return int[] Unique folder scope (selected + descendants)
+ */
+function leaverRiskExpandFolderScope(array $selectedIds, array $descendantLists): array
+{
+    $scope = leaverRiskNormalizeFolderIds($selectedIds);
+    foreach ($descendantLists as $list) {
+        foreach (leaverRiskNormalizeFolderIds((array) $list) as $id) {
+            if (in_array($id, $scope, true) === false) {
+                $scope[] = $id;
+            }
+        }
+    }
+
+    return $scope;
+}
+
+/**
  * Decorate raw report rows with their display status and shared filter.
  *
  * Input rows carry: other_users (int), last_pw_change (int),
@@ -165,13 +212,22 @@ function leaverRiskDecorateReportRows(array $rows): array
  * least one OTHER active human user also holds a sharekey on it. Special
  * server accounts (TP/OTV/SSH/API) never count as readers.
  *
- * @param int $leaverId The user whose access graph is inspected
+ * @param int   $leaverId  The user whose access graph is inspected
+ * @param int[] $folderIds Optional folder scope — empty array = all folders
  *
  * @return array<int, array<string, mixed>> Report rows (already decorated + filtered)
  */
-function leaverRiskSharedItems(int $leaverId): array
+function leaverRiskSharedItems(int $leaverId, array $folderIds = []): array
 {
     $specialIds = [(int) TP_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID, (int) API_USER_ID];
+
+    // Optional folder scope — appended as the last positional placeholder
+    $folderFilterSql = '';
+    $args = [$leaverId, $specialIds, 'at_creation', 'at_modification', 'at_pw%', $leaverId, 0, 0, 0];
+    if (count($folderIds) > 0) {
+        $folderFilterSql = ' AND i.id_tree IN %li';
+        $args[] = array_map('intval', $folderIds);
+    }
 
     $rows = DB::query(
         'SELECT i.id AS item_id, i.label, i.id_tree, n.title AS folder_title,
@@ -198,20 +254,43 @@ function leaverRiskSharedItems(int $leaverId): array
         AND i.perso = %i
         AND i.inactif = %i
         AND i.deleted_at IS NULL
-        AND n.personal_folder = %i
+        AND n.personal_folder = %i' . $folderFilterSql . '
         ORDER BY n.title ASC, i.label ASC',
-        $leaverId,
-        $specialIds,
-        'at_creation',
-        'at_modification',
-        'at_pw%',
-        $leaverId,
-        0,
-        0,
-        0
+        ...$args
     );
 
     return leaverRiskDecorateReportRows($rows);
+}
+
+/**
+ * Resolve the folder scope requested by the client.
+ *
+ * Sanitizes the requested folder ids and, when asked, expands each one
+ * with its whole subtree (NestedTree descendants).
+ *
+ * @param array $requestedFolderIds Folder ids sent by the client
+ * @param bool  $includeChildren    Expand each selected folder with its descendants
+ *
+ * @return int[] Folder ids to filter on — empty array = no filter (all folders)
+ */
+function leaverRiskResolveFolderScope(array $requestedFolderIds, bool $includeChildren): array
+{
+    $selected = leaverRiskNormalizeFolderIds($requestedFolderIds);
+    if (count($selected) === 0 || $includeChildren === false) {
+        return $selected;
+    }
+
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $descendantLists = [];
+    foreach ($selected as $folderId) {
+        $ids = [];
+        foreach ($tree->getDescendants($folderId) as $node) {
+            $ids[] = (int) $node->id;
+        }
+        $descendantLists[] = $ids;
+    }
+
+    return leaverRiskExpandFolderScope($selected, $descendantLists);
 }
 
 /**

@@ -3753,8 +3753,16 @@ if (null !== $post_type) {
                 break;
             }
 
+            // Optional folder filter (+ subtree expansion)
+            $post_folder_ids = filter_input(INPUT_POST, 'folder_ids', FILTER_SANITIZE_NUMBER_INT, FILTER_REQUIRE_ARRAY);
+            $post_include_children = (int) filter_input(INPUT_POST, 'include_children', FILTER_SANITIZE_NUMBER_INT);
+
             require_once __DIR__ . '/leaver.functions.php';
-            $leaverItems = leaverRiskSharedItems($post_id);
+            $folderScope = leaverRiskResolveFolderScope(
+                is_array($post_folder_ids) === true ? $post_folder_ids : [],
+                $post_include_children === 1
+            );
+            $leaverItems = leaverRiskSharedItems($post_id, $folderScope);
 
             // Return metadata only (labels + folder + counters — never any password)
             $reportRows = [];
@@ -3841,9 +3849,16 @@ if (null !== $post_type) {
 
             require_once __DIR__ . '/leaver.functions.php';
 
+            // Same folder filter as the report — "flag all" only covers the
+            // subset currently displayed to the admin.
+            $post_folder_ids = isset($dataReceived['folder_ids']) === true && is_array($dataReceived['folder_ids']) === true
+                ? $dataReceived['folder_ids'] : [];
+            $post_include_children = (int) filter_var($dataReceived['include_children'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+            $folderScope = leaverRiskResolveFolderScope($post_folder_ids, $post_include_children === 1);
+
             // Recompute the eligible set server-side — the client cannot flag
             // items the leaver had no access to.
-            $eligibleIds = array_column(leaverRiskSharedItems($post_leaver_id), 'item_id');
+            $eligibleIds = array_column(leaverRiskSharedItems($post_leaver_id, $folderScope), 'item_id');
             $itemIdsToFlag = $post_flag_all === 1
                 ? array_map('intval', $eligibleIds)
                 : leaverRiskValidateItemIds($post_item_ids, $eligibleIds);

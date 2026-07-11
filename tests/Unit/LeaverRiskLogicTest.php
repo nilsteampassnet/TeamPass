@@ -166,4 +166,54 @@ class LeaverRiskLogicTest extends TestCase
     {
         $this->assertSame([], leaverRiskDecorateReportRows([]));
     }
+
+    // -------------------------------------------------------------------
+    // leaverRiskNormalizeFolderIds()
+    // -------------------------------------------------------------------
+
+    public function testNormalizeFolderIdsCastsAndDeduplicates(): void
+    {
+        $this->assertSame([3, 7, 12], leaverRiskNormalizeFolderIds(['3', 7, '3', '12', 7]));
+    }
+
+    public function testNormalizeFolderIdsDropsInvalidValues(): void
+    {
+        $this->assertSame([5], leaverRiskNormalizeFolderIds([0, -2, 'abc', '', null, 5]));
+    }
+
+    public function testNormalizeFolderIdsWithEmptyInput(): void
+    {
+        $this->assertSame([], leaverRiskNormalizeFolderIds([]));
+    }
+
+    // -------------------------------------------------------------------
+    // leaverRiskExpandFolderScope()
+    // -------------------------------------------------------------------
+
+    public function testExpandFolderScopeMergesDescendants(): void
+    {
+        $scope = leaverRiskExpandFolderScope(
+            [10, 20],
+            [[11, 12], [21]]
+        );
+
+        $this->assertSame([10, 20, 11, 12, 21], $scope);
+    }
+
+    public function testExpandFolderScopeDeduplicatesOverlappingSubtrees(): void
+    {
+        // Selecting a parent and one of its children must not duplicate ids
+        $scope = leaverRiskExpandFolderScope(
+            [10, 11],
+            [[11, 12], [12]]
+        );
+
+        $this->assertSame([10, 11, 12], $scope);
+    }
+
+    public function testExpandFolderScopeWithoutDescendants(): void
+    {
+        $this->assertSame([10], leaverRiskExpandFolderScope([10], [[]]));
+        $this->assertSame([], leaverRiskExpandFolderScope([], []));
+    }
 }

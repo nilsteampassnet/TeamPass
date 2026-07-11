@@ -44,6 +44,16 @@ No password value is ever included in the report — it is metadata only.
 
 Flagging is recorded in the system log (`Leaver credentials flagged for rotation`) as governance evidence.
 
+### Filtering by folder
+
+Large access graphs can be narrowed down with the **folder filter** at the top of the report:
+
+- select one or more folders to limit the report to items stored in them (no selection = all folders),
+- tick **Include subfolders of the selected folders** to expand each selection to its whole subtree,
+- click **Apply** to regenerate the report.
+
+The filter is enforced **server-side**, and **Flag all for rotation** only covers the filtered report — you can safely flag one team's perimeter at a time.
+
 ### Flag lifecycle
 
 | Status | Meaning |

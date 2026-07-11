@@ -85,6 +85,17 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
 // Load tree
 $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
+// Non-personal folders for the leaver risk report filter (F3)
+$leaverScopeFolders = [];
+if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1) {
+    $leaverScopeFolders = DB::query(
+        'SELECT id, title, nlevel FROM ' . prefixTable('nested_tree') . '
+        WHERE personal_folder = %i
+        ORDER BY nleft ASC',
+        0
+    );
+}
+
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
 $optionsRoles = '';
@@ -665,6 +676,26 @@ $emailNotConfigured = $canAccessInactiveAndDeletedUsers === true
                 <div class="modal-body">
                     <div class="alert alert-info py-2">
                         <i class="fa-solid fa-circle-info mr-2"></i><?php echo $lang->get('leaver_risk_intro'); ?>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-8">
+                            <label for="leaver-risk-folders" class="mb-1"><?php echo $lang->get('leaver_risk_folder_filter'); ?></label>
+                            <select id="leaver-risk-folders" class="form-control" multiple size="6">
+<?php foreach ($leaverScopeFolders as $leaverScopeFolder) : ?>
+                                <option value="<?php echo (int) $leaverScopeFolder['id']; ?>"><?php echo str_repeat('&nbsp;&nbsp;', max(0, (int) $leaverScopeFolder['nlevel'] - 1)) . htmlspecialchars((string) $leaverScopeFolder['title']); ?></option>
+<?php endforeach; ?>
+                            </select>
+                            <small class="form-text text-muted"><?php echo $lang->get('leaver_risk_folder_filter_tip'); ?></small>
+                        </div>
+                        <div class="col-4 d-flex flex-column justify-content-end">
+                            <div class="form-check mb-2">
+                                <input type="checkbox" class="form-check-input" id="leaver-risk-include-children">
+                                <label class="form-check-label" for="leaver-risk-include-children"><?php echo $lang->get('leaver_risk_include_children'); ?></label>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" id="leaver-risk-apply-filter">
+                                <i class="fa-solid fa-filter mr-2"></i><?php echo $lang->get('apply'); ?>
+                            </button>
+                        </div>
                     </div>
                     <div id="leaver-risk-results"></div>
                 </div>

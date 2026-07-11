@@ -1543,39 +1543,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             var leaverUserId = $(this).data('id')
             $('#leaver-risk-title').text($(this).data('fullname'))
             $('#leaver-risk-results').html('')
+            $('#leaver-risk-folders').val([])
+            $('#leaver-risk-include-children').prop('checked', false)
             $('#leaver-risk-flag-all').data('user-id', leaverUserId).prop('disabled', true)
             $('#modal-leaver-risk').modal('show')
 
-            toastr.remove();
-            toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
-
-            $.post(
-                'sources/users.queries.php', {
-                    type: 'get_leaver_risk_report',
-                    user_id: leaverUserId,
-                    key: '<?php echo $session->get('key'); ?>'
-                },
-                function(data) {
-                    data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
-                    if (debugJavascript === true) console.log(data);
-
-                    toastr.remove();
-                    if (data.error !== false) {
-                        toastr.error(
-                            data.message,
-                            '<?php echo $lang->get('caution'); ?>', {
-                                timeOut: 5000,
-                                progressBar: true
-                            }
-                        );
-                        return;
-                    }
-
-                    renderLeaverRiskTable(data.items);
-                    $('#leaver-risk-flag-all').prop('disabled', data.items.length === 0);
-                    toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
-                }
-            );
+            loadLeaverRiskReport(leaverUserId)
 
         } else if ($(this).data('action') === 'disable-user') {
             var userID = $(this).data('id'),
@@ -4212,6 +4185,66 @@ function refreshListInactiveUsers(filterValue) {
     })
 
     /**
+     * Read the folder filter of the leaver risk modal.
+     * @returns {Object} {folder_ids: Array<number>, include_children: number}
+     */
+    function leaverRiskFolderFilter() {
+        return {
+            folder_ids: ($('#leaver-risk-folders').val() || []).map(Number),
+            include_children: $('#leaver-risk-include-children').is(':checked') ? 1 : 0,
+        }
+    }
+
+    /**
+     * Load (or reload) the leaver risk report with the current folder filter.
+     * @param {number} leaverUserId - The inspected user id
+     */
+    function loadLeaverRiskReport(leaverUserId) {
+        const filter = leaverRiskFolderFilter()
+
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
+
+        $.post(
+            'sources/users.queries.php', {
+                type: 'get_leaver_risk_report',
+                user_id: leaverUserId,
+                folder_ids: filter.folder_ids,
+                include_children: filter.include_children,
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
+                if (debugJavascript === true) console.log(data);
+
+                toastr.remove();
+                if (data.error !== false) {
+                    toastr.error(
+                        data.message,
+                        '<?php echo $lang->get('caution'); ?>', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+
+                renderLeaverRiskTable(data.items);
+                $('#leaver-risk-flag-all').prop('disabled', data.items.length === 0);
+                toastr.success('<?php echo $lang->get('done'); ?>', '', { timeOut: 1000 });
+            }
+        );
+    }
+
+    // LEAVER RISK — re-generate the report with the selected folder filter
+    $(document).on('click', '#leaver-risk-apply-filter', function() {
+        const leaverUserId = $('#leaver-risk-flag-all').data('user-id')
+        if (leaverUserId) {
+            loadLeaverRiskReport(parseInt(leaverUserId))
+        }
+    })
+
+    /**
      * Render the leaver risk report table (F3).
      * @param {Array} items - Shared items as returned by get_leaver_risk_report
      */
@@ -4264,9 +4297,12 @@ function refreshListInactiveUsers(filterValue) {
         toastr.remove();
         toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
+        const filter = leaverRiskFolderFilter()
         const data = {
             'user_id': parseInt(leaverUserId),
             'flag_all': 1,
+            'folder_ids': filter.folder_ids,
+            'include_children': filter.include_children,
         }
 
         $.post(
@@ -4297,19 +4333,7 @@ function refreshListInactiveUsers(filterValue) {
                 );
 
                 // Refresh the report so the new pending badges show up
-                $.post(
-                    'sources/users.queries.php', {
-                        type: 'get_leaver_risk_report',
-                        user_id: leaverUserId,
-                        key: '<?php echo $session->get('key'); ?>'
-                    },
-                    function(reportData) {
-                        reportData = prepareExchangedData(reportData, 'decode', '<?php echo $session->get('key'); ?>');
-                        if (reportData.error === false) {
-                            renderLeaverRiskTable(reportData.items)
-                        }
-                    }
-                );
+                loadLeaverRiskReport(parseInt(leaverUserId))
             }
         );
     })
