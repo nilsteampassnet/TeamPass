@@ -42,6 +42,7 @@ require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
 require_once __DIR__.'/traits/SecurityNudgeTrait.php';
 require_once __DIR__.'/traits/SharekeysRepairTrait.php';
 require_once __DIR__.'/traits/LAPRSshTestTrait.php';
+require_once __DIR__.'/traits/LAPRDiscoverTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
 class TaskWorker {
@@ -53,6 +54,7 @@ class TaskWorker {
     use SecurityNudgeTrait;
     use SharekeysRepairTrait;
     use LAPRSshTestTrait;
+    use LAPRDiscoverTrait;
 
     private int $taskId;
     private string $processType;
@@ -127,6 +129,9 @@ class TaskWorker {
                     break;
                 case 'lapr_ssh_test':
                     $this->handleLaprSshTest($this->taskData);
+                    break;
+                case 'lapr_discover':
+                    $this->handleLaprDiscover($this->taskData);
                     break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");

@@ -3991,6 +3991,25 @@ switch ($inputData['type']) {
             break;
         }
 
+        // LAPR (D6): block deletion while an active/paused managed account references
+        // this item — no FK, so the guard is enforced here. Removing the item out from
+        // under LAPR would orphan the account and break rotation.
+        $laprManaged = DB::queryFirstField(
+            'SELECT COUNT(*) FROM ' . prefixTable('lapr_accounts') . '
+            WHERE item_id = %i AND status IN ("active","paused","error")',
+            intval($inputData['itemId'])
+        );
+        if ((int) $laprManaged > 0) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('lapr_item_managed_cannot_delete'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         // delete item consists in disabling it
         DB::update(
             prefixTable('items'),
