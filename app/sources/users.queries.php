@@ -3473,13 +3473,21 @@ if (null !== $post_type) {
             $usersAlreadyInTeampass = [];
 
             function nameFromEmail($email) {
-                // Utiliser une expression régulière pour extraire le texte avant le domaine
+                // Guard against null / non-string values (e.g. Entra hybrid objects
+                // returned without a userPrincipalName) — preg_match() would fatal on PHP 8.
+                if (!is_string($email) || $email === '') {
+                    return false;
+                }
+                // Extract the text before the domain
                 if (preg_match('/^(.+)@/', $email, $matches)) {
                     return $matches[1];
                 } else {
                     return false;
                 }
             }
+
+            // Count directory objects skipped because they have no usable login (missing UPN)
+            $skippedUsersWithoutUpn = 0;
             
             foreach ($usersList as $oAuthUser) {
                 // Build the list of all groups in AD
@@ -3496,7 +3504,7 @@ if (null !== $post_type) {
 
                 // Is user in Teampass ?
                 $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
-                if (null !== $userLogin) {                    
+                if (false !== $userLogin) {
                     // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
                         'SELECT id, login, auth_type
@@ -3552,7 +3560,14 @@ if (null !== $post_type) {
                     // Mettre à jour $user['groups'] avec les nouveaux groupes
                     $userADInfos['groups'] = $updatedGroups;
                     array_push($adUsersToSync, $userADInfos);
+                } else {
+                    // No usable userPrincipalName (common with Entra hybrid objects) — skip
+                    $skippedUsersWithoutUpn++;
                 }
+            }
+
+            if ($skippedUsersWithoutUpn > 0) {
+                error_log('TEAMPASS OAuth2 - user sync skipped ' . $skippedUsersWithoutUpn . ' directory object(s) without a usable userPrincipalName');
             }
 
             echo (string) prepareExchangedData(
