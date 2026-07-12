@@ -49,6 +49,22 @@ $lang = new Language($session->get('user-language') ?? 'english');
         'use strict'
 
         var sessionKey = '<?php echo $session->get('key'); ?>'
+        var userId = '<?php echo (int) $session->get('user-id'); ?>'
+
+        // Stale-while-revalidate cache (per user, per tab): paint the last known score
+        // instantly on navigation, then refresh in the background. Score + band only.
+        var CACHE_KEY = 'tp_score_v1_' + userId
+        function readScoreCache() {
+            try {
+                var raw = sessionStorage.getItem(CACHE_KEY)
+                return raw ? JSON.parse(raw) : null
+            } catch (e) { return null }
+        }
+        function writeScoreCache(data) {
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ score: data.score, band: data.band }))
+            } catch (e) { /* ignore quota / serialization errors */ }
+        }
 
         var L = {
             title: <?php echo json_encode($lang->get('security_score_badge_title'), JSON_UNESCAPED_UNICODE); ?>,
@@ -104,6 +120,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 }
                 if (!data || data.error === true) return
                 injectBadge(data)
+                writeScoreCache(data)
             })
         }
 
@@ -116,8 +133,11 @@ $lang = new Language($session->get('user-language') ?? 'english');
         }
 
         $(function () {
-            // Defer a touch so the navbar and websocket init exist.
-            setTimeout(loadScore, 900)
+            // Stale-while-revalidate: paint the last known score instantly (no wait),
+            // then refresh in the background — quickly when we already showed something.
+            var cached = readScoreCache()
+            if (cached) injectBadge(cached)
+            setTimeout(loadScore, cached ? 250 : 900)
             setTimeout(wireLiveRefresh, 1500)
         })
     })()

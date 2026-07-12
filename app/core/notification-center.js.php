@@ -56,6 +56,23 @@ $lang = new Language($session->get('user-language') ?? 'english');
         'use strict'
 
         var sessionKey = '<?php echo $session->get('key'); ?>'
+        var userId = '<?php echo (int) $session->get('user-id'); ?>'
+
+        // Stale-while-revalidate cache (per user, per tab): show the last known unread
+        // count instantly on navigation, then refresh the inbox in the background. The
+        // unread count only is cached — notification content is refetched, not stored.
+        var CACHE_KEY = 'tp_notif_v1_' + userId
+        function readNotifCache() {
+            try {
+                var raw = sessionStorage.getItem(CACHE_KEY)
+                return raw ? JSON.parse(raw) : null
+            } catch (e) { return null }
+        }
+        function writeNotifCache(unread) {
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ unread: parseInt(unread, 10) || 0 }))
+            } catch (e) { /* ignore quota / serialization errors */ }
+        }
 
         var L = {
             title: <?php echo json_encode($lang->get('notification_center'), JSON_UNESCAPED_UNICODE); ?>,
@@ -189,6 +206,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 if (ensureBell().length === 0) return
                 renderBadge(parseInt(data.unread, 10) || 0)
                 renderList(data.rows)
+                writeNotifCache(data.unread)
             })
         }
 
@@ -208,6 +226,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 if (!data || data.error === true) return
                 renderBadge(parseInt(data.unread, 10) || 0)
                 $('.tp-notification-row').removeClass('font-weight-bold')
+                writeNotifCache(data.unread)
             })
         }
 
@@ -238,8 +257,13 @@ $lang = new Language($session->get('user-language') ?? 'english');
         }
 
         $(function () {
-            // Defer a touch so the navbar and websocket init exist.
-            setTimeout(loadInbox, 1100)
+            // Show the bell immediately (server-rendered slot) and paint the last known
+            // unread count from cache, so the cluster no longer pops in after each page.
+            ensureBell()
+            var cached = readNotifCache()
+            if (cached) renderBadge(parseInt(cached.unread, 10) || 0)
+            // Refresh the inbox in the background — quickly when a count was already shown.
+            setTimeout(loadInbox, cached ? 250 : 1100)
             setTimeout(wireLiveRefresh, 1600)
         })
     })()

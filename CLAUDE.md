@@ -34,6 +34,8 @@ Database schema: initial install via `/install/install.php`, upgrades via `/inst
 
 **Request flow:** `index.php` → `/pages/*.php` (HTML) → `/pages/*.js.php` (JS) → AJAX → `/sources/*.queries.php` (JSON response)
 
+**Web root & proxy shims:** the web root is `public/`; the real handlers live in `app/sources/`. Each served `public/sources/*.queries.php` is a tiny proxy that defines `TEAMPASS_ROOT` and `require`s its `app/sources/` counterpart. **Rule: every new `app/sources/*.queries.php` needs a matching `public/sources/` shim.** Without it the POST hits a missing file, falls through to the front controller (which runs `csrfProtector::init()`), and is rejected with a misleading `403 Access Forbidden by CSRFProtector` — the CSRF token was never the problem, the request just never reached a real handler.
+
 **Directory Structure:**
 ```
 /sources/       - Backend AJAX handlers (*.queries.php) + core.php, identify.php, main.functions.php
@@ -188,7 +190,7 @@ No PHPUnit test suite. Debugging: PHP error logging, TeamPass Admin > Logs, Meek
 
 **New setting:** INSERT into `teampass_misc`, access via `ConfigManager::getSetting()`, add to upgrade script, call `ConfigManager::invalidateCache()` after writes.
 
-**New page:** `/pages/mypage.php` + `/pages/mypage.js.php` + `/sources/mypage.queries.php` + route in `index.php` + permission check in `sources/core.php`.
+**New page:** `/pages/mypage.php` + `/pages/mypage.js.php` + `app/sources/mypage.queries.php` + **proxy shim `public/sources/mypage.queries.php`** + route in `index.php` + permission check in `sources/core.php`.
 
 **New API endpoint:** controller in `/api/Controller/Api/`, route in `/api/index.php`, JWT validation, JSON response.
 
