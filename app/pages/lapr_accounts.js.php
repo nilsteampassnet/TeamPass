@@ -53,7 +53,9 @@ const laprAccLang = {
   rotationSuccess: '<?php echo addslashes($lang->get('lapr_rotation_success')); ?>',
   rotationFailed: '<?php echo addslashes($lang->get('lapr_rotation_failed')); ?>',
   manualResync: '<?php echo addslashes($lang->get('lapr_manual_resync_required')); ?>',
-  hostkeyMismatch: '<?php echo addslashes($lang->get('lapr_hostkey_mismatch_blocked')); ?>'
+  hostkeyMismatch: '<?php echo addslashes($lang->get('lapr_hostkey_mismatch_blocked')); ?>',
+  rotateTitle: '<?php echo addslashes($lang->get('lapr_rotate_now')); ?>',
+  resetTitle: '<?php echo addslashes($lang->get('lapr_reset_resume')); ?>'
 }
 
 function laprAccPost(type, payload, onDone) {
@@ -115,9 +117,22 @@ function laprAccStatusBadge(status) {
 
 function laprAccountActions(a) {
   const canRotate = a.status === 'active' || a.status === 'error'
-  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '"><i class="fas fa-rotate"></i></button> ' : '') +
+  const canReset = a.status === 'paused' || a.status === 'error'
+  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
+    (canReset ? '<button class="btn btn-xs btn-warning lapr-reset-acc" data-id="' + a.id + '" title="' + laprAccLang.resetTitle + '"><i class="fas fa-rotate-left"></i></button> ' : '') +
     '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
     '<button class="btn btn-xs btn-danger lapr-delete-acc" data-id="' + a.id + '"><i class="fas fa-trash"></i></button>'
+}
+
+function laprResetAccount(id) {
+  laprAccPost('reset_account', { id: id }, function (data) {
+    if (data.error === true) {
+      toastr.error(data.message || laprAccLang.errorGeneric)
+      return
+    }
+    toastr.success(data.message)
+    laprLoadAccounts()
+  })
 }
 
 function laprRotateAccount(id) {
@@ -303,6 +318,9 @@ $(document).ready(function () {
   })
   $('#lapr-accounts-table').on('click', '.lapr-rotate-acc', function () {
     laprRotateAccount($(this).data('id'))
+  })
+  $('#lapr-accounts-table').on('click', '.lapr-reset-acc', function () {
+    laprResetAccount($(this).data('id'))
   })
   $('#lapr-accounts-table').on('click', '.lapr-editpolicy', function () {
     laprOpenEditPolicy($(this).data('id'), $(this).data('policy'))

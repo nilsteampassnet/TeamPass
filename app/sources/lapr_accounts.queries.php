@@ -126,6 +126,9 @@ switch ($post_type) {
     case 'rotation_status':
         laprRotationStatus($dataReceived, $lang);
         break;
+    case 'reset_account':
+        laprResetAccount($dataReceived, $session, $userId, $lang);
+        break;
     default:
         echo prepareExchangedData(['error' => true, 'message' => 'Unknown action'], 'encode');
 }
@@ -549,6 +552,67 @@ function laprStartRotation(array $data, SessionInterface $session, int $userId, 
     triggerBackgroundHandler();
 
     echo prepareExchangedData(['error' => false, 'task_id' => $taskId, 'message' => $lang->get('lapr_rotation_started')], 'encode');
+}
+
+/**
+ * Reset a paused/error account and resume rotations ("Reset & Resume", Point 5):
+ * clears the retry state and recomputes next_rotation_at from now.
+ *
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
+ * @return void
+ */
+function laprResetAccount(array $data, SessionInterface $session, int $userId, Language $lang): void
+{
+    $accountId = (int) ($data['id'] ?? 0);
+    if ($accountId <= 0) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Invalid account'], 'encode');
+        return;
+    }
+
+    $account = DB::queryFirstRow(
+        'SELECT a.id, a.policy_id, a.last_rotation_at, a.endpoint_id, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
+        $accountId,
+        'deleted'
+    );
+    if ($account === null) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Account not found'], 'encode');
+        return;
+    }
+
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    $frequencyDays = LAPR_DEFAULT_FREQUENCY_DAYS;
+    if ((int) ($account['policy_id'] ?? 0) > 0) {
+        $policy = DB::queryFirstRow(
+            'SELECT frequency_days FROM ' . prefixTable('lapr_policies') . ' WHERE id = %i',
+            (int) $account['policy_id']
+        );
+        if ($policy !== null) {
+            $frequencyDays = (int) $policy['frequency_days'];
+        }
+    }
+
+    DB::update(prefixTable('lapr_accounts'), [
+        'status' => 'active',
+        'retry_count' => 0,
+        'retry_at' => null,
+        'last_rotation_error' => null,
+        'next_rotation_at' => laprComputeNextRotation(null, $frequencyDays),
+        'updated_by' => $userId,
+    ], 'id = %i', $accountId);
+
+    laprAuditLog('account_reset', (int) $account['endpoint_id'], $userId, [], 'success', $accountId);
+
+    echo prepareExchangedData(['error' => false, 'message' => $lang->get('lapr_account_reset_done')], 'encode');
 }
 
 /**

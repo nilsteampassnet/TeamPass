@@ -260,6 +260,7 @@ $laprSettings = array(
     array('lapr_alert_email_recipient', ''),
     array('lapr_scheduler_enabled', '0'),
     array('lapr_scheduler_interval_minutes', '5'),
+    array('lapr_scheduler_next_run_at', '0'),
     array('lapr_max_retries', '3'),
     array('lapr_retry_delay_minutes', '60'),
     array('lapr_audit_retention_days', '365'),

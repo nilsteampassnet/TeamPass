@@ -93,7 +93,7 @@ trait LAPRRotationTrait
         $username = (string) $account['username_cache'];
         // R1 — hard username validation before anything reaches SSH.
         if (laprValidateUsername($username) === false) {
-            $this->laprFinalizeFailure($account, $actorId, 'ERR_INVALID_USERNAME');
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_INVALID_USERNAME', $trigger);
             return ['success' => false, 'error_code' => 'ERR_INVALID_USERNAME'];
         }
 
@@ -101,7 +101,7 @@ trait LAPRRotationTrait
         try {
             $tpKeys = laprGetTpUserPrivateKey($this->settings);
         } catch (Throwable $e) {
-            $this->laprFinalizeFailure($account, $actorId, 'ERR_SERVER_KEY');
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_SERVER_KEY', $trigger);
             return ['success' => false, 'error_code' => 'ERR_SERVER_KEY'];
         }
 
@@ -112,7 +112,7 @@ trait LAPRRotationTrait
         // Read the SSH connection credential from its linked item.
         $sshSecret = laprReadItemPasswordAsTpUser((int) $account['ssh_credential_source'], $tpKeys['private_key'], $tpKeys['public_key']);
         if ($sshSecret === '') {
-            $this->laprFinalizeFailure($account, $actorId, LAPRSshService::ERR_AUTH_FAILED);
+            $this->laprFinalizeFailure($account, $actorId, LAPRSshService::ERR_AUTH_FAILED, $trigger);
             return ['success' => false, 'error_code' => LAPRSshService::ERR_AUTH_FAILED];
         }
 
@@ -120,7 +120,7 @@ trait LAPRRotationTrait
         try {
             $newPassword = $this->laprGeneratePasswordForAccount((int) ($account['policy_id'] ?? 0));
         } catch (Throwable $e) {
-            $this->laprFinalizeFailure($account, $actorId, 'ERR_PASSWORD_GEN');
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_PASSWORD_GEN', $trigger);
             return ['success' => false, 'error_code' => 'ERR_PASSWORD_GEN'];
         }
 
@@ -137,7 +137,7 @@ trait LAPRRotationTrait
         if ($connect['success'] !== true) {
             $service->disconnect();
             $code = isset($connect['error_code']) ? (string) $connect['error_code'] : LAPRSshService::ERR_UNKNOWN;
-            $this->laprFinalizeFailure($account, $actorId, $code);
+            $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
             return ['success' => false, 'error_code' => $code];
         }
 
@@ -152,7 +152,7 @@ trait LAPRRotationTrait
                 laprAuditLog('hostkey_mismatch', (int) $account['endpoint_id'], $actorId, [
                     'account_id' => $accountId,
                 ], 'failure', $accountId, 'ERR_HOSTKEY_MISMATCH', 'system');
-                $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTKEY_MISMATCH');
+                $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTKEY_MISMATCH', $trigger);
                 return ['success' => false, 'error_code' => 'ERR_HOSTKEY_MISMATCH'];
             }
         }
@@ -167,7 +167,7 @@ trait LAPRRotationTrait
         $service->disconnect();
         if ($change['success'] !== true) {
             $code = isset($change['error_code']) ? (string) $change['error_code'] : LAPRSshService::ERR_CHPASSWD_FAILED;
-            $this->laprFinalizeFailure($account, $actorId, $code);
+            $this->laprFinalizeFailure($account, $actorId, $code, $trigger);
             return ['success' => false, 'error_code' => $code];
         }
 
@@ -380,28 +380,86 @@ trait LAPRRotationTrait
     }
 
     /**
-     * Record a rotation failure on the account and in the audit log. Retry
-     * scheduling (Point 5) is layered on top of this in the scheduler phase.
+     * Record a rotation failure on the account and in the audit log. For the
+     * scheduler trigger (Point 5), apply retry/suspension logic: increment
+     * retry_count and schedule a retry until lapr_max_retries is reached, then
+     * suspend the account (status 'paused') with a rotation_suspended audit.
+     * Manual/enroll failures simply mark the account 'error'.
      *
      * @param array  $account   Account row
      * @param int    $actorId   Acting user id
      * @param string $errorCode LAPR error code (no secret)
+     * @param string $trigger   manual | scheduler | enroll
      *
      * @return void
      */
-    private function laprFinalizeFailure(array $account, int $actorId, string $errorCode): void
+    private function laprFinalizeFailure(array $account, int $actorId, string $errorCode, string $trigger = 'manual'): void
     {
         $accountId = (int) $account['id'];
+        $now = date('Y-m-d H:i:s');
+
+        laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
+            'trigger' => $trigger,
+            'username' => (string) $account['username_cache'],
+        ], 'failure', $accountId, $errorCode, 'system');
+
+        if ($trigger !== 'scheduler') {
+            DB::update(prefixTable('lapr_accounts'), [
+                'last_rotation_at' => $now,
+                'last_rotation_status' => 'failure',
+                'last_rotation_error' => $errorCode,
+                'status' => 'error',
+                'updated_by' => $actorId,
+            ], 'id = %i', $accountId);
+            return;
+        }
+
+        // Scheduler retry/suspension logic (FUNC-4-like at the LAPR level).
+        $maxRetries = max(0, (int) ($this->settings['lapr_max_retries'] ?? 3));
+        $retryDelayMinutes = max(1, (int) ($this->settings['lapr_retry_delay_minutes'] ?? 60));
+
+        $current = DB::queryFirstRow(
+            'SELECT retry_count FROM ' . prefixTable('lapr_accounts') . ' WHERE id = %i',
+            $accountId
+        );
+        $retryCount = (int) ($current['retry_count'] ?? 0) + 1;
+
+        if ($retryCount > $maxRetries) {
+            // Suspend — stop retrying automatically until an admin resets the account.
+            DB::update(prefixTable('lapr_accounts'), [
+                'last_rotation_at' => $now,
+                'last_rotation_status' => 'failure',
+                'last_rotation_error' => $errorCode,
+                'status' => 'paused',
+                'retry_count' => $retryCount,
+                'retry_at' => null,
+                'updated_by' => $actorId,
+            ], 'id = %i', $accountId);
+
+            laprAuditLog('rotation_suspended', (int) $account['endpoint_id'], $actorId, [
+                'retry_count' => $retryCount,
+                'max_retries' => $maxRetries,
+            ], 'warning', $accountId, $errorCode, 'system');
+            return;
+        }
+
+        // Schedule the next retry.
+        $retryAt = date('Y-m-d H:i:s', time() + $retryDelayMinutes * 60);
         DB::update(prefixTable('lapr_accounts'), [
-            'last_rotation_at' => date('Y-m-d H:i:s'),
+            'last_rotation_at' => $now,
             'last_rotation_status' => 'failure',
             'last_rotation_error' => $errorCode,
-            'status' => 'error',
+            'status' => 'active',
+            'retry_count' => $retryCount,
+            'retry_at' => $retryAt,
+            'next_rotation_at' => $retryAt,
             'updated_by' => $actorId,
         ], 'id = %i', $accountId);
 
-        laprAuditLog('rotation', (int) $account['endpoint_id'], $actorId, [
-            'username' => (string) $account['username_cache'],
-        ], 'failure', $accountId, $errorCode, 'system');
+        laprAuditLog('rotation_retry_scheduled', (int) $account['endpoint_id'], $actorId, [
+            'trigger' => $trigger,
+            'retry_count' => $retryCount,
+            'retry_at' => $retryAt,
+        ], 'warning', $accountId, $errorCode, 'system');
     }
 }

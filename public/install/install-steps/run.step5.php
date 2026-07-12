@@ -537,6 +537,7 @@ class DatabaseInstaller
             array('admin', 'lapr_alert_email_recipient', ''),
             array('admin', 'lapr_scheduler_enabled', '0'),
             array('admin', 'lapr_scheduler_interval_minutes', '5'),
+            array('admin', 'lapr_scheduler_next_run_at', '0'),
             array('admin', 'lapr_max_retries', '3'),
             array('admin', 'lapr_retry_delay_minutes', '60'),
             array('admin', 'lapr_audit_retention_days', '365'),
