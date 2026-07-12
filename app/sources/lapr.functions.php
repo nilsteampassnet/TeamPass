@@ -305,6 +305,41 @@ function laprGeneratePassword(
 }
 
 /**
+ * Validate rotation-policy parameters (Point 3 bounds — enforced on both
+ * client and server). Length 8–128, frequency 1–3650 days, at least one
+ * character set enabled.
+ *
+ * @param int  $frequencyDays  Rotation frequency in days
+ * @param int  $passwordLength Password length
+ * @param bool $uppercase      Uppercase enabled
+ * @param bool $lowercase      Lowercase enabled
+ * @param bool $digits         Digits enabled
+ * @param bool $symbols        Symbols enabled
+ *
+ * @return bool
+ */
+function laprValidatePolicyParams(
+    int $frequencyDays,
+    int $passwordLength,
+    bool $uppercase,
+    bool $lowercase,
+    bool $digits,
+    bool $symbols
+): bool {
+    if ($frequencyDays < 1 || $frequencyDays > 3650) {
+        return false;
+    }
+    if ($passwordLength < 8 || $passwordLength > 128) {
+        return false;
+    }
+    if ($uppercase === false && $lowercase === false && $digits === false && $symbols === false) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
  * Compute the next rotation datetime from the last rotation and a policy
  * frequency. When the computed date is in the past (e.g. frequency was
  * shortened), it is clamped to now (spec Option A).
