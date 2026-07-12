@@ -1711,6 +1711,8 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/oauth.js.php';        
         } elseif ($get['page'] === 'tools') {
             include_once TEAMPASS_APP . '/pages/tools.js.php';
+        } elseif ($get['page'] === 'admin_lapr') {
+            include_once TEAMPASS_APP . '/pages/admin_lapr.js.php';
         }
     } elseif (isset($get['page']) === true && $get['page'] !== '') {
         if ($get['page'] === 'items') {
@@ -1745,7 +1747,7 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/utilities.health.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once TEAMPASS_APP . '/pages/utilities.renewal.js.php';
-        } elseif (in_array($get['page'], ['lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'], true) === true
+        } elseif (in_array($get['page'], ['lapr_endpoints', 'lapr_accounts', 'lapr_policies'], true) === true
             && file_exists(TEAMPASS_APP . '/pages/' . $get['page'] . '.js.php') === true
         ) {
             include_once TEAMPASS_APP . '/pages/' . basename($get['page']) . '.js.php';

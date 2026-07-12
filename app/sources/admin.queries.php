@@ -108,6 +108,58 @@ $post_list = filter_input(INPUT_POST, 'list', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 
 switch ($post_type) {
         /*
+    * LAPR — list users eligible for the can_manage_lapr flag (non-admin only)
+    */
+    case 'lapr_list_users':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+        $laprUsers = DB::query(
+            'SELECT id, login, name, lastname, can_manage_lapr
+             FROM ' . prefixTable('users') . '
+             WHERE admin = 0 AND deleted_at IS NULL
+             ORDER BY login ASC'
+        );
+        $laprData = [];
+        foreach ($laprUsers as $u) {
+            $laprData[] = [
+                'id' => (int) $u['id'],
+                'login' => $u['login'],
+                'name' => trim(((string) ($u['name'] ?? '')) . ' ' . ((string) ($u['lastname'] ?? ''))),
+                'can_manage_lapr' => (int) $u['can_manage_lapr'],
+            ];
+        }
+        echo prepareExchangedData(['error' => false, 'data' => $laprData], 'encode');
+        break;
+
+        /*
+    * LAPR — grant/revoke the can_manage_lapr flag for a non-admin user
+    */
+    case 'set_user_lapr_permission':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('key_is_not_correct')], 'encode');
+            break;
+        }
+        $laprPermData = prepareExchangedData($post_data, 'decode');
+        $laprTargetId = (int) ($laprPermData['user_id'] ?? 0);
+        $laprGranted = (int) ($laprPermData['granted'] ?? 0) === 1 ? 1 : 0;
+
+        // Only non-admin, non-deleted users can be targeted (admins have LAPR by default).
+        $laprTarget = DB::queryFirstRow(
+            'SELECT id, admin FROM ' . prefixTable('users') . ' WHERE id = %i AND deleted_at IS NULL',
+            $laprTargetId
+        );
+        if ($laprTarget === null || (int) $laprTarget['admin'] === 1) {
+            echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+            break;
+        }
+
+        DB::update(prefixTable('users'), ['can_manage_lapr' => $laprGranted], 'id = %i', $laprTargetId);
+        echo prepareExchangedData(['error' => false, 'granted' => $laprGranted], 'encode');
+        break;
+
+        /*
     * Test the email configuraiton
     */
     case 'admin_email_test_configuration':
