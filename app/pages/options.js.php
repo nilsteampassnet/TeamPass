@@ -84,6 +84,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // -------------------------
     function clearOptionsSearch() {
         $('.option').removeClass('hidden');
+        $('.settings-subgroup').removeClass('hidden');
     }
 
     function activateTabForOption($opt) {
@@ -129,6 +130,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         $allOptions.addClass('hidden');
         $matches.removeClass('hidden');
+        // Subgroup headers are structural, not options: hide them while a search
+        // is active so a header never hangs orphaned above hidden options.
+        $('.settings-subgroup').addClass('hidden');
         activateTabForOption($matches.first());
     }
 
