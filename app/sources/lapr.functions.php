@@ -367,6 +367,87 @@ function laprGetTpUserPrivateKey(array $settings): array
 }
 
 /**
+ * Build an HMAC-signed snapshot of a successful SSH test so it cannot be
+ * tampered with between the test and the endpoint save (spec §10). The HMAC
+ * key is the server master secret (SECUREFILE).
+ *
+ * @param array $data Snapshot payload (tested connection params + fingerprint)
+ *
+ * @return array{payload: array, sig: string}
+ */
+function laprSignSnapshot(array $data): array
+{
+    ksort($data);
+    $json = json_encode($data, JSON_UNESCAPED_SLASHES);
+    $sig = hash_hmac('sha256', $json, getServerSecret());
+
+    return ['payload' => $data, 'sig' => $sig];
+}
+
+/**
+ * Verify an HMAC-signed test snapshot returned by the client at save time.
+ *
+ * @param array  $payload Snapshot payload
+ * @param string $sig     HMAC signature produced by laprSignSnapshot()
+ *
+ * @return bool
+ */
+function laprVerifySnapshot(array $payload, string $sig): bool
+{
+    ksort($payload);
+    $json = json_encode($payload, JSON_UNESCAPED_SLASHES);
+    $expected = hash_hmac('sha256', $json, getServerSecret());
+
+    return hash_equals($expected, $sig);
+}
+
+/**
+ * Read and decrypt the cleartext password of a TeamPass item using the TP_USER
+ * key chain (server-side, no human password). Used to read the SSH credential
+ * of an endpoint from a linked item. The item must be non-personal so TP_USER
+ * holds a sharekey for it.
+ *
+ * @param int    $itemId        teampass_items.id holding the credential
+ * @param string $tpPrivateKey  TP_USER decrypted private key (from laprGetTpUserPrivateKey)
+ * @param string $tpPublicKey   TP_USER public key
+ *
+ * @return string Cleartext password ('' on any failure)
+ */
+function laprReadItemPasswordAsTpUser(int $itemId, string $tpPrivateKey, string $tpPublicKey): string
+{
+    $item = DB::queryFirstRow(
+        'SELECT id, pw, pw_iv FROM ' . prefixTable('items') . ' WHERE id = %i',
+        $itemId
+    );
+    if ($item === null || (string) $item['pw'] === '') {
+        return '';
+    }
+
+    $userKey = DB::queryFirstRow(
+        'SELECT share_key, increment_id FROM ' . prefixTable('sharekeys_items') . '
+         WHERE user_id = %i AND object_id = %i',
+        TP_USER_ID,
+        $itemId
+    );
+    if ($userKey === null) {
+        return '';
+    }
+
+    $objectKey = decryptUserObjectKeyWithMigration(
+        (string) $userKey['share_key'],
+        $tpPrivateKey,
+        $tpPublicKey,
+        (int) $userKey['increment_id'],
+        'sharekeys_items'
+    );
+    if ($objectKey === '') {
+        return '';
+    }
+
+    return base64_decode(doDataDecryption((string) $item['pw'], $objectKey, (string) ($item['pw_iv'] ?? '')));
+}
+
+/**
  * Whether the user can WRITE in a folder (Point 7 §4 / correction C9):
  * writable = user-accessible_folders minus user-read_only_folders.
  * Admin bypass.

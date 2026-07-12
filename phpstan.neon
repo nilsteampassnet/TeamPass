@@ -32,6 +32,7 @@ parameters:
         - public/install/libs/aesctr.php
         - app/includes/libraries/bip39/loader.php
         - app/vendor/tecnickcom/tcpdf/tcpdf_autoconfig.php
+        - app/includes/libraries/teampassclasses/lapr/src/LAPRSshService.php
 
     ignoreErrors:
         - '#Call to an undefined static method DB::count#'
