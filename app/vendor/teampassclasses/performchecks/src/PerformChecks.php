@@ -212,16 +212,22 @@ class PerformChecks
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
                 'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools'
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
+                'lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'
             ),
         );
+
+        // LAPR pages accessible to non-admin users holding the can_manage_lapr flag
+        // (admin_lapr stays admin-only). The module toggle itself is enforced by
+        // laprCheckPermission() in the handlers.
+        $laprFlagPages = array('lapr_endpoints', 'lapr_accounts', 'lapr_policies');
         
         // Convert to array
         $pageVisited = (is_array(json_decode($pageVisited, true)) === true) ? json_decode($pageVisited, true) : [$pageVisited];
         
         // load user's data
         $data = DB::queryfirstrow(
-            'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i',
+            'SELECT id, login, key_tempo, admin, gestionnaire, can_manage_all_users, can_manage_lapr, deleted_at FROM ' . prefixTable('users') . ' WHERE id = %i',
             $this->sessionVar['user_id']
         );
 
@@ -247,9 +253,11 @@ class PerformChecks
             && ($this->isValueInArray($pageVisited, array_merge($pagesRights['manager'], $pagesRights['human_resources'])) === true))
             ||
             ($this->isValueInArray($pageVisited, $pagesRights['user']) === true)
+            ||
+            ((int) ($data['can_manage_lapr'] ?? 0) === 1 && $this->isValueInArray($pageVisited, $laprFlagPages) === true)
         ) {
             return true;
-        } 
+        }
         return false;
     }
 

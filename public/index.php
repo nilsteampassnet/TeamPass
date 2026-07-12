@@ -480,6 +480,54 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                     </li>';
                                 }
 
+                                // LAPR (Linux Account Password Rotation) — visible when the module
+                                // is enabled and the user is admin or holds the can_manage_lapr flag.
+                                if ((int) ($SETTINGS['lapr_enabled'] ?? 0) === 1
+                                    && ((int) $session_user_admin === 1 || (int) $session->get('user-can_manage_lapr') === 1)
+                                ) {
+                                    $laprPages = ['lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'];
+                                    echo '
+                    <li class="nav-item has-treeview', in_array($get['page'], $laprPages, true) ? ' menu-open' : '', '">
+                        <a href="#" class="nav-link', in_array($get['page'], $laprPages, true) ? ' active' : '', '">
+                        <i class="nav-icon fa-solid fa-arrows-rotate"></i>
+                        <p>
+                            ' . $lang->get('lapr') . '
+                            <i class="fa-solid fa-angle-left right"></i>
+                        </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_endpoints" class="nav-link', $get['page'] === 'lapr_endpoints' ? ' active' : '', '">
+                                    <i class="fa-solid fa-server nav-icon"></i>
+                                    <p>' . $lang->get('lapr_endpoints') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_accounts" class="nav-link', $get['page'] === 'lapr_accounts' ? ' active' : '', '">
+                                    <i class="fa-solid fa-user-gear nav-icon"></i>
+                                    <p>' . $lang->get('lapr_accounts') . '</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" data-name="lapr_policies" class="nav-link', $get['page'] === 'lapr_policies' ? ' active' : '', '">
+                                    <i class="fa-solid fa-scroll nav-icon"></i>
+                                    <p>' . $lang->get('lapr_policies') . '</p>
+                                </a>
+                            </li>';
+                                    if ((int) $session_user_admin === 1) {
+                                        echo '
+                            <li class="nav-item">
+                                <a href="#" data-name="admin_lapr" class="nav-link', $get['page'] === 'admin_lapr' ? ' active' : '', '">
+                                    <i class="fa-solid fa-shield-halved nav-icon"></i>
+                                    <p>' . $lang->get('lapr_admin') . '</p>
+                                </a>
+                            </li>';
+                                    }
+                                    echo '
+                        </ul>
+                    </li>';
+                                }
+
                                 if ($session_user_admin === 0) {
                                     // ITEMS & SEARCH
                                     echo '
@@ -1697,6 +1745,10 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
             include_once TEAMPASS_APP . '/pages/utilities.health.js.php';
         } elseif ($get['page'] === 'utilities.renewal') {
             include_once TEAMPASS_APP . '/pages/utilities.renewal.js.php';
+        } elseif (in_array($get['page'], ['lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'], true) === true
+            && file_exists(TEAMPASS_APP . '/pages/' . $get['page'] . '.js.php') === true
+        ) {
+            include_once TEAMPASS_APP . '/pages/' . basename($get['page']) . '.js.php';
         }
     } else {
         include_once TEAMPASS_APP . '/core/login.js.php';

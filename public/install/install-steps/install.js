@@ -312,7 +312,12 @@ function performStep5() {
         { id: 'check64', action: 'api_rate_limit' },
         { id: 'check65', action: 'import_tracking' },
         { id: 'check66', action: 'item_health' },
-        { id: 'check67', action: 'user_nudges' }
+        { id: 'check67', action: 'user_nudges' },
+        { id: 'check68', action: 'lapr_endpoints' },
+        { id: 'check69', action: 'lapr_accounts' },
+        { id: 'check70', action: 'lapr_policies' },
+        { id: 'check71', action: 'lapr_audit_log' },
+        { id: 'check72', action: 'lapr_rate_limit' }
     ];
     
     let errorOccurred = false; // Variable to track errors

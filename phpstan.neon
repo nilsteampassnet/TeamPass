@@ -41,6 +41,9 @@ parameters:
           path: public/install/install-steps/run.step5.php
         - message: '#Method .+ is unused\.#'
           path: public/install/install-steps/run.step6.php
+        # Task-status helpers consumed by the LAPR traits (loaded via require_once)
+        - message: '#Method TaskWorker::updateTask(Status|Result|Step)\(\) is unused\.#'
+          path: app/scripts/background_tasks___worker.php
 
     reportUnmatchedIgnoredErrors: false
 

@@ -1483,6 +1483,63 @@ class TaskWorker {
         return '';
     }
 
+    /**
+     * Update the status of the current task (LAPR & interactive tasks).
+     * Vocabulary aligned with the handler: 'new' | 'in_progress' | 'completed' | 'failed'.
+     *
+     * @param string $status New status value
+     * @return void
+     */
+    private function updateTaskStatus(string $status): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'status' => $status,
+                'updated_at' => time(),
+            ],
+            'increment_id = %i',
+            $this->taskId
+        );
+    }
+
+    /**
+     * Store a structured result for the current task in the `output` column,
+     * where interactive AJAX pollers (e.g. LAPR test_status) read it back.
+     * Secrets must never be part of $result.
+     *
+     * @param array $result Result payload (JSON-encoded)
+     * @return void
+     */
+    private function updateTaskResult(array $result): void {
+        DB::update(
+            prefixTable('background_tasks'),
+            [
+                'output' => json_encode($result, JSON_UNESCAPED_SLASHES),
+                'updated_at' => time(),
+            ],
+            'increment_id = %i',
+            $this->taskId
+        );
+    }
+
+    /**
+     * Record the current progress step of the task inside the `output` JSON
+     * (merged with any existing content) so pollers can display progress.
+     *
+     * @param string $step Step identifier
+     * @return void
+     */
+    private function updateTaskStep(string $step): void {
+        $current = DB::queryFirstField(
+            'SELECT output FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+            $this->taskId
+        );
+        $payload = is_string($current) ? (json_decode($current, true) ?: []) : [];
+        $payload['step'] = $step;
+
+        $this->updateTaskResult($payload);
+    }
+
     private function completeTask(): void {
         // Prepare data for updating the task status
         $updateData = [
