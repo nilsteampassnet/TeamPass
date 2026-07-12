@@ -116,13 +116,13 @@ trait LAPRDiscoverTrait
         // usernames that pass the POSIX validation used for rotation (R1).
         $candidates = [];
         foreach ($accounts as $acct) {
-            $shell = (string) ($acct['shell'] ?? '');
-            $username = (string) ($acct['username'] ?? '');
+            $shell = (string) $acct['shell'];
+            $username = (string) $acct['username'];
             $isLoginShell = $shell !== '' && strpos($shell, 'nologin') === false && strpos($shell, '/false') === false;
             if ($isLoginShell === true && laprValidateUsername($username) === true) {
                 $candidates[] = [
                     'username' => $username,
-                    'uid' => (int) ($acct['uid'] ?? 0),
+                    'uid' => (int) $acct['uid'],
                     'shell' => $shell,
                 ];
             }
