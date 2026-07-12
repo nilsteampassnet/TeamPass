@@ -31,9 +31,12 @@ declare(strict_types=1);
 
 use TeampassClasses\SessionManager\SessionManager;
 use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
 
 $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
+$laprSettings = (new ConfigManager())->getAllSettings();
+$laprRetentionDays = (int) ($laprSettings['lapr_audit_retention_days'] ?? 365);
 ?>
 <script>
 'use strict'
@@ -55,7 +58,82 @@ const laprAccLang = {
   manualResync: '<?php echo addslashes($lang->get('lapr_manual_resync_required')); ?>',
   hostkeyMismatch: '<?php echo addslashes($lang->get('lapr_hostkey_mismatch_blocked')); ?>',
   rotateTitle: '<?php echo addslashes($lang->get('lapr_rotate_now')); ?>',
-  resetTitle: '<?php echo addslashes($lang->get('lapr_reset_resume')); ?>'
+  resetTitle: '<?php echo addslashes($lang->get('lapr_reset_resume')); ?>',
+  historyTitle: '<?php echo addslashes($lang->get('lapr_history')); ?>',
+  historyEmpty: '<?php echo addslashes($lang->get('lapr_history_empty')); ?>',
+  system: '<?php echo addslashes($lang->get('lapr_system_scheduler')); ?>',
+  unknownUser: '<?php echo addslashes($lang->get('lapr_unknown_user')); ?>'
+}
+
+const laprRetentionDays = <?php echo (int) $laprRetentionDays; ?>
+const laprRetentionNote = '<?php echo addslashes($lang->get('lapr_history_retention_note')); ?>'
+let laprHistoryState = { accountId: null, offset: 0, limit: 20, total: 0 }
+
+const laprEventLabels = {
+  rotation: 'Rotation',
+  rotation_retry_scheduled: 'Retry scheduled',
+  rotation_suspended: 'Suspended',
+  account_add: 'Account added',
+  account_reset: 'Reset & resume',
+  ssh_credential_sync: 'SSH credential sync',
+  hostkey_mismatch: 'Host key mismatch'
+}
+
+function laprOpenHistory(accountId) {
+  laprHistoryState = { accountId: accountId, offset: 0, limit: 20, total: 0 }
+  $('#modal_lapr_account_history').modal('show')
+  laprLoadHistoryPage()
+}
+
+function laprLoadHistoryPage() {
+  laprAccPost('list_account_history', {
+    account_id: laprHistoryState.accountId,
+    limit: laprHistoryState.limit,
+    offset: laprHistoryState.offset
+  }, function (data) {
+    if (data.error === true) {
+      toastr.error(data.message || laprAccLang.errorGeneric)
+      return
+    }
+    laprHistoryState.total = data.total
+    laprRenderHistory(data)
+  })
+}
+
+function laprRenderHistory(data) {
+  $('#lapr_history_title').text(
+    DOMPurify.sanitize(data.account.username) + ' @ ' + DOMPurify.sanitize(data.account.ep_label)
+  )
+  let html = ''
+  if (!data.rows.length) {
+    html = '<tr><td colspan="5" class="text-center text-muted">' + DOMPurify.sanitize(laprAccLang.historyEmpty) + '</td></tr>'
+  } else {
+    data.rows.forEach(function (r) {
+      const badge = r.result === 'success' ? 'success' : (r.result === 'warning' ? 'warning' : 'danger')
+      const by = r.is_system ? laprAccLang.system : (r.user_login ? DOMPurify.sanitize(r.user_login) : laprAccLang.unknownUser)
+      html += '<tr>' +
+        '<td>' + DOMPurify.sanitize(r.created_at) + '</td>' +
+        '<td>' + DOMPurify.sanitize(laprEventLabels[r.action_type] || r.action_type) + '</td>' +
+        '<td>' + DOMPurify.sanitize(r.trigger || '—') + '</td>' +
+        '<td><span class="badge badge-' + badge + '">' + DOMPurify.sanitize(r.result) + '</span></td>' +
+        '<td>' + by + '</td>' +
+        '</tr>'
+      if (r.error) {
+        html += '<tr><td colspan="5" class="text-danger small">↳ ' + DOMPurify.sanitize(r.error) + '</td></tr>'
+      }
+    })
+  }
+  $('#lapr_history_tbody').html(html)
+
+  const from = data.total === 0 ? 0 : data.offset + 1
+  const to = Math.min(data.offset + data.limit, data.total)
+  const page = Math.floor(data.offset / data.limit) + 1
+  const pages = Math.max(1, Math.ceil(data.total / data.limit))
+  $('#lapr_history_range').text('Showing ' + from + '–' + to + ' of ' + data.total)
+  $('#lapr_history_page').text(page + '/' + pages)
+  $('#lapr_history_prev').prop('disabled', data.offset <= 0)
+  $('#lapr_history_next').prop('disabled', to >= data.total)
+  $('#lapr_history_retention_note').text(laprRetentionDays > 0 ? laprRetentionNote.replace('%s', laprRetentionDays) : '')
 }
 
 function laprAccPost(type, payload, onDone) {
@@ -120,6 +198,7 @@ function laprAccountActions(a) {
   const canReset = a.status === 'paused' || a.status === 'error'
   return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '" title="' + laprAccLang.rotateTitle + '"><i class="fas fa-rotate"></i></button> ' : '') +
     (canReset ? '<button class="btn btn-xs btn-warning lapr-reset-acc" data-id="' + a.id + '" title="' + laprAccLang.resetTitle + '"><i class="fas fa-rotate-left"></i></button> ' : '') +
+    '<button class="btn btn-xs btn-info lapr-history-acc" data-id="' + a.id + '" title="' + laprAccLang.historyTitle + '"><i class="fas fa-clock-rotate-left"></i></button> ' +
     '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
     '<button class="btn btn-xs btn-danger lapr-delete-acc" data-id="' + a.id + '"><i class="fas fa-trash"></i></button>'
 }
@@ -321,6 +400,19 @@ $(document).ready(function () {
   })
   $('#lapr-accounts-table').on('click', '.lapr-reset-acc', function () {
     laprResetAccount($(this).data('id'))
+  })
+  $('#lapr-accounts-table').on('click', '.lapr-history-acc', function () {
+    laprOpenHistory($(this).data('id'))
+  })
+  $('#lapr_history_prev').on('click', function () {
+    laprHistoryState.offset = Math.max(0, laprHistoryState.offset - laprHistoryState.limit)
+    laprLoadHistoryPage()
+  })
+  $('#lapr_history_next').on('click', function () {
+    if (laprHistoryState.offset + laprHistoryState.limit < laprHistoryState.total) {
+      laprHistoryState.offset += laprHistoryState.limit
+      laprLoadHistoryPage()
+    }
   })
   $('#lapr-accounts-table').on('click', '.lapr-editpolicy', function () {
     laprOpenEditPolicy($(this).data('id'), $(this).data('policy'))

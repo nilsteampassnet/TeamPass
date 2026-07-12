@@ -129,6 +129,9 @@ switch ($post_type) {
     case 'reset_account':
         laprResetAccount($dataReceived, $session, $userId, $lang);
         break;
+    case 'list_account_history':
+        laprListAccountHistory($dataReceived, $session, $lang);
+        break;
     default:
         echo prepareExchangedData(['error' => true, 'message' => 'Unknown action'], 'encode');
 }
@@ -655,6 +658,94 @@ function laprRotationStatus(array $data, Language $lang): void
         'success' => (bool) ($output['success'] ?? false),
         'error_code' => $output['error_code'] ?? '',
         'message_code' => $output['message'] ?? '',
+    ], 'encode');
+}
+
+/**
+ * Paginated, read-only rotation history for one account (Point 6). Reads the
+ * LAPR audit log filtered by account_id; never decrypts anything. Enforces read
+ * access to the item's folder (admin bypass).
+ *
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param Language         $lang    Language helper
+ * @return void
+ */
+function laprListAccountHistory(array $data, SessionInterface $session, Language $lang): void
+{
+    $accountId = (int) ($data['account_id'] ?? 0);
+    $limit = (int) ($data['limit'] ?? 20);
+    $offset = (int) ($data['offset'] ?? 0);
+    $limit = max(1, min(100, $limit));
+    $offset = max(0, $offset);
+
+    if ($accountId <= 0) {
+        echo prepareExchangedData(['error' => true, 'message' => 'ERR_INVALID_ACCOUNT'], 'encode');
+        return;
+    }
+
+    $account = DB::queryFirstRow(
+        'SELECT a.id, a.username_cache, a.item_id, e.label AS ep_label, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
+        $accountId,
+        'deleted'
+    );
+    if ($account === null) {
+        echo prepareExchangedData(['error' => true, 'message' => 'ERR_ACCOUNT_NOT_FOUND'], 'encode');
+        return;
+    }
+
+    if (laprUserCanReadFolder((int) $account['id_tree'], $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    $total = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('lapr_audit_log') . ' WHERE account_id = %i',
+        $accountId
+    );
+
+    $rows = DB::query(
+        'SELECT al.id, al.action_type, al.result, al.error_message, al.action_details,
+                al.created_at, al.user_id, u.login AS user_login
+         FROM ' . prefixTable('lapr_audit_log') . ' AS al
+         LEFT JOIN ' . prefixTable('users') . ' AS u ON u.id = al.user_id
+         WHERE al.account_id = %i
+         ORDER BY al.created_at DESC, al.id DESC
+         LIMIT %i OFFSET %i',
+        $accountId,
+        $limit,
+        $offset
+    );
+
+    $items = [];
+    foreach ($rows as $r) {
+        $details = json_decode((string) ($r['action_details'] ?? '{}'), true) ?: [];
+        $isSystem = (int) $r['user_id'] === (int) TP_USER_ID;
+        $items[] = [
+            'created_at' => $r['created_at'],
+            'action_type' => $r['action_type'],
+            'trigger' => $details['trigger'] ?? null,
+            'result' => $r['result'],
+            'error' => $r['error_message'] ?? ($details['error'] ?? null),
+            'user_login' => $isSystem ? null : ($r['user_login'] ?? null),
+            'is_system' => $isSystem,
+        ];
+    }
+
+    echo prepareExchangedData([
+        'error' => false,
+        'account' => [
+            'username' => $account['username_cache'],
+            'ep_label' => $account['ep_label'],
+        ],
+        'total' => $total,
+        'limit' => $limit,
+        'offset' => $offset,
+        'rows' => $items,
     ], 'encode');
 }
 

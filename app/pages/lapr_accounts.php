@@ -182,6 +182,41 @@ date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
     </div>
 </div>
 
+<!-- Rotation history modal -->
+<div class="modal fade" id="modal_lapr_account_history" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title"><?php echo $lang->get('lapr_history_title'); ?> — <span id="lapr_history_title"></span></h4>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <table class="table table-sm table-striped">
+                    <thead>
+                        <tr>
+                            <th><?php echo $lang->get('date'); ?></th>
+                            <th><?php echo $lang->get('lapr_event'); ?></th>
+                            <th><?php echo $lang->get('lapr_trigger'); ?></th>
+                            <th><?php echo $lang->get('lapr_result'); ?></th>
+                            <th><?php echo $lang->get('lapr_by'); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody id="lapr_history_tbody"></tbody>
+                </table>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted" id="lapr_history_range"></small>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-default" id="lapr_history_prev" disabled>&lsaquo; <?php echo $lang->get('onboarding_btn_prev'); ?></button>
+                        <span class="mx-2" id="lapr_history_page"></span>
+                        <button type="button" class="btn btn-sm btn-default" id="lapr_history_next" disabled><?php echo $lang->get('onboarding_btn_next'); ?> &rsaquo;</button>
+                    </div>
+                </div>
+                <small class="text-muted" id="lapr_history_retention_note"></small>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Discover accounts modal -->
 <div class="modal fade" id="modal_lapr_discover" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
