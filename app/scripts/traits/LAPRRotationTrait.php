@@ -124,6 +124,14 @@ trait LAPRRotationTrait
             return ['success' => false, 'error_code' => 'ERR_PASSWORD_GEN'];
         }
 
+        // Defence in depth (R3): re-check the allowlist against the stored hostname
+        // before opening any connection. A stored endpoint whose hostname was later
+        // moved outside the allowlist must not be reachable by the rotator.
+        if (laprIsHostnameAllowed((string) $account['hostname'], $this->settings) === false) {
+            $this->laprFinalizeFailure($account, $actorId, 'ERR_HOSTNAME_NOT_ALLOWED', $trigger);
+            return ['success' => false, 'error_code' => 'ERR_HOSTNAME_NOT_ALLOWED'];
+        }
+
         // Step 3 — SSH push
         $timeout = (int) ($this->settings['lapr_ssh_connect_timeout'] ?? 10);
         $service = new LAPRSshService($timeout);

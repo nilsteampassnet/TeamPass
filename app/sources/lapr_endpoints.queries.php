@@ -113,7 +113,7 @@ switch ($post_type) {
         laprTestStatus($dataReceived, $lang);
         break;
     case 'add_endpoint':
-        laprAddEndpoint($dataReceived, $userId, $lang);
+        laprAddEndpoint($dataReceived, $userId, $SETTINGS, $lang);
         break;
     case 'delete_endpoint':
         laprDeleteEndpoint($dataReceived, $userId, $lang);
@@ -310,7 +310,7 @@ function laprTestStatus(array $data, Language $lang): void
     }
 
     $task = DB::queryFirstRow(
-        'SELECT increment_id, process_type, status, output, is_in_progress
+        'SELECT increment_id, process_type, status, output, arguments, is_in_progress
          FROM ' . prefixTable('background_tasks') . '
          WHERE increment_id = %i AND process_type = %s',
         $taskId,
@@ -322,6 +322,13 @@ function laprTestStatus(array $data, Language $lang): void
     }
 
     $output = json_decode((string) ($task['output'] ?? '{}'), true) ?: [];
+    // The connection parameters that were actually tested (and allowlist-checked in
+    // start_test) live in the server-stored task arguments — NOT in any client field.
+    // Binding them into the signed snapshot is what prevents an allowlist bypass at
+    // save time (a valid snapshot from an allowed host cannot be replayed to store a
+    // different, non-allowlisted hostname).
+    $taskArgs = json_decode((string) ($task['arguments'] ?? '{}'), true) ?: [];
+    $testedEndpoint = is_array($taskArgs['endpoint'] ?? null) ? $taskArgs['endpoint'] : [];
     $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
 
     if ($finished === false) {
@@ -344,8 +351,15 @@ function laprTestStatus(array $data, Language $lang): void
     }
 
     // Sign a snapshot of the tested connection so the save step cannot be tampered.
+    // The connection parameters are the authoritative, allowlist-checked values from
+    // the task arguments; laprAddEndpoint derives the stored endpoint from these.
     $snapshot = [
         'task_id' => $taskId,
+        'hostname' => (string) ($testedEndpoint['hostname'] ?? ''),
+        'port' => (int) ($testedEndpoint['port'] ?? 22),
+        'ssh_username' => (string) ($testedEndpoint['ssh_username'] ?? ''),
+        'ssh_auth_method' => (string) ($testedEndpoint['ssh_auth_method'] ?? 'password'),
+        'credential_item_id' => (int) ($taskArgs['credential_item_id'] ?? 0),
         'fingerprint' => (string) ($output['fingerprint'] ?? ''),
         'os_info' => $output['os_info'] ?? [],
         'capabilities' => $output['capabilities'] ?? [],
@@ -369,31 +383,48 @@ function laprTestStatus(array $data, Language $lang): void
 /**
  * Persist an endpoint after a verified SSH test (snapshot HMAC + save form).
  *
- * @param array    $data   Decoded client payload
- * @param int      $userId Acting user id
- * @param Language $lang   Language helper
+ * The connection parameters (hostname/port/user/auth/credential) are taken from
+ * the HMAC-signed snapshot — the values that were actually tested AND
+ * allowlist-checked in start_test — never from separate client fields. This is
+ * what stops a valid snapshot from an allowed host being replayed to store a
+ * different, non-allowlisted hostname (SSRF / allowlist bypass). Only the label
+ * and the host-key-skip choice are honoured from the save form.
+ *
+ * @param array    $data     Decoded client payload
+ * @param int      $userId   Acting user id
+ * @param array    $SETTINGS TeamPass settings (allowlist re-check)
+ * @param Language $lang     Language helper
  * @return void
  */
-function laprAddEndpoint(array $data, int $userId, Language $lang): void
+function laprAddEndpoint(array $data, int $userId, array $SETTINGS, Language $lang): void
 {
     $label = trim((string) ($data['label'] ?? ''));
-    $hostname = trim((string) ($data['hostname'] ?? ''));
-    $port = (int) ($data['port'] ?? 22);
-    $sshUsername = trim((string) ($data['ssh_username'] ?? ''));
-    $authMethod = ((string) ($data['ssh_auth_method'] ?? 'password')) === 'key' ? 'key' : 'password';
-    $credentialItemId = (int) ($data['credential_item_id'] ?? 0);
     $skipHostkey = (int) ($data['skip_hostkey_verification'] ?? 0) === 1 ? 1 : 0;
     $snapshot = (array) ($data['snapshot'] ?? []);
     $snapshotSig = (string) ($data['snapshot_sig'] ?? '');
+
+    // Verify the test snapshot (test→save integrity) BEFORE trusting any of its fields.
+    if ($snapshotSig === '' || laprVerifySnapshot($snapshot, $snapshotSig) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_test_required_before_save')], 'encode');
+        return;
+    }
+
+    // Connection params are authoritative from the signed snapshot, not the client form.
+    $hostname = trim((string) ($snapshot['hostname'] ?? ''));
+    $port = (int) ($snapshot['port'] ?? 22);
+    $sshUsername = trim((string) ($snapshot['ssh_username'] ?? ''));
+    $authMethod = ((string) ($snapshot['ssh_auth_method'] ?? 'password')) === 'key' ? 'key' : 'password';
+    $credentialItemId = (int) ($snapshot['credential_item_id'] ?? 0);
 
     if ($label === '' || $hostname === '' || $sshUsername === '' || $credentialItemId <= 0) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_empty_data')], 'encode');
         return;
     }
 
-    // Verify the test snapshot (test→save integrity)
-    if ($snapshotSig === '' || laprVerifySnapshot($snapshot, $snapshotSig) === false) {
-        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_test_required_before_save')], 'encode');
+    // Defence in depth: re-check the allowlist against the (snapshot) hostname, in case
+    // the allowlist changed between test and save, or the snapshot predates a tightening.
+    if (laprIsHostnameAllowed($hostname, $SETTINGS) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_hostname_not_allowed')], 'encode');
         return;
     }
 
@@ -524,6 +555,26 @@ function laprTrustHostkey(array $data, int $userId, Language $lang): void
     $snapshotSig = (string) ($data['snapshot_sig'] ?? '');
 
     if ($endpointId <= 0 || $snapshotSig === '' || laprVerifySnapshot($snapshot, $snapshotSig) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_test_required_before_save')], 'encode');
+        return;
+    }
+
+    // Bind the verified snapshot to THIS endpoint: the re-TOFU test must have been
+    // run against the same host/port/user/credential we are about to trust. This
+    // stops a fingerprint obtained from a different (attacker-controlled) host being
+    // trusted onto an existing endpoint.
+    $endpoint = DB::queryFirstRow(
+        'SELECT hostname, port, ssh_username, ssh_credential_source
+         FROM ' . prefixTable('lapr_endpoints') . ' WHERE id = %i AND status != %s',
+        $endpointId,
+        'deleted'
+    );
+    if ($endpoint === null
+        || (string) $endpoint['hostname'] !== (string) ($snapshot['hostname'] ?? '')
+        || (int) $endpoint['port'] !== (int) ($snapshot['port'] ?? 0)
+        || (string) $endpoint['ssh_username'] !== (string) ($snapshot['ssh_username'] ?? '')
+        || (int) $endpoint['ssh_credential_source'] !== (int) ($snapshot['credential_item_id'] ?? 0)
+    ) {
         echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_test_required_before_save')], 'encode');
         return;
     }
