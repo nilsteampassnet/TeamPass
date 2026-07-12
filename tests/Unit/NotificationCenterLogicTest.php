@@ -73,6 +73,37 @@ class NotificationCenterLogicTest extends TestCase
         $this->assertArrayNotHasKey('message', $clean);
     }
 
+    public function testTaskCompletedKeepsItemLabelAndDropsInternalKeys(): void
+    {
+        $clean = notificationSanitizePayload('task_completed', [
+            'task_type' => 'Item encryption',
+            'status' => 'completed',
+            'item_label' => str_repeat('y', 300),
+            'item_id' => 42,
+            'process_type' => 'new_item',
+            'message' => 'internal detail that must not be stored',
+        ]);
+
+        // The item label is kept (length-bounded) so the inbox can name the item.
+        $this->assertSame(100, strlen($clean['item_label']));
+        // Internal routing keys never reach the stored payload.
+        $this->assertArrayNotHasKey('item_id', $clean);
+        $this->assertArrayNotHasKey('process_type', $clean);
+        $this->assertArrayNotHasKey('message', $clean);
+    }
+
+    public function testTaskCompletedWithoutItemLabelHasNoLabelKey(): void
+    {
+        $clean = notificationSanitizePayload('task_completed', [
+            'task_type' => 'import',
+            'status' => 'completed',
+            'item_label' => '',
+        ]);
+
+        // Empty labels are not stored — generic tasks stay label-less.
+        $this->assertArrayNotHasKey('item_label', $clean);
+    }
+
     public function testFolderPermissionPayloadStoresCountNotIds(): void
     {
         $clean = notificationSanitizePayload('folder_permission_changed', [

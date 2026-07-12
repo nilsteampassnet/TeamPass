@@ -35,6 +35,12 @@ use TeampassClasses\Language\Language;
 $session = SessionManager::getSession();
 $lang = new Language($session->get('user-language') ?? 'english');
 ?>
+<style>
+    #tp-notification-menu { width: 360px; max-width: 92vw; }
+    #tp-notification-menu .tp-notification-row { white-space: normal; }
+    #tp-notification-menu .tp-notification-when { white-space: nowrap; flex: 0 0 auto; }
+    #tp-notification-menu .tp-notification-detail { word-break: break-word; }
+</style>
 <script type="text/javascript">
     //<![CDATA[
     /**
@@ -55,38 +61,46 @@ $lang = new Language($session->get('user-language') ?? 'english');
             title: <?php echo json_encode($lang->get('notification_center'), JSON_UNESCAPED_UNICODE); ?>,
             empty: <?php echo json_encode($lang->get('notification_center_empty'), JSON_UNESCAPED_UNICODE); ?>,
             markAll: <?php echo json_encode($lang->get('notification_center_mark_all'), JSON_UNESCAPED_UNICODE); ?>,
+            themeSecurity: <?php echo json_encode($lang->get('notification_theme_security'), JSON_UNESCAPED_UNICODE); ?>,
+            themeKeys: <?php echo json_encode($lang->get('notification_theme_keys'), JSON_UNESCAPED_UNICODE); ?>,
+            themeTask: <?php echo json_encode($lang->get('notification_theme_task'), JSON_UNESCAPED_UNICODE); ?>,
+            themeItemEncryption: <?php echo json_encode($lang->get('notification_theme_item_encryption'), JSON_UNESCAPED_UNICODE); ?>,
+            themePermission: <?php echo json_encode($lang->get('notification_theme_permission'), JSON_UNESCAPED_UNICODE); ?>,
             securityNudge: <?php echo json_encode($lang->get('notification_type_security_nudge'), JSON_UNESCAPED_UNICODE); ?>,
             keysReady: <?php echo json_encode($lang->get('notification_type_user_keys_ready'), JSON_UNESCAPED_UNICODE); ?>,
-            taskCompleted: <?php echo json_encode($lang->get('notification_type_task_completed'), JSON_UNESCAPED_UNICODE); ?>,
-            taskFailed: <?php echo json_encode($lang->get('notification_type_task_failed'), JSON_UNESCAPED_UNICODE); ?>,
+            statusCompleted: <?php echo json_encode($lang->get('notification_type_task_completed'), JSON_UNESCAPED_UNICODE); ?>,
+            statusFailed: <?php echo json_encode($lang->get('notification_type_task_failed'), JSON_UNESCAPED_UNICODE); ?>,
             permissionChanged: <?php echo json_encode($lang->get('notification_type_folder_permission_changed'), JSON_UNESCAPED_UNICODE); ?>
         }
 
         var EVENT_TYPES = ['security_nudge', 'user_keys_ready', 'task_completed', 'folder_permission_changed']
 
-        // Type -> { icon, text(payload), link } presentation map.
+        // Type -> { theme(payload), detail(payload), link } presentation map.
+        // theme  = short category shown on line 1 (next to the timestamp)
+        // detail = the fine-grained outcome shown on line 2
         var RENDERERS = {
             'security_nudge': {
-                icon: 'fa-solid fa-shield-halved text-warning',
-                text: function (p) { return L.securityNudge.replace('%s', String(parseInt(p.total, 10) || 0)) },
+                theme: function () { return L.themeSecurity },
+                detail: function (p) { return L.securityNudge.replace('%s', String(parseInt(p.total, 10) || 0)) },
                 link: 'index.php?page=dashboard'
             },
             'user_keys_ready': {
-                icon: 'fa-solid fa-key text-success',
-                text: function () { return L.keysReady },
+                theme: function () { return L.themeKeys },
+                detail: function () { return L.keysReady },
                 link: null
             },
             'task_completed': {
-                icon: 'fa-solid fa-list-check text-info',
-                text: function (p) {
-                    var base = (String(p.status) === 'failed') ? L.taskFailed : L.taskCompleted
-                    return p.task_type ? base + ' — ' + String(p.task_type) : base
+                theme: function (p) { return p.item_label ? L.themeItemEncryption : L.themeTask },
+                detail: function (p) {
+                    var status = (String(p.status) === 'failed') ? L.statusFailed : L.statusCompleted
+                    var subject = p.item_label ? String(p.item_label) : (p.task_type ? String(p.task_type) : '')
+                    return subject ? subject + ' — ' + status : status
                 },
                 link: null
             },
             'folder_permission_changed': {
-                icon: 'fa-solid fa-user-lock text-primary',
-                text: function () { return L.permissionChanged },
+                theme: function () { return L.themePermission },
+                detail: function () { return L.permissionChanged },
                 link: null
             }
         }
@@ -107,7 +121,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 '<span class="badge badge-warning navbar-badge" id="tp-notification-count" style="display:none;"></span>' +
                 '</a>' +
                 '<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" id="tp-notification-menu">' +
-                '<span class="dropdown-item dropdown-header">' + escapeText(L.title) + '</span>' +
+                '<span class="dropdown-item dropdown-header"><i class="far fa-bell mr-2"></i>' + escapeText(L.title) + '</span>' +
                 '<div id="tp-notification-list"></div>' +
                 '<div class="dropdown-divider"></div>' +
                 '<a href="#" class="dropdown-item dropdown-footer" id="tp-notification-mark-all">' + escapeText(L.markAll) + '</a>' +
@@ -136,15 +150,19 @@ $lang = new Language($session->get('user-language') ?? 'english');
             rows.forEach(function (row) {
                 var renderer = RENDERERS[row.type]
                 if (!renderer) return
-                var text = escapeText(renderer.text(row.payload || {}))
+                var payload = row.payload || {}
+                var theme = escapeText(renderer.theme(payload))
+                var detail = escapeText(renderer.detail(payload))
                 var when = row.created_at > 0 ? new Date(row.created_at * 1000).toLocaleString() : ''
                 var weight = row.is_read === 1 ? '' : ' font-weight-bold'
                 var href = renderer.link || '#'
                 html += '<div class="dropdown-divider"></div>' +
                     '<a href="' + href + '" class="dropdown-item tp-notification-row' + weight + '" data-id="' + parseInt(row.id, 10) + '">' +
-                    '<i class="' + renderer.icon + ' mr-2"></i>' +
-                    '<span class="text-sm">' + text + '</span>' +
-                    '<span class="float-right text-muted text-xs ml-2">' + escapeText(when) + '</span>' +
+                    '<div class="d-flex justify-content-between align-items-baseline">' +
+                    '<span class="tp-notification-theme text-sm">' + theme + '</span>' +
+                    '<span class="tp-notification-when text-muted text-xs ml-2">' + escapeText(when) + '</span>' +
+                    '</div>' +
+                    '<div class="tp-notification-detail text-sm text-muted">' + detail + '</div>' +
                     '</a>'
             })
             $list.html(html || '<span class="dropdown-item text-muted">' + escapeText(L.empty) + '</span>')

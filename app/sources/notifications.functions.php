@@ -102,6 +102,11 @@ function notificationSanitizePayload(string $eventType, array $payload): array
         case 'task_completed':
             $clean['task_type'] = substr((string) ($payload['task_type'] ?? ''), 0, 100);
             $clean['status'] = substr((string) ($payload['status'] ?? ''), 0, 20);
+            // Item encryption tasks carry the affected item's label so the
+            // inbox can name it; kept only when non-empty, length-bounded.
+            if (isset($payload['item_label']) === true && $payload['item_label'] !== '') {
+                $clean['item_label'] = substr((string) $payload['item_label'], 0, 100);
+            }
             break;
 
         case 'folder_permission_changed':
