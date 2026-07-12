@@ -120,6 +120,12 @@ switch ($post_type) {
     case 'discover_status':
         laprDiscoverStatus($dataReceived, $lang);
         break;
+    case 'start_rotation':
+        laprStartRotation($dataReceived, $session, $userId, $lang);
+        break;
+    case 'rotation_status':
+        laprRotationStatus($dataReceived, $lang);
+        break;
     default:
         echo prepareExchangedData(['error' => true, 'message' => 'Unknown action'], 'encode');
 }
@@ -477,6 +483,115 @@ function laprStartDiscover(array $data, int $userId, Language $lang): void
     triggerBackgroundHandler();
 
     echo prepareExchangedData(['error' => false, 'task_id' => $taskId], 'encode');
+}
+
+/**
+ * Start a manual rotation for an account. Enforces write access to the item's
+ * folder and a duplicate-rotation guard (C12 — exact match via item_id column).
+ *
+ * @param array            $data    Decoded client payload
+ * @param SessionInterface $session Current session
+ * @param int              $userId  Acting user id
+ * @param Language         $lang    Language helper
+ * @return void
+ */
+function laprStartRotation(array $data, SessionInterface $session, int $userId, Language $lang): void
+{
+    $accountId = (int) ($data['id'] ?? 0);
+    if ($accountId <= 0) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Invalid account'], 'encode');
+        return;
+    }
+
+    $account = DB::queryFirstRow(
+        'SELECT a.id, a.status, i.id_tree
+         FROM ' . prefixTable('lapr_accounts') . ' AS a
+         INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = a.item_id
+         WHERE a.id = %i AND a.status != %s',
+        $accountId,
+        'deleted'
+    );
+    if ($account === null) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Account not found'], 'encode');
+        return;
+    }
+
+    // Rotation writes the item → require write access to its folder (admin bypass).
+    if (laprUserCanWriteFolder((int) $account['id_tree'], $session) === false) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('error_not_allowed_to')], 'encode');
+        return;
+    }
+
+    // C12 — duplicate-rotation guard: exact match on the indexed item_id column
+    // (populated with the account id for lapr_rotation tasks), no fragile LIKE.
+    $pending = DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+         WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+         AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+        'lapr_rotation',
+        $accountId
+    );
+    if ((int) $pending > 0) {
+        echo prepareExchangedData(['error' => true, 'message' => $lang->get('lapr_rotation_already_running')], 'encode');
+        return;
+    }
+
+    DB::insert(prefixTable('background_tasks'), [
+        'created_at' => (string) time(),
+        'process_type' => 'lapr_rotation',
+        'arguments' => json_encode(['account_id' => $accountId, 'trigger' => 'manual', 'author' => $userId], JSON_UNESCAPED_SLASHES),
+        'is_in_progress' => 0,
+        'item_id' => $accountId,
+        'status' => 'new',
+    ]);
+    $taskId = (int) DB::insertId();
+
+    triggerBackgroundHandler();
+
+    echo prepareExchangedData(['error' => false, 'task_id' => $taskId, 'message' => $lang->get('lapr_rotation_started')], 'encode');
+}
+
+/**
+ * Poll a rotation task and return the outcome on completion.
+ *
+ * @param array    $data Decoded client payload
+ * @param Language $lang Language helper
+ * @return void
+ */
+function laprRotationStatus(array $data, Language $lang): void
+{
+    $taskId = (int) ($data['task_id'] ?? 0);
+    if ($taskId <= 0) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Invalid task'], 'encode');
+        return;
+    }
+
+    $task = DB::queryFirstRow(
+        'SELECT status, output, is_in_progress FROM ' . prefixTable('background_tasks') . '
+         WHERE increment_id = %i AND process_type = %s',
+        $taskId,
+        'lapr_rotation'
+    );
+    if ($task === null) {
+        echo prepareExchangedData(['error' => true, 'message' => 'Task not found'], 'encode');
+        return;
+    }
+
+    $output = json_decode((string) ($task['output'] ?? '{}'), true) ?: [];
+    $finished = (int) $task['is_in_progress'] === -1 || (string) $task['status'] === 'completed' || (string) $task['status'] === 'failed';
+
+    if ($finished === false) {
+        echo prepareExchangedData(['error' => false, 'finished' => false], 'encode');
+        return;
+    }
+
+    echo prepareExchangedData([
+        'error' => false,
+        'finished' => true,
+        'success' => (bool) ($output['success'] ?? false),
+        'error_code' => $output['error_code'] ?? '',
+        'message_code' => $output['message'] ?? '',
+    ], 'encode');
 }
 
 /**

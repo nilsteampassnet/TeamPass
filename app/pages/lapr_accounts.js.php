@@ -48,7 +48,12 @@ const laprAccLang = {
   discoverInProgress: '<?php echo addslashes($lang->get('lapr_discover_in_progress')); ?>',
   errorGeneric: '<?php echo addslashes($lang->get('error')); ?>',
   addAccount: '<?php echo addslashes($lang->get('lapr_add_account')); ?>',
-  never: '<?php echo addslashes($lang->get('lapr_last_rotation')); ?>'
+  rotateConfirm: '<?php echo addslashes($lang->get('lapr_rotate_confirm')); ?>',
+  rotationInProgress: '<?php echo addslashes($lang->get('lapr_rotation_in_progress')); ?>',
+  rotationSuccess: '<?php echo addslashes($lang->get('lapr_rotation_success')); ?>',
+  rotationFailed: '<?php echo addslashes($lang->get('lapr_rotation_failed')); ?>',
+  manualResync: '<?php echo addslashes($lang->get('lapr_manual_resync_required')); ?>',
+  hostkeyMismatch: '<?php echo addslashes($lang->get('lapr_hostkey_mismatch_blocked')); ?>'
 }
 
 function laprAccPost(type, payload, onDone) {
@@ -109,8 +114,48 @@ function laprAccStatusBadge(status) {
 }
 
 function laprAccountActions(a) {
-  return '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
+  const canRotate = a.status === 'active' || a.status === 'error'
+  return (canRotate ? '<button class="btn btn-xs btn-success lapr-rotate-acc" data-id="' + a.id + '"><i class="fas fa-rotate"></i></button> ' : '') +
+    '<button class="btn btn-xs btn-secondary lapr-editpolicy" data-id="' + a.id + '" data-policy="' + a.policy_id + '"><i class="fas fa-scroll"></i></button> ' +
     '<button class="btn btn-xs btn-danger lapr-delete-acc" data-id="' + a.id + '"><i class="fas fa-trash"></i></button>'
+}
+
+function laprRotateAccount(id) {
+  if (!window.confirm(laprAccLang.rotateConfirm)) { return }
+  toastr.info('<i class="fas fa-circle-notch fa-spin mr-1"></i>' + laprAccLang.rotationInProgress)
+  laprAccPost('start_rotation', { id: id }, function (data) {
+    if (data.error === true) {
+      toastr.clear()
+      toastr.error(data.message || laprAccLang.errorGeneric)
+      return
+    }
+    laprPollRotation(data.task_id)
+  })
+}
+
+function laprPollRotation(taskId) {
+  laprAccPost('rotation_status', { task_id: taskId }, function (data) {
+    if (data.error === true) {
+      toastr.clear()
+      toastr.error(data.message || laprAccLang.errorGeneric)
+      return
+    }
+    if (data.finished !== true) {
+      setTimeout(function () { laprPollRotation(taskId) }, 2000)
+      return
+    }
+    toastr.clear()
+    if (data.success === true) {
+      toastr.success(laprAccLang.rotationSuccess)
+    } else if (data.message_code === 'MANUAL_RESYNC_REQUIRED') {
+      toastr.error(laprAccLang.manualResync)
+    } else if (data.error_code === 'ERR_HOSTKEY_MISMATCH') {
+      toastr.error(laprAccLang.hostkeyMismatch)
+    } else {
+      toastr.error(laprAccLang.rotationFailed + ' (' + DOMPurify.sanitize(data.error_code || '') + ')')
+    }
+    laprLoadAccounts()
+  })
 }
 
 function laprFillSelect(sel, items, valueKey, labelKey) {
@@ -255,6 +300,9 @@ $(document).ready(function () {
   $('#lapr-discover-start-btn').on('click', laprStartDiscover)
   $('#lapr-accounts-table').on('click', '.lapr-delete-acc', function () {
     laprDeleteAccount($(this).data('id'))
+  })
+  $('#lapr-accounts-table').on('click', '.lapr-rotate-acc', function () {
+    laprRotateAccount($(this).data('id'))
   })
   $('#lapr-accounts-table').on('click', '.lapr-editpolicy', function () {
     laprOpenEditPolicy($(this).data('id'), $(this).data('policy'))
