@@ -112,21 +112,26 @@ $lang = new Language($session->get('user-language') ?? 'english');
         function ensureBell() {
             var $item = $('#tp-notification-center')
             if ($item.length > 0) return $item
-            var $nav = $('.main-header .navbar-nav.ml-auto').first()
-            if ($nav.length === 0) return $()
-            $item = $(
-                '<li class="nav-item dropdown" id="tp-notification-center">' +
-                '<a class="nav-link" data-toggle="dropdown" href="#" role="button" aria-label="' + escapeText(L.title) + '" aria-haspopup="true" aria-expanded="false">' +
+            var innerHtml =
+                '<a class="nav-link tp-topbar-btn" data-toggle="dropdown" href="#" role="button" aria-label="' + escapeText(L.title) + '" aria-haspopup="true" aria-expanded="false">' +
                 '<i class="far fa-bell"></i>' +
-                '<span class="badge badge-warning navbar-badge" id="tp-notification-count" style="display:none;"></span>' +
+                '<span class="badge badge-warning navbar-badge" id="tp-notification-count" style="display:none;" aria-live="polite"></span>' +
                 '</a>' +
                 '<div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" id="tp-notification-menu">' +
                 '<span class="dropdown-item dropdown-header"><i class="far fa-bell mr-2"></i>' + escapeText(L.title) + '</span>' +
                 '<div id="tp-notification-list"></div>' +
                 '<div class="dropdown-divider"></div>' +
                 '<a href="#" class="dropdown-item dropdown-footer" id="tp-notification-mark-all">' + escapeText(L.markAll) + '</a>' +
-                '</div></li>'
-            )
+                '</div>'
+            // Preferred: fill the fixed server-rendered slot (deterministic order, no reflow).
+            var $slot = $('#tp-slot-bell')
+            if ($slot.length > 0) {
+                return $slot.attr('id', 'tp-notification-center').html(innerHtml)
+            }
+            // Fallback: legacy prepend when the fixed slot is absent.
+            var $nav = $('.main-header .navbar-nav.ml-auto').first()
+            if ($nav.length === 0) return $()
+            $item = $('<li class="nav-item dropdown" id="tp-notification-center">' + innerHtml + '</li>')
             $nav.prepend($item)
             return $item
         }

@@ -852,3 +852,221 @@ body.dark-mode .form-control:focus-visible {
         margin-bottom: 0.75rem;
     }
 }
+
+/* =========================================================================
+   Top-bar cluster (right side) — grouped by intent: Find · Awareness · View · Account
+   One consistent icon-button style, group separators, a single account chip.
+   Works on both the light (navbar-white/navbar-light) and dark (navbar-dark) bars.
+   ========================================================================= */
+.tp-topbar {
+    align-items: center;
+}
+
+/* Uniform icon buttons: search, theme, recent, notifications, score.
+   Compounded with .nav-link to outrank AdminLTE's `.navbar-expand .navbar-nav .nav-link` padding. */
+.tp-topbar .nav-link.tp-topbar-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 8px;
+    border-radius: 8px;
+    line-height: 1;
+    transition: background-color .15s ease;
+}
+.tp-topbar-btn > i {
+    font-size: 1.05rem;
+}
+.navbar-light .tp-topbar-btn:hover,
+.navbar-light .tp-topbar-btn:focus {
+    background-color: rgba(0, 0, 0, .05);
+}
+.navbar-dark .tp-topbar-btn:hover,
+.navbar-dark .tp-topbar-btn:focus {
+    background-color: rgba(255, 255, 255, .10);
+}
+.tp-topbar-btn:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Keyboard-shortcut hint on the search button */
+.tp-topbar-kbd {
+    font-size: .68rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 2px 6px;
+    border-radius: 5px;
+    line-height: 1;
+    opacity: .8;
+}
+.navbar-light .tp-topbar-kbd {
+    border: 1px solid rgba(0, 0, 0, .18);
+    color: inherit;
+}
+.navbar-dark .tp-topbar-kbd {
+    border: 1px solid rgba(255, 255, 255, .22);
+    color: inherit;
+}
+
+/* Thin vertical group separators (rendered as empty <li>) */
+.tp-topbar-sep {
+    align-self: center;
+    width: 1px;
+    height: 22px;
+    margin: 0 4px;
+    flex: 0 0 auto;
+}
+.navbar-light .tp-topbar-sep {
+    background-color: rgba(0, 0, 0, .12);
+}
+.navbar-dark .tp-topbar-sep {
+    background-color: rgba(255, 255, 255, .16);
+}
+
+/* Account identity chip (compounded with .nav-link to outrank AdminLTE padding) */
+.tp-topbar .nav-link.tp-account-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    height: 40px;
+    padding: 0 10px 0 6px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    transition: background-color .15s ease;
+}
+.navbar-light .tp-account-chip {
+    background-color: rgba(0, 0, 0, .03);
+    border-color: rgba(0, 0, 0, .08);
+}
+.navbar-light .tp-account-chip:hover,
+.navbar-light .tp-account-chip:focus {
+    background-color: rgba(0, 0, 0, .06);
+}
+.navbar-dark .tp-account-chip {
+    background-color: rgba(255, 255, 255, .06);
+    border-color: rgba(255, 255, 255, .09);
+}
+.navbar-dark .tp-account-chip:hover,
+.navbar-dark .tp-account-chip:focus {
+    background-color: rgba(255, 255, 255, .11);
+}
+.tp-account-chip:focus-visible {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.tp-account-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #007bff;
+    color: #fff;
+    font-size: .78rem;
+    font-weight: 700;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+}
+.tp-account-avatar-lg {
+    width: 42px;
+    height: 42px;
+    font-size: .98rem;
+}
+
+.tp-account-identity {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.15;
+    max-width: 160px;
+}
+.tp-account-name {
+    font-weight: 600;
+    font-size: .86rem;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tp-account-exp {
+    font-size: .7rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+/* Full-strength name + muted expiry — override AdminLTE's 50%-opacity nav-link colour */
+.navbar-light .tp-account-chip .tp-account-name {
+    color: rgba(0, 0, 0, .82);
+}
+.navbar-dark .tp-account-chip .tp-account-name {
+    color: rgba(255, 255, 255, .92);
+}
+.navbar-light .tp-account-chip .tp-account-exp {
+    color: #6c757d;
+}
+.navbar-dark .tp-account-chip .tp-account-exp {
+    color: rgba(255, 255, 255, .65);
+}
+.tp-account-caret {
+    font-size: .7rem;
+    opacity: .6;
+}
+
+/* Account dropdown */
+.tp-account-menu {
+    min-width: 260px;
+    padding-top: 0;
+}
+.tp-account-menu-head {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px 16px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
+}
+.dark-mode .tp-account-menu-head {
+    border-bottom-color: rgba(255, 255, 255, .1);
+}
+.tp-account-menu-identity {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.tp-account-menu-name {
+    font-weight: 600;
+    font-size: .95rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tp-account-menu-role {
+    font-size: .68rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+.dark-mode .tp-account-menu-role {
+    color: rgba(255, 255, 255, .55);
+}
+
+/* Compact on small screens: keep the avatar, drop name + expiry */
+@media (max-width: 767.98px) {
+    .tp-account-identity {
+        display: none;
+    }
+    .tp-topbar-sep {
+        margin: 0 2px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tp-topbar-btn,
+    .tp-account-chip {
+        transition: none;
+    }
+}

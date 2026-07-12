@@ -258,6 +258,12 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 openSelected()
             }
         })
+
+        // Toolbar search affordance — mirrors Ctrl+K so the palette is discoverable.
+        $(document).on('click', '#tp-navbar-search', function (e) {
+            e.preventDefault()
+            if (state.open) { closePalette() } else { openPalette() }
+        })
     })()
     //]]>
 </script>

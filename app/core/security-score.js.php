@@ -72,15 +72,21 @@ $lang = new Language($session->get('user-language') ?? 'english');
 
             var $item = $('#tp-score-badge-item')
             if ($item.length === 0) {
-                var $nav = $('.main-header .navbar-nav.ml-auto').first()
-                if ($nav.length === 0) return
-                $item = $(
-                    '<li class="nav-item d-flex align-items-center mr-2" id="tp-score-badge-item">' +
-                    '<a href="index.php?page=dashboard" class="nav-link p-1 infotip" id="tp-score-badge">' +
+                var contentHtml =
+                    '<a href="index.php?page=dashboard" class="nav-link tp-topbar-btn p-1 infotip" id="tp-score-badge">' +
                     '<span class="badge badge-pill" id="tp-score-badge-value"></span>' +
-                    '</a></li>'
-                )
-                $nav.prepend($item)
+                    '</a>'
+                // Preferred: fill the fixed server-rendered slot (deterministic order, no reflow).
+                var $slot = $('#tp-slot-score')
+                if ($slot.length > 0) {
+                    $item = $slot.attr('id', 'tp-score-badge-item').html(contentHtml)
+                } else {
+                    // Fallback: legacy prepend when the fixed slot is absent.
+                    var $nav = $('.main-header .navbar-nav.ml-auto').first()
+                    if ($nav.length === 0) return
+                    $item = $('<li class="nav-item d-flex align-items-center mr-2" id="tp-score-badge-item">' + contentHtml + '</li>')
+                    $nav.prepend($item)
+                }
             }
             $item.find('#tp-score-badge').attr('title', titleText)
             $item.find('#tp-score-badge-value')

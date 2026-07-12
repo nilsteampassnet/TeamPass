@@ -397,7 +397,9 @@ if (
                 if (data[0].new_value !== 'expired') {
                     $('#temps_restant').val(data[0].new_value);
                     $('#date_end_session').val(data[0].new_value);
-                    $('#countdown').css('color', 'white');
+                    // Clear the near-expiry red override; let the theme-aware CSS colour apply
+                    // (forcing white was invisible on the default light navbar).
+                    $('#countdown').css('color', '');
 
                     // Reset extend session dialog flag
                     extendSessionShown = false;
