@@ -3072,6 +3072,13 @@ switch ($inputData['type']) {
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
             || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
+                // "Restrict items to roles" is an ADDITIONAL restriction, never a replacement for
+                // folder access. Require the same folder / personal-folder predicate as the first
+                // clause so an item is only ever disclosed from a folder the caller can actually
+                // see (GHSA-hjhc-6g7v-8jxr). Without this the clause collapsed to "item has no
+                // per-item restriction" and leaked every unrestricted item's metadata cross-folder.
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && (intval($dataItem['perso']) === 0 || (intval($dataItem['perso']) === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false)
         ) {
             // Check if actual USER can see this ITEM
