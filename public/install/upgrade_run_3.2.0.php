@@ -695,6 +695,126 @@ mysqli_query(
     "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'security_nudges_stale_scan_days', '14')"
 );
 
+// Add the rotation_flags table — Leaver / Offboarding Risk view (F3, Enterprise
+// governance). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'rotation_flags` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `item_id` int(12) NOT NULL,
+        `flagged_at` int(12) NOT NULL DEFAULT 0,
+        `flagged_by` int(12) NOT NULL DEFAULT 0,
+        `leaver_id` int(12) NOT NULL DEFAULT 0,
+        `reason` varchar(50) NOT NULL DEFAULT \'leaver\',
+        `status` varchar(20) NOT NULL DEFAULT \'pending\',
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `uk_item` (`item_id`),
+        KEY `idx_leaver` (`leaver_id`),
+        KEY `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating rotation_flags table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Leaver risk toggles (F3): master switch and the auto-flag-on-disable
+// behaviour. Both off by default — admin opt-in.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'leaver_risk_enabled', '0')"
+);
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'leaver_risk_auto_flag', '0')"
+);
+
+// Add the Compliance reports toggle (F6): admin Reports page (access matrix,
+// access changes, posture summary, rotation evidence). Off by default.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'compliance_reports_enabled', '0')"
+);
+
+// Add the access_reviews + access_review_items tables — Access Recertification
+// Campaigns (F2, Enterprise governance). Companion tables: additive, no ALTER
+// on hot tables. Titles are denormalised on purpose (evidence stability).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'access_reviews` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `label` varchar(255) NOT NULL,
+        `folder_scope` int(12) NOT NULL DEFAULT 0,
+        `started_by` int(12) NOT NULL DEFAULT 0,
+        `started_at` int(12) NOT NULL DEFAULT 0,
+        `status` varchar(20) NOT NULL DEFAULT \'open\',
+        `closed_by` int(12) NULL DEFAULT NULL,
+        `closed_at` int(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating access_reviews table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'access_review_items` (
+        `id` int(12) NOT NULL AUTO_INCREMENT,
+        `review_id` int(12) NOT NULL,
+        `role_id` int(12) NOT NULL,
+        `role_title` varchar(255) NOT NULL DEFAULT \'\',
+        `folder_id` int(12) NOT NULL,
+        `folder_title` varchar(500) NOT NULL DEFAULT \'\',
+        `access_type` varchar(10) NOT NULL DEFAULT \'\',
+        `decision` varchar(20) NOT NULL DEFAULT \'pending\',
+        `decided_by` int(12) NULL DEFAULT NULL,
+        `decided_at` int(12) NULL DEFAULT NULL,
+        `comment` varchar(500) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uk_review_grant` (`review_id`, `role_id`, `folder_id`),
+        KEY `idx_review_decision` (`review_id`, `decision`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating access_review_items table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Access recertification toggle (F2). Off by default — admin opt-in.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'access_reviews_enabled', '0')"
+);
+
+// Add the data_classification table — Data Classification & Ownership (F4,
+// Enterprise governance). Companion table: additive, no ALTER on hot tables.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'data_classification` (
+        `increment_id` int(12) NOT NULL AUTO_INCREMENT,
+        `item_id` int(12) NOT NULL,
+        `level` tinyint(1) NOT NULL DEFAULT 0,
+        `owner_id` int(12) NULL DEFAULT NULL,
+        `updated_by` int(12) NOT NULL DEFAULT 0,
+        `updated_at` int(12) NOT NULL DEFAULT 0,
+        PRIMARY KEY (`increment_id`),
+        UNIQUE KEY `uk_item` (`item_id`),
+        KEY `idx_level` (`level`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating data_classification table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    exit;
+}
+
+// Add the Data classification toggle (F4). Off by default — admin opt-in.
+mysqli_query(
+    $db_link,
+    "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`) VALUES ('admin', 'data_classification_enabled', '0')"
+);
+
 // FUNC-4 — add retry tracking columns to background_subtasks (failed subtasks are re-queued)
 $res = addColumnIfNotExist(
     $pre . 'background_subtasks',

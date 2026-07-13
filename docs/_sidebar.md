@@ -31,8 +31,12 @@
 - [Profile](features/profile.md)
 - [Knowledge Base](features/knowledge-base.md)
 - [Breach Detection](features/breach-detection.md)
+- [Leaver Risk](features/leaver-risk.md)
+- [Classification](features/classification.md)
 - **Manage**
 - [Settings](manage/settings.md)
+- [Compliance Reports](manage/compliance-reports.md)
+- [Access Reviews](manage/access-reviews.md)
 - [Tasks](manage/tasks.md)
 - [Tools](manage/tools.md)
 - [Network ACL](manage/network-acl.md)

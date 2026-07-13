@@ -1310,6 +1310,66 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="leaver offboarding risk rotation governance">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_leaver_risk'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_leaver_risk_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='leaver_risk_enabled' data-toggle-on='<?php echo isset($SETTINGS['leaver_risk_enabled']) === true && (int) $SETTINGS['leaver_risk_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='leaver_risk_enabled_input' value='<?php echo isset($SETTINGS['leaver_risk_enabled']) && (int) $SETTINGS['leaver_risk_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="leaver offboarding risk rotation auto flag disable">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_leaver_risk_auto_flag'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_leaver_risk_auto_flag_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='leaver_risk_auto_flag' data-toggle-on='<?php echo isset($SETTINGS['leaver_risk_auto_flag']) === true && (int) $SETTINGS['leaver_risk_auto_flag'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='leaver_risk_auto_flag_input' value='<?php echo isset($SETTINGS['leaver_risk_auto_flag']) && (int) $SETTINGS['leaver_risk_auto_flag'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="compliance reports audit evidence governance">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_compliance_reports'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_compliance_reports_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='compliance_reports_enabled' data-toggle-on='<?php echo isset($SETTINGS['compliance_reports_enabled']) === true && (int) $SETTINGS['compliance_reports_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='compliance_reports_enabled_input' value='<?php echo isset($SETTINGS['compliance_reports_enabled']) && (int) $SETTINGS['compliance_reports_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="access reviews recertification attestation governance audit">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_access_reviews'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_access_reviews_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='access_reviews_enabled' data-toggle-on='<?php echo isset($SETTINGS['access_reviews_enabled']) === true && (int) $SETTINGS['access_reviews_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='access_reviews_enabled_input' value='<?php echo isset($SETTINGS['access_reviews_enabled']) && (int) $SETTINGS['access_reviews_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
+                        <div class='row mb-2 option' data-keywords="data classification ownership label governance restricted confidential">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_data_classification'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_data_classification_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <div class='toggle toggle-modern' id='data_classification_enabled' data-toggle-on='<?php echo isset($SETTINGS['data_classification_enabled']) === true && (int) $SETTINGS['data_classification_enabled'] === 1 ? 'true' : 'false'; ?>'></div><input type='hidden' id='data_classification_enabled_input' value='<?php echo isset($SETTINGS['data_classification_enabled']) && (int) $SETTINGS['data_classification_enabled'] === 1 ? 1 : 0; ?>' />
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="display optimization icon">
                             <div class='col-10'>
                                 <?php echo $lang->get('copy_to_clipboard_small_icons'); ?>
