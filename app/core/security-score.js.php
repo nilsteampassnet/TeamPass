@@ -49,6 +49,22 @@ $lang = new Language($session->get('user-language') ?? 'english');
         'use strict'
 
         var sessionKey = '<?php echo $session->get('key'); ?>'
+        var userId = '<?php echo (int) $session->get('user-id'); ?>'
+
+        // Stale-while-revalidate cache (per user, per tab): paint the last known score
+        // instantly on navigation, then refresh in the background. Score + band only.
+        var CACHE_KEY = 'tp_score_v1_' + userId
+        function readScoreCache() {
+            try {
+                var raw = sessionStorage.getItem(CACHE_KEY)
+                return raw ? JSON.parse(raw) : null
+            } catch (e) { return null }
+        }
+        function writeScoreCache(data) {
+            try {
+                sessionStorage.setItem(CACHE_KEY, JSON.stringify({ score: data.score, band: data.band }))
+            } catch (e) { /* ignore quota / serialization errors */ }
+        }
 
         var L = {
             title: <?php echo json_encode($lang->get('security_score_badge_title'), JSON_UNESCAPED_UNICODE); ?>,
@@ -72,15 +88,21 @@ $lang = new Language($session->get('user-language') ?? 'english');
 
             var $item = $('#tp-score-badge-item')
             if ($item.length === 0) {
-                var $nav = $('.main-header .navbar-nav.ml-auto').first()
-                if ($nav.length === 0) return
-                $item = $(
-                    '<li class="nav-item d-flex align-items-center mr-2" id="tp-score-badge-item">' +
-                    '<a href="index.php?page=dashboard" class="nav-link p-1 infotip" id="tp-score-badge">' +
+                var contentHtml =
+                    '<a href="index.php?page=dashboard" class="nav-link tp-topbar-btn p-1 infotip" id="tp-score-badge">' +
                     '<span class="badge badge-pill" id="tp-score-badge-value"></span>' +
-                    '</a></li>'
-                )
-                $nav.prepend($item)
+                    '</a>'
+                // Preferred: fill the fixed server-rendered slot (deterministic order, no reflow).
+                var $slot = $('#tp-slot-score')
+                if ($slot.length > 0) {
+                    $item = $slot.attr('id', 'tp-score-badge-item').html(contentHtml)
+                } else {
+                    // Fallback: legacy prepend when the fixed slot is absent.
+                    var $nav = $('.main-header .navbar-nav.ml-auto').first()
+                    if ($nav.length === 0) return
+                    $item = $('<li class="nav-item d-flex align-items-center mr-2" id="tp-score-badge-item">' + contentHtml + '</li>')
+                    $nav.prepend($item)
+                }
             }
             $item.find('#tp-score-badge').attr('title', titleText)
             $item.find('#tp-score-badge-value')
@@ -98,6 +120,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 }
                 if (!data || data.error === true) return
                 injectBadge(data)
+                writeScoreCache(data)
             })
         }
 
@@ -110,8 +133,11 @@ $lang = new Language($session->get('user-language') ?? 'english');
         }
 
         $(function () {
-            // Defer a touch so the navbar and websocket init exist.
-            setTimeout(loadScore, 900)
+            // Stale-while-revalidate: paint the last known score instantly (no wait),
+            // then refresh in the background — quickly when we already showed something.
+            var cached = readScoreCache()
+            if (cached) injectBadge(cached)
+            setTimeout(loadScore, cached ? 250 : 900)
             setTimeout(wireLiveRefresh, 1500)
         })
     })()

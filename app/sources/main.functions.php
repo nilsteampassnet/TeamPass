@@ -8757,6 +8757,14 @@ function emitWebSocketEvent(
     array $payload,
     ?int $excludeUserId = null
 ): bool {
+    // D2 — Notification centre: persist whitelisted user-target events in the
+    // user's inbox. Runs before the WebSocket gate on purpose: the inbox works
+    // even when the WebSocket daemon is disabled.
+    require_once __DIR__ . '/notifications.functions.php';
+    if (notificationShouldPersist($eventType, $targetType, $targetId) === true) {
+        tpPersistUserNotification($eventType, (int) $targetId, $payload);
+    }
+
     // Check if WebSocket is enabled
     try {
         $wsEnabled = DB::queryFirstField(
@@ -8803,6 +8811,71 @@ function emitWebSocketEvent(
 
     } catch (Exception $e) {
         error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Persist a user notification in the notification-centre inbox (D2).
+ *
+ * No-op when the feature is disabled or the table does not exist yet
+ * (pre-upgrade). Keeps only the latest 50 notifications per user.
+ *
+ * @param string $eventType Whitelisted event type (see notificationPersistableEvents())
+ * @param int    $userId    Target user id
+ * @param array  $payload   Raw event payload (sanitized before storage)
+ * @return bool True when a row was stored
+ */
+function tpPersistUserNotification(string $eventType, int $userId, array $payload): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+
+    try {
+        $enabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'notification_center_enabled'
+        );
+        if ($enabled !== '1') {
+            return false;
+        }
+
+        DB::insert(
+            prefixTable('user_notifications'),
+            [
+                'user_id' => $userId,
+                'created_at' => time(),
+                'event_type' => $eventType,
+                'payload' => json_encode(
+                    notificationSanitizePayload($eventType, $payload),
+                    JSON_UNESCAPED_UNICODE
+                ),
+                'is_read' => 0,
+            ]
+        );
+
+        // Prune: keep the latest 50 rows for this user.
+        $pruneBelow = DB::queryFirstField(
+            'SELECT increment_id FROM ' . prefixTable('user_notifications') . '
+            WHERE user_id = %i ORDER BY increment_id DESC LIMIT 1 OFFSET 49',
+            $userId
+        );
+        if ($pruneBelow !== null) {
+            DB::query(
+                'DELETE FROM ' . prefixTable('user_notifications') . '
+                WHERE user_id = %i AND increment_id < %i',
+                $userId,
+                (int) $pruneBelow
+            );
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Table might not exist yet (before migration) — never break the caller.
         return false;
     }
 }

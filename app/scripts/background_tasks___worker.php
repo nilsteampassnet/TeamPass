@@ -1416,6 +1416,17 @@ class TaskWorker {
             return;
         }
 
+        // Resolve the item label (stored in cleartext) so the inbox can name it.
+        $itemId = (int) ($this->taskData['item_id'] ?? 0);
+        $itemLabel = '';
+        if ($itemId > 0) {
+            $itemRow = DB::queryFirstRow(
+                'SELECT label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+            $itemLabel = (string) ($itemRow['label'] ?? '');
+        }
+
         $messages = [
             'completed' => 'Item encryption keys generated successfully',
             'failed'    => 'Failed to generate item encryption keys',
@@ -1430,7 +1441,8 @@ class TaskWorker {
                 'task_type'    => 'Item encryption',
                 'status'       => $status,
                 'message'      => $messages[$status] ?? '',
-                'item_id'      => (int) ($this->taskData['item_id'] ?? 0),
+                'item_id'      => $itemId,
+                'item_label'   => $itemLabel,
                 'process_type' => $this->processType,
             ]
         );

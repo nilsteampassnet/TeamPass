@@ -114,6 +114,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             ['items', '<?php echo $lang->get('items'); ?>'],
             ['percent', '%'],
         ],
+        'rotation_overdue': [
+            ['label', '<?php echo $lang->get('label'); ?>'],
+            ['folder', '<?php echo $lang->get('folder'); ?>'],
+            ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['last_change', '<?php echo $lang->get('leaver_risk_last_pw_change'); ?>'],
+            ['due_at', '<?php echo $lang->get('rotation_due_at'); ?>'],
+            ['days_overdue', '<?php echo $lang->get('rotation_days_overdue'); ?>'],
+            ['status', '<?php echo $lang->get('status'); ?>'],
+        ],
+        'rotation_sla': [
+            ['folder', '<?php echo $lang->get('folder'); ?>'],
+            ['sla_days', '<?php echo $lang->get('rotation_sla_days'); ?>'],
+            ['items', '<?php echo $lang->get('items'); ?>'],
+            ['overdue', '<?php echo $lang->get('rotation_overdue'); ?>'],
+        ],
     }
 
     const tpReportTips = {
@@ -122,6 +137,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         'posture_summary': '<?php echo $lang->get('compliance_report_posture_summary_tip'); ?>',
         'rotation_evidence': '<?php echo $lang->get('compliance_report_rotation_evidence_tip'); ?>',
         'classification': '<?php echo $lang->get('compliance_report_classification_tip'); ?>',
+        'rotation_overdue': '<?php echo $lang->get('compliance_report_rotation_overdue_tip'); ?>',
+        'rotation_sla': '<?php echo $lang->get('compliance_report_rotation_sla_tip'); ?>',
     }
 
     let tpReportCsv = ''
@@ -227,6 +244,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     ? scanLabel
                     : '<?php echo $lang->get('compliance_report_source_live'); ?>'
             })
+        }
+        if (reportType === 'rotation_sla' && data.folders_total !== undefined) {
+            title += ' — ' + data.folders_with_sla + '/' + data.folders_total
+                + ' <?php echo $lang->get('rotation_sla_coverage_suffix'); ?> (' + data.coverage_percent + '%)'
         }
         $('#report-results-title').text(title)
 

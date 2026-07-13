@@ -529,6 +529,10 @@ class DatabaseInstaller
             array('admin', 'leaver_risk_enabled', '0'),
             array('admin', 'leaver_risk_auto_flag', '0'),
             array('admin', 'compliance_reports_enabled', '0'),
+            array('admin', 'rotation_tracking_enabled', '0'),
+            array('admin', 'notification_center_enabled', '0'),
+            array('admin', 'command_palette_enabled', '0'),
+            array('admin', 'micro_learning_enabled', '0'),
             array('admin', 'access_reviews_enabled', '0'),
             array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
@@ -1710,6 +1714,24 @@ class DatabaseInstaller
             UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
             KEY `idx_user_id` (`user_id`),
             KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_notifications (in-app Notification Centre - D2)
+    private function user_notifications()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_notifications` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `user_id` INT(12) NOT NULL,
+            `created_at` INT(12) NOT NULL DEFAULT 0,
+            `event_type` VARCHAR(50) NOT NULL,
+            `payload` TEXT NULL,
+            `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+            `read_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`increment_id`),
+            KEY `idx_user_unread` (`user_id`, `is_read`, `increment_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

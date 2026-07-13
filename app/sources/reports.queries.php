@@ -44,6 +44,7 @@ require_once 'main.functions.php';
 require_once __DIR__ . '/reports.functions.php';
 require_once __DIR__ . '/leaver.functions.php';
 require_once __DIR__ . '/classification.functions.php';
+require_once __DIR__ . '/rotation.functions.php';
 
 // init
 loadClasses('DB');
@@ -416,6 +417,126 @@ switch ($post_type) {
                     ['Classification', 'Items', 'Percent'],
                     $rows,
                     ['level', 'items', 'percent']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * OVERDUE ROTATIONS — items past (or nearing) their folder rotation SLA (F5)
+     *
+     * The SLA is the per-folder renewal_period (days). Metadata only — item
+     * label + dates, consistent with the rotation evidence report.
+     */
+    case 'report_rotation_overdue':
+        if ((int) ($SETTINGS['rotation_tracking_enabled'] ?? 0) !== 1) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
+
+        $nowTs = time();
+        $dueSoonDays = 14;
+        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+
+        // Items in SLA-covered shared folders whose due date falls inside the
+        // window (already overdue or due within the look-ahead). Items without
+        // a usable change date are excluded (same rule as the F1 overdue flag).
+        $records = DB::query(
+            'SELECT i.id AS item_id, i.label, n.id AS folder_id, n.title AS folder_title,
+                n.renewal_period AS sla_days,
+                ' . $lastRelevantSql . ' AS last_change
+            FROM ' . prefixTable('items') . ' AS i
+            INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON (l.id_item = i.id)
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL AND n.personal_folder = 0
+            AND n.renewal_period > 0
+            AND ' . $lastRelevantSql . ' > 0
+            AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . ($nowTs + $dueSoonDays * (int) TP_ONE_DAY_SECONDS),
+            'at_creation',
+            'at_modification',
+            'at_pw%'
+        );
+
+        $rows = rotationBuildOverdueRows($records, $nowTs, $dueSoonDays);
+        foreach ($rows as &$row) {
+            $translated = $lang->get('rotation_status_' . $row['status']);
+            $row['status'] = empty($translated) === false ? $translated : (string) $row['status'];
+        }
+        unset($row);
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'rows' => $rows,
+                'csv' => reportsBuildCsv(
+                    ['Item', 'Folder', 'SLA (days)', 'Last change', 'Due', 'Days overdue', 'Status'],
+                    $rows,
+                    ['label', 'folder', 'sla_days', 'last_change', 'due_at', 'days_overdue', 'status']
+                ),
+            ],
+            'encode'
+        );
+        break;
+
+    /*
+     * ROTATION SLA COVERAGE — per-folder SLA and overdue counts (F5)
+     */
+    case 'report_rotation_sla':
+        if ((int) ($SETTINGS['rotation_tracking_enabled'] ?? 0) !== 1) {
+            echo (string) prepareExchangedData(
+                ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+                'encode'
+            );
+            break;
+        }
+
+        $nowTs = time();
+        $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+
+        // One row per shared folder: SLA, live item count, overdue count.
+        $folderRecords = DB::query(
+            'SELECT n.id AS folder_id, n.title AS folder_title, n.renewal_period AS sla_days,
+                COUNT(i.id) AS items,
+                SUM(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0
+                    AND (' . $lastRelevantSql . ' + n.renewal_period * ' . (int) TP_ONE_DAY_SECONDS . ') <= ' . $nowTs . ' THEN 1 ELSE 0 END) AS overdue
+            FROM ' . prefixTable('nested_tree') . ' AS n
+            LEFT JOIN ' . prefixTable('items') . ' AS i
+                ON (i.id_tree = n.id AND i.inactif = 0 AND i.deleted_at IS NULL)
+            LEFT JOIN (
+                SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+                FROM ' . prefixTable('log_items') . '
+                WHERE action = %s OR (action = %s AND raison LIKE %s)
+                GROUP BY id_item
+            ) AS l ON (l.id_item = i.id)
+            WHERE n.personal_folder = 0
+            GROUP BY n.id, n.title, n.renewal_period',
+            'at_creation',
+            'at_modification',
+            'at_pw%'
+        );
+
+        $coverage = rotationSlaCoverage($folderRecords);
+
+        echo (string) prepareExchangedData(
+            [
+                'error' => false,
+                'rows' => $coverage['rows'],
+                'folders_total' => $coverage['summary']['folders_total'],
+                'folders_with_sla' => $coverage['summary']['folders_with_sla'],
+                'coverage_percent' => $coverage['summary']['coverage_percent'],
+                'csv' => reportsBuildCsv(
+                    ['Folder id', 'Folder', 'SLA (days)', 'Items', 'Overdue'],
+                    $coverage['rows'],
+                    ['folder_id', 'folder', 'sla_days', 'items', 'overdue']
                 ),
             ],
             'encode'

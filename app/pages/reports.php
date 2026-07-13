@@ -128,6 +128,10 @@ $reportsEnabled = (int) ($SETTINGS['compliance_reports_enabled'] ?? 0) === 1;
 <?php if ((int) ($SETTINGS['data_classification_enabled'] ?? 0) === 1) : ?>
                                     <option value='classification'><?php echo $lang->get('compliance_report_classification'); ?></option>
 <?php endif; ?>
+<?php if ((int) ($SETTINGS['rotation_tracking_enabled'] ?? 0) === 1) : ?>
+                                    <option value='rotation_overdue'><?php echo $lang->get('compliance_report_rotation_overdue'); ?></option>
+                                    <option value='rotation_sla'><?php echo $lang->get('compliance_report_rotation_sla'); ?></option>
+<?php endif; ?>
                                 </select>
                                 <small class='form-text text-muted' id='report-type-tip'></small>
                             </div>

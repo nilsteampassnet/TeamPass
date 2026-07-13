@@ -345,7 +345,9 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         'refresh_list_items_seen',
         'ga_generate_qr',
         'user_get_session_time',
-        'save_user_location'
+        'save_user_location',
+        'notifications_list',
+        'notifications_mark_read'
     ];
 
     // Default values
@@ -402,6 +404,18 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
                 (int) $filtered_user_id,
                 $SETTINGS
             );
+
+        /*
+        * Notification centre (D2) — list the user's inbox
+        */
+        case 'notifications_list'://action_user
+            return notificationsListForUser((int) $session->get('user-id'), $SETTINGS);
+
+        /*
+        * Notification centre (D2) — mark notifications as read
+        */
+        case 'notifications_mark_read'://action_user
+            return notificationsMarkRead((int) $session->get('user-id'), $dataReceived, $SETTINGS);
 
         /*
         * Increase the session time of User
@@ -3932,6 +3946,109 @@ function setUserOnlyPersonalItemsEncryption(string $userPreviousPwd, string $use
             'error' => true,
             'message' => $lang->get('no_previous_valide_private_key'),
         ),
+        'encode'
+    );
+}
+
+/**
+ * Notification centre (D2) — return the user's inbox + unread count.
+ *
+ * @param int   $userId   Session user id
+ * @param array $SETTINGS Teampass settings
+ * @return string Encrypted JSON {error, rows, unread}
+ */
+function notificationsListForUser(int $userId, array $SETTINGS): string
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    require_once __DIR__ . '/notifications.functions.php';
+
+    if ((int) ($SETTINGS['notification_center_enabled'] ?? 0) !== 1) {
+        return prepareExchangedData(
+            ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+            'encode'
+        );
+    }
+
+    $records = DB::query(
+        'SELECT increment_id, event_type, payload, created_at, is_read
+        FROM ' . prefixTable('user_notifications') . '
+        WHERE user_id = %i
+        ORDER BY increment_id DESC
+        LIMIT 30',
+        $userId
+    );
+    $unread = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('user_notifications') . '
+        WHERE user_id = %i AND is_read = 0',
+        $userId
+    );
+
+    return prepareExchangedData(
+        [
+            'error' => false,
+            'rows' => notificationShapeRows($records),
+            'unread' => $unread,
+        ],
+        'encode'
+    );
+}
+
+/**
+ * Notification centre (D2) — mark notifications as read for the session user.
+ *
+ * Expects $dataReceived['ids'] (array of ids) or $dataReceived['all'] = true.
+ * Only the session user's own rows are ever touched.
+ *
+ * @param int               $userId       Session user id
+ * @param array|null|string $dataReceived Decoded client payload
+ * @param array             $SETTINGS     Teampass settings
+ * @return string Encrypted JSON {error, unread}
+ */
+function notificationsMarkRead(int $userId, array|null|string $dataReceived, array $SETTINGS): string
+{
+    $session = SessionManager::getSession();
+    $lang = new Language($session->get('user-language') ?? 'english');
+    require_once __DIR__ . '/notifications.functions.php';
+
+    if ((int) ($SETTINGS['notification_center_enabled'] ?? 0) !== 1) {
+        return prepareExchangedData(
+            ['error' => true, 'message' => $lang->get('error_not_allowed_to')],
+            'encode'
+        );
+    }
+
+    $nowTs = time();
+    if (is_array($dataReceived) === true && filter_var($dataReceived['all'] ?? false, FILTER_VALIDATE_BOOLEAN) === true) {
+        DB::query(
+            'UPDATE ' . prefixTable('user_notifications') . '
+            SET is_read = 1, read_at = %i
+            WHERE user_id = %i AND is_read = 0',
+            $nowTs,
+            $userId
+        );
+    } else {
+        $ids = notificationSanitizeIds(is_array($dataReceived) === true ? ($dataReceived['ids'] ?? []) : []);
+        if (count($ids) > 0) {
+            DB::query(
+                'UPDATE ' . prefixTable('user_notifications') . '
+                SET is_read = 1, read_at = %i
+                WHERE user_id = %i AND is_read = 0 AND increment_id IN %li',
+                $nowTs,
+                $userId,
+                $ids
+            );
+        }
+    }
+
+    $unread = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('user_notifications') . '
+        WHERE user_id = %i AND is_read = 0',
+        $userId
+    );
+
+    return prepareExchangedData(
+        ['error' => false, 'unread' => $unread],
         'encode'
     );
 }

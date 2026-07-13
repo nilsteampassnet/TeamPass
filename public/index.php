@@ -352,6 +352,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
 ) {
     ?>
     <body class="hold-transition sidebar-mini layout-navbar-fixed layout-fixed <?php echo $theme_body; ?>">
+        <a class="tp-skip-link" href="#tp-main-content"><?php echo $lang->get('a11y_skip_to_content'); ?></a>
         <div class="wrapper">
 
             <!-- Navbar -->
@@ -364,21 +365,89 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                 <!-- Left navbar links -->
                 <ul class="navbar-nav">
                     <li class="nav-item">
-                        <a class="nav-link" data-widget="pushmenu" href="#"><i class="fa-solid fa-bars"></i></a>
+                        <a class="nav-link" data-widget="pushmenu" href="#" role="button" aria-label="<?php echo $lang->get('a11y_toggle_menu'); ?>"><i class="fa-solid fa-bars" aria-hidden="true"></i></a>
                     </li>
                 </ul>
 
-                <!-- Right navbar links -->
-                <ul class="navbar-nav ml-auto">
-                    <!-- Messages Dropdown Menu -->
-                    <li class="nav-item dropdown">
-                        <div class="dropdown show">
-                            <a class="btn btn-primary dropdown-toggle" href="#" data-toggle="dropdown">
-                                <?php
-                                    echo $session_name . '&nbsp;' . $session_lastname; ?>
-                            </a>
+                <!-- Right navbar links — grouped by intent: Find · Awareness · View · Account -->
+                <?php
+                // Topbar feature gates — mirror the JS includes further down so a rendered
+                // slot always has its filler script (and vice-versa).
+                $tpShowSearch    = (int) ($SETTINGS['command_palette_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
+                $tpShowScore     = (int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) $session_user_admin !== 1;
+                $tpShowBell      = (int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1;
+                $tpShowAwareness = $tpShowScore === true || $tpShowBell === true;
+                // Account chip initials + role label.
+                $tpInitials = strtoupper(mb_substr((string) $session_name, 0, 1, 'UTF-8') . mb_substr((string) $session_lastname, 0, 1, 'UTF-8'));
+                $tpRoleLabel = (int) $session_user_admin === 1
+                    ? $lang->get('god')
+                    : ($session_user_manager === 1 ? $lang->get('gestionnaire') : $lang->get('user'));
+                ?>
+                <ul class="navbar-nav ml-auto tp-topbar">
 
-                            <div class="dropdown-menu dropdown-menu-right">
+                    <?php if ($tpShowSearch === true) { ?>
+                    <!-- Find: opens the command palette (also Ctrl+K) -->
+                    <li class="nav-item">
+                        <a class="nav-link tp-topbar-btn" href="#" id="tp-navbar-search" role="button"
+                            aria-label="<?php echo $lang->get('search_results'); ?>"
+                            title="<?php echo $lang->get('search_results'); ?> (Ctrl+K)">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <kbd class="tp-topbar-kbd d-none d-lg-inline-block">Ctrl K</kbd>
+                        </a>
+                    </li>
+                    <li class="tp-topbar-sep" aria-hidden="true"></li>
+                    <?php } ?>
+
+                    <?php if ($tpShowAwareness === true) { ?>
+                    <!-- Awareness: fixed slots filled in place by app/core/*.js.php (no prepend, no reflow) -->
+                    <?php if ($tpShowScore === true) { ?>
+                    <li class="nav-item d-flex align-items-center" id="tp-slot-score"></li>
+                    <?php } ?>
+                    <?php if ($tpShowBell === true) { ?>
+                    <li class="nav-item dropdown" id="tp-slot-bell"></li>
+                    <?php } ?>
+                    <li class="tp-topbar-sep" aria-hidden="true"></li>
+                    <?php } ?>
+
+                    <!-- View: theme + recent items -->
+                    <li id="switch-theme" class="nav-item">
+                        <a class="nav-link tp-topbar-btn" href="#" role="button"
+                            aria-label="<?php echo $lang->get('a11y_toggle_theme'); ?>"
+                            title="<?php echo $lang->get('a11y_toggle_theme'); ?>">
+                            <i class="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link tp-topbar-btn" data-widget="control-sidebar" data-slide="true" href="#"
+                            id="controlsidebar" role="button"
+                            aria-label="<?php echo $lang->get('a11y_open_sidebar'); ?>"
+                            title="<?php echo $lang->get('last_items_title'); ?>">
+                            <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i>
+                        </a>
+                    </li>
+                    <li class="tp-topbar-sep" aria-hidden="true"></li>
+
+                    <!-- Account: identity chip + live session countdown + menu -->
+                    <li class="nav-item dropdown tp-topbar-account">
+                        <a class="nav-link tp-account-chip" href="#" data-toggle="dropdown" role="button"
+                            aria-haspopup="true" aria-expanded="false"
+                            aria-label="<?php echo $lang->get('my_profile'); ?>">
+                            <span class="tp-account-avatar"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                            <span class="tp-account-identity">
+                                <span class="tp-account-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
+                                <span class="tp-account-exp infotip" id="countdown" title="<?php echo $lang->get('index_expiration_in'); ?>"></span>
+                            </span>
+                            <i class="fa-solid fa-chevron-down tp-account-caret" aria-hidden="true"></i>
+                        </a>
+
+                        <div class="dropdown-menu dropdown-menu-right tp-account-menu">
+                            <div class="tp-account-menu-head">
+                                <span class="tp-account-avatar tp-account-avatar-lg"><?php echo htmlspecialchars($tpInitials, ENT_QUOTES, 'UTF-8'); ?></span>
+                                <span class="tp-account-menu-identity">
+                                    <span class="tp-account-menu-name"><?php echo $session_name . ' ' . $session_lastname; ?></span>
+                                    <span class="tp-account-menu-role"><?php echo $tpRoleLabel; ?></span>
+                                </span>
+                            </div>
                                 <a class="dropdown-item user-menu" href="#" data-name="increase_session">
                                     <i class="far fa-clock fa-fw mr-2"></i><?php echo $lang->get('index_add_one_hour'); ?></a>
                                 <div class="dropdown-divider"></div>
@@ -423,16 +492,6 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
                                     <i class="fa-solid fa-sign-out-alt fa-fw mr-2"></i><?php echo $lang->get('disconnect'); ?>
                                 </a>
                             </div>
-                        </div>
-                    </li>
-                    <li>
-                        <span class="align-middle infotip ml-2 text-info" title="<?php echo $lang->get('index_expiration_in'); ?>" id="countdown"></span>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" id="controlsidebar"><i class="fa-solid fa-th-large"></i></a>
-                    </li>
-                    <li id="switch-theme" class="nav-item pointer">
-                        <i class="fa-solid fa-circle-half-stroke m-2 m-2"></i>
                     </li>
                 </ul>
             </nav>
@@ -906,7 +965,7 @@ if ((null === $session->get('user-validite_pw') || empty($session->get('user-val
             </aside>
 
             <!-- Content Wrapper. Contains page content -->
-            <div class="content-wrapper">
+            <div class="content-wrapper" id="tp-main-content" role="main">
 
                 <!-- DEFECT REPORT -->
                 <div class="card card-danger m-2 hidden" id="dialog-bug-report">
@@ -1721,6 +1780,32 @@ if (isset($SETTINGS['cpassman_dir']) === true) {
         && (int) $session->get('user-admin') !== 1
     ) {
         include_once TEAMPASS_APP . '/core/security-score.js.php';
+    }
+    // Micro-Learning (F11): contextual, dismissible security tips for
+    // authenticated non-admin users when the feature is enabled by an admin.
+    if ((int) ($SETTINGS['micro_learning_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
+    ) {
+        include_once TEAMPASS_APP . '/core/micro-learning.js.php';
+    }
+    // Command Palette (F15): Ctrl+K global search for authenticated non-admin
+    // users when the feature is enabled by an admin (admins have no item access).
+    if ((int) ($SETTINGS['command_palette_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+        && (int) $session->get('user-admin') !== 1
+    ) {
+        include_once TEAMPASS_APP . '/core/command-palette.js.php';
+    }
+    // Notification Centre (D2): navbar bell + inbox for all authenticated users
+    // when the feature is enabled by an admin.
+    if ((int) ($SETTINGS['notification_center_enabled'] ?? 0) === 1
+        && empty($session->get('user-id')) === false
+        && (int) $session->get('user-id') > 0
+    ) {
+        include_once TEAMPASS_APP . '/core/notification-center.js.php';
     }
     // Data Classification (F4): item-card badge + selector for authenticated non-admin
     // users when the feature is enabled by an admin.
