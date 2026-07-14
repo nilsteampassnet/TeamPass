@@ -886,6 +886,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 .val('')
                 .focus();
             $('#form-folder-add-icon-selected, #form-folder-add-icon').val('');
+            // Preset complexity to the parent folder's minimal level
+            // (the server rejects a lower value)
+            if (isNaN(parseInt(store.get('teampassItem').folderComplexity)) === false) {
+                $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
+            }
             // Set type of action for the form
             $('#form-folder-add').data('action', 'add');
 

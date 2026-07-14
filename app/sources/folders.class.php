@@ -91,7 +91,13 @@ class FolderManager
 
         $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id);
         if (isset($parentComplexity['error']) && $parentComplexity['error'] === true) {
-            return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$this->settings['TP_PW_COMPLEXITY'][$parentComplexity['valeur']][1]}</b>]");
+            // Build the required-level label from the TP_PW_COMPLEXITY constant
+            // (not a DB setting); fall back to the raw value if not defined (API context)
+            $requiredLevel = (int) ($parentComplexity['valeur'] ?? 0);
+            $requiredLabel = defined('TP_PW_COMPLEXITY') === true && isset(TP_PW_COMPLEXITY[$requiredLevel][1])
+                ? TP_PW_COMPLEXITY[$requiredLevel][1]
+                : (string) $requiredLevel;
+            return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$requiredLabel}</b>]");
         }
 
         return $this->createFolder($params, array_merge($parentFolderData, $parentComplexity), $options);
@@ -489,6 +495,8 @@ class FolderManager
             if (isset($data['valeur']) === true && intval($complexity) < intval($data['valeur'])) {
                 return [
                     'error' => true,
+                    // Required minimal level — used by the caller to build the error message
+                    'valeur' => (int) $data['valeur'],
                 ];
             }
         }
