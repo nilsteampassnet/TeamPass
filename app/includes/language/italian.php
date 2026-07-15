@@ -623,7 +623,7 @@ return array(
     'import_keepass_to_folder' => 'Seleziona la cartella di destinazione',
     'index_add_one_hour' => 'Estendi la sessione di 1 ora',
     'index_change_pw_confirmation' => 'Conferma',
-    'index_get_identified' => 'Acdi',
+    'index_get_identified' => 'Accedi',
     'index_last_pw_change' => 'Password modificata il giorno',
     'index_last_seen' => 'Ultima connessione, il giorno',
     'index_login' => 'Account',
