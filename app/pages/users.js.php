@@ -1254,10 +1254,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             toastr.remove();
             toastr.info('<?php echo $lang->get('in_progress'); ?> ... <i class="fa-solid fa-circle-notch fa-spin fa-2x"></i>');
 
-            // This sends a GA Code by email to user
+            // This sends a GA Code by email to user.
+            // The right to reset someone else's MFA is granted by the session
+            // server side, based on user_id only.
             data = {
                 'user_id': $(this).data('id'),
-                'demand_origin': 'users_management_list',
                 'send_email': 1
             }
 
