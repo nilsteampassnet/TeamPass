@@ -295,11 +295,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($('#export-format').val() === 'html') {
             // Offline mode: build a single self-contained, password-encrypted HTML file
             generateOfflineFile(ids);
-        } else if ($('#export-format').val() === 'csv') {
+        } else if ($('#export-format').val() === 'csv' || $('#export-format').val() === 'xml') {
             // Export to CSV
             $.post(
                 "sources/export.queries.php", {
-                    type: 'export_to_csv_format',
+                    type: 'export_to_' + $('#export-format').val() + '_format',
                     ids: (JSON.stringify(ids))
                 },
                 function(data) {
@@ -321,7 +321,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
                     
                     // download VSC file
-                    download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
+                    if (data.xml_content) {
+                        var byteCharacters = atob(data.xml_content);
+                        var byteNumbers = new Array(byteCharacters.length);
+                        for (var i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        var byteArray = new Uint8Array(byteNumbers);
+                        download(new Blob([byteArray]), $('#export-filename').val() + ".xml", "text/xml");
+                    } else if (data.csv_content) {
+                        download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");
+                    }//decodeURI(data[0].content)
                 }
             );
         }
