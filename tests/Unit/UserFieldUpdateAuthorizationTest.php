@@ -140,4 +140,87 @@ class UserFieldUpdateAuthorizationTest extends TestCase
             'save_user_change must confirm the caller may manage the target user'
         );
     }
+
+    /**
+     * 'update_users_rights_sharing' designates its targets through 'destination_ids', so the
+     * target-scope guard — which keys on 'user_id' — never covers it. It used to authorize on the
+     * *source* account only, leaving the destinations unchecked: a manager could write the privilege
+     * columns of any account, including their own.
+     */
+    public function testRightsSharingValidatesEveryDestination(): void
+    {
+        $src = $this->usersQueriesSource();
+
+        self::assertStringContainsString(
+            'foreach (array_merge([$inputData[\'source_id\']], $inputData[\'destination_ids\']) as $userToCheck) {',
+            $src,
+            'The source and every destination must be authorization-checked'
+        );
+
+        self::assertStringContainsString(
+            'if (callerMayManageUser((int) $userToCheck) === false) {',
+            $src,
+            'Each propagation target must be checked against the caller scope'
+        );
+
+        // The old source-only authorization must not come back.
+        self::assertStringNotContainsString(
+            "\$data_user = DB::queryFirstRow(\n                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '\n                WHERE id = %i',\n                \$inputData['source_id']\n            );",
+            $src,
+            'Authorizing on the source account alone left every destination unchecked'
+        );
+    }
+
+    /**
+     * The propagated values are supplied by the client, not read from the source row, so a manager
+     * must not be able to hand himself the privileged flags. A legitimate propagation never carries
+     * them: get_list_of_users_for_sharing only ever offers accounts with admin = 0.
+     */
+    public function testRightsSharingRefusesPrivilegeGrantByNonAdmin(): void
+    {
+        $src = $this->usersQueriesSource();
+
+        self::assertStringContainsString(
+            "if ((int) \$session->get('user-admin') !== 1\n                && ((int) \$inputData['user_admin'] === 1\n                    || (int) \$inputData['user_hr'] === 1\n                    || (int) \$inputData['user_manager'] === 1)) {",
+            $src,
+            'Only an administrator may propagate admin / can_manage_all_users / gestionnaire'
+        );
+
+        self::assertStringContainsString(
+            'WHERE u.admin = %i AND u.isAdministratedByRole IN %ls',
+            $src,
+            'The sharing list offered to a manager must stay restricted to non-admin, in-scope users'
+        );
+    }
+
+    /**
+     * The shared scope rule itself. Its behaviour is what every non-'user_id' action relies on.
+     */
+    public function testSharedScopeHelperRefusesPrivilegedTargets(): void
+    {
+        $src = $this->usersQueriesSource();
+
+        self::assertStringContainsString(
+            'function callerMayManageUser(int $targetUserId): bool',
+            $src,
+            'The shared scope helper must exist for actions the target-scope guard cannot cover'
+        );
+
+        self::assertSame(
+            1,
+            preg_match('/function callerMayManageUser\(int \$targetUserId\): bool\n\{(.*?)\n\}/s', $src, $matches),
+            'callerMayManageUser must be a top-level function'
+        );
+        $body = $matches[1];
+
+        self::assertStringContainsString("(int) \$target['admin'] === 1", $body, 'A manager must never act on an administrator');
+        self::assertStringContainsString("(int) \$target['can_manage_all_users'] === 1", $body, 'A manager must never act on an HR user');
+        self::assertStringContainsString("(int) \$target['gestionnaire'] === 1", $body, 'A manager must never act on another manager');
+        self::assertStringContainsString('DB::count() === 0', $body, 'An unknown target must be refused');
+        self::assertStringContainsString(
+            "in_array(\$target['isAdministratedByRole'], \$session->get('user-roles_array')) === false",
+            $body,
+            'A plain manager must stay confined to the users administrated by their own roles'
+        );
+    }
 }
