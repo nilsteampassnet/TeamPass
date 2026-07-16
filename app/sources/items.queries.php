@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'find.functions.php';
 
 // init
 loadClasses('DB');
@@ -4690,16 +4691,7 @@ switch ($inputData['type']) {
                     // Build description preview (handles both raw HTML and HTML-encoded strings)
                     $descPreview = '';
                     if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false) {
-                        $descRaw = strval($record['description']);
-                        // Some descriptions may be stored HTML-encoded (ex: &lt;p&gt;...&lt;/p&gt;). Decode first, then strip tags.
-                        $descDecoded = html_entity_decode($descRaw, ENT_QUOTES, 'UTF-8');
-                        $descStripped = preg_replace('#<[^>]+>#', ' ', $descDecoded);
-                        // Normalize spaces (includes NBSP) and trim
-                        $descStripped = str_replace("\xC2\xA0", ' ', (string) $descStripped);
-                        $descStripped = trim(preg_replace('/\s+/', ' ', (string) $descStripped));
-                        if ($descStripped !== '') {
-                            $descPreview = mb_substr($descStripped, 0, 200);
-                        }
+                        $descPreview = findBuildDescriptionPreview(strval($record['description']));
                     }
                     $html_json[$record['id']]['desc'] = $descPreview;
                     $html_json[$record['id']]['login'] = $record['login'];
