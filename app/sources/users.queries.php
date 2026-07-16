@@ -2219,7 +2219,9 @@ if (null !== $post_type) {
             );
 
             // Check send values
-            if ($inputData['source_id'] === 0 || $inputData['destination_ids'] === 0) {
+            if ($inputData['source_id'] === 0
+                || $inputData['destination_ids'] === 0
+                || is_array($inputData['destination_ids']) === false) {
                 // error
                 echo prepareExchangedData(
                     array(
@@ -2228,63 +2230,82 @@ if (null !== $post_type) {
                     ),
                     'encode'
                 );
+                break;
             }
 
-            // Get info about user
-            $data_user = DB::queryFirstRow(
-                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $inputData['source_id']
-            );
+            // SECURITY (GHSA-58ph-5gg6-h2v8, adjacent finding): this action designates its targets
+            // through 'destination_ids', not 'user_id', so the manager/admin target-scope guard
+            // applied at the top of this file never fires here. The checks used to validate the
+            // *source* account only -- the destinations were never verified, and the test repeated
+            // inside the loop simply re-read the same source row -- which let a manager write the
+            // privilege columns of any account, including their own.
 
-            // Is this user allowed to do this?
-            if (
-                (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-            ) {
-                foreach ($inputData['destination_ids'] as $dest_user_id) {
-                    // Is this user allowed to do this?
-                    if (
-                        (int) $session->get('user-admin') === 1
-                        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-                    ) {
-                        // Update user roles in users_roles table
-                        $roleIds = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
-                        );
-                        setUserRoles((int) $dest_user_id, $roleIds, 'manual');
-                        
-                        // Update allowed folders in users_groups table
-                        $allowedFolders = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
-                        );
-                        setUserGroups((int) $dest_user_id, $allowedFolders);
-                        
-                        // Update forbidden folders in users_groups_forbidden table
-                        $forbiddenFolders = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
-                        );
-                        setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
-                        
-                        // Update other user fields in users table
-                        DB::update(
-                            prefixTable('users'),
-                            array(
-                                'isAdministratedByRole' => $inputData['user_managedby'],
-                                'gestionnaire' => $inputData['user_manager'],
-                                'read_only' => $inputData['user_readonly'],
-                                'can_create_root_folder' => $inputData['user_rootfolder'],
-                                'personal_folder' => $inputData['user_personalfolder'],
-                                'can_manage_all_users' => $inputData['user_hr'],
-                                'admin' => $inputData['user_admin'],
-                            ),
-                            'id = %i',
-                            $dest_user_id
-                        );
-                    }
+            // Only an administrator may grant privileged flags. A legitimate propagation never
+            // carries them: get_list_of_users_for_sharing only ever offers non-admin accounts.
+            if ((int) $session->get('user-admin') !== 1
+                && ((int) $inputData['user_admin'] === 1
+                    || (int) $inputData['user_hr'] === 1
+                    || (int) $inputData['user_manager'] === 1)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The caller must be entitled to administrate the source account and every single
+            // destination. They are all checked before anything is written, so a refused entry
+            // cannot leave a partially applied propagation behind.
+            foreach (array_merge([$inputData['source_id']], $inputData['destination_ids']) as $userToCheck) {
+                if (callerMayManageUser((int) $userToCheck) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break 2;
                 }
+            }
+
+            foreach ($inputData['destination_ids'] as $dest_user_id) {
+                // Update user roles in users_roles table
+                $roleIds = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
+                );
+                setUserRoles((int) $dest_user_id, $roleIds, 'manual');
+
+                // Update allowed folders in users_groups table
+                $allowedFolders = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
+                );
+                setUserGroups((int) $dest_user_id, $allowedFolders);
+
+                // Update forbidden folders in users_groups_forbidden table
+                $forbiddenFolders = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
+                );
+                setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
+
+                // Update other user fields in users table
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'isAdministratedByRole' => $inputData['user_managedby'],
+                        'gestionnaire' => $inputData['user_manager'],
+                        'read_only' => $inputData['user_readonly'],
+                        'can_create_root_folder' => $inputData['user_rootfolder'],
+                        'personal_folder' => $inputData['user_personalfolder'],
+                        'can_manage_all_users' => $inputData['user_hr'],
+                        'admin' => $inputData['user_admin'],
+                    ),
+                    'id = %i',
+                    $dest_user_id
+                );
             }
 
             echo prepareExchangedData(
@@ -4705,126 +4726,74 @@ break;
             );
             break;
     }
-    // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
-    // Prepare POST variables
-    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $value[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $value[1])
-    ) {
-        if ($value[0] === 'userlanguage') {
-            $value[0] = 'user_language';
-            $post_newValue = strtolower($post_newValue);
-            // Enforce the list of installed languages; fall back to the default on an unknown value.
-            // Prevents arbitrary values (ex: newline-carrying payloads) from being stored as user_language.
-            $isKnownLanguage = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('languages') . ' WHERE LOWER(name) = %s',
-                $post_newValue
-            );
-            if ($isKnownLanguage === 0) {
-                $post_newValue = strtolower((string) ($SETTINGS['default_language'] ?? 'english'));
-            }
-        }
-
-        // Check that operation is allowed
-        if (in_array(
-            $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses_usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
-        )) {
-            DB::update(
-                prefixTable('users'),
-                array(
-                    $value[0] => $post_newValue,
-                ),
-                'id = %i',
-                $value[1]
-            );
-            // update LOG
-            logEvents(
-                $SETTINGS,
-                'user_mngt',
-                'at_user_new_' . $value[0] . ':' . $value[1],
-                (string) $session->get('user-id'),
-                $session->get('user-login'),
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-            );
-
-            // refresh SESSION if requested
-            // Session keys mapping
-            $sessionMapping = [
-                'treeloadstrategy' => 'user-tree_load_strategy',
-                'usertimezone' => 'user-timezone',
-                'userlanguage' => 'user-language',
-                'agses_usercardid' => null, 
-                'email' => 'user-email',
-                'split_view_mode' => 'user-split_view_mode',
-                'show_subfolders' => 'user-show_subfolders',
-            ];
-            // Update session
-            if (array_key_exists($value[0], $sessionMapping)) {
-                $sessionKey = $sessionMapping[$value[0]];
-                if ($sessionKey !== null) {
-                    $session->set($sessionKey, $post_newValue);
-                }
-            }
-            
-            // Display info
-            echo htmlentities($post_newValue, ENT_QUOTES);
-        }
-    }
-    // # ADMIN FOR USER HAS BEEN DEFINED ##
-} elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
-    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $id[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $id[1])
-    ) {
-        DB::update(
-            prefixTable('users'),
-            array(
-                'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT),
-            ),
-            'id = %i',
-            $id[1]
-        );
-        // Display info
-        if ((int) filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
-            echo 'Oui';
-        } else {
-            echo 'Non';
-        }
-    }
 }
+
+// SECURITY (GHSA-58ph-5gg6-h2v8): the legacy 'newValue' and 'newadmin' branches used to sit here.
+// Selected by the mere absence of a "type" parameter, they were evaluated outside the block above
+// and re-implemented their own, laxer authorization check. They let a manager rewrite a target
+// account's 'pw' (stored verbatim: unhashed, no complexity check, no key regeneration), 'login'
+// and 'email', and set the 'admin' flag, enabling silent takeover of a managed account.
+// They had no caller: user administration goes through the "save_user_change" action and profile
+// preferences through "user_profile_update", both subject to the target-scope guard above.
+// Do not reintroduce a request-driven column write outside that guard.
 
 function canAccessInactiveAndDeletedUsersPanels(): bool
 {
     $session = SessionManager::getSession();
 
     return (int) $session->get('user-admin') === 1;
+}
+
+/**
+ * Tells whether the caller is entitled to administrate a given user account.
+ *
+ * Same rule as the target-scope guard applied to the typed actions at the top of this file:
+ * an administrator may act on anyone, a manager only on a non-privileged target, and a plain
+ * manager only within the users administrated by one of their own roles. Use it in any action
+ * whose target is not carried by 'user_id', since the guard keys on that field and cannot
+ * cover them.
+ *
+ * @param int $targetUserId Id of the account the caller wants to modify.
+ *
+ * @return bool True when the caller may modify this account, false otherwise.
+ */
+function callerMayManageUser(int $targetUserId): bool
+{
+    $session = SessionManager::getSession();
+
+    if ((int) $session->get('user-admin') === 1) {
+        return true;
+    }
+
+    // Standard users may never administrate a user record.
+    if ((int) $session->get('user-manager') !== 1
+        && (int) $session->get('user-can_manage_all_users') !== 1) {
+        return false;
+    }
+
+    $target = DB::queryFirstRow(
+        'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $targetUserId
+    );
+
+    // Unknown target, or a manager attempting to act on an administrator or another manager,
+    // is always refused.
+    if (DB::count() === 0
+        || (int) $target['admin'] === 1
+        || (int) $target['can_manage_all_users'] === 1
+        || (int) $target['gestionnaire'] === 1) {
+        return false;
+    }
+
+    // A plain manager is limited to users administrated by one of their own roles.
+    if ((int) $session->get('user-manager') === 1
+        && in_array($target['isAdministratedByRole'], $session->get('user-roles_array')) === false) {
+        return false;
+    }
+
+    return true;
 }
 
 /**
