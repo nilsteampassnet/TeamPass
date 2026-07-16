@@ -6506,7 +6506,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         window.tpWsStartItemView(data.id, data.folder);
                     }
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
-                    $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));
+                    $('#card-item-description, #form-item-suggestion-description').html(
+                        DOMPurify.sanitize(
+                            htmlDecode(data.description || ''),
+                            {USE_PROFILES: {html: true}}
+                        )
+                    );
                     if (data.description === '') {
                         $('#card-item-description').addClass('hidden');
                     } else {

@@ -232,6 +232,10 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                 data = prepareExchangedData(data, 'decode', '<?php echo $session->get('key'); ?>');
                 console.info(data);
                 var return_html = '';
+                var descriptionHtml = DOMPurify.sanitize(
+                    htmlDecode(data.description || ''),
+                    {USE_PROFILES: {html: true}}
+                );
                 if (data.show_detail_option !== 0 || data.show_details === 0) {
                     //item expired
                     return_html = '<?php echo $lang->get('not_allowed_to_see_pw_is_expired'); ?>';
@@ -245,7 +249,7 @@ $var['hidden_asterisk'] = '<i class="fas fa-asterisk mr-2"></i><i class="fas fa-
                         '<h5 id="item-label">' + data.label + '</h5>' +
                         '</div>' +
                         '<div class="card-body">' +
-                        (data.description === '' ? '' : '<div class="form-group">' + data.description + '</div>') +
+                        (descriptionHtml === '' ? '' : '<div class="form-group">' + descriptionHtml + '</div>') +
                         '<div class="form-group">' +
                         '<?php echo $lang->get('pw'); ?>' +
                         '<button type="button" class="btn btn-secondary ml-2" id="btn-copy-pwd" data-id="' + data.id + '" data-label="' + data.label + '"><i class="fas fa-copy"></i></button>' +
