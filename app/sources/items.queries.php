@@ -4709,7 +4709,11 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
                     $html_json[$record['id']]['corruption_reason'] = $corruptedState['reason'] ?? '';
                     $html_json[$record['id']]['corruption_severity'] = $corruptedState['severity'] ?? '';
+                    // The exception label embeds the raw scanner exception message, which is
+                    // reserved for the admin health page. Return no label here so the item list
+                    // falls back to the generic unreadable-password message.
                     $html_json[$record['id']]['corruption_reason_label'] = $corruptedState !== null
+                        && $corruptedState['reason'] !== 'exception'
                         ? teampassCorruptedItemsReasonToLabel(
                             $lang,
                             $corruptedState['reason']

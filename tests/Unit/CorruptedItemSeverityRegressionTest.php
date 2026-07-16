@@ -32,6 +32,43 @@ class CorruptedItemSeverityRegressionTest extends TestCase
         );
     }
 
+    public function testExceptionReasonIsNotLabelledInItemsList(): void
+    {
+        $source = self::source('app/sources/items.queries.php');
+
+        // The exception label would expose the raw scanner exception message to
+        // non-admin users, so the item list must leave the label empty and let
+        // the renderer fall back to the generic message.
+        $this->assertStringContainsString(
+            "&& \$corruptedState['reason'] !== 'exception'",
+            $source
+        );
+    }
+
+    public function testItemsListNeverSelectsExceptionMessage(): void
+    {
+        $source = self::source('app/sources/items.queries.php');
+
+        $this->assertStringContainsString(
+            'SELECT item_id, reason_code, severity',
+            $source
+        );
+        $this->assertStringNotContainsString(
+            'SELECT item_id, reason_code, severity, exception_message',
+            $source
+        );
+    }
+
+    public function testRendererFallsBackWhenReasonLabelIsEmpty(): void
+    {
+        $source = self::source('app/pages/items.js.php');
+
+        $this->assertStringContainsString(
+            'const corruptionLabel = value.corruption_reason_label ||',
+            $source
+        );
+    }
+
     public function testRendererWhitelistsWarningAndFallsBackToDanger(): void
     {
         $source = self::source('app/pages/items.js.php');
