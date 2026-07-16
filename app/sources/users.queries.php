@@ -4705,120 +4705,16 @@ break;
             );
             break;
     }
-    // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
-    // Prepare POST variables
-    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $value[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $value[1])
-    ) {
-        if ($value[0] === 'userlanguage') {
-            $value[0] = 'user_language';
-            $post_newValue = strtolower($post_newValue);
-            // Enforce the list of installed languages; fall back to the default on an unknown value.
-            // Prevents arbitrary values (ex: newline-carrying payloads) from being stored as user_language.
-            $isKnownLanguage = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('languages') . ' WHERE LOWER(name) = %s',
-                $post_newValue
-            );
-            if ($isKnownLanguage === 0) {
-                $post_newValue = strtolower((string) ($SETTINGS['default_language'] ?? 'english'));
-            }
-        }
-
-        // Check that operation is allowed
-        if (in_array(
-            $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses_usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
-        )) {
-            DB::update(
-                prefixTable('users'),
-                array(
-                    $value[0] => $post_newValue,
-                ),
-                'id = %i',
-                $value[1]
-            );
-            // update LOG
-            logEvents(
-                $SETTINGS,
-                'user_mngt',
-                'at_user_new_' . $value[0] . ':' . $value[1],
-                (string) $session->get('user-id'),
-                $session->get('user-login'),
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-            );
-
-            // refresh SESSION if requested
-            // Session keys mapping
-            $sessionMapping = [
-                'treeloadstrategy' => 'user-tree_load_strategy',
-                'usertimezone' => 'user-timezone',
-                'userlanguage' => 'user-language',
-                'agses_usercardid' => null, 
-                'email' => 'user-email',
-                'split_view_mode' => 'user-split_view_mode',
-                'show_subfolders' => 'user-show_subfolders',
-            ];
-            // Update session
-            if (array_key_exists($value[0], $sessionMapping)) {
-                $sessionKey = $sessionMapping[$value[0]];
-                if ($sessionKey !== null) {
-                    $session->set($sessionKey, $post_newValue);
-                }
-            }
-            
-            // Display info
-            echo htmlentities($post_newValue, ENT_QUOTES);
-        }
-    }
-    // # ADMIN FOR USER HAS BEEN DEFINED ##
-} elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
-    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $id[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $id[1])
-    ) {
-        DB::update(
-            prefixTable('users'),
-            array(
-                'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT),
-            ),
-            'id = %i',
-            $id[1]
-        );
-        // Display info
-        if ((int) filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
-            echo 'Oui';
-        } else {
-            echo 'Non';
-        }
-    }
 }
+
+// SECURITY (GHSA-58ph-5gg6-h2v8): the legacy 'newValue' and 'newadmin' branches used to sit here.
+// Selected by the mere absence of a "type" parameter, they were evaluated outside the block above
+// and re-implemented their own, laxer authorization check. They let a manager rewrite a target
+// account's 'pw' (stored verbatim: unhashed, no complexity check, no key regeneration), 'login'
+// and 'email', and set the 'admin' flag, enabling silent takeover of a managed account.
+// They had no caller: user administration goes through the "save_user_change" action and profile
+// preferences through "user_profile_update", both subject to the target-scope guard above.
+// Do not reintroduce a request-driven column write outside that guard.
 
 function canAccessInactiveAndDeletedUsersPanels(): bool
 {
