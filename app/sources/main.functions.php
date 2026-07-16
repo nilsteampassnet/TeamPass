@@ -2513,6 +2513,257 @@ function getClientIpServer(): string
     return 'UNKNOWN';
 }
 
+/**
+ * Return an integer admin setting while preserving backward-compatible defaults.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ * @param string               $key      Setting key to look up.
+ * @param int                  $default  Value returned when key is missing or empty.
+ * @param int                  $minimum  Minimum accepted value (clamped via max()).
+ *
+ * @return int
+ */
+function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
+{
+    if (array_key_exists($key, $settings) === false) {
+        return $default;
+    }
+
+    $rawValue = trim((string) $settings[$key]);
+    if ($rawValue == '') {
+        return $default;
+    }
+
+    return max($minimum, (int) $rawValue);
+}
+
+/**
+ * Return the date until which a login or an IP address is locked by anti brute force.
+ * Any endpoint accepting credentials must call it before verifying them, otherwise it
+ * becomes an oracle bypassing the lockout enforced on the regular login page.
+ *
+ * @param string $username Login being tried.
+ * @param string $ip       Remote address of the caller.
+ *
+ * @return string|null unlock_at timestamp when locked, null when not locked.
+ */
+function getAuthenticationLockUntil(string $username, string $ip): ?string
+{
+    $unlockAt = DB::queryFirstField(
+        'SELECT MAX(unlock_at)
+         FROM ' . prefixTable('auth_failures') . '
+         WHERE unlock_at > %s
+         AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+        date('Y-m-d H:i:s', time()),
+        'login',
+        $username,
+        'remote_ip',
+        $ip
+    );
+
+    return $unlockAt ?: null;
+}
+
+/**
+ * Add a failed authentication attempt to the database.
+ * If the number of failed attempts exceeds the limit, a lock is triggered.
+ *
+ * @param string $source              Source of the failed attempt (login or remote_ip).
+ * @param string $value               Value for this source (username or IP address).
+ * @param int    $limit               Failure attempt limit after which the source is locked.
+ * @param int    $lockDurationMinutes Fixed lock duration in minutes.
+ */
+function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
+{
+    if ($limit <= 0 || trim($value) === '') {
+        return;
+    }
+    // Count failed attempts from this source
+    $count = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('auth_failures') . '
+        WHERE source = %s AND value = %s',
+        $source,
+        $value
+    );
+
+    // Add this attempt
+    $count++;
+
+    // Calculate unlock time if number of attempts exceeds limit
+    $unlock_at = $count >= $limit
+        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
+        : null;
+
+    // Unlock account one time code
+    $unlock_code = ($count >= $limit && $source === 'login')
+        ? generateQuickPassword(30, false)
+        : null;
+
+    // Insert the new failure into the database
+    DB::insert(
+        prefixTable('auth_failures'),
+        [
+            'source' => $source,
+            'value' => $value,
+            'unlock_at' => $unlock_at,
+            'unlock_code' => $unlock_code,
+        ]
+    );
+
+    if ($unlock_at !== null && $source === 'login') {
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $lang = new Language($SETTINGS['default_language'] ?? 'english');
+
+        // Get user details
+        $userInfos = DB::queryFirstRow(
+            'SELECT email, name
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $value
+        );
+
+        // Notify all administrators about the locked account
+        notifyAdminsAboutLockedAccount(
+            $SETTINGS,
+            $lang,
+            $value,
+            is_array($userInfos) === true ? $userInfos : [],
+            getClientIpServer(),
+            $unlock_at
+        );
+
+        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
+
+        sendMailToUser(
+            $userInfos['email'],
+            $lang->get('bruteforce_reset_mail_body'),
+            $lang->get('bruteforce_reset_mail_subject'),
+            [
+                '#name#' => (string) ($userInfos['name'] ?? ''),
+                '#reset_url#' => $unlock_url,
+                '#unlock_at#' => $unlock_at,
+            ],
+            true
+        );
+    }
+}
+
+/**
+ * Notify all administrators when a user account is locked by anti brute force.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfos
+ */
+function notifyAdminsAboutLockedAccount(
+    array $SETTINGS,
+    Language $lang,
+    string $login,
+    array $userInfos,
+    string $sourceIp,
+    string $unlockAt
+): void {
+    $adminUsers = DB::query(
+        'SELECT email, name
+         FROM ' . prefixTable('users') . '
+         WHERE admin = %i
+            AND disabled = %i
+            AND deleted_at IS NULL
+            AND email IS NOT NULL
+            AND email != %s',
+        1,
+        0,
+        ''
+    );
+
+    if (empty($adminUsers) === true) {
+        return;
+    }
+
+    $userName = trim((string) ($userInfos['name'] ?? ''));
+    $userEmail = trim((string) ($userInfos['email'] ?? ''));
+    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
+    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
+
+    $unlockAtTimestamp = strtotime($unlockAt);
+    $formattedUnlockAt = $unlockAtTimestamp === false
+        ? $unlockAt
+        : date(
+            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
+            $unlockAtTimestamp
+        );
+
+    $mailBody = str_replace(
+        [
+            '#tp_user#',
+            '#tp_name#',
+            '#tp_email#',
+            '#tp_ip#',
+            '#tp_date#',
+            '#tp_time#',
+            '#tp_unlock_at#',
+        ],
+        [
+            $login,
+            $userDisplayName,
+            $userDisplayEmail,
+            $sourceIp,
+            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
+            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
+            $formattedUnlockAt,
+        ],
+        $lang->get('email_body_on_user_lock')
+    );
+
+    foreach ($adminUsers as $adminUser) {
+        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_on_user_lock'),
+            $mailBody,
+            (string) $adminUser['email'],
+            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
+        );
+    }
+}
+
+/**
+ * Add failed authentication attempts for both user login and IP address.
+ * This function checks the number of attempts for both the username and IP,
+ * and triggers a lock if the number exceeds the configured limits.
+ * Old technical entries are purged after 24 hours once unlocked.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ */
+function addFailedAuthentication(string $username, string $ip, array $settings): void
+{
+    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
+    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
+    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
+
+    if ($userLimit <= 0 && $ipLimit <= 0) {
+        return;
+    }
+
+    // Remove old logs (more than 24 hours) once the related lock is over.
+    DB::delete(
+        prefixTable('auth_failures'),
+        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+        date('Y-m-d H:i:s', time() - (24 * 3600)),
+        date('Y-m-d H:i:s', time())
+    );
+
+    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
+    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
+}
+
 
 /**
  * Returns true if the network ACL table exists.

@@ -352,6 +352,11 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
 
     // Default values
     $filtered_user_id = (int) $session->get('user-id');
+    // Tells if the current session is allowed to administrate the user targeted
+    // by the payload. Stays false for an anonymous caller, and for a standard
+    // user even when the payload targets their own account. Never derive this
+    // from a client provided value.
+    $sessionCanManageTargetUser = false;
 
     // User can't manage users and requested type is administrative.
     if ((int) $session->get('user-admin') !== 1 &&
@@ -392,6 +397,7 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         ) {
             // This user is allowed to modify other users.
             $filtered_user_id = (int) $dataReceived['user_id'];
+            $sessionCanManageTargetUser = true;
         }
     }
 
@@ -481,13 +487,17 @@ function userHandler(string $post_type, array|null|string $dataReceived, array $
         * This will generate the QR Google Authenticator
         */
         case 'ga_generate_qr'://action_user
+            // This action is reachable without a session (first MFA enrollment from
+            // the login page). The administrative flavour, which resets someone
+            // else's MFA without knowing their password, is granted by the session
+            // only, never by a value taken from the payload.
             return generateQRCode(
                 (int) $filtered_user_id,
-                (string) filter_var($dataReceived['demand_origin'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['send_email'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['login'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['pwd'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
-                (string) filter_var($dataReceived['token'], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                $sessionCanManageTargetUser,
+                (string) filter_var($dataReceived['send_email'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['login'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['pwd'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                (string) filter_var($dataReceived['token'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS),
                 $SETTINGS
             );
 
@@ -1353,9 +1363,28 @@ function changePassword(
     );
 }
 
+/**
+ * Generate a new MFA secret and temporary code for a user.
+ *
+ * Two callers are supported:
+ *  - self service enrollment from the login page, without any session: the user
+ *    proves ownership of the account with their password;
+ *  - administrative reset from the users management page: the session already
+ *    proved it may administrate the target user, so no password is required.
+ *
+ * @param int    $post_id        Target user id, resolved server side (0 when unauthenticated).
+ * @param bool   $isAdminDemand  True only when the session may administrate the target user.
+ * @param string $post_send_mail Send the temporary code by email when equal to 1.
+ * @param string $post_login     Login provided by the caller (self service only).
+ * @param string $post_pwd       Password provided by the caller (self service only).
+ * @param string $post_token     Anti replay token.
+ * @param array  $SETTINGS       Teampass settings.
+ *
+ * @return string Encoded answer.
+ */
 function generateQRCode(
     $post_id,
-    $post_demand_origin,
+    bool $isAdminDemand,
     $post_send_mail,
     $post_login,
     $post_pwd,
@@ -1366,6 +1395,22 @@ function generateQRCode(
     // Load user's language
     $session = SessionManager::getSession();
     $lang = new Language($session->get('user-language') ?? 'english');
+
+    // This action is reachable without a session, so a self service demand must be
+    // throttled exactly like a login attempt. The lock is checked before looking
+    // the user up, otherwise an unknown login would never be slowed down and the
+    // whole user base could be enumerated at full speed.
+    if ($isAdminDemand === false
+        && getAuthenticationLockUntil((string) $post_login, getClientIpServer()) !== null
+    ) {
+        return prepareExchangedData(
+            array(
+                'error' => true,
+                'message' => $lang->get('bruteforce_account_locked'),
+            ),
+            'encode'
+        );
+    }
 
     // Check if user exists
     if (isValueSetNullEmpty($post_id) === true) {
@@ -1383,7 +1428,7 @@ function generateQRCode(
             WHERE id = %i',
             $post_id
         );
-        $post_login = $dataUser['login'];
+        $post_login = $dataUser['login'] ?? $post_login;
     }
     // Get number of returned users
     $counter = DB::count();
@@ -1391,33 +1436,43 @@ function generateQRCode(
     // Do treatment
     if ($counter === 0) {
         // Not a registered user !
-        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes($post_login), stripslashes($post_login));
+        logEvents($SETTINGS, 'failed_auth', 'user_not_exists', '', stripslashes((string) $post_login), stripslashes((string) $post_login));
+        if ($isAdminDemand === false) {
+            addFailedAuthentication((string) $post_login, getClientIpServer(), $SETTINGS);
+        }
         return prepareExchangedData(
             array(
                 'error' => true,
                 'message' => $lang->get('no_user'),
-                'tst' => 1,
             ),
             'encode'
         );
     }
 
-    $passwordManager = new PasswordManager();
-    if (
-        isSetArrayOfValues([$post_pwd, $dataUser['pw']]) === true
-        && $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
-        && $post_demand_origin !== 'users_management_list'
-    ) {
-        // checked the given password
-        logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($post_login), stripslashes($post_login));
-        return prepareExchangedData(
-            array(
-                'error' => true,
-                'message' => $lang->get('no_user'),
-                'tst' => $post_demand_origin,
-            ),
-            'encode'
-        );
+    // The password is the only credential proving the caller owns this account,
+    // so it is mandatory for every non administrative demand. It is checked in
+    // positive logic: a missing password, or a user row without any password,
+    // must never let the check be skipped.
+    if ($isAdminDemand === false) {
+        $passwordManager = new PasswordManager();
+        if (
+            isValueSetNullEmpty($post_pwd) === true
+            || isValueSetNullEmpty($dataUser['pw']) === true
+            || $passwordManager->verifyPassword($dataUser['pw'], $post_pwd) === false
+        ) {
+            // checked the given password
+            logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes((string) $post_login), stripslashes((string) $post_login));
+            addFailedAuthentication((string) $post_login, getClientIpServer(), $SETTINGS);
+            // Answer strictly identical to the unknown login one: this action must
+            // not tell an anonymous caller whether a login exists.
+            return prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('no_user'),
+                ),
+                'encode'
+            );
+        }
     }
 
     // A user who has already completed MFA enrollment can only regenerate a
@@ -1428,7 +1483,7 @@ function generateQRCode(
     $userAlreadyEnrolled = empty($dataUser['ga']) === false
         && (string) $dataUser['ga_temporary_code'] === 'done';
     if (isKeyExistingAndEqual('ga_reset_by_user', 0, $SETTINGS) === true
-        && $post_demand_origin !== 'users_management_list'
+        && $isAdminDemand === false
         && $userAlreadyEnrolled === true
     ) {
         // User is not allowed to reset an existing code by themselves
