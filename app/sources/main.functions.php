@@ -2655,6 +2655,117 @@ function handleFailedAttempts(string $source, string $value, int $limit, int $lo
 }
 
 /**
+ * Tells whether local password recovery may be offered for a user.
+ * Lives here rather than in identify.php so that both the request handler and the
+ * recovery endpoint (reset-password.php) share one definition of eligibility.
+ *
+ * @param array<string, mixed>|null $userInfo Complete user data, null when the login is unknown
+ * @param array<string, mixed>      $SETTINGS
+ *
+ * @return array{available: bool}
+ */
+function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
+{
+    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
+        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
+    $hasOngoingProcess = is_array($userInfo) === true
+        && empty($userInfo['ongoing_process_id']) === false;
+
+    return [
+        'available' => is_array($userInfo) === true
+            && ($userInfo['auth_type'] ?? '') === 'local'
+            && $featureEnabled === true
+            && $emailConfigured === true
+            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && $hasOngoingProcess === false,
+    ];
+}
+
+/**
+ * Creates a single-use local password recovery token for a user.
+ * Only the SHA-256 hash of the token is stored, so a database dump cannot be replayed
+ * against the recovery endpoint. Any previous token of the user is dropped, which keeps
+ * the most recent link the only usable one.
+ *
+ * @param integer $userId
+ *
+ * @return string The clear token, to be sent to the registered email address only
+ */
+function createForgotLocalPasswordToken(int $userId): string
+{
+    // Opportunistic purge of expired tokens, then of any previous token of this user
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND end_timestamp < %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        time()
+    );
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND user_id = %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        $userId
+    );
+
+    $token = bin2hex(random_bytes(32));
+    DB::insert(
+        prefixTable('tokens'),
+        [
+            'user_id' => $userId,
+            'token' => hash('sha256', $token),
+            'reason' => TP_FORGOT_PWD_TOKEN_REASON,
+            'creation_timestamp' => (string) time(),
+            'end_timestamp' => (string) (time() + TP_FORGOT_PWD_TOKEN_VALIDITY),
+        ]
+    );
+
+    return $token;
+}
+
+/**
+ * Returns the recovery token row matching a clear token, or null when it is unknown,
+ * of another kind, or expired. Possession of the token is the only proof accepted by
+ * the recovery endpoint, so nothing else about the request is trusted here.
+ *
+ * @param string $token Clear token taken from the recovery link
+ *
+ * @return array<string, mixed>|null
+ */
+function getForgotLocalPasswordTokenRow(string $token): ?array
+{
+    if (preg_match('/^[a-f0-9]{64}$/', $token) !== 1) {
+        return null;
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT id, user_id, end_timestamp
+        FROM ' . prefixTable('tokens') . '
+        WHERE token = %s AND reason = %s',
+        hash('sha256', $token),
+        TP_FORGOT_PWD_TOKEN_REASON
+    );
+
+    if (DB::count() === 0 || is_array($row) === false || (int) $row['end_timestamp'] < time()) {
+        return null;
+    }
+
+    return $row;
+}
+
+/**
+ * Consumes a recovery token so a link can never be replayed.
+ *
+ * @param integer $tokenId
+ */
+function deleteForgotLocalPasswordToken(int $tokenId): void
+{
+    DB::delete(prefixTable('tokens'), 'id = %i', $tokenId);
+}
+
+/**
  * Notify all administrators when a user account is locked by anti brute force.
  *
  * @param array<string, mixed> $SETTINGS
