@@ -180,9 +180,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             deletedBy += (deletedBy ? ' ' : '') + '[' + value.login + ']';
                         }
 
+                        // Every server value below is rendered through .html(): encode each one.
+                        // folderExtra is markup built here, from an integer count, and stays raw.
                         foldersHtml += '<tr class="icheck-toggle">' +
-                            '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="folder-select"></td>' +
-                            '<td class="font-weight-bold">' + folderLabel + folderExtra + '</td>' +
+                            '<td width="35px"><input type="checkbox" data-id="' + parseInt(value.id, 10) + '" class="folder-select"></td>' +
+                            '<td class="font-weight-bold">' + htmlEncode(folderLabel) + folderExtra + '</td>' +
                             '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(deletedDate) + '</td>' +
                             '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(deletedBy) + '</td>' +
                             '</tr>';
@@ -199,12 +201,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     );
                 } else {
                     $.each(data.items, function(index, value) {
+                        // Same rule as above: the item label and its folder path are user-supplied
+                        // and reach this table verbatim, so encode every server value before it is
+                        // parsed as HTML by .html() (GHSA-r298-6mxv-j9hc).
                         itemsHtml += '<tr class="icheck-toggle">' +
-                            '<td width="35px"><input type="checkbox" data-id="' + value.id + '" class="item-select"></td>' +
-                            '<td class="font-weight-bold">' + (value.path ? value.path : value.label) + '</td>' +
-                            '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + value.date + '</td>' +
-                            '<td class=""><i class="fa-regular fa-user mr-1"></i>' + value.name + ' [' + value.login + ']</td>' +
-                            '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + (value.folder_path ? value.folder_path : value.folder_label) + '</td>' +
+                            '<td width="35px"><input type="checkbox" data-id="' + parseInt(value.id, 10) + '" class="item-select"></td>' +
+                            '<td class="font-weight-bold">' + htmlEncode(value.path ? value.path : value.label) + '</td>' +
+                            '<td class="font-weight-light"><i class="fa-regular fa-calendar-alt mr-1"></i>' + htmlEncode(value.date) + '</td>' +
+                            '<td class=""><i class="fa-regular fa-user mr-1"></i>' + htmlEncode(value.name) + ' [' + htmlEncode(value.login) + ']</td>' +
+                            '<td class="font-italic"><i class="fa-regular fa-folder mr-1"></i>' + htmlEncode(value.folder_path ? value.folder_path : value.folder_label) + '</td>' +
                             (value.folder_deleted === true ?
                                 '<td class=""><?php echo $lang->get('belong_of_deleted_folder'); ?></td>' :
                                 '') +
