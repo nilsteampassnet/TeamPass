@@ -5571,8 +5571,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 if (showCorruptedItemsInList === true && value.is_corrupted === 1) {
-                    corruption_row_class = ' tp-item-corrupted-danger';
-                    corruption_marker = '<i class="fa-solid fa-triangle-exclamation mr-1 infotip tp-item-corrupted-marker text-danger" title="<?php echo $lang->get('items_corrupted_marker_unreadable'); ?>"></i>';
+                    // Only accept the two severities supported by the stylesheet.
+                    // Unknown or missing values stay red to preserve the safest legacy behaviour.
+                    const corruptionSeverity = value.corruption_severity === 'warning' ? 'warning' : 'danger';
+                    const corruptionLabel = value.corruption_reason_label || <?php echo json_encode($lang->get('items_corrupted_marker_unreadable'), JSON_UNESCAPED_UNICODE); ?>;
+                    corruption_row_class = ' tp-item-corrupted-' + corruptionSeverity;
+                    corruption_marker = '<i class="fa-solid fa-triangle-exclamation mr-1 infotip tp-item-corrupted-marker text-' + corruptionSeverity + '" title="' + htmlEncode(corruptionLabel) + '"></i>';
                 }
 
                 $('#teampass_items_list').append(
