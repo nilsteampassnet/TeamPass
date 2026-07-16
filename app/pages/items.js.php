@@ -367,8 +367,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     );
     // browserSession('init') skips keys when the store already exists (initialized by load.js.php),
-    // so force-inject HIBP settings via store.update to guarantee they are always present.
+    // so force-inject page settings before the first item list is rendered.
     store.update('teampassApplication', function(app) {
+        app.highlightFavorites = parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>)
         app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
         app.hibpIntervalDays = parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
     })
@@ -5472,7 +5473,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             value.anyone_can_modify = parseInt(value.anyone_can_modify);
             value.canMove = parseInt(value.canMove);
             value.expired = parseInt(value.expired);
-            value.is_favorite = parseInt(value.is_favorite);
+            value.is_favourited = parseInt(value.is_favourited ?? value.is_favorite ?? 0);
             value.is_result_of_search = parseInt(value.is_result_of_search);
             value.item_id = parseInt(value.item_id);
             value.is_corrupted = parseInt(value.is_corrupted || 0);
