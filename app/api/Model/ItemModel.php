@@ -31,6 +31,7 @@
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 use ZxcvbnPhp\Zxcvbn;
+use voku\helper\AntiXSS;
 
 class ItemModel
 {
@@ -250,7 +251,12 @@ class ItemModel
 
             // Step 1: Prepare data and sanitize inputs
             $data = $this->prepareData($arrItemParams);
-            $this->validateData($data); // Step 2: Validate the data
+            $data = $this->validateData($data); // Step 2: Sanitize the data
+
+            // Realign the values extracted above on the sanitized ones: they feed the duplicate
+            // check, the tags and the WebSocket event, which must all see what is actually stored.
+            $label = $data['label'];
+            $tags = $data['tags'];
 
             // Step 3: Validate password rules (length, emptiness)
             $this->validatePassword($password, $SETTINGS);
@@ -380,28 +386,59 @@ class ItemModel
     }
 
     /**
-     * Sanitizes and validates the input data according to specified filters.
-     * If validation fails, throws an exception.
-     * @param array $data - Data to be validated and sanitized
-     * @throws Exception - If the data is invalid
+     * Neutralizes the item fields that are later rendered as HTML.
+     *
+     * This method used to hand its data to dataSanitizer() and throw the result away, so the
+     * API stored every field exactly as the client sent it. The web form encodes the same
+     * fields before storing them (see items.queries.php), and the renderers - items list,
+     * recycle bin - rely on that: a label is inserted into the page markup as-is. An API
+     * client could therefore store an item label carrying an event handler and have it execute
+     * in the browser of anyone listing the folder or opening the recycle bin
+     * (GHSA-r298-6mxv-j9hc).
+     *
+     * Each field gets the same treatment as its web counterpart, so both paths store the same
+     * bytes. 'password' and 'totp' are deliberately left untouched: they are secrets, never
+     * rendered as markup, and must keep their exact value.
+     *
+     * @param array $data - Data to be sanitized
+     * @return array - The sanitized data, to be used in place of the input
      */
-    private function validateData(array $data) : void
+    private function validateData(array $data) : array
     {
-        $filters = [
-            'folderId' => 'cast:integer',
-            'label' => 'trim|escape',
-            'password' => 'trim|escape',
-            'description' => 'trim|escape',
-            'login' => 'trim|escape',
-            'email' => 'trim|escape',
-            'tags' => 'trim|escape',
-            'anyoneCanModify' => 'trim|escape',
-            'url' => 'trim|escape',
-            'icon' => 'trim|escape',
-            'totp' => 'trim|escape',
-        ];
+        // Fully encoded: rendered as plain text by the clients.
+        foreach (['label', 'login'] as $field) {
+            $data[$field] = (string) filter_var($data[$field], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        }
 
-        dataSanitizer($data, $filters);
+        $data['tags'] = htmlspecialchars($data['tags']);
+        $data['email'] = (string) filter_var(htmlspecialchars_decode($data['email']), FILTER_SANITIZE_EMAIL);
+        $data['url'] = $this->sanitizeItemUrl($data['url']);
+
+        // Rich text: keep the markup the editor produces, drop what is executable.
+        $antiXss = new AntiXSS();
+        $data['description'] = (string) $antiXss->xss_clean($data['description']);
+
+        return $data;
+    }
+
+    /**
+     * Cleans a user-supplied URL before it is stored.
+     *
+     * Mirrors the web path: a javascript:/data:/vbscript: URL is script execution as soon as
+     * the item card renders it as a link, so it is dropped rather than stored.
+     *
+     * @param string $url - Raw URL
+     * @return string - URL safe to store, empty when the scheme is dangerous
+     */
+    private function sanitizeItemUrl(string $url) : string
+    {
+        $url = (string) filter_var(htmlspecialchars_decode($url), FILTER_SANITIZE_URL);
+
+        if ($url !== '' && preg_match('#^\s*(?:javascript|data|vbscript)\s*:#i', $url) === 1) {
+            return '';
+        }
+
+        return $url;
     }
 
     /**
@@ -1225,22 +1262,31 @@ class ItemModel
                 $updateData['favicon_url'] = $this->getFaviconUrl($currentItem['url']);
             }
 
+            // Each field is stored the way the web form stores it, so an update cannot
+            // reintroduce the markup that validateData() strips on creation
+            // (GHSA-r298-6mxv-j9hc).
             $fieldsDefinitions = [
-                'label'             => ['db_key' => 'label', 'type' => 'string'],
-                'description'       => ['db_key' => 'description', 'type' => 'string'],
-                'login'             => ['db_key' => 'login', 'type' => 'string'],
-                'email'             => ['db_key' => 'email', 'type' => 'string'],
-                'url'               => ['db_key' => 'url', 'type' => 'string'],
+                'label'             => ['db_key' => 'label', 'type' => 'encoded'],
+                'description'       => ['db_key' => 'description', 'type' => 'richtext'],
+                'login'             => ['db_key' => 'login', 'type' => 'encoded'],
+                'email'             => ['db_key' => 'email', 'type' => 'email'],
+                'url'               => ['db_key' => 'url', 'type' => 'url'],
                 'icon'              => ['db_key' => 'fa_icon', 'type' => 'icon'],
                 'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
-                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
+                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'url']
             ];
             foreach ($fieldsDefinitions as $paramKey => $def) {
                 if (isset($params[$paramKey])) {
+                    // No default arm on purpose: every type above is handled, and a type added
+                    // later without its own arm must fail loudly rather than silently store the
+                    // client value verbatim.
                     $updateData[$def['db_key']] = match($def['type']) {
-                        'int'   => (int) $params[$paramKey],
-                        'icon'  => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
-                        default => $params[$paramKey],
+                        'int'      => (int) $params[$paramKey],
+                        'icon'     => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
+                        'encoded'  => (string) filter_var((string) $params[$paramKey], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'email'    => (string) filter_var(htmlspecialchars_decode((string) $params[$paramKey]), FILTER_SANITIZE_EMAIL),
+                        'url'      => $this->sanitizeItemUrl((string) $params[$paramKey]),
+                        'richtext' => (string) (new AntiXSS())->xss_clean((string) $params[$paramKey]),
                     };
                 }
             }
@@ -1327,8 +1373,8 @@ class ItemModel
                     $itemId
                 );
 
-                // Add new tags
-                $this->addTags($itemId, $params['tags']);
+                // Add new tags — encoded like the web form does, a tag is rendered as markup
+                $this->addTags($itemId, htmlspecialchars((string) $params['tags']));
             }
 
             // Handle custom fields update

@@ -2634,10 +2634,40 @@ if (null !== $post_type) {
                 return true;
             };
 
+            // SECURITY (GHSA-gjc5-pmxw-58p4): the role id is client-supplied, so being entitled to
+            // manage the target user is not enough — the caller must also be entitled to grant that
+            // particular role, otherwise a manager could hand one of their users a role reaching
+            // folders the manager cannot see. The scope mirrors the role dropdown built server-side
+            // in app/pages/users.php: an administrator may grant any existing role, anyone else only
+            // a role they hold themselves or a role they created.
+            $callerMayGrantRole = static function (int $roleId) use ($session, $callerIsAdmin): bool {
+                $role = DB::queryFirstRow(
+                    'SELECT creator_id
+                    FROM ' . prefixTable('roles_title') . '
+                    WHERE id = %i',
+                    $roleId
+                );
+                // A role id pointing to nothing is never granted.
+                if (DB::count() === 0 || is_array($role) === false) {
+                    return false;
+                }
+                if ($callerIsAdmin === true) {
+                    return true;
+                }
+                // user-roles_array holds the caller's effective roles (manual ones plus those
+                // derived from AD groups), stored as strings at login.
+                $callerRoles = array_map('strval', (array) $session->get('user-roles_array'));
+                return in_array((string) $roleId, $callerRoles, true)
+                    || (int) $role['creator_id'] === (int) $session->get('user-id');
+            };
+
             // If adding a role to user, use the users_roles table directly
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
-                // Only an administrator or an in-scope manager may assign a role to this user.
-                if ($callerMayManageTargetUser((int) $post_user_id) === false) {
+                // Only an administrator or an in-scope manager may assign a role to this user,
+                // and only a role that is within their own grant scope.
+                if ($callerMayManageTargetUser((int) $post_user_id) === false
+                    || $callerMayGrantRole((int) $post_new_value) === false
+                ) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -2740,7 +2770,10 @@ if (null !== $post_type) {
             // it to an explicit allow-list of non-privileged fields so it can never be used to write
             // admin, gestionnaire, can_manage_all_users, read_only, pw, private_key, api_key, ... and
             // confirm the caller is entitled to modify this specific user.
-            $writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'fonction_id', 'auth_type'];
+            // 'fonction_id' is deliberately absent: the column was dropped from the users table in
+            // 3.1.5 (roles now live in users_roles), so this generic path can no longer write roles.
+            // Keeping it listed would leave a role write that bypasses the grant-scope check above.
+            $writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'auth_type'];
             if (in_array($post_field, $writableUserFields, true) === false
                 || $callerMayManageTargetUser((int) $post_user_id) === false) {
                 echo prepareExchangedData(
@@ -4744,57 +4777,8 @@ function canAccessInactiveAndDeletedUsersPanels(): bool
     return (int) $session->get('user-admin') === 1;
 }
 
-/**
- * Tells whether the caller is entitled to administrate a given user account.
- *
- * Same rule as the target-scope guard applied to the typed actions at the top of this file:
- * an administrator may act on anyone, a manager only on a non-privileged target, and a plain
- * manager only within the users administrated by one of their own roles. Use it in any action
- * whose target is not carried by 'user_id', since the guard keys on that field and cannot
- * cover them.
- *
- * @param int $targetUserId Id of the account the caller wants to modify.
- *
- * @return bool True when the caller may modify this account, false otherwise.
- */
-function callerMayManageUser(int $targetUserId): bool
-{
-    $session = SessionManager::getSession();
-
-    if ((int) $session->get('user-admin') === 1) {
-        return true;
-    }
-
-    // Standard users may never administrate a user record.
-    if ((int) $session->get('user-manager') !== 1
-        && (int) $session->get('user-can_manage_all_users') !== 1) {
-        return false;
-    }
-
-    $target = DB::queryFirstRow(
-        'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole
-        FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $targetUserId
-    );
-
-    // Unknown target, or a manager attempting to act on an administrator or another manager,
-    // is always refused.
-    if (DB::count() === 0
-        || (int) $target['admin'] === 1
-        || (int) $target['can_manage_all_users'] === 1
-        || (int) $target['gestionnaire'] === 1) {
-        return false;
-    }
-
-    // A plain manager is limited to users administrated by one of their own roles.
-    if ((int) $session->get('user-manager') === 1
-        && in_array($target['isAdministratedByRole'], $session->get('user-roles_array')) === false) {
-        return false;
-    }
-
-    return true;
-}
+// callerMayManageUser() lives in main.functions.php: the rule is shared with the other entry
+// points whose target is not carried by 'user_id' (see users.logs.datatable.php).
 
 /**
  * List deleted users

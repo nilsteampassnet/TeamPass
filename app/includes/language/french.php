@@ -2155,7 +2155,7 @@ return array(
     'forgot_local_password_email_subject' => '[TeamPass] Mot de passe temporaire',
     'forgot_local_password_email_body' => 'Bonjour #name#,<br><br>Ceci est un email généré par le gestionnaire de mots de passe Teampass.<br><br>Un mot de passe temporaire a été généré pour votre compte local TeamPass suite à votre demande.<br><br>Login : <b>#login#</b><br>Mot de passe temporaire : <b>#password#</b><br><br>Il vous sera demandé de le modifier dès votre prochaine connexion.<br><br><a href="#tp_link#">Accéder à TeamPass</a><br><br>Cordialement',
     'forgot_local_password' => 'J’ai perdu mon mot de passe',
-    'forgot_local_password_email_sent' => 'Un mot de passe temporaire est en cours d’envoi à votre adresse email. Vous devrez le changer lors de votre prochaine connexion.',
+    'forgot_local_password_email_sent' => 'Si votre compte est éligible, un lien de récupération de mot de passe a été envoyé à votre adresse email.',
     'forgot_local_password_unavailable' => 'La récupération de mot de passe n’est pas disponible pour ce compte. Veuillez contacter un administrateur.',
     'settings_enable_local_password_recovery' => 'Activer la récupération de mot de passe locale',
     'settings_enable_local_password_recovery_tip' => 'Autorise les utilisateurs locaux à demander un mot de passe temporaire par email après un échec de connexion. Ils devront le modifier lors de leur prochaine connexion.',
@@ -2817,5 +2817,11 @@ return array(
     'mass_operation_partially_denied' => '#nb# élément(s) ignoré(s) par manque de permissions',
     'error_hibp_check_failed' => 'La vérification de compromission du mot de passe n’a pas pu aboutir (service injoignable)',
     'error_no_access_to_item' => 'Vous n’êtes pas autorisé à accéder à cet élément',
+    'forgot_local_password_confirm_email_subject' => '[TeamPass] Demande de récupération de mot de passe',
+    'forgot_local_password_confirm_email_body' => 'Bonjour #name#,<br><br>Ceci est un email généré par le gestionnaire de mots de passe Teampass.<br><br>Une récupération de mot de passe a été demandée pour votre compte local TeamPass.<br><br>Login : <b>#login#</b><br><br>Pour réinitialiser votre mot de passe, cliquez sur ce lien <a href="#reset_url#" target="_blank">#reset_url#</a><br><br>Ce lien est valable 15 minutes et ne peut être utilisé qu’une seule fois. Un mot de passe temporaire vous sera alors envoyé.<br><br>Si vous n’êtes pas à l’origine de cette demande, ignorez simplement cet email : rien n’a été modifié sur votre compte.<br><br>Cordialement',
+    'forgot_local_password_confirm_intro' => 'Vous êtes sur le point de réinitialiser le mot de passe de ce compte. Un mot de passe temporaire sera envoyé à votre adresse email.',
+    'forgot_local_password_link_invalid' => 'Ce lien de récupération de mot de passe est invalide, a expiré, ou a déjà été utilisé.',
+    'forgot_local_password_reset_done' => 'Votre mot de passe a été réinitialisé. Un mot de passe temporaire a été envoyé à votre adresse email.',
+    'at_user_forgot_local_password_requested' => 'Récupération de mot de passe demandée pour l’utilisateur #user_login#',
 
 );

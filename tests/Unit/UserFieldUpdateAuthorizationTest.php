@@ -39,6 +39,11 @@ class UserFieldUpdateAuthorizationTest extends TestCase
         return $this->readSource('/app/sources/users.queries.php');
     }
 
+    private function mainFunctionsSource(): string
+    {
+        return $this->readSource('/app/sources/main.functions.php');
+    }
+
     /**
      * The two legacy branches must not come back: they were reachable by any
      * authenticated caller and bypassed the guard entirely.
@@ -198,7 +203,9 @@ class UserFieldUpdateAuthorizationTest extends TestCase
      */
     public function testSharedScopeHelperRefusesPrivilegedTargets(): void
     {
-        $src = $this->usersQueriesSource();
+        // The helper lives in main.functions.php so every entry point whose target is not
+        // carried by 'user_id' shares one rule instead of re-implementing it.
+        $src = $this->mainFunctionsSource();
 
         self::assertStringContainsString(
             'function callerMayManageUser(int $targetUserId): bool',

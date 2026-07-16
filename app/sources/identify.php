@@ -368,8 +368,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
-    clearForgotLocalPasswordRequestContext($session);
-    
+
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -626,10 +625,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        // Only drives the display of the "forgot password" link: the recovery request is
+        // authorized by the emailed token alone, never by anything left in this session.
         $forgotLocalPasswordContext = getForgotLocalPasswordContext($userInfo, $SETTINGS);
-        if ($forgotLocalPasswordContext['available'] === true) {
-            storeForgotLocalPasswordRequestContext($session, (string) $username);
-        }
         echo prepareExchangedData(
             [
                 'value' => '',
@@ -3792,61 +3790,18 @@ function identifyDoAzureChecks(
 }
 
 /**
- * Returns context data indicating whether local password recovery is available for the given user.
- *
- * @param array<string,mixed>|null $userInfo
- * @param array<string,mixed>      $SETTINGS
- * @return array{available: bool}
- */
-function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
-{
-    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
-    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
-        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
-        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
-    $hasOngoingProcess = is_array($userInfo) === true
-        && empty($userInfo['ongoing_process_id']) === false;
-
-    return [
-        'available' => is_array($userInfo) === true
-            && ($userInfo['auth_type'] ?? '') === 'local'
-            && $featureEnabled === true
-            && $emailConfigured === true
-            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
-            && (int) ($userInfo['disabled'] ?? 0) !== 1
-            && $hasOngoingProcess === false,
-    ];
-}
-
-function clearForgotLocalPasswordRequestContext($session = null): void
-{
-    $session = $session ?? SessionManager::getSession();
-    $session->remove('forgot_local_password_login');
-    $session->remove('forgot_local_password_requested_at');
-}
-
-function storeForgotLocalPasswordRequestContext($session, string $login): void
-{
-    clearForgotLocalPasswordRequestContext($session);
-    $session->set('forgot_local_password_login', $login);
-    $session->set('forgot_local_password_requested_at', time());
-}
-
-function forgotLocalPasswordRequestIsAuthorized($session, string $login): bool
-{
-    $authorizedLogin = (string) ($session->get('forgot_local_password_login') ?? '');
-    $requestedAt = (int) ($session->get('forgot_local_password_requested_at') ?? 0);
-
-    return $authorizedLogin !== ''
-        && hash_equals($authorizedLogin, $login)
-        && $requestedAt > 0
-        && (time() - $requestedAt) <= 600;
-}
-
-/**
  * Processes a local password recovery request.
- * Generates a temporary password, resets the user's encryption keys immediately
- * and sends a dedicated notification email in the target user's language.
+ *
+ * SECURITY (GHSA-cm5h-m2xm-5pxr): this handler is reachable without any authentication, so it
+ * must never change anything on the target account. It only emails a single-use link to the
+ * address registered on the account; the reset itself happens in reset-password.php, once the
+ * caller proved they control that mailbox by opening the link. The previous implementation
+ * authorized the request against a value the same unauthenticated caller had planted in their
+ * own session during a failed login, which proved nothing and let anybody knowing a login force
+ * a key reset and wipe the account's bruteforce counters.
+ *
+ * The answer is deliberately uniform: an unauthenticated caller must not learn whether a login
+ * exists, is local, or is eligible for recovery.
  *
  * @param string               $sentData  Raw POST data field
  * @param array<string,mixed>  $SETTINGS
@@ -3856,6 +3811,7 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
 {
     $session = SessionManager::getSession();
     $lang    = new Language($session->get('user-language') ?? 'english');
+    $uniformAnswer = ['error' => false, 'message' => $lang->get('forgot_local_password_email_sent')];
 
     $dataReceived = $session->get('key') === null
         ? $sentData
@@ -3866,63 +3822,33 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
     $dataReceived = sanitizeData($dataReceived, ['login' => 'trim|escape']);
 
     $login = trim((string) ($dataReceived['login'] ?? ''));
-
     if ($login === '') {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+        return $uniformAnswer;
     }
 
-    if (forgotLocalPasswordRequestIsAuthorized($session, $login) !== true) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    $userInfo = getUserCompleteData($login);
+    if (getForgotLocalPasswordContext($userInfo, $SETTINGS)['available'] !== true) {
+        return $uniformAnswer;
     }
 
-    $userInfo    = getUserCompleteData($login);
-    $forgotCtx   = getForgotLocalPasswordContext($userInfo, $SETTINGS);
-    if ($forgotCtx['available'] !== true) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
-    }
-
-    $temporaryPassword = GenerateCryptKey(20, false, true, true, false, true);
-    $resetResult = prepareExchangedData(
-        handleUserKeys(
-            (int) $userInfo['id'],
-            $temporaryPassword,
-            isset($SETTINGS['maximum_number_of_items_to_treat']) === true
-                ? (int) $SETTINGS['maximum_number_of_items_to_treat']
-                : NUMBER_ITEMS_IN_BATCH,
-            '',
-            true,
-            false,
-            true,
-            false,
-            '',
-            false,
-            '',
-            '',
-            false,
-            'auth-pwd-change'
-        ),
-        'decode'
+    // One recovery email per account and per TP_FORGOT_PWD_TOKEN_THROTTLE seconds, so the
+    // endpoint cannot be used to flood the mailbox of an account whose login is known.
+    $pendingToken = DB::queryFirstRow(
+        'SELECT creation_timestamp
+        FROM ' . prefixTable('tokens') . '
+        WHERE user_id = %i AND reason = %s',
+        (int) $userInfo['id'],
+        TP_FORGOT_PWD_TOKEN_REASON
     );
-
-    if (is_array($resetResult) !== true || (isset($resetResult['error']) === true && $resetResult['error'] === true)) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    if (DB::count() > 0
+        && is_array($pendingToken) === true
+        && (time() - (int) $pendingToken['creation_timestamp']) < TP_FORGOT_PWD_TOKEN_THROTTLE
+    ) {
+        return $uniformAnswer;
     }
 
-    DB::delete(
-        prefixTable('auth_failures'),
-        'source = %s AND value = %s',
-        'login',
-        $userInfo['login']
-    );
-    $session->set('pwd_attempts', 0);
+    $token = createForgotLocalPasswordToken((int) $userInfo['id']);
 
-    $emailServerUrl = empty(trim((string) ($SETTINGS['email_server_url'] ?? ''))) === false
-        ? (string) $SETTINGS['email_server_url']
-        : (string) ($SETTINGS['cpassman_url'] ?? '');
     $userLanguageName = trim((string) ($userInfo['user_language'] ?? ''));
     if ($userLanguageName === '' || $userLanguageName === '0') {
         $userLanguageName = (string) ($SETTINGS['default_language'] ?? 'english');
@@ -3930,28 +3856,26 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
     $userLanguage = new Language($userLanguageName);
     sendMailToUser(
         (string) $userInfo['email'],
-        $userLanguage->get('forgot_local_password_email_body'),
-        $userLanguage->get('forgot_local_password_email_subject'),
+        $userLanguage->get('forgot_local_password_confirm_email_body'),
+        $userLanguage->get('forgot_local_password_confirm_email_subject'),
         [
             '#login#' => (string) $userInfo['login'],
             '#name#' => (string) ($userInfo['name'] ?? ''),
             '#lastname#' => (string) ($userInfo['lastname'] ?? ''),
-            '#tp_link#' => $emailServerUrl,
+            '#reset_url#' => rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/')
+                . '/reset-password.php?token=' . $token,
         ],
-        false,
-        cryption($temporaryPassword, '', 'encrypt')['string'],
-        trim(((string) ($userInfo['name'] ?? '')) . ' ' . ((string) ($userInfo['lastname'] ?? '')))
+        false
     );
-    clearForgotLocalPasswordRequestContext($session);
 
     logEvents(
         $SETTINGS,
         'user_mngt',
-        'at_user_pwd_changed',
+        'at_user_forgot_local_password_requested',
         (string) $userInfo['id'],
         (string) $userInfo['login'],
         (string) $userInfo['id']
     );
 
-    return ['error' => false, 'message' => $lang->get('forgot_local_password_email_sent')];
+    return $uniformAnswer;
 }
