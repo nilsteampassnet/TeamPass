@@ -70,7 +70,10 @@ $checkUserAccess = new PerformChecks(
 // Handle the case
 echo $checkUserAccess->caseHandler();
 if (
-    $checkUserAccess->userAccessPage('items') === false ||
+    // This datatable feeds the Users administration page, not the items page: gate it on the
+    // page that actually offers it. 'items' is held by every authenticated user and was far
+    // too wide for an audit trail (GHSA-qhff-v9qj-75wc).
+    $checkUserAccess->userAccessPage('users') === false ||
     $checkUserAccess->checkSession() === false
 ) {
     // Not allowed page
@@ -124,6 +127,28 @@ $inputData = dataSanitizer(
     $filters
 );
 
+// Holding the Users page is not enough: 'userId' is client-supplied and is the only predicate
+// scoping the log queries below. Without this check a manager - or, before the page gate above,
+// any authenticated user - could read the audit trail of any account, administrators included,
+// simply by iterating the id (GHSA-qhff-v9qj-75wc).
+// Reading one's own logs is always permitted; any other target must be within the caller's
+// administration scope, using the same rule as the user-management actions.
+$targetUserId = (int) $inputData['userId'];
+if ($targetUserId <= 0
+    || ($targetUserId !== (int) $session->get('user-id')
+        && callerMayManageUser($targetUserId) === false)
+) {
+    // Answer with a well-formed but empty datatable: it keeps the client working and tells an
+    // out-of-scope caller nothing about whether the target exists.
+    echo json_encode([
+        'sEcho' => (int) $inputData['draw'],
+        'iTotalRecords' => 0,
+        'iTotalDisplayRecords' => 0,
+        'aaData' => [],
+    ]);
+    exit;
+}
+
 /* BUILD QUERY */
 // Paging
 $sLimit = '';
@@ -174,12 +199,14 @@ $rows = DB::query(
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.$inputData['userId'].
+    WHERE u.id = %i'.
     (string) $sWhere.
     ' UNION '.
     'SELECT s.date AS date, s.label AS label, s.field_1 AS field1
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.$inputData['userId']
+    WHERE s.qui = %i',
+    $targetUserId,
+    $targetUserId
 );
 $iTotal = DB::count();
 $rows = DB::query(
@@ -187,14 +214,16 @@ $rows = DB::query(
     FROM '.prefixTable('log_items').' as l
     INNER JOIN '.prefixTable('items').' as i ON (l.id_item=i.id)
     INNER JOIN '.prefixTable('users').' as u ON (l.id_user=u.id)
-    WHERE u.id = '.$inputData['userId'].
+    WHERE u.id = %i'.
     (string) $sWhere.
     ' UNION
     SELECT s.date AS date, s.label AS label, s.field_1 AS field1, s.id as id
     FROM '.prefixTable('log_system').' AS s
-    WHERE s.qui = '.$inputData['userId'].
+    WHERE s.qui = %i'.
     (string) $sOrder.
-    (string) $sLimit
+    (string) $sLimit,
+    $targetUserId,
+    $targetUserId
 );
 $sOutput = '{';
 $sOutput .= '"sEcho": '.$inputData['draw'].', ';
