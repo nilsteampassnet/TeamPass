@@ -2469,11 +2469,11 @@ if (
                 return '';
             }
 
-            // Password is empty or no key
+            // No key available for this user (or item not found) - show the server-provided reason
             if (typeof data.password_status !== 'undefined' && data.password_status === 'no_key') {
                 toastr.remove();
-                toastr.info('<?php echo $lang->get('password_is_empty'); ?>', '', {
-                    timeOut: 2000,
+                toastr.info(data.password_error || '<?php echo $lang->get('password_is_empty'); ?>', '', {
+                    timeOut: 4000,
                     positionClass: 'toast-bottom-right',
                     progressBar: true
                 });

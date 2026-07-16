@@ -792,6 +792,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
     }
 
+    /**
+     * Shared callback for background queries (attachments confirmation,
+     * edition lock release, ...): surfaces a server-side error that would
+     * otherwise fail silently.
+     *
+     * @param {string} ret - Encrypted server response
+     */
+    function reportBackgroundQueryError(ret) {
+        ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>')
+        if (ret && ret.error === true && ret.message) {
+            toastr.error(ret.message, '', { timeOut: 5000, progressBar: true })
+        }
+    }
+
     // Manage folders action
     $('.tp-action').click(function() {
         // Ensure that the local storage data is consistent with what is
@@ -1052,7 +1066,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             '<?php echo $session->get('key'); ?>'
                         ),
                         key: '<?php echo $session->get('key'); ?>'
-                    }
+                    },
+                    reportBackgroundQueryError
                 );
             }
 
@@ -1554,7 +1569,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             true
                         );
                     }
-                );
+                ).fail(function() {
+                    $("#items-delete-user-confirm").modal('hide');
+                    toastrUpdate(loadingToast, 'error',
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        { timeOut: 5000 }
+                    );
+                });
             });
 
             $("#modal-btn-items-delete-cancel").on("click", function(){
@@ -1665,7 +1686,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         type: 'handle_item_edition_lock',
                         data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                         key: '<?php echo $session->get('key'); ?>'
-                    }
+                    },
+                    reportBackgroundQueryError
                 );
 
                 if (userUploadedFile === true) {
@@ -2113,12 +2135,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // ERROR
                     $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        data.message,
+                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                         { timeOut: 5000 }
                     );
+                    requestRunning = false;
                 }
             }
-        );
+        ).fail(function() {
+            $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
+            toastrUpdate(loadingToast, 'error',
+                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                { timeOut: 5000 }
+            );
+            requestRunning = false;
+        });
     }
 
 
@@ -2223,7 +2253,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             'action': 'release_lock',
                         }), 'encode', '<?php echo $session->get('key'); ?>'),
                         key: '<?php echo $session->get('key'); ?>'
-                    });
+                    }, reportBackgroundQueryError);
 
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
@@ -2254,12 +2284,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // ERROR
                     $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        data.message,
+                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                         { timeOut: 5000 }
                     );
                 }
             }
-        );
+        ).fail(function() {
+            $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
+            toastrUpdate(loadingToast, 'error',
+                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                { timeOut: 5000 }
+            );
+        });
     });
 
 
@@ -3239,6 +3275,21 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(ret) {
+                        // decrypt data and stop on server-side denial
+                        ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (ret === false || ret.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                (ret && ret.message) || '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            quick_icon_query_status = true;
+                            return;
+                        }
+
                         //change quick icon
                         if (elem.data('item-favourited') === 0) {
                             $(elem)
@@ -3658,7 +3709,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
         // Extraire le message d'erreur
-        let errorMessage = 'An unknown error occurred.';
+        let errorMessage = '<?php echo addslashes($lang->get('error_unknown')); ?>';
         if (err.response) {
             try {
                 const response = JSON.parse(err.response);
@@ -4065,11 +4116,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // error
                             $("#div_loading").addClass("hidden");
                             //requestRunning = false;
-                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
+                            $("#div_dialog_message_text").html("<?php echo addslashes($lang->get('server_answer_error')); ?><br />Returned data:<br />" + data);
                             $("#div_dialog_message").dialog("open");
 
                             toastrUpdate(loadingToast, 'error',
-                                'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
+                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                { timeOut: 5000 }
+                            );
+                            return false;
+                        }
+                        // prepareExchangedData returns false (without throwing) on unusable response
+                        if (data === false) {
+                            toastrUpdate(loadingToast, 'error',
+                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4110,7 +4169,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                         type: 'confirm_attachments',
                                         data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
-                                    }
+                                    },
+                                    reportBackgroundQueryError
                                 );
 
                                 // Prevent duplicate ListerItems via jstree select_node event handler
@@ -4167,7 +4227,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                         type: 'confirm_attachments',
                                         data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
-                                    }
+                                    },
+                                    reportBackgroundQueryError
                                 );
 
                                 // Update store with new item id
@@ -4235,11 +4296,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // Close edit form and reopen folders-tree-card with refreshed item.
                             $('.form-item, #form-item-attachments-zone').addClass('hidden');
                             $('#folders-tree-card').removeClass('hidden');
-                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;                         
+                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;
                             Details(item_id, 'show', true);
                         }
                     }
-                );
+                ).fail(function() {
+                    // HTTP-level failure (500, network...): close the spinner and unblock edition
+                    toastrUpdate(loadingToast, 'error',
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        { timeOut: 5000 }
+                    );
+                    requestRunning = false;
+                });
             }
         } else if (userUploadedFile === true) {
             // Send query to confirm attachments
@@ -4252,7 +4320,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     type: 'confirm_attachments',
                     data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                     key: '<?php echo $session->get('key'); ?>'
-                }
+                },
+                reportBackgroundQueryError
             );
 
             store.update(
@@ -6965,7 +7034,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     return true;
                 }
-            );
+            ).fail(function() {
+                // HTTP-level failure (500, network...): close the spinner and unblock navigation
+                toastr.remove();
+                toastr.error(
+                    '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                requestRunning = false;
+            });
         });
     }
 
@@ -7794,7 +7874,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                if (data.error !== "" || data.sends === undefined || data.sends.length === 0) {
+                // A real server error must not be displayed as an empty list
+                if (data.error !== undefined && data.error !== "") {
+                    toastr.error(
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+                if (data.sends === undefined || data.sends.length === 0) {
                     $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
                     return;
                 }
@@ -8856,7 +8947,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
                         );
                     }
-                );
+                ).fail(function() {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    ui.draggable.removeClass('hidden');
+                });
             }
         });
     }

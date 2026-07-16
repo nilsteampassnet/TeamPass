@@ -2807,5 +2807,15 @@ return array(
     'security_score_delta_since' => 'depuis la dernière analyse',
     'security_score_scan_hint' => 'Lancez une analyse pour inclure les mots de passe réutilisés et compromis dans votre score.',
     'security_score_top3' => 'Les 3 principaux points à corriger',
+    'error_no_edit_right' => 'Vous n’avez pas le droit de modifier cet élément',
+    'error_no_delete_right' => 'Vous n’avez pas le droit de supprimer cet élément',
+    'error_missing_sharekey' => 'Votre clé de déchiffrement pour cet élément n’est pas encore disponible. Veuillez réessayer dans quelques instants.',
+    'error_readonly_account' => 'Votre compte est en lecture seule, cette action n’est pas autorisée',
+    'error_item_creation_failed' => 'La création de l’élément a échoué suite à une erreur interne. Veuillez réessayer.',
+    'error_no_sharekey_yet' => 'Clé de déchiffrement pas encore disponible pour ce champ',
+    'nothing_to_do' => 'Aucune action à réaliser',
+    'mass_operation_partially_denied' => '#nb# élément(s) ignoré(s) par manque de permissions',
+    'error_hibp_check_failed' => 'La vérification de compromission du mot de passe n’a pas pu aboutir (service injoignable)',
+    'error_no_access_to_item' => 'Vous n’êtes pas autorisé à accéder à cet élément',
 
 );
