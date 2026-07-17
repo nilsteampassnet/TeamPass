@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'find.functions.php';
 
 // init
 loadClasses('DB');
@@ -216,7 +217,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -446,118 +447,161 @@ switch ($inputData['type']) {
                 } else {
                     $cryptedStuff['encrypted'] = '';
                     $cryptedStuff['objectKey'] = '';
+                    $cryptedStuff['meta'] = '';
                 }
 
+                // Capture the plaintext before it is overwritten with the ciphertext, for the
+                // post-commit security-posture refresh (reuse bucket hashing).
+                $plaintextPasswordForHealth = $post_password;
                 $post_password = $cryptedStuff['encrypted'];
                 $post_password_key = $cryptedStuff['objectKey'];
+                $post_password_iv = $cryptedStuff['meta'] ?? '';
                 $itemFilesForTasks = [];
                 $itemFieldsForTasks = [];
                 
                 // ADD item
-                DB::insert(
-                    prefixTable('items'),
-                    array(
-                        'label' => $inputData['label'],
-                        'description' => $post_description,
-                        'pw' => $post_password,
-                        'pw_iv' => '',
-                        'pw_len' => $strlen_post_password,
-                        'email' => $post_email,
-                        'url' => $post_url,
-                        'id_tree' => $inputData['folderId'],
-                        'login' => $post_login,
-                        'inactif' => 0,
-                        'restricted_to' => empty($post_restricted_to) === true ?
-                            '' : implode(';', $post_restricted_to),
-                        'perso' => ((int) $post_folder_is_personal === 1) ?
-                            1 : 0,
-                        'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
-                        'complexity_level' => $post_complexity_level,
-                        'encryption_type' => 'teampass_aes',
-                        'fa_icon' => $post_fa_icon,
-                        'item_key' => uniqidReal(50),
-                        'created_at' => time(),
-                    )
-                );
-                $newID = DB::insertId();
+                // FUNC-6: the item row, the creator sharekey and the encrypted custom fields
+                // (with their sharekeys) must be atomic. A crash in between would leave an
+                // encrypted item or field with no key, i.e. permanently unreadable (I4 violation).
+                DB::startTransaction();
+                try {
+                    DB::insert(
+                        prefixTable('items'),
+                        array(
+                            'label' => $inputData['label'],
+                            'description' => $post_description,
+                            'pw' => $post_password,
+                            'pw_iv' => $post_password_iv,
+                            'pw_len' => $strlen_post_password,
+                            'email' => $post_email,
+                            'url' => $post_url,
+                            'id_tree' => $inputData['folderId'],
+                            'login' => $post_login,
+                            'inactif' => 0,
+                            'restricted_to' => empty($post_restricted_to) === true ?
+                                '' : implode(';', $post_restricted_to),
+                            'perso' => ((int) $post_folder_is_personal === 1) ?
+                                1 : 0,
+                            'anyone_can_modify' => ($post_anyone_can_modify === 'on') ? 1 : 0,
+                            'complexity_level' => $post_complexity_level,
+                            'encryption_type' => 'teampass_aes',
+                            'fa_icon' => $post_fa_icon,
+                            'item_key' => uniqidReal(50),
+                            'created_at' => time(),
+                        )
+                    );
+                    $newID = DB::insertId();
 
-                // Create sharekeys for the user itself
-                storeUsersShareKey(
-                    'sharekeys_items',
-                    (int) $post_folder_is_personal,
-                    intval($newID),
-                    $cryptedStuff['objectKey'],
-                    true,   // only for the item creator
-                    false,  // no delete all
-                );
+                    // Create sharekeys for the user itself
+                    storeUsersShareKey(
+                        'sharekeys_items',
+                        (int) $post_folder_is_personal,
+                        intval($newID),
+                        $cryptedStuff['objectKey'],
+                        true,   // onlyForUser (deprecated, ignored)
+                        false,  // no delete all
+                        [],     // objectKeyArray
+                        -1,     // all_users_except_id
+                        -1,     // apiUserId
+                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
+                    );
 
-                // update fields
-                if (
-                    isset($SETTINGS['item_extra_fields']) === true
-                    && (int) $SETTINGS['item_extra_fields'] === 1
-                ) {
-                    foreach ($post_fields as $field) {
-                        if (empty($field['value']) === false) {
-                            // should we encrypt the data
-                            $dataTmp = DB::queryFirstRow(
-                                'SELECT encrypted_data
-                                FROM ' . prefixTable('categories') . '
-                                WHERE id = %i',
-                                $field['id']
-                            );
-
-                            // Should we encrypt the data
-                            if (intval($dataTmp['encrypted_data']) === 1) {
-                                // Create sharekeys for users
-                                $cryptedStuff = doDataEncryption($field['value']);
-
-                                // Store value
-                                DB::insert(
-                                    prefixTable('categories_items'),
-                                    array(
-                                        'item_id' => $newID,
-                                        'field_id' => $field['id'],
-                                        'data' => $cryptedStuff['encrypted'],
-                                        'data_iv' => '',
-                                        'encryption_type' => TP_ENCRYPTION_NAME,
-                                    )
-                                );
-                                $newObjectId = DB::insertId();
-
-                                // Create sharekeys for user
-                                storeUsersShareKey(
-                                    'sharekeys_fields',
-                                    (int) $post_folder_is_personal,
-                                    intval($newObjectId),
-                                    $cryptedStuff['objectKey'],
-                                    true,   // only for the item creator
-                                    false,  // delete all
+                    // update fields
+                    if (
+                        isset($SETTINGS['item_extra_fields']) === true
+                        && (int) $SETTINGS['item_extra_fields'] === 1
+                    ) {
+                        foreach ($post_fields as $field) {
+                            if (empty($field['value']) === false) {
+                                // should we encrypt the data
+                                $dataTmp = DB::queryFirstRow(
+                                    'SELECT encrypted_data
+                                    FROM ' . prefixTable('categories') . '
+                                    WHERE id = %i',
+                                    $field['id']
                                 );
 
-                                array_push(
-                                    $itemFieldsForTasks,
-                                    [
-                                        'object_id' => $newObjectId,
-                                        'object_key' => $cryptedStuff['objectKey'],
-                                    ]
-                                );
-                                
-                            } else {
-                                // update value
-                                DB::insert(
-                                    prefixTable('categories_items'),
-                                    array(
-                                        'item_id' => $newID,
-                                        'field_id' => $field['id'],
-                                        'data' => $field['value'],
-                                        'data_iv' => '',
-                                        'encryption_type' => 'not_set',
-                                    )
-                                );
+                                // Should we encrypt the data
+                                if (intval($dataTmp['encrypted_data']) === 1) {
+                                    // Create sharekeys for users
+                                    $cryptedStuff = doDataEncryption($field['value']);
+
+                                    // Store value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field['id'],
+                                            'data' => $cryptedStuff['encrypted'],
+                                            'data_iv' => $cryptedStuff['meta'],
+                                            'encryption_type' => TP_ENCRYPTION_NAME,
+                                        )
+                                    );
+                                    $newObjectId = DB::insertId();
+
+                                    // Create sharekeys for user
+                                    storeUsersShareKey(
+                                        'sharekeys_fields',
+                                        (int) $post_folder_is_personal,
+                                        intval($newObjectId),
+                                        $cryptedStuff['objectKey'],
+                                        true,   // onlyForUser (deprecated, ignored)
+                                        false,  // no delete all
+                                        [],     // objectKeyArray
+                                        -1,     // all_users_except_id
+                                        -1,     // apiUserId
+                                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
+                                    );
+
+                                    array_push(
+                                        $itemFieldsForTasks,
+                                        [
+                                            'object_id' => $newObjectId,
+                                            'object_key' => $cryptedStuff['objectKey'],
+                                        ]
+                                    );
+
+                                } else {
+                                    // update value
+                                    DB::insert(
+                                        prefixTable('categories_items'),
+                                        array(
+                                            'item_id' => $newID,
+                                            'field_id' => $field['id'],
+                                            'data' => $field['value'],
+                                            'data_iv' => '',
+                                            'encryption_type' => 'not_set',
+                                        )
+                                    );
+                                }
                             }
                         }
                     }
+
+                    DB::commit();
+                } catch (Throwable $e) {
+                    DB::rollback();
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS Error - create_item transaction failed: ' . $e->getMessage());
+                    }
+                    echo (string) prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_item_creation_failed'),
+                        ),
+                        'encode'
+                    );
+                    break;
                 }
+
+                // Refresh the new item's security posture so a reused/weak password is flagged
+                // without waiting for a manual dashboard scan. No-op when the dashboard is disabled.
+                refreshItemHealthAfterSave(
+                    (int) $newID,
+                    (int) $session->get('user-id'),
+                    (string) $plaintextPasswordForHealth,
+                    $SETTINGS
+                );
 
                 // If template enable, is there a main one selected?
                 if (
@@ -862,7 +906,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -1059,6 +1103,7 @@ switch ($inputData['type']) {
         $tasksToBePerformed = [];
         $encrypted_password = '';
         $encrypted_password_key = '';
+        $encrypted_password_iv = '';
 
         // Get all informations for this item
         $dataItem = DB::queryFirstRow(
@@ -1088,7 +1133,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_no_delete_right'),
                     ),
                     'encode'
                 );
@@ -1100,7 +1145,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_edit_right'),
                 ),
                 'encode'
             );
@@ -1134,7 +1179,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_missing_sharekey'),
                 ),
                 'encode'
             );
@@ -1185,7 +1230,7 @@ switch ($inputData['type']) {
         ) {
             // Get existing values
             $data = DB::queryFirstRow(
-                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login, 
+                'SELECT i.id as id, i.label as label, i.description as description, i.pw as pw, i.pw_iv as pw_iv, i.url as url, i.id_tree as id_tree, i.perso as perso, i.login as login,
                 i.inactif as inactif, i.restricted_to as restricted_to, i.anyone_can_modify as anyone_can_modify, i.email as email, i.notification as notification,
                 u.login as user_login, u.email as user_email
                 FROM ' . prefixTable('items') . ' as i
@@ -1198,7 +1243,7 @@ switch ($inputData['type']) {
 
             // Should we log a password change?
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
@@ -1210,11 +1255,15 @@ switch ($inputData['type']) {
             } else {
                 $pw = teampassDecryptPasswordValue(
                     $data['pw'],
-                    decryptUserObjectKey(
+                    decryptUserObjectKeyWithMigration(
                         $userKey['share_key'],
-                        $session->get('user-private_key')
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_items'
                     ),
-                    (int) ($data['pw_len'] ?? 0)
+                    (int) ($data['pw_len'] ?? 0),
+                    (string) ($data['pw_iv'] ?? '')
                 );
             }
 
@@ -1257,6 +1306,7 @@ switch ($inputData['type']) {
                         // waiting on an encryption task that would never refresh the detail view
                         // for an empty password.
                         $encrypted_password = '';
+                        $encrypted_password_iv = '';
                         DB::delete(
                             prefixTable('sharekeys_items'),
                             'object_id = %i',
@@ -1264,8 +1314,9 @@ switch ($inputData['type']) {
                         );
                         $passwordWasUpdated = true;
                     } else {
-                        // Not allowed to clear the password — keep the existing one.
+                        // Not allowed to clear the password — keep the existing one (and its meta).
                         $encrypted_password = $data['pw'];
+                        $encrypted_password_iv = $data['pw_iv'] ?? '';
                     }
                 } else {
                     //-----
@@ -1273,6 +1324,7 @@ switch ($inputData['type']) {
                     $cryptedStuff = doDataEncryption($post_password);
                     $encrypted_password = $cryptedStuff['encrypted'];
                     $encrypted_password_key = $cryptedStuff['objectKey'];
+                    $encrypted_password_iv = $cryptedStuff['meta'];
 
                     // Create sharekeys for users
                     storeUsersShareKey(
@@ -1280,8 +1332,12 @@ switch ($inputData['type']) {
                         (int) $post_folder_is_personal,
                         (int) $inputData['itemId'],
                         $encrypted_password_key,
-                        true,   // only for the item creator
-                        true,   // delete all
+                        true,   // onlyForUser (deprecated, ignored)
+                        true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                        [],     // objectKeyArray
+                        -1,     // all_users_except_id
+                        -1,     // apiUserId
+                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                     );
 
                     // Create a task to create sharekeys for users
@@ -1292,6 +1348,7 @@ switch ($inputData['type']) {
                 }
             } else {
                 $encrypted_password = $data['pw'];
+                $encrypted_password_iv = $data['pw_iv'] ?? '';
             }
 
             // ---Manage tags
@@ -1355,6 +1412,7 @@ switch ($inputData['type']) {
                     'label' => $inputData['label'],
                     'description' => $post_description,
                     'pw' => $encrypted_password,
+                    'pw_iv' => $encrypted_password_iv,
                     'pw_len' => $strlen_post_password,
                     'email' => $post_email,
                     'login' => $post_login,
@@ -1417,9 +1475,11 @@ switch ($inputData['type']) {
                             if (intval($dataTmpCat['encrypted_data']) === 1) {
                                 $cryptedStuff   = doDataEncryption($field['value']);
                                 $dataToStore    = $cryptedStuff['encrypted'];
+                                $dataIvToStore  = $cryptedStuff['meta'];
                                 $encryptionType = TP_ENCRYPTION_NAME;
                             } else {
                                 $dataToStore    = $field['value'];
+                                $dataIvToStore  = '';
                                 $encryptionType = 'not_set';
                             }
 
@@ -1430,7 +1490,7 @@ switch ($inputData['type']) {
                                     'item_id' => $inputData['itemId'],
                                     'field_id' => $field['id'],
                                     'data' => $dataToStore,
-                                    'data_iv' => '',
+                                    'data_iv' => $dataIvToStore,
                                     'encryption_type' => $encryptionType,
                                 )
                             );
@@ -1445,8 +1505,12 @@ switch ($inputData['type']) {
                                     (int) $post_folder_is_personal,
                                     intval($newId),
                                     $cryptedStuff['objectKey'],
-                                    true,   // only for the item creator
-                                    true,   // delete all
+                                    true,   // onlyForUser (deprecated, ignored)
+                                    true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                                    [],     // objectKeyArray
+                                    -1,     // all_users_except_id
+                                    -1,     // apiUserId
+                                    (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                                 );
 
                                 array_push(
@@ -1495,7 +1559,8 @@ switch ($inputData['type']) {
                                             $session->get('user-public_key'),
                                             intval($userKey['increment_id']),
                                             'sharekeys_fields'
-                                        )
+                                        ),
+                                        (string) ($dataTmpCat['data_iv'] ?? '')
                                     ));
                                 } else {
                                     $oldVal = '';
@@ -1513,6 +1578,7 @@ switch ($inputData['type']) {
                                 if (intval($dataTmpCat['encrypted_data']) === 1) {
                                     $cryptedStuff = doDataEncryption($field['value']);
                                     $encrypt['string'] = $cryptedStuff['encrypted'];
+                                    $encrypt['iv'] = $cryptedStuff['meta'];
                                     $encrypt['type'] = TP_ENCRYPTION_NAME;
 
                                     // Create sharekeys for users
@@ -1521,8 +1587,12 @@ switch ($inputData['type']) {
                                         (int) $post_folder_is_personal,
                                         intval($dataTmpCat['field_item_id']),
                                         $cryptedStuff['objectKey'],
-                                        true,   // only for the item creator
-                                        true,   // delete all
+                                        true,   // onlyForUser (deprecated, ignored)
+                                        true,   // deleteAll (used by the personal branch; ignored by caller-only)
+                                        [],     // objectKeyArray
+                                        -1,     // all_users_except_id
+                                        -1,     // apiUserId
+                                        (int) $session->get('user-id'),  // FUNC-1 — caller-only sync (public); fan-out deferred to background
                                     );
 
                                     array_push(
@@ -1532,6 +1602,7 @@ switch ($inputData['type']) {
                                     $encryptedFieldIsChanged = true;
                                 } else {
                                     $encrypt['string'] = $field['value'];
+                                    $encrypt['iv'] = '';
                                     $encrypt['type'] = 'not_set';
                                 }
 
@@ -1540,7 +1611,7 @@ switch ($inputData['type']) {
                                     prefixTable('categories_items'),
                                     array(
                                         'data' => $encrypt['string'],
-                                        'data_iv' => '',
+                                        'data_iv' => $encrypt['iv'],
                                         'encryption_type' => $encrypt['type'],
                                     ),
                                     'item_id = %i AND field_id = %i',
@@ -2239,6 +2310,16 @@ switch ($inputData['type']) {
 
             if ($passwordWasUpdated === true) {
                 teampassCorruptedItemsClearItemState((int) $inputData['itemId']);
+
+                // Refresh the item's security posture so the "needs attention" shield reflects
+                // the new password immediately (reused/breached flags are otherwise frozen at
+                // the last manual dashboard scan). No-op when the dashboard is disabled.
+                refreshItemHealthAfterSave(
+                    (int) $inputData['itemId'],
+                    (int) $session->get('user-id'),
+                    (string) $post_password,
+                    $SETTINGS
+                );
             }
 
             // Prepare some stuff to return
@@ -2285,7 +2366,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -2313,7 +2394,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -2346,7 +2427,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                     ),
                     'encode'
                 );
@@ -2373,7 +2454,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_missing_sharekey'),
                     ),
                     'encode'
                 );
@@ -2391,7 +2472,8 @@ switch ($inputData['type']) {
                         intval($userKey['increment_id']),
                         'sharekeys_items'
                     ),
-                    (int) ($originalRecord['pw_len'] ?? 0)
+                    (int) ($originalRecord['pw_len'] ?? 0),
+                    (string) ($originalRecord['pw_iv'] ?? '')
                 )
             );
             // reaffect pw
@@ -2413,7 +2495,10 @@ switch ($inputData['type']) {
                     $aSet['viewed_no'] = '0';
                 } elseif ($key === 'pw') {
                     $aSet['pw'] = $originalRecord['pw'];
-                    $aSet['pw_iv'] = '';
+                    $aSet['pw_iv'] = $cryptedStuff['meta'];
+                } elseif ($key === 'pw_iv') {
+                    // pw_iv reflects the freshly re-encrypted pw (set in the 'pw' branch);
+                    // never copy the source row's pw_iv.
                 } elseif ($key === 'perso') {
                     $aSet['perso'] = $is_perso;
                 } elseif ($key !== 'id' && $key !== 'key') {
@@ -2441,7 +2526,7 @@ switch ($inputData['type']) {
             // --------------------
             // Manage Custom Fields
             $rows = DB::query(
-                'SELECT ci.id AS id, ci.data AS data, ci.field_id AS field_id, c.encrypted_data AS encrypted_data
+                'SELECT ci.id AS id, ci.data AS data, ci.data_iv AS data_iv, ci.field_id AS field_id, c.encrypted_data AS encrypted_data
                 FROM ' . prefixTable('categories_items') . ' AS ci
                 INNER JOIN ' . prefixTable('categories') . ' AS c ON (c.id = ci.field_id)
                 WHERE ci.item_id = %i',
@@ -2472,7 +2557,8 @@ switch ($inputData['type']) {
                                     $session->get('user-public_key'),
                                     intval($userKey['increment_id'] ?? 0),
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($field['data_iv'] ?? '')
                             )
                         )
                     );
@@ -2488,7 +2574,8 @@ switch ($inputData['type']) {
                         'field_id' => $field['field_id'],
                         'data' => intval($field['encrypted_data']) === 1 ?
                             $cryptedStuff['encrypted'] : $field['data'],
-                        'data_iv' => '',
+                        'data_iv' => intval($field['encrypted_data']) === 1 ?
+                            $cryptedStuff['meta'] : '',
                         'encryption_type' => intval($field['encrypted_data']) === 1 ?
                             TP_ENCRYPTION_NAME : 'not_set',
                     )
@@ -2525,7 +2612,7 @@ switch ($inputData['type']) {
             // get file key
             $rows = DB::query(
                 'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status, f.extension AS extension,
-                f.size AS size, f.type AS type, s.share_key AS share_key
+                f.size AS size, f.type AS type, s.share_key AS share_key, s.increment_id AS increment_id
                 FROM ' . prefixTable('files') . ' AS f
                 INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
                 WHERE s.user_id = %i AND f.id_item = %i',
@@ -2540,7 +2627,13 @@ switch ($inputData['type']) {
                     $fileContent = decryptFile(
                         $record['file'],
                         $SETTINGS['path_to_upload_folder'],
-                        decryptUserObjectKey($record['share_key'] ?? '', $session->get('user-private_key'))
+                        decryptUserObjectKeyWithMigration(
+                            $record['share_key'] ?? '',
+                            $session->get('user-private_key'),
+                            $session->get('user-public_key'),
+                            intval($record['increment_id'] ?? 0),
+                            'sharekeys_files'
+                        )
                     );
 
                     // Step2 - create file
@@ -2873,7 +2966,7 @@ switch ($inputData['type']) {
         // Uncrypt PW
         // Get the object key for the user
         $userKeys = DB::query(
-            'SELECT share_key
+            'SELECT share_key, increment_id
             FROM ' . prefixTable('sharekeys_items') . '
             WHERE user_id = %i AND object_id = %i',
             $session->get('user-id'),
@@ -2909,7 +3002,13 @@ switch ($inputData['type']) {
             // Loop on available keys
             // We should only have one but in case of, do this loop
             foreach ($userKeys as $userKey) {
-                $decryptedObject = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $decryptedObject = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_items'
+                );
 
                 if (!empty($decryptedObject)) {
                     $validKeyFound = true;
@@ -2921,11 +3020,26 @@ switch ($inputData['type']) {
                 $passwordForMetrics = teampassDecryptPasswordValue(
                     $dataItem['pw'],
                     $decryptedObject,
-                    (int) ($dataItem['pw_len'] ?? 0)
+                    (int) ($dataItem['pw_len'] ?? 0),
+                    (string) ($dataItem['pw_iv'] ?? '')
                 );
                 $pw = $passwordForMetrics === '' ? '' : base64_encode($passwordForMetrics);
                 $arrData['pwd_encryption_error'] = false;
                 $arrData['pwd_encryption_error_message'] = '';
+
+                // Lazily upgrade a legacy-encrypted password to AES v2 on read
+                // (no-op unless v2 writes are enabled and the row is still legacy).
+                if ($passwordForMetrics !== '') {
+                    doDataReEncryption(
+                        'items',
+                        'pw',
+                        'pw_iv',
+                        (int) $dataItem['id'],
+                        (string) $dataItem['pw'],
+                        (string) ($dataItem['pw_iv'] ?? ''),
+                        $decryptedObject
+                    );
+                }
             } elseif (isset($userKey) && $userKey['share_key'] !== '') {
                 $pw = '';
                 $arrData['pwd_encryption_error'] = 'inconsistent_password';
@@ -2959,6 +3073,13 @@ switch ($inputData['type']) {
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
             || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
+                // "Restrict items to roles" is an ADDITIONAL restriction, never a replacement for
+                // folder access. Require the same folder / personal-folder predicate as the first
+                // clause so an item is only ever disclosed from a folder the caller can actually
+                // see (GHSA-hjhc-6g7v-8jxr). Without this the clause collapsed to "item has no
+                // per-item restriction" and leaked every unrestricted item's metadata cross-folder.
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && (intval($dataItem['perso']) === 0 || (intval($dataItem['perso']) === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false)
         ) {
             // Check if actual USER can see this ITEM
@@ -3065,12 +3186,28 @@ switch ($inputData['type']) {
             }
 
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
-            $arrData['pw_length'] = strlen($passwordForMetrics);
-            // Password security badge: OWASP ASVS aligned policy (min length 12, max TeamPass complexity level)
-            if (strlen($passwordForMetrics) === 0) {
-                $arrData['pw_is_secure'] = null; // empty password → no badge
+            $pwLength = strlen($passwordForMetrics);
+            $arrData['pw_length'] = $pwLength;
+            // Per-item health marker (replaces the old binary pw_is_secure shield): the same
+            // posture signals used by the Security Posture Dashboard (F1), surfaced on the card.
+            // - weak: complexity below "medium" (TP_PW_STRENGTH_3) OR length < 12 (card-only,
+            //   uses the decrypted value available here — the dashboard has no plaintext).
+            // - reused: from the per-user scan (item_health), only when the dashboard is enabled.
+            // breached is intentionally excluded — the HIBP badge already shows it on the card.
+            if ($pwLength === 0) {
+                $arrData['pw_health'] = null; // empty password → no marker
             } else {
-                $arrData['pw_is_secure'] = strlen($passwordForMetrics) >= 12 && intval($dataItem['complexity_level']) >= TP_PW_STRENGTH_5;
+                $flagWeak = (intval($dataItem['complexity_level']) < TP_PW_STRENGTH_3 || $pwLength < 12) ? 1 : 0;
+                $flagReused = 0;
+                if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1) {
+                    $flagReused = (int) DB::queryFirstField(
+                        'SELECT COALESCE(flag_reused, 0) FROM ' . prefixTable('item_health') . '
+                        WHERE user_id = %i AND item_id = %i',
+                        (int) $session->get('user-id'),
+                        (int) $inputData['id']
+                    );
+                }
+                $arrData['pw_health'] = ['weak' => $flagWeak, 'reused' => $flagReused];
             }
 
             // HIBP cached status (no API call here — async check is triggered by the JS)
@@ -3146,7 +3283,7 @@ switch ($inputData['type']) {
 
                     // get fields for this Item
                     $rows_tmp = DB::query(
-                        'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.item_id AS item_id,
+                        'SELECT i.id AS id, i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv, i.item_id AS item_id,
                         i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data, c.parent_id AS parent_id,
                         c.type as field_type, c.masked AS field_masked, c.role_visibility AS role_visibility
                         FROM ' . prefixTable('categories_items') . ' AS i
@@ -3219,15 +3356,17 @@ switch ($inputData['type']) {
                         } else {
                             // Data is encrypted in DB and we have a key
                             // Use migration-aware decryption to transparently upgrade v1→v3 sharekeys
+                            $fieldObjectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_fields'
+                            );
                             $decryptedValue = doDataDecryption(
                                 $row['data'],
-                                decryptUserObjectKeyWithMigration(
-                                    $userKey['share_key'],
-                                    $session->get('user-private_key'),
-                                    $session->get('user-public_key'),
-                                    intval($userKey['increment_id']),
-                                    'sharekeys_fields'
-                                )
+                                $fieldObjectKey,
+                                (string) ($row['data_iv'] ?? '')
                             );
                             if ($decryptedValue === '') {
                                 $fieldText = [
@@ -3242,6 +3381,18 @@ switch ($inputData['type']) {
                                     'encrypted' => true,
                                     'error' => '',
                                 ];
+
+                                // Lazily upgrade a legacy-encrypted field to AES v2 on read
+                                // (no-op unless v2 writes are enabled and the row is still legacy).
+                                doDataReEncryption(
+                                    'categories_items',
+                                    'data',
+                                    'data_iv',
+                                    (int) $row['id'],
+                                    (string) $row['data'],
+                                    (string) ($row['data_iv'] ?? ''),
+                                    $fieldObjectKey
+                                );
                             }
                         }
 
@@ -3382,6 +3533,8 @@ switch ($inputData['type']) {
             // ---
         } else {
             $arrData['show_details'] = 0;
+            // Access denied (folder access or item-level restriction) - provide the reason
+            $arrData['message'] = $lang->get('error_no_access_to_item');
             // get readable list of restriction
             $listOfRestricted = '';
             if (empty($dataItem['restricted_to']) === false) {
@@ -3447,7 +3600,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_readonly_account'),
                     ),
                     'encode'
                 );
@@ -3459,7 +3612,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -3747,7 +3900,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -3797,7 +3950,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $granted,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                 ),
                 'encode'
             );
@@ -3828,7 +3981,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_delete_right'),
                 ),
                 'encode'
             );
@@ -3916,7 +4069,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -3927,7 +4080,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -4000,7 +4153,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -4029,7 +4182,7 @@ switch ($inputData['type']) {
         }
         // check that title is not numeric
         if (is_numeric($title) === true) {
-            echo '[{"error" : "ERR_TITLE_ONLY_WITH_NUMBERS"}]';
+            echo '[ { "error" : "' . $lang->get('error_only_numbers_in_folder_name') . '" } ]';
             break;
         }
 
@@ -4130,7 +4283,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to')." BOOH 1",
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -4540,16 +4693,7 @@ switch ($inputData['type']) {
                     // Build description preview (handles both raw HTML and HTML-encoded strings)
                     $descPreview = '';
                     if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false) {
-                        $descRaw = strval($record['description']);
-                        // Some descriptions may be stored HTML-encoded (ex: &lt;p&gt;...&lt;/p&gt;). Decode first, then strip tags.
-                        $descDecoded = html_entity_decode($descRaw, ENT_QUOTES, 'UTF-8');
-                        $descStripped = preg_replace('#<[^>]+>#', ' ', $descDecoded);
-                        // Normalize spaces (includes NBSP) and trim
-                        $descStripped = str_replace("\xC2\xA0", ' ', (string) $descStripped);
-                        $descStripped = trim(preg_replace('/\s+/', ' ', (string) $descStripped));
-                        if ($descStripped !== '') {
-                            $descPreview = mb_substr($descStripped, 0, 200);
-                        }
+                        $descPreview = findBuildDescriptionPreview(strval($record['description']));
                     }
                     $html_json[$record['id']]['desc'] = $descPreview;
                     $html_json[$record['id']]['login'] = $record['login'];
@@ -4565,7 +4709,11 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
                     $html_json[$record['id']]['corruption_reason'] = $corruptedState['reason'] ?? '';
                     $html_json[$record['id']]['corruption_severity'] = $corruptedState['severity'] ?? '';
+                    // The exception label embeds the raw scanner exception message, which is
+                    // reserved for the admin health page. Return no label here so the item list
+                    // falls back to the generic unreadable-password message.
                     $html_json[$record['id']]['corruption_reason_label'] = $corruptedState !== null
+                        && $corruptedState['reason'] !== 'exception'
                         ? teampassCorruptedItemsReasonToLabel(
                             $lang,
                             $corruptedState['reason']
@@ -4788,7 +4936,7 @@ switch ($inputData['type']) {
 
         // Get item details and its sharekey (including sharekey ID and user public key for migration)
         $dataItem = DB::queryFirstRow(
-            'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
+            'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id,
                     i.id AS id, i.label AS label, i.id_tree AS id_tree
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
@@ -4800,11 +4948,18 @@ switch ($inputData['type']) {
 
         // Check if password item exists
         if (DB::count() === 0) {
+            // Distinguish a missing item from a missing sharekey for this user
+            DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('items') . '
+                WHERE item_key = %s OR id = %i',
+                $inputData['itemKey'] ?? '',
+                $inputData['itemId'] ?? 0
+            );
             echo (string) prepareExchangedData(
                 [
                     'error' => false,
                     'password' => '',
-                    'password_error' => $lang->get('password_is_empty'),
+                    'password_error' => DB::count() === 0 ? $lang->get('error_item_not_found') : $lang->get('error_missing_sharekey'),
                     'password_status' => 'no_key',
                 ],
                 'encode'
@@ -4856,18 +5011,34 @@ switch ($inputData['type']) {
         // Automatic v1→v3 migration is performed transparently during decryption
         $pw = '';
         if (!empty($dataItem['share_key'])) {
+            $itemObjectKey = decryptUserObjectKeyWithMigration(
+                $dataItem['share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                intval($dataItem['sharekey_id']),
+                'sharekeys_items'
+            );
             $passwordPlain = teampassDecryptPasswordValue(
                 $dataItem['pw'],
-                decryptUserObjectKeyWithMigration(
-                    $dataItem['share_key'],
-                    $session->get('user-private_key'),
-                    $session->get('user-public_key'),
-                    intval($dataItem['sharekey_id']),
-                    'sharekeys_items'
-                ),
-                (int) ($dataItem['pw_len'] ?? 0)
+                $itemObjectKey,
+                (int) ($dataItem['pw_len'] ?? 0),
+                (string) ($dataItem['pw_iv'] ?? '')
             );
             $pw = $passwordPlain === '' ? '' : base64_encode($passwordPlain);
+
+            // Lazily upgrade a legacy-encrypted password to AES v2 on read
+            // (no-op unless v2 writes are enabled and the row is still legacy).
+            if ($passwordPlain !== '') {
+                doDataReEncryption(
+                    'items',
+                    'pw',
+                    'pw_iv',
+                    (int) $dataItem['id'],
+                    (string) $dataItem['pw'],
+                    (string) ($dataItem['pw_iv'] ?? ''),
+                    $itemObjectKey
+                );
+            }
         }
 
         $returnValues = array(
@@ -5187,6 +5358,13 @@ switch ($inputData['type']) {
             );
         }
 
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -5232,7 +5410,10 @@ switch ($inputData['type']) {
         // Check that user can access this folder
         if (in_array($data_item['id_tree'], $session->get('user-accessible_folders')) === false) {
             echo (string) prepareExchangedData(
-                array('error' => 'ERR_FOLDER_NOT_ALLOWED'),
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
                 'encode'
             );
             break;
@@ -5298,13 +5479,27 @@ switch ($inputData['type']) {
      * $action = 1 => Make not favorite
      */
     case 'action_on_quick_icon':
-        // Check KEY and rights
-        if (
-            $inputData['key'] !== $session->get('key')
-            || $session->get('user-read_only') === 1 || !isset($SETTINGS['pwd_maximum_length'])
-        ) {
-            // error
-            exit;
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Check rights
+        if ($session->get('user-read_only') === 1 || !isset($SETTINGS['pwd_maximum_length'])) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_readonly_account'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         // decrypt and retreive data in JSON format
@@ -5318,7 +5513,14 @@ switch ($inputData['type']) {
         // Verify the current user can access this item's folder.
         $granted = accessToItemIsGranted($itemId, $SETTINGS);
         if ($granted !== true) {
-            exit;
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         if ($action === 0) {
@@ -5344,6 +5546,14 @@ switch ($inputData['type']) {
 
         $favs = getUserFavorites((int) $session->get('user-id'));
         $session->set('user-favorites', $favs);
+
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -5366,7 +5576,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -5401,7 +5611,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_delete_right'),
                 ),
                 'encode'
             );
@@ -5419,7 +5629,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_edit_right'),
                 ),
                 'encode'
             );
@@ -5456,7 +5666,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                 ),
                 'encode'
             );
@@ -5558,14 +5768,20 @@ switch ($inputData['type']) {
 
             // Get the ITEM object key for the user
             $userKey = DB::queryFirstRow(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
                 $inputData['itemId']
             );
             if (DB::count() > 0) {
-                $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_items'
+                );
 
                 // This is a public object
                 $users = DB::query(
@@ -5602,7 +5818,7 @@ switch ($inputData['type']) {
                 }
 
                 $userKey = DB::queryFirstRow(
-                    'SELECT share_key
+                    'SELECT share_key, increment_id
                     FROM ' . prefixTable('sharekeys_fields') . '
                     WHERE user_id = %i AND object_id = %i',
                     $session->get('user-id'),
@@ -5627,7 +5843,13 @@ switch ($inputData['type']) {
                     continue;
                 }
 
-                $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                $objectKey = decryptUserObjectKeyWithMigration(
+                    $userKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($userKey['increment_id']),
+                    'sharekeys_fields'
+                );
 
                 // This is a public object
                 $users = DB::query(
@@ -5658,14 +5880,20 @@ switch ($inputData['type']) {
             );
             foreach ($rows as $attachment) {
                 $userKey = DB::queryFirstRow(
-                    'SELECT share_key
+                    'SELECT share_key, increment_id
                     FROM ' . prefixTable('sharekeys_files') . '
                     WHERE user_id = %i AND object_id = %i',
                     $session->get('user-id'),
                     $attachment['id']
                 );
                 if (DB::count() > 0) {
-                    $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                    $objectKey = decryptUserObjectKeyWithMigration(
+                        $userKey['share_key'],
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($userKey['increment_id']),
+                        'sharekeys_files'
+                    );
 
                     // This is a public object
                     $users = DB::query(
@@ -5764,7 +5992,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -5943,14 +6171,20 @@ switch ($inputData['type']) {
 
                     // Get the ITEM object key for the user
                     $userKey = DB::queryFirstRow(
-                        'SELECT share_key
+                        'SELECT share_key, increment_id
                         FROM ' . prefixTable('sharekeys_items') . '
                         WHERE user_id = %i AND object_id = %i',
                         $session->get('user-id'),
                         $item_id
                     );
                     if (DB::count() > 0) {
-                        $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                        $objectKey = decryptUserObjectKeyWithMigration(
+                            $userKey['share_key'],
+                            $session->get('user-private_key'),
+                            $session->get('user-public_key'),
+                            intval($userKey['increment_id']),
+                            'sharekeys_items'
+                        );
 
                         // This is a public object
                         $users = DB::query(
@@ -5982,14 +6216,20 @@ switch ($inputData['type']) {
                     );
                     foreach ($rows as $field) {
                         $userKey = DB::queryFirstRow(
-                            'SELECT share_key
+                            'SELECT share_key, increment_id
                             FROM ' . prefixTable('sharekeys_fields') . '
                             WHERE user_id = %i AND object_id = %i',
                             $session->get('user-id'),
                             $field['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                            $objectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_fields'
+                            );
 
                             // This is a public object
                             $users = DB::query(
@@ -6022,14 +6262,20 @@ switch ($inputData['type']) {
                     );
                     foreach ($rows as $attachment) {
                         $userKey = DB::queryFirstRow(
-                            'SELECT share_key
+                            'SELECT share_key, increment_id
                             FROM ' . prefixTable('sharekeys_files') . '
                             WHERE user_id = %i AND object_id = %i',
                             $session->get('user-id'),
                             $attachment['id']
                         );
                         if (DB::count() > 0) {
-                            $objectKey = decryptUserObjectKey($userKey['share_key'], $session->get('user-private_key'));
+                            $objectKey = decryptUserObjectKeyWithMigration(
+                                $userKey['share_key'],
+                                $session->get('user-private_key'),
+                                $session->get('user-public_key'),
+                                intval($userKey['increment_id']),
+                                'sharekeys_files'
+                            );
 
                             // This is a public object
                             $users = DB::query(
@@ -6108,7 +6354,7 @@ switch ($inputData['type']) {
         echo (string) prepareExchangedData(
             array(
                 'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? $lang->get('error_not_allowed_to') : '',
+                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
             ),
             'encode'
         );
@@ -6134,7 +6380,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6153,7 +6399,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6239,7 +6485,7 @@ switch ($inputData['type']) {
         echo (string) prepareExchangedData(
             array(
                 'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? $lang->get('error_not_allowed_to') : '',
+                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
             ),
             'encode'
         );
@@ -6265,7 +6511,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6512,11 +6758,110 @@ switch ($inputData['type']) {
             break;
         }
 
+        // Master gate: Secure Send relies on the OTV engine
+        if (isset($SETTINGS['otv_is_enabled']) === false || (int) $SETTINGS['otv_is_enabled'] !== 1) {
+            echo json_encode(array('error' => 'not_allowed'));
+            break;
+        }
+
         // decrypt and retreive data in JSON format
         $dataReceived = prepareExchangedData(
             $inputData['data'],
             'decode'
         );
+
+        // Determine the kind of send: an existing item or an ad-hoc note/secret
+        $secureSendType = (isset($dataReceived['send_type']) === true && $dataReceived['send_type'] === 'note') ? 'note' : 'item';
+        if ($secureSendType === 'note' && (int) ($SETTINGS['secure_send_allow_notes'] ?? 0) !== 1) {
+            echo json_encode(array('error' => 'notes_not_allowed'));
+            break;
+        }
+
+        // Optional recipient passphrase (transmitted out-of-band by the sender)
+        $secureSendPassphrase = (string) ($dataReceived['passphrase'] ?? '');
+        if ((int) ($SETTINGS['secure_send_require_passphrase'] ?? 0) === 1 && $secureSendPassphrase === '') {
+            echo json_encode(array('error' => 'passphrase_required'));
+            break;
+        }
+
+        // Clamp expiry (days) and view count to the administrator policy
+        $secureSendMaxDays = (int) ($SETTINGS['otv_expiration_period'] ?? 7);
+        if ($secureSendMaxDays < 1) {
+            $secureSendMaxDays = 7;
+        }
+        $secureSendDays = (int) ($dataReceived['days'] ?? $secureSendMaxDays);
+        if ($secureSendDays < 1) {
+            $secureSendDays = 1;
+        }
+        if ($secureSendDays > $secureSendMaxDays) {
+            $secureSendDays = $secureSendMaxDays;
+        }
+
+        $secureSendMaxViewsCap = (int) ($SETTINGS['secure_send_max_views'] ?? 5);
+        if ($secureSendMaxViewsCap < 1) {
+            $secureSendMaxViewsCap = 1;
+        }
+        $secureSendViews = (int) ($dataReceived['views'] ?? 1);
+        if ($secureSendViews < 1) {
+            $secureSendViews = 1;
+        }
+        if ($secureSendViews > $secureSendMaxViewsCap) {
+            $secureSendViews = $secureSendMaxViewsCap;
+        }
+
+        // Build the plaintext payload to share
+        if ($secureSendType === 'item') {
+            // Item send: re-encrypt the item password; the recipient page reads the
+            // other fields (label, login, url, description) from the item via item_id.
+            $secureSendItemId = (int) ($dataReceived['id'] ?? 0);
+            $itemQ = DB::queryFirstRow(
+                'SELECT s.share_key, s.increment_id, i.pw, i.pw_iv, i.pw_len
+                FROM ' . prefixTable('items') . ' AS i
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
+                WHERE s.user_id = %i AND s.object_id = %i',
+                $session->get('user-id'),
+                $secureSendItemId
+            );
+            if (DB::count() === 0 || empty($itemQ['pw']) === true) {
+                // No share key found
+                $secureSendPlaintext = '';
+            } else {
+                $secureSendPlaintext = teampassDecryptPasswordValue(
+                    $itemQ['pw'],
+                    decryptUserObjectKeyWithMigration(
+                        $itemQ['share_key'],
+                        $session->get('user-private_key'),
+                        $session->get('user-public_key'),
+                        intval($itemQ['increment_id']),
+                        'sharekeys_items'
+                    ),
+                    (int) ($itemQ['pw_len'] ?? 0),
+                    (string) ($itemQ['pw_iv'] ?? '')
+                );
+            }
+        } else {
+            // Note send: self-contained encrypted JSON, not bound to any item
+            $secureSendItemId = null;
+            $secureSendPayload = (isset($dataReceived['payload']) === true && is_array($dataReceived['payload']) === true)
+                ? $dataReceived['payload']
+                : array();
+            if (trim((string) ($secureSendPayload['secret'] ?? '')) === ''
+                && trim((string) ($secureSendPayload['note'] ?? '')) === ''
+            ) {
+                echo json_encode(array('error' => 'empty_note'));
+                break;
+            }
+            $secureSendPlaintext = json_encode(
+                array(
+                    'title'  => trim((string) ($secureSendPayload['title'] ?? '')),
+                    'secret' => (string) ($secureSendPayload['secret'] ?? ''),
+                    'note'   => (string) ($secureSendPayload['note'] ?? ''),
+                    'login'  => trim((string) ($secureSendPayload['login'] ?? '')),
+                    'url'    => trim((string) ($secureSendPayload['url'] ?? '')),
+                ),
+                JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
+            );
+        }
 
         // delete all existing old otv codes
         DB::delete(
@@ -6525,87 +6870,83 @@ switch ($inputData['type']) {
             time()
         );
 
-        // generate session
+        // Generate the lookup code and the link secret carried in the URL.
+        // The Defuse key that encrypts the payload is wrapped by the link secret
+        // (and, when set, the passphrase) so the URL alone is not enough to decrypt.
         $otv_code = GenerateCryptKey(32, false, true, true, false, true);
-        $otv_key = GenerateCryptKey(32, false, true, true, false, true);
+        $secureSendLinkSecret = GenerateCryptKey(32, false, true, true, false, true);
+        $secureSendWrapPassword = $secureSendPassphrase === ''
+            ? $secureSendLinkSecret
+            : hash('sha256', $secureSendLinkSecret . '|' . $secureSendPassphrase);
 
-        // Generate Defuse key
-        $otv_user_code_encrypted = defuse_generate_personal_key($otv_key);
-
-        // check if psk is correct.
-        $otv_key_encoded = defuse_validate_personal_key(
-            $otv_key,
-            $otv_user_code_encrypted
+        $secureSendProtectedKey = defuse_generate_personal_key($secureSendWrapPassword);
+        $secureSendKeyEncoded = defuse_validate_personal_key(
+            $secureSendWrapPassword,
+            $secureSendProtectedKey
         );
 
-        // Decrypt the pwd
-        // Should we log a password change?
-        $itemQ = DB::queryFirstRow(
-            'SELECT s.share_key, i.pw, i.pw_len
-            FROM ' . prefixTable('items') . ' AS i
-            INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (i.id = s.object_id)
-            WHERE s.user_id = %i AND s.object_id = %i',
-            $session->get('user-id'),
-            $dataReceived['id']
-        );
-        if (DB::count() === 0 || empty($itemQ['pw']) === true) {
-            // No share key found
-            $pw = '';
-        } else {
-            $pw = teampassDecryptPasswordValue(
-                $itemQ['pw'],
-                decryptUserObjectKey(
-                    $itemQ['share_key'],
-                    $session->get('user-private_key')
-                ),
-                (int) ($itemQ['pw_len'] ?? 0)
-            );
-        }
-
-        // Encrypt it with DEFUSE using the generated code as key
-        // This is required as the OTV is used by someone without any Teampass account
+        // Encrypt the payload with DEFUSE using the wrapped key
         $passwd = cryption(
-            $pw,
-            $otv_key_encoded,
+            $secureSendPlaintext,
+            $secureSendKeyEncoded,
             'encrypt',
             $SETTINGS
         );
         $timestampReference = time();
 
+        // "Shared globaly" (subdomain) only applies to item sends when configured by the admin
+        $secureSendShared = ($secureSendType === 'item'
+            && (int) ($dataReceived['shared_globaly'] ?? 0) === 1
+            && empty($SETTINGS['otv_subdomain']) === false) ? 1 : 0;
+
         DB::insert(
             prefixTable('otv'),
             array(
                 'id' => null,
-                'item_id' => $dataReceived['id'],
+                'item_id' => $secureSendItemId,
+                'send_type' => $secureSendType,
                 'timestamp' => $timestampReference,
                 'originator' => intval($session->get('user-id')),
                 'code' => $otv_code,
                 'encrypted' => $passwd['string'],
-                'time_limit' => (int) $dataReceived['days'] * (int) TP_ONE_DAY_SECONDS + time(),
-                'max_views' => (int) $dataReceived['views'],
-                'shared_globaly' => 0,
+                'protected_key' => $secureSendProtectedKey,
+                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
+                'failed_attempts' => 0,
+                'time_limit' => $secureSendDays * (int) TP_ONE_DAY_SECONDS + time(),
+                'max_views' => $secureSendViews,
+                'shared_globaly' => $secureSendShared,
             )
         );
         $newID = DB::insertId();
 
-        // Prepare URL content
+        // Prepare URL content (the URL carries the link secret, not the Defuse key)
         $otv_session = array(
             'otv' => true,
             'code' => $otv_code,
-            'key' => $otv_key_encoded,
+            'key' => $secureSendLinkSecret,
             'stamp' => $timestampReference,
         );
 
-        if (isset($SETTINGS['otv_expiration_period']) === false) {
-            $SETTINGS['otv_expiration_period'] = 7;
+        if ($secureSendShared === 1) {
+            // Inject the configured subdomain into the host
+            $domain_scheme = parse_url($SETTINGS['cpassman_url'], PHP_URL_SCHEME);
+            $domain_host = parse_url($SETTINGS['cpassman_url'], PHP_URL_HOST);
+            if (str_contains((string) $domain_host, 'www.') === true) {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . substr((string) $domain_host, 4);
+            } else {
+                $domain_host = (string) $SETTINGS['otv_subdomain'] . '.' . $domain_host;
+            }
+            $url = $domain_scheme . '://' . $domain_host . '/index.php?' . http_build_query($otv_session);
+        } else {
+            $url = rtrim((string) $SETTINGS['cpassman_url'], '/') . '/index.php?' . http_build_query($otv_session);
         }
-        $url = $SETTINGS['cpassman_url'] . '/index.php?' . http_build_query($otv_session);
 
         echo json_encode(
             array(
                 'error' => '',
                 'url' => $url,
                 'otv_id' => $newID,
+                'has_passphrase' => $secureSendPassphrase === '' ? 0 : 1,
             )
         );
         break;
@@ -6692,6 +7033,84 @@ switch ($inputData['type']) {
         );
         break;
 
+    /*
+     * CASE
+     * List the current user's active Secure Send links (My secure sends)
+     */
+    case 'list_secure_sends':
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        // Drop expired links opportunistically
+        DB::delete(
+            prefixTable('otv'),
+            'time_limit < %i',
+            time()
+        );
+
+        $secureSendRows = DB::query(
+            'SELECT o.id, o.send_type, o.item_id, o.has_passphrase, o.views, o.max_views, o.time_limit, i.label AS item_label
+            FROM ' . prefixTable('otv') . ' AS o
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = o.item_id)
+            WHERE o.originator = %i
+            ORDER BY o.id DESC',
+            $session->get('user-id')
+        );
+
+        $secureSends = array();
+        foreach ($secureSendRows as $secureSendRow) {
+            $isNote = ($secureSendRow['send_type'] ?? 'item') === 'note' || empty($secureSendRow['item_id']) === true;
+            $secureSends[] = array(
+                'id' => (int) $secureSendRow['id'],
+                'send_type' => $isNote === true ? 'note' : 'item',
+                'label' => $isNote === true
+                    ? $lang->get('secure_send_note')
+                    : htmlspecialchars(strip_tags((string) ($secureSendRow['item_label'] ?? '')), ENT_QUOTES, 'UTF-8'),
+                'has_passphrase' => (int) ($secureSendRow['has_passphrase'] ?? 0),
+                'remaining_views' => max(0, (int) $secureSendRow['max_views'] - (int) $secureSendRow['views']),
+                'expires_label' => date($SETTINGS['date_format'] . ' ' . $SETTINGS['time_format'], (int) $secureSendRow['time_limit']),
+            );
+        }
+
+        echo json_encode(array('error' => '', 'sends' => $secureSends));
+        break;
+
+    /*
+     * CASE
+     * Revoke (delete) one of the current user's Secure Send links
+     */
+    case 'revoke_secure_send':
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo '[ { "error" : "key_not_conform" } ]';
+            break;
+        }
+
+        // decrypt and retreive data in JSON format
+        $dataReceived = prepareExchangedData(
+            $inputData['data'],
+            'decode'
+        );
+        $secureSendId = (int) ($dataReceived['id'] ?? 0);
+
+        // Verify the current user owns this link before deleting it
+        $secureSendOwner = DB::queryFirstRow(
+            'SELECT originator FROM ' . prefixTable('otv') . ' WHERE id = %i',
+            $secureSendId
+        );
+        if (DB::count() === 0 || (int) $secureSendOwner['originator'] !== (int) $session->get('user-id')) {
+            echo json_encode(array('error' => 'not_allowed'));
+            break;
+        }
+
+        DB::delete(prefixTable('otv'), 'id = %i', $secureSendId);
+
+        echo json_encode(array('error' => '', 'id' => $secureSendId));
+        break;
+
 
         /*
     * CASE
@@ -6714,7 +7133,7 @@ switch ($inputData['type']) {
         $file_info = DB::queryFirstRow(
             'SELECT f.id AS id, f.file AS file, f.name AS name, f.status AS status,
             f.extension AS extension, f.type AS type,
-            s.share_key AS share_key
+            s.share_key AS share_key, s.increment_id AS increment_id
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('sharekeys_files') . ' AS s ON (f.id = s.object_id)
             WHERE s.user_id = %i AND s.object_id = %i',
@@ -6745,7 +7164,13 @@ switch ($inputData['type']) {
         $fileContent = decryptFile(
             $file_info['file'],
             $SETTINGS['path_to_upload_folder'],
-            decryptUserObjectKey($file_info['share_key'], $session->get('user-private_key'))
+            decryptUserObjectKeyWithMigration(
+                $file_info['share_key'],
+                $session->get('user-private_key'),
+                $session->get('user-public_key'),
+                intval($file_info['increment_id']),
+                'sharekeys_files'
+            )
         );
 
         // Check error
@@ -7064,7 +7489,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -7258,7 +7683,9 @@ switch ($inputData['type']) {
             $cryptedStuff['encrypted'] = '';
             $cryptedStuff['objectKey'] = '';
         } else {
-            $cryptedStuff = doDataEncryption($pwd);
+            // items_change has no pw_iv column and its pw is never read via doDataDecryption($meta),
+            // so it must stay in the legacy format (no meta to persist).
+            $cryptedStuff = doDataEncryption($pwd, null, true);
         }
 
         // query
@@ -7505,7 +7932,7 @@ switch ($inputData['type']) {
                 );
                 if ($deleteAccessRights['edit'] !== true) {
                     echo (string) prepareExchangedData(
-                        array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                        array('error' => true, 'message' => $lang->get('error_no_edit_right')),
                         'encode'
                     );
                     break;
@@ -7599,7 +8026,7 @@ switch ($inputData['type']) {
         );
         if (DB::count() === 0) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_item_not_found')),
                 'encode'
             );
             break;
@@ -7611,7 +8038,7 @@ switch ($inputData['type']) {
         );
         if ($confirmAccessRights['edit'] !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_no_edit_right')),
                 'encode'
             );
             break;
@@ -7721,7 +8148,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_readonly_account'),
                     ),
                     'encode'
                 );
@@ -7752,7 +8179,7 @@ switch ($inputData['type']) {
                 // Check that user can access this item
                 $granted = accessToItemIsGranted((int) $itemId, $SETTINGS);
                 if ($granted !== true) {
-                    $failedDeletions[$itemId] = $granted;
+                    $failedDeletions[$itemId] = $lang->get('error_not_allowed_to_access_this_folder');
                     continue; // Passer à l'item suivant
                 }
 
@@ -7779,7 +8206,7 @@ switch ($inputData['type']) {
 
                 if ($checkRights['error'] || !$checkRights['delete']) {
                     // No delete right on this folder: skip and report, never delete (#5275)
-                    $failedDeletions[$itemId] = $lang->get('error_not_allowed_to');
+                    $failedDeletions[$itemId] = $lang->get('error_no_delete_right');
                     continue;
                 }
 
@@ -7863,7 +8290,7 @@ switch ($inputData['type']) {
             $hibpItemId = (int) filter_var($inputData['id'], FILTER_SANITIZE_NUMBER_INT);
             if ($hibpItemId <= 0) {
                 echo (string) prepareExchangedData(
-                    ['error' => true, 'message' => 'invalid_item_id'],
+                    ['error' => true, 'message' => $lang->get('error_missing_id')],
                     'encode'
                 );
                 break;
@@ -7871,14 +8298,14 @@ switch ($inputData['type']) {
 
             // Load item and verify user has access via sharekey
             $hibpItem = DB::queryFirstRow(
-                'SELECT pw, hibp_status, hibp_checked_at
+                'SELECT pw, pw_iv, hibp_status, hibp_checked_at
                 FROM ' . prefixTable('items') . '
                 WHERE id = %i',
                 $hibpItemId
             );
             if ($hibpItem === null) {
                 echo (string) prepareExchangedData(
-                    ['error' => true, 'status' => 'error'],
+                    ['error' => true, 'status' => 'error', 'message' => $lang->get('error_item_not_found')],
                     'encode'
                 );
                 break;
@@ -7886,7 +8313,7 @@ switch ($inputData['type']) {
 
             // Get the user's share key for this item
             $hibpUserKeys = DB::query(
-                'SELECT share_key
+                'SELECT share_key, increment_id
                 FROM ' . prefixTable('sharekeys_items') . '
                 WHERE user_id = %i AND object_id = %i',
                 $session->get('user-id'),
@@ -7895,7 +8322,7 @@ switch ($inputData['type']) {
 
             if (empty($hibpUserKeys) || empty($hibpItem['pw'])) {
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_missing_sharekey')],
                     'encode'
                 );
                 break;
@@ -7904,16 +8331,22 @@ switch ($inputData['type']) {
             // Decrypt the object key then the password
             $hibpPw = '';
             foreach ($hibpUserKeys as $hibpKey) {
-                $hibpObjectKey = decryptUserObjectKey($hibpKey['share_key'], $session->get('user-private_key'));
+                $hibpObjectKey = decryptUserObjectKeyWithMigration(
+                    $hibpKey['share_key'],
+                    $session->get('user-private_key'),
+                    $session->get('user-public_key'),
+                    intval($hibpKey['increment_id']),
+                    'sharekeys_items'
+                );
                 if (!empty($hibpObjectKey)) {
-                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey));
+                    $hibpPw = (string) base64_decode(doDataDecryption($hibpItem['pw'], $hibpObjectKey, (string) ($hibpItem['pw_iv'] ?? '')));
                     break;
                 }
             }
 
             if ($hibpPw === '') {
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_missing_sharekey')],
                     'encode'
                 );
                 break;
@@ -7923,9 +8356,9 @@ switch ($inputData['type']) {
             $hibpResult = checkPasswordWithHIBP($hibpPw);
 
             if (isset($hibpResult['error'])) {
-                // Network unreachable or API error — do not update DB, return error silently
+                // Network unreachable or API error — do not update DB
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_hibp_check_failed')],
                     'encode'
                 );
                 break;

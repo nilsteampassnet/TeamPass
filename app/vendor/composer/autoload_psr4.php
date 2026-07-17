@@ -22,6 +22,7 @@ return array(
     'TeampassClasses\\NestedTree\\' => array($vendorDir . '/teampassclasses/nestedtree/src'),
     'TeampassClasses\\LdapExtra\\' => array($vendorDir . '/teampassclasses/ldapextra/src'),
     'TeampassClasses\\Language\\' => array($vendorDir . '/teampassclasses/language/src'),
+    'TeampassClasses\\ImportFormat\\' => array($vendorDir . '/teampassclasses/importformat/src'),
     'TeampassClasses\\FolderServices\\' => array($vendorDir . '/teampassclasses/folderservices/src'),
     'TeampassClasses\\Encryption\\' => array($vendorDir . '/teampassclasses/encryption/src'),
     'TeampassClasses\\EmailService\\' => array($vendorDir . '/teampassclasses/emailservice/src'),

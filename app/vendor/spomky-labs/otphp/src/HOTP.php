@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
-use OTPHP\Exception\InvalidParameterException;
 use function is_int;
+use OTPHP\Exception\InvalidParameterException;
 
 /**
  * Note: This class is not marked as readonly because the verify() method

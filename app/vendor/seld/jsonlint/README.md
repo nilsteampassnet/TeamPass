@@ -36,6 +36,7 @@ You can also pass additional flags to `JsonParser::lint/parse` that tweak the fu
 - `JsonParser::PARSE_TO_ASSOC` parses to associative arrays instead of stdClass objects.
 - `JsonParser::ALLOW_COMMENTS` parses while allowing (and ignoring) inline `//` and multiline `/* */` comments in the JSON document.
 - `JsonParser::ALLOW_DUPLICATE_KEYS_TO_ARRAY` collects duplicate keys. e.g. if you have two `foo` keys the `foo` key will become an object (or array in assoc mode) with all `foo` values accessible as an array in `$result->foo->__duplicates__` (or `$result['foo']['__duplicates__']` in assoc mode).
+- `JsonParser::VALIDATE_UTF8_ENCODING` validates that the whole input is well-formed UTF-8 (as defined by [RFC 3629](https://www.rfc-editor.org/rfc/rfc3629)) before parsing, throwing an `InvalidEncodingException` that points at the first invalid byte otherwise.
 
 Example:
 
@@ -46,6 +47,28 @@ try {
 } catch (DuplicateKeyException $e) {
     $details = $e->getDetails();
     echo 'Key '.$details['key'].' is a duplicate in '.$jsonFile.' at line '.$details['line'];
+}
+```
+
+Validating UTF-8 encoding
+-------------------------
+
+The UTF-8 validation behind the `VALIDATE_UTF8_ENCODING` flag is also available as a
+standalone, reusable utility through the `Seld\JsonLint\Utf8Validator` class, should you
+need to validate UTF-8 encoding outside of JSON parsing:
+
+```php
+use Seld\JsonLint\Utf8Validator;
+use Seld\JsonLint\InvalidEncodingException;
+
+try {
+    // returns void on success, throws on the first invalid byte
+    Utf8Validator::validate($string);
+} catch (InvalidEncodingException $e) {
+    // getMessage() describes the offending byte and its position
+    echo $e->getMessage();
+    // getDetails() returns that position information as an array
+    $details = $e->getDetails();
 }
 ```
 

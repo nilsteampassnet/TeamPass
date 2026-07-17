@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
+use function is_int;
 use OTPHP\Exception\InvalidParameterException;
 use Psr\Clock\ClockInterface;
-use function is_int;
 
 /**
  * @readonly

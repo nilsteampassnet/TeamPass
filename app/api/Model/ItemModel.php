@@ -31,6 +31,7 @@
 use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\ConfigManager\ConfigManager;
 use ZxcvbnPhp\Zxcvbn;
+use voku\helper\AntiXSS;
 
 class ItemModel
 {
@@ -78,9 +79,9 @@ class ItemModel
 
         // Get items
         $rows = DB::query(
-            "SELECT i.id, i.label, i.description, i.pw, i.url, i.id_tree, i.login, i.email, 
+            "SELECT i.id, i.label, i.description, i.pw, i.pw_iv, i.url, i.id_tree, i.login, i.email,
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
-                t.title as folder_label, 
+                t.title as folder_label,
                 io.secret as otp_secret,
                 (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
                  FROM " . prefixTable('tags') . " AS tg 
@@ -121,7 +122,8 @@ class ItemModel
                             $userPublicKey,
                             (int) $userKey['increment_id'],
                             'sharekeys_items'
-                        )
+                        ),
+                        (string) ($row['pw_iv'] ?? '')
                     )
                 );
             } catch (Exception $e) {
@@ -249,7 +251,12 @@ class ItemModel
 
             // Step 1: Prepare data and sanitize inputs
             $data = $this->prepareData($arrItemParams);
-            $this->validateData($data); // Step 2: Validate the data
+            $data = $this->validateData($data); // Step 2: Sanitize the data
+
+            // Realign the values extracted above on the sanitized ones: they feed the duplicate
+            // check, the tags and the WebSocket event, which must all see what is actually stored.
+            $label = $data['label'];
+            $tags = $data['tags'];
 
             // Step 3: Validate password rules (length, emptiness)
             $this->validatePassword($password, $SETTINGS);
@@ -265,9 +272,12 @@ class ItemModel
             $this->checkForDuplicates($label, $SETTINGS, $itemInfos);
 
             // Step 7: Encrypt password if provided
+            // Keep the plaintext for the post-insert security-posture refresh (reuse hashing).
+            $plaintextPasswordForHealth = $password;
             $cryptedData = $this->encryptPassword($password);
             $passwordKey = $cryptedData['passwordKey'];
             $password = $cryptedData['encrypted'];
+            $passwordIv = $cryptedData['meta'] ?? '';
 
             // Generate favicon URL if URL is provided and favicon_url is empty
             if (empty($data['url']) === false) {
@@ -275,7 +285,7 @@ class ItemModel
             }
 
             // Step 8: Insert the new item into the database
-            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel);
+            $newID = $this->insertNewItem($data, $password, $itemInfos, $complexityLevel, $passwordIv);
 
             // Step 9: Handle post-insert tasks (logging, sharing, tagging, custom fields)
             $this->handlePostInsertTasks($newID, $itemInfos, $folderId, $passwordKey, $userId, $username, $tags, $fields, $data, $SETTINGS);
@@ -284,6 +294,10 @@ class ItemModel
 
             // Notify WebSocket subscribers so other users viewing this folder see the new item
             emitItemEvent('created', $newID, $folderId, $label, $username, $userId);
+
+            // Refresh the caller's security posture so a reused/weak password is flagged without
+            // waiting for a manual dashboard scan (no-op when the dashboard is disabled).
+            refreshItemHealthAfterSave((int) $newID, $userId, (string) $plaintextPasswordForHealth, $SETTINGS);
 
             // Success response
             return [
@@ -372,28 +386,59 @@ class ItemModel
     }
 
     /**
-     * Sanitizes and validates the input data according to specified filters.
-     * If validation fails, throws an exception.
-     * @param array $data - Data to be validated and sanitized
-     * @throws Exception - If the data is invalid
+     * Neutralizes the item fields that are later rendered as HTML.
+     *
+     * This method used to hand its data to dataSanitizer() and throw the result away, so the
+     * API stored every field exactly as the client sent it. The web form encodes the same
+     * fields before storing them (see items.queries.php), and the renderers - items list,
+     * recycle bin - rely on that: a label is inserted into the page markup as-is. An API
+     * client could therefore store an item label carrying an event handler and have it execute
+     * in the browser of anyone listing the folder or opening the recycle bin
+     * (GHSA-r298-6mxv-j9hc).
+     *
+     * Each field gets the same treatment as its web counterpart, so both paths store the same
+     * bytes. 'password' and 'totp' are deliberately left untouched: they are secrets, never
+     * rendered as markup, and must keep their exact value.
+     *
+     * @param array $data - Data to be sanitized
+     * @return array - The sanitized data, to be used in place of the input
      */
-    private function validateData(array $data) : void
+    private function validateData(array $data) : array
     {
-        $filters = [
-            'folderId' => 'cast:integer',
-            'label' => 'trim|escape',
-            'password' => 'trim|escape',
-            'description' => 'trim|escape',
-            'login' => 'trim|escape',
-            'email' => 'trim|escape',
-            'tags' => 'trim|escape',
-            'anyoneCanModify' => 'trim|escape',
-            'url' => 'trim|escape',
-            'icon' => 'trim|escape',
-            'totp' => 'trim|escape',
-        ];
+        // Fully encoded: rendered as plain text by the clients.
+        foreach (['label', 'login'] as $field) {
+            $data[$field] = (string) filter_var($data[$field], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        }
 
-        dataSanitizer($data, $filters);
+        $data['tags'] = htmlspecialchars($data['tags']);
+        $data['email'] = (string) filter_var(htmlspecialchars_decode($data['email']), FILTER_SANITIZE_EMAIL);
+        $data['url'] = $this->sanitizeItemUrl($data['url']);
+
+        // Rich text: keep the markup the editor produces, drop what is executable.
+        $antiXss = new AntiXSS();
+        $data['description'] = (string) $antiXss->xss_clean($data['description']);
+
+        return $data;
+    }
+
+    /**
+     * Cleans a user-supplied URL before it is stored.
+     *
+     * Mirrors the web path: a javascript:/data:/vbscript: URL is script execution as soon as
+     * the item card renders it as a link, so it is dropped rather than stored.
+     *
+     * @param string $url - Raw URL
+     * @return string - URL safe to store, empty when the scheme is dangerous
+     */
+    private function sanitizeItemUrl(string $url) : string
+    {
+        $url = (string) filter_var(htmlspecialchars_decode($url), FILTER_SANITIZE_URL);
+
+        if ($url !== '' && preg_match('#^\s*(?:javascript|data|vbscript)\s*:#i', $url) === 1) {
+            return '';
+        }
+
+        return $url;
     }
 
     /**
@@ -527,6 +572,7 @@ class ItemModel
         return [
             'encrypted' => $cryptedStuff['encrypted'],
             'passwordKey' => $cryptedStuff['objectKey'],
+            'meta' => $cryptedStuff['meta'],
         ];
     }
 
@@ -536,9 +582,10 @@ class ItemModel
      * @param string $password - The encrypted password
      * @param array $itemInfos - Folder-specific settings
      * @param int $complexityLevel - Complexity level computed from the plaintext password by checkPasswordComplexity()
+     * @param string $passwordIv - v2 metadata (pw_iv) returned by encryptPassword(); empty for legacy data
      * @return int - Returns the ID of the newly created item
      */
-    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel) : int
+    private function insertNewItem(array $data, string $password, array $itemInfos, int $complexityLevel, string $passwordIv = '') : int
     {
         include_once API_ROOT_PATH . '/../sources/main.functions.php';
 
@@ -548,7 +595,7 @@ class ItemModel
                 'label' => $data['label'],
                 'description' => $data['description'],
                 'pw' => $password,
-                'pw_iv' => '',
+                'pw_iv' => $passwordIv,
                 'pw_len' => strlen($data['password']),
                 'email' => $data['email'],
                 'url' => $data['url'],
@@ -739,7 +786,7 @@ class ItemModel
 
         // Field values for this item, restricted to the folder's categories
         $rows = DB::query(
-            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data,
+            'SELECT i.id AS object_id, i.field_id AS field_id, i.data AS data, i.data_iv AS data_iv,
                 i.encryption_type AS encryption_type, c.encrypted_data AS encrypted_data,
                 c.title AS title, c.type AS type, c.masked AS masked,
                 c.role_visibility AS role_visibility
@@ -791,7 +838,8 @@ class ItemModel
                                     $userPublicKey,
                                     (int) $userKey['increment_id'],
                                     'sharekeys_fields'
-                                )
+                                ),
+                                (string) ($row['data_iv'] ?? '')
                             )
                         );
                     } catch (Exception $e) {
@@ -877,7 +925,7 @@ class ItemModel
                         'item_id' => $newID,
                         'field_id' => $fieldId,
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ]
                 );
@@ -973,7 +1021,7 @@ class ItemModel
             }
 
             $existing = DB::queryFirstRow(
-                'SELECT i.id AS object_id, i.data AS data, i.encryption_type AS encryption_type,
+                'SELECT i.id AS object_id, i.data AS data, i.data_iv AS data_iv, i.encryption_type AS encryption_type,
                     c.encrypted_data AS encrypted_data, c.title AS title
                 FROM ' . prefixTable('categories_items') . ' AS i
                 INNER JOIN ' . prefixTable('categories') . ' AS c ON (i.field_id = c.id)
@@ -992,7 +1040,7 @@ class ItemModel
                             'item_id' => $itemId,
                             'field_id' => $fieldId,
                             'data' => $cryptedStuff['encrypted'],
-                            'data_iv' => '',
+                            'data_iv' => $cryptedStuff['meta'],
                             'encryption_type' => 'teampass_aes',
                         ]
                     );
@@ -1046,7 +1094,8 @@ class ItemModel
                                 $userPublicKey,
                                 (int) $userKey['increment_id'],
                                 'sharekeys_fields'
-                            )
+                            ),
+                            (string) ($existing['data_iv'] ?? '')
                         )
                     );
                 }
@@ -1064,7 +1113,7 @@ class ItemModel
                     prefixTable('categories_items'),
                     [
                         'data' => $cryptedStuff['encrypted'],
-                        'data_iv' => '',
+                        'data_iv' => $cryptedStuff['meta'],
                         'encryption_type' => 'teampass_aes',
                     ],
                     'item_id = %i AND field_id = %i',
@@ -1213,22 +1262,31 @@ class ItemModel
                 $updateData['favicon_url'] = $this->getFaviconUrl($currentItem['url']);
             }
 
+            // Each field is stored the way the web form stores it, so an update cannot
+            // reintroduce the markup that validateData() strips on creation
+            // (GHSA-r298-6mxv-j9hc).
             $fieldsDefinitions = [
-                'label'             => ['db_key' => 'label', 'type' => 'string'],
-                'description'       => ['db_key' => 'description', 'type' => 'string'],
-                'login'             => ['db_key' => 'login', 'type' => 'string'],
-                'email'             => ['db_key' => 'email', 'type' => 'string'],
-                'url'               => ['db_key' => 'url', 'type' => 'string'],
+                'label'             => ['db_key' => 'label', 'type' => 'encoded'],
+                'description'       => ['db_key' => 'description', 'type' => 'richtext'],
+                'login'             => ['db_key' => 'login', 'type' => 'encoded'],
+                'email'             => ['db_key' => 'email', 'type' => 'email'],
+                'url'               => ['db_key' => 'url', 'type' => 'url'],
                 'icon'              => ['db_key' => 'fa_icon', 'type' => 'icon'],
                 'anyone_can_modify' => ['db_key' => 'anyone_can_modify', 'type' => 'int'],
-                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'string']
+                'favicon_url' => ['db_key' => 'favicon_url', 'type' => 'url']
             ];
             foreach ($fieldsDefinitions as $paramKey => $def) {
                 if (isset($params[$paramKey])) {
+                    // No default arm on purpose: every type above is handled, and a type added
+                    // later without its own arm must fail loudly rather than silently store the
+                    // client value verbatim.
                     $updateData[$def['db_key']] = match($def['type']) {
-                        'int'   => (int) $params[$paramKey],
-                        'icon'  => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
-                        default => $params[$paramKey],
+                        'int'      => (int) $params[$paramKey],
+                        'icon'     => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) $params[$paramKey]),
+                        'encoded'  => (string) filter_var((string) $params[$paramKey], FILTER_SANITIZE_FULL_SPECIAL_CHARS),
+                        'email'    => (string) filter_var(htmlspecialchars_decode((string) $params[$paramKey]), FILTER_SANITIZE_EMAIL),
+                        'url'      => $this->sanitizeItemUrl((string) $params[$paramKey]),
+                        'richtext' => (string) (new AntiXSS())->xss_clean((string) $params[$paramKey]),
                     };
                 }
             }
@@ -1259,6 +1317,7 @@ class ItemModel
                 $cryptedData = $this->encryptPassword($newPassword);
                 $passwordKey = $cryptedData['passwordKey'];
                 $updateData['pw'] = $cryptedData['encrypted'];
+                $updateData['pw_iv'] = $cryptedData['meta'] ?? '';
                 $updateData['pw_len'] = strlen($newPassword);
                 $updateData['complexity_level'] = $complexityLevel;
             }
@@ -1314,8 +1373,8 @@ class ItemModel
                     $itemId
                 );
 
-                // Add new tags
-                $this->addTags($itemId, $params['tags']);
+                // Add new tags — encoded like the web form does, a tag is rendered as markup
+                $this->addTags($itemId, htmlspecialchars((string) $params['tags']));
             }
 
             // Handle custom fields update
@@ -1345,6 +1404,15 @@ class ItemModel
                     [],
                     -1,
                     $userData['id']
+                );
+
+                // Refresh the caller's security posture so the "needs attention" shield reflects
+                // the new password without waiting for a manual dashboard scan (no-op when off).
+                refreshItemHealthAfterSave(
+                    $itemId,
+                    (int) $userData['id'],
+                    (string) $newPassword,
+                    $SETTINGS
                 );
             }
 

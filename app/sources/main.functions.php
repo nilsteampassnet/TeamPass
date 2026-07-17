@@ -1123,6 +1123,393 @@ function prepareSendingEmail(
 }
 
 /**
+ * Compute the four actionable security-posture counts for a single user (F8).
+ *
+ * Mirrors the metadata SQL of the Security Posture Dashboard (`dashboard.queries.php`):
+ * weak / overdue / breached are derived live from non-encrypted columns (no decryption),
+ * while reused comes from the persisted per-user `item_health` table (populated by the
+ * in-session deep scan). It therefore runs both in the user's web session and in the CLI
+ * background worker (which has no private key). It never decrypts and never returns any
+ * plaintext — only counts and the worst flagged item's identifiers for a deep-link.
+ *
+ * @param int $userId User to compute the posture for.
+ *
+ * @return array{weak:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
+ */
+function securityNudgeComputeCounts(int $userId): array
+{
+    $nowTs = time();
+    $weakThreshold = TP_PW_STRENGTH_3;
+
+    // Metadata-only flag expressions (identical semantics to the dashboard).
+    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $flagWeakSql = "(CASE WHEN i.complexity_level <> '' AND CAST(i.complexity_level AS SIGNED) >= 0 AND CAST(i.complexity_level AS SIGNED) < " . (int) $weakThreshold . " THEN 1 ELSE 0 END)";
+    $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
+    $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
+
+    $logJoinSql = '
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)';
+
+    // Per-item view of the four actionable triggers (weak/overdue/breached live, reused persisted).
+    // Placeholder order: %i (sharekeys user) · %s %s %s (log) · %i (item_health user).
+    $innerSql =
+        'SELECT i.id, i.id_tree,
+            ' . $flagWeakSql . ' AS flag_weak,
+            ' . $flagOverdueSql . ' AS flag_overdue,
+            ' . $flagBreachedSql . ' AS flag_breached,
+            COALESCE(ih.flag_reused, 0) AS flag_reused
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+        $logJoinSql . '
+        LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL';
+
+    $agg = DB::queryFirstRow(
+        'SELECT
+            COALESCE(SUM(t.flag_weak), 0) AS weak,
+            COALESCE(SUM(t.flag_overdue), 0) AS overdue,
+            COALESCE(SUM(t.flag_breached), 0) AS breached,
+            COALESCE(SUM(t.flag_reused), 0) AS reused,
+            COALESCE(SUM(CASE WHEN (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0 THEN 1 ELSE 0 END), 0) AS total_flagged
+        FROM (' . $innerSql . ') AS t',
+        $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+    );
+
+    // Worst flagged item (severity: breached > reused > weak > overdue) for the "fix it now" deep-link.
+    $worstItem = null;
+    if ((int) ($agg['total_flagged'] ?? 0) > 0) {
+        $worst = DB::queryFirstRow(
+            'SELECT t.id, t.id_tree
+            FROM (' . $innerSql . ') AS t
+            WHERE (t.flag_weak + t.flag_overdue + t.flag_breached + t.flag_reused) > 0
+            ORDER BY t.flag_breached DESC, t.flag_reused DESC, t.flag_weak DESC, t.flag_overdue DESC, t.id DESC
+            LIMIT 1',
+            $userId, 'at_creation', 'at_modification', 'at_pw%', $userId
+        );
+        if (is_array($worst) === true && isset($worst['id']) === true) {
+            $worstItem = ['id' => (int) $worst['id'], 'folder_id' => (int) $worst['id_tree']];
+        }
+    }
+
+    $lastScan = (int) DB::queryFirstField(
+        'SELECT COALESCE(MAX(last_scan_at), 0) FROM ' . prefixTable('item_health') . ' WHERE user_id = %i',
+        $userId
+    );
+
+    return [
+        'weak' => (int) ($agg['weak'] ?? 0),
+        'overdue' => (int) ($agg['overdue'] ?? 0),
+        'breached' => (int) ($agg['breached'] ?? 0),
+        'reused' => (int) ($agg['reused'] ?? 0),
+        'total_flagged' => (int) ($agg['total_flagged'] ?? 0),
+        'last_scan' => $lastScan,
+        'worst_item' => $worstItem,
+    ];
+}
+
+/**
+ * Re-derive the per-user `reused` flags in item_health from the stored reuse buckets.
+ *
+ * Resets flag_reused for the user, then sets it back to 1 for every item whose
+ * reuse_group has more than one member. Shared by the dashboard deep scan
+ * (`dashboard.queries.php` `finalize_scan`) and the save-time incremental refresh
+ * (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused"
+ * and never drift.
+ *
+ * @param int $userId User whose reuse flags are recomputed.
+ *
+ * @return void
+ */
+function finalizeUserReuseFlags(int $userId): void
+{
+    // Reset, then flag every item whose bucket has more than one member.
+    DB::query(
+        'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 0 WHERE user_id = %i',
+        $userId
+    );
+    DB::query(
+        'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 1
+        WHERE user_id = %i AND reuse_group <> %s AND reuse_group IN (
+            SELECT rg FROM (
+                SELECT reuse_group AS rg
+                FROM ' . prefixTable('item_health') . '
+                WHERE user_id = %i AND reuse_group <> %s
+                GROUP BY reuse_group
+                HAVING COUNT(*) > 1
+            ) AS d
+        )',
+        $userId,
+        '',
+        $userId,
+        ''
+    );
+}
+
+/**
+ * Refresh the per-user security posture (item_health) for one item right after its
+ * password is created/updated, so the "needs attention" shield reflects the new
+ * password without waiting for a manual dashboard deep scan.
+ *
+ * Mirrors the per-item logic of the dashboard deep scan (`dashboard.queries.php`
+ * `deep_scan_chunk`) for a single (item_id, user_id) row, then re-derives the user's
+ * `reused` flags via finalizeUserReuseFlags(). No decryption is needed: the caller
+ * passes the plaintext password it already holds, hashed into the same reuse bucket the
+ * scan uses. The item's cached HIBP status is reset so the client-side async check
+ * re-evaluates the new password (stale "breached" clears).
+ *
+ * No-op when the Security Posture Dashboard is disabled.
+ *
+ * @param int    $itemId            Item whose posture is refreshed.
+ * @param int    $userId            User the posture row belongs to (the editor).
+ * @param string $plaintextPassword The new cleartext password (may be empty).
+ * @param array  $SETTINGS          Application settings.
+ *
+ * @return void
+ */
+function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextPassword, array $SETTINGS): void
+{
+    // Feature off → item_health is unused, nothing to refresh.
+    if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) !== 1) {
+        return;
+    }
+    if ($itemId <= 0 || $userId <= 0) {
+        return;
+    }
+
+    $nowTs = time();
+    $weakThreshold = TP_PW_STRENGTH_3;
+    $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
+    if ($oversharedThreshold <= 0) {
+        $oversharedThreshold = 10;
+    }
+
+    // Reset the item's cached HIBP status so the stale "breached" flag clears and the
+    // client-side async check re-evaluates the new password (items.js.php re-checks when
+    // hibp_status === 0). hibp_status is a per-item column shared by all holders, which is
+    // correct here: the password changed for everyone.
+    DB::update(
+        prefixTable('items'),
+        [
+            'hibp_status' => 0,
+            'hibp_count' => 0,
+            'hibp_checked_at' => '',
+        ],
+        'id = %i',
+        $itemId
+    );
+
+    // Recompute the metadata flags for this single item (no decryption). Same fragments as
+    // the dashboard scan, scoped to one item.
+    $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
+    $logJoinSql = '
+        LEFT JOIN (
+            SELECT id_item, MAX(CAST(date AS UNSIGNED)) AS last_relevant_date
+            FROM ' . prefixTable('log_items') . '
+            WHERE action = %s OR (action = %s AND raison LIKE %s)
+            GROUP BY id_item
+        ) AS l ON (l.id_item = i.id)';
+    $shareCountJoinSql = '
+        LEFT JOIN (
+            SELECT object_id, COUNT(*) AS share_count
+            FROM ' . prefixTable('sharekeys_items') . '
+            GROUP BY object_id
+        ) AS sc ON (sc.object_id = i.id)';
+
+    $row = DB::queryFirstRow(
+        'SELECT i.complexity_level,
+            n.renewal_period,
+            COALESCE(sc.share_count, 0) AS share_count,
+            ' . $lastRelevantSql . ' AS last_relevant_date
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
+        $logJoinSql . $shareCountJoinSql . '
+        WHERE i.id = %i',
+        'at_creation',
+        'at_modification',
+        'at_pw%',
+        $itemId
+    );
+    if (is_array($row) === false) {
+        // Item vanished (deleted mid-flight) — nothing to store.
+        return;
+    }
+
+    $cl = (string) $row['complexity_level'];
+    $flagWeak = ($cl !== '' && (int) $cl >= 0 && (int) $cl < $weakThreshold) ? 1 : 0;
+    $renewal = (int) $row['renewal_period'];
+    $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
+    $base = (int) $row['last_relevant_date'];
+    $flagOverdue = ($renewal > 0 && $base > 0 && ($base + $renewal * TP_ONE_DAY_SECONDS) <= $nowTs) ? 1 : 0;
+    $flagOvershared = ((int) $row['share_count'] > $oversharedThreshold) ? 1 : 0;
+    // HIBP was just reset (unknown) → not breached until the async check runs.
+    $flagBreached = 0;
+    // The saving user holds a valid sharekey (they just re-encrypted) → not orphaned.
+    $flagOrphaned = 0;
+
+    // Same per-install, per-user reuse bucket the scan uses (deep_scan_chunk). The stored
+    // password decrypts to exactly this plaintext, so an identical HMAC matches the scan.
+    $reuseGroup = '';
+    if ($plaintextPassword !== '') {
+        $reuseSalt = (string) @file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE) . '|item-health|' . $userId;
+        $reuseGroup = substr(hash_hmac('sha256', $plaintextPassword, $reuseSalt), 0, 32);
+    }
+
+    // Upsert the row. flag_reused is left to finalizeUserReuseFlags(); last_scan_at is NOT
+    // bumped (insert 0, omit from the update) so the dashboard's "last full scan" /
+    // staleness (MAX(last_scan_at)) stays honest for a single-item refresh.
+    DB::query(
+        'INSERT INTO ' . prefixTable('item_health') . '
+            (item_id, user_id, flag_weak, flag_breached, flag_overdue, flag_no_expiry, flag_overshared, flag_orphaned, reuse_group, last_scan_at)
+            VALUES (%i, %i, %i, %i, %i, %i, %i, %i, %s, 0)
+        ON DUPLICATE KEY UPDATE
+            flag_weak = VALUES(flag_weak),
+            flag_breached = VALUES(flag_breached),
+            flag_overdue = VALUES(flag_overdue),
+            flag_no_expiry = VALUES(flag_no_expiry),
+            flag_overshared = VALUES(flag_overshared),
+            flag_orphaned = VALUES(flag_orphaned),
+            reuse_group = VALUES(reuse_group)',
+        $itemId,
+        $userId,
+        $flagWeak,
+        $flagBreached,
+        $flagOverdue,
+        $flagNoExpiry,
+        $flagOvershared,
+        $flagOrphaned,
+        $reuseGroup
+    );
+
+    // Re-derive `reused` across the user's buckets so both the old bucket (now possibly a
+    // singleton → its sibling un-flags) and the new bucket are corrected.
+    finalizeUserReuseFlags($userId);
+}
+
+/**
+ * Compute the per-user Personal Security Score (F10) — light gamification.
+ *
+ * Pure presentation layer over the F8 posture counts (securityNudgeComputeCounts):
+ * a single 0–100 score, a qualitative band, and the worst three issue categories to
+ * fix. Severity-weighted (breached > reused > weak > overdue) and normalised by the
+ * number of credentials the user can read. Metadata only — it never decrypts and never
+ * returns any plaintext — so it runs in the user's web session and in the CLI worker alike.
+ *
+ * Score model: penalty = Σ weight·count, score = 100 − min(100, round(100·penalty /
+ * (total_items · MAX_WEIGHT))). The weights are tunable constants below.
+ *
+ * The progress delta (`delta`) is the score change frozen at the most recent scan
+ * relative to the previous scan (persisted in `user_nudges` by `finalize_scan`), so it
+ * gives the "+N since last scan" gamification feedback without recomputing history.
+ *
+ * @param int $userId User to score.
+ *
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ */
+function securityScoreCompute(int $userId): array
+{
+    // Severity weights (breached hurts most). Tunable without behavioural risk.
+    $weights = ['breached' => 10, 'reused' => 4, 'weak' => 3, 'overdue' => 2];
+    $maxWeight = 10;
+
+    $counts = securityNudgeComputeCounts($userId);
+
+    // Total credentials the user can read — the score denominator.
+    $totalItems = (int) DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('items') . ' AS i
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL',
+        $userId
+    );
+
+    $penalty =
+        $weights['breached'] * (int) $counts['breached']
+        + $weights['reused'] * (int) $counts['reused']
+        + $weights['weak'] * (int) $counts['weak']
+        + $weights['overdue'] * (int) $counts['overdue'];
+
+    if ($totalItems <= 0) {
+        // No credentials to assess — nothing at risk.
+        $score = 100;
+    } else {
+        $score = 100 - (int) min(100, (int) round(100 * $penalty / ($totalItems * $maxWeight)));
+    }
+    if ($score < 0) {
+        $score = 0;
+    }
+
+    // Qualitative band (constructive, never shaming).
+    if ($score >= 90) {
+        $band = 'excellent';
+    } elseif ($score >= 70) {
+        $band = 'good';
+    } elseif ($score >= 40) {
+        $band = 'fair';
+    } else {
+        $band = 'poor';
+    }
+
+    // Worst three issue categories by weighted contribution (count > 0 only).
+    $contrib = [
+        ['key' => 'breached', 'count' => (int) $counts['breached'], 'w' => $weights['breached'] * (int) $counts['breached']],
+        ['key' => 'reused', 'count' => (int) $counts['reused'], 'w' => $weights['reused'] * (int) $counts['reused']],
+        ['key' => 'weak', 'count' => (int) $counts['weak'], 'w' => $weights['weak'] * (int) $counts['weak']],
+        ['key' => 'overdue', 'count' => (int) $counts['overdue'], 'w' => $weights['overdue'] * (int) $counts['overdue']],
+    ];
+    usort($contrib, static function (array $a, array $b): int {
+        return $b['w'] <=> $a['w'];
+    });
+    $top3 = [];
+    foreach ($contrib as $c) {
+        if ($c['count'] > 0 && count($top3) < 3) {
+            $top3[] = ['key' => (string) $c['key'], 'count' => (int) $c['count']];
+        }
+    }
+
+    // Progress delta, frozen at the last scan by finalize_scan (NULL before the first scan).
+    $nudgeRow = DB::queryFirstRow(
+        'SELECT last_score_delta, last_score_at FROM ' . prefixTable('user_nudges') . ' WHERE user_id = %i',
+        $userId
+    );
+    $delta = (is_array($nudgeRow) === true && $nudgeRow['last_score_delta'] !== null)
+        ? (int) $nudgeRow['last_score_delta']
+        : null;
+    $deltaAt = (is_array($nudgeRow) === true) ? (int) ($nudgeRow['last_score_at'] ?? 0) : 0;
+
+    return [
+        'score' => $score,
+        'band' => $band,
+        'total_items' => $totalItems,
+        'scanned' => ($counts['last_scan'] > 0),
+        'last_scan' => (int) $counts['last_scan'],
+        'delta' => $delta,
+        'delta_at' => $deltaAt,
+        'counts' => [
+            'breached' => (int) $counts['breached'],
+            'reused' => (int) $counts['reused'],
+            'weak' => (int) $counts['weak'],
+            'overdue' => (int) $counts['overdue'],
+            'total' => (int) $counts['total_flagged'],
+        ],
+        // Surfaced so the dashboard help text always matches the algorithm (no drift).
+        'weights' => [
+            'breached' => (int) $weights['breached'],
+            'reused' => (int) $weights['reused'],
+            'weak' => (int) $weights['weak'],
+            'overdue' => (int) $weights['overdue'],
+        ],
+        'top3' => $top3,
+        'worst_item' => $counts['worst_item'],
+    ];
+}
+
+/**
  * Returns the email body.
  *
  * @param string $textMail Text for the email
@@ -2124,6 +2511,368 @@ function getClientIpServer(): string
     }
 
     return 'UNKNOWN';
+}
+
+/**
+ * Return an integer admin setting while preserving backward-compatible defaults.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ * @param string               $key      Setting key to look up.
+ * @param int                  $default  Value returned when key is missing or empty.
+ * @param int                  $minimum  Minimum accepted value (clamped via max()).
+ *
+ * @return int
+ */
+function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
+{
+    if (array_key_exists($key, $settings) === false) {
+        return $default;
+    }
+
+    $rawValue = trim((string) $settings[$key]);
+    if ($rawValue == '') {
+        return $default;
+    }
+
+    return max($minimum, (int) $rawValue);
+}
+
+/**
+ * Return the date until which a login or an IP address is locked by anti brute force.
+ * Any endpoint accepting credentials must call it before verifying them, otherwise it
+ * becomes an oracle bypassing the lockout enforced on the regular login page.
+ *
+ * @param string $username Login being tried.
+ * @param string $ip       Remote address of the caller.
+ *
+ * @return string|null unlock_at timestamp when locked, null when not locked.
+ */
+function getAuthenticationLockUntil(string $username, string $ip): ?string
+{
+    $unlockAt = DB::queryFirstField(
+        'SELECT MAX(unlock_at)
+         FROM ' . prefixTable('auth_failures') . '
+         WHERE unlock_at > %s
+         AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+        date('Y-m-d H:i:s', time()),
+        'login',
+        $username,
+        'remote_ip',
+        $ip
+    );
+
+    return $unlockAt ?: null;
+}
+
+/**
+ * Add a failed authentication attempt to the database.
+ * If the number of failed attempts exceeds the limit, a lock is triggered.
+ *
+ * @param string $source              Source of the failed attempt (login or remote_ip).
+ * @param string $value               Value for this source (username or IP address).
+ * @param int    $limit               Failure attempt limit after which the source is locked.
+ * @param int    $lockDurationMinutes Fixed lock duration in minutes.
+ */
+function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
+{
+    if ($limit <= 0 || trim($value) === '') {
+        return;
+    }
+    // Count failed attempts from this source
+    $count = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('auth_failures') . '
+        WHERE source = %s AND value = %s',
+        $source,
+        $value
+    );
+
+    // Add this attempt
+    $count++;
+
+    // Calculate unlock time if number of attempts exceeds limit
+    $unlock_at = $count >= $limit
+        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
+        : null;
+
+    // Unlock account one time code
+    $unlock_code = ($count >= $limit && $source === 'login')
+        ? generateQuickPassword(30, false)
+        : null;
+
+    // Insert the new failure into the database
+    DB::insert(
+        prefixTable('auth_failures'),
+        [
+            'source' => $source,
+            'value' => $value,
+            'unlock_at' => $unlock_at,
+            'unlock_code' => $unlock_code,
+        ]
+    );
+
+    if ($unlock_at !== null && $source === 'login') {
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $lang = new Language($SETTINGS['default_language'] ?? 'english');
+
+        // Get user details
+        $userInfos = DB::queryFirstRow(
+            'SELECT email, name
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $value
+        );
+
+        // Notify all administrators about the locked account
+        notifyAdminsAboutLockedAccount(
+            $SETTINGS,
+            $lang,
+            $value,
+            is_array($userInfos) === true ? $userInfos : [],
+            getClientIpServer(),
+            $unlock_at
+        );
+
+        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
+
+        sendMailToUser(
+            $userInfos['email'],
+            $lang->get('bruteforce_reset_mail_body'),
+            $lang->get('bruteforce_reset_mail_subject'),
+            [
+                '#name#' => (string) ($userInfos['name'] ?? ''),
+                '#reset_url#' => $unlock_url,
+                '#unlock_at#' => $unlock_at,
+            ],
+            true
+        );
+    }
+}
+
+/**
+ * Tells whether local password recovery may be offered for a user.
+ * Lives here rather than in identify.php so that both the request handler and the
+ * recovery endpoint (reset-password.php) share one definition of eligibility.
+ *
+ * @param array<string, mixed>|null $userInfo Complete user data, null when the login is unknown
+ * @param array<string, mixed>      $SETTINGS
+ *
+ * @return array{available: bool}
+ */
+function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
+{
+    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
+        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
+    $hasOngoingProcess = is_array($userInfo) === true
+        && empty($userInfo['ongoing_process_id']) === false;
+
+    return [
+        'available' => is_array($userInfo) === true
+            && ($userInfo['auth_type'] ?? '') === 'local'
+            && $featureEnabled === true
+            && $emailConfigured === true
+            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && $hasOngoingProcess === false,
+    ];
+}
+
+/**
+ * Creates a single-use local password recovery token for a user.
+ * Only the SHA-256 hash of the token is stored, so a database dump cannot be replayed
+ * against the recovery endpoint. Any previous token of the user is dropped, which keeps
+ * the most recent link the only usable one.
+ *
+ * @param integer $userId
+ *
+ * @return string The clear token, to be sent to the registered email address only
+ */
+function createForgotLocalPasswordToken(int $userId): string
+{
+    // Opportunistic purge of expired tokens, then of any previous token of this user
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND end_timestamp < %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        time()
+    );
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND user_id = %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        $userId
+    );
+
+    $token = bin2hex(random_bytes(32));
+    DB::insert(
+        prefixTable('tokens'),
+        [
+            'user_id' => $userId,
+            'token' => hash('sha256', $token),
+            'reason' => TP_FORGOT_PWD_TOKEN_REASON,
+            'creation_timestamp' => (string) time(),
+            'end_timestamp' => (string) (time() + TP_FORGOT_PWD_TOKEN_VALIDITY),
+        ]
+    );
+
+    return $token;
+}
+
+/**
+ * Returns the recovery token row matching a clear token, or null when it is unknown,
+ * of another kind, or expired. Possession of the token is the only proof accepted by
+ * the recovery endpoint, so nothing else about the request is trusted here.
+ *
+ * @param string $token Clear token taken from the recovery link
+ *
+ * @return array<string, mixed>|null
+ */
+function getForgotLocalPasswordTokenRow(string $token): ?array
+{
+    if (preg_match('/^[a-f0-9]{64}$/', $token) !== 1) {
+        return null;
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT id, user_id, end_timestamp
+        FROM ' . prefixTable('tokens') . '
+        WHERE token = %s AND reason = %s',
+        hash('sha256', $token),
+        TP_FORGOT_PWD_TOKEN_REASON
+    );
+
+    if (DB::count() === 0 || is_array($row) === false || (int) $row['end_timestamp'] < time()) {
+        return null;
+    }
+
+    return $row;
+}
+
+/**
+ * Consumes a recovery token so a link can never be replayed.
+ *
+ * @param integer $tokenId
+ */
+function deleteForgotLocalPasswordToken(int $tokenId): void
+{
+    DB::delete(prefixTable('tokens'), 'id = %i', $tokenId);
+}
+
+/**
+ * Notify all administrators when a user account is locked by anti brute force.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfos
+ */
+function notifyAdminsAboutLockedAccount(
+    array $SETTINGS,
+    Language $lang,
+    string $login,
+    array $userInfos,
+    string $sourceIp,
+    string $unlockAt
+): void {
+    $adminUsers = DB::query(
+        'SELECT email, name
+         FROM ' . prefixTable('users') . '
+         WHERE admin = %i
+            AND disabled = %i
+            AND deleted_at IS NULL
+            AND email IS NOT NULL
+            AND email != %s',
+        1,
+        0,
+        ''
+    );
+
+    if (empty($adminUsers) === true) {
+        return;
+    }
+
+    $userName = trim((string) ($userInfos['name'] ?? ''));
+    $userEmail = trim((string) ($userInfos['email'] ?? ''));
+    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
+    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
+
+    $unlockAtTimestamp = strtotime($unlockAt);
+    $formattedUnlockAt = $unlockAtTimestamp === false
+        ? $unlockAt
+        : date(
+            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
+            $unlockAtTimestamp
+        );
+
+    $mailBody = str_replace(
+        [
+            '#tp_user#',
+            '#tp_name#',
+            '#tp_email#',
+            '#tp_ip#',
+            '#tp_date#',
+            '#tp_time#',
+            '#tp_unlock_at#',
+        ],
+        [
+            $login,
+            $userDisplayName,
+            $userDisplayEmail,
+            $sourceIp,
+            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
+            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
+            $formattedUnlockAt,
+        ],
+        $lang->get('email_body_on_user_lock')
+    );
+
+    foreach ($adminUsers as $adminUser) {
+        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_on_user_lock'),
+            $mailBody,
+            (string) $adminUser['email'],
+            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
+        );
+    }
+}
+
+/**
+ * Add failed authentication attempts for both user login and IP address.
+ * This function checks the number of attempts for both the username and IP,
+ * and triggers a lock if the number exceeds the configured limits.
+ * Old technical entries are purged after 24 hours once unlocked.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ */
+function addFailedAuthentication(string $username, string $ip, array $settings): void
+{
+    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
+    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
+    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
+
+    if ($userLimit <= 0 && $ipLimit <= 0) {
+        return;
+    }
+
+    // Remove old logs (more than 24 hours) once the related lock is over.
+    DB::delete(
+        prefixTable('auth_failures'),
+        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+        date('Y-m-d H:i:s', time() - (24 * 3600)),
+        date('Y-m-d H:i:s', time())
+    );
+
+    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
+    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
 }
 
 
@@ -3221,6 +3970,32 @@ function decryptPrivateKey(string $userPwd, string $userPrivateKey)
     // making future logins use Pass 1 only.
 
     if (empty($userPwd) === false) {
+        // AES v2 (authenticated GCM): value is "v2:<base64(meta)>:<base64(ciphertext)>".
+        // v2 keys are always written with the raw password (post xss-fix) and the GCM tag
+        // authenticates, so a single attempt is enough (no PKCS7 false-positive guard needed).
+        if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+            $parts = explode(':', $userPrivateKey, 3);
+            if (count($parts) === 3) {
+                try {
+                    $decrypted = (string) \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                        base64_decode($parts[2]),
+                        base64_decode($parts[1]),
+                        $userPwd,
+                        '',
+                        'pbkdf2'
+                    );
+                    if (strpos($decrypted, '-----BEGIN') !== false) {
+                        return base64_encode($decrypted);
+                    }
+                } catch (Exception $e) {
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS decryptPrivateKey v2 failed: ' . $e->getMessage());
+                    }
+                }
+            }
+            return '';
+        }
+
         $keyRaw = base64_decode($userPrivateKey);
 
         /**
@@ -3289,7 +4064,14 @@ function encryptPrivateKey(string $userPwd, string $userPrivateKey): string
     // chars but is removed for consistency and to avoid confusion.
     if (empty($userPwd) === false) {
         try {
-            // Encrypt using CryptoManager (phpseclib v3, SHA-256)
+            if (aesV2WriteEnabled() === true) {
+                // AES v2 (authenticated GCM, PBKDF2-SHA256 600k). users.private_key has no
+                // companion column, so the metadata is encoded in the value with a "v2:" prefix.
+                $v2 = CryptoManager::aesGcmEncrypt(base64_decode($userPrivateKey), $userPwd, '', 'pbkdf2');
+                return 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
+            }
+
+            // Legacy format (AES-CBC, SHA-256) — unchanged
             $encrypted = CryptoManager::aesEncrypt(
                 base64_decode($userPrivateKey),
                 $userPwd,
@@ -3345,6 +4127,43 @@ function decryptPrivateKeyWithMigration(
     //
     // Return array includes:
     //   'needs_xss_migration' (bool) — true when Pass 2 was needed (re-encrypt required)
+
+    // AES v2 (authenticated GCM): self-describing "v2:" prefix — already the current format,
+    // so no migration is needed. The GCM tag authenticates the password (clean failure on a
+    // wrong password). version_used stays 3 (the RSA sharekey layer is v3, unaffected).
+    if (strncmp($userPrivateKey, 'v2:', 3) === 0) {
+        $parts = explode(':', $userPrivateKey, 3);
+        if (count($parts) === 3) {
+            try {
+                $decrypted = (string) CryptoManager::aesGcmDecrypt(
+                    base64_decode($parts[2]),
+                    base64_decode($parts[1]),
+                    $userPwd,
+                    '',
+                    'pbkdf2'
+                );
+                if (strpos($decrypted, '-----BEGIN') !== false) {
+                    return [
+                        'private_key_clear'   => base64_encode($decrypted),
+                        'migration_error'     => false,
+                        'needs_migration'     => false,
+                        'needs_xss_migration' => false,
+                        'version_used'        => 3,
+                    ];
+                }
+            } catch (Exception $e) {
+                if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                    error_log('TEAMPASS Migration Error - User ' . $userId . ' v2 private key decryption failed: ' . $e->getMessage());
+                }
+            }
+        }
+        return [
+            'private_key_clear'   => '',
+            'migration_error'     => true,
+            'needs_migration'     => false,
+            'needs_xss_migration' => false,
+        ];
+    }
 
     $keyRaw = base64_decode($userPrivateKey);
 
@@ -3889,14 +4708,100 @@ function handleExternalPasswordChange(int $userId, string $newPassword, array $u
 }
 
 /**
+ * Whether new item/field/file data must be written in the AES v2 (authenticated
+ * GCM) format. Gated by the admin setting `aes_v2_write_enabled` (default 0).
+ *
+ * When OFF, doDataEncryption() keeps emitting the legacy CBC format (meta='')
+ * so behaviour is unchanged. Turning it ON is the rollback switch for Phase 2.
+ *
+ * @return bool
+ */
+function aesV2WriteEnabled(): bool
+{
+    if (class_exists('TeampassClasses\ConfigManager\ConfigManager') === true) {
+        $configManager = new ConfigManager();
+        return (int) ($configManager->getSetting('aes_v2_write_enabled') ?? 0) === 1;
+    }
+    return false;
+}
+
+/**
+ * Returns the AES v2 migration progress for the three encrypted stores.
+ *
+ * For each store it counts how many encrypted values still use the legacy CBC
+ * format (companion meta column empty / no "v2:" prefix) versus the v2 GCM
+ * format, plus a completion percentage. Used by the admin Security tab to track
+ * the lazy migration triggered by the aes_v2_write_enabled flag.
+ *
+ * @return array<string, array{legacy: int, v2: int, total: int, percent: int}>
+ */
+function getAesV2MigrationStatus(): array
+{
+    // Items: legacy = has a password but empty pw_iv; v2 = pw_iv carries metadata.
+    $itemsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw_iv != ''"
+    );
+    $itemsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('items') . " WHERE pw != '' AND pw_iv = ''"
+    );
+
+    // Custom fields: only encrypted values are concerned (encryption_type set).
+    $fieldsV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv != ''",
+        TP_ENCRYPTION_NAME
+    );
+    $fieldsLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('categories_items') . " WHERE encryption_type = %s AND data_iv = ''",
+        TP_ENCRYPTION_NAME
+    );
+
+    // Private keys: v2 carries the "v2:" prefix. Skip service accounts and
+    // placeholder keys ('none', '') that never go through a password re-encryption.
+    $keysV2 = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . " WHERE private_key LIKE 'v2:%'"
+    );
+    $keysLegacy = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM ' . prefixTable('users') . "
+        WHERE private_key NOT LIKE 'v2:%'
+        AND private_key != '' AND private_key != 'none'
+        AND id NOT IN %ls",
+        [OTV_USER_ID, SSH_USER_ID, API_USER_ID]
+    );
+
+    $build = static function (int $legacy, int $v2): array {
+        $total = $legacy + $v2;
+        return [
+            'legacy'  => $legacy,
+            'v2'      => $v2,
+            'total'   => $total,
+            'percent' => $total === 0 ? 100 : (int) round($v2 / $total * 100),
+        ];
+    };
+
+    return [
+        'items'        => $build($itemsLegacy, $itemsV2),
+        'fields'       => $build($fieldsLegacy, $fieldsV2),
+        'private_keys' => $build($keysLegacy, $keysV2),
+    ];
+}
+
+/**
  * Encrypts a string using AES.
  *
- * @param string $data String to encrypt
- * @param string $key
+ * Emits the AES v2 (authenticated GCM, random IV + salt) format when
+ * aesV2WriteEnabled() is true, otherwise the legacy CBC format. The returned
+ * 'meta' MUST be stored in the companion column (pw_iv / data_iv): it is empty
+ * for legacy data and carries the v2 nonce/salt otherwise.
  *
- * @return array
+ * @param string      $data              String to encrypt
+ * @param string|null $key               Reuse an existing object key (base64) instead of generating one
+ * @param bool        $forceLegacyFormat Force the legacy CBC format even when v2 writes are enabled.
+ *                                       Use only for storage targets that have no companion meta column
+ *                                       (e.g. items_change.pw) and never go through doDataDecryption($meta).
+ *
+ * @return array{encrypted: string, objectKey: string, meta: string}
  */
-function doDataEncryption(string $data, ?string $key = null): array
+function doDataEncryption(string $data, ?string $key = null, bool $forceLegacyFormat = false): array
 {
     // Passwords are secrets: do NOT sanitize before encryption or HTML-sensitive chars get corrupted.
     // XSS protection applies at output (HTML rendering), never at the encryption boundary.
@@ -3905,29 +4810,48 @@ function doDataEncryption(string $data, ?string $key = null): array
     // Generate an object key
     $objectKey = is_null($key) === true ? uniqidReal(KEY_LENGTH) : $antiXss->xss_clean($key);
 
-    // Encrypt using CryptoManager with CBC mode (phpseclib v3)
+    if ($forceLegacyFormat === false && aesV2WriteEnabled() === true) {
+        // AES v2: authenticated GCM with random nonce + salt; meta carries nonce/salt.
+        // Key material is the raw objectKey string (same value the legacy path feeds to aesEncrypt).
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($data, $objectKey);
+
+        return [
+            'encrypted' => base64_encode($v2['ciphertext']),
+            'objectKey' => base64_encode($objectKey),
+            'meta' => base64_encode($v2['meta']),
+        ];
+    }
+
+    // Legacy format (AES-CBC) — unchanged
     $encrypted = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($data, $objectKey, 'cbc');
 
     return [
         'encrypted' => base64_encode($encrypted),
         'objectKey' => base64_encode($objectKey),
+        'meta' => '',
     ];
 }
 
 /**
  * Decrypts a string using AES.
  *
- * @param string $data Encrypted data
- * @param string $key  Key to uncrypt
+ * Dispatches on $meta (the pw_iv / data_iv column value):
+ *   - $meta === '' → legacy format (AES-CBC, fixed IV/salt) — behaviour unchanged.
+ *   - $meta !== '' → AES v2 (authenticated GCM); nonce + salt are carried in $meta.
+ *
+ * @param string $data Encrypted data (base64)
+ * @param string $key  Object key to decrypt with (base64)
+ * @param string $meta Base64 v2 metadata (pw_iv / data_iv); empty for legacy data
  *
  * @return string Empty string on decryption failure
  */
-function doDataDecryption(string $data, string $key): string
+function doDataDecryption(string $data, string $key, string $meta = ''): string
 {
     // Sanitize
     $antiXss = new AntiXSS();
     $data = $antiXss->xss_clean($data);
     $key = $antiXss->xss_clean($key);
+    // $meta is base64 of binary (version|nonce|salt) — not user-facing text, left untouched.
 
     // Guard: empty key means upstream decryption failed - return empty rather than attempt decrypt
     if (empty($key)) {
@@ -3935,11 +4859,20 @@ function doDataDecryption(string $data, string $key): string
     }
 
     try {
-        // Decrypt using CryptoManager (phpseclib v3)
-        $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
-            base64_decode($data),
-            base64_decode($key)
-        );
+        if ($meta === '') {
+            // Legacy format (AES-CBC) — unchanged
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesDecrypt(
+                base64_decode($data),
+                base64_decode($key)
+            );
+        } else {
+            // AES v2 (authenticated GCM) — nonce/salt carried in $meta (pw_iv/data_iv)
+            $decrypted = \TeampassClasses\CryptoManager\CryptoManager::aesGcmDecrypt(
+                base64_decode($data),
+                base64_decode($meta),
+                base64_decode($key)
+            );
+        }
 
         return base64_encode((string) $decrypted);
     } catch (Exception $e) {
@@ -3947,6 +4880,87 @@ function doDataDecryption(string $data, string $key): string
             error_log('TEAMPASS doDataDecryption failed: ' . $e->getMessage());
         }
         return '';
+    }
+}
+
+/**
+ * Lazily upgrade a legacy (AES-CBC) encrypted value to the AES v2 (authenticated
+ * GCM) format on read, reusing the existing object key so the RSA sharekey layer
+ * stays untouched. Mirrors the phpseclib v1→v3 lazy migration pattern.
+ *
+ * No-op (returns false) unless ALL of these hold:
+ *   - aesV2WriteEnabled() is true (the admin rollback switch),
+ *   - the value is still legacy ($currentMeta === ''),
+ *   - we have a row id, a ciphertext and an object key in hand.
+ *
+ * The object key is reused verbatim (same key material doDataDecryption() feeds
+ * back on the next read), so every existing sharekey keeps decrypting the value
+ * and no sharekey/RSA work is needed. Failures never bubble up to the read path:
+ * the row is left in the legacy format and retried on the next access.
+ *
+ * @param string $table        Logical table name ('items' / 'categories_items')
+ * @param string $dataColumn   Ciphertext column ('pw' / 'data')
+ * @param string $metaColumn   Companion meta column ('pw_iv' / 'data_iv')
+ * @param int    $rowId        Row id to update
+ * @param string $encryptedB64 Current ciphertext (base64) read from $dataColumn
+ * @param string $currentMeta  Current meta read from $metaColumn ('' = legacy)
+ * @param string $objectKeyB64 Object key (base64) already decrypted from the sharekey
+ *
+ * @return bool True when the row was upgraded to v2, false otherwise
+ */
+function doDataReEncryption(
+    string $table,
+    string $dataColumn,
+    string $metaColumn,
+    int $rowId,
+    string $encryptedB64,
+    string $currentMeta,
+    string $objectKeyB64
+): bool {
+    // Only migrate legacy values, and only while v2 writes are enabled.
+    if ($currentMeta !== '' || $rowId <= 0 || $encryptedB64 === '' || $objectKeyB64 === ''
+        || aesV2WriteEnabled() !== true
+    ) {
+        return false;
+    }
+
+    // The raw object key is the exact key material both the legacy decrypt and the
+    // v2 re-encrypt must use (no xss_clean, to guarantee a byte-exact round-trip).
+    $rawObjectKey = base64_decode($objectKeyB64, true);
+    if ($rawObjectKey === false || $rawObjectKey === '') {
+        return false;
+    }
+
+    try {
+        // Recover the exact original bytes (doDataDecryption returns base64 of the
+        // raw plaintext); re-encrypt those same bytes with the same object key.
+        $plaintextB64 = doDataDecryption($encryptedB64, $objectKeyB64, '');
+        if ($plaintextB64 === '') {
+            return false;
+        }
+        $plaintext = base64_decode($plaintextB64, true);
+        if ($plaintext === false) {
+            return false;
+        }
+
+        $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($plaintext, $rawObjectKey);
+
+        DB::update(
+            prefixTable($table),
+            [
+                $dataColumn => base64_encode($v2['ciphertext']),
+                $metaColumn => base64_encode($v2['meta']),
+            ],
+            'id = %i',
+            $rowId
+        );
+
+        return true;
+    } catch (Exception $e) {
+        if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+            error_log('TEAMPASS doDataReEncryption failed: ' . $e->getMessage());
+        }
+        return false;
     }
 }
 
@@ -4027,10 +5041,15 @@ function teampassDecodeTransportSecret(string $value, bool $isBase64Encoded = fa
 /**
  * Decrypt an item password and normalize legacy entity-encoded values when
  * pw_len proves that the decoded form is the original one.
+ *
+ * @param string   $encryptedPassword Encrypted password (base64)
+ * @param string   $objectKey         Object key (base64)
+ * @param int|null $storedLength      Stored pw_len for legacy entity normalization
+ * @param string   $meta              Base64 v2 metadata (items.pw_iv); empty for legacy data
  */
-function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null): string
+function teampassDecryptPasswordValue(string $encryptedPassword, string $objectKey, ?int $storedLength = null, string $meta = ''): string
 {
-    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey);
+    $decryptedB64 = doDataDecryption($encryptedPassword, $objectKey, $meta);
     if ($decryptedB64 === '') {
         return '';
     }
@@ -4407,15 +5426,26 @@ function generateQuickPassword(int $length = 16, bool $symbolsincluded = true): 
 /**
  * Permit to store the sharekey of an object for users.
  *
+ * When $post_folder_is_personal === 1, the object is personal: the sharekey is created only for
+ * the owner and for TP_USER_ID (server-side recovery). Otherwise, it is created for every eligible
+ * user (all active users with a public key, except the OTV/SSH/API system accounts).
+ *
  * @param string $object_name             Type for table selection
- * @param int    $post_folder_is_personal Personal
+ * @param int    $post_folder_is_personal 1 = personal object (owner + TP_USER_ID only), 0 = public
  * @param int    $post_object_id          Object
  * @param string $objectKey               Object key
- * @param bool   $onlyForUser             If is TRUE, then the sharekey is only for the user
- * @param bool   $deleteAll               If is TRUE, then all existing entries are deleted
+ * @param bool   $onlyForUser             DEPRECATED — ignored. Callers pass true on public paths too,
+ *                                        so it is unreliable; $post_folder_is_personal is the signal.
+ * @param bool   $deleteAll               If is TRUE, then stale/foreign entries are deleted
  * @param array  $objectKeyArray          Array of objects
  * @param int    $all_users_except_id     All users except this one
  * @param int    $apiUserId               API User ID
+ * @param int    $callerOnlyUserId        FUNC-1 — when >= 0 (and the object is public), the sharekey
+ *                                        is created ONLY for this user (the editor) and nothing is
+ *                                        deleted. The full fan-out to all other users and the stale-key
+ *                                        cleanup (deleteAll) are deferred to the background task. Lets
+ *                                        the editor read his change immediately without N×RSA in the
+ *                                        HTTP thread. Ignored for personal objects.
  *
  * @return void
  */
@@ -4428,7 +5458,8 @@ function storeUsersShareKey(
     bool $deleteAll = true,
     array $objectKeyArray = [],
     int $all_users_except_id = -1,
-    int $apiUserId = -1
+    int $apiUserId = -1,
+    int $callerOnlyUserId = -1
 ): void {
 
     $session = SessionManager::getSession();
@@ -4436,6 +5467,111 @@ function storeUsersShareKey(
 
     // Get the user ID
     $userId = ($apiUserId === -1) ? (int) $session->get('user-id') : $apiUserId;
+
+    // SEC-8 — Personal object: distribute the sharekey ONLY to the owner and to TP_USER_ID
+    // (server-side recovery key). $onlyForUser is intentionally NOT used as the decision signal:
+    // callers historically pass it as true on public paths too, so it is unreliable. The personal
+    // folder flag is the authoritative signal. See encryption-improvement-roadmap.md §5.1.
+    if ($post_folder_is_personal === 1) {
+        $personalRecipients = [$userId, (int) TP_USER_ID];
+        $recipients = DB::query(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id IN %li
+            AND public_key != ""',
+            $personalRecipients
+        );
+
+        // FUNC-3 — isolate each recipient: a single invalid public key must not
+        // abort the whole batch. On failure we log and skip that recipient only.
+        $rows = [];
+        foreach ($recipients as $recipient) {
+            $recipientId = (int) $recipient['id'];
+            if (count($objectKeyArray) === 0) {
+                try {
+                    $rows[] = [
+                        'object_id'          => $post_object_id,
+                        'user_id'            => $recipientId,
+                        'share_key'          => encryptUserObjectKey($objectKey, $recipient['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => $recipientId,
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $recipient['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $recipientId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
+                }
+            }
+        }
+        batchUpsertSharekeys(prefixTable($object_name), $rows);
+
+        // Remove any foreign sharekey left on this personal object (legacy over-distribution).
+        if ($deleteAll === true && count($objectKeyArray) === 0) {
+            DB::delete(
+                prefixTable($object_name),
+                'object_id = %i AND user_id NOT IN %li',
+                $post_object_id,
+                [$userId, (int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID]
+            );
+        }
+        return;
+    }
+
+    // FUNC-1 — caller-only synchronous distribution (public objects).
+    // create_item / update_item use this so the editing user can read his change
+    // immediately (1×RSA) while the full fan-out to all other users — and the
+    // deleteAll stale-key cleanup — is deferred to the background task. This branch
+    // is purely additive: it never deletes an existing sharekey (the background
+    // fan-out owns deletion). Reached only for public objects (personal returns above).
+    if ($callerOnlyUserId !== -1) {
+        $caller = DB::queryFirstRow(
+            'SELECT id, public_key
+            FROM ' . prefixTable('users') . '
+            WHERE id = %i
+            AND public_key != ""',
+            $callerOnlyUserId
+        );
+        if (empty($caller) === false) {
+            $rows = [];
+            if (count($objectKeyArray) === 0) {
+                try {
+                    $rows[] = [
+                        'object_id'          => $post_object_id,
+                        'user_id'            => (int) $caller['id'],
+                        'share_key'          => encryptUserObjectKey($objectKey, $caller['public_key']),
+                        'encryption_version' => 3,
+                    ];
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+                }
+            } else {
+                foreach ($objectKeyArray as $object) {
+                    try {
+                        $rows[] = [
+                            'object_id'          => (int) $object['objectId'],
+                            'user_id'            => (int) $caller['id'],
+                            'share_key'          => encryptUserObjectKey($object['objectKey'], $caller['public_key']),
+                            'encryption_version' => 3,
+                        ];
+                    } catch (Throwable $e) {
+                        error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for caller ' . (int) $caller['id'] . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
+                    }
+                }
+            }
+            batchUpsertSharekeys(prefixTable($object_name), $rows);
+        }
+        return;
+    }
 
     // Create sharekey for each user
     $user_ids = [OTV_USER_ID, SSH_USER_ID, API_USER_ID];
@@ -4450,42 +5586,52 @@ function storeUsersShareKey(
         $user_ids
     );
 
-    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert
+    // Collect all (objectId, userId, encryptedKey) rows first, then batch-insert.
+    // FUNC-3 — each user is isolated: a failing RSA encryption (invalid public key)
+    // is logged and skipped instead of aborting the whole batch. A user is added to
+    // $processedUserIds only when at least one of his sharekeys was produced, so the
+    // deleteAll pass below never wipes a key it could not regenerate.
     $rows = [];
     $processedUserIds = [];
     foreach ($users as $user) {
-        try {
-            if (count($objectKeyArray) === 0) {
-                if (WIP === true) {
-                    error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
-                }
+        $loopUserId = (int) $user['id'];
+        $userProcessed = false;
+        if (count($objectKeyArray) === 0) {
+            if (WIP === true) {
+                error_log('TEAMPASS Debug - storeUsersShareKey case1 - ' . $object_name . ' - ' . $post_object_id . ' - ' . $user['id']);
+            }
+            try {
                 $rows[] = [
                     'object_id'          => $post_object_id,
-                    'user_id'            => (int) $user['id'],
+                    'user_id'            => $loopUserId,
                     'share_key'          => encryptUserObjectKey($objectKey, $user['public_key']),
                     'encryption_version' => 3,
                 ];
-            } else {
-                foreach ($objectKeyArray as $object) {
-                    if (WIP === true) {
-                        error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
-                    }
+                $userProcessed = true;
+            } catch (Throwable $e) {
+                error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . $post_object_id . '): ' . $e->getMessage());
+            }
+        } else {
+            foreach ($objectKeyArray as $object) {
+                if (WIP === true) {
+                    error_log('TEAMPASS Debug - storeUsersShareKey case2 - ' . $object_name . ' - ' . $object['objectId'] . ' - ' . $user['id']);
+                }
+                try {
                     $rows[] = [
                         'object_id'          => (int) $object['objectId'],
-                        'user_id'            => (int) $user['id'],
+                        'user_id'            => $loopUserId,
                         'share_key'          => encryptUserObjectKey($object['objectKey'], $user['public_key']),
                         'encryption_version' => 3,
                     ];
+                    $userProcessed = true;
+                } catch (Throwable $e) {
+                    error_log('TEAMPASS Error - storeUsersShareKey: RSA encrypt failed for user ' . $loopUserId . ' on ' . $object_name . ' (object ' . (int) $object['objectId'] . '): ' . $e->getMessage());
                 }
             }
-        } catch (Exception $e) {
-            // One user with an invalid public key must not abort the distribution
-            // to all the other users. Log and continue with the next user.
-            error_log('TEAMPASS Error - storeUsersShareKey - Cannot encrypt object key for user #' . $user['id'] . ' (' . $object_name . ' / object ' . $post_object_id . '): ' . $e->getMessage());
         }
-        // The user stays in the eligible list even on encryption failure so the
-        // stale-key cleanup below never deletes an existing sharekey.
-        $processedUserIds[] = (int) $user['id'];
+        if ($userProcessed === true) {
+            $processedUserIds[] = $loopUserId;
+        }
     }
 
     // Single batched upsert instead of N individual queries
@@ -4502,13 +5648,19 @@ function storeUsersShareKey(
                 $post_object_id,
                 $processedUserIds
             );
-        } else {
-            // No eligible users found: remove all sharekeys for this object
+        } elseif (empty($users)) {
+            // No eligible users at all: remove all sharekeys for this object
             DB::delete(
                 prefixTable($object_name),
                 'object_id = %i',
                 $post_object_id
             );
+        } else {
+            // FUNC-3 — eligible users existed but every RSA encryption failed.
+            // Do NOT wipe the existing sharekeys: that would orphan the object
+            // (invariant I4 — no encrypted object without a live key). Keep them
+            // for retry/repair and surface the anomaly in the log.
+            error_log('TEAMPASS Error - storeUsersShareKey: all RSA encryptions failed for object ' . $post_object_id . ' on ' . $object_name . '; skipping deleteAll to avoid orphaning the object.');
         }
     }
 }
@@ -6088,7 +7240,12 @@ function createTaskForItem(
             'created_at' => time(),
             'process_type' => $processType,
             'arguments' => json_encode([
-                'all_users_except_id' => (int) $userId,
+                // FUNC-1 — the background fan-out distributes to ALL eligible users
+                // (caller included) and now owns the deleteAll cleanup. The caller must
+                // stay in the recipient set, otherwise deleteAll=true would wipe the
+                // sharekey the synchronous caller-only pass just created. So we no longer
+                // exclude the editor here (-1 = nobody excluded).
+                'all_users_except_id' => -1,
                 'item_id' => (int) $itemId,
                 'object_key' => $objectKey,
                 'author' => (int) $userId,
@@ -7962,6 +9119,14 @@ function emitWebSocketEvent(
     array $payload,
     ?int $excludeUserId = null
 ): bool {
+    // D2 — Notification centre: persist whitelisted user-target events in the
+    // user's inbox. Runs before the WebSocket gate on purpose: the inbox works
+    // even when the WebSocket daemon is disabled.
+    require_once __DIR__ . '/notifications.functions.php';
+    if (notificationShouldPersist($eventType, $targetType, $targetId) === true) {
+        tpPersistUserNotification($eventType, (int) $targetId, $payload);
+    }
+
     // Check if WebSocket is enabled
     try {
         $wsEnabled = DB::queryFirstField(
@@ -8008,6 +9173,71 @@ function emitWebSocketEvent(
 
     } catch (Exception $e) {
         error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Persist a user notification in the notification-centre inbox (D2).
+ *
+ * No-op when the feature is disabled or the table does not exist yet
+ * (pre-upgrade). Keeps only the latest 50 notifications per user.
+ *
+ * @param string $eventType Whitelisted event type (see notificationPersistableEvents())
+ * @param int    $userId    Target user id
+ * @param array  $payload   Raw event payload (sanitized before storage)
+ * @return bool True when a row was stored
+ */
+function tpPersistUserNotification(string $eventType, int $userId, array $payload): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+
+    try {
+        $enabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'notification_center_enabled'
+        );
+        if ($enabled !== '1') {
+            return false;
+        }
+
+        DB::insert(
+            prefixTable('user_notifications'),
+            [
+                'user_id' => $userId,
+                'created_at' => time(),
+                'event_type' => $eventType,
+                'payload' => json_encode(
+                    notificationSanitizePayload($eventType, $payload),
+                    JSON_UNESCAPED_UNICODE
+                ),
+                'is_read' => 0,
+            ]
+        );
+
+        // Prune: keep the latest 50 rows for this user.
+        $pruneBelow = DB::queryFirstField(
+            'SELECT increment_id FROM ' . prefixTable('user_notifications') . '
+            WHERE user_id = %i ORDER BY increment_id DESC LIMIT 1 OFFSET 49',
+            $userId
+        );
+        if ($pruneBelow !== null) {
+            DB::query(
+                'DELETE FROM ' . prefixTable('user_notifications') . '
+                WHERE user_id = %i AND increment_id < %i',
+                $userId,
+                (int) $pruneBelow
+            );
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Table might not exist yet (before migration) — never break the caller.
         return false;
     }
 }
@@ -9116,4 +10346,56 @@ function checkPasswordWithHIBP(string $password): array
     }
 
     return ['pwned' => false, 'count' => 0];
+}
+
+/**
+ * Tells whether the caller is entitled to administrate a given user account.
+ *
+ * Same rule as the target-scope guard applied to the typed actions of users.queries.php:
+ * an administrator may act on anyone, a manager only on a non-privileged target, and a plain
+ * manager only within the users administrated by one of their own roles. Use it in any action
+ * whose target is not carried by 'user_id', since the guard keys on that field and cannot
+ * cover them.
+ *
+ * @param int $targetUserId Id of the account the caller wants to modify.
+ *
+ * @return bool True when the caller may modify this account, false otherwise.
+ */
+function callerMayManageUser(int $targetUserId): bool
+{
+    $session = SessionManager::getSession();
+
+    if ((int) $session->get('user-admin') === 1) {
+        return true;
+    }
+
+    // Standard users may never administrate a user record.
+    if ((int) $session->get('user-manager') !== 1
+        && (int) $session->get('user-can_manage_all_users') !== 1) {
+        return false;
+    }
+
+    $target = DB::queryFirstRow(
+        'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $targetUserId
+    );
+
+    // Unknown target, or a manager attempting to act on an administrator or another manager,
+    // is always refused.
+    if (DB::count() === 0
+        || (int) $target['admin'] === 1
+        || (int) $target['can_manage_all_users'] === 1
+        || (int) $target['gestionnaire'] === 1) {
+        return false;
+    }
+
+    // A plain manager is limited to users administrated by one of their own roles.
+    if ((int) $session->get('user-manager') === 1
+        && in_array($target['isAdministratedByRole'], $session->get('user-roles_array')) === false) {
+        return false;
+    }
+
+    return true;
 }

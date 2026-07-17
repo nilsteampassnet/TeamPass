@@ -94,6 +94,25 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_NOT_ENGAGED = <?php echo json_encode($lang->get('notification_not_engaged'), JSON_UNESCAPED_UNICODE); ?>;
 
+    // Plain-language coaching strings for the passphrase generator (F9).
+    const TP_PASSPHRASE_COACH = {
+        summary:       <?php echo json_encode($lang->get('passphrase_coach_summary'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_one:  <?php echo json_encode($lang->get('passphrase_coach_add_word_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_word_many: <?php echo json_encode($lang->get('passphrase_coach_add_word_many'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_one:  <?php echo json_encode($lang->get('passphrase_coach_add_char_one'), JSON_UNESCAPED_UNICODE); ?>,
+        add_char_many: <?php echo json_encode($lang->get('passphrase_coach_add_char_many'), JSON_UNESCAPED_UNICODE); ?>,
+        strong:        <?php echo json_encode($lang->get('passphrase_coach_strong'), JSON_UNESCAPED_UNICODE); ?>,
+        time_instant:   <?php echo json_encode($lang->get('passphrase_coach_time_instant'), JSON_UNESCAPED_UNICODE); ?>,
+        time_seconds:   <?php echo json_encode($lang->get('passphrase_coach_time_seconds'), JSON_UNESCAPED_UNICODE); ?>,
+        time_minutes:   <?php echo json_encode($lang->get('passphrase_coach_time_minutes'), JSON_UNESCAPED_UNICODE); ?>,
+        time_hours:     <?php echo json_encode($lang->get('passphrase_coach_time_hours'), JSON_UNESCAPED_UNICODE); ?>,
+        time_days:      <?php echo json_encode($lang->get('passphrase_coach_time_days'), JSON_UNESCAPED_UNICODE); ?>,
+        time_months:    <?php echo json_encode($lang->get('passphrase_coach_time_months'), JSON_UNESCAPED_UNICODE); ?>,
+        time_years:     <?php echo json_encode($lang->get('passphrase_coach_time_years'), JSON_UNESCAPED_UNICODE); ?>,
+        time_centuries: <?php echo json_encode($lang->get('passphrase_coach_time_centuries'), JSON_UNESCAPED_UNICODE); ?>,
+        time_ages:      <?php echo json_encode($lang->get('passphrase_coach_time_ages'), JSON_UNESCAPED_UNICODE); ?>,
+    };
+
     // Minimum word count and extra suffix requirements per folder complexity level
     const TP_PASSPHRASE_RULES = {
         0:  { minWords: 3, capitalize: false, appendSuffix: false },
@@ -101,6 +120,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         38: { minWords: 3, capitalize: true,  appendSuffix: false },
         48: { minWords: 4, capitalize: true,  appendSuffix: false },
         60: { minWords: 4, capitalize: true,  appendSuffix: true  },
+    };
+
+    // Minimum random-password requirements per folder complexity level.
+    // Mirrors PasswordGeneratorService::COMPLEXITY_PRESETS (server-side enforcement):
+    // the folder can only ADD requirements (forced character classes + minimum length).
+    const TP_PWD_COMPLEXITY_PRESETS = {
+        0:  { minLength: 4,  lowercase: false, uppercase: false, numbers: false, symbols: false },
+        20: { minLength: 8,  lowercase: true,  uppercase: false, numbers: true,  symbols: false },
+        38: { minLength: 12, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        48: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: false },
+        60: { minLength: 16, lowercase: true,  uppercase: true,  numbers: true,  symbols: true  },
     };
 
     var requestRunning = false,
@@ -527,7 +557,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // Is this a short url
     var queryDict = {},
         showItemOnPageLoad = false,
-        itemIdToShow = '';
+        itemIdToShow = '',
+        itemActionOnLoad = 'show';
     location.search.substr(1).split("&").forEach(function(item) {
         queryDict[item.split("=")[0]] = item.split("=")[1]
     });
@@ -564,6 +595,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         showItemOnPageLoad = true;
         itemIdToShow = queryDict['id'];
         startedItemsListQuery = true;
+
+        // F8 "Fix it now" deep-link: open the item straight in edit mode so the
+        // password generator is ready (index.php?page=items&group=..&id=..&action=edit).
+        if (queryDict['action'] === 'edit') {
+            itemActionOnLoad = 'edit';
+        }
     }
 
     // Close on escape key
@@ -605,9 +642,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
     // Show details of item
     if (showItemOnPageLoad === true) {
-        // Display item details
+        // Display item details (or jump straight to edit for an F8 "Fix it now" deep-link)
         $.when(
-            Details(itemIdToShow, 'show', true)
+            Details(itemIdToShow, itemActionOnLoad, true)
         ).then(function() {
             // Force previous view to Tree folders
             store.update(
@@ -719,7 +756,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             .html('<?php echo $var['hidden_asterisk']; ?>')
             .removeClass('pointer_none');
 
-        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger');
+        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
     }
 
 
@@ -752,6 +789,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             setTimeout(function () {
                 toastr.clear($toast)
             }, timeOut)
+        }
+    }
+
+    /**
+     * Shared callback for background queries (attachments confirmation,
+     * edition lock release, ...): surfaces a server-side error that would
+     * otherwise fail silently.
+     *
+     * @param {string} ret - Encrypted server response
+     */
+    function reportBackgroundQueryError(ret) {
+        ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>')
+        if (ret && ret.error === true && ret.message) {
+            toastr.error(ret.message, '', { timeOut: 5000, progressBar: true })
         }
     }
 
@@ -849,6 +900,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 .val('')
                 .focus();
             $('#form-folder-add-icon-selected, #form-folder-add-icon').val('');
+            // Preset complexity to the parent folder's minimal level
+            // (the server rejects a lower value)
+            if (isNaN(parseInt(store.get('teampassItem').folderComplexity)) === false) {
+                $('#form-folder-add-complexicity').val(store.get('teampassItem').folderComplexity).change();
+            }
             // Set type of action for the form
             $('#form-folder-add').data('action', 'add');
 
@@ -1010,7 +1066,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             '<?php echo $session->get('key'); ?>'
                         ),
                         key: '<?php echo $session->get('key'); ?>'
-                    }
+                    },
+                    reportBackgroundQueryError
                 );
             }
 
@@ -1055,7 +1112,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-minimum-complexity').html(store.get('teampassItem').itemMinimumComplexity);
 
                 // HIde
-                $('.form-item-copy, #folders-tree-card, .columns-position, #form-item-password-options, .form-item-action, #form-item-attachments-zone')
+                $('.form-item-copy, #folders-tree-card, .columns-position, .form-item-action, #form-item-attachments-zone')
                     .addClass('hidden');
                 // Destroy editor
                 $('#form-item-description').summernote('destroy');
@@ -1142,6 +1199,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         } else if ($(this).data('item-action') === 'edit') {
             const item_tree_id = store.get('teampassItem').tree_id;
             if (debugJavascript === true) console.info('SHOW EDIT ITEM');
+            // Set the save action immediately so it can never be lost if the async
+            // showItemEditForm() path takes the error branch (which skips line 4370).
+            // Mirrors the list-pencil path, which sets it synchronously before Details().
+            $('#form-item-button-save').data('action', 'update_item');
             // Reset item
             store.update(
                 'teampassItem',
@@ -1329,17 +1390,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // > END <
             //
         } else if ($(this).data('item-action') === 'otv') {
-            if (debugJavascript === true) console.info('SHOW OTV ITEM');
+            if (debugJavascript === true) console.info('SHOW SECURE SEND ITEM');
             toastr.remove();
 
-            // Generate link
-            $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
-            $('#form-item-otv-views').val('1');
-            prepareOneTimeView();
-
-            $('#form-item-otv-link').val('');
-            // Open OTV modal
-            $('#modal-item-otv').modal('show');
+            // Open the Secure Send modal in item mode (link generated on demand)
+            openSecureSendModal('item');
 
             //
             // > END <
@@ -1514,7 +1569,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             true
                         );
                     }
-                );
+                ).fail(function() {
+                    $("#items-delete-user-confirm").modal('hide');
+                    toastrUpdate(loadingToast, 'error',
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        { timeOut: 5000 }
+                    );
+                });
             });
 
             $("#modal-btn-items-delete-cancel").on("click", function(){
@@ -1625,7 +1686,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         type: 'handle_item_edition_lock',
                         data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                         key: '<?php echo $session->get('key'); ?>'
-                    }
+                    },
+                    reportBackgroundQueryError
                 );
 
                 if (userUploadedFile === true) {
@@ -1790,18 +1852,6 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         );
 
         scrollBackToPosition();
-    });
-
-
-    /**
-     * Show/Hide the Password generation options
-     */
-    $('#item-button-password-showOptions').click(function() {
-        if ($('#form-item-password-options').hasClass('hidden') === true) {
-            $('#form-item-password-options').removeClass('hidden');
-        } else {
-            $('#form-item-password-options').addClass('hidden');
-        }
     });
 
 
@@ -2085,12 +2135,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // ERROR
                     $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        data.message,
+                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                         { timeOut: 5000 }
                     );
+                    requestRunning = false;
                 }
             }
-        );
+        ).fail(function() {
+            $('#form-item-delete-perform').prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
+            toastrUpdate(loadingToast, 'error',
+                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                { timeOut: 5000 }
+            );
+            requestRunning = false;
+        });
     }
 
 
@@ -2195,7 +2253,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             'action': 'release_lock',
                         }), 'encode', '<?php echo $session->get('key'); ?>'),
                         key: '<?php echo $session->get('key'); ?>'
-                    });
+                    }, reportBackgroundQueryError);
 
                     // Warn user
                     toastrUpdate(loadingToast, 'success',
@@ -2226,12 +2284,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     // ERROR
                     $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
                     toastrUpdate(loadingToast, 'error',
-                        data.message,
+                        (data && data.message) || '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                         { timeOut: 5000 }
                     );
                 }
             }
-        );
+        ).fail(function() {
+            $btn.prop('disabled', false).html('<?php echo $lang->get('perform'); ?>');
+            toastrUpdate(loadingToast, 'error',
+                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                { timeOut: 5000 }
+            );
+        });
     });
 
 
@@ -2920,7 +2984,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             '<span class="skeleton-line skeleton-sm d-inline-block" style="width:22px;"></span>'
         );
         $('#item-hibp-badge').addClass('hidden');
-        $('#card-item-pwd-security-badge').addClass('hidden');
+        $('#card-item-pwd-security-badge').addClass('hidden').removeClass('badge-success badge-danger badge-warning');
     }
 
     /**
@@ -2952,7 +3016,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         $('#form-item').removeClass('was-validated');
         // Show the form immediately (same show/hide logic as showItemEditForm)
         $('.form-item, #form-item-attachments-zone').removeClass('hidden');
-        $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+        $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
             .addClass('hidden');
         $('#but_back_top_left, #but_back_top_right').addClass('hidden');
     }
@@ -3211,6 +3275,21 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         key: '<?php echo $session->get('key'); ?>'
                     },
                     function(ret) {
+                        // decrypt data and stop on server-side denial
+                        ret = prepareExchangedData(ret, 'decode', '<?php echo $session->get('key'); ?>');
+                        if (ret === false || ret.error === true) {
+                            toastr.remove();
+                            toastr.error(
+                                (ret && ret.message) || '<?php echo $lang->get('error_not_allowed_to'); ?>',
+                                '', {
+                                    timeOut: 5000,
+                                    progressBar: true
+                                }
+                            );
+                            quick_icon_query_status = true;
+                            return;
+                        }
+
                         //change quick icon
                         if (elem.data('item-favourited') === 0) {
                             $(elem)
@@ -3411,6 +3490,13 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     };
     $('#form-item-password').pwstrength(pwdOptions);
 
+    // Live quality coaching for anything typed in the password field. Generators set
+    // their own (richer) coaching via passphraseCoaching/passwordCoaching and write the
+    // field with .val() (which does not fire 'input'), so they are not overridden here.
+    $('#form-item-password').on('input', function () {
+        showFieldPasswordCoaching($(this).val());
+    });
+
     function normalizeGeneratedPassword(generatedPassword) {
         if (Array.isArray(generatedPassword) === true) {
             return generatedPassword.length > 0 ? String(generatedPassword[0] ?? '') : '';
@@ -3432,6 +3518,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     function syncItemPasswordComplexity(passwordValue = null) {
+        // Any password change other than a fresh passphrase clears the coaching
+        // text; the element keeps its reserved height so nothing below shifts.
+        $('#form-item-password-coach').empty();
+
         const normalizedPassword = normalizeGeneratedPassword(passwordValue);
         if (normalizedPassword !== '') {
             $('#form-item-password').val(normalizedPassword);
@@ -3619,7 +3709,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     uploader_attachments.bind('Error', function(up, err) {
         toastr.remove();
         // Extraire le message d'erreur
-        let errorMessage = 'An unknown error occurred.';
+        let errorMessage = '<?php echo addslashes($lang->get('error_unknown')); ?>';
         if (err.response) {
             try {
                 const response = JSON.parse(err.response);
@@ -3735,15 +3825,26 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         if ($('#form-item-button-save').data('action') === '' ||
             $('#form-item-button-save').data('action') === undefined
         ) {
-            toastr.remove();
-            toastr.error(
-                '<?php echo $lang->get('error_no_action_identified'); ?>',
-                '', {
-                    timeOut: 5000,
-                    progressBar: true
-                }
-            );
-            return false;
+            // Defensive fallback: the flag may have been lost if the edit form was
+            // entered through an async path that never set it. Infer it from the
+            // current item state rather than blocking a legitimate save.
+            const _item = store.get('teampassItem');
+            const _formVisible = !$('.form-item').hasClass('hidden');
+            if (_formVisible && parseInt(_item.isNewItem, 10) === 1) {
+                $('#form-item-button-save').data('action', 'new_item');
+            } else if (_formVisible && parseInt(_item.id, 10) > 0) {
+                $('#form-item-button-save').data('action', 'update_item');
+            } else {
+                toastr.remove();
+                toastr.error(
+                    '<?php echo $lang->get('error_no_action_identified'); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                return false;
+            }
         }
 
         // Don't save if no change
@@ -4015,11 +4116,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // error
                             $("#div_loading").addClass("hidden");
                             //requestRunning = false;
-                            $("#div_dialog_message_text").html("An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />" + data);
+                            $("#div_dialog_message_text").html("<?php echo addslashes($lang->get('server_answer_error')); ?><br />Returned data:<br />" + data);
                             $("#div_dialog_message").dialog("open");
 
                             toastrUpdate(loadingToast, 'error',
-                                'An error appears. Answer from Server cannot be parsed!<br />Returned data:<br />' + data,
+                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                                { timeOut: 5000 }
+                            );
+                            return false;
+                        }
+                        // prepareExchangedData returns false (without throwing) on unusable response
+                        if (data === false) {
+                            toastrUpdate(loadingToast, 'error',
+                                '<?php echo addslashes($lang->get('server_answer_error')); ?>',
                                 { timeOut: 5000 }
                             );
                             return false;
@@ -4060,7 +4169,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                         type: 'confirm_attachments',
                                         data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
-                                    }
+                                    },
+                                    reportBackgroundQueryError
                                 );
 
                                 // Prevent duplicate ListerItems via jstree select_node event handler
@@ -4117,7 +4227,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                         type: 'confirm_attachments',
                                         data: prepareExchangedData(JSON.stringify(confirmData), 'encode', '<?php echo $session->get('key'); ?>'),
                                         key: '<?php echo $session->get('key'); ?>'
-                                    }
+                                    },
+                                    reportBackgroundQueryError
                                 );
 
                                 // Update store with new item id
@@ -4185,11 +4296,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // Close edit form and reopen folders-tree-card with refreshed item.
                             $('.form-item, #form-item-attachments-zone').addClass('hidden');
                             $('#folders-tree-card').removeClass('hidden');
-                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;                         
+                            item_id = store.get('teampassItem').id !== '' ? store.get('teampassItem').id : data.item_id;
                             Details(item_id, 'show', true);
                         }
                     }
-                );
+                ).fail(function() {
+                    // HTTP-level failure (500, network...): close the spinner and unblock edition
+                    toastrUpdate(loadingToast, 'error',
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        { timeOut: 5000 }
+                    );
+                    requestRunning = false;
+                });
             }
         } else if (userUploadedFile === true) {
             // Send query to confirm attachments
@@ -4202,7 +4320,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     type: 'confirm_attachments',
                     data: prepareExchangedData(JSON.stringify(data), 'encode', '<?php echo $session->get('key'); ?>'),
                     key: '<?php echo $session->get('key'); ?>'
-                }
+                },
+                reportBackgroundQueryError
             );
 
             store.update(
@@ -4313,7 +4432,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#form-item-password-loader').addClass('hidden');
                 $('#form-item-password').attr('placeholder', '<?php echo $lang->get('password'); ?>');
                 if (item_pwd || item_pwd === '') {
-                    syncItemPasswordComplexity(item_pwd);
+                    syncItemPasswordComplexity(item_pwd).then(function () {
+                        // Surface the existing password's quality without regenerating one.
+                        showFieldPasswordCoaching(item_pwd);
+                    });
                 }
             }, 0);
         });
@@ -4358,7 +4480,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // Show edition form
             $('.form-item, #form-item-attachments-zone')
                 .removeClass('hidden');
-            $('.form-item-copy, #form-item-password-options, .form-item-action, #folders-tree-card, .columns-position')
+            $('.form-item-copy, .form-item-action, #folders-tree-card, .columns-position')
                 .addClass('hidden');
 
             // Initial 'user did a change'
@@ -5130,7 +5252,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                                     teampassItem.hasCustomCategories = data.categoriesStructure
                             }
                         );
-                        
+
+                        // Keep both generators' options aligned with the
+                        // selected folder's complexity rules.
+                        syncPassphraseOptionsWithComplexity();
+                        syncRandomOptionsWithComplexity();
+
 
                         // display path of folders
                         $('#form-folder-path').html(
@@ -5444,8 +5571,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
 
                 if (showCorruptedItemsInList === true && value.is_corrupted === 1) {
-                    corruption_row_class = ' tp-item-corrupted-danger';
-                    corruption_marker = '<i class="fa-solid fa-triangle-exclamation mr-1 infotip tp-item-corrupted-marker text-danger" title="<?php echo $lang->get('items_corrupted_marker_unreadable'); ?>"></i>';
+                    // Only accept the two severities supported by the stylesheet.
+                    // Unknown or missing values stay red to preserve the safest legacy behaviour.
+                    const corruptionSeverity = value.corruption_severity === 'warning' ? 'warning' : 'danger';
+                    const corruptionLabel = value.corruption_reason_label || <?php echo json_encode($lang->get('items_corrupted_marker_unreadable'), JSON_UNESCAPED_UNICODE); ?>;
+                    corruption_row_class = ' tp-item-corrupted-' + corruptionSeverity;
+                    corruption_marker = '<i class="fa-solid fa-triangle-exclamation mr-1 infotip tp-item-corrupted-marker text-' + corruptionSeverity + '" title="' + htmlEncode(corruptionLabel) + '"></i>';
                 }
 
                 $('#teampass_items_list').append(
@@ -5522,6 +5653,64 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 window.tpWsSetItemViewers(parseInt(itemId), window.tpViewingItems[itemId])
             })
         }
+<?php if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1 && (int) ($SETTINGS['security_nudges_enabled'] ?? 0) === 1) { ?>
+        // F8: mark at-risk rows in the list (complements the item-card HIBP badge).
+        applyHealthBadges();
+<?php } ?>
+    }
+
+    /**
+     * F8 — decorate at-risk items in the current list with a single health marker.
+     * Complements (never duplicates) the item-card HIBP badge shown only when an item
+     * is opened. Metadata-only; driven by the per-user item_health flags via get_folder_flags.
+     */
+    function applyHealthBadges() {
+        var ids = [];
+        $('#teampass_items_list tr[data-item-id]').each(function () {
+            var id = parseInt($(this).data('item-id'), 10);
+            if (id > 0) ids.push(id);
+        });
+        if (ids.length === 0) return;
+
+        var nudgeLabels = {
+            breached: '<?php echo addslashes($lang->get('security_dashboard_breached')); ?>',
+            weak: '<?php echo addslashes($lang->get('security_dashboard_weak')); ?>',
+            reused: '<?php echo addslashes($lang->get('security_dashboard_reused')); ?>',
+            overdue: '<?php echo addslashes($lang->get('security_dashboard_overdue')); ?>'
+        };
+        var badgeTitlePrefix = '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>';
+        var nudgeSessionKey = '<?php echo $session->get('key'); ?>';
+
+        $.post('sources/dashboard.queries.php', { type: 'get_folder_flags', item_ids: ids.join(','), key: nudgeSessionKey }, function (response) {
+            var data;
+            try {
+                data = prepareExchangedData(response, 'decode', nudgeSessionKey);
+            } catch (e) {
+                return;
+            }
+            if (!data || data.error === true || !data.flags) return;
+
+            Object.keys(data.flags).forEach(function (itemId) {
+                var f = data.flags[itemId];
+                var labels = [];
+                if (f.breached === 1) labels.push(nudgeLabels.breached);
+                if (f.weak === 1) labels.push(nudgeLabels.weak);
+                if (f.reused === 1) labels.push(nudgeLabels.reused);
+                if (f.overdue === 1) labels.push(nudgeLabels.overdue);
+                if (labels.length === 0) return;
+
+                var $container = $('#list-item-row_' + itemId + ' .icon-container');
+                if ($container.length === 0 || $container.find('.tp-item-health-marker').length > 0) return;
+
+                var cls = f.breached === 1 ? 'text-danger' : 'text-warning';
+                $container.append(
+                    $('<i>')
+                        .addClass('fa-solid fa-shield-halved mr-1 infotip tp-item-health-marker ' + cls)
+                        .attr('title', badgeTitlePrefix + ' — ' + labels.join(', '))
+                );
+                $container.find('.tp-item-health-marker').tooltip();
+            });
+        });
     }
 
     $(document).on('click', '.open-folder', function() {
@@ -5638,6 +5827,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
             // Prepare copy to clipboard
             PrepareCopyToClipboard();
+
+            // WebSocket: list fully rendered — let the realtime layer re-apply
+            // its presence badges (edition locks, viewers) on the fresh rows.
+            $(document).trigger('teampass:items:rendered');
         }
     }
 
@@ -6317,7 +6510,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         window.tpWsStartItemView(data.id, data.folder);
                     }
                     $('#form-item-label, #form-item-suggestion-label').val($('<div>').html(data.label).text());
-                    $('#card-item-description, #form-item-suggestion-description').html(htmlDecode(data.description));
+                    $('#card-item-description, #form-item-suggestion-description').html(
+                        DOMPurify.sanitize(
+                            htmlDecode(data.description || ''),
+                            {USE_PROFILES: {html: true}}
+                        )
+                    );
                     if (data.description === '') {
                         $('#card-item-description').addClass('hidden');
                     } else {
@@ -6325,20 +6523,23 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     }
                     $('#card-item-pwd').html('<?php echo $var['hidden_asterisk']; ?>');
 
-                    // Password security badge
+                    // Password health marker (replaces the old binary secure/not-secure shield):
+                    // surfaces the same posture signals as the dashboard (weak / reused). breached
+                    // is not shown here — the HIBP badge already covers it on the card.
                     const $pwBadge = $('#card-item-pwd-security-badge')
-                    if (data.pw_is_secure === true) {
+                    const pwHealth = data.pw_health
+                    if (pwHealth && (pwHealth.weak === 1 || pwHealth.reused === 1)) {
+                        const pwIssues = []
+                        if (pwHealth.weak === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_weak')); ?>')
+                        if (pwHealth.reused === 1) pwIssues.push('<?php echo addslashes($lang->get('security_dashboard_reused')); ?>')
                         $pwBadge
-                            .removeClass('hidden badge-danger')
-                            .addClass('badge-success')
-                            .html('<i class="fa-solid fa-shield mr-1 infotip" title="<?php echo $lang->get('secure'); ?>"></i>')
-                    } else if (data.pw_is_secure === false) {
-                        $pwBadge
-                            .removeClass('hidden badge-success')
-                            .addClass('badge-danger')
-                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip" title="<?php echo $lang->get('not_secure'); ?>"></i>')
+                            .removeClass('hidden badge-success badge-danger')
+                            .addClass('badge-warning infotip')
+                            .attr('title', '<?php echo addslashes($lang->get('security_nudges_list_badge_title')); ?>' + ' — ' + pwIssues.join(', '))
+                            .html('<i class="fa-solid fa-shield-halved mr-1 infotip"></i>')
+                        $pwBadge.find('.infotip').tooltip()
                     } else {
-                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger')
+                        $pwBadge.addClass('hidden').removeClass('badge-success badge-danger badge-warning')
                     }
 
                     $('#card-item-login').html(data.login);
@@ -6435,7 +6636,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                         html_kbs = '';
 
                     $(data.tags).each(function(index, value) {
-                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-tag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
+                        html_tags += '<span class="badge badge-success pointer tip mr-2" title="<?php echo $lang->get('list_items_with_tag'); ?>" onclick="searchItemsWithTags(\'' + value + '\')"><i class="fa-solid fa-hashtag fa-sm"></i>&nbsp;<span class="item_tag">' + value + '</span></span>';
                     });
                     if (html_tags === '') {
                         $('#card-item-tags').html('<?php echo $lang->get('none'); ?>');
@@ -6842,7 +7043,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
                     return true;
                 }
-            );
+            ).fail(function() {
+                // HTTP-level failure (500, network...): close the spinner and unblock navigation
+                toastr.remove();
+                toastr.error(
+                    '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                    '', {
+                        timeOut: 5000,
+                        progressBar: true
+                    }
+                );
+                requestRunning = false;
+            });
         });
     }
 
@@ -7039,7 +7251,10 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             // reuse the pre-fetched promise — no second network request.
                             $.when(editPasswordPromise).then(function(item_pwd) {
                                 if (item_pwd || item_pwd === '') {
-                                    syncItemPasswordComplexity(item_pwd);
+                                    syncItemPasswordComplexity(item_pwd).then(function () {
+                                        // Keep the existing password's quality line after the re-sync.
+                                        showFieldPasswordCoaching(item_pwd);
+                                    });
                                 }
                             });
                         }
@@ -7607,18 +7822,160 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     }
 
     /**
-     * Undocumented function
+     * Bind the copy-to-clipboard button to a Secure Send URL.
+     *
+     * @param {string} url
+     * @return void
+     */
+    function bindSecureSendClipboard(url) {
+        $('#form-item-otv-copy-button').off('click.securesend').on('click.securesend', async function() {
+            try {
+                if (!url) {
+                    return;
+                }
+                await copyToClipboard(url);
+                toastr.info(
+                    '<?php echo $lang->get("copy_to_clipboard"); ?>',
+                    '', {
+                        timeOut: 2000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            } catch (error) {
+                toastr.error(
+                    '<?php echo $lang->get("clipboard_error"); ?>',
+                    '', {
+                        timeOut: 3000,
+                        positionClass: 'toast-bottom-right',
+                        progressBar: true
+                    }
+                );
+            }
+        });
+    }
+
+    /**
+     * Map a Secure Send backend error code to a readable message.
+     *
+     * @param {string} code
+     * @return {string}
+     */
+    function secureSendErrorLabel(code) {
+        var map = {
+            'passphrase_required': '<?php echo $lang->get('secure_send_passphrase_required_error'); ?>',
+            'empty_note': '<?php echo $lang->get('secure_send_empty_note_error'); ?>',
+            'notes_not_allowed': '<?php echo $lang->get('error'); ?>',
+            'not_allowed': '<?php echo $lang->get('error'); ?>'
+        };
+        return map[code] || '<?php echo $lang->get('error'); ?>';
+    }
+
+    /**
+     * Load and render the current user's active Secure Send links.
      *
      * @return void
      */
-    function prepareOneTimeView() {
+    function loadSecureSendsList() {
+        $.post(
+            "sources/items.queries.php", {
+                type: "list_secure_sends",
+                key: "<?php echo $session->get('key'); ?>"
+            },
+            function(data) {
+                // A real server error must not be displayed as an empty list
+                if (data.error !== undefined && data.error !== "") {
+                    toastr.error(
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    return;
+                }
+                if (data.sends === undefined || data.sends.length === 0) {
+                    $('#secure-send-list').html('<?php echo $lang->get('secure_send_no_active'); ?>');
+                    return;
+                }
+                var html = '<ul class="list-unstyled mb-0">';
+                data.sends.forEach(function(s) {
+                    var lock = s.has_passphrase === 1 ? ' <i class="fa-solid fa-lock text-success"></i>' : '';
+                    var icon = s.send_type === 'note' ? 'fa-note-sticky' : 'fa-key';
+                    html += '<li class="d-flex justify-content-between align-items-center border-bottom py-1">' +
+                        '<span><i class="fa-solid ' + icon + ' mr-2"></i>' + s.label + lock +
+                        ' <small class="text-muted ml-2">' + s.remaining_views + ' <?php echo $lang->get('secure_send_remaining_views'); ?> &middot; ' + s.expires_label + '</small></span>' +
+                        '<button type="button" class="btn btn-xs btn-outline-danger secure-send-revoke ml-2" data-id="' + s.id + '"><i class="fa-solid fa-trash"></i></button>' +
+                        '</li>';
+                });
+                html += '</ul>';
+                $('#secure-send-list').html(html);
+            },
+            "json"
+        );
+    }
+
+    /**
+     * Open the Secure Send modal in the given mode.
+     *
+     * @param {string} mode 'item' or 'note'
+     * @return void
+     */
+    function openSecureSendModal(mode) {
+        $('#form-secure-send-mode').val(mode);
+        // Reset the form
+        $('#form-item-otv-link').val('').data('otv-id', 0);
+        $('#form-secure-send-passphrase').val('');
+        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+        $('#form-item-otv-days').val($('#form-item-otv-days').attr('max'));
+        $('#form-item-otv-views').val('1');
+        $('#secure-send-modal-title').text('<?php echo $lang->get('secure_send'); ?>');
+
+        if (mode === 'note') {
+            $('#secure-send-note-fields').removeClass('hidden');
+            $('#form-secure-send-title, #form-secure-send-secret, #form-secure-send-note, #form-secure-send-login, #form-secure-send-url').val('');
+        } else {
+            $('#secure-send-note-fields').addClass('hidden');
+        }
+
+        loadSecureSendsList();
+        $('#modal-item-otv').modal('show');
+    }
+
+    // Generate a Secure Send link
+    $(document).on('click', '#form-secure-send-generate', function() {
+        var mode = $('#form-secure-send-mode').val();
+        var passphrase = $('#form-secure-send-passphrase').val();
+
         var data = {
-            "id": store.get('teampassItem').id,
+            "send_type": mode,
+            "passphrase": passphrase,
             "days": $('#form-item-otv-days').val(),
             "views": $('#form-item-otv-views').val(),
+            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0
         };
 
-        //Send query
+        if (mode === 'note') {
+            var secret = $('#form-secure-send-secret').val();
+            var note = $('#form-secure-send-note').val();
+            if (secret.trim() === '' && note.trim() === '') {
+                toastr.error('<?php echo $lang->get('secure_send_empty_note_error'); ?>', '', { timeOut: 3000, progressBar: true });
+                return;
+            }
+            data.payload = {
+                "title": $('#form-secure-send-title').val(),
+                "secret": secret,
+                "note": note,
+                "login": $('#form-secure-send-login').val(),
+                "url": $('#form-secure-send-url').val()
+            };
+        } else {
+            data.id = store.get('teampassItem').id;
+        }
+
+        var $btn = $(this);
+        $btn.addClass('disabled');
+
         $.post(
             "sources/items.queries.php", {
                 type: "generate_OTV_url",
@@ -7626,118 +7983,49 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                //check if format error
-                if (data.error == "") {
-                    $('#form-item-otv-link').val(data.url);
-                    $('#form-item-otv-link').data('otv-id', data.otv_id);
-
-                    // prepare clipboard
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
+                $btn.removeClass('disabled');
+                if (data.error === "") {
+                    $('#form-item-otv-link').val(data.url).data('otv-id', data.otv_id);
+                    bindSecureSendClipboard(data.url);
+                    if (data.has_passphrase === 1) {
+                        $('#form-secure-send-passphrase-reminder').removeClass('hidden');
+                    } else {
+                        $('#form-secure-send-passphrase-reminder').addClass('hidden');
+                    }
+                    loadSecureSendsList();
+                } else {
+                    toastr.error(secureSendErrorLabel(data.error), '', { timeOut: 3000, progressBar: true });
                 }
             },
             "json"
         );
-    }
+    });
 
-    // Handle update OTV button
-    $(document).on('click', '#form-item-otv-update', function() {
-        var $btn = $(this);
-        $btn.addClass('disabled').html('<i class="fa-solid fa-circle-notch fa-spin"></i><br>');
+    // Open the Secure Send modal in note mode from the top-level entry
+    $(document).on('click', '#secure-send-note-open', function() {
+        openSecureSendModal('note');
+    });
 
+    // Refresh the "My secure sends" list
+    $(document).on('click', '#secure-send-list-refresh', function() {
+        loadSecureSendsList();
+    });
+
+    // Revoke a Secure Send link
+    $(document).on('click', '.secure-send-revoke', function() {
         var data = {
-            "otv_id": $('#form-item-otv-link').data('otv-id'),
-            "days": $('#form-item-otv-days').val(),
-            "views": $('#form-item-otv-views').val(),
-            "shared_globaly": $('#form-item-otv-subdomain').is(":checked") === true ? 1 : 0,
-            "original_link": $('#form-item-otv-link').val(),
+            "id": $(this).data('id')
         };
-
         $.post(
             "sources/items.queries.php", {
-                type: "update_OTV_url",
+                type: "revoke_secure_send",
                 data: prepareExchangedData(JSON.stringify(data), "encode", "<?php echo $session->get('key'); ?>"),
                 key: "<?php echo $session->get('key'); ?>"
             },
             function(data) {
-                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
-                $btn.removeClass('disabled').html('<i class="fa-solid fa-save"></i><br><?php echo ucfirst($lang->get('update')); ?>');
-                // Display new url
-                if (data.new_url !== undefined) {
-                    $('#form-item-otv-link').val(data.new_url);
-
-                    // Prepare Clipboard for OTV url                        
-                    document.getElementById('form-item-otv-copy-button').addEventListener('click', async function() {
-                        try {
-                            const urlOtv = data.url;
-
-                            if (!urlOtv) {
-                                return;
-                            }
-
-                            // Copy to clipboard
-                            await copyToClipboard(urlOtv);
-
-                            // Send success notification
-                            toastr.info(
-                                '<?php echo $lang->get("copy_to_clipboard"); ?>',
-                                '', {
-                                    timeOut: 2000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        } catch (error) {
-                            toastr.error(
-                                '<?php echo $lang->get("clipboard_error"); ?>',
-                                '', {
-                                    timeOut: 3000,
-                                    positionClass: 'toast-bottom-right',
-                                    progressBar: true
-                                }
-                            );
-                        }
-                    });
-                }
-                toastr.remove();
-                toastr.info(
-                    '<?php echo $lang->get('updated'); ?>',
-                    '', {
-                        timeOut: 2000,
-                        progressBar: true
-                    }
-                );
-            }
+                loadSecureSendsList();
+            },
+            "json"
         );
     });
 
@@ -7940,8 +8228,18 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         });
     }
 
+    // Bound to the generic .password-generate buttons (e.g. server-password field)
+    // and reused by the main item generate button when in "random" mode.
     $('.password-generate').click(function() {
-        var elementId = $(this).data('id');
+        generateRandomPasswordFor($(this).data('id'));
+    });
+
+    /**
+     * Generate a random password (server-side smart generator) into a field.
+     *
+     * @param {string} elementId  Target input id (e.g. 'form-item-password').
+     */
+    function generateRandomPasswordFor(elementId) {
         $('#' + elementId).focus();
         if (debugJavascript === true) console.log(elementId);
 
@@ -7998,6 +8296,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     $(sel).prop('checked', checked === true).closest('label').toggleClass('active', checked === true);
                 });
                 syncItemPasswordComplexity(data.key ?? '');
+                passwordCoaching(opts);
             }
 
             // Form has changed
@@ -8007,7 +8306,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // SHow button in sticky footer
             //$('#form-item-buttons').addClass('sticky-footer');
         });
-    });
+    }
 
     /**
      * Generate a BIP-39 passphrase using cryptographically secure randomness.
@@ -8016,7 +8315,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
      * @param {number}  wordCount   Requested number of words (may be raised by complexity rules).
      * @param {string}  separator   Word separator ('-', '_', '.', ' ', or '').
      * @param {boolean} capitalize  Whether to capitalise the first letter of each word.
-     * @returns {string}
+     * @returns {{passphrase: string, wordCount: number, hasSuffix: boolean}}
      */
     function generateBip39Passphrase(wordCount, separator, capitalize) {
         const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
@@ -8032,8 +8331,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             return doCapitalize ? word.charAt(0).toUpperCase() + word.slice(1) : word
         })
 
-        const sep = separator === 'space' ? ' ' : separator
-        let passphrase = words.join(sep)
+        let passphrase = words.join(separator)
 
         // Complexity level 60 requires digits + symbols: append a short suffix
         if (rules.appendSuffix) {
@@ -8045,22 +8343,204 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             passphrase += digit + symbol
         }
 
-        return passphrase
+        return { passphrase: passphrase, wordCount: actualWordCount, hasSuffix: rules.appendSuffix }
     }
 
-    // Tracks the last folder complexity applied to the passphrase options.
-    // null means "never synced" and triggers a reset on the first call.
-    let lastSyncedPassphraseComplexity = null
+    // Crack-time buckets, ordered ascending. Each entry: [upper bound in seconds, i18n key].
+    // A value below a bound falls in that bucket; above the last bound it is "ages".
+    const TP_CRACK_BUCKETS = [
+        [1,            'time_instant'],
+        [60,           'time_seconds'],
+        [3600,         'time_minutes'],
+        [86400,        'time_hours'],
+        [2592000,      'time_days'],      // 30 days
+        [31536000,     'time_months'],    // 1 year
+        [3153600000,   'time_years'],     // 100 years
+        [315360000000, 'time_centuries'], // 10 000 years
+    ]
+    // Index in TP_CRACK_BUCKETS considered "strong enough" (centuries or more).
+    const TP_CRACK_STRONG_INDEX = 7
+    // Bits of entropy added by the digit+symbol suffix (10 digits × 8 symbols).
+    const TP_SUFFIX_BITS = Math.log2(80)
+    // Assumed offline attack rate (GPU-class), used only for the plain-language estimate.
+    const TP_CRACK_GUESSES_PER_SECOND = 1e10
+
+    /**
+     * Returns the bucket index for a given entropy, using the average number of
+     * guesses (2^(bits-1)) divided by the assumed attack rate.
+     *
+     * @param {number} entropyBits
+     * @returns {number} Index into TP_CRACK_BUCKETS, or its length for "ages".
+     */
+    function crackBucketIndex(entropyBits) {
+        const seconds = Math.pow(2, entropyBits - 1) / TP_CRACK_GUESSES_PER_SECOND
+        for (let i = 0; i < TP_CRACK_BUCKETS.length; i++) {
+            if (seconds < TP_CRACK_BUCKETS[i][0]) return i
+        }
+        return TP_CRACK_BUCKETS.length
+    }
+
+    /**
+     * Returns the localized plain-language crack-time label for an entropy value.
+     *
+     * @param {number} entropyBits
+     * @returns {string}
+     */
+    function crackLabel(entropyBits) {
+        const idx = crackBucketIndex(entropyBits)
+        const key = idx < TP_CRACK_BUCKETS.length ? TP_CRACK_BUCKETS[idx][1] : 'time_ages'
+        return TP_PASSPHRASE_COACH[key]
+    }
+
+    /**
+     * Render the coaching line (entropy summary + optional nudge) under the bar.
+     * Shared by the passphrase and the random-password generators so the UI is
+     * consistent between both modes.
+     *
+     * @param {number} entropyBits  Estimated entropy of the generated secret.
+     * @param {string} tip          Already-localized nudge, or '' for none.
+     */
+    function renderPasswordCoaching(entropyBits, tip) {
+        const summary = TP_PASSPHRASE_COACH.summary
+            .replace('%bits%', String(entropyBits))
+            .replace('%time%', crackLabel(entropyBits))
+
+        // Two fixed lines (summary + nudge) so the reserved height never changes
+        // and the generate buttons below do not jump when coaching appears.
+        const tipLine = tip !== '' ? '<div>' + tip + '</div>' : ''
+        $('#form-item-password-coach')
+            .html('<div><i class="fa-solid fa-shield-halved mr-1"></i>' + summary + '</div>' + tipLine)
+    }
+
+    /**
+     * Estimate the entropy (bits) of an arbitrary, already-existing password using
+     * zxcvbn — the honest measure for a non-generated secret — with a charset-based
+     * fallback when zxcvbn is unavailable.
+     *
+     * @param {string} pw
+     * @returns {number} Estimated entropy in bits.
+     */
+    function estimatePasswordBits(pw) {
+        if (typeof zxcvbn === 'function') {
+            try {
+                const z = zxcvbn(pw)
+                if (z && z.guesses && z.guesses > 1) {
+                    return Math.round(Math.log2(z.guesses))
+                }
+            } catch (e) { /* fall through to the charset estimate */ }
+        }
+        let charset = 0
+        if (/[a-z]/.test(pw)) charset += 26
+        if (/[A-Z]/.test(pw)) charset += 26
+        if (/[0-9]/.test(pw)) charset += 10
+        if (/[^a-zA-Z0-9]/.test(pw)) charset += 23
+        return Math.round(pw.length * Math.log2(charset || 26))
+    }
+
+    /**
+     * Show the coaching line (entropy + plain-language crack time) for whatever
+     * password is currently in the edit field. This makes the quality of the
+     * EXISTING password visible when an item is opened for edition, without having
+     * to regenerate one, and keeps the line fresh while the user types. Empties the
+     * line for an empty field.
+     *
+     * @param {string} passwordValue
+     */
+    function showFieldPasswordCoaching(passwordValue) {
+        const pw = normalizeGeneratedPassword(passwordValue)
+        if (pw === '') {
+            $('#form-item-password-coach').empty()
+            return
+        }
+        const bits = estimatePasswordBits(pw)
+        const tip = crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX ? TP_PASSPHRASE_COACH.strong : ''
+        renderPasswordCoaching(bits, tip)
+    }
+
+    /**
+     * Coaching for a generated passphrase. Uses the generator's own entropy
+     * (uniformly random words) — the honest measure for a generated secret —
+     * and nudges the user to add words until the "strong" bucket is reached.
+     *
+     * @param {number}  wordCount  Number of words actually used.
+     * @param {boolean} hasSuffix  Whether a digit+symbol suffix was appended.
+     */
+    function passphraseCoaching(wordCount, hasSuffix) {
+        const bitsPerWord = Math.log2(TP_BIP39_WORDLIST.length || 2048)
+        const suffixBits = hasSuffix ? TP_SUFFIX_BITS : 0
+        const curBits = Math.round(wordCount * bitsPerWord + suffixBits)
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra words that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 8; extra++) {
+                const bits = (wordCount + extra) * bitsPerWord + suffixBits
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_word_one
+                        : TP_PASSPHRASE_COACH.add_word_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        renderPasswordCoaching(curBits, tip)
+    }
+
+    // Character-class sizes used by the server-side generator (Hackzilla
+    // ComputerPasswordGenerator): lower 26, upper 26, digits 10, symbols 23.
+    function passwordCharsetSize(opts) {
+        let size = 0
+        if (opts.lowercase)  size += 26
+        if (opts.capitalize) size += 26
+        if (opts.numerals)   size += 10
+        if (opts.symbols)    size += 23
+        return size || 26
+    }
+
+    /**
+     * Coaching for a generated random password. Entropy is length × log2(charset)
+     * and the nudge suggests adding characters until the "strong" bucket is reached.
+     *
+     * @param {object} opts  effective_options returned by the generator
+     *                       ({size, lowercase, capitalize, numerals, symbols}).
+     */
+    function passwordCoaching(opts) {
+        const length = parseInt(opts.size, 10) || 0
+        const bitsPerChar = Math.log2(passwordCharsetSize(opts))
+        const curBits = Math.round(length * bitsPerChar)
+
+        let tip = ''
+        if (crackBucketIndex(curBits) >= TP_CRACK_STRONG_INDEX) {
+            tip = TP_PASSPHRASE_COACH.strong
+        } else {
+            // Smallest number of extra characters that reaches the "strong" bucket.
+            for (let extra = 1; extra <= 64; extra++) {
+                const bits = (length + extra) * bitsPerChar
+                if (crackBucketIndex(bits) >= TP_CRACK_STRONG_INDEX) {
+                    const template = extra === 1
+                        ? TP_PASSPHRASE_COACH.add_char_one
+                        : TP_PASSPHRASE_COACH.add_char_many.replace('%count%', String(extra))
+                    tip = template.replace('%time%', crackLabel(bits))
+                    break
+                }
+            }
+        }
+
+        renderPasswordCoaching(curBits, tip)
+    }
 
     /**
      * Sync the passphrase options with the current folder's complexity rules.
      *
-     * - When the folder complexity CHANGES (including on first open): resets word count
-     *   to the folder minimum and sets capitalize according to folder rules.
-     * - When the folder complexity is UNCHANGED: only enforces the minimum floor
-     *   so the user's manual adjustments within a session are preserved.
-     *
-     * Options below the folder minimum are always disabled in the selector.
+     * The user's last-used word count and capitalize choice (restored from
+     * localStorage) are preserved; the folder rules only tighten them: the word
+     * count is raised to the folder minimum when it is below it, and capitalize
+     * is forced on when the folder requires it. Options below the folder minimum
+     * are disabled in the selector.
      */
     function syncPassphraseOptionsWithComplexity() {
         const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
@@ -8072,56 +8552,166 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             $(this).prop('disabled', parseInt($(this).val(), 10) < minWords)
         })
 
-        if (lastSyncedPassphraseComplexity !== folderComplexity) {
-            // Folder changed (or first call): reset to folder minimum
+        // Keep the user's last-used word count, only raised to the folder floor.
+        const currentVal = parseInt($('#passphrase-word-count').val(), 10) || minWords
+        if (currentVal < minWords) {
             $('#passphrase-word-count').val(String(minWords))
-            $('#passphrase-capitalize')
-                .prop('checked', rules.capitalize)
-                .closest('label').toggleClass('active', rules.capitalize)
-            lastSyncedPassphraseComplexity = folderComplexity
-        } else {
-            // Same folder: only raise word count if it fell below minimum
-            const currentVal = parseInt($('#passphrase-word-count').val(), 10) || minWords
-            if (currentVal < minWords) {
-                $('#passphrase-word-count').val(String(minWords))
-            }
-            // Folder requiring uppercase must always stay checked
-            if (rules.capitalize) {
-                $('#passphrase-capitalize').prop('checked', true).closest('label').addClass('active')
-            }
+        }
+
+        // A folder requiring uppercase forces it on; otherwise keep the user's choice.
+        if (rules.capitalize) {
+            $('#passphrase-capitalize').prop('checked', true).closest('label').addClass('active')
         }
     }
 
     /**
-     * Passphrase generate button click handler.
+     * Returns the random-password preset for a complexity level (closest lower
+     * preset when the level does not match exactly), mirroring the server.
+     *
+     * @param {number} level  Folder complexity (TP_PW_STRENGTH_* value).
      */
-    $('#item-button-passphrase-generate').click(function() {
+    function pwdPresetForComplexity(level) {
+        let selected = TP_PWD_COMPLEXITY_PRESETS[0]
+        Object.keys(TP_PWD_COMPLEXITY_PRESETS).forEach(function(k) {
+            if (level >= parseInt(k, 10)) selected = TP_PWD_COMPLEXITY_PRESETS[k]
+        })
+        return selected
+    }
+
+    /**
+     * Reflect the folder's complexity in the random-password options: the
+     * character classes it requires are forced ON and locked (disabled), and
+     * lengths below its minimum are disabled — so the selector matches what the
+     * server will actually enforce instead of silently reverting the user's input.
+     */
+    function syncRandomOptionsWithComplexity() {
+        const folderComplexity = store.get('teampassItem') ? (store.get('teampassItem').folderComplexity ?? 0) : 0
+        const preset = pwdPresetForComplexity(folderComplexity)
+
+        $.each({
+            '#pwd-definition-lcl':     preset.lowercase,
+            '#pwd-definition-ucl':     preset.uppercase,
+            '#pwd-definition-numeric': preset.numbers,
+            '#pwd-definition-symbols': preset.symbols,
+        }, function(sel, required) {
+            const $cb = $(sel)
+            if (required) {
+                $cb.prop('checked', true).prop('disabled', true)
+                   .closest('label').addClass('active disabled')
+            } else {
+                $cb.prop('disabled', false).closest('label').removeClass('disabled')
+            }
+        })
+
+        // Disable lengths below the folder minimum and raise the value if needed.
+        $('#pwd-definition-size option').each(function() {
+            $(this).prop('disabled', parseInt($(this).val(), 10) < preset.minLength)
+        })
+        if ((parseInt($('#pwd-definition-size').val(), 10) || 0) < preset.minLength) {
+            $('#pwd-definition-size').val(String(preset.minLength))
+        }
+    }
+
+    /**
+     * Generate a BIP-39 passphrase into the item password field.
+     */
+    function generateItemPassphrase() {
         syncPassphraseOptionsWithComplexity()
 
         const wordCount = parseInt($('#passphrase-word-count').val(), 10) || 4
         const separator = $('#passphrase-separator').val()
         const capitalize = $('#passphrase-capitalize').prop('checked')
 
-        const passphrase = generateBip39Passphrase(wordCount, separator, capitalize)
-        $('#form-item-password').val(passphrase).focus()
+        const result = generateBip39Passphrase(wordCount, separator, capitalize)
+        $('#form-item-password').val(result.passphrase).focus()
 
-        syncItemPasswordComplexity(passphrase)
+        syncItemPasswordComplexity(result.passphrase)
+        passphraseCoaching(result.wordCount, result.hasSuffix)
 
         userDidAChange = true
-        if (debugJavascript === true) console.log('Passphrase generated: ' + passphrase)
-    })
+        if (debugJavascript === true) console.log('Passphrase generated: ' + result.passphrase)
+    }
+
+    // -------------------------------------------------------------------------
+    // Generator mode (random vs passphrase) — drives which options panel shows
+    // and what the single generate button produces.
+    // -------------------------------------------------------------------------
 
     /**
-     * Show/hide the passphrase options panel.
-     * Syncs word count constraints with folder complexity before showing.
+     * Returns the active generator mode ('random' or 'passphrase').
      */
-    $('#item-button-passphrase-showOptions').click(function() {
-        if ($('#form-item-passphrase-options').hasClass('hidden')) {
+    function currentGeneratorMode() {
+        return $('#form-item-generator-mode label.active').data('mode') || 'random'
+    }
+
+    /**
+     * Show only the options panel matching the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function showGeneratorOptions(mode) {
+        const isPassphrase = mode === 'passphrase'
+        $('#form-item-password-options').toggleClass('hidden', isPassphrase)
+        $('#form-item-passphrase-options').toggleClass('hidden', !isPassphrase)
+        if (isPassphrase) {
             syncPassphraseOptionsWithComplexity()
-            $('#form-item-passphrase-options').removeClass('hidden')
         } else {
-            $('#form-item-passphrase-options').addClass('hidden')
+            syncRandomOptionsWithComplexity()
         }
+    }
+
+    /**
+     * Apply a mode to both the toggle buttons and the visible options panel.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function applyGeneratorMode(mode) {
+        $('#form-item-generator-mode label').each(function() {
+            const active = $(this).data('mode') === mode
+            // Selected mode: solid primary button. Unselected: muted outline.
+            // Keeps the visible panel, the .active class and the button colour
+            // always in sync (currentGeneratorMode() reads label.active).
+            $(this).toggleClass('active btn-primary', active)
+                   .toggleClass('btn-outline-secondary', !active)
+            $(this).find('input[type=radio]').prop('checked', active)
+        })
+        showGeneratorOptions(mode)
+    }
+
+    /**
+     * Generate a secret into the item password field for the given mode.
+     *
+     * @param {string} mode  'random' or 'passphrase'.
+     */
+    function generateInMode(mode) {
+        if (mode === 'passphrase') {
+            generateItemPassphrase()
+        } else {
+            generateRandomPasswordFor('form-item-password')
+        }
+    }
+
+    // Pick a mode: swap the options panel, remember it, and generate right away
+    // so the field, the strength bar and the coaching always match the mode.
+    // Bound on the radio 'change' (fires exactly once) rather than the label
+    // 'click' (label-wrapped radios fire click twice, which desynced the
+    // .active class from the shown panel and made Generate use the wrong mode).
+    $('#form-item-generator-mode input[type=radio]').on('change', function() {
+        const mode = $(this).closest('label').data('mode')
+        applyGeneratorMode(mode)
+        try { localStorage.setItem('tp_generator_mode', mode) } catch (_) {}
+        generateInMode(mode)
+    })
+
+    // Single generate button: dispatches to the active mode.
+    $('#item-button-generate').click(function() {
+        generateInMode(currentGeneratorMode())
+    })
+
+    // Manual edits invalidate the generated-passphrase coaching (programmatic
+    // .val() does not fire 'input', so the generator's coaching is preserved).
+    $('#form-item-password').on('input', function() {
+        $('#form-item-password-coach').empty()
     })
 
     // -------------------------------------------------------------------------
@@ -8129,7 +8719,8 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
     // -------------------------------------------------------------------------
 
     /**
-     * Save password generator options to localStorage on any option change.
+     * Save password generator options to localStorage and regenerate the
+     * password so the result always reflects the current settings.
      */
     $('#pwd-definition-size, .password-definition').on('change', function() {
         try {
@@ -8142,27 +8733,32 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 secure:  $('#pwd-definition-secure').prop('checked'),
             }))
         } catch (_) {}
+        generateRandomPasswordFor('form-item-password')
     })
 
     /**
-     * Save passphrase generator options to localStorage on any option change.
-     * wordCount and capitalize are folder-dependent so they are saved for
-     * within-session use but NOT restored on the next page load.
-     * Only the separator is purely cosmetic and restored across sessions.
+     * Save all passphrase options to localStorage and regenerate on any
+     * passphrase option change (word count, separator, capitalize). The saved
+     * values are the user's last-used preferences and are restored on the next
+     * page load; folder complexity only tightens them (raises the word count to
+     * the folder minimum, forces capitalize when required).
      */
-    $('#passphrase-separator').on('change', function() {
+    $('#passphrase-word-count, #passphrase-separator, #passphrase-capitalize').on('change', function() {
         try {
             localStorage.setItem('tp_passphrase_gen_opts', JSON.stringify({
-                separator: $('#passphrase-separator').val(),
+                wordCount:  $('#passphrase-word-count').val(),
+                separator:  $('#passphrase-separator').val(),
+                capitalize: $('#passphrase-capitalize').prop('checked'),
             }))
         } catch (_) {}
+        generateItemPassphrase()
     })
 
     /**
      * Load generator options from localStorage on page load.
      * - Password generator: all options restored (size, character types).
-     * - Passphrase generator: only separator restored; word count and capitalize
-     *   are always derived from folder complexity via syncPassphraseOptionsWithComplexity().
+     * - Passphrase generator: word count, separator and capitalize restored;
+     *   folder complexity only tightens them via syncPassphraseOptionsWithComplexity().
      */
     ;(function loadGeneratorOptionsFromStorage() {
         try {
@@ -8183,9 +8779,22 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 
         try {
             const ppOpts = JSON.parse(localStorage.getItem('tp_passphrase_gen_opts') || 'null')
-            if (ppOpts && ppOpts.separator !== undefined) {
-                $('#passphrase-separator').val(ppOpts.separator)
+            if (ppOpts) {
+                if (ppOpts.separator !== undefined) {
+                    $('#passphrase-separator').val(ppOpts.separator)
+                }
+                if (ppOpts.wordCount !== undefined) {
+                    $('#passphrase-word-count').val(String(ppOpts.wordCount))
+                }
+                if (ppOpts.capitalize !== undefined) {
+                    $('#passphrase-capitalize').prop('checked', !!ppOpts.capitalize)
+                        .closest('label').toggleClass('active', !!ppOpts.capitalize)
+                }
             }
+        } catch (_) {}
+
+        try {
+            applyGeneratorMode(localStorage.getItem('tp_generator_mode') || 'random')
         } catch (_) {}
     })()
 
@@ -8347,7 +8956,17 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             }
                         );
                     }
-                );
+                ).fail(function() {
+                    toastr.remove();
+                    toastr.error(
+                        '<?php echo addslashes($lang->get('server_answer_error')); ?>',
+                        '', {
+                            timeOut: 5000,
+                            progressBar: true
+                        }
+                    );
+                    ui.draggable.removeClass('hidden');
+                });
             }
         });
     }

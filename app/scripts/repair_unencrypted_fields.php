@@ -70,6 +70,7 @@ $affected = DB::query(
             ci.item_id     AS item_id,
             ci.field_id    AS field_id,
             ci.data        AS data,
+            ci.data_iv     AS data_iv,
             ci.encryption_type AS encryption_type,
             c.encrypted_data   AS encrypted_data,
             c.title            AS field_title
@@ -170,7 +171,7 @@ foreach ($affected as $row) {
     // ------------------------------------------------------------------
     // Step 2: decrypt the stored value.
     // ------------------------------------------------------------------
-    $plaintext = doDataDecryption($row['data'], $objectKey);
+    $plaintext = doDataDecryption($row['data'], $objectKey, (string) ($row['data_iv'] ?? ''));
 
     if ($plaintext === '') {
         echo "ERROR — decryption returned empty (sharekey via {$shareKeyUsed})\n";

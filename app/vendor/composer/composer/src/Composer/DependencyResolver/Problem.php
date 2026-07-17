@@ -12,7 +12,6 @@
 
 namespace Composer\DependencyResolver;
 
-use Composer\Advisory\PartialSecurityAdvisory;
 use Composer\Advisory\SecurityAdvisory;
 use Composer\Package\CompletePackageInterface;
 use Composer\Package\AliasPackage;
@@ -87,17 +86,21 @@ class Problem
             reset($reasons);
             $rule = current($reasons);
 
-            if ($rule->getReason() !== Rule::RULE_ROOT_REQUIRE) {
-                throw new \LogicException("Single reason problems must contain a root require rule.");
-            }
+            if ($rule->getReason() === Rule::RULE_ROOT_REQUIRE) {
+                $reasonData = $rule->getReasonData();
+                $packageName = $reasonData['packageName'];
+                $constraint = $reasonData['constraint'];
 
-            $reasonData = $rule->getReasonData();
-            $packageName = $reasonData['packageName'];
-            $constraint = $reasonData['constraint'];
-
-            $packages = $pool->whatProvides($packageName, $constraint);
-            if (\count($packages) === 0) {
-                return "\n    ".implode(self::getMissingPackageReason($repositorySet, $request, $pool, $isVerbose, $packageName, $constraint));
+                $packages = $pool->whatProvides($packageName, $constraint);
+                if (\count($packages) === 0) {
+                    return "\n    ".implode(self::getMissingPackageReason($repositorySet, $request, $pool, $isVerbose, $packageName, $constraint));
+                }
+            } elseif ($rule->getReason() === Rule::RULE_LOCKED_FILTER_LIST_REMOVED) {
+                // Solver::checkForFilterListRemovedLockedPackages emits these
+                // for locked packages that the policy filter list dropped from
+                // the pool (typically malware blocked at install time).
+                $package = $rule->getReasonData()['package'];
+                return "\n    ".implode(self::getMissingLockedPackageReason($pool, $package));
             }
         }
 
@@ -120,6 +123,7 @@ class Problem
             case Rule::RULE_ROOT_REQUIRE:
                 return $rule->getReasonData()['packageName'];
             case Rule::RULE_FIXED:
+            case Rule::RULE_LOCKED_FILTER_LIST_REMOVED:
                 return (string) $rule->getReasonData()['package'];
             case Rule::RULE_PACKAGE_CONFLICT:
             case Rule::RULE_PACKAGE_REQUIRES:
@@ -140,6 +144,7 @@ class Problem
     {
         switch ($rule->getReason()) {
             case Rule::RULE_FIXED:
+            case Rule::RULE_LOCKED_FILTER_LIST_REMOVED:
                 return 3;
             case Rule::RULE_ROOT_REQUIRE:
                 return 2;
@@ -348,10 +353,9 @@ class Problem
         if (\count($packages) > 0) {
             $rootReqs = $repositorySet->getRootRequires();
             if (isset($rootReqs[$packageName])) {
-                $filtered = array_filter($packages, static function ($p) use ($rootReqs, $packageName): bool {
+                if (!array_any($packages, static function ($p) use ($rootReqs, $packageName): bool {
                     return $rootReqs[$packageName]->matches(new Constraint('==', $p->getVersion()));
-                });
-                if (0 === count($filtered)) {
+                })) {
                     return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but '.(self::hasMultipleNames($packages) ? 'these conflict' : 'it conflicts').' with your root composer.json require ('.$rootReqs[$packageName]->getPrettyString().').'];
                 }
             }
@@ -359,10 +363,9 @@ class Problem
             $tempReqs = $repositorySet->getTemporaryConstraints();
             foreach (reset($packages)->getNames() as $name) {
                 if (isset($tempReqs[$name])) {
-                    $filtered = array_filter($packages, static function ($p) use ($tempReqs, $name): bool {
+                    if (!array_any($packages, static function ($p) use ($tempReqs, $name): bool {
                         return $tempReqs[$name]->matches(new Constraint('==', $p->getVersion()));
-                    });
-                    if (0 === count($filtered)) {
+                    })) {
                         return ["- Root composer.json requires $name".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but '.(self::hasMultipleNames($packages) ? 'these conflict' : 'it conflicts').' with your temporary update constraint ('.$name.':'.$tempReqs[$name]->getPrettyString().').'];
                     }
                 }
@@ -370,24 +373,15 @@ class Problem
 
             if ($lockedPackage !== null) {
                 $fixedConstraint = new Constraint('==', $lockedPackage->getVersion());
-                $filtered = array_filter($packages, static function ($p) use ($fixedConstraint): bool {
+                if (!array_any($packages, static function ($p) use ($fixedConstraint): bool {
                     return $fixedConstraint->matches(new Constraint('==', $p->getVersion()));
-                });
-                if (0 === count($filtered)) {
+                })) {
                     return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but the package is fixed to '.$lockedPackage->getPrettyVersion().' (lock file version) by a partial update and that version does not match. Make sure you list it as an argument for the update command.'];
                 }
             }
 
-            $nonLockedPackages = array_filter($packages, static function ($p): bool {
-                return !$p->getRepository() instanceof LockArrayRepository;
-            });
-
-            if (0 === \count($nonLockedPackages)) {
-                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' in the lock file but not in remote repositories, make sure you avoid updating this package to keep the one from the lock file.'];
-            }
-
             if ($pool->isAbandonedRemovedPackageVersion($packageName, $constraint)) {
-                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, because they are abandoned and you configured "block-abandoned" to true in your "audit" config.'];
+                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, because they are abandoned and you configured "policy.abandoned.block" to true.'];
             }
 
             if ($pool->isSecurityRemovedPackageVersion($packageName, $constraint)) {
@@ -404,17 +398,52 @@ class Problem
 
                         return $advisory->advisoryId;
                     }, $advisories['advisories'][$packageName]);
+                    $advisoryIds = array_map(static function (SecurityAdvisory $advisory): string {
+                        return $advisory->advisoryId;
+                    }, $advisories['advisories'][$packageName]);
                 } else {
+                    $advisoryIds = $pool->getSecurityAdvisoryIdentifiersForPackageVersion($packageName, $constraint);
                     $advisoriesList = array_map(static function (string $advisoryId): string {
                         if (str_starts_with($advisoryId, 'PKSA-')) {
                             return '<href='.OutputFormatter::escape('https://packagist.org/security-advisories/'.$advisoryId).'>'.$advisoryId.'</>';
                         }
 
                         return $advisoryId;
-                    }, $pool->getSecurityAdvisoryIdentifiersForPackageVersion($packageName, $constraint));
+                    }, $advisoryIds);
                 }
 
-                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, because they are affected by security advisories ("' . implode('", "', $advisoriesList). '"). Go to https://packagist.org/security-advisories/ to find advisory details. To ignore the advisories, add them to the audit "ignore" config. To turn the feature off entirely, you can set "block-insecure" to false in your "audit" config.'];
+                $hasPackagistAdvisories = true;
+                foreach ($advisoryIds as $advisoryId) {
+                    if (!str_starts_with($advisoryId, 'PKSA-')) {
+                        $hasPackagistAdvisories = false;
+                        break;
+                    }
+                }
+
+                $advisoryDetailsHint = $hasPackagistAdvisories
+                    ? ' Go to https://packagist.org/security-advisories/ to find advisory details.'
+                    : ' Review the advisory details above for more information.';
+
+                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, because they are affected by security advisories ("' . implode('", "', $advisoriesList). '").'.$advisoryDetailsHint.' To ignore the advisories, add their IDs to the "policy.advisories.ignore-id" config or add the package to "policy.advisories.ignore". To turn the feature off entirely, you can set "policy.advisories.block" to false.'];
+            }
+
+            if ($pool->isFilterListRemovedPackageVersion($packageName, $constraint)) {
+                $filters = $pool->getFilterListEntryForPackageVersion($packageName, $constraint);
+                $ignorePaths = implode(' and ', array_map(static function (string $listName): string {
+                    return '"policy.' . $listName . '.ignore"';
+                }, array_keys($filters)));
+
+                $offPaths = implode(' and ', array_map(static function (string $listName): string {
+                    return '"policy.' . $listName . '.block"';
+                }, array_keys($filters)));
+
+                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, because they were ' . implode(', ', $filters). '. To ignore filters for this package, add the package to the ' . $ignorePaths . ' config. To turn the feature off entirely, you can set ' . $offPaths . ' to false.'];
+            }
+
+            if (!array_any($packages, static function ($p): bool {
+                return !$p->getRepository() instanceof LockArrayRepository;
+            })) {
+                return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' in the lock file but not in remote repositories, make sure you avoid updating this package to keep the one from the lock file.'];
             }
 
             return ["- Root composer.json requires $packageName".self::constraintToText($constraint) . ', ', 'found '.self::getPackageList($packages, $isVerbose, $pool, $constraint).' but these were not loaded, likely because '.(self::hasMultipleNames($packages) ? 'they conflict' : 'it conflicts').' with another require.'];
@@ -473,6 +502,38 @@ class Problem
         }
 
         return ["- Root composer.json requires $packageName, it ", "could not be found in any version, there may be a typo in the package name."];
+    }
+
+    /**
+     * Build the user-facing explanation for a locked package the pool dropped.
+     *
+     * Used for problems emitted by Solver::checkForFilterListRemovedLockedPackages.
+     * Root and platform packages are filtered out before they can land in the
+     * filter-list-removed map, so any package that reaches this method came
+     * from the locked repository (composer install, or partial composer update
+     * with kept locked deps) — hence the "(in the lock file)" hint in the prefix.
+     *
+     * @return array{0: string, 1: string} [prefix, suffix] tuple matching getMissingPackageReason()
+     */
+    public static function getMissingLockedPackageReason(Pool $pool, BasePackage $package): array
+    {
+        $packageName = $package->getName();
+        $constraint = new Constraint(Constraint::STR_OP_EQ, $package->getVersion());
+        $prefix = "- Package $packageName ".$package->getPrettyVersion().' (in the lock file) ';
+
+        if ($pool->isFilterListRemovedPackageVersion($packageName, $constraint)) {
+            $filters = $pool->getFilterListEntryForPackageVersion($packageName, $constraint);
+            $ignorePaths = implode(' and ', array_map(static function (string $listName): string {
+                return '"policy.' . $listName . '.ignore"';
+            }, array_keys($filters)));
+            $offPaths = implode(' and ', array_map(static function (string $listName): string {
+                return '"policy.' . $listName . '.block"';
+            }, array_keys($filters)));
+
+            return [$prefix, 'was not loaded, because it was ' . implode(', ', $filters). '. To ignore filters for this package, add the package to the ' . $ignorePaths . ' config. To turn the feature off entirely, you can set ' . $offPaths . ' to false.'];
+        }
+
+        throw new \LogicException("Filter list removed locked package must have version removed from pool.");
     }
 
     /**

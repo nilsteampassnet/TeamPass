@@ -520,6 +520,21 @@ class DatabaseInstaller
             array('admin', 'url_to_files_folder', rtrim($this->installConfig['teampassUrl'], '/') . '/storage/files'),
             array('admin', 'activate_expiration', '0'),
             array('admin', 'pw_life_duration', '0'),
+            array('admin', 'security_dashboard_enabled', '0'),
+            array('admin', 'security_dashboard_overshared_threshold', '10'),
+            array('admin', 'security_nudges_enabled', '0'),
+            array('admin', 'security_nudges_email_enabled', '0'),
+            array('admin', 'security_nudges_email_frequency_days', '7'),
+            array('admin', 'security_nudges_stale_scan_days', '14'),
+            array('admin', 'leaver_risk_enabled', '0'),
+            array('admin', 'leaver_risk_auto_flag', '0'),
+            array('admin', 'compliance_reports_enabled', '0'),
+            array('admin', 'rotation_tracking_enabled', '0'),
+            array('admin', 'notification_center_enabled', '0'),
+            array('admin', 'command_palette_enabled', '0'),
+            array('admin', 'micro_learning_enabled', '0'),
+            array('admin', 'access_reviews_enabled', '0'),
+            array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -603,6 +618,9 @@ class DatabaseInstaller
             array('admin', 'manager_move_item', '0'),
             array('admin', 'create_item_without_password', '0'),
             array('admin', 'otv_is_enabled', '0'),
+            array('admin', 'secure_send_allow_notes', '0'),
+            array('admin', 'secure_send_max_views', '5'),
+            array('admin', 'secure_send_require_passphrase', '0'),
             array('admin', 'agses_authentication_enabled', '0'),
             array('admin', 'item_extra_fields', '0'),
             array('admin', 'saltkey_ante_2127', 'none'),
@@ -697,6 +715,10 @@ class DatabaseInstaller
             array('admin', 'tasks_history_delay', '604800'),
             array('admin', 'cli_php_binary_path', ''),
             array('admin', 'enable_fastcgi_finish_request', '1'),
+            // Fresh installs start hardened: AES v2 (authenticated GCM) writes enabled.
+            // Upgraded installs keep '0' (seeded by upgrade_run_3.2.1.php) until the
+            // admin opts in.
+            array('admin', 'aes_v2_write_enabled', '1'),
             array('admin', 'oauth_new_user_is_administrated_by', '0'),
             array('admin', 'oauth_selfregistered_user_belongs_to_role', '0'),
             array('admin', 'oauth_self_register_groups', ''),
@@ -861,6 +883,7 @@ class DatabaseInstaller
             `aes_iv` TEXT NULL DEFAULT NULL,
             `split_view_mode` tinyint(1) NOT null DEFAULT '0',
             `show_subfolders` tinyint(1) NOT NULL DEFAULT '0',
+            `onboarding_completed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'First-run onboarding wizard completed (0=no, 1=done/skipped)',
             `encryption_version` TINYINT(1) NOT NULL DEFAULT 3 COMMENT '1=phpseclib v1 (SHA-1), 3=phpseclib v3 (SHA-256)',
             `phpseclibv3_migration_completed` TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Forced phpseclib v3 migration status (0=not done, 1=completed)',
             `phpseclibv3_migration_task_id` INT(12) NULL DEFAULT NULL COMMENT 'ID of the active phpseclib v3 migration background task',
@@ -1425,9 +1448,13 @@ class DatabaseInstaller
             `id` int(10) NOT NULL AUTO_INCREMENT,
             `timestamp` text NOT NULL,
             `code` varchar(100) NOT NULL,
-            `item_id` int(12) NOT NULL,
+            `item_id` int(12) NULL DEFAULT NULL,
+            `send_type` varchar(10) NOT NULL DEFAULT 'item',
             `originator` int(12) NOT NULL,
             `encrypted` text NOT NULL,
+            `protected_key` text NULL DEFAULT NULL,
+            `has_passphrase` tinyint(1) NOT NULL DEFAULT '0',
+            `failed_attempts` int(10) NOT NULL DEFAULT '0',
             `views` INT(10) NOT NULL DEFAULT '0',
             `max_views` INT(10) NULL DEFAULT NULL,
             `time_limit` varchar(100) DEFAULT NULL,
@@ -1568,6 +1595,8 @@ class DatabaseInstaller
             `sub_task_in_progress` tinyint(1) NOT NULL DEFAULT 0,
             `status` varchar(50) DEFAULT NULL,
             `error_message` TEXT NULL DEFAULT NULL,
+            `retry_count` tinyint(3) unsigned NOT NULL DEFAULT 0,
+            `max_retries` tinyint(3) unsigned NOT NULL DEFAULT 3,
             PRIMARY KEY (`increment_id`),
             INDEX idx_finished (finished_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
@@ -1667,6 +1696,144 @@ class DatabaseInstaller
         );
     }
 
+    // Create table item_health (Security Posture Dashboard - F1)
+    private function item_health()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "item_health` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `user_id` INT(12) NOT NULL,
+            `flag_weak` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_reused` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_breached` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_overdue` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_no_expiry` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_overshared` TINYINT(1) NOT NULL DEFAULT 0,
+            `flag_orphaned` TINYINT(1) NOT NULL DEFAULT 0,
+            `reuse_group` VARCHAR(32) NULL DEFAULT NULL,
+            `last_scan_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
+            KEY `idx_user_id` (`user_id`),
+            KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_notifications (in-app Notification Centre - D2)
+    private function user_notifications()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_notifications` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `user_id` INT(12) NOT NULL,
+            `created_at` INT(12) NOT NULL DEFAULT 0,
+            `event_type` VARCHAR(50) NOT NULL,
+            `payload` TEXT NULL,
+            `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+            `read_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`increment_id`),
+            KEY `idx_user_unread` (`user_id`, `is_read`, `increment_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table rotation_flags (Leaver / Offboarding Risk view - F3)
+    private function rotation_flags()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "rotation_flags` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `flagged_at` INT(12) NOT NULL DEFAULT 0,
+            `flagged_by` INT(12) NOT NULL DEFAULT 0,
+            `leaver_id` INT(12) NOT NULL DEFAULT 0,
+            `reason` VARCHAR(50) NOT NULL DEFAULT 'leaver',
+            `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_leaver` (`leaver_id`),
+            KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_reviews (Access Recertification Campaigns - F2)
+    private function access_reviews()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_reviews` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `label` VARCHAR(255) NOT NULL,
+            `folder_scope` INT(12) NOT NULL DEFAULT 0,
+            `started_by` INT(12) NOT NULL DEFAULT 0,
+            `started_at` INT(12) NOT NULL DEFAULT 0,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+            `closed_by` INT(12) NULL DEFAULT NULL,
+            `closed_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_review_items (Access Recertification Campaigns - F2: grant snapshot + decisions)
+    private function access_review_items()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_review_items` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `review_id` INT(12) NOT NULL,
+            `role_id` INT(12) NOT NULL,
+            `role_title` VARCHAR(255) NOT NULL DEFAULT '',
+            `folder_id` INT(12) NOT NULL,
+            `folder_title` VARCHAR(500) NOT NULL DEFAULT '',
+            `access_type` VARCHAR(10) NOT NULL DEFAULT '',
+            `decision` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            `decided_by` INT(12) NULL DEFAULT NULL,
+            `decided_at` INT(12) NULL DEFAULT NULL,
+            `comment` VARCHAR(500) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_review_grant` (`review_id`, `role_id`, `folder_id`),
+            KEY `idx_review_decision` (`review_id`, `decision`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table data_classification (Data Classification & Ownership - F4)
+    private function data_classification()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "data_classification` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `level` TINYINT(1) NOT NULL DEFAULT 0,
+            `owner_id` INT(12) NULL DEFAULT NULL,
+            `updated_by` INT(12) NOT NULL DEFAULT 0,
+            `updated_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_level` (`level`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_nudges (Proactive Health Nudges - F8: email-digest bookkeeping)
+    private function user_nudges()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_nudges` (
+            `user_id` INT(12) NOT NULL,
+            `last_digest_at` INT(12) NOT NULL DEFAULT 0,
+            `last_score` TINYINT UNSIGNED NULL DEFAULT NULL,
+            `last_score_delta` SMALLINT NULL DEFAULT NULL,
+            `last_score_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`user_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
     // Create table ldap_groups_roles
     private function ldap_groups_roles()
     {
@@ -1733,6 +1900,29 @@ class DatabaseInstaller
             `folder_id` INT(12) NULL DEFAULT NULL,
             `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             `imported_at` INT(12) NULL DEFAULT NULL
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table import_tracking (per-operation import follow-up)
+    private function import_tracking()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "import_tracking` (
+            `id` INT(12) AUTO_INCREMENT PRIMARY KEY,
+            `operation_id` INT(12) NOT NULL,
+            `user_id` INT(12) NOT NULL,
+            `format` VARCHAR(20) NOT NULL,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'analyzing',
+            `total_items` INT(12) NOT NULL DEFAULT 0,
+            `imported_items` INT(12) NOT NULL DEFAULT 0,
+            `failed_items` INT(12) NOT NULL DEFAULT 0,
+            `folders_count` INT(12) NOT NULL DEFAULT 0,
+            `message` TEXT NULL,
+            `started_at` INT(12) NOT NULL,
+            `finished_at` INT(12) NULL DEFAULT NULL,
+            KEY `operation_id` (`operation_id`),
+            KEY `user_id` (`user_id`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

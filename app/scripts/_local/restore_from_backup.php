@@ -163,7 +163,7 @@ ok("Private key decrypted OK (" . strlen($tpPrivateKeyPem) . " bytes PEM)");
 printHeader('Scan for corrupted items via TP_USER', 2);
 
 $tpSharekeys = DB::query(
-    'SELECT sk.object_id, sk.share_key, i.label, i.pw, i.pw_len
+    'SELECT sk.object_id, sk.share_key, i.label, i.pw, i.pw_iv, i.pw_len
      FROM ' . prefixTable('sharekeys_items') . ' sk
      JOIN ' . prefixTable('items') . ' i ON i.id = sk.object_id
      WHERE sk.user_id = %i
@@ -186,7 +186,7 @@ foreach ($tpSharekeys as $row) {
             continue;
         }
 
-        $decryptedB64 = doDataDecryption($row['pw'], $itemKey);
+        $decryptedB64 = doDataDecryption($row['pw'], $itemKey, (string) ($row['pw_iv'] ?? ''));
         if (empty($decryptedB64) && !empty($row['pw'])) {
             $corruptedList[$id] = ['label' => $row['label'], 'reason' => 'decrypt_failed', 'pw_len' => (int)$row['pw_len'], 'actual_len' => 0];
             continue;

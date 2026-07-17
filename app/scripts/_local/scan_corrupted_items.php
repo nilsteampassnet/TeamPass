@@ -19,7 +19,7 @@ $tpPk = DB::queryFirstRow('SELECT private_key FROM ' . prefixTable('user_private
 $tpPrivateKeyB64 = decryptPrivateKey($tpPassword, $tpPk['private_key']);
 
 $tpSharekeys = DB::query(
-    'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.pw, i.pw_len, i.created_at, i.updated_at
+    'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.pw, i.pw_iv, i.pw_len, i.created_at, i.updated_at
      FROM ' . prefixTable('sharekeys_items') . ' sk
      JOIN ' . prefixTable('items') . ' i ON i.id = sk.object_id
      WHERE sk.user_id = %i AND i.deleted_at IS NULL
@@ -39,7 +39,7 @@ foreach ($tpSharekeys as $row) {
             continue;
         }
 
-        $decryptedB64 = doDataDecryption($row['pw'], $itemKey);
+        $decryptedB64 = doDataDecryption($row['pw'], $itemKey, (string) ($row['pw_iv'] ?? ''));
         if (empty($decryptedB64) && !empty($row['pw'])) {
             $corrupted[] = ['id' => $row['object_id'], 'label' => $row['label'], 'reason' => 'decrypt_failed', 'len_stored' => $row['pw_len'], 'len_actual' => 0, 'created_at' => $row['created_at'], 'updated_at' => $row['updated_at']];
             continue;

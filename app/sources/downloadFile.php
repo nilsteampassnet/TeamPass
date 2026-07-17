@@ -97,20 +97,16 @@ $getData = dataSanitizer(
         'filename' => $request->query->get('name'),
         'fileid' => $request->query->get('fileid'),
         'action' => $request->query->get('action'),
-        'file' => $request->query->get('file'),
         'key' => $request->query->get('key'),
         'key_tmp' => $request->query->get('key_tmp'),
-        'pathIsFiles' => $request->query->get('pathIsFiles'),
         'pathIsOnthefly' => $request->query->get('pathIsOnthefly'),
     ],
     [
         'filename' => 'trim|escape',
         'fileid' => 'cast:integer',
         'action' => 'trim|escape',
-        'file' => 'trim|escape',
         'key' => 'trim|escape',
         'key_tmp' => 'trim|escape',
-        'pathIsFiles' => 'trim|escape',
         'pathIsOnthefly' => 'trim|escape',
     ]
 );
@@ -203,12 +199,16 @@ function tpUserCanDownloadBackupFromSession(int $userId, string $key, string $ke
 
 $get_filename = (string) $antiXss->xss_clean($getData['filename']);
 $get_fileid = (int) $antiXss->xss_clean($getData['fileid']);
-$get_pathIsFiles = (string) $antiXss->xss_clean($getData['pathIsFiles']);
 $get_pathIsOnthefly = (string) $antiXss->xss_clean($getData['pathIsOnthefly']);
 $get_action = (string) $antiXss->xss_clean($getData['action']);
-$get_file = (string) $antiXss->xss_clean($getData['file']);
 $get_key = (string) $antiXss->xss_clean($getData['key']);
 $get_key_tmp = (string) $antiXss->xss_clean($getData['key_tmp']);
+
+// A third branch (pathIsFiles=1) used to serve any name from path_to_files_folder while
+// authorizing an unrelated fileid (GHSA-3f3c-cw29-xxm7). It must not be reintroduced as it
+// stands: a `files` row describes an attachment stored in path_to_upload_folder, so a fileid
+// can never authorize a file living in path_to_files_folder, which holds imports and backups
+// uploaded by other users. Backups are downloaded through branch 1.
 
 // Branch 1: On-the-fly backups from storage/onthefly (pathIsOnthefly = 1)
 if ((int) $get_pathIsOnthefly === 1) {
@@ -242,54 +242,9 @@ if ((int) $get_pathIsOnthefly === 1) {
     exit;
 }
 
-// Branch 2: Files from files folder (pathIsFiles = 1)
-if (null !== $get_pathIsFiles && (int) $get_pathIsFiles === 1) {
-
-    // Clean filename
-    $get_filename = str_replace(array("\r", "\n"), '', $get_filename);
-    $get_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '', basename($get_filename));
-    
-    if (empty($get_filename)) {
-        sendError('ERROR_Invalid_filename');
-    }
-    
-    // Validate file path
-    $filepath = validateSecurePath($SETTINGS['path_to_files_folder'], $get_filename);
-    if (!$filepath) {
-        sendError('ERROR_File_not_found');
-    }
-    
-    // Check permissions based on action
-    $hasAccess = false;
-    if ($get_action === 'backup') {
-        $hasAccess = userHasAccessToBackupFile(
-            $session->get('user-id'), 
-            $get_file, 
-            $get_key, 
-            $get_key_tmp
-        );
-    } else {
-        $hasAccess = userHasAccessToFile($session->get('user-id'), $get_fileid);
-    }
-    
-    if (!$hasAccess) {
-        sendError('ERROR_Not_allowed');
-    }
-    
-    // All checks passed - serve file
-    setDownloadHeaders($get_filename, filesize($filepath));
-    
-    if (ob_get_level()) {
-        ob_end_clean();
-    }
-    
-    readfile($filepath);
-    exit;
-}
-
 // Branch 2: Files from upload folder (encrypted/standard)
 else {
-    
+
     if (empty($get_fileid)) {
         sendError('ERROR_Invalid_fileid');
     }

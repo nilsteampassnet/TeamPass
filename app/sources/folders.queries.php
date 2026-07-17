@@ -815,7 +815,12 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error'   => $creationStatus['error'],
-                    'message' => $creationStatus['error'] === true ? $lang->get('error_not_allowed_to') : $lang->get('folder_created'),
+                    // Return the real failure reason (duplicate title, complexity,
+                    // parent not allowed…); fall back to the generic message only
+                    // when the permission check denied without a message.
+                    'message' => $creationStatus['error'] === true
+                        ? (empty($creationStatus['message']) === false ? $creationStatus['message'] : $lang->get('error_not_allowed_to'))
+                        : $lang->get('folder_created'),
                     'newId'   => $creationStatus['newId'],
                     'rowData' => $rowData,
                 ),
@@ -1407,9 +1412,10 @@ if (null !== $post_type) {
                                             $itemUserTpKey['share_key'],
                                             $userTpPrivateKey
                                         ),
-                                        (int) ($record['pw_len'] ?? 0)
+                                        (int) ($record['pw_len'] ?? 0),
+                                        (string) ($record['pw_iv'] ?? '')
                                     )
-                                );                                
+                                );
 
                                 // Insert the new record and get the new auto_increment id
                                 DB::insert(
@@ -1419,7 +1425,7 @@ if (null !== $post_type) {
                                         'description' => empty($record['description']) === true ? '' : $record['description'],
                                         'id_tree' => $newFolderId,
                                         'pw' => $cryptedStuff['encrypted'],
-                                        'pw_iv' => '',
+                                        'pw_iv' => $cryptedStuff['meta'],
                                         'url' => empty($record['url']) === true ? '' : substr($record['url'], 0, 500),
                                         'login' => empty($record['login']) === true ? '' : substr($record['login'], 0, 200),
                                         'viewed_no' => 0,

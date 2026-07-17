@@ -777,6 +777,104 @@
                 }
             }
         },
+        "/folder/update": {
+            "put": {
+                "operationId": "folderUpdate",
+                "summary": "Update an existing folder (partial update)",
+                "description": "PUT only. Every field except 'id' is optional; unspecified fields keep their current value. 'access_rights' is not updatable here (roles-management concern). Personal root folders cannot be renamed or moved, and cross-domain (personal ↔ shared) moves are rejected.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FolderUpdateBody"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Folder updated",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FolderUpdateResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/UnprocessableEntity"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
+        "/folder/delete": {
+            "delete": {
+                "operationId": "folderDelete",
+                "summary": "Soft-delete a folder and its descendants",
+                "description": "DELETE only. The folder and all its descendants go to the recycle bin (restorable from Utilities → Recycled bin); contained items are soft-deleted. Personal root folders and folder id 0 cannot be deleted.",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "description": "Folder id to delete (may also be sent in the JSON body)",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Folder deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/FolderDeleteResult"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "405": {
+                        "$ref": "#/components/responses/MethodNotAllowed"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/InternalError"
+                    },
+                    "429": {
+                        "$ref": "#/components/responses/RateLimited"
+                    }
+                }
+            }
+        },
         "/user/list": {
             "get": {
                 "operationId": "userList",
@@ -1199,10 +1297,16 @@
                         "type": "string"
                     },
                     "parent_id": {
-                        "type": "integer"
+                        "type": "integer",
+                        "description": "Parent folder id (0 = root, requires user_can_create_root_folder). Optional when 'private' is true — defaults to the caller's personal root."
                     },
                     "complexity": {
-                        "type": "integer"
+                        "type": "integer",
+                        "description": "Password complexity level. Required for a shared target; optional (default 0) when the resolved target is personal (e.g. 'private' is true)."
+                    },
+                    "private": {
+                        "type": "boolean",
+                        "description": "Optional. When true, creates a personal (private) folder under the caller's personal root without needing its id (requires personal folders to be enabled for the user). The personal_folder flag is never accepted directly from the client — it is derived server-side from the resolved parent."
                     },
                     "duration": {
                         "type": "integer"
@@ -1231,6 +1335,43 @@
                     }
                 }
             },
+            "FolderUpdateBody": {
+                "type": "object",
+                "required": [
+                    "id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "description": "Folder id to update (required)."
+                    },
+                    "title": {
+                        "type": "string"
+                    },
+                    "parent_id": {
+                        "type": "integer",
+                        "description": "New parent id (move). Cross-domain personal ↔ shared moves are rejected (422)."
+                    },
+                    "complexity": {
+                        "type": "integer"
+                    },
+                    "duration": {
+                        "type": "integer"
+                    },
+                    "create_auth_without": {
+                        "type": "integer"
+                    },
+                    "edit_auth_without": {
+                        "type": "integer"
+                    },
+                    "icon": {
+                        "type": "string"
+                    },
+                    "icon_selected": {
+                        "type": "string"
+                    }
+                }
+            },
             "CreatedResult": {
                 "type": "object",
                 "properties": {
@@ -1241,6 +1382,41 @@
                         "type": "string"
                     },
                     "newId": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "FolderUpdateResult": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "FolderDeleteResult": {
+                "type": "object",
+                "properties": {
+                    "error": {
+                        "type": "boolean"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "deleted_folders": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        },
+                        "description": "Ids of the folder and every descendant that was soft-deleted."
+                    },
+                    "deleted_items_count": {
                         "type": "integer"
                     }
                 }

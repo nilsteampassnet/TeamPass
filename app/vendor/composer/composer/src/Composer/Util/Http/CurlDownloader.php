@@ -181,6 +181,14 @@ class CurlDownloader
             $this->config->prohibitUrlByConfig($url, $this->io, $options);
         }
 
+        if (
+            isset($options['prevent_url_access_callable']) &&
+            is_callable($options['prevent_url_access_callable']) &&
+            $options['prevent_url_access_callable']($url)
+        ) {
+            throw new TransportException('Access to "'.Url::sanitize($url).'" is blocked.');
+        }
+
         $curlHandle = curl_init();
         $headerHandle = fopen('php://temp/maxmemory:32768', 'w+b');
         if (false === $headerHandle) {
@@ -205,7 +213,7 @@ class CurlDownloader
         $bodyHandle = fopen($bodyTarget, 'w+b');
         restore_error_handler();
         if (false === $bodyHandle) {
-            throw new TransportException('The "'.$url.'" file could not be written to '.($copyTo ?? 'a temporary file').': '.$errorMessage);
+            throw new TransportException('The "'.Url::sanitize($url).'" file could not be written to '.($copyTo ?? 'a temporary file').': '.$errorMessage);
         }
 
         curl_setopt($curlHandle, CURLOPT_URL, $url);
@@ -221,6 +229,11 @@ class CurlDownloader
             curl_setopt($curlHandle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
         } elseif ($attributes['ipResolve'] === 6) {
             curl_setopt($curlHandle, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V6);
+        }
+
+        if ($attributes['retries'] > 0) {
+            // when retrying, do not re-use a kept-alive connection from the pool as it may be the cause of the failure
+            curl_setopt($curlHandle, CURLOPT_FRESH_CONNECT, true);
         }
 
         if (function_exists('curl_share_init')) {
@@ -324,8 +337,6 @@ class CurlDownloader
 
     public function tick(): void
     {
-        static $timeoutWarning = false;
-
         if (count($this->jobs) === 0) {
             return;
         }
@@ -347,7 +358,7 @@ class CurlDownloader
 
             $progress = curl_getinfo($curlHandle);
             if (false === $progress) {
-                throw new \RuntimeException('Failed getting info from curl handle '.$i.' ('.$this->jobs[$i]['url'].')');
+                throw new \RuntimeException('Failed getting info from curl handle '.$i.' ('.Url::sanitize($this->jobs[$i]['url']).')');
             }
             $job = $this->jobs[$i];
             unset($this->jobs[$i]);
@@ -369,11 +380,6 @@ class CurlDownloader
                         $error = curl_strerror($errno);
                     }
                     $progress['error_code'] = $errno;
-
-                    if ($errno === 28 /* CURLE_OPERATION_TIMEDOUT */ && \PHP_VERSION_ID >= 70300 && $progress['namelookup_time'] === 0.0 && !$timeoutWarning) {
-                        $timeoutWarning = true;
-                        $this->io->writeError('<warning>A connection timeout was encountered. If you intend to run Composer without connecting to the internet, run the command again prefixed with COMPOSER_DISABLE_NETWORK=1 to make Composer run in offline mode.</warning>');
-                    }
 
                     if (
                         (!isset($job['options']['http']['method']) || $job['options']['http']['method'] === 'GET')
@@ -437,8 +443,9 @@ class CurlDownloader
                 }
                 fclose($job['bodyHandle']);
 
+                $warningsOutput = false;
                 if ($response->getStatusCode() >= 300 && $response->getHeader('content-type') === 'application/json') {
-                    HttpDownloader::outputWarnings($this->io, $job['origin'], json_decode($response->getBody(), true));
+                    $warningsOutput = HttpDownloader::outputWarnings($this->io, $job['origin'], json_decode($response->getBody(), true));
                 }
 
                 $result = $this->isAuthenticatedRetryNeeded($job, $response);
@@ -458,9 +465,12 @@ class CurlDownloader
 
                 // fail 4xx and 5xx responses and capture the response
                 if ($statusCode >= 400 && $statusCode <= 599) {
+                    $retryableStatusCode = in_array($statusCode, [423, 425, 500, 502, 503, 504, 507, 510], true)
+                        // codeload.github.com intermittently returns 400 on reused connections, retry those specifically, see #12958
+                        || ($statusCode === 400 && parse_url($job['url'], PHP_URL_HOST) === 'codeload.github.com');
                     if (
                         (!isset($job['options']['http']['method']) || $job['options']['http']['method'] === 'GET')
-                        && in_array($statusCode, [423, 425, 500, 502, 503, 504, 507, 510], true)
+                        && $retryableStatusCode
                         && $job['attributes']['retries'] < $this->maxRetries
                     ) {
                         $this->io->writeError('Retrying ('.($job['attributes']['retries'] + 1).') ' . Url::sanitize($job['url']) . ' due to status code '. $statusCode, true, IOInterface::DEBUG);
@@ -468,7 +478,7 @@ class CurlDownloader
                         continue;
                     }
 
-                    throw $this->failResponse($job, $response, $response->getStatusMessage());
+                    throw $this->failResponse($job, $response, $response->getStatusMessage(), $warningsOutput);
                 }
 
                 if ($job['attributes']['storeAuth'] !== false) {
@@ -523,7 +533,7 @@ class CurlDownloader
                         is_callable($this->jobs[$i]['options']['prevent_ip_access_callable']) &&
                         $this->jobs[$i]['options']['prevent_ip_access_callable']($progress['primary_ip'])
                     ) {
-                        $this->rejectJob($this->jobs[$i], new TransportException(sprintf('IP "%s" is blocked for "%s".', $progress['primary_ip'], $progress['url'])));
+                        $this->rejectJob($this->jobs[$i], new TransportException(sprintf('IP "%s" is blocked for "%s".', $progress['primary_ip'], Url::sanitize($progress['url']))));
                     }
 
                     $this->jobs[$i]['primaryIp'] = (string) $progress['primary_ip'];
@@ -560,12 +570,16 @@ class CurlDownloader
         }
 
         if (!empty($targetUrl)) {
+            if (!Url::isAllowedRedirect($targetUrl)) {
+                throw new TransportException('Could not follow the redirect to "'.Url::sanitize($targetUrl).'" because only http and https redirects are supported.');
+            }
+
             $this->io->writeError(sprintf('Following redirect (%u) %s', $job['attributes']['redirects'] + 1, Url::sanitize($targetUrl)), true, IOInterface::DEBUG);
 
             return $targetUrl;
         }
 
-        throw new TransportException('The "'.$job['url'].'" file could not be downloaded, got redirect without Location ('.$response->getStatusMessage().')');
+        throw new TransportException('The "'.Url::sanitize($job['url']).'" file could not be downloaded, got redirect without Location ('.$response->getStatusMessage().')');
     }
 
     /**
@@ -657,18 +671,19 @@ class CurlDownloader
     /**
      * @param  Job                $job
      */
-    private function failResponse(array $job, Response $response, string $errorMessage): TransportException
+    private function failResponse(array $job, Response $response, string $errorMessage, bool $warningsOutput = false): TransportException
     {
         if (null !== $job['filename']) {
             @unlink($job['filename'].'~');
         }
 
         $details = '';
-        if (in_array(strtolower((string) $response->getHeader('content-type')), ['application/json', 'application/json; charset=utf-8'], true)) {
+        // skip dumping the raw JSON body when outputWarnings already presented it cleanly, to avoid duplicate/messy output
+        if (!$warningsOutput && in_array(strtolower((string) $response->getHeader('content-type')), ['application/json', 'application/json; charset=utf-8'], true)) {
             $details = ':'.PHP_EOL.substr($response->getBody(), 0, 200).(strlen($response->getBody()) > 200 ? '...' : '');
         }
 
-        return new TransportException('The "'.$job['url'].'" file could not be downloaded ('.$errorMessage.')' . $details, $response->getStatusCode());
+        return new TransportException('The "'.Url::sanitize($job['url']).'" file could not be downloaded ('.$errorMessage.')' . $details, $response->getStatusCode());
     }
 
     /**

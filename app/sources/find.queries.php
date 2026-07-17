@@ -38,6 +38,7 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'find.functions.php';
 
 // init
 loadClasses('DB');
@@ -381,12 +382,10 @@ if (null === $request->query->get('type')) {
         ) {
             $getItemInList = false;
         } else {
-            $txt = str_replace(['\n', '<br />', '\\'], [' ', ' ', '', ' '], strip_tags($record['description']));
-            if (strlen($txt) > 50) {
-                $sOutputItem .= '"' . base64_encode(substr(stripslashes(preg_replace('~/<[\/]{0,1}[^>]*>\//|[ \t]/~', '', $txt)), 0, 50)) . '", ';
-            } else {
-                $sOutputItem .= '"' . base64_encode(stripslashes(preg_replace('~/<[^>]*>|[ \t]/~', '', $txt))) . '", ';
-            }
+            $descriptionPreview = findBuildDescriptionPreview((string) $record['description'], 50);
+            $sOutputItem .= '"' . base64_encode(
+                htmlspecialchars($descriptionPreview, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            ) . '", ';
         }
 
         //col5 - TAGS
@@ -428,7 +427,7 @@ if (null === $request->query->get('type')) {
         $arr_data[$record['id']]['item_id'] = (int) $record['id'];
         $arr_data[$record['id']]['tree_id'] = (int) $record['id_tree'];
         $arr_data[$record['id']]['label'] = (string) $record['label'];
-        $arr_data[$record['id']]['desc'] = (string) strip_tags(explode('<br>', $record['description'])[0]);
+        $arr_data[$record['id']]['desc'] = findBuildDescriptionPreview((string) $record['description']);
         $arr_data[$record['id']]['folder'] = (string)$record['folder'];
         $arr_data[$record['id']]['login'] = (string) strtr($record['login'], '"', '&quot;');
         $arr_data[$record['id']]['item_key'] = (string) $record['item_key'];
@@ -667,7 +666,7 @@ if (null === $request->query->get('type')) {
             && (int) $SETTINGS['copy_to_clipboard_small_icons'] === 1
         ) {
             $data_item = DB::queryFirstRow(
-                'SELECT i.pw AS pw, s.share_key AS share_key
+                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, s.share_key AS share_key
                 FROM ' . prefixTable('items') . ' AS i
                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                 WHERE i.id = %i AND s.user_id = %i',
@@ -684,7 +683,8 @@ if (null === $request->query->get('type')) {
                     decryptUserObjectKey(
                         $data_item['share_key'],
                         $session->get('user-private_key')
-                    )
+                    ),
+                    (string) ($data_item['pw_iv'] ?? '')
                 );
             }
 

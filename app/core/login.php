@@ -150,10 +150,10 @@ if (
         $username = $request->getUser();
     }
     echo '
-            <input type="text" id="login" class="form-control" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
+            <input type="text" id="login" class="form-control" aria-label="' . $lang->get('login') . '" placeholder="', filter_var($username, FILTER_SANITIZE_FULL_SPECIAL_CHARS), '" readonly>';
 } else {
     echo '
-            <input type="text" id="login" class="form-control" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $session->get('user-login') && empty($session->get('user-login')) === false ? filter_var($session->get('user-login'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
+            <input type="text" id="login" class="form-control" aria-label="' . $lang->get('login') . '" placeholder="' . $lang->get('index_login') . '" value="'.(null !== $session->get('user-login') && empty($session->get('user-login')) === false ? filter_var($session->get('user-login'), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '').'">';
 }
 
 echo '
@@ -168,7 +168,7 @@ if (! (isset($SETTINGS['enable_http_request_login']) === true
             <div class="input-group-prepend infotip" title="' . $lang->get('password') . '">
                 <span class="input-group-text"><i class="fa-solid fa-lock fa-fw"></i></span>
             </div>
-            <input type="password" id="pw" class="form-control submit-button" placeholder="' . $lang->get('index_password') . '">
+            <input type="password" id="pw" class="form-control submit-button" aria-label="' . $lang->get('password') . '" placeholder="' . $lang->get('index_password') . '">
         </div>';
 }
 
@@ -177,8 +177,9 @@ echo '
             <div class="input-group-prepend infotip" title="' . $lang->get('session_expiration_in_minutes') . '">
                 <span class="input-group-text"><i class="fa-solid fa-clock fa-fw"></i></span>
             </div>
-            <input type="text" id="session_duration" class="form-control submit-button" 
-            placeholder="' . $lang->get('index_session_duration') .'&nbsp;(' . $lang->get('minutes') . ')" 
+            <input type="text" id="session_duration" class="form-control submit-button"
+            aria-label="' . $lang->get('session_expiration_in_minutes') . '"
+            placeholder="' . $lang->get('index_session_duration') .'&nbsp;(' . $lang->get('minutes') . ')"
             value="', isset($SETTINGS['default_session_expiration_time']) === true ? $SETTINGS['default_session_expiration_time'] : '', '">
         </div>';
 // 2FA auth selector

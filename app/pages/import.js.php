@@ -222,10 +222,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * CANCEL button
      */
     $(document).on('click', '#form-item-import-cancel', function() {
-        // What importation is on-going
-        var importTask = $('#import-type').find('.active').text().toLowerCase();
+        // Which source is selected (value is language independent)
+        var importSource = $('#import-source').val();
+        var managerFormats = ['bitwarden', 'lastpass', '1password', 'keepassxc'];
 
-        if (importTask === 'csv') {
+        if (importSource === 'csv') {
             // Clear form
             $('.csv-setup').addClass('hidden');
             $('#csv-items-number, #csv-items-list').html('');
@@ -239,12 +240,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     teampassApplication.uploadedFileId = '';
                 }
             );
-        } else if (importTask === 'keepass') {
+        } else if (importSource === 'keepass') {
             // Clear form
             $('.keepass-setup').addClass('hidden');
             $('#keepass-items-number, #keepass-items-list').html('');
             $('#import-keepass-attach-pickfile-keepass-text').text('');
             $('.import-keepass-cb').iCheck('uncheck');
+
+            store.update(
+                'teampassApplication',
+                function(teampassApplication) {
+                    teampassApplication.uploadType = '';
+                    teampassApplication.uploadedFileId = '';
+                }
+            );
+        } else if (managerFormats.indexOf(importSource) !== -1) {
+            // Clear form
+            $('.mgr-setup, #mgr-setup-progress').addClass('hidden');
+            $('#mgr-file-info').html('');
+            $('#import-mgr-attach-pickfile-text').text('<?php echo addslashes($lang->get('select_file')); ?>');
+            $('.import-mgr-cb').iCheck('uncheck');
 
             store.update(
                 'teampassApplication',
@@ -263,30 +278,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
      * 
      */
     $(document).on('click', '#form-item-import-perform', function() {
-        // What importation is on-going
-        var importTask = $('#import-type').find('.active').text().toLowerCase();
+        // Which source is selected (value is language independent)
+        var importSource = $('#import-source').val();
+        var managerFormats = ['bitwarden', 'lastpass', '1password', 'keepassxc'];
 
         store.update(
             'teampassApplication',
             function(teampassApplication) {
-                teampassApplication.uploadType = importTask;
+                teampassApplication.uploadType = importSource;
             }
         );
 
-        if (importTask === 'csv') {
+        if (importSource === 'csv') {
             // Are expected data available?
             if ($('#import-csv-target-folder').val() === 0 && parseInt($('#csv-items-number').text()) > 0) {
                 return false;
             }
 
             launchCSVItemsImport();
-        } else if (importTask === 'keepass') {
+        } else if (importSource === 'keepass') {
             // Are expected data available?
             if ($('#import-keepass-target-folder').val() === 0 && parseInt($('#keepass-items-number').text()) > 0) {
                 return false;
             }
 
             launchKeepassItemsImport();
+        } else if (managerFormats.indexOf(importSource) !== -1) {
+            launchUniversalImport();
         }
     });
 
@@ -767,6 +785,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 
                 // restart time expiration counter
                 ProcessInProgress = false;
+
+                // Refresh the follow-up panel with the completed import
+                if (typeof loadImportFollowup === 'function') {
+                    loadImportFollowup();
+                }
             }
         );
     }
@@ -1131,4 +1154,499 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         );
     }
+
+
+    // **************  OTHER PASSWORD MANAGERS (Bitwarden / LastPass / 1Password / KeePassXC)  *************** //
+
+    // Nice labels per format (also used by the follow-up history table)
+    const mgrFormatLabels = {
+        'csv': 'CSV',
+        'keepass': 'Keepass',
+        'bitwarden': '<?php echo addslashes($lang->get('import_format_bitwarden')); ?>',
+        'lastpass': '<?php echo addslashes($lang->get('import_format_lastpass')); ?>',
+        '1password': '<?php echo addslashes($lang->get('import_format_1password')); ?>',
+        'keepassxc': '<?php echo addslashes($lang->get('import_format_keepassxc')); ?>'
+    };
+    // Per-format export instructions (shown under the source selector)
+    const mgrFormatHints = {
+        'bitwarden': '<?php echo addslashes($lang->get('import_hint_bitwarden')); ?>',
+        'lastpass': '<?php echo addslashes($lang->get('import_hint_lastpass')); ?>',
+        '1password': '<?php echo addslashes($lang->get('import_hint_1password')); ?>',
+        'keepassxc': '<?php echo addslashes($lang->get('import_hint_keepassxc')); ?>'
+    };
+
+    let mgrFolderIdMap = {};
+    let mgrFailedItems = [];
+    let mgrBatchSizeItems = 10;
+
+    // Show the export instructions matching the selected source manager
+    function updateMgrHint() {
+        let fmt = $('#import-mgr-format').val();
+        $('#import-mgr-format-hint').html('<i class="fas fa-circle-info mr-1"></i>' + (mgrFormatHints[fmt] || ''));
+    }
+    // Show only the form zone matching the selected source. For a password
+    // manager format, drive the hidden #import-mgr-format and its export hint.
+    function showImportZone(source) {
+        var managerFormats = ['bitwarden', 'lastpass', '1password', 'keepassxc'];
+        $('.import-zone').addClass('hidden');
+        if (source === 'keepass') {
+            $('#keepass').removeClass('hidden');
+        } else if (managerFormats.indexOf(source) !== -1) {
+            $('#import-mgr-format').val(source);
+            updateMgrHint();
+            $('#managers').removeClass('hidden');
+        } else {
+            // Default: native CSV
+            $('#csv').removeClass('hidden');
+        }
+    }
+    $(document).on('change', '#import-source', function() {
+        showImportZone($(this).val());
+    });
+    // Initialise the visible zone on page load
+    showImportZone($('#import-source').val());
+
+    // Plupload for password-manager exports (csv, json, xml)
+    var uploader_mgr = new plupload.Uploader({
+        runtimes: "gears,html5,flash,silverlight,browserplus",
+        browse_button: "import-mgr-attach-pickfile",
+        container: "import-mgr-upload-zone",
+        max_file_size: "20mb",
+        chunk_size: "1mb",
+        unique_names: true,
+        dragdrop: true,
+        multiple_queues: false,
+        multi_selection: false,
+        max_file_count: 1,
+        url: "<?php echo $SETTINGS['cpassman_url']; ?>/sources/upload.files.php",
+        flash_swf_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.swf',
+        silverlight_xap_url: '<?php echo $SETTINGS['cpassman_url']; ?>/plugins/plupload/js/Moxie.xap',
+        filters: [{
+            title: "Export files",
+            extensions: "csv,json,xml"
+        }],
+        init: {
+            FilesAdded: function(up, files) {
+                $.post(
+                    "sources/main.queries.php", {
+                        type: "save_token",
+                        type_category: 'action_system',
+                        size: 25,
+                        capital: true,
+                        numeric: true,
+                        ambiguous: true,
+                        reason: "import_items_from_csv",
+                        duration: 10,
+                        key: '<?php echo $session->get('key'); ?>'
+                    },
+                    function(data) {
+                        store.update('teampassApplication', function(teampassApplication) {
+                            teampassApplication.uploadedFileId = data[0].token;
+                        });
+                        up.setOption('multipart_params', {
+                            PHPSESSID: '<?php echo $session->get('key'); ?>',
+                            type_upload: "import_items_from_csv",
+                            user_token: data[0].token
+                        });
+                        up.start();
+                    },
+                    "json"
+                );
+            },
+            BeforeUpload: function(up, file) {
+                toastr.remove();
+                toastr.info('<i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
+                $('#import-feedback').addClass('hidden');
+            },
+            FileUploaded: function(upldr, file, object) {
+                var data = prepareExchangedData(object.response, "decode", "<?php echo $session->get('key'); ?>");
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
+
+                if (data.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-exclamation-circle fa-lg mr-2"></i>Message: ' + data.message,
+                        '', {
+                            timeOut: 10000,
+                            closeButton: true,
+                            progressBar: true
+                        }
+                    );
+                } else {
+                    toastr.remove();
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    });
+
+                    $('#import-mgr-attach-pickfile-text')
+                        .text(file.name + ' (' + plupload.formatSize(file.size) + ')');
+
+                    store.update('teampassApplication', function(teampassApplication) {
+                        teampassApplication.uploadedFileId = data.operation_id;
+                    });
+
+                    // Parse the uploaded export
+                    UniversalParse();
+                }
+                upldr.splice();
+            }
+        }
+    });
+    uploader_mgr.bind("Error", function(up, err) {
+        toastr.warning(
+            err.message + (err.file ? ' (' + err.file.name + ')' : ''),
+            '<?php echo addslashes($lang->get('caution')); ?>',
+            { timeOut: 4000, progressBar: true }
+        );
+        up.splice();
+        up.refresh();
+    });
+    uploader_mgr.init();
+
+    // STEP 1 - Parse the uploaded export and stage rows into items_importations
+    function UniversalParse() {
+        toastr.remove();
+        toastr.info('<?php echo $lang->get('reading_file'); ?><i class="fa-solid fa-ellipsis fa-2x fa-fade ml-2"></i>');
+
+        let payload = {
+            'file': store.get('teampassApplication').uploadedFileId,
+            'format': $('#import-mgr-format').val()
+        };
+
+        $.post(
+            "sources/import.queries.php", {
+                type: "import_file_format_universal",
+                data: prepareExchangedData(JSON.stringify(payload), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+                if (debugJavascript === true) {
+                    console.log(data);
+                }
+
+                store.update('teampassApplication', function(teampassApplication) {
+                    teampassApplication.uploadedFileId = '';
+                });
+
+                if (data.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i>' + data.message,
+                        '', {
+                            timeOut: 10000,
+                            closeButton: true,
+                            progressBar: true
+                        }
+                    );
+                    $('#import-feedback').removeClass('hidden');
+                } else {
+                    $('#mgr-file-info').html(
+                        '<i class="fa-solid fa-list mr-2"></i><?php echo addslashes($lang->get('to_be_imported')); ?>:' +
+                        '<i class="fa-solid fa-key ml-4 mr-1"></i><span id="mgr-items-number">' + data.items_number + '</span>' +
+                        (data.userCanManageFolders === 1 ?
+                            '<i class="fa-solid fa-folder ml-4 mr-1"></i><span id="mgr-folders-number">' + data.folders_number + '</span>'
+                            : '<i class="fa-solid fa-triangle-exclamation ml-4 mr-1 text-danger pointer infotip" title="<?php echo addslashes($lang->get('import_flat_in_target_folder')); ?>"></i>') +
+                        '<input type="hidden" id="mgr-operation-id" value="' + data.operation_id + '">' +
+                        '<input type="hidden" id="mgr-userCanManageFolders" value="' + data.userCanManageFolders + '">' +
+                        '<input type="hidden" id="mgr-folders-number-hidden" value="' + data.folders_number + '">'
+                    );
+
+                    if (data.userCanManageFolders === 1 && data.folders_number > 0) {
+                        $('.mgr-folder').removeClass('hidden');
+                    } else {
+                        $('.mgr-folder').addClass('hidden');
+                    }
+                    $('.mgr-setup').removeClass('hidden');
+                    $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
+
+                    toastr.remove();
+                    toastr.success('<?php echo $lang->get('done'); ?>', '', {
+                        timeOut: 2000,
+                        progressBar: true
+                    });
+
+                    // Surface the newly staged import in the follow-up panel
+                    loadImportFollowup();
+                }
+            }
+        );
+    }
+
+    function updateMgrProgressBar(current, total) {
+        let progress = total > 0 ? Math.round((current / total) * 100) : 100;
+        $('#import-mgr-progress-bar').css('width', progress + '%').text(progress + '%');
+    }
+
+    // STEP 2 - Start the import (reuses the CSV folder/item creation pipeline)
+    function launchUniversalImport() {
+        if (parseInt($("#import-mgr-target-folder").val()) === 0 || $("#import-mgr-target-folder").val() === null) {
+            toastr.remove();
+            toastr.error(
+                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('please_select_a_folder')); ?>',
+                '', { timeOut: 10000, closeButton: true, progressBar: true }
+            );
+            return false;
+        }
+        if ($('#mgr-operation-id').val() === undefined || $('#mgr-operation-id').val() === '') {
+            toastr.remove();
+            toastr.error(
+                '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_no_read_possible')); ?>',
+                '', { timeOut: 10000, closeButton: true, progressBar: true }
+            );
+            return false;
+        }
+
+        $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', true);
+        ProcessInProgress = true;
+        mgrFolderIdMap = {};
+        mgrFailedItems = [];
+        mgrBatchSizeItems = 10;
+
+        let csvOperationId = $('#mgr-operation-id').val();
+        let folderId = parseInt($("#import-mgr-target-folder").val());
+        let totalFolders = parseInt($('#mgr-folders-number-hidden').val()) || 0;
+
+        $("#mgr-setup-progress").removeClass("hidden");
+        $("#import-mgr-progress-bar").css("width", "0%").attr("aria-valuenow", "0");
+
+        toastr.remove();
+        toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-2"></i><?php echo $lang->get('please_wait_folders_in_construction'); ?>');
+
+        if ($('#mgr-userCanManageFolders').val() === '1' && totalFolders > 0) {
+            processMgrFoldersBatch(csvOperationId, folderId, 0, totalFolders, batchSizeFolders);
+        } else {
+            processMgrItems(csvOperationId, folderId);
+        }
+    }
+
+    function processMgrFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSize) {
+        let dataFolders = {
+            'csvOperationId': csvOperationId,
+            'folderId': folderId,
+            'offset': processedFolders,
+            'limit': batchSize,
+            'folderIdMap': mgrFolderIdMap,
+            'folderPasswordComplexity': $('#import-mgr-complexity').val(),
+            'folderAccessRight': $('#import-mgr-access-right').val(),
+        };
+
+        $.post(
+            "sources/import.queries.php", {
+                type: "import_csv_folders",
+                data: prepareExchangedData(JSON.stringify(dataFolders), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                if (response.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_folder_creation')); ?>',
+                        '', { timeOut: 10000, closeButton: true, progressBar: true }
+                    );
+                    $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
+                    ProcessInProgress = false;
+                    return;
+                }
+
+                mgrFolderIdMap = response.folderIdMap;
+                processedFolders += response.processedCount || batchSize;
+                updateMgrProgressBar(processedFolders, totalFolders);
+                $('#import-mgr-progress-text').html(
+                    '<i class="fa-solid fa-folder mr-2 fa-beat-fade"></i>' + Math.min(processedFolders, totalFolders) + '/' + totalFolders
+                );
+
+                if (processedFolders < totalFolders) {
+                    processMgrFoldersBatch(csvOperationId, folderId, processedFolders, totalFolders, batchSize);
+                } else {
+                    setTimeout(function() {
+                        processMgrItems(csvOperationId, folderId);
+                    }, 1000);
+                }
+            }
+        );
+    }
+
+    function processMgrItems(csvOperationId, folderId) {
+        toastr.remove();
+        toastr.info('<i class="fa-solid fa-cog fa-spin fa-1x mr-2"></i><?php echo $lang->get('please_wait_items_in_construction'); ?>');
+
+        if ($('#import-mgr-keys-strategy').val() === 'tasksHandler') {
+            mgrBatchSizeItems = 100;
+        }
+
+        let totalItems = parseInt($('#mgr-items-number').text()) || 0;
+        if (totalItems > 0) {
+            updateMgrProgressBar(0, totalItems);
+            $('#import-mgr-progress-text').html('<i class="fa-solid fa-key mr-2 fa-beat-fade"></i><?php echo addslashes($lang->get('please_wait')); ?>');
+            processMgrItemsBatch(csvOperationId, folderId, 0, totalItems, mgrBatchSizeItems, 0);
+        } else {
+            finishingMgrImport(csvOperationId, 0, 0);
+        }
+    }
+
+    function processMgrItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSize, insertedItems) {
+        let dataItems = {
+            'csvOperationId': csvOperationId,
+            'folderId': folderId,
+            'offset': processedItems,
+            'limit': batchSize,
+            'editAll': $('#import-mgr-edit-all-checkbox').prop('checked') ? 1 : 0,
+            'editRole': $('#import-mgr-edit-role-checkbox').prop('checked') ? 1 : 0,
+            'keysGenerationWithTasksHandler': $('#import-mgr-keys-strategy').val(),
+            'insertedItems': insertedItems,
+            'foldersNumber': parseInt($('#mgr-folders-number-hidden').val()) || 0,
+        };
+
+        $.post(
+            "sources/import.queries.php", {
+                type: "import_csv_items",
+                data: prepareExchangedData(JSON.stringify(dataItems), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                if (response.error === true) {
+                    toastr.remove();
+                    toastr.error(
+                        '<i class="fa-solid fa-ban fa-lg mr-2"></i><?php echo addslashes($lang->get('import_error_item_creation')); ?>',
+                        '', { timeOut: 10000, closeButton: true, progressBar: true }
+                    );
+                    $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
+                    ProcessInProgress = false;
+                    return;
+                }
+
+                processedItems += batchSize;
+                updateMgrProgressBar(processedItems, totalItems);
+                $('#import-mgr-progress-text').html(
+                    '<i class="fa-solid fa-key mr-2 fa-beat-fade"></i>' + Math.min(processedItems, totalItems) + '/' + totalItems
+                );
+
+                insertedItems = response.insertedItems || 0;
+                mgrFailedItems = mgrFailedItems.concat(response.failedItems || []);
+
+                if (processedItems < totalItems) {
+                    processMgrItemsBatch(csvOperationId, folderId, processedItems, totalItems, batchSize, insertedItems);
+                } else {
+                    finishingMgrImport(csvOperationId, totalItems, insertedItems);
+                }
+            }
+        );
+    }
+
+    function finishingMgrImport(csvOperationId, totalItems, insertedItems) {
+        $.post(
+            "sources/import.queries.php", {
+                type: "import_csv_items_finalization",
+                data: prepareExchangedData(JSON.stringify({ 'csvOperationId': csvOperationId }), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(response) {
+                response = prepareExchangedData(response, "decode", "<?php echo $session->get('key'); ?>");
+
+                toastr.remove();
+                toastr.success(
+                    '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>',
+                    '', { timeOut: 2000, closeButton: true, progressBar: true }
+                );
+
+                // Reset the form
+                $('.mgr-setup, #mgr-setup-progress').addClass('hidden');
+                $('#mgr-file-info').html('');
+                $('#import-mgr-attach-pickfile-text').text('<?php echo addslashes($lang->get('select_file')); ?>');
+                $('.import-mgr-cb').iCheck('uncheck');
+                $('#import-mgr-target-folder').val(null).trigger('change');
+
+                $('#import-feedback').removeClass('hidden');
+                $('#import-feedback-progress-text').html(
+                    '<i class="fa-solid fa-check-circle fa-lg mr-2"></i><?php echo addslashes($lang->get('csv_import_success')); ?>' +
+                    '<br><i class="fa-solid fa-key mr-2"></i><?php echo addslashes($lang->get('number_of_items_imported')); ?>: ' + insertedItems +
+                    '<br><i class="fa-solid fa-exclamation-triangle mr-2"></i><?php echo addslashes($lang->get('number_of_items_failed')); ?>: ' + mgrFailedItems.length
+                );
+
+                $('#form-item-import-perform, #form-item-import-cancel').prop('disabled', false);
+                ProcessInProgress = false;
+
+                // Refresh the follow-up panel with the completed import
+                loadImportFollowup();
+            }
+        );
+    }
+
+
+    // **************  IMPORT FOLLOW-UP (suivi utilisateur)  *************** //
+
+    const importStatusLabels = {
+        'analyzing': '<?php echo addslashes($lang->get('import_status_analyzing')); ?>',
+        'ready': '<?php echo addslashes($lang->get('import_status_ready')); ?>',
+        'creating_folders': '<?php echo addslashes($lang->get('import_status_creating_folders')); ?>',
+        'importing_items': '<?php echo addslashes($lang->get('import_status_importing_items')); ?>',
+        'completed': '<?php echo addslashes($lang->get('import_status_completed')); ?>',
+        'failed': '<?php echo addslashes($lang->get('import_status_failed')); ?>'
+    };
+    const importStatusBadge = {
+        'analyzing': 'badge-secondary',
+        'ready': 'badge-info',
+        'creating_folders': 'badge-warning',
+        'importing_items': 'badge-warning',
+        'completed': 'badge-success',
+        'failed': 'badge-danger'
+    };
+
+    function renderImportStatus(status) {
+        let label = importStatusLabels[status] || status;
+        let cls = importStatusBadge[status] || 'badge-secondary';
+        return '<span class="badge ' + cls + '">' + label + '</span>';
+    }
+
+    function loadImportFollowup() {
+        $.post(
+            "sources/import.queries.php", {
+                type: "import_tracking_status",
+                data: prepareExchangedData(JSON.stringify({}), "encode", "<?php echo $session->get('key'); ?>"),
+                key: '<?php echo $session->get('key'); ?>'
+            },
+            function(data) {
+                data = prepareExchangedData(data, "decode", "<?php echo $session->get('key'); ?>");
+
+                if (data.error === true || !data.history || data.history.length === 0) {
+                    $('#import-followup-body').html(
+                        '<tr><td colspan="6" class="text-center text-muted py-3"><?php echo addslashes($lang->get('import_followup_empty')); ?></td></tr>'
+                    );
+                    return;
+                }
+
+                let rows = '';
+                data.history.forEach(function(h) {
+                    let fmtLabel = mgrFormatLabels[h.format] || (h.format ? h.format.toUpperCase() : '');
+                    let when = h.started_at ? new Date(parseInt(h.started_at) * 1000).toLocaleString() : '';
+                    let failedCell = parseInt(h.failed_items) > 0
+                        ? '<span class="text-danger font-weight-bold">' + h.failed_items + '</span>'
+                        : h.failed_items;
+                    rows += '<tr>' +
+                        '<td>' + fmtLabel + '</td>' +
+                        '<td>' + renderImportStatus(h.status) + '</td>' +
+                        '<td class="text-center">' + h.imported_items + ' / ' + h.total_items + '</td>' +
+                        '<td class="text-center">' + failedCell + '</td>' +
+                        '<td class="text-center">' + h.folders_count + '</td>' +
+                        '<td>' + when + '</td>' +
+                        '</tr>';
+                });
+                $('#import-followup-body').html(rows);
+            }
+        );
+    }
+    $(document).on('click', '#import-followup-refresh', loadImportFollowup);
+
+    // Load follow-up history on page open
+    $(function() {
+        loadImportFollowup();
+    });
 </script>

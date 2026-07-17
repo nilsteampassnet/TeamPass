@@ -29,12 +29,21 @@ use Seld\JsonLint\JsonParser;
 
 $files = array();
 $quiet = false;
+$allowComments = false;
+$detectKeyConflicts = false;
+$validateUTF8Encoding = false;
 
 if (isset($_SERVER['argc']) && $_SERVER['argc'] > 1) {
     for ($i = 1; $i < $_SERVER['argc']; $i++) {
         $arg = $_SERVER['argv'][$i];
         if ($arg == '-q' || $arg == '--quiet') {
             $quiet = true;
+        } elseif ($arg === '--allow-comments') {
+            $allowComments = true;
+        } elseif ($arg === '--detect-key-conflicts') {
+            $detectKeyConflicts = true;
+        } elseif ($arg === '--validate-utf8-encoding') {
+            $validateUTF8Encoding = true;
         } else {
             if ($arg == '-h' || $arg == '--help') {
                 showUsage($_SERVER['argv'][0]);
@@ -45,11 +54,13 @@ if (isset($_SERVER['argc']) && $_SERVER['argc'] > 1) {
     }
 }
 
+$flags = getFlags($allowComments, $detectKeyConflicts, $validateUTF8Encoding);
+
 if (!empty($files)) {
     // file linting
     $exitCode = 0;
     foreach ($files as $file) {
-        $result = lintFile($file, $quiet);
+        $result = lintFile($file, $quiet, $flags);
         if ($result === false) {
             $exitCode = 1;
         }
@@ -58,18 +69,34 @@ if (!empty($files)) {
 } else {
     //stdin linting
     if ($contents = file_get_contents('php://stdin')) {
-        lint($contents, $quiet);
+        lint($contents, $quiet, $flags);
     } else {
         fwrite(STDERR, 'No file name or json input given' . PHP_EOL);
         exit(1);
     }
 }
 
+function getFlags($allowComments = false, $detectKeyConflicts = false, $validateUTF8Encoding = false)
+{
+    $flags = 0;
+    if ($allowComments) {
+        $flags |= JsonParser::ALLOW_COMMENTS;
+    }
+    if ($detectKeyConflicts) {
+        $flags |= JsonParser::DETECT_KEY_CONFLICTS;
+    }
+    if ($validateUTF8Encoding) {
+        $flags |= JsonParser::VALIDATE_UTF8_ENCODING;
+    }
+
+    return $flags;
+}
+
 // stdin lint function
-function lint($content, $quiet = false)
+function lint($content, $quiet = false, $flags = 0)
 {
     $parser = new JsonParser();
-    if ($err = $parser->lint($content)) {
+    if ($err = $parser->lint($content, $flags)) {
         fwrite(STDERR, $err->getMessage() . ' (stdin)' . PHP_EOL);
         exit(1);
     }
@@ -80,7 +107,7 @@ function lint($content, $quiet = false)
 }
 
 // file lint function
-function lintFile($file, $quiet = false)
+function lintFile($file, $quiet = false, $flags = 0)
 {
     if (!preg_match('{^https?://}i', $file)) {
         if (!file_exists($file)) {
@@ -95,13 +122,14 @@ function lintFile($file, $quiet = false)
 
     $content = file_get_contents($file);
     $parser = new JsonParser();
-    if ($err = $parser->lint($content)) {
+    if ($err = $parser->lint($content, $flags)) {
         fwrite(STDERR, $file . ': ' . $err->getMessage() . PHP_EOL);
         return false;
     }
     if (!$quiet) {
         echo 'Valid JSON (' . $file . ')' . PHP_EOL;
     }
+
     return true;
 }
 
@@ -113,5 +141,8 @@ function showUsage($programPath)
     echo 'Options:'.PHP_EOL;
     echo '  -q, --quiet     Cause jsonlint to be quiet when no errors are found'.PHP_EOL;
     echo '  -h, --help      Show this message'.PHP_EOL;
+    echo '  --allow-comments Cause jsonlint to enable syntax for comments similar to JSON5.'.PHP_EOL;
+    echo '  --detect-key-conflicts Cause jsonlint to detect key conflicts in objects.'.PHP_EOL;
+    echo '  --validate-utf8-encoding Cause jsonlint to validate that the whole file is valid UTF-8 encoding.'.PHP_EOL;
     exit(0);
 }

@@ -39,6 +39,7 @@ require_once __DIR__.'/traits/UserHandlerTrait.php';
 require_once __DIR__.'/traits/EmailTrait.php';
 require_once __DIR__.'/traits/MigrateUserHandlerTrait.php';
 require_once __DIR__.'/traits/PhpseclibV3MigrationTrait.php';
+require_once __DIR__.'/traits/SecurityNudgeTrait.php';
 require_once __DIR__.'/traits/SharekeysRepairTrait.php';
 require_once __DIR__ . '/taskLogger.php';
 
@@ -48,6 +49,7 @@ class TaskWorker {
     use EmailTrait;
     use MigrateUserHandlerTrait;
     use PhpseclibV3MigrationTrait;
+    use SecurityNudgeTrait;
     use SharekeysRepairTrait;
 
     private int $taskId;
@@ -55,6 +57,10 @@ class TaskWorker {
     private array $taskData;
     private array $settings;
     private TaskLogger $logger;
+
+    // FUNC-4 — set when a subtask is re-queued for retry: the parent task has been
+    // reset to is_in_progress=0 for re-pickup and must NOT be marked completed.
+    private bool $deferCompletion = false;
 
     public function __construct(int $taskId, string $processType, array $taskData) {
         $this->taskId = $taskId;
@@ -114,16 +120,25 @@ class TaskWorker {
                 case 'inactive_users_housekeeping':
                     $this->handleInactiveUsersHousekeeping();
                     break;
+                case 'security_nudge_digest':
+                    $this->handleSecurityNudgeDigest();
+                    break;
                 default:
                     throw new Exception("Type of subtask unknown: {$this->processType}");
             }
 
-            // Mark the task as completed
-            try {
-                $this->completeTask();
-                $this->emitItemEncryptionEvent('completed');
-            } catch (Exception $e) {
-                $this->handleTaskFailure($e);
+            // Mark the task as completed — unless a subtask was re-queued for retry
+            // (FUNC-4): in that case processSubTasks() has already reset the parent
+            // task to is_in_progress=0 so the handler re-launches it on the next tick.
+            if ($this->deferCompletion === true) {
+                if (LOG_TASKS === true) $this->logger->log('Task ' . $this->taskId . ' completion deferred: subtask(s) re-queued for retry', 'INFO');
+            } else {
+                try {
+                    $this->completeTask();
+                    $this->emitItemEncryptionEvent('completed');
+                } catch (Exception $e) {
+                    $this->handleTaskFailure($e);
+                }
             }
 
         } catch (Exception $e) {
@@ -746,6 +761,9 @@ class TaskWorker {
                     // API-activity backfill (last_connexion); any other update path above
                     // has already continued the loop.
                     DB::update(prefixTable('users'), $activityUpdate, 'id = %i', $userId);
+                    // In this (non-reset) path $activityUpdate is only ever populated by
+                    // the API-activity backfill above, so reaching here means the row was
+                    // backfilled — count it unconditionally.
                     $apiActivityBackfilled++;
                 }
 
@@ -1398,6 +1416,17 @@ class TaskWorker {
             return;
         }
 
+        // Resolve the item label (stored in cleartext) so the inbox can name it.
+        $itemId = (int) ($this->taskData['item_id'] ?? 0);
+        $itemLabel = '';
+        if ($itemId > 0) {
+            $itemRow = DB::queryFirstRow(
+                'SELECT label FROM ' . prefixTable('items') . ' WHERE id = %i',
+                $itemId
+            );
+            $itemLabel = (string) ($itemRow['label'] ?? '');
+        }
+
         $messages = [
             'completed' => 'Item encryption keys generated successfully',
             'failed'    => 'Failed to generate item encryption keys',
@@ -1412,7 +1441,8 @@ class TaskWorker {
                 'task_type'    => 'Item encryption',
                 'status'       => $status,
                 'message'      => $messages[$status] ?? '',
-                'item_id'      => (int) ($this->taskData['item_id'] ?? 0),
+                'item_id'      => $itemId,
+                'item_label'   => $itemLabel,
                 'process_type' => $this->processType,
             ]
         );
@@ -1669,22 +1699,47 @@ class TaskWorker {
                 );
         
             } catch (Exception $e) {
-                // Mark subtask as failed
-                DB::update(
-                    prefixTable('background_subtasks'),
-                    [
-                        'is_in_progress' => -1,
-                        'finished_at' => time(),
-                        'updated_at' => time(),
-                        'status' => 'failed',
-                        'error_message' => $e->getMessage(),
-                    ],
-                    'increment_id = %i',
-                    $subtask['increment_id']
-                );
-        
-                $this->logger->log('processSubTasks : ' . $e->getMessage(), 'ERROR');
-                $failedSubtasks[] = strval($subtaskData['step'] ?? $subtask['increment_id']) . ': ' . $e->getMessage();
+                // FUNC-4 — re-queue the subtask if retries remain, otherwise fail it
+                // permanently. Re-pickup is paced by the handler's resource-key guard
+                // (the parent task is only re-launched once this worker has exited),
+                // and bounded by max_retries to avoid a retry storm.
+                $retryCount = (int) ($subtask['retry_count'] ?? 0);
+                $maxRetries = (int) ($subtask['max_retries'] ?? 3);
+
+                if ($retryCount < $maxRetries) {
+                    DB::update(
+                        prefixTable('background_subtasks'),
+                        [
+                            'is_in_progress' => 0,
+                            'sub_task_in_progress' => 0,
+                            'status' => 'queued',
+                            'retry_count' => $retryCount + 1,
+                            'updated_at' => time(),
+                            'error_message' => $e->getMessage(),
+                        ],
+                        'increment_id = %i',
+                        $subtask['increment_id']
+                    );
+                    $this->deferCompletion = true;
+                    $this->logger->log('processSubTasks : subtask ' . (int) $subtask['increment_id'] . ' failed, re-queued (attempt ' . ($retryCount + 1) . '/' . $maxRetries . ') : ' . $e->getMessage(), 'WARNING');
+                } else {
+                    DB::update(
+                        prefixTable('background_subtasks'),
+                        [
+                            'is_in_progress' => -1,
+                            'finished_at' => time(),
+                            'updated_at' => time(),
+                            'status' => 'failed',
+                            'error_message' => $e->getMessage(),
+                        ],
+                        'increment_id = %i',
+                        $subtask['increment_id']
+                    );
+                    $this->logger->log('processSubTasks : subtask ' . (int) $subtask['increment_id'] . ' permanently failed after ' . $maxRetries . ' retries : ' . $e->getMessage(), 'ERROR');
+                    // A permanently failed subtask (retries exhausted) must fail the
+                    // whole parent task via the $failedSubtasks throw below.
+                    $failedSubtasks[] = strval($subtaskData['step'] ?? $subtask['increment_id']) . ': ' . $e->getMessage();
+                }
             }
         }
 
@@ -1702,6 +1757,21 @@ class TaskWorker {
 
         if (intval($remainingSubtasks) === 0) {
             $this->completeTask();
+        } elseif ($this->deferCompletion === true) {
+            // FUNC-4 — subtask(s) re-queued for retry: reset the parent task to
+            // is_in_progress=0 so the handler re-launches it (otherwise it would
+            // stay stuck at is_in_progress=1 until the stale-task cleanup kills it).
+            // execute() honours $deferCompletion and skips completeTask().
+            DB::update(
+                prefixTable('background_tasks'),
+                [
+                    'is_in_progress' => 0,
+                    'updated_at' => time(),
+                    'status' => 'queued',
+                ],
+                'increment_id = %i',
+                $this->taskId
+            );
         }
     }
 }

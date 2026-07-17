@@ -91,10 +91,290 @@ class FolderManager
 
         $parentComplexity = $this->checkComplexityLevel($parentFolderData, $complexity, $parent_id);
         if (isset($parentComplexity['error']) && $parentComplexity['error'] === true) {
-            return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$this->settings['TP_PW_COMPLEXITY'][$parentComplexity['valeur']][1]}</b>]");
+            // Build the required-level label from the TP_PW_COMPLEXITY constant
+            // (not a DB setting); fall back to the raw value if not defined (API context)
+            $requiredLevel = (int) ($parentComplexity['valeur'] ?? 0);
+            $requiredLabel = defined('TP_PW_COMPLEXITY') === true && isset(TP_PW_COMPLEXITY[$requiredLevel][1])
+                ? TP_PW_COMPLEXITY[$requiredLevel][1]
+                : (string) $requiredLevel;
+            return $this->errorResponse($this->lang->get('error_folder_complexity_lower_than_top_folder') . " [<b>{$requiredLabel}</b>]");
         }
 
         return $this->createFolder($params, array_merge($parentFolderData, $parentComplexity), $options);
+    }
+
+    /**
+     * Update an existing folder.
+     *
+     * Write engine shared by the API (access checks and business validation are
+     * performed by the caller — FolderModel/FolderController). Only the columns
+     * explicitly present in $params are written (partial update). $params keys:
+     *  - id (int, required)
+     *  - personal_folder (int, derived from the resolved parent — always written)
+     *  - parent_id, title, duration, create_auth_without, edit_auth_without,
+     *    icon, icon_selected, complexity (all optional — only written when present)
+     *  - parent_changed (bool), user_login, user_roles (context, never from session)
+     *
+     * @param array $params  Folder update parameters (see above)
+     * @param array $options Reserved for future toggles (unused today)
+     * @return array{error: bool, id?: int, title?: string, parent_id?: int, message?: string}
+     */
+    public function updateFolder(array $params, array $options = []): array
+    {
+        $folderId = (int) ($params['id'] ?? 0);
+        if ($folderId <= 0) {
+            return ['error' => true, 'message' => 'Invalid folder id'];
+        }
+
+        $current = DB::queryFirstRow(
+            'SELECT * FROM ' . prefixTable('nested_tree') . ' WHERE id = %i',
+            $folderId
+        );
+        if ($current === null) {
+            return ['error' => true, 'message' => 'Folder not found'];
+        }
+
+        // Build the set of columns to update — only the keys present in the request
+        $folderParameters = [
+            'personal_folder' => (int) ($params['personal_folder'] ?? $current['personal_folder']),
+        ];
+        if (array_key_exists('parent_id', $params)) {
+            $folderParameters['parent_id'] = (int) $params['parent_id'];
+        }
+        if (array_key_exists('title', $params)) {
+            $folderParameters['title'] = (string) $params['title'];
+        }
+        if (array_key_exists('duration', $params)) {
+            $folderParameters['renewal_period'] = (int) $params['duration'];
+        }
+        if (array_key_exists('create_auth_without', $params)) {
+            $folderParameters['bloquer_creation'] = (int) $params['create_auth_without'];
+        }
+        if (array_key_exists('edit_auth_without', $params)) {
+            $folderParameters['bloquer_modification'] = (int) $params['edit_auth_without'];
+        }
+        if (array_key_exists('icon', $params)) {
+            $folderParameters['fa_icon'] = empty($params['icon']) === true ? TP_DEFAULT_ICON : (string) $params['icon'];
+        }
+        if (array_key_exists('icon_selected', $params)) {
+            $folderParameters['fa_icon_selected'] = empty($params['icon_selected']) === true ? TP_DEFAULT_ICON_SELECTED : (string) $params['icon_selected'];
+        }
+
+        DB::update(
+            prefixTable('nested_tree'),
+            $folderParameters,
+            'id = %i',
+            $folderId
+        );
+
+        // Complexity upsert (only when provided) — reuse the INSERT...ON DUPLICATE
+        // KEY UPDATE helper so a personal folder without a misc/complex row is handled.
+        if (array_key_exists('complexity', $params) && $params['complexity'] !== null) {
+            $this->addComplexity((string) $folderId, (int) $params['complexity']);
+        }
+
+        // Ensure categories are set for this folder
+        handleFoldersCategories([$folderId]);
+
+        // Rebuild the nested tree — never touch nleft/nright/nlevel manually
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $tree->rebuild();
+
+        // Invalidate cache for users with access to this folder
+        invalidateCacheForFolderUsers($folderId);
+        if (!empty($params['parent_changed'])) {
+            $this->refreshCacheForUsersWithSimilarRoles((string) ($params['user_roles'] ?? ''));
+        }
+
+        $newTitle = $folderParameters['title'] ?? (string) $current['title'];
+        $newParentId = isset($folderParameters['parent_id'])
+            ? (int) $folderParameters['parent_id']
+            : (int) $current['parent_id'];
+
+        // Emit WebSocket event — excludeUserId = null (the API caller's UI did not
+        // perform the change locally, so nobody is excluded)
+        emitFolderEvent(
+            'updated',
+            $folderId,
+            (string) $newTitle,
+            (string) ($params['user_login'] ?? ''),
+            $newParentId,
+            null
+        );
+
+        return [
+            'error' => false,
+            'id' => $folderId,
+            'title' => (string) $newTitle,
+            'parent_id' => $newParentId,
+        ];
+    }
+
+    /**
+     * Soft-delete folders and their descendants (recycle-bin format).
+     *
+     * Mirrors the web delete_folders handler: every node goes to the recycle bin
+     * (a misc 'folder_deleted' JSON row) and its items are soft-deleted; the
+     * nested_tree rows are then removed (restorable from Utilities → Recycled bin).
+     * No session bookkeeping — user context comes from $context.
+     *
+     * @param array<int> $folderIds Folder IDs to delete (descendants included automatically)
+     * @param array      $context   user_id (int), user_login (string), SETTINGS (array)
+     * @return array{error: bool, deleted_folders?: array<int>, deleted_items_count?: int, message?: string}
+     */
+    public function deleteFolders(array $folderIds, array $context): array
+    {
+        $userId = (int) ($context['user_id'] ?? 0);
+        $userLogin = (string) ($context['user_login'] ?? '');
+        $SETTINGS = is_array($context['SETTINGS'] ?? null) ? $context['SETTINGS'] : $this->settings;
+
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+        $folderForDel = [];
+        $foldersDeletedInfo = [];
+        $deletedItemsCount = 0;
+
+        DB::startTransaction();
+        try {
+            foreach ($folderIds as $requestedFolderId) {
+                $requestedFolderId = (int) $requestedFolderId;
+                if (in_array($requestedFolderId, $folderForDel, true) === true) {
+                    continue;
+                }
+
+                $subFolders = $tree->getDescendants($requestedFolderId, true);
+                foreach ($subFolders as $thisSubFolders) {
+                    // Never delete a personal root folder (defense in depth)
+                    if ((int) $thisSubFolders->parent_id === 0
+                        && (int) ($thisSubFolders->personal_folder ?? 0) === 1
+                    ) {
+                        continue;
+                    }
+                    if ((int) $thisSubFolders->parent_id < 0) {
+                        continue;
+                    }
+
+                    // Store the deleted folder (recycled bin) as JSON — this format
+                    // is parsed by utilities.queries.php on restore; any drift breaks it.
+                    $folderDeletedData = [
+                        'id' => (int) $thisSubFolders->id,
+                        'parent_id' => (int) $thisSubFolders->parent_id,
+                        'title' => (string) $thisSubFolders->title,
+                        'nleft' => (int) $thisSubFolders->nleft,
+                        'nright' => (int) $thisSubFolders->nright,
+                        'nlevel' => (int) $thisSubFolders->nlevel,
+                        'bloquer_creation' => (int) ($thisSubFolders->bloquer_creation ?? 0),
+                        'bloquer_modification' => (int) ($thisSubFolders->bloquer_modification ?? 0),
+                        'personal_folder' => (int) ($thisSubFolders->personal_folder ?? 0),
+                        'renewal_period' => (int) ($thisSubFolders->renewal_period ?? 0),
+                        'categories' => (string) ($thisSubFolders->categories ?? ''),
+                        'deleted_by' => $userId,
+                        'deleted_by_login' => $userLogin,
+                    ];
+                    if (isset($thisSubFolders->fa_icon) === true) {
+                        $folderDeletedData['fa_icon'] = (string) $thisSubFolders->fa_icon;
+                    }
+                    if (isset($thisSubFolders->fa_icon_selected) === true) {
+                        $folderDeletedData['fa_icon_selected'] = (string) $thisSubFolders->fa_icon_selected;
+                    }
+                    if (isset($thisSubFolders->is_template) === true) {
+                        $folderDeletedData['is_template'] = (int) $thisSubFolders->is_template;
+                    }
+
+                    DB::query(
+                        'INSERT INTO %l (type, intitule, valeur, created_at)
+                         VALUES (%s, %s, %s, %i)
+                         ON DUPLICATE KEY UPDATE valeur = VALUES(valeur), updated_at = %i',
+                        prefixTable('misc'),
+                        'folder_deleted',
+                        'f' . (int) $thisSubFolders->id,
+                        json_encode($folderDeletedData, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                        time(),
+                        time()
+                    );
+
+                    $folderForDel[] = (int) $thisSubFolders->id;
+                    $foldersDeletedInfo[] = [
+                        'folder_id' => (int) $thisSubFolders->id,
+                        'title' => (string) $thisSubFolders->title,
+                        'parent_id' => (int) $thisSubFolders->parent_id,
+                    ];
+
+                    // Soft-delete items in this folder
+                    $itemsInSubFolder = DB::query(
+                        'SELECT id, label FROM ' . prefixTable('items') . ' WHERE id_tree = %i',
+                        $thisSubFolders->id
+                    );
+                    foreach ($itemsInSubFolder as $item) {
+                        DB::update(
+                            prefixTable('items'),
+                            [
+                                'inactif' => '1',
+                                'deleted_at' => time(),
+                            ],
+                            'id = %i',
+                            $item['id']
+                        );
+
+                        logItems(
+                            $SETTINGS,
+                            (int) $item['id'],
+                            (string) $item['label'],
+                            $userId,
+                            'at_delete',
+                            $userLogin
+                        );
+
+                        updateCacheTable('delete_value', (int) $item['id']);
+                        $deletedItemsCount++;
+                    }
+                }
+            }
+
+            // Collect affected users BEFORE deleting folders/roles
+            $folderForDel = array_values(array_unique($folderForDel));
+            $affectedUserIds = [];
+            if (empty($folderForDel) === false) {
+                $affectedUserIds = DB::queryFirstColumn(
+                    'SELECT DISTINCT ur.user_id FROM ' . prefixTable('users_roles') . ' ur
+                    JOIN ' . prefixTable('roles_values') . ' rv ON ur.role_id = rv.role_id
+                    WHERE rv.folder_id IN %ls',
+                    $folderForDel
+                );
+            }
+
+            foreach ($folderForDel as $fol) {
+                DB::delete(prefixTable('nested_tree'), 'id = %i', $fol);
+            }
+
+            invalidateCacheForFolderUsers(0, $affectedUserIds);
+
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollback();
+            return ['error' => true, 'message' => $e->getMessage()];
+        }
+
+        // Rebuild the tree after commit (mirrors the web handler)
+        $tree->rebuild();
+
+        // Emit WebSocket events for deleted folders
+        foreach ($foldersDeletedInfo as $deletedFolder) {
+            emitFolderEvent(
+                'deleted',
+                (int) $deletedFolder['folder_id'],
+                (string) $deletedFolder['title'],
+                $userLogin,
+                (int) $deletedFolder['parent_id'],
+                null
+            );
+        }
+
+        return [
+            'error' => false,
+            'deleted_folders' => $folderForDel,
+            'deleted_items_count' => $deletedItemsCount,
+        ];
     }
 
     /**
@@ -215,6 +495,8 @@ class FolderManager
             if (isset($data['valeur']) === true && intval($complexity) < intval($data['valeur'])) {
                 return [
                     'error' => true,
+                    // Required minimal level — used by the caller to build the error message
+                    'valeur' => (int) $data['valeur'],
                 ];
             }
         }
@@ -346,10 +628,15 @@ class FolderManager
     {
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
         $tree->rebuild();
-        
-        // Update session visible flolders
-        $sess_key = $isPersonal ? 'user-personal_folders' : 'user-accessible_folders';
-        SessionManager::addRemoveFromSessionArray($sess_key, [$newId], 'add');
+
+        // Update session visible folders.
+        // Guarded: under the API SAPI there is no active session, and starting one
+        // here would be an unwanted side effect (session files created for a stateless
+        // request). The web path always has an active session.
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            $sess_key = $isPersonal ? 'user-personal_folders' : 'user-accessible_folders';
+            SessionManager::addRemoveFromSessionArray($sess_key, [$newId], 'add');
+        }
 
         if ($user_is_admin === 0) {
             $this->updateUserFolderCache($tree, $title, $parent_id, $isPersonal, $user_id, $newId);

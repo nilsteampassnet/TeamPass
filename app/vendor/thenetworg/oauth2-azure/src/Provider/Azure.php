@@ -92,7 +92,7 @@ class Azure extends AbstractProvider
 
             $factory = $this->getRequestFactory();
             $request = $factory->getRequestWithOptions(
-                'get',
+                'GET',
                 $openIdConfigurationUri,
                 []
             );
@@ -197,7 +197,7 @@ class Azure extends AbstractProvider
                 $ref = $tenant . '/' . $ref;
             }
 
-            $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
+            $response = $this->request('GET', $ref, $accessToken, ['headers' => $headers]);
             $values   = $response;
             if (isset($response['value'])) {
                 $values = $response['value'];
@@ -237,35 +237,35 @@ class Azure extends AbstractProvider
 
     public function get($ref, &$accessToken, $headers = [], $doNotWrap = false)
     {
-        $response = $this->request('get', $ref, $accessToken, ['headers' => $headers]);
+        $response = $this->request('GET', $ref, $accessToken, ['headers' => $headers]);
 
         return $doNotWrap ? $response : $this->wrapResponse($response);
     }
 
     public function post($ref, $body, &$accessToken, $headers = [])
     {
-        $response = $this->request('post', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
+        $response = $this->request('POST', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
     public function put($ref, $body, &$accessToken, $headers = [])
     {
-        $response = $this->request('put', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
+        $response = $this->request('PUT', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
     public function delete($ref, &$accessToken, $headers = [])
     {
-        $response = $this->request('delete', $ref, $accessToken, ['headers' => $headers]);
+        $response = $this->request('DELETE', $ref, $accessToken, ['headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
 
     public function patch($ref, $body, &$accessToken, $headers = [])
     {
-        $response = $this->request('patch', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
+        $response = $this->request('PATCH', $ref, $accessToken, ['body' => $body, 'headers' => $headers]);
 
         return $this->wrapResponse($response);
     }
@@ -392,7 +392,7 @@ class Azure extends AbstractProvider
         $keysUri = $openIdConfiguration['jwks_uri'];
 
         $factory = $this->getRequestFactory();
-        $request = $factory->getRequestWithOptions('get', $keysUri, []);
+        $request = $factory->getRequestWithOptions('GET', $keysUri, []);
 
         $response = $this->getParsedResponse($request);
 

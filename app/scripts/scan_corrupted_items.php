@@ -94,7 +94,7 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
     }
 
     $tpSharekeys = DB::query(
-        'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.perso, i.pw, i.pw_len, i.created_at, i.updated_at,
+        'SELECT sk.object_id, sk.share_key, sk.encryption_version, i.label, i.perso, i.pw, i.pw_iv, i.pw_len, i.created_at, i.updated_at,
                 (SELECT MAX(l.date) FROM ' . prefixTable('log_items') . ' l
                  WHERE l.id_item = sk.object_id AND l.action = \'at_password_shown\') AS last_shown
          FROM ' . prefixTable('sharekeys_items') . ' sk
@@ -135,7 +135,7 @@ function tpScanCorruptedItemsViaTpUser(int $limit = 2000): array
                 continue;
             }
 
-            $decryptedB64 = doDataDecryption((string) $row['pw'], $itemKey);
+            $decryptedB64 = doDataDecryption((string) $row['pw'], $itemKey, (string) ($row['pw_iv'] ?? ''));
             if ($decryptedB64 === '' && (string) $row['pw'] !== '') {
                 $corrupted[] = array(
                     'id' => (int) $row['object_id'],

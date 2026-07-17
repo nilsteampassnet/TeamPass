@@ -95,12 +95,6 @@ $extensionHasLicence = $extensionLicenceKey !== '';
                     <i class="fas fa-tachometer-alt"></i> <?php echo $lang->get('dashboard'); ?>
                 </h1>
             </div>
-            <div class="col-sm-6">
-                <ol class="breadcrumb float-sm-right">
-                    <li class="breadcrumb-item"><a href="index.php?page=items"><?php echo $lang->get('home'); ?></a></li>
-                    <li class="breadcrumb-item active"><?php echo $lang->get('admin'); ?></li>
-                </ol>
-            </div>
         </div>
     </div>
 </div>

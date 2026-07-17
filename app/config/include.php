@@ -26,9 +26,9 @@
  * @see       https://www.teampass.net
  */
 
-define('TP_VERSION', '3.2.0');
+define('TP_VERSION', '3.2.1');
 define("UPGRADE_MIN_DATE", "1783587926");
-define('TP_VERSION_MINOR', '8');
+define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
@@ -43,12 +43,15 @@ define('TP_FILE_PREFIX', 'EncryptedFile_');
 define('NUMBER_ITEMS_IN_BATCH', 1000);
 define('WIP', (bool) getenv('TEAMPASS_DEBUG'));
 define('UPGRADE_SEND_EMAILS', true);
-define('KEY_LENGTH', 16);
+define('KEY_LENGTH', 64);   // objectKey entropy: 64 hex chars = 256 bits (SEC-4). Backward-compatible: existing 16-hex keys keep decrypting; only re-encryption upgrades old objects.
 define('EDITION_LOCK_PERIOD', 86400);   // Defines the delay for which an item edition lock is active
 define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 300);  // Lock expires after 5 minutes without heartbeat renewal
 define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
+define('TP_FORGOT_PWD_TOKEN_REASON', 'forgot_local_password');  // teampass_tokens.reason of a local password recovery token
+define('TP_FORGOT_PWD_TOKEN_VALIDITY', 900);    // A recovery link stays usable 15 minutes
+define('TP_FORGOT_PWD_TOKEN_THROTTLE', 120);    // Minimum delay between two recovery emails for one account
 
 // Ensure root path constants are available when this file is included directly
 // (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
@@ -137,6 +140,8 @@ $mngPages = array(
     'uploads' => 'uploads.php',
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
+    'reports' => 'reports.php',
+    'reviews' => 'reviews.php',
 );
 
 // Utilities Pages
