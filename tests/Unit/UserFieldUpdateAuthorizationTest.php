@@ -124,14 +124,16 @@ class UserFieldUpdateAuthorizationTest extends TestCase
         $src = $this->usersQueriesSource();
 
         self::assertStringContainsString(
-            "\$writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'fonction_id', 'auth_type'];",
+            "\$writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'auth_type'];",
             $src,
             'The writable-field allow-list must stay restricted to non-privileged columns'
         );
 
         // Guard the intent rather than the literal above: these must never appear in it.
+        // 'fonction_id' was removed by the GHSA-gjc5 fix (the users column was dropped in
+        // 3.1.5; roles live in users_roles) — it must not come back as a latent bypass.
         self::assertSame(1, preg_match('/\$writableUserFields = \[(.*?)\];/s', $src, $matches));
-        foreach (['pw', 'email', 'admin', 'gestionnaire', 'can_manage_all_users', 'read_only', 'private_key', 'api_key'] as $forbidden) {
+        foreach (['pw', 'email', 'admin', 'gestionnaire', 'can_manage_all_users', 'read_only', 'private_key', 'api_key', 'fonction_id'] as $forbidden) {
             self::assertStringNotContainsString(
                 "'" . $forbidden . "'",
                 $matches[1],
