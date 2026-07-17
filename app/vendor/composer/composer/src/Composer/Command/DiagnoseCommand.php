@@ -24,6 +24,7 @@ use Composer\Package\Locker;
 use Composer\Package\RootPackage;
 use Composer\Package\Version\VersionParser;
 use Composer\Pcre\Preg;
+use Composer\Policy\ListPolicyConfig;
 use Composer\Repository\ComposerRepository;
 use Composer\Repository\FilesystemRepository;
 use Composer\Repository\PlatformRepository;
@@ -89,7 +90,7 @@ EOT
             $commandEvent = new CommandEvent(PluginEvents::COMMAND, 'diagnose', $input, $output);
             $composer->getEventDispatcher()->dispatch($commandEvent->getName(), $commandEvent);
             $this->process = $composer->getLoop()->getProcessExecutor() ?? new ProcessExecutor($io);
-       } else {
+        } else {
             $config = Factory::createConfig();
 
             $this->process = new ProcessExecutor($io);
@@ -589,10 +590,12 @@ EOT
             $packages[] = $rootPkg;
         }
         $repoSet->addRepository(new ComposerRepository(['type' => 'composer', 'url' => 'https://packagist.org'], new NullIO(), $config, $this->httpDownloader));
+        $policyConfig = $this->createPolicyConfig($config, null);
+        $policyConfig = $policyConfig->withAudit(ListPolicyConfig::AUDIT_IGNORE);
 
         try {
             $io = new BufferIO();
-            $result = $auditor->audit($io, $repoSet, $packages, Auditor::FORMAT_TABLE, true, [], Auditor::ABANDONED_IGNORE);
+            $result = $auditor->audit($io, $repoSet, $policyConfig, $packages, Auditor::FORMAT_TABLE);
         } catch (\Throwable $e) {
             return '<highlight>Failed performing audit: '.$e->getMessage().'</>';
         }

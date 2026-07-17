@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## 2.5.1 - 2026-07-08
+
+### Fixed
+
+- Fixed recursive `Utils::all()` rejecting generator inputs
+
+
+## 2.5.0 - 2026-06-02
+
+### Deprecated
+
+- Deprecated passing non-iterable inputs to promise collection helpers and `EachPromise`
+
+
 ## 2.4.1 - 2026-05-20
 
 ### Fixed

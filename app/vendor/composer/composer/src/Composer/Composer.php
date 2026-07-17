@@ -51,9 +51,9 @@ class Composer extends PartialComposer
      *
      * @see getVersion()
      */
-    public const VERSION = '2.9.8';
+    public const VERSION = '2.10.2';
     public const BRANCH_ALIAS_VERSION = '';
-    public const RELEASE_DATE = '2026-05-13 09:28:38';
+    public const RELEASE_DATE = '2026-07-01 11:24:45';
     public const SOURCE_VERSION = '';
 
     /**
@@ -80,6 +80,50 @@ class Composer extends PartialComposer
         }
 
         return self::VERSION;
+    }
+
+    /**
+     * @var non-empty-string|null Name of the command currently being executed, used for telemetry in outgoing requests
+     */
+    private static $runningCommand = null;
+
+    /**
+     * @var non-empty-string|null 'install' or 'update' — the operation the Installer is currently running, used for telemetry
+     */
+    private static $runningOperation = null;
+
+    /**
+     * @internal
+     */
+    public static function setRunningCommand(?string $command): void
+    {
+        self::$runningCommand = ($command === null || $command === '') ? null : $command;
+        // a new outer command resets any operation left over from a prior context
+        self::$runningOperation = null;
+    }
+
+    /**
+     * @return non-empty-string|null
+     */
+    public static function getRunningCommand(): ?string
+    {
+        return self::$runningCommand;
+    }
+
+    /**
+     * @internal
+     */
+    public static function setRunningOperation(?string $operation): void
+    {
+        self::$runningOperation = ($operation === null || $operation === '') ? null : $operation;
+    }
+
+    /**
+     * @return non-empty-string|null
+     */
+    public static function getRunningOperation(): ?string
+    {
+        return self::$runningOperation;
     }
 
     /**

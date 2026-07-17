@@ -1,7 +1,5 @@
 <?php
 
-/** @noinspection ReturnTypeCanBeDeclaredInspection */
-
 declare(strict_types=1);
 
 namespace voku\helper;
@@ -38,6 +36,8 @@ use const HTML_ENTITIES;
  */
 final class AntiXSS
 {
+    private const MAX_SANITIZATION_PASSES = 100;
+
     const VOKU_ANTI_XSS_GT = 'voku::anti-xss::gt';
 
     const VOKU_ANTI_XSS_LT = 'voku::anti-xss::lt';
@@ -129,6 +129,7 @@ final class AntiXSS
         'onAnimationEnd',
         'onAnimationIteration',
         'onAnimationStart',
+        'onAppInstalled',
         'onAriaRequest',
         'onAutoComplete',
         'onAutoCompleteError',
@@ -137,6 +138,8 @@ final class AntiXSS
         'onBeforeCopy',
         'onBeforeCut',
         'onBeforeInput',
+        'onBeforeInstallPrompt',
+        'onBeforeMatch',
         'onBeforePrint',
         'onBeforeDeactivate',
         'onBeforeEditFocus',
@@ -146,6 +149,7 @@ final class AntiXSS
         'onBeforeToggle',
         'onBeforeUnload',
         'onBeforeUpdate',
+        'onBeforeXRSelect',
         'onBegin',
         'onBlur',
         'onBounce',
@@ -158,6 +162,7 @@ final class AntiXSS
         'onClose',
         'onCommand',
         'onCompassNeedsCalibration',
+        'onContentVisibilityAutoStateChange',
         'onContextMenu',
         'onControlSelect',
         'onCopy',
@@ -171,6 +176,7 @@ final class AntiXSS
         'onDeviceLight',
         'onDeviceMotion',
         'onDeviceOrientation',
+        'onDeviceOrientationAbsolute',
         'onDeviceProximity',
         'onDrag',
         'onDragDrop',
@@ -194,9 +200,12 @@ final class AntiXSS
         'onFocusIn',
         'onFocusOut',
         'onFormChange',
+        'onFormData',
         'onFormInput',
         'onFullScreenChange',
         'onFullScreenError',
+        'onGamepadConnected',
+        'onGamepadDisconnected',
         'onGotPointerCapture',
         'onHashChange',
         'onHelp',
@@ -217,6 +226,7 @@ final class AntiXSS
         'onMediaComplete',
         'onMediaError',
         'onMessage',
+        'onMessageError',
         'onMouseDown',
         'onMouseEnter',
         'onMouseLeave',
@@ -257,10 +267,13 @@ final class AntiXSS
         'onMsThumbnailClick',
         'onOffline',
         'onOnline',
+        'onOrientationChange',
         'onOutOfSync',
         'onPage',
         'onPageHide',
+        'onPageReveal',
         'onPageShow',
+        'onPageSwap',
         'onPaste',
         'onPause',
         'onPlay',
@@ -283,6 +296,7 @@ final class AntiXSS
         'onRateChange',
         'onReadyStateChange',
         'onReceived',
+        'onRejectionHandled',
         'onRepeat',
         'onReset',
         'onResize',
@@ -299,13 +313,18 @@ final class AntiXSS
         'onRowsExit',
         'onRowsInserted',
         'onScroll',
+        'onScrollEnd',
+        'onScrollSnapChange',
+        'onScrollSnapChanging',
         'onSearch',
         'onSeek',
         'onSeeked',
         'onSeeking',
+        'onSecurityPolicyViolation',
         'onSelect',
         'onSelectionChange',
         'onSelectStart',
+        'onSlotChange',
         'onStalled',
         'onStorage',
         'onStorageCommit',
@@ -335,6 +354,11 @@ final class AntiXSS
         'onUnhandledRejection',
         'onURLFlip',
         'onUserProximity',
+        'onVRDisplayActivate',
+        'onVRDisplayConnect',
+        'onVRDisplayDeactivate',
+        'onVRDisplayDisconnect',
+        'onVRDisplayPresentChange',
         'onVolumeChange',
         'onWaiting',
         'onWebKitAnimationEnd',
@@ -765,7 +789,10 @@ final class AntiXSS
         $str_backup = $str;
         
         // process
+        $iterations = 0;
         do {
+            $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
+
             // backup the string (for the loop)
             $str_backup_loop = $str;
 
@@ -848,6 +875,27 @@ final class AntiXSS
         }
 
         return $result . $callback($remaining);
+    }
+
+    /**
+     * @param int    $iterations
+     * @param string $context
+     *
+     * @return void
+     */
+    private function _guardAgainstNonConvergingLoop(&$iterations, $context)
+    {
+        ++$iterations;
+
+        if ($iterations > self::MAX_SANITIZATION_PASSES) {
+            throw new \RuntimeException(
+                'AntiXSS detected a non-converging sanitization loop after '
+                . self::MAX_SANITIZATION_PASSES
+                . ' passes while running '
+                . $context
+                . '.'
+            );
+        }
     }
 
     /**
@@ -964,7 +1012,9 @@ final class AntiXSS
                         continue;
                     }
 
+                    $iterations = 0;
                     do {
+                        $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
                         $count = $temp_count = 0;
 
                         $tmp = \preg_replace(
@@ -1174,21 +1224,29 @@ final class AntiXSS
      */
     private function _initNeverAllowedRegex()
     {
-        $this->_never_allowed_regex = [
+        $this->_never_allowed_regex = $this->_getDefaultNeverAllowedRegex($this->_replacement);
+
+        $this->_rebuildNeverAllowedRegexCache();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function _getDefaultNeverAllowedRegex(string $replacement): array
+    {
+        return [
             // default javascript
-            '(\(?:?document\)?|\(?:?window\)?(?:\.document)?)\.(?:location|on\w*)' => $this->_replacement,
+            '(\(?:?document\)?|\(?:?window\)?(?:\.document)?)\.(?:location|on\w*)' => $replacement,
             // data-attribute + base64
-            "([\"'])?data\s*:\s*(?!image\s*\/\s*(?!svg.*?))[^\1]*?base64[^\1]*?,[^\1]*?\1?" => $this->_replacement,
+            "([\"'])?data\s*:\s*(?!image\s*\/\s*(?!svg.*?))[^\1]*?base64[^\1]*?,[^\1]*?\1?" => $replacement,
             // old IE, old Netscape
-            'expres(?:\\\\|\s)*sion\s*(?:\(|&\#40;)' => $this->_replacement,
+            'expres(?:\\\\|\s)*sion\s*(?:\(|&\#40;)' => $replacement,
             // src="js"
-            'src\=(?<wrapper>[\'|"]).*\.js(?:\g{wrapper})' => $this->_replacement,
+            'src\=(?<wrapper>[\'|"]).*\.js(?:\g{wrapper})' => $replacement,
             // comments
             '<!--(.*)-->' => '&lt;!--$1--&gt;',
             '<!--'        => '&lt;!--',
         ];
-
-        $this->_rebuildNeverAllowedRegexCache();
     }
 
     /**
@@ -1254,7 +1312,7 @@ final class AntiXSS
         }
 
         if (
-            $canShortCircuit 
+            $canShortCircuit
             &&
             $eventQuickChecks !== []
         ) {
@@ -1428,6 +1486,137 @@ final class AntiXSS
     }
 
     /**
+     * ASCII-only "is alphanumeric" check for a single byte, deliberately not using
+     * "ctype_alnum()": "ext-ctype" is not declared in "composer.json" and is not
+     * guaranteed to be enabled on every PHP build.
+     *
+     * @param string $byte exactly one byte
+     *
+     * @return bool
+     */
+    private function _isAsciiAlnumByte($byte)
+    {
+        return ($byte >= 'a' && $byte <= 'z')
+            || ($byte >= 'A' && $byte <= 'Z')
+            || ($byte >= '0' && $byte <= '9');
+    }
+
+    /**
+     * Last-resort, backtracking-free removal of "<$tagName ...>" used only when the
+     * normal regex-based removal above could not run at all (e.g. because
+     * "pcre.backtrack_limit" was exhausted, which an attacker can trigger
+     * deliberately with a pathological payload to try to bypass sanitization).
+     *
+     * <p>
+     * <br />
+     * We must never fall back to returning the untouched, still-dangerous input in
+     * that case ("fail open"); instead every occurrence of the tag is destroyed
+     * with the configured replacement ("fail closed"). This only uses "strpos()" and
+     * plain byte comparisons, so it cannot itself be driven into catastrophic backtracking.
+     * </p>
+     *
+     * @param string $str
+     * @param string $tagName tag name without "<", e.g. "a", "img", "script"
+     *
+     * @return string
+     */
+    private function _failClosedRemoveTag($str, $tagName)
+    {
+        $needle = '<' . $tagName;
+        $length = \strlen($str);
+        $result = '';
+        $offset = 0;
+
+        while ($offset < $length && ($pos = \stripos($str, $needle, $offset)) !== false) {
+            $afterName = $pos + \strlen($needle);
+            $nextByte = $afterName < $length ? $str[$afterName] : '';
+
+            if ($nextByte !== '' && $this->_isAsciiAlnumByte($nextByte)) {
+                // e.g. "<audioplayer" is not "<audio"; keep scanning past the false positive
+                $result .= \substr($str, $offset, $afterName - $offset);
+                $offset = $afterName;
+
+                continue;
+            }
+
+            $result .= \substr($str, $offset, $pos - $offset);
+
+            $closePos = \strpos($str, '>', $afterName);
+            if ($closePos === false) {
+                // unterminated tag: drop the remainder rather than risk leaving it intact
+                return $result . $this->_replacement;
+            }
+
+            $result .= $this->_replacement;
+            $offset = $closePos + 1;
+        }
+
+        return $result . \substr($str, $offset);
+    }
+
+    /**
+     * Last-resort, backtracking-free removal of dangerous attributes by name, used
+     * only when the regex-based "_remove_evil_attributes()" could not run at all
+     * (see "_failClosedRemoveTag()" for why we must not fail open in that case).
+     *
+     * @param string   $str
+     * @param string[] $attrNames literal attribute names to strip, e.g. "onclick", "style"
+     *
+     * @return string
+     */
+    private function _failClosedRemoveAttributesByName($str, array $attrNames)
+    {
+        foreach ($attrNames as $attrName) {
+            if ($attrName === '' || \stripos($str, $attrName) === false) {
+                continue;
+            }
+
+            $length = \strlen($str);
+            $needleLen = \strlen($attrName);
+            $result = '';
+            $offset = 0;
+
+            while ($offset < $length && ($pos = \stripos($str, $attrName, $offset)) !== false) {
+                $result .= \substr($str, $offset, $pos - $offset);
+                $cursor = $pos + $needleLen;
+
+                while ($cursor < $length && \strpos(" \t\r\n", $str[$cursor]) !== false) {
+                    ++$cursor;
+                }
+
+                $consumedValue = false;
+                if ($cursor < $length && $str[$cursor] === '=') {
+                    ++$cursor;
+                    while ($cursor < $length && \strpos(" \t\r\n", $str[$cursor]) !== false) {
+                        ++$cursor;
+                    }
+
+                    $quote = $cursor < $length ? $str[$cursor] : '';
+                    if ($quote === '"' || $quote === "'") {
+                        $endQuote = \strpos($str, $quote, $cursor + 1);
+                        if ($endQuote !== false) {
+                            $result .= $this->_replacement;
+                            $offset = $endQuote + 1;
+                            $consumedValue = true;
+                        }
+                    }
+                }
+
+                if (!$consumedValue) {
+                    // no safely-bounded quoted value found right after the name:
+                    // still neutralize the bare name so it cannot act as an executable attribute
+                    $result .= $this->_replacement;
+                    $offset = $pos + $needleLen;
+                }
+            }
+
+            $str = $result . \substr($str, $offset);
+        }
+
+        return $str;
+    }
+
+    /**
      * Remove disallowed Javascript in links or img tags
      *
      * <p>
@@ -1452,7 +1641,9 @@ final class AntiXSS
      */
     private function _remove_disallowed_javascript($str)
     {
+        $iterations = 0;
         do {
+            $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
             $original = $str;
 
             if (\stripos($str, '<a') !== false) {
@@ -1468,7 +1659,7 @@ final class AntiXSS
                         $str
                     );
                 }
-                $str = (string)$strTmp;
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'a');
             }
 
             if (\stripos($str, '<img') !== false) {
@@ -1488,7 +1679,7 @@ final class AntiXSS
                     $str
                 );
                 if ($strTmp === null) {
-                    $strTmp = (string) \preg_replace_callback(
+                    $strTmp = \preg_replace_callback(
                         '#<img[^\p{L}@]+([^>]*)(?:\s?/?>|$)#iu',
                         function ($matches) {
                             if (
@@ -1504,7 +1695,7 @@ final class AntiXSS
                         $str
                     );
                 }
-                $str = (string)$strTmp;
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'img');
             }
 
             if (\stripos($str, '<audio') !== false) {
@@ -1514,13 +1705,13 @@ final class AntiXSS
                     $str
                 );
                 if ($strTmp === null) {
-                    $strTmp = (string) \preg_replace_callback(
+                    $strTmp = \preg_replace_callback(
                         '#<audio[^\p{L}@]+([^>]*)(?:\s?/?>|$)#iu',
                         [$this, '_js_src_removal_callback'],
                         $str
                     );
                 }
-                $str = (string)$strTmp;
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'audio');
             }
 
             if (\stripos($str, '<video') !== false) {
@@ -1536,33 +1727,36 @@ final class AntiXSS
                         $str
                     );
                 }
-                $str = (string)$strTmp;
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'video');
             }
 
             if (\stripos($str, '<source') !== false) {
-                $str = (string) \preg_replace_callback(
+                $strTmp = \preg_replace_callback(
                     '#<source[^\p{L}@]+([^>]*)(?:\s?/?>|$)#iu',
                     [$this, '_js_src_removal_callback'],
                     $str
                 );
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'source');
             }
 
             if (\stripos($str, 'script') !== false) {
                 // INFO: US-ASCII: ¼ === <
-                $str = (string) \preg_replace(
+                $strTmp = \preg_replace(
                     '#(?:%3C|¼|<)\s*script[^\p{L}@]+(?:[^>]*)(?:\s?/?(?:%3E|¾|>)|$)#iu',
                     $this->_replacement,
                     $str
                 );
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'script');
             }
 
             if (\stripos($str, 'script') !== false) {
                 // INFO: US-ASCII: ¼ === <
-                $str = (string) \preg_replace(
+                $strTmp = \preg_replace(
                     '#(?:%3C|¼|<)[^\p{L}@]*/*[^\p{L}@]*(?:script[^\p{L}@]+).*(?:%3E|¾|>)?#iUus',
                     $this->_replacement,
                     $str
                 );
+                $str = $strTmp ?? $this->_failClosedRemoveTag($str, 'script');
             }
         } while ($original !== $str);
 
@@ -1622,7 +1816,9 @@ final class AntiXSS
             &&
             \in_array('style', $this->_evil_attributes_regex, true)
         ) {
+            $iterations = 0;
             do {
+                $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
                 $count = $temp_count = 0;
 
                 $tmp = \preg_replace(
@@ -1639,10 +1835,12 @@ final class AntiXSS
 
         if (!$this->_cache_evil_attributes_regex_string) {
             $this->_cache_evil_attributes_regex_string = \implode('|', $this->_evil_attributes_regex);
-            $this->_cache_evil_attributes_regex_string .= '|' . \implode('\w*|', $this->_never_allowed_on_events_afterwards);
+            $this->_cache_evil_attributes_regex_string .= '|(?<![\w-])(?:' . \implode('|', $this->_never_allowed_on_events_afterwards) . ')[\w:-]*';
         }
 
+        $iterations = 0;
         do {
+            $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
             $count = $temp_count = 0;
 
             // find occurrences of illegal attribute strings with and without quotes (" and ' are octal quotes)
@@ -1654,6 +1852,7 @@ final class AntiXSS
                 $temp_count
             );
             if ($strTmp === null) {
+                $temp_count = 0;
                 $strTmp = \preg_replace(
                     '/(?:' . $this->_cache_evil_attributes_regex_string . ')(?:\s*=\s*)(?:\'(?:.*?)\'|"(?:.*?)")/ius',
                     $this->_replacement,
@@ -1662,8 +1861,20 @@ final class AntiXSS
                     $temp_count
                 );
             }
-            $str = (string)$strTmp;
-            $count += $temp_count;
+            if ($strTmp === null) {
+                // both regex attempts failed (e.g. "pcre.backtrack_limit" exhausted): never fall
+                // back to the untouched, still-dangerous input ("fail open"); destroy the
+                // dangerous attributes with a bounded, non-regex scan instead ("fail closed")
+                $strFailClosed = $this->_failClosedRemoveAttributesByName(
+                    $str,
+                    \array_merge($this->_evil_attributes_regex, $this->_never_allowed_on_events_afterwards)
+                );
+                $count += ($strFailClosed !== $str) ? 1 : 0;
+                $str = $strFailClosed;
+            } else {
+                $str = $strTmp;
+                $count += $temp_count;
+            }
 
             $strTmp = \preg_replace(
                 '/(.*?)(<[^>]+)(?<!\p{L})(?:' . $this->_cache_evil_attributes_regex_string . ')\s*=\s*(?:[^\s>]*)/ius',
@@ -1673,6 +1884,7 @@ final class AntiXSS
                 $temp_count
             );
             if ($strTmp === null) {
+                $temp_count = 0;
                 $strTmp = \preg_replace(
                     '/(?<![\p{L}=])(?:' . $this->_cache_evil_attributes_regex_string . ')\s*=\s*(?:[^\s>]*)/ius',
                     $this->_replacement,
@@ -1681,8 +1893,17 @@ final class AntiXSS
                     $temp_count
                 );
             }
-            $str = (string)$strTmp;
-            $count += $temp_count;
+            if ($strTmp === null) {
+                $strFailClosed = $this->_failClosedRemoveAttributesByName(
+                    $str,
+                    \array_merge($this->_evil_attributes_regex, $this->_never_allowed_on_events_afterwards)
+                );
+                $count += ($strFailClosed !== $str) ? 1 : 0;
+                $str = $strFailClosed;
+            } else {
+                $str = $strTmp;
+                $count += $temp_count;
+            }
         } while ($count);
 
         return (string) $str;
@@ -1779,7 +2000,9 @@ final class AntiXSS
         // init
         $strEnd = '';
 
+        $iterations = 0;
         do {
+            $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
             $original = $str;
 
             if (
@@ -2431,10 +2654,29 @@ final class AntiXSS
      */
     public function setReplacement($string): self
     {
+        $defaultNeverAllowedRegex = $this->_getDefaultNeverAllowedRegex($this->_replacement);
+        $customNeverAllowedRegex = \array_diff_key($this->_never_allowed_regex, $defaultNeverAllowedRegex);
+        $removedNeverAllowedRegex = \array_diff_key($defaultNeverAllowedRegex, $this->_never_allowed_regex);
+
         $this->_replacement = (string) $string;
 
         $this->_initNeverAllowedStr();
         $this->_initNeverAllowedRegex();
+
+        if ($removedNeverAllowedRegex !== []) {
+            $this->_never_allowed_regex = \array_diff_key($this->_never_allowed_regex, $removedNeverAllowedRegex);
+        }
+
+        if ($customNeverAllowedRegex !== []) {
+            $this->_never_allowed_regex = \array_merge(
+                $customNeverAllowedRegex,
+                $this->_never_allowed_regex
+            );
+        }
+
+        if ($removedNeverAllowedRegex !== [] || $customNeverAllowedRegex !== []) {
+            $this->_rebuildNeverAllowedRegexCache();
+        }
 
         return $this;
     }
@@ -2540,7 +2782,9 @@ final class AntiXSS
         $old_str_backup = $str;
 
         // process
+        $iterations = 0;
         do {
+            $this->_guardAgainstNonConvergingLoop($iterations, __METHOD__);
             $old_str = $str;
             $str = $this->_do($str);
         } while ($old_str !== $str);

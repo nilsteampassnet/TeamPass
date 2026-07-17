@@ -42,6 +42,8 @@ class ConsoleIO extends BaseIO
     /** @var string */
     protected $lastMessageErr = '';
 
+    /** @var string|false */
+    private $sendTimestamps = false;
     /** @var float */
     private $startTime;
     /** @var array<IOInterface::*, OutputInterface::VERBOSITY_*> */
@@ -74,6 +76,14 @@ class ConsoleIO extends BaseIO
     public function enableDebugging(float $startTime)
     {
         $this->startTime = $startTime;
+    }
+
+    /**
+     * @return void
+     */
+    public function enableTimestamps(string $format = DATE_RFC3339_EXTENDED)
+    {
+        $this->sendTimestamps = $format;
     }
 
     /**
@@ -174,6 +184,12 @@ class ConsoleIO extends BaseIO
             }, (array) $messages);
         }
 
+        if ($this->sendTimestamps !== false) {
+            $messages = array_map(function ($message): string {
+                return sprintf('[%s] %s', (new \DateTime())->format($this->sendTimestamps), $message);
+            }, (array) $messages);
+        }
+
         if (true === $stderr && $this->output instanceof ConsoleOutputInterface) {
             $this->output->getErrorOutput()->write($messages, $newline, $sfVerbosity);
             $this->lastMessageErr = implode($newline ? "\n" : '', (array) $messages);
@@ -208,6 +224,22 @@ class ConsoleIO extends BaseIO
     {
         // messages can be an array, let's convert it to string anyway
         $messages = implode($newline ? "\n" : '', (array) $messages);
+
+        $decorated = $stderr ? $this->getErrorOutput()->isDecorated() : $this->output->isDecorated();
+
+        // backspaces corrupt non-decorated output, so write a plain line instead
+        if (!$decorated) {
+            if ($messages !== '') {
+                $this->doWrite($messages, true, $stderr, $verbosity);
+            }
+            if ($stderr) {
+                $this->lastMessageErr = $messages;
+            } else {
+                $this->lastMessage = $messages;
+            }
+
+            return;
+        }
 
         // since overwrite is supposed to overwrite last message...
         if (!isset($size)) {
@@ -371,6 +403,7 @@ class ConsoleIO extends BaseIO
         $pattern = $allowNewlines ? "{{$escapePattern}|[\x01-\x09\x0B\x0C\x0E-\x1A]|\r(?!\n)}u" : "{{$escapePattern}|[\x01-\x1A]}u";
         if (is_string($messages)) {
             $messages = self::ensureValidUtf8($messages);
+
             return Preg::replace($pattern, '', $messages);
         }
 

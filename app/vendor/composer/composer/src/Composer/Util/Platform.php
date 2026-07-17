@@ -87,6 +87,54 @@ class Platform
     }
 
     /**
+     * Read a boolean-style env var. Accepts only the literal strings '0' or '1'.
+     *
+     * Returns true for '1', false for '0', and $default when the variable is unset.
+     * Throws \RuntimeException for any other value (including the empty string).
+     *
+     * @param non-empty-string $name
+     * @return ($default is bool ? bool : ?bool)
+     */
+    public static function getBoolEnv(string $name, ?bool $default = null): ?bool
+    {
+        $value = self::getEnv($name);
+        if (false === $value || '' === $value) {
+            return $default;
+        }
+
+        if (!in_array($value, ['0', '1', 'false', 'true', 'off', 'on'], true)) {
+            throw new \RuntimeException(
+                "Invalid value for {$name}: {$value}. Expected 0, 1, false, true, off, or on."
+            );
+        }
+
+        return in_array($value, ['1', 'true', 'on', ], true);
+    }
+
+    /**
+     * Refuses to parse a tar/phar archive on PHP < 8.0, where the \Phar/\PharData
+     * constructor handles archive metadata in a way that is unsafe with untrusted
+     * input. PHP 8.0+ is not affected, so this is a no-op there.
+     *
+     * @internal
+     * @throws \RuntimeException when run on PHP < 8.0 without the explicit opt-out env var
+     */
+    public static function assertPharMetadataSafe(): void
+    {
+        if (\PHP_VERSION_ID >= 80000) {
+            return;
+        }
+        // TODO remove it from tests/bootstrap.php when removing this code
+        if (self::getBoolEnv('COMPOSER_ALLOW_UNSAFE_PHAR_METADATA', false)) {
+            return;
+        }
+        throw new \RuntimeException(
+            'Refusing to parse a tar/phar archive on PHP < 8.0 because it is not safe to process untrusted archives on that PHP version. '
+            .'Upgrade to PHP 8.0+ to remove this risk, or set COMPOSER_ALLOW_UNSAFE_PHAR_METADATA=1 to override (not recommended).'
+        );
+    }
+
+    /**
      * putenv() equivalent but updates the runtime global variables too
      */
     public static function putEnv(string $name, string $value): void

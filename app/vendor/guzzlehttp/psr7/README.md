@@ -119,7 +119,7 @@ echo $stream; // 0123456789
 
 `GuzzleHttp\Psr7\FnStream`
 
-Compose stream implementations based on a hash of functions.
+Compose stream implementations based on a hash of callables.
 
 Allows for easy testing and extension of a provided stream without needing
 to create a concrete class for a simple extension point.
@@ -202,6 +202,11 @@ echo $stream->tell();
 Stream that when read returns bytes for a streaming multipart or
 multipart/form-data stream.
 
+Each multipart element must contain a `name` and `contents` key. `contents` may
+be any non-array value accepted by `GuzzleHttp\Psr7\Utils::streamFor()`,
+including closures and invokable objects. Array contents are recursively
+expanded into nested form fields.
+
 
 ## NoSeekStream
 
@@ -231,12 +236,15 @@ var_export($noSeek->read(3));
 
 Provides a read only stream that pumps data from a PHP callable.
 
-When invoking the provided callable, the PumpStream will pass the amount of
-data requested to read to the callable. The callable can choose to ignore
+When invoking the provided callable, the PumpStream will pass the suggested
+number of bytes to read to the callable. The callable can choose to ignore
 this value and return fewer or more bytes than requested. Any extra data
 returned by the provided callable is buffered internally until drained using
 the read() function of the PumpStream. The provided callable MUST return
-false when there is no more data to read.
+false or null when there is no more data to read.
+
+Userland callables that declare no parameters are tolerated by PHP, but
+length-aware callables remain the recommended formal shape.
 
 
 ## Implementing stream decorators
@@ -447,6 +455,56 @@ string. This function does not modify the provided keys when an array is
 encountered (like `http_build_query()` would).
 
 
+## `GuzzleHttp\Psr7\Utils::asciiToLower`
+
+`public static function asciiToLower(string $string): string`
+
+Converts ASCII uppercase letters in a string to lowercase.
+
+Unlike strtolower(), which honors LC_CTYPE before PHP 8.2, the conversion is
+locale-independent and leaves every non-ASCII byte unchanged, as HTTP protocol
+elements require.
+
+
+## `GuzzleHttp\Psr7\Utils::asciiToUpper`
+
+`public static function asciiToUpper(string $string): string`
+
+Converts ASCII lowercase letters in a string to uppercase.
+
+Unlike strtoupper(), which honors LC_CTYPE before PHP 8.2, the conversion is
+locale-independent and leaves every non-ASCII byte unchanged, as HTTP protocol
+elements require.
+
+
+## `GuzzleHttp\Psr7\Utils::asciiUcFirst`
+
+`public static function asciiUcFirst(string $string): string`
+
+Converts the first character of a string to uppercase when it is an ASCII
+lowercase letter.
+
+Unlike ucfirst(), which honors LC_CTYPE before PHP 8.2, the conversion is
+locale-independent and leaves every non-ASCII byte unchanged, as HTTP protocol
+elements require.
+
+
+## `GuzzleHttp\Psr7\Utils::caselessContains`
+
+`public static function caselessContains(string $haystack, string $needle): bool`
+
+Checks whether the haystack contains the needle, comparing ASCII letters
+case-insensitively and without locale sensitivity.
+
+
+## `GuzzleHttp\Psr7\Utils::caselessEquals`
+
+`public static function caselessEquals(string $left, string $right): bool`
+
+Checks whether two strings are equal, comparing ASCII letters
+case-insensitively and without locale sensitivity.
+
+
 ## `GuzzleHttp\Psr7\Utils::caselessRemove`
 
 `public static function caselessRemove(iterable<string> $keys, $keys, array $data): array`
@@ -460,6 +518,11 @@ Remove the items given by the keys, case insensitively from the data.
 
 Copy the contents of a stream into another stream until the given number
 of bytes have been read.
+
+The copy stops if the destination `write()` returns 0, for example a
+`BufferStream` at its high water mark or a full `DroppingStream`. For a
+guaranteed full copy, use a normal writable stream such as a file or
+`php://temp` stream.
 
 
 ## `GuzzleHttp\Psr7\Utils::copyToString`
@@ -492,7 +555,10 @@ a message.
 - method: (string) Changes the HTTP method.
 - set_headers: (array) Sets the given headers.
 - remove_headers: (array) Remove the given headers.
-- body: (mixed) Sets the given body.
+- body: (mixed) Sets the given body. Present non-null values are converted with
+  `GuzzleHttp\Psr7\Utils::streamFor()`, including scalar values, resources,
+  streams, iterators, callable arrays, closures, invokable objects, and
+  objects with `__toString()`. String inputs remain literal bodies.
 - uri: (UriInterface) Set the URI.
 - query: (string) Set the query string value of the URI.
 - version: (string) Set the protocol version.
@@ -538,13 +604,14 @@ This method accepts the following `$resource` types:
   the object will be cast to a string and then a stream will be returned that
   uses the string value.
 - `NULL`: When `null` is passed, an empty stream object is returned.
-- `callable` When a callable is passed, a read-only stream object will be
+- `callable`: When a callable array, closure, or invokable object is passed and
+  no earlier resource or object rule applies, a read-only stream object will be
   created that invokes the given callable. The callable is invoked with the
-  number of suggested bytes to read. The callable can return any number of
-  bytes, but MUST return `false` when there is no more data to return. The
-  stream object that wraps the callable will invoke the callable until the
-  number of requested bytes are available. Any additional bytes will be
-  buffered and used in subsequent reads.
+  suggested number of bytes to read. The callable can return fewer or more bytes
+  than requested, but MUST return `false` or `null` when there is no more data
+  to return. Any additional bytes will be buffered and used in subsequent reads.
+  String inputs are always treated as string bodies, even when they name
+  callable functions.
 
 ```php
 $stream = GuzzleHttp\Psr7\Utils::streamFor('foo');
@@ -716,6 +783,10 @@ provided key are removed.
 `public static function isCrossOrigin(UriInterface $original, UriInterface $modified): bool`
 
 Determines if a modified URL should be considered cross-origin with respect to an original URL.
+
+Two URLs are cross-origin when their scheme, host, or effective port differ. Host comparison is case-insensitive, and missing ports use the default port for `http` or `https`. Other schemes do not receive implicit default ports.
+
+This helper only compares URI origins. It does not implement redirect handling or credential policy.
 
 ## Reference Resolution
 

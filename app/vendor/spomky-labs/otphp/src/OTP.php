@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
+use function array_key_exists;
+use function chr;
+use function count;
 use Exception;
+use function in_array;
+use function is_int;
+use function is_string;
 use OTPHP\Exception\InvalidLabelException;
 use OTPHP\Exception\InvalidParameterException;
 use OTPHP\Exception\ParameterNotFoundException;
 use OTPHP\Exception\SecretDecodingException;
 use ParagonIE\ConstantTime\Base32;
-use function array_key_exists;
-use function chr;
-use function count;
-use function in_array;
-use function is_int;
-use function is_string;
 use function sprintf;
 use const STR_PAD_LEFT;
+use function strlen;
 
 /**
  * @readonly
@@ -25,6 +26,19 @@ use const STR_PAD_LEFT;
 abstract class OTP implements OTPInterface
 {
     private const DEFAULT_SECRET_SIZE = 64;
+
+    /**
+     * Minimum digest size, in bytes, required by the RFC 4226 dynamic truncation.
+     *
+     * The truncation reads four bytes starting at an offset taken from the low
+     * nibble of the last digest byte, i.e. an offset in the range [0, 15]. It
+     * therefore reads up to index "offset + 3" = 18 and needs at least 19 bytes.
+     * A shorter digest (e.g. MD5, 16 bytes) makes the truncation read past the
+     * end of the hash, collapsing the output to a small, secret-independent set
+     * of values. Such algorithms are also outside RFC 4226/6238 and are not
+     * interoperable with authenticator apps. See {@see self::generateOTP()}.
+     */
+    private const MINIMUM_DIGEST_SIZE = 19;
 
     /**
      * @var array<non-empty-string, mixed>
@@ -149,7 +163,7 @@ abstract class OTP implements OTPInterface
     public function getDigits(): int
     {
         $value = $this->getParameter('digits');
-        (is_int($value) && $value > 0) || throw new InvalidParameterException(
+        (is_int($value) && $value >= 1 && $value <= self::MAX_DIGITS) || throw new InvalidParameterException(
             'Invalid "digits" parameter.',
             'digits',
             $value
@@ -193,7 +207,7 @@ abstract class OTP implements OTPInterface
             $value = $callback($value);
         }
 
-        if (property_exists($this, $parameter)) {
+        if (in_array($parameter, ['label', 'issuer'], true)) {
             $this->{$parameter} = $value;
         } else {
             $this->parameters[$parameter] = $value;
@@ -276,6 +290,7 @@ abstract class OTP implements OTPInterface
         $hash = hash_hmac($this->getDigest(), $this->intToByteString($input), $this->getDecodedSecret(), true);
         $unpacked = unpack('C*', $hash);
         $unpacked !== false || throw new InvalidParameterException('Invalid data.', 'hash', $hash);
+        /** @var list<int> $hmac */
         $hmac = array_values($unpacked);
 
         $offset = ($hmac[count($hmac) - 1] & 0xF);
@@ -342,8 +357,19 @@ abstract class OTP implements OTPInterface
             'secret' => static fn (string $value): string => strtoupper(trim($value, '=')),
             'algorithm' => static function (string $value): string {
                 $value = strtolower($value);
-                in_array($value, hash_algos(), true) || throw new InvalidParameterException(
+                in_array($value, hash_hmac_algos(), true) || throw new InvalidParameterException(
                     sprintf('The "%s" digest is not supported.', $value),
+                    'algorithm',
+                    $value
+                );
+                $size = strlen(hash($value, '', true));
+                $size >= self::MINIMUM_DIGEST_SIZE || throw new InvalidParameterException(
+                    sprintf(
+                        'The "%s" digest produces a %d-byte hash which is too short for the RFC 4226 dynamic truncation; at least %d bytes are required.',
+                        $value,
+                        $size,
+                        self::MINIMUM_DIGEST_SIZE
+                    ),
                     'algorithm',
                     $value
                 );
@@ -351,9 +377,14 @@ abstract class OTP implements OTPInterface
                 return $value;
             },
             'digits' => static function ($value): int {
-                $value > 0 || throw new InvalidParameterException('Digits must be at least 1.', 'digits', $value);
+                $value = (int) $value;
+                ($value >= 1 && $value <= self::MAX_DIGITS) || throw new InvalidParameterException(
+                    sprintf('Digits must be between 1 and %d.', self::MAX_DIGITS),
+                    'digits',
+                    $value
+                );
 
-                return (int) $value;
+                return $value;
             },
             'issuer' => function (string $value): string {
                 $value !== '' || throw new InvalidLabelException('Issuer must not be empty.', 'issuer', $value);

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OTPHP;
 
-use OTPHP\Exception\InvalidProvisioningUriException;
 use function array_key_exists;
 use function is_string;
+use OTPHP\Exception\InvalidProvisioningUriException;
 
 /**
  * @readonly
@@ -88,8 +88,8 @@ final class Url
         $path = $parsed_url['path'] ?? null;
         $query = $parsed_url['query'] ?? null;
         $scheme === 'otpauth' || throw new InvalidProvisioningUriException('Not a valid OTP provisioning URI');
-        is_string($host) || throw new InvalidProvisioningUriException('Invalid URI.');
-        is_string($path) || throw new InvalidProvisioningUriException('Invalid URI.');
+        (is_string($host) && $host !== '') || throw new InvalidProvisioningUriException('Invalid URI.');
+        (is_string($path) && $path !== '') || throw new InvalidProvisioningUriException('Invalid URI.');
         is_string($query) || throw new InvalidProvisioningUriException('Invalid URI.');
         $parsedQuery = [];
         parse_str($query, $parsedQuery);
@@ -97,6 +97,7 @@ final class Url
             'Not a valid OTP provisioning URI'
         );
         $secret = $parsedQuery['secret'];
+        (is_string($secret) && $secret !== '') || throw new InvalidProvisioningUriException('Invalid URI.');
         unset($parsedQuery['secret']);
 
         return new self($scheme, $host, $path, $secret, $parsedQuery);
