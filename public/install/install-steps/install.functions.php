@@ -156,18 +156,21 @@ function cryptionForInstall(string $message, string $ascii_key, string $type, ?a
  */
 function generateUserKeysForInstall(string $userPwd): array
 {
-    // Sanitize
-    $antiXss = new AntiXSS();
-    $userPwd = $antiXss->xss_clean($userPwd);
+    // NOTE: xss_clean() is intentionally NOT applied to $userPwd: AES v2 private
+    // keys are always encrypted with the raw password (decryptPrivateKey() only
+    // attempts the raw password on the "v2:" format).
 
     // Generate RSA key pair using CryptoManager (phpseclib v3)
     $res = \TeampassClasses\CryptoManager\CryptoManager::generateRSAKeyPair(4096);
 
-    // Encrypt the private key with user password using AES (SHA-256 for v3)
-    $privatekey = \TeampassClasses\CryptoManager\CryptoManager::aesEncrypt($res['privatekey'], $userPwd, 'cbc', 'sha256');
+    // Encrypt the private key in AES v2 (authenticated GCM, PBKDF2-SHA256),
+    // same format as encryptPrivateKey() in main.functions.php — fresh installs
+    // start with aes_v2_write_enabled = 1.
+    $v2 = \TeampassClasses\CryptoManager\CryptoManager::aesGcmEncrypt($res['privatekey'], $userPwd, '', 'pbkdf2');
+    $privatekey = 'v2:' . base64_encode($v2['meta']) . ':' . base64_encode($v2['ciphertext']);
 
     return [
-        'private_key' => base64_encode($privatekey),
+        'private_key' => $privatekey,
         'public_key' => base64_encode($res['publickey']),
         'private_key_clear' => base64_encode($res['privatekey']),
     ];
