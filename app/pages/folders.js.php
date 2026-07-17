@@ -866,6 +866,17 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         openSidebar($row)
     })
 
+    // Preset complexity to the parent folder's minimal level when the parent
+    // changes (the server rejects a lower value)
+    $('#new-parent').on('change', function() {
+        const parentId = parseInt($(this).val())
+        if (isNaN(parentId) === true || parentId === 0) return
+        const parentComplexity = $('#table-folders tr[data-id="' + parentId + '"]').data('complexity')
+        if (parentComplexity !== undefined && parentComplexity !== '') {
+            $('#new-complexity').val(String(parentComplexity)).trigger('change')
+        }
+    })
+
     // Init select2 with dropdownParent when the new-folder modal opens
     $('#modal-folder-new').on('shown.bs.modal', function() {
         $('#new-parent').html(store.get('teampassApplication').foldersSelect)

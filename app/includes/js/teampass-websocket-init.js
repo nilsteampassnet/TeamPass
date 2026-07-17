@@ -159,6 +159,14 @@
    * Set up handlers for various WebSocket events
    */
   function setupEventHandlers() {
+    // Items list re-rendered (folder reload, live refresh): the fresh rows no
+    // longer carry the injected presence badges — re-apply them from state.
+    if (typeof $ !== 'undefined') {
+      $(document).on('teampass:items:rendered', function() {
+        rehydratePresenceIndicators()
+      })
+    }
+
     tpWs.on('connected', function(data) {
       if (data && data.user_id) {
         window.TeamPassCurrentUserId = parseInt(data.user_id, 10)
@@ -912,6 +920,28 @@
   function removeItemViewIndicator(itemId) {
     if (typeof $ === 'undefined') return
     $('#list-item-row_' + itemId).find('.item-view-badge').remove()
+  }
+
+  /**
+   * Re-apply presence badges (edition locks + viewers) on the current rows.
+   *
+   * An in-place items-list refresh redraws every row and wipes the injected
+   * badges while the tracked state (tpLockedItems / tpViewingItems) is still
+   * valid — rehydrate from that state instead of waiting for the next live
+   * event. Triggered by 'teampass:items:rendered' from the items page.
+   */
+  function rehydratePresenceIndicators() {
+    if (typeof $ === 'undefined') return
+    if (window.tpLockedItems) {
+      Object.keys(window.tpLockedItems).forEach(function(itemId) {
+        showEditionLockIndicator(itemId, window.tpLockedItems[itemId])
+      })
+    }
+    if (window.tpViewingItems) {
+      Object.keys(window.tpViewingItems).forEach(function(itemId) {
+        showItemViewIndicator(parseInt(itemId, 10), window.tpViewingItems[itemId])
+      })
+    }
   }
 
   function updateItemViewersInDetailView(itemId, viewers) {

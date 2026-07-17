@@ -217,6 +217,7 @@ switch (parse_url($vars['REQUEST_URI'], \PHP_URL_PATH)) {
                 header($header);
             }
         }
+        break;
 }
 
 header('Content-Type: application/json', true);

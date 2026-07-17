@@ -12,7 +12,7 @@ Installation
 Install the latest version with:
 
 ```bash
-$ composer require composer/metadata-minifier
+composer require composer/metadata-minifier
 ```
 
 
@@ -30,6 +30,14 @@ Basic usage
 - `MetadataMinifier::expand()`: Expands an array of minified versions back to their original format
 - `MetadataMinifier::minify()`: Minifies an array of versions into a set of version diffs
 
+For example to expand the dev versions (note the ~dev in the URL) of Monolog you would do:
+
+```php
+$packageName = 'monolog/monolog';
+$url = 'https://repo.packagist.org/p2/' . $packageName . '~dev.json';
+$json = json_decode(file_get_contents($url), true);
+$versions = \Composer\MetadataMinifier\MetadataMinifier::expand($json['packages'][$packageName]);
+```
 
 License
 -------

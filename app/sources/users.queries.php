@@ -2219,7 +2219,9 @@ if (null !== $post_type) {
             );
 
             // Check send values
-            if ($inputData['source_id'] === 0 || $inputData['destination_ids'] === 0) {
+            if ($inputData['source_id'] === 0
+                || $inputData['destination_ids'] === 0
+                || is_array($inputData['destination_ids']) === false) {
                 // error
                 echo prepareExchangedData(
                     array(
@@ -2228,63 +2230,82 @@ if (null !== $post_type) {
                     ),
                     'encode'
                 );
+                break;
             }
 
-            // Get info about user
-            $data_user = DB::queryFirstRow(
-                'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-                WHERE id = %i',
-                $inputData['source_id']
-            );
+            // SECURITY (GHSA-58ph-5gg6-h2v8, adjacent finding): this action designates its targets
+            // through 'destination_ids', not 'user_id', so the manager/admin target-scope guard
+            // applied at the top of this file never fires here. The checks used to validate the
+            // *source* account only -- the destinations were never verified, and the test repeated
+            // inside the loop simply re-read the same source row -- which let a manager write the
+            // privilege columns of any account, including their own.
 
-            // Is this user allowed to do this?
-            if (
-                (int) $session->get('user-admin') === 1
-                || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-            ) {
-                foreach ($inputData['destination_ids'] as $dest_user_id) {
-                    // Is this user allowed to do this?
-                    if (
-                        (int) $session->get('user-admin') === 1
-                        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-                        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-                    ) {
-                        // Update user roles in users_roles table
-                        $roleIds = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
-                        );
-                        setUserRoles((int) $dest_user_id, $roleIds, 'manual');
-                        
-                        // Update allowed folders in users_groups table
-                        $allowedFolders = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
-                        );
-                        setUserGroups((int) $dest_user_id, $allowedFolders);
-                        
-                        // Update forbidden folders in users_groups_forbidden table
-                        $forbiddenFolders = array_filter(
-                            explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
-                        );
-                        setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
-                        
-                        // Update other user fields in users table
-                        DB::update(
-                            prefixTable('users'),
-                            array(
-                                'isAdministratedByRole' => $inputData['user_managedby'],
-                                'gestionnaire' => $inputData['user_manager'],
-                                'read_only' => $inputData['user_readonly'],
-                                'can_create_root_folder' => $inputData['user_rootfolder'],
-                                'personal_folder' => $inputData['user_personalfolder'],
-                                'can_manage_all_users' => $inputData['user_hr'],
-                                'admin' => $inputData['user_admin'],
-                            ),
-                            'id = %i',
-                            $dest_user_id
-                        );
-                    }
+            // Only an administrator may grant privileged flags. A legitimate propagation never
+            // carries them: get_list_of_users_for_sharing only ever offers non-admin accounts.
+            if ((int) $session->get('user-admin') !== 1
+                && ((int) $inputData['user_admin'] === 1
+                    || (int) $inputData['user_hr'] === 1
+                    || (int) $inputData['user_manager'] === 1)) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // The caller must be entitled to administrate the source account and every single
+            // destination. They are all checked before anything is written, so a refused entry
+            // cannot leave a partially applied propagation behind.
+            foreach (array_merge([$inputData['source_id']], $inputData['destination_ids']) as $userToCheck) {
+                if (callerMayManageUser((int) $userToCheck) === false) {
+                    echo prepareExchangedData(
+                        array(
+                            'error' => true,
+                            'message' => $lang->get('error_not_allowed_to'),
+                        ),
+                        'encode'
+                    );
+                    break 2;
                 }
+            }
+
+            foreach ($inputData['destination_ids'] as $dest_user_id) {
+                // Update user roles in users_roles table
+                $roleIds = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_functions']))
+                );
+                setUserRoles((int) $dest_user_id, $roleIds, 'manual');
+
+                // Update allowed folders in users_groups table
+                $allowedFolders = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_fldallowed']))
+                );
+                setUserGroups((int) $dest_user_id, $allowedFolders);
+
+                // Update forbidden folders in users_groups_forbidden table
+                $forbiddenFolders = array_filter(
+                    explode(';', str_replace(',', ';', (string) $inputData['user_fldforbid']))
+                );
+                setUserForbiddenGroups((int) $dest_user_id, $forbiddenFolders);
+
+                // Update other user fields in users table
+                DB::update(
+                    prefixTable('users'),
+                    array(
+                        'isAdministratedByRole' => $inputData['user_managedby'],
+                        'gestionnaire' => $inputData['user_manager'],
+                        'read_only' => $inputData['user_readonly'],
+                        'can_create_root_folder' => $inputData['user_rootfolder'],
+                        'personal_folder' => $inputData['user_personalfolder'],
+                        'can_manage_all_users' => $inputData['user_hr'],
+                        'admin' => $inputData['user_admin'],
+                    ),
+                    'id = %i',
+                    $dest_user_id
+                );
             }
 
             echo prepareExchangedData(
@@ -2613,10 +2634,40 @@ if (null !== $post_type) {
                 return true;
             };
 
+            // SECURITY (GHSA-gjc5-pmxw-58p4): the role id is client-supplied, so being entitled to
+            // manage the target user is not enough — the caller must also be entitled to grant that
+            // particular role, otherwise a manager could hand one of their users a role reaching
+            // folders the manager cannot see. The scope mirrors the role dropdown built server-side
+            // in app/pages/users.php: an administrator may grant any existing role, anyone else only
+            // a role they hold themselves or a role they created.
+            $callerMayGrantRole = static function (int $roleId) use ($session, $callerIsAdmin): bool {
+                $role = DB::queryFirstRow(
+                    'SELECT creator_id
+                    FROM ' . prefixTable('roles_title') . '
+                    WHERE id = %i',
+                    $roleId
+                );
+                // A role id pointing to nothing is never granted.
+                if (DB::count() === 0 || is_array($role) === false) {
+                    return false;
+                }
+                if ($callerIsAdmin === true) {
+                    return true;
+                }
+                // user-roles_array holds the caller's effective roles (manual ones plus those
+                // derived from AD groups), stored as strings at login.
+                $callerRoles = array_map('strval', (array) $session->get('user-roles_array'));
+                return in_array((string) $roleId, $callerRoles, true)
+                    || (int) $role['creator_id'] === (int) $session->get('user-id');
+            };
+
             // If adding a role to user, use the users_roles table directly
             if (empty($post_context) === false && $post_context === 'add_one_role_to_user') {
-                // Only an administrator or an in-scope manager may assign a role to this user.
-                if ($callerMayManageTargetUser((int) $post_user_id) === false) {
+                // Only an administrator or an in-scope manager may assign a role to this user,
+                // and only a role that is within their own grant scope.
+                if ($callerMayManageTargetUser((int) $post_user_id) === false
+                    || $callerMayGrantRole((int) $post_new_value) === false
+                ) {
                     echo prepareExchangedData(
                         array(
                             'error' => true,
@@ -2719,7 +2770,10 @@ if (null !== $post_type) {
             // it to an explicit allow-list of non-privileged fields so it can never be used to write
             // admin, gestionnaire, can_manage_all_users, read_only, pw, private_key, api_key, ... and
             // confirm the caller is entitled to modify this specific user.
-            $writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'fonction_id', 'auth_type'];
+            // 'fonction_id' is deliberately absent: the column was dropped from the users table in
+            // 3.1.5 (roles now live in users_roles), so this generic path can no longer write roles.
+            // Keeping it listed would leave a role write that bypasses the grant-scope check above.
+            $writableUserFields = ['login', 'name', 'lastname', 'isAdministratedByRole', 'auth_type'];
             if (in_array($post_field, $writableUserFields, true) === false
                 || $callerMayManageTargetUser((int) $post_user_id) === false) {
                 echo prepareExchangedData(
@@ -3473,13 +3527,21 @@ if (null !== $post_type) {
             $usersAlreadyInTeampass = [];
 
             function nameFromEmail($email) {
-                // Utiliser une expression régulière pour extraire le texte avant le domaine
+                // Guard against null / non-string values (e.g. Entra hybrid objects
+                // returned without a userPrincipalName) — preg_match() would fatal on PHP 8.
+                if (!is_string($email) || $email === '') {
+                    return false;
+                }
+                // Extract the text before the domain
                 if (preg_match('/^(.+)@/', $email, $matches)) {
                     return $matches[1];
                 } else {
                     return false;
                 }
             }
+
+            // Count directory objects skipped because they have no usable login (missing UPN)
+            $skippedUsersWithoutUpn = 0;
             
             foreach ($usersList as $oAuthUser) {
                 // Build the list of all groups in AD
@@ -3496,7 +3558,7 @@ if (null !== $post_type) {
 
                 // Is user in Teampass ?
                 $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
-                if (null !== $userLogin) {                    
+                if (false !== $userLogin) {
                     // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
                         'SELECT id, login, auth_type
@@ -3552,7 +3614,14 @@ if (null !== $post_type) {
                     // Mettre à jour $user['groups'] avec les nouveaux groupes
                     $userADInfos['groups'] = $updatedGroups;
                     array_push($adUsersToSync, $userADInfos);
+                } else {
+                    // No usable userPrincipalName (common with Entra hybrid objects) — skip
+                    $skippedUsersWithoutUpn++;
                 }
+            }
+
+            if ($skippedUsersWithoutUpn > 0) {
+                error_log('TEAMPASS OAuth2 - user sync skipped ' . $skippedUsersWithoutUpn . ' directory object(s) without a usable userPrincipalName');
             }
 
             echo (string) prepareExchangedData(
@@ -3650,6 +3719,31 @@ if (null !== $post_type) {
                         'reason' => 'account_disabled',
                     ]);
                 }
+
+                // Leaver risk (F3): optionally auto-flag for rotation every shared
+                // credential the disabled account could read.
+                if ((int) $post_user_disabled === 1
+                    && (int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1
+                    && (int) ($SETTINGS['leaver_risk_auto_flag'] ?? 0) === 1
+                ) {
+                    require_once __DIR__ . '/leaver.functions.php';
+                    $leaverItems = leaverRiskSharedItems((int) $post_id);
+                    $flaggedCount = leaverRiskFlagItems(
+                        array_column($leaverItems, 'item_id'),
+                        (int) $post_id,
+                        (int) $session->get('user-id')
+                    );
+                    if ($flaggedCount > 0) {
+                        logEvents(
+                            $SETTINGS,
+                            'user_mngt',
+                            'at_leaver_items_flagged',
+                            (string) $session->get('user-id'),
+                            $session->get('user-login'),
+                            (string) $post_id
+                        );
+                    }
+                }
             } else {
                 echo prepareExchangedData(
                     array(
@@ -3665,6 +3759,196 @@ if (null !== $post_type) {
                 array(
                     'message' => '',
                     'error' => false,
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * LEAVER RISK REPORT (F3)
+         * Shared credentials a (disabled/leaving) user could read.
+         */
+        case 'get_leaver_risk_report':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Is this user allowed to do this?
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature gate
+            if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $post_id = (int) filter_input(INPUT_POST, 'user_id', FILTER_SANITIZE_NUMBER_INT);
+            if ($post_id <= 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Optional folder filter (+ subtree expansion)
+            $post_folder_ids = filter_input(INPUT_POST, 'folder_ids', FILTER_SANITIZE_NUMBER_INT, FILTER_REQUIRE_ARRAY);
+            $post_include_children = (int) filter_input(INPUT_POST, 'include_children', FILTER_SANITIZE_NUMBER_INT);
+
+            require_once __DIR__ . '/leaver.functions.php';
+            $folderScope = leaverRiskResolveFolderScope(
+                is_array($post_folder_ids) === true ? $post_folder_ids : [],
+                $post_include_children === 1
+            );
+            $leaverItems = leaverRiskSharedItems($post_id, $folderScope);
+
+            // Return metadata only (labels + folder + counters — never any password)
+            $reportRows = [];
+            foreach ($leaverItems as $leaverItem) {
+                $reportRows[] = [
+                    'item_id' => (int) $leaverItem['item_id'],
+                    'label' => $leaverItem['label'],
+                    'folder_title' => $leaverItem['folder_title'],
+                    'other_users' => (int) $leaverItem['other_users'],
+                    'last_pw_change' => (int) $leaverItem['last_pw_change'],
+                    'display_status' => $leaverItem['display_status'],
+                ];
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'items' => $reportRows,
+                ),
+                'encode'
+            );
+
+            break;
+
+        /*
+         * LEAVER RISK — FLAG ITEMS FOR ROTATION (F3)
+         */
+        case 'flag_leaver_items_for_rotation':
+            // Check KEY
+            if ($post_key !== $session->get('key')) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('key_is_not_correct'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Is this user allowed to do this?
+            if (
+                (int) $session->get('user-admin') !== 1
+                && (int) $session->get('user-can_manage_all_users') !== 1
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Feature gate
+            if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) !== 1) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            // Prepare variables
+            $post_leaver_id = (int) filter_var($dataReceived['user_id'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+            $post_item_ids = isset($dataReceived['item_ids']) === true && is_array($dataReceived['item_ids']) === true
+                ? $dataReceived['item_ids'] : [];
+            $post_flag_all = (int) filter_var($dataReceived['flag_all'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+
+            if ($post_leaver_id <= 0) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('user_not_exists'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            require_once __DIR__ . '/leaver.functions.php';
+
+            // Same folder filter as the report — "flag all" only covers the
+            // subset currently displayed to the admin.
+            $post_folder_ids = isset($dataReceived['folder_ids']) === true && is_array($dataReceived['folder_ids']) === true
+                ? $dataReceived['folder_ids'] : [];
+            $post_include_children = (int) filter_var($dataReceived['include_children'] ?? 0, FILTER_SANITIZE_NUMBER_INT);
+            $folderScope = leaverRiskResolveFolderScope($post_folder_ids, $post_include_children === 1);
+
+            // Recompute the eligible set server-side — the client cannot flag
+            // items the leaver had no access to.
+            $eligibleIds = array_column(leaverRiskSharedItems($post_leaver_id, $folderScope), 'item_id');
+            $itemIdsToFlag = $post_flag_all === 1
+                ? array_map('intval', $eligibleIds)
+                : leaverRiskValidateItemIds($post_item_ids, $eligibleIds);
+
+            $flaggedCount = leaverRiskFlagItems($itemIdsToFlag, $post_leaver_id, (int) $session->get('user-id'));
+
+            if ($flaggedCount > 0) {
+                logEvents(
+                    $SETTINGS,
+                    'user_mngt',
+                    'at_leaver_items_flagged',
+                    (string) $session->get('user-id'),
+                    $session->get('user-login'),
+                    (string) $post_leaver_id
+                );
+            }
+
+            echo prepareExchangedData(
+                array(
+                    'error' => false,
+                    'flagged_count' => $flaggedCount,
                 ),
                 'encode'
             );
@@ -4475,120 +4759,16 @@ break;
             );
             break;
     }
-    // # NEW LOGIN FOR USER HAS BEEN DEFINED ##
-} elseif (!empty(filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS))) {
-    // Prepare POST variables
-    $value = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-    $post_newValue = filter_input(INPUT_POST, 'newValue', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $value[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $value[1])
-    ) {
-        if ($value[0] === 'userlanguage') {
-            $value[0] = 'user_language';
-            $post_newValue = strtolower($post_newValue);
-            // Enforce the list of installed languages; fall back to the default on an unknown value.
-            // Prevents arbitrary values (ex: newline-carrying payloads) from being stored as user_language.
-            $isKnownLanguage = (int) DB::queryFirstField(
-                'SELECT COUNT(*) FROM ' . prefixTable('languages') . ' WHERE LOWER(name) = %s',
-                $post_newValue
-            );
-            if ($isKnownLanguage === 0) {
-                $post_newValue = strtolower((string) ($SETTINGS['default_language'] ?? 'english'));
-            }
-        }
-
-        // Check that operation is allowed
-        if (in_array(
-            $value[0],
-            array('login', 'pw', 'email', 'treeloadstrategy', 'usertimezone', 'yubico_user_key', 'yubico_user_id', 'agses_usercardid', 'user_language', 'psk', 'split_view_mode', 'show_subfolders')
-        )) {
-            DB::update(
-                prefixTable('users'),
-                array(
-                    $value[0] => $post_newValue,
-                ),
-                'id = %i',
-                $value[1]
-            );
-            // update LOG
-            logEvents(
-                $SETTINGS,
-                'user_mngt',
-                'at_user_new_' . $value[0] . ':' . $value[1],
-                (string) $session->get('user-id'),
-                $session->get('user-login'),
-                filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS)
-            );
-
-            // refresh SESSION if requested
-            // Session keys mapping
-            $sessionMapping = [
-                'treeloadstrategy' => 'user-tree_load_strategy',
-                'usertimezone' => 'user-timezone',
-                'userlanguage' => 'user-language',
-                'agses_usercardid' => null, 
-                'email' => 'user-email',
-                'split_view_mode' => 'user-split_view_mode',
-                'show_subfolders' => 'user-show_subfolders',
-            ];
-            // Update session
-            if (array_key_exists($value[0], $sessionMapping)) {
-                $sessionKey = $sessionMapping[$value[0]];
-                if ($sessionKey !== null) {
-                    $session->set($sessionKey, $post_newValue);
-                }
-            }
-            
-            // Display info
-            echo htmlentities($post_newValue, ENT_QUOTES);
-        }
-    }
-    // # ADMIN FOR USER HAS BEEN DEFINED ##
-} elseif (null !== filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT)) {
-    $id = explode('_', filter_input(INPUT_POST, 'id', FILTER_SANITIZE_FULL_SPECIAL_CHARS));
-
-    // Get info about user
-    $data_user = DB::queryFirstRow(
-        'SELECT admin, isAdministratedByRole FROM ' . prefixTable('users') . '
-        WHERE id = %i',
-        $id[1]
-    );
-
-    // Is this user allowed to do this?
-    if (
-        (int) $session->get('user-admin') === 1
-        || (in_array($data_user['isAdministratedByRole'], $session->get('user-roles_array')))
-        || ((int) $session->get('user-can_manage_all_users') === 1 && (int) $data_user['admin'] !== 1)
-        || ($session->get('user-id') === $id[1])
-    ) {
-        DB::update(
-            prefixTable('users'),
-            array(
-                'admin' => filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT),
-            ),
-            'id = %i',
-            $id[1]
-        );
-        // Display info
-        if ((int) filter_input(INPUT_POST, 'newadmin', FILTER_SANITIZE_NUMBER_INT) === 1) {
-            echo 'Oui';
-        } else {
-            echo 'Non';
-        }
-    }
 }
+
+// SECURITY (GHSA-58ph-5gg6-h2v8): the legacy 'newValue' and 'newadmin' branches used to sit here.
+// Selected by the mere absence of a "type" parameter, they were evaluated outside the block above
+// and re-implemented their own, laxer authorization check. They let a manager rewrite a target
+// account's 'pw' (stored verbatim: unhashed, no complexity check, no key regeneration), 'login'
+// and 'email', and set the 'admin' flag, enabling silent takeover of a managed account.
+// They had no caller: user administration goes through the "save_user_change" action and profile
+// preferences through "user_profile_update", both subject to the target-scope guard above.
+// Do not reintroduce a request-driven column write outside that guard.
 
 function canAccessInactiveAndDeletedUsersPanels(): bool
 {
@@ -4596,6 +4776,9 @@ function canAccessInactiveAndDeletedUsersPanels(): bool
 
     return (int) $session->get('user-admin') === 1;
 }
+
+// callerMayManageUser() lives in main.functions.php: the rule is shared with the other entry
+// points whose target is not carried by 'user_id' (see users.logs.datatable.php).
 
 /**
  * List deleted users

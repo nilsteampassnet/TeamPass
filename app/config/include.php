@@ -49,6 +49,9 @@ define('EDITION_LOCK_HEARTBEAT_TIMEOUT', 300);  // Lock expires after 5 minutes 
 define('LOG_TO_SERVER', (bool) getenv('TEAMPASS_DEBUG'));         // Defines if logs are sent to the server
 define('OAUTH2_REDIRECTURI', 'index.php?post_type=oauth2');
 define('FORCE_PHPSECLIBV3_MIGRATION', true); // Set to true to force phpseclib v1 to v3 migration on user login
+define('TP_FORGOT_PWD_TOKEN_REASON', 'forgot_local_password');  // teampass_tokens.reason of a local password recovery token
+define('TP_FORGOT_PWD_TOKEN_VALIDITY', 900);    // A recovery link stays usable 15 minutes
+define('TP_FORGOT_PWD_TOKEN_THROTTLE', 120);    // Minimum delay between two recovery emails for one account
 
 // Ensure root path constants are available when this file is included directly
 // (e.g. from CLI scripts). Web entry points define them earlier in public/index.php.
@@ -138,6 +141,8 @@ $mngPages = array(
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
     'admin_lapr' => 'admin_lapr.php',
+    'reports' => 'reports.php',
+    'reviews' => 'reviews.php',
 );
 
 // Utilities Pages

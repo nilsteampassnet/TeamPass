@@ -815,7 +815,12 @@ if (null !== $post_type) {
             echo prepareExchangedData(
                 array(
                     'error'   => $creationStatus['error'],
-                    'message' => $creationStatus['error'] === true ? $lang->get('error_not_allowed_to') : $lang->get('folder_created'),
+                    // Return the real failure reason (duplicate title, complexity,
+                    // parent not allowed…); fall back to the generic message only
+                    // when the permission check denied without a message.
+                    'message' => $creationStatus['error'] === true
+                        ? (empty($creationStatus['message']) === false ? $creationStatus['message'] : $lang->get('error_not_allowed_to'))
+                        : $lang->get('folder_created'),
                     'newId'   => $creationStatus['newId'],
                     'rowData' => $rowData,
                 ),

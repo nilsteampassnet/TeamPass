@@ -1208,6 +1208,10 @@ class Tokenizer
      */
     protected function is_alpha($input)
     {
+        if (!is_string($input) || 1 !== strlen($input)) {
+            return false;
+        }
+
         $code = ord($input);
 
         return ($code >= 97 && $code <= 122) || ($code >= 65 && $code <= 90);

@@ -199,19 +199,19 @@ class PerformChecks
             'manager' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'human_resources' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'roles', 'utilities', 'users', 'profile',
                 'import', 'export', 'offline', 'process',
-                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs1', 'tasks',
+                'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'tasks', 'reviews',
             ),
             'admin' => array(
                 'home', 'items', 'search', 'kb', 'favourites', 'suggestion', 'folders', 'manage_roles', 'manage_folders',
                 'import', 'export', 'offline', 'process',
                 'manage_views', 'manage_users', 'manage_settings', 'manage_main',
                 'admin', 'profile', 'mfa', 'api', 'backups', 'emails', 'ldap', 'special',
-                'statistics', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
+                'statistics', 'reports', 'reviews', 'fields', 'options', 'views', 'roles', 'folders', 'users', 'utilities',
                 'utilities.deletion', 'utilities.renewal', 'utilities.database', 'utilities.logs', 'utilities.health', 'tasks', 'uploads', 'oauth', 'tools',
                 'lapr_endpoints', 'lapr_accounts', 'lapr_policies', 'admin_lapr'
             ),

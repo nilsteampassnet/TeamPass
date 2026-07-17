@@ -2513,6 +2513,368 @@ function getClientIpServer(): string
     return 'UNKNOWN';
 }
 
+/**
+ * Return an integer admin setting while preserving backward-compatible defaults.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ * @param string               $key      Setting key to look up.
+ * @param int                  $default  Value returned when key is missing or empty.
+ * @param int                  $minimum  Minimum accepted value (clamped via max()).
+ *
+ * @return int
+ */
+function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
+{
+    if (array_key_exists($key, $settings) === false) {
+        return $default;
+    }
+
+    $rawValue = trim((string) $settings[$key]);
+    if ($rawValue == '') {
+        return $default;
+    }
+
+    return max($minimum, (int) $rawValue);
+}
+
+/**
+ * Return the date until which a login or an IP address is locked by anti brute force.
+ * Any endpoint accepting credentials must call it before verifying them, otherwise it
+ * becomes an oracle bypassing the lockout enforced on the regular login page.
+ *
+ * @param string $username Login being tried.
+ * @param string $ip       Remote address of the caller.
+ *
+ * @return string|null unlock_at timestamp when locked, null when not locked.
+ */
+function getAuthenticationLockUntil(string $username, string $ip): ?string
+{
+    $unlockAt = DB::queryFirstField(
+        'SELECT MAX(unlock_at)
+         FROM ' . prefixTable('auth_failures') . '
+         WHERE unlock_at > %s
+         AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
+        date('Y-m-d H:i:s', time()),
+        'login',
+        $username,
+        'remote_ip',
+        $ip
+    );
+
+    return $unlockAt ?: null;
+}
+
+/**
+ * Add a failed authentication attempt to the database.
+ * If the number of failed attempts exceeds the limit, a lock is triggered.
+ *
+ * @param string $source              Source of the failed attempt (login or remote_ip).
+ * @param string $value               Value for this source (username or IP address).
+ * @param int    $limit               Failure attempt limit after which the source is locked.
+ * @param int    $lockDurationMinutes Fixed lock duration in minutes.
+ */
+function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
+{
+    if ($limit <= 0 || trim($value) === '') {
+        return;
+    }
+    // Count failed attempts from this source
+    $count = DB::queryFirstField(
+        'SELECT COUNT(*)
+        FROM ' . prefixTable('auth_failures') . '
+        WHERE source = %s AND value = %s',
+        $source,
+        $value
+    );
+
+    // Add this attempt
+    $count++;
+
+    // Calculate unlock time if number of attempts exceeds limit
+    $unlock_at = $count >= $limit
+        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
+        : null;
+
+    // Unlock account one time code
+    $unlock_code = ($count >= $limit && $source === 'login')
+        ? generateQuickPassword(30, false)
+        : null;
+
+    // Insert the new failure into the database
+    DB::insert(
+        prefixTable('auth_failures'),
+        [
+            'source' => $source,
+            'value' => $value,
+            'unlock_at' => $unlock_at,
+            'unlock_code' => $unlock_code,
+        ]
+    );
+
+    if ($unlock_at !== null && $source === 'login') {
+        $configManager = new ConfigManager();
+        $SETTINGS = $configManager->getAllSettings();
+        $lang = new Language($SETTINGS['default_language'] ?? 'english');
+
+        // Get user details
+        $userInfos = DB::queryFirstRow(
+            'SELECT email, name
+            FROM ' . prefixTable('users') . '
+            WHERE login = %s',
+            $value
+        );
+
+        // Notify all administrators about the locked account
+        notifyAdminsAboutLockedAccount(
+            $SETTINGS,
+            $lang,
+            $value,
+            is_array($userInfos) === true ? $userInfos : [],
+            getClientIpServer(),
+            $unlock_at
+        );
+
+        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
+
+        sendMailToUser(
+            $userInfos['email'],
+            $lang->get('bruteforce_reset_mail_body'),
+            $lang->get('bruteforce_reset_mail_subject'),
+            [
+                '#name#' => (string) ($userInfos['name'] ?? ''),
+                '#reset_url#' => $unlock_url,
+                '#unlock_at#' => $unlock_at,
+            ],
+            true
+        );
+    }
+}
+
+/**
+ * Tells whether local password recovery may be offered for a user.
+ * Lives here rather than in identify.php so that both the request handler and the
+ * recovery endpoint (reset-password.php) share one definition of eligibility.
+ *
+ * @param array<string, mixed>|null $userInfo Complete user data, null when the login is unknown
+ * @param array<string, mixed>      $SETTINGS
+ *
+ * @return array{available: bool}
+ */
+function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
+{
+    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
+    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
+        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
+        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
+    $hasOngoingProcess = is_array($userInfo) === true
+        && empty($userInfo['ongoing_process_id']) === false;
+
+    return [
+        'available' => is_array($userInfo) === true
+            && ($userInfo['auth_type'] ?? '') === 'local'
+            && $featureEnabled === true
+            && $emailConfigured === true
+            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
+            && (int) ($userInfo['disabled'] ?? 0) !== 1
+            && $hasOngoingProcess === false,
+    ];
+}
+
+/**
+ * Creates a single-use local password recovery token for a user.
+ * Only the SHA-256 hash of the token is stored, so a database dump cannot be replayed
+ * against the recovery endpoint. Any previous token of the user is dropped, which keeps
+ * the most recent link the only usable one.
+ *
+ * @param integer $userId
+ *
+ * @return string The clear token, to be sent to the registered email address only
+ */
+function createForgotLocalPasswordToken(int $userId): string
+{
+    // Opportunistic purge of expired tokens, then of any previous token of this user
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND end_timestamp < %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        time()
+    );
+    DB::delete(
+        prefixTable('tokens'),
+        'reason = %s AND user_id = %i',
+        TP_FORGOT_PWD_TOKEN_REASON,
+        $userId
+    );
+
+    $token = bin2hex(random_bytes(32));
+    DB::insert(
+        prefixTable('tokens'),
+        [
+            'user_id' => $userId,
+            'token' => hash('sha256', $token),
+            'reason' => TP_FORGOT_PWD_TOKEN_REASON,
+            'creation_timestamp' => (string) time(),
+            'end_timestamp' => (string) (time() + TP_FORGOT_PWD_TOKEN_VALIDITY),
+        ]
+    );
+
+    return $token;
+}
+
+/**
+ * Returns the recovery token row matching a clear token, or null when it is unknown,
+ * of another kind, or expired. Possession of the token is the only proof accepted by
+ * the recovery endpoint, so nothing else about the request is trusted here.
+ *
+ * @param string $token Clear token taken from the recovery link
+ *
+ * @return array<string, mixed>|null
+ */
+function getForgotLocalPasswordTokenRow(string $token): ?array
+{
+    if (preg_match('/^[a-f0-9]{64}$/', $token) !== 1) {
+        return null;
+    }
+
+    $row = DB::queryFirstRow(
+        'SELECT id, user_id, end_timestamp
+        FROM ' . prefixTable('tokens') . '
+        WHERE token = %s AND reason = %s',
+        hash('sha256', $token),
+        TP_FORGOT_PWD_TOKEN_REASON
+    );
+
+    if (DB::count() === 0 || is_array($row) === false || (int) $row['end_timestamp'] < time()) {
+        return null;
+    }
+
+    return $row;
+}
+
+/**
+ * Consumes a recovery token so a link can never be replayed.
+ *
+ * @param integer $tokenId
+ */
+function deleteForgotLocalPasswordToken(int $tokenId): void
+{
+    DB::delete(prefixTable('tokens'), 'id = %i', $tokenId);
+}
+
+/**
+ * Notify all administrators when a user account is locked by anti brute force.
+ *
+ * @param array<string, mixed> $SETTINGS
+ * @param array<string, mixed> $userInfos
+ */
+function notifyAdminsAboutLockedAccount(
+    array $SETTINGS,
+    Language $lang,
+    string $login,
+    array $userInfos,
+    string $sourceIp,
+    string $unlockAt
+): void {
+    $adminUsers = DB::query(
+        'SELECT email, name
+         FROM ' . prefixTable('users') . '
+         WHERE admin = %i
+            AND disabled = %i
+            AND deleted_at IS NULL
+            AND email IS NOT NULL
+            AND email != %s',
+        1,
+        0,
+        ''
+    );
+
+    if (empty($adminUsers) === true) {
+        return;
+    }
+
+    $userName = trim((string) ($userInfos['name'] ?? ''));
+    $userEmail = trim((string) ($userInfos['email'] ?? ''));
+    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
+    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
+
+    $unlockAtTimestamp = strtotime($unlockAt);
+    $formattedUnlockAt = $unlockAtTimestamp === false
+        ? $unlockAt
+        : date(
+            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
+            $unlockAtTimestamp
+        );
+
+    $mailBody = str_replace(
+        [
+            '#tp_user#',
+            '#tp_name#',
+            '#tp_email#',
+            '#tp_ip#',
+            '#tp_date#',
+            '#tp_time#',
+            '#tp_unlock_at#',
+        ],
+        [
+            $login,
+            $userDisplayName,
+            $userDisplayEmail,
+            $sourceIp,
+            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
+            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
+            $formattedUnlockAt,
+        ],
+        $lang->get('email_body_on_user_lock')
+    );
+
+    foreach ($adminUsers as $adminUser) {
+        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
+            continue;
+        }
+
+        prepareSendingEmail(
+            $lang->get('email_subject_on_user_lock'),
+            $mailBody,
+            (string) $adminUser['email'],
+            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
+        );
+    }
+}
+
+/**
+ * Add failed authentication attempts for both user login and IP address.
+ * This function checks the number of attempts for both the username and IP,
+ * and triggers a lock if the number exceeds the configured limits.
+ * Old technical entries are purged after 24 hours once unlocked.
+ *
+ * @param array<string, mixed> $settings Settings array.
+ */
+function addFailedAuthentication(string $username, string $ip, array $settings): void
+{
+    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
+    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
+    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
+
+    if ($userLimit <= 0 && $ipLimit <= 0) {
+        return;
+    }
+
+    // Remove old logs (more than 24 hours) once the related lock is over.
+    DB::delete(
+        prefixTable('auth_failures'),
+        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
+        date('Y-m-d H:i:s', time() - (24 * 3600)),
+        date('Y-m-d H:i:s', time())
+    );
+
+    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
+    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
+}
+
 
 /**
  * Returns true if the network ACL table exists.
@@ -8757,6 +9119,14 @@ function emitWebSocketEvent(
     array $payload,
     ?int $excludeUserId = null
 ): bool {
+    // D2 — Notification centre: persist whitelisted user-target events in the
+    // user's inbox. Runs before the WebSocket gate on purpose: the inbox works
+    // even when the WebSocket daemon is disabled.
+    require_once __DIR__ . '/notifications.functions.php';
+    if (notificationShouldPersist($eventType, $targetType, $targetId) === true) {
+        tpPersistUserNotification($eventType, (int) $targetId, $payload);
+    }
+
     // Check if WebSocket is enabled
     try {
         $wsEnabled = DB::queryFirstField(
@@ -8803,6 +9173,71 @@ function emitWebSocketEvent(
 
     } catch (Exception $e) {
         error_log("emitWebSocketEvent: Failed to insert event - " . $e->getMessage());
+        return false;
+    }
+}
+
+/**
+ * Persist a user notification in the notification-centre inbox (D2).
+ *
+ * No-op when the feature is disabled or the table does not exist yet
+ * (pre-upgrade). Keeps only the latest 50 notifications per user.
+ *
+ * @param string $eventType Whitelisted event type (see notificationPersistableEvents())
+ * @param int    $userId    Target user id
+ * @param array  $payload   Raw event payload (sanitized before storage)
+ * @return bool True when a row was stored
+ */
+function tpPersistUserNotification(string $eventType, int $userId, array $payload): bool
+{
+    if ($userId <= 0) {
+        return false;
+    }
+
+    require_once __DIR__ . '/notifications.functions.php';
+
+    try {
+        $enabled = DB::queryFirstField(
+            'SELECT valeur FROM %l WHERE intitule = %s',
+            prefixTable('misc'),
+            'notification_center_enabled'
+        );
+        if ($enabled !== '1') {
+            return false;
+        }
+
+        DB::insert(
+            prefixTable('user_notifications'),
+            [
+                'user_id' => $userId,
+                'created_at' => time(),
+                'event_type' => $eventType,
+                'payload' => json_encode(
+                    notificationSanitizePayload($eventType, $payload),
+                    JSON_UNESCAPED_UNICODE
+                ),
+                'is_read' => 0,
+            ]
+        );
+
+        // Prune: keep the latest 50 rows for this user.
+        $pruneBelow = DB::queryFirstField(
+            'SELECT increment_id FROM ' . prefixTable('user_notifications') . '
+            WHERE user_id = %i ORDER BY increment_id DESC LIMIT 1 OFFSET 49',
+            $userId
+        );
+        if ($pruneBelow !== null) {
+            DB::query(
+                'DELETE FROM ' . prefixTable('user_notifications') . '
+                WHERE user_id = %i AND increment_id < %i',
+                $userId,
+                (int) $pruneBelow
+            );
+        }
+
+        return true;
+    } catch (Exception $e) {
+        // Table might not exist yet (before migration) — never break the caller.
         return false;
     }
 }
@@ -9911,4 +10346,56 @@ function checkPasswordWithHIBP(string $password): array
     }
 
     return ['pwned' => false, 'count' => 0];
+}
+
+/**
+ * Tells whether the caller is entitled to administrate a given user account.
+ *
+ * Same rule as the target-scope guard applied to the typed actions of users.queries.php:
+ * an administrator may act on anyone, a manager only on a non-privileged target, and a plain
+ * manager only within the users administrated by one of their own roles. Use it in any action
+ * whose target is not carried by 'user_id', since the guard keys on that field and cannot
+ * cover them.
+ *
+ * @param int $targetUserId Id of the account the caller wants to modify.
+ *
+ * @return bool True when the caller may modify this account, false otherwise.
+ */
+function callerMayManageUser(int $targetUserId): bool
+{
+    $session = SessionManager::getSession();
+
+    if ((int) $session->get('user-admin') === 1) {
+        return true;
+    }
+
+    // Standard users may never administrate a user record.
+    if ((int) $session->get('user-manager') !== 1
+        && (int) $session->get('user-can_manage_all_users') !== 1) {
+        return false;
+    }
+
+    $target = DB::queryFirstRow(
+        'SELECT admin, gestionnaire, can_manage_all_users, isAdministratedByRole
+        FROM ' . prefixTable('users') . '
+        WHERE id = %i',
+        $targetUserId
+    );
+
+    // Unknown target, or a manager attempting to act on an administrator or another manager,
+    // is always refused.
+    if (DB::count() === 0
+        || (int) $target['admin'] === 1
+        || (int) $target['can_manage_all_users'] === 1
+        || (int) $target['gestionnaire'] === 1) {
+        return false;
+    }
+
+    // A plain manager is limited to users administrated by one of their own roles.
+    if ((int) $session->get('user-manager') === 1
+        && in_array($target['isAdministratedByRole'], $session->get('user-roles_array')) === false) {
+        return false;
+    }
+
+    return true;
 }

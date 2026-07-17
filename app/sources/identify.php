@@ -368,8 +368,7 @@ function identifyUser(string $sentData, array $SETTINGS): bool
     $session = SessionManager::getSession();
     $request = SymfonyRequest::createFromGlobals();
     $lang = new Language($session->get('user-language') ?? 'english');
-    clearForgotLocalPasswordRequestContext($session);
-    
+
     // Prepare GET variables
     $sessionAdmin = $session->get('user-admin');
     $sessionPwdAttempts = $session->get('pwd_attempts');
@@ -626,10 +625,9 @@ function identifyUser(string $sentData, array $SETTINGS): bool
         logEvents($SETTINGS, 'failed_auth', 'password_is_not_correct', '', stripslashes($username), stripslashes($username));
         // Add failed authentication log
         addFailedAuthentication($username, getClientIpServer(), $SETTINGS);
+        // Only drives the display of the "forgot password" link: the recovery request is
+        // authorized by the emailed token alone, never by anything left in this session.
         $forgotLocalPasswordContext = getForgotLocalPasswordContext($userInfo, $SETTINGS);
-        if ($forgotLocalPasswordContext['available'] === true) {
-            storeForgotLocalPasswordRequestContext($session, (string) $username);
-        }
         echo prepareExchangedData(
             [
                 'value' => '',
@@ -2872,21 +2870,11 @@ class initialChecks {
     public function isTooManyPasswordAttempts($username, $ip) {
 
         // Check for existing lock
-        $unlock_at = DB::queryFirstField(
-            'SELECT MAX(unlock_at)
-             FROM ' . prefixTable('auth_failures') . '
-             WHERE unlock_at > %s
-             AND ((source = %s AND value = %s) OR (source = %s AND value = %s))',
-            date('Y-m-d H:i:s', time()),
-            'login',
-            $username,
-            'remote_ip',
-            $ip
-        );
+        $unlock_at = getAuthenticationLockUntil((string) $username, (string) $ip);
 
         // Account or remote address locked
-        if ($unlock_at) {
-            throw new Exception((string) $unlock_at);
+        if ($unlock_at !== null) {
+            throw new Exception($unlock_at);
         }
     }
 
@@ -3803,285 +3791,18 @@ function identifyDoAzureChecks(
 }
 
 /**
- * Return an integer admin setting while preserving backward-compatible defaults.
- *
- * @param array<string, mixed> $settings Settings array.
- * @param string               $key      Setting key to look up.
- * @param int                  $default  Value returned when key is missing or empty.
- * @param int                  $minimum  Minimum accepted value (clamped via max()).
- *
- * @return int
- */
-function getBruteforceIntegerSetting(array $settings, string $key, int $default, int $minimum = 0): int
-{
-    if (array_key_exists($key, $settings) === false) {
-        return $default;
-    }
-
-    $rawValue = trim((string) $settings[$key]);
-    if ($rawValue == '') {
-        return $default;
-    }
-
-    return max($minimum, (int) $rawValue);
-}
-
-/**
- * Add a failed authentication attempt to the database.
- * If the number of failed attempts exceeds the limit, a lock is triggered.
- *
- * @param string $source              Source of the failed attempt (login or remote_ip).
- * @param string $value               Value for this source (username or IP address).
- * @param int    $limit               Failure attempt limit after which the source is locked.
- * @param int    $lockDurationMinutes Fixed lock duration in minutes.
- */
-function handleFailedAttempts(string $source, string $value, int $limit, int $lockDurationMinutes): void
-{
-    if ($limit <= 0 || trim($value) === '') {
-        return;
-    }
-    // Count failed attempts from this source
-    $count = DB::queryFirstField(
-        'SELECT COUNT(*)
-        FROM ' . prefixTable('auth_failures') . '
-        WHERE source = %s AND value = %s',
-        $source,
-        $value
-    );
-
-    // Add this attempt
-    $count++;
-
-    // Calculate unlock time if number of attempts exceeds limit
-    $unlock_at = $count >= $limit
-        ? date('Y-m-d H:i:s', time() + ($lockDurationMinutes * 60))
-        : null;
-
-    // Unlock account one time code
-    $unlock_code = ($count >= $limit && $source === 'login')
-        ? generateQuickPassword(30, false)
-        : null;
-
-    // Insert the new failure into the database
-    DB::insert(
-        prefixTable('auth_failures'),
-        [
-            'source' => $source,
-            'value' => $value,
-            'unlock_at' => $unlock_at,
-            'unlock_code' => $unlock_code,
-        ]
-    );
-
-    if ($unlock_at !== null && $source === 'login') {
-        $configManager = new ConfigManager();
-        $SETTINGS = $configManager->getAllSettings();
-        $lang = new Language($SETTINGS['default_language'] ?? 'english');
-
-        // Get user details
-        $userInfos = DB::queryFirstRow(
-            'SELECT email, name
-            FROM ' . prefixTable('users') . '
-            WHERE login = %s',
-            $value
-        );
-
-        // Notify all administrators about the locked account
-        notifyAdminsAboutLockedAccount(
-            $SETTINGS,
-            $lang,
-            $value,
-            is_array($userInfos) === true ? $userInfos : [],
-            getClientIpServer(),
-            $unlock_at
-        );
-
-        if (is_array($userInfos) === false || !filter_var($userInfos['email'] ?? null, FILTER_VALIDATE_EMAIL)) {
-            return;
-        }
-
-        $unlock_url = $SETTINGS['cpassman_url'] . '/self-unlock.php?login=' . $value . '&otp=' . $unlock_code;
-
-        sendMailToUser(
-            $userInfos['email'],
-            $lang->get('bruteforce_reset_mail_body'),
-            $lang->get('bruteforce_reset_mail_subject'),
-            [
-                '#name#' => (string) ($userInfos['name'] ?? ''),
-                '#reset_url#' => $unlock_url,
-                '#unlock_at#' => $unlock_at,
-            ],
-            true
-        );
-    }
-}
-
-/**
- * Notify all administrators when a user account is locked by anti brute force.
- *
- * @param array<string, mixed> $SETTINGS
- * @param array<string, mixed> $userInfos
- */
-function notifyAdminsAboutLockedAccount(
-    array $SETTINGS,
-    Language $lang,
-    string $login,
-    array $userInfos,
-    string $sourceIp,
-    string $unlockAt
-): void {
-    $adminUsers = DB::query(
-        'SELECT email, name
-         FROM ' . prefixTable('users') . '
-         WHERE admin = %i
-            AND disabled = %i
-            AND deleted_at IS NULL
-            AND email IS NOT NULL
-            AND email != %s',
-        1,
-        0,
-        ''
-    );
-
-    if (empty($adminUsers) === true) {
-        return;
-    }
-
-    $userName = trim((string) ($userInfos['name'] ?? ''));
-    $userEmail = trim((string) ($userInfos['email'] ?? ''));
-    $userDisplayName = $userName === '' ? $lang->get('undefined') : $userName;
-    $userDisplayEmail = $userEmail === '' ? $lang->get('no_email_set') : $userEmail;
-
-    $unlockAtTimestamp = strtotime($unlockAt);
-    $formattedUnlockAt = $unlockAtTimestamp === false
-        ? $unlockAt
-        : date(
-            ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s'),
-            $unlockAtTimestamp
-        );
-
-    $mailBody = str_replace(
-        [
-            '#tp_user#',
-            '#tp_name#',
-            '#tp_email#',
-            '#tp_ip#',
-            '#tp_date#',
-            '#tp_time#',
-            '#tp_unlock_at#',
-        ],
-        [
-            $login,
-            $userDisplayName,
-            $userDisplayEmail,
-            $sourceIp,
-            date($SETTINGS['date_format'] ?? 'Y-m-d', (int) time()),
-            date($SETTINGS['time_format'] ?? 'H:i:s', (int) time()),
-            $formattedUnlockAt,
-        ],
-        $lang->get('email_body_on_user_lock')
-    );
-
-    foreach ($adminUsers as $adminUser) {
-        if (filter_var($adminUser['email'] ?? null, FILTER_VALIDATE_EMAIL) === false) {
-            continue;
-        }
-
-        prepareSendingEmail(
-            $lang->get('email_subject_on_user_lock'),
-            $mailBody,
-            (string) $adminUser['email'],
-            empty($adminUser['name']) === false ? (string) $adminUser['name'] : $lang->get('administrator')
-        );
-    }
-}
-
-/**
- * Add failed authentication attempts for both user login and IP address.
- * This function checks the number of attempts for both the username and IP,
- * and triggers a lock if the number exceeds the configured limits.
- * Old technical entries are purged after 24 hours once unlocked.
- *
- * @param array<string, mixed> $settings Settings array.
- */
-function addFailedAuthentication(string $username, string $ip, array $settings): void
-{
-    $userLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication', 10, 0);
-    $ipLimit = getBruteforceIntegerSetting($settings, 'nb_bad_authentication_by_ip', 30, 0);
-    $lockDurationMinutes = getBruteforceIntegerSetting($settings, 'bruteforce_lock_duration', 10, 1);
-
-    if ($userLimit <= 0 && $ipLimit <= 0) {
-        return;
-    }
-
-    // Remove old logs (more than 24 hours) once the related lock is over.
-    DB::delete(
-        prefixTable('auth_failures'),
-        'date < %s AND (unlock_at < %s OR unlock_at IS NULL)',
-        date('Y-m-d H:i:s', time() - (24 * 3600)),
-        date('Y-m-d H:i:s', time())
-    );
-
-    handleFailedAttempts('login', $username, $userLimit, $lockDurationMinutes);
-    handleFailedAttempts('remote_ip', $ip, $ipLimit, $lockDurationMinutes);
-}
-
-/**
- * Returns context data indicating whether local password recovery is available for the given user.
- *
- * @param array<string,mixed>|null $userInfo
- * @param array<string,mixed>      $SETTINGS
- * @return array{available: bool}
- */
-function getForgotLocalPasswordContext(?array $userInfo, array $SETTINGS): array
-{
-    $emailConfigured = empty(trim((string) ($SETTINGS['email_smtp_server'] ?? ''))) === false;
-    $featureEnabled  = isset($SETTINGS['enable_local_password_recovery']) === true
-        ? (int) $SETTINGS['enable_local_password_recovery'] === 1
-        : (int) ($SETTINGS['disable_show_forgot_pwd_link'] ?? 0) !== 1;
-    $hasOngoingProcess = is_array($userInfo) === true
-        && empty($userInfo['ongoing_process_id']) === false;
-
-    return [
-        'available' => is_array($userInfo) === true
-            && ($userInfo['auth_type'] ?? '') === 'local'
-            && $featureEnabled === true
-            && $emailConfigured === true
-            && empty(trim((string) ($userInfo['email'] ?? ''))) === false
-            && (int) ($userInfo['disabled'] ?? 0) !== 1
-            && $hasOngoingProcess === false,
-    ];
-}
-
-function clearForgotLocalPasswordRequestContext($session = null): void
-{
-    $session = $session ?? SessionManager::getSession();
-    $session->remove('forgot_local_password_login');
-    $session->remove('forgot_local_password_requested_at');
-}
-
-function storeForgotLocalPasswordRequestContext($session, string $login): void
-{
-    clearForgotLocalPasswordRequestContext($session);
-    $session->set('forgot_local_password_login', $login);
-    $session->set('forgot_local_password_requested_at', time());
-}
-
-function forgotLocalPasswordRequestIsAuthorized($session, string $login): bool
-{
-    $authorizedLogin = (string) ($session->get('forgot_local_password_login') ?? '');
-    $requestedAt = (int) ($session->get('forgot_local_password_requested_at') ?? 0);
-
-    return $authorizedLogin !== ''
-        && hash_equals($authorizedLogin, $login)
-        && $requestedAt > 0
-        && (time() - $requestedAt) <= 600;
-}
-
-/**
  * Processes a local password recovery request.
- * Generates a temporary password, resets the user's encryption keys immediately
- * and sends a dedicated notification email in the target user's language.
+ *
+ * SECURITY (GHSA-cm5h-m2xm-5pxr): this handler is reachable without any authentication, so it
+ * must never change anything on the target account. It only emails a single-use link to the
+ * address registered on the account; the reset itself happens in reset-password.php, once the
+ * caller proved they control that mailbox by opening the link. The previous implementation
+ * authorized the request against a value the same unauthenticated caller had planted in their
+ * own session during a failed login, which proved nothing and let anybody knowing a login force
+ * a key reset and wipe the account's bruteforce counters.
+ *
+ * The answer is deliberately uniform: an unauthenticated caller must not learn whether a login
+ * exists, is local, or is eligible for recovery.
  *
  * @param string               $sentData  Raw POST data field
  * @param array<string,mixed>  $SETTINGS
@@ -4091,6 +3812,7 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
 {
     $session = SessionManager::getSession();
     $lang    = new Language($session->get('user-language') ?? 'english');
+    $uniformAnswer = ['error' => false, 'message' => $lang->get('forgot_local_password_email_sent')];
 
     $dataReceived = $session->get('key') === null
         ? $sentData
@@ -4101,63 +3823,33 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
     $dataReceived = sanitizeData($dataReceived, ['login' => 'trim|escape']);
 
     $login = trim((string) ($dataReceived['login'] ?? ''));
-
     if ($login === '') {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+        return $uniformAnswer;
     }
 
-    if (forgotLocalPasswordRequestIsAuthorized($session, $login) !== true) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    $userInfo = getUserCompleteData($login);
+    if (getForgotLocalPasswordContext($userInfo, $SETTINGS)['available'] !== true) {
+        return $uniformAnswer;
     }
 
-    $userInfo    = getUserCompleteData($login);
-    $forgotCtx   = getForgotLocalPasswordContext($userInfo, $SETTINGS);
-    if ($forgotCtx['available'] !== true) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
-    }
-
-    $temporaryPassword = GenerateCryptKey(20, false, true, true, false, true);
-    $resetResult = prepareExchangedData(
-        handleUserKeys(
-            (int) $userInfo['id'],
-            $temporaryPassword,
-            isset($SETTINGS['maximum_number_of_items_to_treat']) === true
-                ? (int) $SETTINGS['maximum_number_of_items_to_treat']
-                : NUMBER_ITEMS_IN_BATCH,
-            '',
-            true,
-            false,
-            true,
-            false,
-            '',
-            false,
-            '',
-            '',
-            false,
-            'auth-pwd-change'
-        ),
-        'decode'
+    // One recovery email per account and per TP_FORGOT_PWD_TOKEN_THROTTLE seconds, so the
+    // endpoint cannot be used to flood the mailbox of an account whose login is known.
+    $pendingToken = DB::queryFirstRow(
+        'SELECT creation_timestamp
+        FROM ' . prefixTable('tokens') . '
+        WHERE user_id = %i AND reason = %s',
+        (int) $userInfo['id'],
+        TP_FORGOT_PWD_TOKEN_REASON
     );
-
-    if (is_array($resetResult) !== true || (isset($resetResult['error']) === true && $resetResult['error'] === true)) {
-        clearForgotLocalPasswordRequestContext($session);
-        return ['error' => true, 'message' => $lang->get('forgot_local_password_unavailable')];
+    if (DB::count() > 0
+        && is_array($pendingToken) === true
+        && (time() - (int) $pendingToken['creation_timestamp']) < TP_FORGOT_PWD_TOKEN_THROTTLE
+    ) {
+        return $uniformAnswer;
     }
 
-    DB::delete(
-        prefixTable('auth_failures'),
-        'source = %s AND value = %s',
-        'login',
-        $userInfo['login']
-    );
-    $session->set('pwd_attempts', 0);
+    $token = createForgotLocalPasswordToken((int) $userInfo['id']);
 
-    $emailServerUrl = empty(trim((string) ($SETTINGS['email_server_url'] ?? ''))) === false
-        ? (string) $SETTINGS['email_server_url']
-        : (string) ($SETTINGS['cpassman_url'] ?? '');
     $userLanguageName = trim((string) ($userInfo['user_language'] ?? ''));
     if ($userLanguageName === '' || $userLanguageName === '0') {
         $userLanguageName = (string) ($SETTINGS['default_language'] ?? 'english');
@@ -4165,28 +3857,26 @@ function requestForgotLocalPassword(string $sentData, array $SETTINGS): array
     $userLanguage = new Language($userLanguageName);
     sendMailToUser(
         (string) $userInfo['email'],
-        $userLanguage->get('forgot_local_password_email_body'),
-        $userLanguage->get('forgot_local_password_email_subject'),
+        $userLanguage->get('forgot_local_password_confirm_email_body'),
+        $userLanguage->get('forgot_local_password_confirm_email_subject'),
         [
             '#login#' => (string) $userInfo['login'],
             '#name#' => (string) ($userInfo['name'] ?? ''),
             '#lastname#' => (string) ($userInfo['lastname'] ?? ''),
-            '#tp_link#' => $emailServerUrl,
+            '#reset_url#' => rtrim((string) ($SETTINGS['cpassman_url'] ?? ''), '/')
+                . '/reset-password.php?token=' . $token,
         ],
-        false,
-        cryption($temporaryPassword, '', 'encrypt')['string'],
-        trim(((string) ($userInfo['name'] ?? '')) . ' ' . ((string) ($userInfo['lastname'] ?? '')))
+        false
     );
-    clearForgotLocalPasswordRequestContext($session);
 
     logEvents(
         $SETTINGS,
         'user_mngt',
-        'at_user_pwd_changed',
+        'at_user_forgot_local_password_requested',
         (string) $userInfo['id'],
         (string) $userInfo['login'],
         (string) $userInfo['id']
     );
 
-    return ['error' => false, 'message' => $lang->get('forgot_local_password_email_sent')];
+    return $uniformAnswer;
 }

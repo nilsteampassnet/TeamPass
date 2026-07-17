@@ -44,6 +44,7 @@ use TeampassClasses\EmailService\EmailSettings;
 
 // Load functions
 require_once 'main.functions.php';
+require_once 'find.functions.php';
 
 // init
 loadClasses('DB');
@@ -216,7 +217,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -586,7 +587,7 @@ switch ($inputData['type']) {
                     echo (string) prepareExchangedData(
                         array(
                             'error' => true,
-                            'message' => $lang->get('error'),
+                            'message' => $lang->get('error_item_creation_failed'),
                         ),
                         'encode'
                     );
@@ -905,7 +906,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -1132,7 +1133,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_no_delete_right'),
                     ),
                     'encode'
                 );
@@ -1144,7 +1145,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_edit_right'),
                 ),
                 'encode'
             );
@@ -1178,7 +1179,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_missing_sharekey'),
                 ),
                 'encode'
             );
@@ -2365,7 +2366,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -2393,7 +2394,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -2426,7 +2427,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                     ),
                     'encode'
                 );
@@ -2453,7 +2454,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_missing_sharekey'),
                     ),
                     'encode'
                 );
@@ -3072,6 +3073,13 @@ switch ($inputData['type']) {
                 && (int) $post_restricted === 1
                 && $user_in_restricted_list_of_item === true)
             || (isset($SETTINGS['restricted_to_roles']) && (int) $SETTINGS['restricted_to_roles'] === 1
+                // "Restrict items to roles" is an ADDITIONAL restriction, never a replacement for
+                // folder access. Require the same folder / personal-folder predicate as the first
+                // clause so an item is only ever disclosed from a folder the caller can actually
+                // see (GHSA-hjhc-6g7v-8jxr). Without this the clause collapsed to "item has no
+                // per-item restriction" and leaked every unrestricted item's metadata cross-folder.
+                && (in_array($dataItem['id_tree'], $session->get('user-accessible_folders')) === true || (int) $session->get('user-admin') === 1)
+                && (intval($dataItem['perso']) === 0 || (intval($dataItem['perso']) === 1 && in_array($dataItem['id_tree'], $session->get('user-personal_folders')) === true))
                 && $restrictionActive === false)
         ) {
             // Check if actual USER can see this ITEM
@@ -3525,6 +3533,8 @@ switch ($inputData['type']) {
             // ---
         } else {
             $arrData['show_details'] = 0;
+            // Access denied (folder access or item-level restriction) - provide the reason
+            $arrData['message'] = $lang->get('error_no_access_to_item');
             // get readable list of restriction
             $listOfRestricted = '';
             if (empty($dataItem['restricted_to']) === false) {
@@ -3590,7 +3600,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_readonly_account'),
                     ),
                     'encode'
                 );
@@ -3602,7 +3612,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -3890,7 +3900,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -3940,7 +3950,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $granted,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                 ),
                 'encode'
             );
@@ -3971,7 +3981,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_delete_right'),
                 ),
                 'encode'
             );
@@ -4078,7 +4088,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -4089,7 +4099,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['id'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -4162,7 +4172,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -4191,7 +4201,7 @@ switch ($inputData['type']) {
         }
         // check that title is not numeric
         if (is_numeric($title) === true) {
-            echo '[{"error" : "ERR_TITLE_ONLY_WITH_NUMBERS"}]';
+            echo '[ { "error" : "' . $lang->get('error_only_numbers_in_folder_name') . '" } ]';
             break;
         }
 
@@ -4292,7 +4302,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to')." BOOH 1",
+                    'message' => $lang->get('error_not_allowed_to'),
                 ),
                 'encode'
             );
@@ -4702,16 +4712,7 @@ switch ($inputData['type']) {
                     // Build description preview (handles both raw HTML and HTML-encoded strings)
                     $descPreview = '';
                     if (isset($SETTINGS['show_description']) === true && (int) $SETTINGS['show_description'] === 1 && is_null($record['description']) === false) {
-                        $descRaw = strval($record['description']);
-                        // Some descriptions may be stored HTML-encoded (ex: &lt;p&gt;...&lt;/p&gt;). Decode first, then strip tags.
-                        $descDecoded = html_entity_decode($descRaw, ENT_QUOTES, 'UTF-8');
-                        $descStripped = preg_replace('#<[^>]+>#', ' ', $descDecoded);
-                        // Normalize spaces (includes NBSP) and trim
-                        $descStripped = str_replace("\xC2\xA0", ' ', (string) $descStripped);
-                        $descStripped = trim(preg_replace('/\s+/', ' ', (string) $descStripped));
-                        if ($descStripped !== '') {
-                            $descPreview = mb_substr($descStripped, 0, 200);
-                        }
+                        $descPreview = findBuildDescriptionPreview(strval($record['description']));
                     }
                     $html_json[$record['id']]['desc'] = $descPreview;
                     $html_json[$record['id']]['login'] = $record['login'];
@@ -4727,7 +4728,11 @@ switch ($inputData['type']) {
                     $html_json[$record['id']]['is_corrupted'] = $corruptedState !== null ? 1 : 0;
                     $html_json[$record['id']]['corruption_reason'] = $corruptedState['reason'] ?? '';
                     $html_json[$record['id']]['corruption_severity'] = $corruptedState['severity'] ?? '';
+                    // The exception label embeds the raw scanner exception message, which is
+                    // reserved for the admin health page. Return no label here so the item list
+                    // falls back to the generic unreadable-password message.
                     $html_json[$record['id']]['corruption_reason_label'] = $corruptedState !== null
+                        && $corruptedState['reason'] !== 'exception'
                         ? teampassCorruptedItemsReasonToLabel(
                             $lang,
                             $corruptedState['reason']
@@ -4962,11 +4967,18 @@ switch ($inputData['type']) {
 
         // Check if password item exists
         if (DB::count() === 0) {
+            // Distinguish a missing item from a missing sharekey for this user
+            DB::queryFirstRow(
+                'SELECT id FROM ' . prefixTable('items') . '
+                WHERE item_key = %s OR id = %i',
+                $inputData['itemKey'] ?? '',
+                $inputData['itemId'] ?? 0
+            );
             echo (string) prepareExchangedData(
                 [
                     'error' => false,
                     'password' => '',
-                    'password_error' => $lang->get('password_is_empty'),
+                    'password_error' => DB::count() === 0 ? $lang->get('error_item_not_found') : $lang->get('error_missing_sharekey'),
                     'password_status' => 'no_key',
                 ],
                 'encode'
@@ -5365,6 +5377,13 @@ switch ($inputData['type']) {
             );
         }
 
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -5410,7 +5429,10 @@ switch ($inputData['type']) {
         // Check that user can access this folder
         if (in_array($data_item['id_tree'], $session->get('user-accessible_folders')) === false) {
             echo (string) prepareExchangedData(
-                array('error' => 'ERR_FOLDER_NOT_ALLOWED'),
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
                 'encode'
             );
             break;
@@ -5476,13 +5498,27 @@ switch ($inputData['type']) {
      * $action = 1 => Make not favorite
      */
     case 'action_on_quick_icon':
-        // Check KEY and rights
-        if (
-            $inputData['key'] !== $session->get('key')
-            || $session->get('user-read_only') === 1 || !isset($SETTINGS['pwd_maximum_length'])
-        ) {
-            // error
-            exit;
+        // Check KEY
+        if ($inputData['key'] !== $session->get('key')) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ),
+                'encode'
+            );
+            break;
+        }
+        // Check rights
+        if ($session->get('user-read_only') === 1 || !isset($SETTINGS['pwd_maximum_length'])) {
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_readonly_account'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         // decrypt and retreive data in JSON format
@@ -5496,7 +5532,14 @@ switch ($inputData['type']) {
         // Verify the current user can access this item's folder.
         $granted = accessToItemIsGranted($itemId, $SETTINGS);
         if ($granted !== true) {
-            exit;
+            echo (string) prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         if ($action === 0) {
@@ -5522,6 +5565,14 @@ switch ($inputData['type']) {
 
         $favs = getUserFavorites((int) $session->get('user-id'));
         $session->set('user-favorites', $favs);
+
+        echo (string) prepareExchangedData(
+            array(
+                'error' => false,
+                'message' => '',
+            ),
+            'encode'
+        );
         break;
 
     /*
@@ -5544,7 +5595,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -5579,7 +5630,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_delete_right'),
                 ),
                 'encode'
             );
@@ -5597,7 +5648,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_no_edit_right'),
                 ),
                 'encode'
             );
@@ -5634,7 +5685,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
                 ),
                 'encode'
             );
@@ -5960,7 +6011,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6322,7 +6373,7 @@ switch ($inputData['type']) {
         echo (string) prepareExchangedData(
             array(
                 'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? $lang->get('error_not_allowed_to') : '',
+                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
             ),
             'encode'
         );
@@ -6348,7 +6399,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6367,7 +6418,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -6453,7 +6504,7 @@ switch ($inputData['type']) {
         echo (string) prepareExchangedData(
             array(
                 'error' => $deniedItems > 0,
-                'message' => $deniedItems > 0 ? $lang->get('error_not_allowed_to') : '',
+                'message' => $deniedItems > 0 ? str_replace('#nb#', (string) $deniedItems, $lang->get('mass_operation_partially_denied')) : '',
             ),
             'encode'
         );
@@ -6479,7 +6530,7 @@ switch ($inputData['type']) {
             echo (string) prepareExchangedData(
                 array(
                     'error' => true,
-                    'message' => $lang->get('error_not_allowed_to'),
+                    'message' => $lang->get('error_readonly_account'),
                 ),
                 'encode'
             );
@@ -7457,7 +7508,7 @@ switch ($inputData['type']) {
         $granted = accessToItemIsGranted((int) $inputData['itemId'], $SETTINGS);
         if ($granted !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_not_allowed_to_access_this_folder')),
                 'encode'
             );
             break;
@@ -7900,7 +7951,7 @@ switch ($inputData['type']) {
                 );
                 if ($deleteAccessRights['edit'] !== true) {
                     echo (string) prepareExchangedData(
-                        array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                        array('error' => true, 'message' => $lang->get('error_no_edit_right')),
                         'encode'
                     );
                     break;
@@ -7994,7 +8045,7 @@ switch ($inputData['type']) {
         );
         if (DB::count() === 0) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_item_not_found')),
                 'encode'
             );
             break;
@@ -8006,7 +8057,7 @@ switch ($inputData['type']) {
         );
         if ($confirmAccessRights['edit'] !== true) {
             echo (string) prepareExchangedData(
-                array('error' => true, 'message' => $lang->get('error_not_allowed_to')),
+                array('error' => true, 'message' => $lang->get('error_no_edit_right')),
                 'encode'
             );
             break;
@@ -8116,7 +8167,7 @@ switch ($inputData['type']) {
                 echo (string) prepareExchangedData(
                     array(
                         'error' => true,
-                        'message' => $lang->get('error_not_allowed_to'),
+                        'message' => $lang->get('error_readonly_account'),
                     ),
                     'encode'
                 );
@@ -8147,7 +8198,7 @@ switch ($inputData['type']) {
                 // Check that user can access this item
                 $granted = accessToItemIsGranted((int) $itemId, $SETTINGS);
                 if ($granted !== true) {
-                    $failedDeletions[$itemId] = $granted;
+                    $failedDeletions[$itemId] = $lang->get('error_not_allowed_to_access_this_folder');
                     continue; // Passer à l'item suivant
                 }
 
@@ -8174,7 +8225,7 @@ switch ($inputData['type']) {
 
                 if ($checkRights['error'] || !$checkRights['delete']) {
                     // No delete right on this folder: skip and report, never delete (#5275)
-                    $failedDeletions[$itemId] = $lang->get('error_not_allowed_to');
+                    $failedDeletions[$itemId] = $lang->get('error_no_delete_right');
                     continue;
                 }
 
@@ -8258,7 +8309,7 @@ switch ($inputData['type']) {
             $hibpItemId = (int) filter_var($inputData['id'], FILTER_SANITIZE_NUMBER_INT);
             if ($hibpItemId <= 0) {
                 echo (string) prepareExchangedData(
-                    ['error' => true, 'message' => 'invalid_item_id'],
+                    ['error' => true, 'message' => $lang->get('error_missing_id')],
                     'encode'
                 );
                 break;
@@ -8273,7 +8324,7 @@ switch ($inputData['type']) {
             );
             if ($hibpItem === null) {
                 echo (string) prepareExchangedData(
-                    ['error' => true, 'status' => 'error'],
+                    ['error' => true, 'status' => 'error', 'message' => $lang->get('error_item_not_found')],
                     'encode'
                 );
                 break;
@@ -8290,7 +8341,7 @@ switch ($inputData['type']) {
 
             if (empty($hibpUserKeys) || empty($hibpItem['pw'])) {
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_missing_sharekey')],
                     'encode'
                 );
                 break;
@@ -8314,7 +8365,7 @@ switch ($inputData['type']) {
 
             if ($hibpPw === '') {
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_missing_sharekey')],
                     'encode'
                 );
                 break;
@@ -8324,9 +8375,9 @@ switch ($inputData['type']) {
             $hibpResult = checkPasswordWithHIBP($hibpPw);
 
             if (isset($hibpResult['error'])) {
-                // Network unreachable or API error — do not update DB, return error silently
+                // Network unreachable or API error — do not update DB
                 echo (string) prepareExchangedData(
-                    ['error' => false, 'status' => 'error'],
+                    ['error' => false, 'status' => 'error', 'message' => $lang->get('error_hibp_check_failed')],
                     'encode'
                 );
                 break;

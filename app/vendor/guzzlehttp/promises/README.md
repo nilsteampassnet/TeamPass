@@ -53,7 +53,7 @@ why the promise cannot be fulfilled.
 
 ### Callbacks
 
-Callbacks are registered with the `then` method by providing an optional 
+Callbacks are registered with the `then` method by providing an optional
 `$onFulfilled` followed by an optional `$onRejected` function.
 
 
@@ -227,8 +227,8 @@ $promise = new Promise(function () use (&$promise) {
 echo $promise->wait(); // outputs "foo"
 ```
 
-If an exception is encountered while invoking the wait function of a promise,
-the promise is rejected with the exception and the exception is thrown.
+If a throwable is encountered while invoking the wait function of a promise,
+the promise is rejected with the throwable and the throwable is thrown.
 
 ```php
 $promise = new Promise(function () use (&$promise) {
@@ -247,8 +247,8 @@ $promise->resolve('foo');
 echo $promise->wait(); // outputs "foo"
 ```
 
-Calling `wait` on a promise that has been rejected will throw an exception. If
-the rejection reason is an instance of `\Exception` the reason is thrown.
+Calling `wait` on a promise that has been rejected will throw. If the rejection
+reason is an instance of `\Throwable` the reason is thrown.
 Otherwise, a `GuzzleHttp\Promise\RejectionException` is thrown and the reason
 can be obtained by calling the `getReason` method of the exception.
 
@@ -323,9 +323,11 @@ assert('waited' === $promise->wait());
 
 A promise has the following methods:
 
-- `then(callable $onFulfilled, callable $onRejected) : PromiseInterface`
-  
-  Appends fulfillment and rejection handlers to the promise, and returns a new promise resolving to the return value of the called handler.
+- `then(?callable $onFulfilled = null, ?callable $onRejected = null) : PromiseInterface`
+
+  Appends fulfillment and rejection handlers to the promise, and returns a new
+  promise resolving to the return value of the called handler. If a handler is
+  omitted, the original fulfillment value or rejection reason is forwarded.
 
 - `otherwise(callable $onRejected) : PromiseInterface`
   

@@ -541,6 +541,15 @@ class DatabaseInstaller
             array('admin', 'lapr_max_retries', '3'),
             array('admin', 'lapr_retry_delay_minutes', '60'),
             array('admin', 'lapr_audit_retention_days', '365'),
+            array('admin', 'leaver_risk_enabled', '0'),
+            array('admin', 'leaver_risk_auto_flag', '0'),
+            array('admin', 'compliance_reports_enabled', '0'),
+            array('admin', 'rotation_tracking_enabled', '0'),
+            array('admin', 'notification_center_enabled', '0'),
+            array('admin', 'command_palette_enabled', '0'),
+            array('admin', 'micro_learning_enabled', '0'),
+            array('admin', 'access_reviews_enabled', '0'),
+            array('admin', 'data_classification_enabled', '0'),
             array('admin', 'maintenance_mode', '1'),
             array('admin', 'enable_sts', '0'),
             array('admin', 'encryptClientServer', '1'),
@@ -1721,6 +1730,104 @@ class DatabaseInstaller
             UNIQUE KEY `uk_item_user` (`item_id`, `user_id`),
             KEY `idx_user_id` (`user_id`),
             KEY `idx_reuse_group` (`user_id`, `reuse_group`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table user_notifications (in-app Notification Centre - D2)
+    private function user_notifications()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "user_notifications` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `user_id` INT(12) NOT NULL,
+            `created_at` INT(12) NOT NULL DEFAULT 0,
+            `event_type` VARCHAR(50) NOT NULL,
+            `payload` TEXT NULL,
+            `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+            `read_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`increment_id`),
+            KEY `idx_user_unread` (`user_id`, `is_read`, `increment_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table rotation_flags (Leaver / Offboarding Risk view - F3)
+    private function rotation_flags()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "rotation_flags` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `flagged_at` INT(12) NOT NULL DEFAULT 0,
+            `flagged_by` INT(12) NOT NULL DEFAULT 0,
+            `leaver_id` INT(12) NOT NULL DEFAULT 0,
+            `reason` VARCHAR(50) NOT NULL DEFAULT 'leaver',
+            `status` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_leaver` (`leaver_id`),
+            KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_reviews (Access Recertification Campaigns - F2)
+    private function access_reviews()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_reviews` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `label` VARCHAR(255) NOT NULL,
+            `folder_scope` INT(12) NOT NULL DEFAULT 0,
+            `started_by` INT(12) NOT NULL DEFAULT 0,
+            `started_at` INT(12) NOT NULL DEFAULT 0,
+            `status` VARCHAR(20) NOT NULL DEFAULT 'open',
+            `closed_by` INT(12) NULL DEFAULT NULL,
+            `closed_at` INT(12) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            KEY `idx_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table access_review_items (Access Recertification Campaigns - F2: grant snapshot + decisions)
+    private function access_review_items()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "access_review_items` (
+            `id` INT(12) NOT NULL AUTO_INCREMENT,
+            `review_id` INT(12) NOT NULL,
+            `role_id` INT(12) NOT NULL,
+            `role_title` VARCHAR(255) NOT NULL DEFAULT '',
+            `folder_id` INT(12) NOT NULL,
+            `folder_title` VARCHAR(500) NOT NULL DEFAULT '',
+            `access_type` VARCHAR(10) NOT NULL DEFAULT '',
+            `decision` VARCHAR(20) NOT NULL DEFAULT 'pending',
+            `decided_by` INT(12) NULL DEFAULT NULL,
+            `decided_at` INT(12) NULL DEFAULT NULL,
+            `comment` VARCHAR(500) NULL DEFAULT NULL,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uk_review_grant` (`review_id`, `role_id`, `folder_id`),
+            KEY `idx_review_decision` (`review_id`, `decision`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
+        );
+    }
+
+    // Create table data_classification (Data Classification & Ownership - F4)
+    private function data_classification()
+    {
+        DB::query(
+            "CREATE TABLE IF NOT EXISTS `" . $this->inputData['tablePrefix'] . "data_classification` (
+            `increment_id` INT(12) NOT NULL AUTO_INCREMENT,
+            `item_id` INT(12) NOT NULL,
+            `level` TINYINT(1) NOT NULL DEFAULT 0,
+            `owner_id` INT(12) NULL DEFAULT NULL,
+            `updated_by` INT(12) NOT NULL DEFAULT 0,
+            `updated_at` INT(12) NOT NULL DEFAULT 0,
+            PRIMARY KEY (`increment_id`),
+            UNIQUE KEY `uk_item` (`item_id`),
+            KEY `idx_level` (`level`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
     }

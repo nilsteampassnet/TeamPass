@@ -250,6 +250,10 @@ class RemoteFilesystem
             throw new \RuntimeException("RemoteFilesystem doesn't support the 'prevent_ip_access_callable' config.");
         }
 
+        if (isset($options['prevent_url_access_callable'])) {
+            throw new \RuntimeException("RemoteFilesystem doesn't support the 'prevent_url_access_callable' config.");
+        }
+
         if (isset($options['gitlab-token'])) {
             $fileUrl .= (false === strpos($fileUrl, '?') ? '?' : '&') . 'access_token='.$options['gitlab-token'];
             unset($options['gitlab-token']);
@@ -680,6 +684,10 @@ class RemoteFilesystem
         }
 
         if (!empty($targetUrl)) {
+            if (!Url::isAllowedRedirect($targetUrl)) {
+                throw new TransportException('Could not follow the redirect to "'.Url::sanitize($targetUrl).'" because only http and https redirects are supported.');
+            }
+
             $this->redirects++;
 
             $this->io->writeError('', true, IOInterface::DEBUG);

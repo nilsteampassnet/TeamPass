@@ -10,6 +10,7 @@
  */
 
 namespace Seld\JsonLint;
+
 use stdClass;
 
 /**
@@ -32,6 +33,7 @@ class JsonParser
     const PARSE_TO_ASSOC = 4;
     const ALLOW_COMMENTS = 8;
     const ALLOW_DUPLICATE_KEYS_TO_ARRAY = 16;
+    const VALIDATE_UTF8_ENCODING = 32;
 
     /** @var Lexer */
     private $lexer;
@@ -205,6 +207,9 @@ class JsonParser
         if (($flags & self::ALLOW_DUPLICATE_KEYS_TO_ARRAY) && ($flags & self::ALLOW_DUPLICATE_KEYS)) {
             throw new \InvalidArgumentException('Only one of ALLOW_DUPLICATE_KEYS and ALLOW_DUPLICATE_KEYS_TO_ARRAY can be used, you passed in both.');
         }
+        if ($flags & self::VALIDATE_UTF8_ENCODING) {
+            Utf8Validator::validate($input);
+        }
 
         $this->failOnBOM($input);
 
@@ -240,7 +245,7 @@ class JsonParser
 
         while (true) {
             // retrieve state number from top of stack
-            $state = $this->stack[\count($this->stack)-1];
+            $state = $this->stack[\count($this->stack) - 1];
 
             // use default actions if available
             if (isset($this->defaultActions[$state])) {
@@ -278,7 +283,7 @@ class JsonParser
                         }
                     }
 
-                    $errStr = 'Parse error on line ' . ($yylineno+1) . ":\n";
+                    $errStr = 'Parse error on line ' . ($yylineno + 1) . ":\n";
                     $errStr .= $this->lexer->showPosition() . "\n";
                     if ($message) {
                         $errStr .= $message;
@@ -324,12 +329,12 @@ class JsonParser
                         throw new ParsingException($errStr ?: 'Parsing halted.');
                     }
                     $this->popStack(1);
-                    $state = $this->stack[\count($this->stack)-1];
+                    $state = $this->stack[\count($this->stack) - 1];
                 }
 
                 $preErrorSymbol = $symbol; // save the lookahead token
                 $symbol = Lexer::T_ERROR;         // insert generic error symbol as new lookahead
-                $state = $this->stack[\count($this->stack)-1];
+                $state = $this->stack[\count($this->stack) - 1];
                 /** @var array<int, int>|false */
                 $action = isset($this->table[$state][Lexer::T_ERROR]) ? $this->table[$state][Lexer::T_ERROR] : false;
                 if ($action === false) {
@@ -391,7 +396,7 @@ class JsonParser
                     $this->vstack[] = $newToken;
                     $this->lstack[] = $position;
                     /** @var int */
-                    $newState = $this->table[$this->stack[\count($this->stack)-2]][$this->stack[\count($this->stack)-1]];
+                    $newState = $this->table[$this->stack[\count($this->stack) - 2]][$this->stack[\count($this->stack) - 1]];
                     $this->stack[] = $newState;
                     break;
 
