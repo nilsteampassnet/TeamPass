@@ -121,6 +121,14 @@ MFA: Google Authenticator (TOTP), Duo Security, YubiKey, AGSES.
 
 Controllers in `/api/Controller/Api/`. JWT auth via `Authorization: Bearer <token>`. Key endpoints: `/api/authorize`, `/api/item/get`, `/api/item/create`, `/api/item/getOtp`, `/api/folder/listFolders`.
 
+## LAPR (Linux Account Password Rotation)
+
+> Full architecture details: @.claude/docs/architecture-lapr.md
+
+Agentless SSH rotation of local Linux account passwords (release 3.2.2, feature `feature/lapr-mvp1`). Pages `lapr_endpoints|lapr_accounts|lapr_policies|admin_lapr`, handlers `sources/lapr_*.queries.php`, SSH class `TeampassClasses\Lapr\LAPRSshService` (require_once, not PSR-4), background traits `LAPRSshTestTrait|LAPRDiscoverTrait|LAPRRotationTrait`.
+
+**Rule: all SSH work runs in background traits** — never in a `*.queries.php` request thread. **Rule: never log a secret** — `laprAuditLog()`/`action_details` are whitelisted, never a password. **Rule: read a credential/item as the server via `laprReadItemPasswordAsTpUser()`** (TP_USER chain, migration-aware) — non-personal items only. **Rule: write a rotated item password by mirroring `laprUpdateItemPassword()`** (pw_iv + sharekey fan-out via `apiUserId=TP_USER_ID` + history `old_value` + `emitItemEvent`). **Rule: gate every handler with `laprCheckPermission()`** (`lapr_enabled` + admin-or-`can_manage_lapr`). Host-key mismatch **blocks** rotation (D4); `username_cache` is hard-validated (R1) and generated passwords filtered for `chpasswd` safety (R9).
+
 ## Browser Extension Auto-Configuration
 
 > Full architecture details: @.claude/docs/architecture-extension-autoconfig.md

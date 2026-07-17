@@ -317,7 +317,12 @@ function performStep5() {
         { id: 'check69', action: 'access_reviews' },
         { id: 'check70', action: 'access_review_items' },
         { id: 'check71', action: 'data_classification' },
-        { id: 'check72', action: 'user_notifications' }
+        { id: 'check72', action: 'user_notifications' },
+        { id: 'check73', action: 'lapr_endpoints' },
+        { id: 'check74', action: 'lapr_accounts' },
+        { id: 'check75', action: 'lapr_policies' },
+        { id: 'check76', action: 'lapr_audit_log' },
+        { id: 'check77', action: 'lapr_rate_limit' }
     ];
     
     let errorOccurred = false; // Variable to track errors

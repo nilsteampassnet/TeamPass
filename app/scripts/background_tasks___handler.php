@@ -93,6 +93,7 @@ class BackgroundTasksHandler {
             $this->handleScheduledExternalizedBackup();
             $this->handleScheduledInactiveUsersMgmt();
             $this->handleScheduledSecurityNudgeDigest();
+            $this->handleScheduledLAPRRotations();
             $this->drainTaskPool();
             $this->performMaintenanceTasks();
         } catch (Exception $e) {
@@ -481,6 +482,87 @@ class BackgroundTasksHandler {
         );
 
         $this->upsertSettingValue('security_nudges_next_run_at', (string) $this->computeNextDailyRunAt($now + 60, $timeStr));
+    }
+
+    /**
+     * Scheduler (LAPR Point 5): enqueue lapr_rotation tasks for accounts whose
+     * next_rotation_at is due. Paced by lapr_scheduler_interval_minutes. Each
+     * account is de-duplicated against pending/running rotation tasks by the
+     * indexed background_tasks.item_id (= account id). Runs as TP_USER.
+     *
+     * @return void
+     */
+    private function handleScheduledLAPRRotations(): void
+    {
+        if ((int) $this->getSettingValue('lapr_enabled', '0') !== 1
+            || (int) $this->getSettingValue('lapr_scheduler_enabled', '0') !== 1
+        ) {
+            return;
+        }
+
+        $now = time();
+        $intervalMinutes = max(1, (int) $this->getSettingValue('lapr_scheduler_interval_minutes', '5'));
+        $nextRunAt = (int) $this->getSettingValue('lapr_scheduler_next_run_at', '0');
+
+        if ($nextRunAt <= 0) {
+            $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+            return;
+        }
+        if ($now < $nextRunAt) {
+            return;
+        }
+
+        // Due accounts: active, endpoint active, next_rotation_at reached,
+        // and (retry gating) retry_at not in the future.
+        $nowStr = date('Y-m-d H:i:s', $now);
+        $dueAccounts = DB::query(
+            'SELECT a.id
+             FROM ' . prefixTable('lapr_accounts') . ' AS a
+             INNER JOIN ' . prefixTable('lapr_endpoints') . ' AS e ON e.id = a.endpoint_id
+             WHERE a.status = %s AND e.status = %s
+             AND a.next_rotation_at IS NOT NULL AND a.next_rotation_at <= %s
+             AND (a.retry_at IS NULL OR a.retry_at <= %s)
+             ORDER BY a.next_rotation_at ASC
+             LIMIT 100',
+            'active',
+            'active',
+            $nowStr,
+            $nowStr
+        );
+
+        foreach ($dueAccounts as $account) {
+            $accountId = (int) $account['id'];
+
+            // Dedup: skip if a rotation task is already pending/running (C12, indexed item_id).
+            $pending = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('background_tasks') . '
+                 WHERE process_type = %s AND item_id = %i AND is_in_progress IN (0,1)
+                 AND (finished_at IS NULL OR finished_at = "" OR finished_at = 0)',
+                'lapr_rotation',
+                $accountId
+            );
+            if ($pending > 0) {
+                continue;
+            }
+
+            DB::insert(prefixTable('background_tasks'), [
+                'created_at' => (string) $now,
+                'process_type' => 'lapr_rotation',
+                'arguments' => json_encode([
+                    'account_id' => $accountId,
+                    'trigger' => 'scheduler',
+                    'author' => (int) TP_USER_ID,
+                ], JSON_UNESCAPED_SLASHES),
+                'is_in_progress' => 0,
+                'item_id' => $accountId,
+                'status' => 'new',
+            ]);
+        }
+
+        $this->upsertSettingValue('lapr_scheduler_next_run_at', (string) ($now + $intervalMinutes * 60));
+        if (LOG_TASKS === true) {
+            $this->logger->log('LAPR scheduler: enqueued ' . count($dueAccounts) . ' due account(s)', 'INFO');
+        }
     }
 
     /**
@@ -1171,6 +1253,47 @@ class BackgroundTasksHandler {
         $this->handleKbTokensExpiration();
         $this->cleanOldFinishedTasks();
         $this->cleanOldImportFiles();
+        $this->cleanLAPRMaintenance();
+    }
+
+    /**
+     * LAPR maintenance (Point 5/7): purge audit-log rows past the retention
+     * window (lapr_audit_retention_days; 0 = keep forever) and stale rate-limit
+     * rows (window expired and not currently blocked).
+     *
+     * @return void
+     */
+    private function cleanLAPRMaintenance(): void
+    {
+        $retentionDays = (int) $this->getSettingValue('lapr_audit_retention_days', '365');
+        if ($retentionDays > 0) {
+            $cutoff = date('Y-m-d H:i:s', time() - $retentionDays * 86400);
+            try {
+                DB::query(
+                    'DELETE FROM ' . prefixTable('lapr_audit_log') . ' WHERE created_at < %s',
+                    $cutoff
+                );
+            } catch (Throwable $e) {
+                if (LOG_TASKS === true) {
+                    $this->logger->log('LAPR audit purge skipped: ' . $e->getMessage(), 'INFO');
+                }
+            }
+        }
+
+        // Purge stale rate-limit rows (window long expired and not blocked).
+        try {
+            DB::query(
+                'DELETE FROM ' . prefixTable('lapr_rate_limit') . '
+                 WHERE (blocked_until IS NULL OR blocked_until < %i)
+                 AND window_start < %i',
+                time(),
+                time() - 86400
+            );
+        } catch (Throwable $e) {
+            if (LOG_TASKS === true) {
+                $this->logger->log('LAPR rate-limit purge skipped: ' . $e->getMessage(), 'INFO');
+            }
+        }
     }
 
     /**

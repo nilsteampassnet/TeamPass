@@ -1,0 +1,308 @@
+<?php
+/**
+ * Teampass - a collaborative passwords manager.
+ * ---
+ * This file is part of the TeamPass project.
+ *
+ * TeamPass is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, version 3 of the License.
+ *
+ * TeamPass is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Certain components of this file may be under different licenses. For
+ * details, see the `licenses` directory or individual file headers.
+ * ---
+ * @file      upgrade_run_3.2.2.php
+ * @author    Nils Laumaillé (nils@teampass.net)
+ * @copyright 2009-2026 Teampass.net
+ * @license   GPL-3.0
+ * @see       https://www.teampass.net
+ */
+
+use TeampassClasses\SuperGlobal\SuperGlobal;
+use TeampassClasses\Language\Language;
+use TeampassClasses\ConfigManager\ConfigManager;
+
+// Load functions
+require_once __DIR__.'/../sources/main.functions.php';
+
+// init
+loadClasses('DB');
+$superGlobal = new SuperGlobal();
+$lang = new Language();
+error_reporting(E_ERROR | E_PARSE);
+set_time_limit(600);
+
+// Load config
+$configManager = new ConfigManager();
+$SETTINGS = $configManager->getAllSettings();
+
+//include librairies
+require_once TEAMPASS_ROOT . '/app/includes/language/english.php';
+require_once TEAMPASS_ROOT . '/app/config/include.php';
+require_once TEAMPASS_ROOT . '/app/config/settings.php';
+require_once 'tp.functions.php';
+require_once 'libs/aesctr.php';
+
+// DataBase
+// Test DB connexion
+$pass = defuse_return_decrypted(DB_PASSWD);
+$server = (string) DB_HOST;
+$pre = (string) DB_PREFIX;
+$database = (string) DB_NAME;
+$port = (int) DB_PORT;
+$user = (string) DB_USER;
+
+$db_link = mysqli_connect(
+    $server,
+    $user,
+    $pass,
+    $database,
+    $port
+);
+if ($db_link) {
+    $db_link->set_charset(DB_ENCODING);
+} else {
+    echo '[{"finish":"1", "msg":"", "error":"Impossible to get connected to server. Error is: ' . addslashes(mysqli_connect_error()) . '!"}]';
+    exit();
+}
+
+//---------------------------------------------------------------------
+
+//--->BEGIN 3.2.2 — LAPR (Linux Account Password Rotation)
+
+// LAPR managed endpoints (enrolled Linux servers reachable over SSH).
+// No FK constraints (TeamPass project convention) — referential integrity
+// is enforced at application level.
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_endpoints` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `label` VARCHAR(255) NOT NULL,
+        `hostname` VARCHAR(255) NOT NULL,
+        `port` SMALLINT UNSIGNED NOT NULL DEFAULT 22,
+        `ssh_username` VARCHAR(100) NOT NULL,
+        `ssh_auth_method` ENUM(\'password\',\'key\') NOT NULL DEFAULT \'password\',
+        `ssh_credential_source` INT(12) NULL COMMENT \'teampass_items.id holding the SSH credential (app-level link)\',
+        `os_info` TEXT NULL COMMENT \'JSON {os_name, kernel, user_info, is_root}\',
+        `capabilities` TEXT NULL COMMENT \'JSON {has_chpasswd, has_passwd, has_sudo}\',
+        `ssh_hostkey_fingerprint` VARCHAR(255) NULL,
+        `ssh_hostkey_verified` TINYINT(1) NOT NULL DEFAULT 1,
+        `status` ENUM(\'active\',\'disabled\',\'error\',\'unreachable\',\'deleted\') NOT NULL DEFAULT \'active\',
+        `last_check_at` DATETIME NULL,
+        `last_error` TEXT NULL,
+        `next_check_at` DATETIME NULL,
+        `allowed_by_policy` TINYINT(1) NOT NULL DEFAULT 1,
+        `created_by` INT(12) NOT NULL,
+        `updated_by` INT(12) NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        INDEX `idx_hostname` (`hostname`),
+        INDEX `idx_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating lapr_endpoints table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// LAPR managed accounts (existing TeamPass items whose password is rotated).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_accounts` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `endpoint_id` INT(12) NOT NULL,
+        `item_id` INT(12) NOT NULL COMMENT \'teampass_items.id — LAPR manages this item password\',
+        `username_cache` VARCHAR(100) NOT NULL COMMENT \'copy of item.login at add time\',
+        `policy_id` INT(12) NULL,
+        `last_rotation_at` DATETIME NULL,
+        `last_rotation_status` ENUM(\'success\',\'failure\',\'never\') NOT NULL DEFAULT \'never\',
+        `last_rotation_error` TEXT NULL,
+        `next_rotation_at` DATETIME NULL,
+        `retry_count` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+        `retry_at` DATETIME NULL DEFAULT NULL,
+        `status` ENUM(\'active\',\'paused\',\'error\',\'deleted\') NOT NULL DEFAULT \'active\',
+        `created_by` INT(12) NOT NULL,
+        `updated_by` INT(12) NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_item_id` (`item_id`),
+        INDEX `idx_next_rotation` (`next_rotation_at`, `status`),
+        INDEX `idx_endpoint` (`endpoint_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating lapr_accounts table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// LAPR rotation policies (frequency + generated password rules).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_policies` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `label` VARCHAR(255) NOT NULL,
+        `frequency_days` SMALLINT UNSIGNED NOT NULL DEFAULT 30,
+        `password_length` TINYINT UNSIGNED NOT NULL DEFAULT 24,
+        `use_uppercase` TINYINT(1) NOT NULL DEFAULT 1,
+        `use_lowercase` TINYINT(1) NOT NULL DEFAULT 1,
+        `use_digits` TINYINT(1) NOT NULL DEFAULT 1,
+        `use_symbols` TINYINT(1) NOT NULL DEFAULT 1,
+        `rotate_on_enroll` TINYINT(1) NOT NULL DEFAULT 0,
+        `is_preset` TINYINT(1) NOT NULL DEFAULT 0,
+        `created_by` INT(12) NOT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` DATETIME NULL ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        INDEX `idx_preset` (`is_preset`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating lapr_policies table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// LAPR audit log (action_type as VARCHAR — new event types are added by later
+// points without schema change; secrets are never stored here).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_audit_log` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `action_type` VARCHAR(50) NOT NULL COMMENT \'endpoint_add|endpoint_test|endpoint_edit|endpoint_delete|rotation|account_add|account_reset|hostkey_mismatch|ssh_credential_sync|rotation_retry_scheduled|rotation_suspended\',
+        `endpoint_id` INT(12) NULL,
+        `account_id` INT(12) NULL,
+        `user_id` INT(12) NOT NULL,
+        `ip_address` VARCHAR(45) NOT NULL,
+        `action_details` TEXT NULL COMMENT \'JSON, never contains secrets\',
+        `result` ENUM(\'success\',\'failure\',\'warning\') NOT NULL,
+        `error_message` TEXT NULL,
+        `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        INDEX `idx_endpoint` (`endpoint_id`),
+        INDEX `idx_account` (`account_id`),
+        INDEX `idx_user` (`user_id`),
+        INDEX `idx_action` (`action_type`, `created_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating lapr_audit_log table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// LAPR rate limiting (per IP and per hostname on SSH test / endpoint add).
+$res = mysqli_query(
+    $db_link,
+    'CREATE TABLE IF NOT EXISTS `' . $pre . 'lapr_rate_limit` (
+        `id` INT(12) NOT NULL AUTO_INCREMENT,
+        `scope` ENUM(\'ip\',\'hostname\') NOT NULL,
+        `scope_value` VARCHAR(255) NOT NULL,
+        `attempts` INT(12) NOT NULL DEFAULT 0,
+        `window_start` INT(12) NOT NULL,
+        `blocked_until` INT(12) NULL DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `uniq_scope` (`scope`, `scope_value`),
+        INDEX `idx_blocked` (`blocked_until`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;'
+);
+if ($res === false) {
+    echo '[{"finish":"1", "msg":"", "error":"Error creating lapr_rate_limit table: ' . addslashes(mysqli_error($db_link)) . '"}]';
+    mysqli_close($db_link);
+    exit();
+}
+
+// Per-user LAPR management flag (admin-or-flag permission model).
+$laprColumnExists = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = '" . $database . "'
+     AND TABLE_NAME = '" . $pre . "users'
+     AND COLUMN_NAME = 'can_manage_lapr'"
+));
+if (empty($laprColumnExists[0])) {
+    if (mysqli_query(
+        $db_link,
+        "ALTER TABLE `" . $pre . "users`
+         ADD `can_manage_lapr` TINYINT(1) NOT NULL DEFAULT 0
+         COMMENT 'LAPR: user can manage endpoints/accounts/policies (0=no, 1=yes)'
+         AFTER `gestionnaire`"
+    ) === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding users.can_manage_lapr: ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
+// LAPR settings (type 'admin' — read through ConfigManager, saved by the
+// generic save_option_change handler). All disabled by default: the module
+// is fully opt-in.
+$laprSettings = array(
+    array('lapr_enabled', '0'),
+    array('lapr_allowlist_enabled', '0'),
+    array('lapr_allowlist', ''),
+    array('lapr_ssh_connect_timeout', '10'),
+    array('lapr_rate_limit_max_attempts', '5'),
+    array('lapr_rate_limit_window_seconds', '60'),
+    array('lapr_rate_limit_block_seconds', '300'),
+    array('lapr_alert_email_enabled', '0'),
+    array('lapr_alert_email_recipient', ''),
+    array('lapr_scheduler_enabled', '0'),
+    array('lapr_scheduler_interval_minutes', '5'),
+    array('lapr_scheduler_next_run_at', '0'),
+    array('lapr_max_retries', '3'),
+    array('lapr_retry_delay_minutes', '60'),
+    array('lapr_audit_retention_days', '365'),
+);
+foreach ($laprSettings as $setting) {
+    mysqli_query(
+        $db_link,
+        "INSERT IGNORE INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+         VALUES ('admin', '" . $setting[0] . "', '" . addslashes($setting[1]) . "')"
+    );
+}
+
+// Seed the 3 read-only preset policies (created_by = TP_USER_ID) when absent.
+$laprPresets = array(
+    // label, frequency_days, password_length, upper, lower, digits, symbols, rotate_on_enroll
+    array('Standard (30 days)', 30, 24, 1, 1, 1, 1, 0),
+    array('High Security (7 days)', 7, 32, 1, 1, 1, 1, 0),
+    array('Weekly + rotate on enroll', 7, 20, 1, 1, 1, 0, 1),
+);
+foreach ($laprPresets as $preset) {
+    $existing = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT COUNT(*) FROM `" . $pre . "lapr_policies`
+         WHERE `label` = '" . addslashes($preset[0]) . "' AND `is_preset` = 1"
+    ));
+    if (empty($existing[0])) {
+        mysqli_query(
+            $db_link,
+            "INSERT INTO `" . $pre . "lapr_policies`
+             (`label`, `frequency_days`, `password_length`, `use_uppercase`, `use_lowercase`,
+              `use_digits`, `use_symbols`, `rotate_on_enroll`, `is_preset`, `created_by`)
+             VALUES ('" . addslashes($preset[0]) . "', " . (int) $preset[1] . ", " . (int) $preset[2] . ",
+              " . (int) $preset[3] . ", " . (int) $preset[4] . ", " . (int) $preset[5] . ",
+              " . (int) $preset[6] . ", " . (int) $preset[7] . ", 1, " . (int) TP_USER_ID . ")"
+        );
+    }
+}
+
+//--->END 3.2.2
+
+// Close connection
+mysqli_close($db_link);
+
+// Finished
+echo '[{"finish":"1" , "next":"", "error":""}]';

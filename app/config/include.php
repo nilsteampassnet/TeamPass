@@ -140,6 +140,7 @@ $mngPages = array(
     'uploads' => 'uploads.php',
     'oauth' => 'oauth.php',
     'tools' => 'tools.php',
+    'admin_lapr' => 'admin_lapr.php',
     'reports' => 'reports.php',
     'reviews' => 'reviews.php',
 );
