@@ -32,6 +32,7 @@ declare(strict_types=1);
 use TeampassClasses\SessionManager\SessionManager;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use TeampassClasses\Language\Language;
+use TeampassClasses\NestedTree\NestedTree;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
 
@@ -103,8 +104,8 @@ switch ($post_type) {
     case 'list_endpoints':
         laprListEndpoints($lang);
         break;
-    case 'list_credential_items':
-        laprListCredentialItems($session, $lang);
+    case 'search_credential_items':
+        laprSearchCredentialItems($dataReceived, $session, $lang);
         break;
     case 'start_test':
         laprStartTest($dataReceived, $session, $SETTINGS, $userId, $lang);
@@ -169,48 +170,71 @@ function laprListEndpoints(Language $lang): void
 }
 
 /**
- * List candidate SSH credential items: accessible, non-personal, active items
- * with a non-empty login. TP_USER must hold a sharekey (guaranteed for
- * non-personal items).
+ * Search candidate SSH credential items: accessible, non-personal, active items.
+ * TP_USER must hold a sharekey, which is guaranteed for non-personal items only.
  *
+ * Feeds the select2 picker of the enroll modal: the search runs server-side and
+ * returns a bounded page of results, so the vault size does not matter. Matching
+ * covers label and login, since an SSH credential is often identified by its
+ * account name (root, ansible, deploy) rather than by its label.
+ *
+ * @param array    $data    Decoded client payload ('term')
  * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
- * @param Language $lang Language helper
+ * @param Language $lang    Language helper
  * @return void
  */
-function laprListCredentialItems($session, Language $lang): void
+function laprSearchCredentialItems(array $data, $session, Language $lang): void
 {
+    // Escape the LIKE wildcards so a '%' typed by the user stays a literal.
+    $term = trim((string) ($data['term'] ?? ''));
+    $likeTerm = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term) . '%';
+
     $accessible = array_map('intval', (array) ($session->get('user-accessible_folders') ?? []));
-    if ((int) $session->get('user-admin') === 1) {
-        $rows = DB::query(
-            'SELECT i.id, i.label, i.login, i.id_tree
-             FROM ' . prefixTable('items') . ' AS i
-             WHERE i.perso = 0 AND i.inactif = 0 AND i.deleted_at IS NULL
-             ORDER BY i.label ASC LIMIT 500'
-        );
-    } elseif (count($accessible) === 0) {
-        echo prepareExchangedData(['error' => false, 'data' => []], 'encode');
+    $isAdmin = (int) $session->get('user-admin') === 1;
+
+    if ($isAdmin === false && count($accessible) === 0) {
+        echo prepareExchangedData(['error' => false, 'results' => []], 'encode');
         return;
-    } else {
-        $rows = DB::query(
-            'SELECT i.id, i.label, i.login, i.id_tree
-             FROM ' . prefixTable('items') . ' AS i
-             WHERE i.perso = 0 AND i.inactif = 0 AND i.deleted_at IS NULL
-             AND i.id_tree IN %li
-             ORDER BY i.label ASC LIMIT 500',
-            $accessible
-        );
     }
 
-    $data = [];
+    // Folder scope: admins see every non-personal item, others only their own scope.
+    $scopeClause = $isAdmin === true ? '' : ' AND i.id_tree IN %li ';
+    $sql = 'SELECT i.id, i.label, i.login, i.id_tree
+            FROM ' . prefixTable('items') . ' AS i
+            WHERE i.perso = 0 AND i.inactif = 0 AND i.deleted_at IS NULL
+            AND (i.label LIKE %s OR i.login LIKE %s)'
+        . $scopeClause .
+           'ORDER BY i.label ASC LIMIT 20';
+
+    $rows = $isAdmin === true
+        ? DB::query($sql, $likeTerm, $likeTerm)
+        : DB::query($sql, $likeTerm, $likeTerm, $accessible);
+
+    // Same label can exist in several folders: show the path to disambiguate.
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+    $pathCache = [];
+
+    $results = [];
     foreach ($rows as $r) {
-        $data[] = [
+        $folderId = (int) $r['id_tree'];
+        if (isset($pathCache[$folderId]) === false) {
+            $segments = [];
+            foreach ($tree->getPath($folderId, true) as $node) {
+                $segments[] = (string) $node->title;
+            }
+            $pathCache[$folderId] = implode(' / ', $segments);
+        }
+
+        $results[] = [
             'id' => (int) $r['id'],
-            'label' => $r['label'],
-            'login' => $r['login'],
+            // Raw values: the client escapes them at render time.
+            'text' => (string) $r['label'],
+            'login' => (string) $r['login'],
+            'path' => $pathCache[$folderId],
         ];
     }
 
-    echo prepareExchangedData(['error' => false, 'data' => $data], 'encode');
+    echo prepareExchangedData(['error' => false, 'results' => $results], 'encode');
 }
 
 /**

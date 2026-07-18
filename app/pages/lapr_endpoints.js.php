@@ -53,11 +53,13 @@ const laprLang = {
   confirmDelete: '<?php echo addslashes($lang->get('please_confirm_deletion')); ?>',
   hostkeyFingerprint: '<?php echo addslashes($lang->get('lapr_hostkey_fingerprint')); ?>',
   hostkeyTofu: '<?php echo addslashes($lang->get('lapr_hostkey_tofu_note')); ?>',
-  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>'
+  errorGeneric: '<?php echo addslashes($lang->get('error')); ?>',
+  searchItemPlaceholder: '<?php echo addslashes($lang->get('lapr_search_item_placeholder')); ?>'
 }
 
+// Returns the jqXHR so callers can chain .fail() (select2 transport needs it).
 function laprPost(type, payload, onDone) {
-  $.post(laprEndpointsUrl, {
+  return $.post(laprEndpointsUrl, {
     type: type,
     key: laprSessionKey,
     data: prepareExchangedData(JSON.stringify(payload || {}), 'encode', laprSessionKey)
@@ -120,13 +122,74 @@ function laprOpenEndpointModal() {
   $('#lapr-ep-skip-hostkey-warning').hide()
   $('#lapr-ep-test-result').hide().html('')
   $('#lapr-ep-save-btn').prop('disabled', true)
-  laprPost('list_credential_items', {}, function (data) {
-    const sel = $('#lapr-ep-credential-item').empty()
-    ;(data.data || []).forEach(function (it) {
-      sel.append($('<option>').val(it.id).text(it.label + (it.login ? ' (' + it.login + ')' : '')))
-    })
-  })
+  laprInitCredentialPicker()
   $('#modal_lapr_endpoint').modal('show')
+}
+
+/**
+ * Wire the credential item picker on a server-side search. The vault can hold
+ * tens of thousands of items, so the list is never preloaded: select2 queries
+ * the handler on each keystroke and the server returns a bounded page.
+ */
+function laprInitCredentialPicker() {
+  const sel = $('#lapr-ep-credential-item')
+
+  // Rebuilt on every open, so the previous selection never leaks into a new enroll.
+  if (sel.hasClass('select2-hidden-accessible')) {
+    sel.select2('destroy')
+  }
+  // select2 needs a blank first option for the placeholder to show on a single select.
+  sel.empty().append($('<option>')).val(null)
+
+  sel.select2({
+    width: '100%',
+    // The modal owns the stacking context, otherwise the dropdown renders behind it.
+    dropdownParent: $('#modal_lapr_endpoint'),
+    placeholder: laprLang.searchItemPlaceholder,
+    minimumInputLength: 0,
+    ajax: {
+      delay: 250,
+      // Custom transport: TeamPass encrypts the exchange envelope, so select2
+      // cannot post to a plain url. Mirrors the #kb-associated-items picker.
+      transport: function (params, success, failure) {
+        laprPost('search_credential_items', { term: params.data.term || '' }, function (data) {
+          if (data.error === true) {
+            toastr.error(data.message || laprLang.errorGeneric)
+            success({ results: [] })
+            return
+          }
+          success({ results: data.results || [] })
+        }).fail(failure)
+      },
+      processResults: function (data) {
+        return data
+      }
+    },
+    templateResult: laprFormatCredentialResult,
+    templateSelection: laprFormatCredentialSelection
+  })
+}
+
+/**
+ * Render one search result: label + login on the first line, folder path below.
+ * The path disambiguates items sharing the same label across folders.
+ */
+function laprFormatCredentialResult(item) {
+  if (!item.id) { return item.text }
+  const title = DOMPurify.sanitize(item.text) +
+    (item.login ? ' <span class="text-muted">(' + DOMPurify.sanitize(item.login) + ')</span>' : '')
+  const path = item.path
+    ? '<div class="small text-muted"><i class="fas fa-folder-open mr-1"></i>' + DOMPurify.sanitize(item.path) + '</div>'
+    : ''
+  return $('<div>' + title + path + '</div>')
+}
+
+/**
+ * Render the collapsed selection: label + login, no path (single line).
+ */
+function laprFormatCredentialSelection(item) {
+  if (!item.id) { return item.text }
+  return item.text + (item.login ? ' (' + item.login + ')' : '')
 }
 
 function laprCollectEndpointForm() {

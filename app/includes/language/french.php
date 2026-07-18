@@ -2661,6 +2661,7 @@ return array(
     'lapr_credential_stored_note' => 'L\'identifiant SSH est stocké comme un élément TeamPass chiffré avec le modèle de clés standard.',
     'lapr_add_account' => 'Ajouter un compte géré',
     'lapr_select_item' => 'Sélectionner l\'élément TeamPass',
+    'lapr_search_item_placeholder' => 'Saisir pour rechercher un élément par libellé ou identifiant',
     'lapr_username' => 'Compte Linux',
     'lapr_policy' => 'Politique',
     'lapr_no_policy' => 'Aucune politique (défauts : 24 caractères, tous jeux)',

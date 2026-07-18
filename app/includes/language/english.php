@@ -2712,6 +2712,7 @@ return array(
     'lapr_credential_stored_note' => 'The SSH credential is stored as a TeamPass item encrypted with the standard sharekey model.',
     'lapr_add_account' => 'Add a managed account',
     'lapr_select_item' => 'Select the TeamPass item',
+    'lapr_search_item_placeholder' => 'Type to search an item by label or login',
     'lapr_username' => 'Linux account',
     'lapr_policy' => 'Policy',
     'lapr_no_policy' => 'No policy (defaults: 24 chars, all charsets)',
