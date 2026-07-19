@@ -2853,7 +2853,7 @@ if (null !== $post_type) {
                 // Custom LDAP Options
                 'options' => [
                     // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
                 ]
             ];
             //prepare connection
@@ -5211,7 +5211,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'timeout'          => 5,
         'follow_referrals' => false,
         'options' => [
-            LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
+            LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
         ]
     ];
 
