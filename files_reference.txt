@@ -56,7 +56,7 @@ app/api/inc/jwt_utils.php c4fdb16d884ae2f661f1bf263bd095b2
 app/api/index.php dc8ac9bf3867769240cb185cdd7aa818
 app/api/openapi.json 66b578346b4a8571b8ee3494a195afea
 app/config/.htaccess 81594a7af3d0a392c24aada056204b79
-app/config/include.php bf4aff63de5b753eae490243b1d16ead
+app/config/include.php dc2d4751d812d4c4fd377a5b10432e79
 app/config/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/config/settings.sample.php b428568d86d89390da3f0e0137a14802
 app/core/extension-autoconfig.js.php 55768fb83ec46e63557dcb0bb247d22d
@@ -300,7 +300,7 @@ app/includes/libraries/teampassclasses/language/composer.json a73c22a223a67e22e3
 app/includes/libraries/teampassclasses/language/src/Language.php 1be731cc78de43149315b52d34029abf
 app/includes/libraries/teampassclasses/ldapextra/composer.json 395e56feaea100904193fa68fa04e4e1
 app/includes/libraries/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php f84d00a7ded02f2478c81970bb73a480
-app/includes/libraries/teampassclasses/ldapextra/src/LdapExtra.php b4a1be2d7a238ce3e2edcf9b44b5da11
+app/includes/libraries/teampassclasses/ldapextra/src/LdapExtra.php 4bf24083588e911e223f36b5968b942a
 app/includes/libraries/teampassclasses/ldapextra/src/OpenLdapExtra.php ce51d04260fdbaec84d5de6859be5201
 app/includes/libraries/teampassclasses/nestedtree/composer.json f8d59b745a9bdf6f4730c2edd9d2c6f4
 app/includes/libraries/teampassclasses/nestedtree/src/NestedTree.php 3285fe033620066ce387c896bb8c84ea
@@ -385,8 +385,8 @@ app/scripts/_local/restore_from_backup.php e6dcce1321a62c659b3a6ffb40362170
 app/scripts/_local/scan_corrupted_items.php 89f954517984e946ba2337a38c358d11
 app/scripts/background_tasks___do_calculation.php 1d2ed0691e73adb1ed03d2ed5e179988
 app/scripts/background_tasks___functions.php 746fd9f1632242b10d19acd445ee8aeb
-app/scripts/background_tasks___handler.php 472c64650aa4099975902bc87b5fa250
-app/scripts/background_tasks___worker.php 5da8a9b07f714d587b76eff689391e3a
+app/scripts/background_tasks___handler.php 0f50101a6dcd0cfe0d54d164ab2583c1
+app/scripts/background_tasks___worker.php fdeab016a2f022d9ed6f2663fdc6a347
 app/scripts/fix_integrity_hash.php f7483329917bbe00bf7ba5b74825bd8f
 app/scripts/index.html 5f1f28d1adcb7eac03989f0ca3e7068e
 app/scripts/migrate_tp_user_to_v3.php 80a279dd0f24edcd4d2982e0c5a9330f
@@ -429,7 +429,7 @@ app/sources/items.queries.php b767ab4e05427fd9a97f5afd9668a0c9
 app/sources/kb.queries.php 8f76d13bae62b3501c673f2137c83835
 app/sources/ldap.queries.php 8a05ee159071dd544ce0901090ca0da3
 app/sources/logs.datatables.php 9b0b8781cb55b511b4b376d97952db77
-app/sources/main.functions.php 7c77b7bef01292d33a4c5600df3dcdd4
+app/sources/main.functions.php 90642492cdcb5105a1c3afebc90a66d4
 app/sources/main.queries.php a9ab1e19832700532c27465c3c109d2c
 app/sources/oauth.php 247b59bd4d67aece19a8b4c142d37f54
 app/sources/options_favorites.queries.php df1f9e5c9db97dfa155278d35f1b65a0
@@ -443,7 +443,7 @@ app/sources/upload.attachments.php 75ec94510593e030ad0d1dfa0f2b1900
 app/sources/upload.files.php 797d578740139905ed31679f32ed4af8
 app/sources/users.datatable.php 273150d28847784011e69c7f42ee3d01
 app/sources/users.logs.datatable.php 15bd5514317e5f2b21ea7220a5630b56
-app/sources/users.queries.php 94f7d375f359c6a5db4089dcb3a69c4a
+app/sources/users.queries.php da3219dc89087a66e9e8439b058cf6a3
 app/sources/users_purge.functions.php 8b2d85d92230ace4e936dbf3f7541643
 app/sources/utilities.queries.php 6d567b5ac97e6c79f5d94c35aa276878
 app/sources/utils.queries.php d10ae8027aa259586839a45c987beb6e
@@ -7192,7 +7192,7 @@ app/vendor/teampassclasses/language/composer.json a73c22a223a67e22e3eb005642e69c
 app/vendor/teampassclasses/language/src/Language.php 1be731cc78de43149315b52d34029abf
 app/vendor/teampassclasses/ldapextra/composer.json 395e56feaea100904193fa68fa04e4e1
 app/vendor/teampassclasses/ldapextra/src/ActiveDirectoryExtra.php f84d00a7ded02f2478c81970bb73a480
-app/vendor/teampassclasses/ldapextra/src/LdapExtra.php b4a1be2d7a238ce3e2edcf9b44b5da11
+app/vendor/teampassclasses/ldapextra/src/LdapExtra.php 4bf24083588e911e223f36b5968b942a
 app/vendor/teampassclasses/ldapextra/src/OpenLdapExtra.php ce51d04260fdbaec84d5de6859be5201
 app/vendor/teampassclasses/nestedtree/composer.json f8d59b745a9bdf6f4730c2edd9d2c6f4
 app/vendor/teampassclasses/nestedtree/src/NestedTree.php 3285fe033620066ce387c896bb8c84ea
@@ -7800,7 +7800,6 @@ docs/misc/extension.md 340354fad0047922b83969a6a42e3c07
 docs/misc/session-management.md 03e143b010f3afeee594bca4d712b0f6
 docs/misc/tips.md a1657aaef1f64664c56ecaa22bf87928
 docs/misc/troubleshooting.md bf0d38978bd08cbe93adbd15c3cec3cd
-files_reference.txt~ d41d8cd98f00b204e9800998ecf8427e
 migrate_3.2.x.php 6b6e7ee3f781fc2cd064ada29b88ae90
 package-lock.json bc989a5392cd76418dde37ebb5b8165c
 package.json 7d92493d5e5af1f1e36a01b992386b35
@@ -15000,6 +14999,7 @@ tests/Unit/CryptoManagerTest.php 91404d95d547fc9fcd7035befc3dfa9e
 tests/Unit/EncryptionTest.php 268f28aec82e315ca9c480fc5f3403fd
 tests/Unit/FolderAccessModelTest.php 1d9758e05f2c913b2113490905aae8fb
 tests/Unit/InactiveUsersApiActivityTest.php af545dd8f7203448b25f8c72adf7e669
+tests/Unit/LdapTlsRequireCertTest.php 33e5896e444de0675253583c18ac709c
 tests/Unit/LoginAuthenticationTest.php cdb289c8aef85c6c7350852d9498d928
 tests/Unit/PasswordGeneratorServiceTest.php 33fa9e3c503067465e23e919aa3e02b4
 tests/Unit/PasswordManagerTest.php cb395f92149cce4d431de81db8cb3222
