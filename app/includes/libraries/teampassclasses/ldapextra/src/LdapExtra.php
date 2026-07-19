@@ -42,6 +42,36 @@ class LdapExtra
         $this->settings = $settings;
     }
 
+    /**
+     * Convert the stored LDAP TLS certificate check setting to its integer constant.
+     *
+     * The admin form stores the constant name as a string, e.g. 'LDAP_OPT_X_TLS_NEVER',
+     * while ldap_set_option() requires the matching integer value. Passing the raw
+     * string raises a TypeError on PHP 8.
+     *
+     * @return int One of the LDAP_OPT_X_TLS_* values
+     */
+    private function getTlsRequireCertValue(): int
+    {
+        $allowedValues = [
+            'LDAP_OPT_X_TLS_NEVER'  => LDAP_OPT_X_TLS_NEVER,
+            'LDAP_OPT_X_TLS_HARD'   => LDAP_OPT_X_TLS_HARD,
+            'LDAP_OPT_X_TLS_DEMAND' => LDAP_OPT_X_TLS_DEMAND,
+            'LDAP_OPT_X_TLS_ALLOW'  => LDAP_OPT_X_TLS_ALLOW,
+            'LDAP_OPT_X_TLS_TRY'    => LDAP_OPT_X_TLS_TRY,
+        ];
+
+        $value = $this->settings['ldap_tls_certificate_check'] ?? '';
+
+        // Older installations may already store the integer value
+        if (is_int($value) === true || (is_string($value) === true && ctype_digit($value) === true)) {
+            $intValue = (int) $value;
+            return in_array($intValue, $allowedValues, true) === true ? $intValue : LDAP_OPT_X_TLS_HARD;
+        }
+
+        return $allowedValues[(string) $value] ?? LDAP_OPT_X_TLS_HARD;
+    }
+
     public function establishLdapConnection()
     {
         $config = [
@@ -56,7 +86,7 @@ class LdapExtra
             'timeout' => 5,
             'follow_referrals' => false,
             'options' => [
-                LDAP_OPT_X_TLS_REQUIRE_CERT => isset($this->settings['ldap_tls_certiface_check']) ? $this->settings['ldap_tls_certiface_check'] : LDAP_OPT_X_TLS_HARD,
+                LDAP_OPT_X_TLS_REQUIRE_CERT => $this->getTlsRequireCertValue(),
             ],
         ];
 
