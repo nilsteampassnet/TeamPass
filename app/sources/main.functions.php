@@ -5776,6 +5776,39 @@ function filterString(string $field)
 }
 
 /**
+ * Convert the stored LDAP TLS certificate check setting to its integer constant.
+ *
+ * The admin form (pages/ldap.php) stores the constant name as a string, e.g.
+ * 'LDAP_OPT_X_TLS_NEVER', while ldap_set_option() requires the matching integer
+ * value for LDAP_OPT_X_TLS_REQUIRE_CERT. Passing the raw string raises a
+ * TypeError on PHP 8.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return int One of the LDAP_OPT_X_TLS_* values
+ */
+function tpLdapTlsRequireCertValue(array $SETTINGS): int
+{
+    $allowedValues = [
+        'LDAP_OPT_X_TLS_NEVER'  => LDAP_OPT_X_TLS_NEVER,
+        'LDAP_OPT_X_TLS_HARD'   => LDAP_OPT_X_TLS_HARD,
+        'LDAP_OPT_X_TLS_DEMAND' => LDAP_OPT_X_TLS_DEMAND,
+        'LDAP_OPT_X_TLS_ALLOW'  => LDAP_OPT_X_TLS_ALLOW,
+        'LDAP_OPT_X_TLS_TRY'    => LDAP_OPT_X_TLS_TRY,
+    ];
+
+    $value = $SETTINGS['ldap_tls_certificate_check'] ?? '';
+
+    // Older installations may already store the integer value
+    if (is_int($value) === true || (is_string($value) === true && ctype_digit($value) === true)) {
+        $intValue = (int) $value;
+        return in_array($intValue, $allowedValues, true) === true ? $intValue : LDAP_OPT_X_TLS_HARD;
+    }
+
+    return $allowedValues[(string) $value] ?? LDAP_OPT_X_TLS_HARD;
+}
+
+/**
  * CHeck if provided credentials are allowed on server
  *
  * @param string $login    User Login
@@ -5805,7 +5838,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         // Custom LDAP Options
         'options' => [
             // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certificate_check']) ? $SETTINGS['ldap_tls_certificate_check'] : LDAP_OPT_X_TLS_HARD),
+            LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
         ],
     ];
     
