@@ -1709,19 +1709,30 @@ class TaskWorker {
 // Prepare the environment
 // Get the task ID and process type from command line arguments
 if ($argc < 3) {
-    error_log("Usage: php background_tasks___worker.php <task_id> <process_type> [<task_data>]");
+    error_log("Usage: php background_tasks___worker.php <task_id> <process_type>");
     exit(1);
 }
 $taskId = (int)$argv[1];
 $processType = $argv[2];
-$taskData = $argv[3] ?? null;
-if ($taskData) {
-    $taskData = json_decode($taskData, true);
-    if (!is_array($taskData)) {
-        $taskData = [];
+
+// Read the task payload from the database rather than from the command line.
+// Passing the JSON payload as a shell argument is unreliable: on Windows,
+// escapeshellarg() replaces every " % and ! with a space, which destroys the JSON
+// and leaves the worker with an empty argument set. It also hits the ~8191-char
+// Windows command-line limit and exposes credentials in the process list.
+$taskData = [];
+$rawArguments = DB::queryFirstField(
+    'SELECT arguments FROM ' . prefixTable('background_tasks') . ' WHERE increment_id = %i',
+    $taskId
+);
+if (empty($rawArguments) === false) {
+    $taskData = json_decode((string) $rawArguments, true);
+    if (is_array($taskData) === false) {
+        // Do not silently fall back to an empty payload: the task would run with
+        // every argument missing and fail later with a confusing TypeError.
+        error_log("Task {$taskId}: unable to decode arguments (" . json_last_error_msg() . ")");
+        exit(1);
     }
-} else {
-    $taskData = [];
 }
 
 // Initialize the worker
