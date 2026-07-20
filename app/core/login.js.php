@@ -209,7 +209,13 @@ declare(strict_types=1);
         }
         
         // Relaunch authentication
-        if (($("#pw").val() !== "" || $("#login").val() !== "") && store.get('userOauth2Info').oauth2LoginOngoing === false) {
+        // The stored OAuth2 context may be absent (never set, or already consumed by
+        // launchIdentify above), so it must never be dereferenced blindly.
+        const storedOauth2Info = store.get('userOauth2Info');
+        if (($("#pw").val() !== "" || $("#login").val() !== "")
+            && storedOauth2Info !== null && typeof storedOauth2Info === 'object'
+            && storedOauth2Info.oauth2LoginOngoing === false
+        ) {
             $(this).delay(500).queue(function() {
                 if($("#but_identify_user").length > 0) {
                     document.getElementById('but_identify_user').click();
@@ -764,6 +770,10 @@ declare(strict_types=1);
      * @param {object|null} availableMfaMethods - MFA methods returned after primary auth
      */
     function buildMfaDataAndIdentify(isDuo, redirect, psk, availableMfaMethods) {
+        // Keep the OAuth2 context before clearing the store: it is cleared here but
+        // still needed at the end of this function to build the identify payload.
+        const oauth2Info = store.get('userOauth2Info') || {};
+
         // Clear localstorage
         store.remove('teampassApplication');
         store.remove('teampassSettings');
@@ -849,10 +859,10 @@ declare(strict_types=1);
 
         if (debugJavascript === true) {
             console.log('Data submitted to identifyUser:');
-            console.log({...mfaData, ...store.get('userOauth2Info')});
+            console.log({...mfaData, ...oauth2Info});
         }
 
-        identifyUser(redirect, psk, mfaData, randomstring, store.get('userOauth2Info'));
+        identifyUser(redirect, psk, mfaData, randomstring, oauth2Info);
     }
 
     //Identify user
@@ -944,6 +954,11 @@ declare(strict_types=1);
                     toastr.remove();
                     mfaStepPending = true;
 
+                    // The OAuth2 auto-continue path hides the login box before submitting the
+                    // primary factor. MFA is asked for after that factor is validated, so the
+                    // box must be restored here or the user is left on a blank page.
+                    $('.login-box').show();
+
                     // The server always returns the available MFA methods with
                     // the 2fa_not_set response, so use them directly and fall
                     // back to the cached set only if they are missing.
@@ -1013,6 +1028,9 @@ declare(strict_types=1);
                         if (data.primary_auth_failed === true) {
                             resetMfaStep();
                         }
+                        // Restore the form hidden by the OAuth2 auto-continue path, so the
+                        // failure is actionable instead of leaving an empty page behind.
+                        $('.login-box').show();
                         toastr.remove();
                         toastr.error(
                             data.message,
