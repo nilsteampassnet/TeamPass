@@ -260,16 +260,19 @@ When one or more valid OTV links exist for an item, a badge showing the count is
 
 ### Viewing the OTP code
 
-When viewing an item that has OTP configured, the current 6-digit code is shown and refreshes automatically every 30 seconds. A progress indicator shows time remaining before the next rotation.
+When viewing an item that has OTP configured, the current code is shown and refreshes according to the configured RFC 6238 period. A progress indicator shows the time remaining before the next rotation.
 
 ### Setting up OTP on an item
 
 1. Open the item in edit mode.
 2. Select the **Details** tab.
-3. Fill in the **Secret key** field (provided by the target service, usually shown alongside the QR code).
-4. Optionally fill in **Phone number** (useful for account recovery).
-5. Enable the **Show OTP** toggle.
-6. Save the item.
+3. Paste either the Base32 **Secret key** or the complete `otpauth://totp/...` provisioning URI supplied by the target service.
+4. For a Base32 secret, select the expected algorithm (`SHA-1`, `SHA-256`, or `SHA-512`), code length (6 or 8 digits), and period. A provisioning URI fills these values automatically.
+5. Optionally fill in **Phone number** (useful for account recovery).
+6. Enable the **Show OTP** toggle.
+7. Save the item.
+
+The secret alone does not contain the algorithm. Bare secrets therefore default to the historical Teampass profile: SHA-1, 6 digits, and 30 seconds. Existing item OTP records keep this profile automatically after upgrade.
 
 All users with access to the item will then see the same rotating code.
 
