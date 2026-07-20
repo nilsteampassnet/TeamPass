@@ -1,0 +1,166 @@
+<?php
+
+declare(strict_types=1);
+
+use ParagonIE\ConstantTime\Base32;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
+
+require_once __DIR__ . '/../../app/sources/otp.functions.php';
+
+/**
+ * Regression coverage for the RFC 6238 item TOTP profiles.
+ */
+final class ItemTotpConfigurationTest extends TestCase
+{
+    /**
+     * @return iterable<string, array{string, int, string, string}>
+     */
+    public static function rfc6238Vectors(): iterable
+    {
+        $timestamps = [59, 1111111109, 1111111111, 1234567890, 2000000000, 20000000000];
+        $vectors = [
+            'sha1' => [
+                'secret' => '12345678901234567890',
+                'codes' => ['94287082', '07081804', '14050471', '89005924', '69279037', '65353130'],
+            ],
+            'sha256' => [
+                'secret' => '12345678901234567890123456789012',
+                'codes' => ['46119246', '68084774', '67062674', '91819424', '90698825', '77737706'],
+            ],
+            'sha512' => [
+                'secret' => '1234567890123456789012345678901234567890123456789012345678901234',
+                'codes' => ['90693936', '25091201', '99943326', '93441116', '38618901', '47863826'],
+            ],
+        ];
+
+        foreach ($vectors as $algorithm => $vector) {
+            $secret = Base32::encodeUpper($vector['secret']);
+            foreach ($timestamps as $index => $timestamp) {
+                yield $algorithm . '-' . $timestamp => [
+                    $algorithm,
+                    $timestamp,
+                    $vector['codes'][$index],
+                    $secret,
+                ];
+            }
+        }
+    }
+
+    #[DataProvider('rfc6238Vectors')]
+    public function testRfc6238Vectors(
+        string $algorithm,
+        int $timestamp,
+        string $expectedCode,
+        string $secret
+    ): void {
+        $totp = createItemTotp($secret, $algorithm, 8, 30);
+
+        self::assertSame($expectedCode, $totp->at($timestamp));
+    }
+
+    public function testBareSecretKeepsHistoricalProfileByDefault(): void
+    {
+        $configuration = normalizeItemTotpConfiguration('jbswy3dpehpk3pxp====');
+
+        self::assertSame('JBSWY3DPEHPK3PXP', $configuration['secret']);
+        self::assertSame('sha1', $configuration['algorithm']);
+        self::assertSame(6, $configuration['digits']);
+        self::assertSame(30, $configuration['period']);
+    }
+
+    public function testProvisioningUriSuppliesTheCompleteProfile(): void
+    {
+        $configuration = normalizeItemTotpConfiguration(
+            'otpauth://totp/Example:user?secret=JBSWY3DPEHPK3PXP&issuer=Example&algorithm=SHA512&digits=8&period=45'
+        );
+
+        self::assertSame('JBSWY3DPEHPK3PXP', $configuration['secret']);
+        self::assertSame('sha512', $configuration['algorithm']);
+        self::assertSame(8, $configuration['digits']);
+        self::assertSame(45, $configuration['period']);
+    }
+
+    public function testProvisioningUriDefaultsMatchLegacyProfile(): void
+    {
+        $configuration = normalizeItemTotpConfiguration(
+            'otpauth://totp/Example:user?secret=JBSWY3DPEHPK3PXP&issuer=Example'
+        );
+
+        self::assertSame('sha1', $configuration['algorithm']);
+        self::assertSame(6, $configuration['digits']);
+        self::assertSame(30, $configuration['period']);
+    }
+
+    public function testHotpProvisioningUriIsRejected(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        normalizeItemTotpConfiguration(
+            'otpauth://hotp/Example:user?secret=JBSWY3DPEHPK3PXP&counter=0'
+        );
+    }
+
+    /**
+     * @return iterable<string, array{string, string, int, int}>
+     */
+    public static function invalidProfiles(): iterable
+    {
+        yield 'unsupported algorithm' => ['JBSWY3DPEHPK3PXP', 'md5', 6, 30];
+        yield 'unsupported digits' => ['JBSWY3DPEHPK3PXP', 'sha1', 7, 30];
+        yield 'zero period' => ['JBSWY3DPEHPK3PXP', 'sha1', 6, 0];
+        yield 'excessive period' => ['JBSWY3DPEHPK3PXP', 'sha1', 6, 86401];
+        yield 'invalid Base32' => ['NOT-BASE32!', 'sha1', 6, 30];
+    }
+
+    #[DataProvider('invalidProfiles')]
+    public function testInvalidProfilesAreRejected(
+        string $secret,
+        string $algorithm,
+        int $digits,
+        int $period
+    ): void {
+        $this->expectException(InvalidArgumentException::class);
+
+        normalizeItemTotpConfiguration($secret, $algorithm, $digits, $period);
+    }
+
+    public function testInstallerAndUpgradePreserveLegacyDefaults(): void
+    {
+        $installer = file_get_contents(
+            __DIR__ . '/../../public/install/install-steps/run.step5.php'
+        );
+        $upgrade = file_get_contents(
+            __DIR__ . '/../../public/install/upgrade_run_3.2.1.php'
+        );
+
+        self::assertIsString($installer);
+        self::assertIsString($upgrade);
+        foreach ([
+            "DEFAULT 'sha1'",
+            'DEFAULT 6',
+            'DEFAULT 30',
+        ] as $defaultDefinition) {
+            self::assertStringContainsString($defaultDefinition, $installer);
+            self::assertStringContainsString($defaultDefinition, $upgrade);
+        }
+    }
+
+    public function testItemPageKeepsTotpPeriodLimitOutsideGeneratedJavascript(): void
+    {
+        $itemPage = file_get_contents(__DIR__ . '/../../app/pages/items.php');
+        $itemScript = file_get_contents(__DIR__ . '/../../app/pages/items.js.php');
+
+        self::assertIsString($itemPage);
+        self::assertIsString($itemScript);
+        self::assertStringContainsString(
+            'max="<?php echo ITEM_TOTP_MAX_PERIOD; ?>"',
+            $itemPage
+        );
+        self::assertStringContainsString(
+            "const maxPeriod = Number($('#form-item-otpPeriod').attr('max'))",
+            $itemScript
+        );
+        self::assertStringNotContainsString('const maxPeriod = <?php', $itemScript);
+    }
+}
