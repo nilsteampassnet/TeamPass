@@ -90,6 +90,24 @@ error_reporting(E_ERROR);
 
 // --------------------------------- //
 
+// The generic gate above only proves the user may reach the items page. Each upload
+// type has its own audience, so authorize it explicitly: without this an ordinary
+// user could stage import files while import is disabled for them, or drop a restore
+// archive on disk (GHSA-cgcj-f9rx-c8r4).
+$requestedUploadType = $request->request->filter('type_upload', '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+if (in_array($requestedUploadType, ['import_items_from_csv', 'import_items_from_keepass'], true) === true) {
+    if ((int) $session->get('user-admin') !== 1
+        && ($checkUserAccess->userAccessPage('import') === false
+            || (int) ($SETTINGS['allow_import'] ?? 0) !== 1)
+    ) {
+        echo handleUploadError('Import is not allowed for this user.');
+        return false;
+    }
+} elseif ($requestedUploadType === 'restore_db' && (int) $session->get('user-admin') !== 1) {
+    echo handleUploadError('Restore is not allowed for this user.');
+    return false;
+}
+
 //check for session
 if (null !== $request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS)) {
     session_id($request->request->filter('PHPSESSID', null, FILTER_SANITIZE_FULL_SPECIAL_CHARS));
@@ -502,7 +520,7 @@ if (
         prefixTable('misc'),
         array(
             'type' => 'temp_file',
-            'intitule' => time(),
+            'intitule' => tempFileBuildOwnerTag((int) $session->get('user-id')),
             'valeur' => $newFileName,
         )
     );
@@ -531,7 +549,7 @@ if (
         prefixTable('misc'),
         array(
             'type' => 'temp_file',
-            'intitule' => time(),
+            'intitule' => tempFileBuildOwnerTag((int) $session->get('user-id')),
             'valeur' => $newFileName,
         )
     );
@@ -652,7 +670,7 @@ if (
         prefixTable('misc'),
         array(
             'type' => 'temp_file',
-            'intitule' => time(),
+            'intitule' => tempFileBuildOwnerTag((int) $session->get('user-id')),
             'valeur' => $finalFileName,
         )
     );
