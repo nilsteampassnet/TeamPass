@@ -206,44 +206,52 @@ class OAuth2Controller
         }
     }
 
-    public function getAllUsers($token = null)
+    /**
+     * Retrieve every directory user, with the groups they belong to.
+     *
+     * Always returns a well-formed envelope so that a failure can never be
+     * mistaken for a user list by the caller.
+     *
+     * @param string|null $token Unused, kept for backward compatibility.
+     * @return array{error: bool, message: string, users: array<int, array<string, mixed>>}
+     */
+    public function getAllUsers($token = null): array
     {
+        // Directory synchronization is only implemented for Microsoft Entra ID.
+        if (($this->provider instanceof Azure) === false) {
+            return [
+                'error' => true,
+                'message' => 'User synchronization is only supported with Microsoft Entra ID (Azure).',
+                'users' => [],
+            ];
+        }
+
         try {
             // Exchange the authorization code for an access token
             $token = $this->provider->getAccessToken('client_credentials', [
                 'scope' => 'https://graph.microsoft.com/.default',
             ]);
 
-            if ($this->provider instanceof Azure) {
-                // Call Graph API to retrieve users
-                $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime';
+            // Call Graph API to retrieve users
+            $graphUrl = 'https://graph.microsoft.com/v1.0/users?$select=id,displayName,userPrincipalName,givenName,surname,mail,accountEnabled,lastPasswordChangeDateTime&$top=999';
+            $usersList = [];
+
+            // Graph paginates its collections: follow @odata.nextLink until exhausted,
+            // otherwise only the first page of the directory would ever be synchronized.
+            while (empty($graphUrl) === false) {
                 $response = $this->provider->getAuthenticatedRequest('GET', $graphUrl, $token->getToken());
                 $usersResponse = $this->provider->getParsedResponse($response);
 
-                $usersList = [];
-
                 if (isset($usersResponse['value']) && is_array($usersResponse['value'])) {
                     foreach ($usersResponse['value'] as $user) {
-                        // Request to retrieve the user's groups
-                        $userGroups = [];
-                        $groupsUrl = "https://graph.microsoft.com/v1.0/users/{$user['id']}/memberOf";
-                        $groupsRequest = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $token->getToken());
-                        $groupsResponse = $this->provider->getParsedResponse($groupsRequest);
-
-                        if (isset($groupsResponse['value']) && is_array($groupsResponse['value'])) {
-                            foreach ($groupsResponse['value'] as $group) {
-                                if ($group['@odata.type'] === '#microsoft.graph.group') {
-                                    $userGroups[] = [
-                                        'id' => $group['id'] ?? null,
-                                        'displayName' => $group['displayName'] ?? null,
-                                    ];
-                                }
-                            }
+                        // Ignore anything that is not a usable directory object
+                        if (is_array($user) === false || empty($user['id']) === true) {
+                            continue;
                         }
 
                         // Add user with their groups to the list
                         $usersList[] = [
-                            'id' => $user['id'] ?? null,
+                            'id' => $user['id'],
                             'displayName' => $user['displayName'] ?? null,
                             'userPrincipalName' => $user['userPrincipalName'] ?? null,
                             'givenName' => $user['givenName'] ?? null,
@@ -251,19 +259,62 @@ class OAuth2Controller
                             'mail' => $user['mail'] ?? null,
                             'accountEnabled' => $user['accountEnabled'] ?? null,
                             'lastPasswordChangeDateTime' => $user['lastPasswordChangeDateTime'] ?? null,
-                            'groups' => $userGroups,
+                            'groups' => $this->getUserGroups((string) $user['id'], $token->getToken()),
                         ];
                     }
                 }
 
-                return $usersList;
+                $graphUrl = (string) ($usersResponse['@odata.nextLink'] ?? '');
             }
+
+            return [
+                'error' => false,
+                'message' => '',
+                'users' => $usersList,
+            ];
 
         } catch (Exception $e) {
             return [
                 'error' => true,
                 'message' => 'Error while getting users: ' . $e->getMessage(),
+                'users' => [],
             ];
         }
+    }
+
+    /**
+     * Retrieve the groups a single directory user belongs to.
+     *
+     * A failure on one user must not abort the whole synchronization, so the
+     * error is swallowed and an empty group list is returned for that user.
+     *
+     * @param string $userId      Directory object id of the user.
+     * @param string $accessToken Access token to use for the Graph call.
+     * @return array<int, array{id: string|null, displayName: string|null}>
+     */
+    private function getUserGroups(string $userId, string $accessToken): array
+    {
+        $userGroups = [];
+
+        try {
+            $groupsUrl = 'https://graph.microsoft.com/v1.0/users/' . rawurlencode($userId) . '/memberOf';
+            $groupsRequest = $this->provider->getAuthenticatedRequest('GET', $groupsUrl, $accessToken);
+            $groupsResponse = $this->provider->getParsedResponse($groupsRequest);
+
+            if (isset($groupsResponse['value']) && is_array($groupsResponse['value'])) {
+                foreach ($groupsResponse['value'] as $group) {
+                    if (is_array($group) === true && ($group['@odata.type'] ?? '') === '#microsoft.graph.group') {
+                        $userGroups[] = [
+                            'id' => $group['id'] ?? null,
+                            'displayName' => $group['displayName'] ?? null,
+                        ];
+                    }
+                }
+            }
+        } catch (Exception $e) {
+            error_log('TEAMPASS OAuth2 - unable to get groups of user ' . $userId . ': ' . $e->getMessage());
+        }
+
+        return $userGroups;
     }
 }
