@@ -1529,6 +1529,21 @@
                             "properties": {
                                 "token": {
                                     "type": "string"
+                                },
+                                "teampass_version": {
+                                    "type": "string",
+                                    "description": "Full server version, e.g. '3.2.1.0'",
+                                    "examples": [
+                                        "3.2.1.0"
+                                    ]
+                                },
+                                "teampass_version_major": {
+                                    "type": "string",
+                                    "description": "Major version part (TP_VERSION), e.g. '3.2.1'"
+                                },
+                                "teampass_version_minor": {
+                                    "type": "string",
+                                    "description": "Minor version part (TP_VERSION_MINOR), e.g. '0'"
                                 }
                             }
                         }
@@ -1548,8 +1563,21 @@
                                 "extension_key": {
                                     "type": "string"
                                 },
-                                "cpassman_url": {
-                                    "type": "string"
+                                "extension_url": {
+                                    "type": "string",
+                                    "description": "Instance URL (cpassman_url)"
+                                },
+                                "teampass_version": {
+                                    "type": "string",
+                                    "description": "Full server version, e.g. '3.2.1.0'"
+                                },
+                                "teampass_version_major": {
+                                    "type": "string",
+                                    "description": "Major version part (TP_VERSION)"
+                                },
+                                "teampass_version_minor": {
+                                    "type": "string",
+                                    "description": "Minor version part (TP_VERSION_MINOR)"
                                 }
                             }
                         }

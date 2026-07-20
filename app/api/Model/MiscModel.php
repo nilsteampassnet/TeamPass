@@ -27,7 +27,15 @@ use TeampassClasses\ConfigManager\ConfigManager;
 
 class MiscModel
 {
-    // Get extension settings
+    /**
+     * Get the browser extension connection settings.
+     *
+     * The server version is included so a client can refresh it without waiting for
+     * the next authentication (an instance upgraded between two logins reports the
+     * new value here).
+     *
+     * @return array<string,string>
+     */
     public function getBrowserExtensionSettings(): array
     {
         // Load config
@@ -38,6 +46,9 @@ class MiscModel
             'extension_fqdn' => $SETTINGS['browser_extension_fqdn'] ?? '',
             'extension_key' => $SETTINGS['browser_extension_key'] ?? '',
             'extension_url' => $SETTINGS['cpassman_url'] ?? '',
+            'teampass_version' => TP_VERSION . '.' . TP_VERSION_MINOR,
+            'teampass_version_major' => TP_VERSION,
+            'teampass_version_minor' => TP_VERSION_MINOR,
         ];
     }
 }
