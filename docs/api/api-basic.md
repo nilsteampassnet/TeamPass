@@ -773,6 +773,55 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 
 ## Folders Endpoints {#folders-endpoints}
 
+### Read folders tree {#read-folders}
+
+> 📋 Returns the complete hierarchical list of folders accessible to the authenticated user
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/readFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/folder/readFolders` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Production",
+    "parent_id": 0,
+    "nlevel": 1,
+    "access_type": "W"
+  },
+  {
+    "id": 2,
+    "title": "Servers",
+    "parent_id": 1,
+    "nlevel": 2,
+    "access_type": "R"
+  }
+]
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List of folders returned successfully |
+| 401 | Invalid token or expired session |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/folder/readFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
 ### List accessible folders {#list-folders}
 
 > 📋 Returns the list of folders accessible to the authenticated user
