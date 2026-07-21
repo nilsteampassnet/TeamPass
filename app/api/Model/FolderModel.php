@@ -114,6 +114,42 @@ class FolderModel
         return $ret;
     }
 
+    public function getFoldersTree(array $foldersId, int $userId): array
+    {
+        if (empty($foldersId) === true) {
+            return [];
+        }
+
+        // Sanitize folder IDs to integers
+        $foldersId = array_map('intval', $foldersId);
+
+        $rows = DB::query(
+            'SELECT id, title, parent_id, nlevel
+            FROM ' . prefixTable('nested_tree') . '
+            WHERE id IN %li
+            ORDER BY nleft ASC',
+            $foldersId
+        );
+
+        $ret = [];
+        $folderAccessModel = new FolderAccessModel();
+
+        foreach ($rows as $row) {
+            $folderId = (int) $row['id'];
+            $isReadOnly = $folderAccessModel->isFolderReadOnlyForUser($folderId, $userId);
+
+            array_push($ret, [
+                'id' => $folderId,
+                'title' => $row['title'],
+                'parent_id' => (int) $row['parent_id'],
+                'nlevel' => (int) $row['nlevel'],
+                'access_type' => $isReadOnly ? 'R' : 'W'
+            ]);
+        }
+
+        return $ret;
+    }
+
     public function createFolder(
         string $title,
         int $parent_id,
