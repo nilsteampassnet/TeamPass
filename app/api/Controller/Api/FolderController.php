@@ -88,6 +88,55 @@ class FolderController extends BaseController
     //end listInFoldersAction()
 
     /**
+     * Get complete list of Folders with tree structure
+     *
+     * @return void
+     */
+    public function readFoldersAction(array $userData)
+    {
+        $request = symfonyRequest::createFromGlobals();
+        $requestMethod = $request->getMethod();
+        $strErrorDesc = $responseData = $strErrorHeader = '';
+
+        $arrErrorHeaders = [];
+        $arrSuccessHeaders = [];
+
+        if (strtoupper($requestMethod) === 'GET') {
+            if (empty($userData['folders_list'])) {
+                $responseData = json_encode([]);
+                $arrSuccessHeaders[] = 'X-Total-Count: 0';
+            } else {
+                try {
+                    $folderModel = new FolderModel();
+                    $arrFolders = $folderModel->getFoldersTree(explode(",", $userData['folders_list']), (int)$userData['id']);
+
+                    $responseData = json_encode($arrFolders);
+                    $arrSuccessHeaders[] = 'X-Total-Count: ' . count($arrFolders);
+                } catch (Error $e) {
+                    error_log('[API] FolderController::readFoldersAction error: ' . $e->getMessage());
+                    $strErrorDesc = 'An internal error occurred. Please contact support.';
+                    $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
+                }
+            }
+        } else {
+            $strErrorDesc = 'Method not supported';
+            $strErrorHeader = 'HTTP/1.1 405 Method Not Allowed';
+            $arrErrorHeaders[] = 'Allow: GET';
+        }
+
+        // send output
+        if (empty($strErrorDesc) === true) {
+            $this->sendOutput(
+                $responseData,
+                array_merge(['Content-Type: application/json', 'HTTP/1.1 200 OK'], $arrSuccessHeaders)
+            );
+        } else {
+            $this->sendProblemFromHeader($strErrorHeader, $strErrorDesc, $arrErrorHeaders);
+        }
+    }
+    //end readFoldersAction()
+
+    /**
      * create new folder
      *
      * @return void
