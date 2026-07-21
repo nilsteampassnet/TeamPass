@@ -102,7 +102,7 @@ function checkUSerCRUDRights($userData, $actionToPerform): bool
 {
     if ($actionToPerform === 'create' && $userData['allowed_to_create'] === 1) {
         return true;
-    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'listFolders', 'writableFolders']) === true && $userData['allowed_to_read'] === 1) {
+    } elseif (in_array($actionToPerform, ['read', 'get', 'inFolders', 'findByUrl', 'getOtp', 'allTags', 'listFolders', 'writableFolders', 'readFolders']) === true && $userData['allowed_to_read'] === 1) {
         return true;
     } elseif ($actionToPerform === 'update' && $userData['allowed_to_update'] === 1) {
         return true;
