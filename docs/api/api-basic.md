@@ -773,6 +773,55 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 
 ## Folders Endpoints {#folders-endpoints}
 
+### Read folders tree {#read-folders}
+
+> 📋 Returns the complete hierarchical list of folders accessible to the authenticated user
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/readFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/folder/readFolders` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+[
+  {
+    "id": 1,
+    "title": "Production",
+    "parent_id": 0,
+    "nlevel": 1,
+    "access_type": "W"
+  },
+  {
+    "id": 2,
+    "title": "Servers",
+    "parent_id": 1,
+    "nlevel": 2,
+    "access_type": "R"
+  }
+]
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List of folders returned successfully |
+| 401 | Invalid token or expired session |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/folder/readFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+---
+
 ### List accessible folders {#list-folders}
 
 > 📋 Returns the list of folders accessible to the authenticated user
@@ -863,14 +912,17 @@ curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
 | `title` | string | ✅ | Folder name |
-| `parent_id` | integer | ✅ | Parent folder ID (0 for root if authorized) |
-| `complexity` | integer | ❌ | Complexity level: 0 (Weak), 20 (Medium), 38 (Strong), 48 (Heavy), 60 (Very heavy) |
+| `parent_id` | integer | ✅¹ | Parent folder ID (0 for root if authorized) |
+| `complexity` | integer | ✅¹ | Complexity level: 0 (Weak), 20 (Medium), 38 (Strong), 48 (Heavy), 60 (Very heavy) |
+| `private` | boolean | ❌ | Create a personal (private) folder under your personal root. When `true`, `parent_id` and `complexity` become optional. Personal folders must be enabled for your account. |
 | `duration` | integer | ❌ | Expiration delay in minutes (0 = no expiration) |
 | `create_auth_without` | integer | ❌ | Allow creation even if complexity insufficient (0/1) |
 | `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
 | `access_rights` | string | ❌ | Access type: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit) |
+
+> ¹ `parent_id` and `complexity` are required for a **shared** folder. When `private` is `true` (personal folder), both are optional — `parent_id` defaults to your personal root and the complexity ceiling does not apply. The `personal_folder` flag is always derived server-side; it is never accepted from the client.
 
 **Possible values for `complexity`:**
 
@@ -905,10 +957,11 @@ curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
 
 | Code | Description |
 | ---- | ----------- |
-| 200 | Folder created successfully |
-| 400 | Missing or invalid parameters |
+| 201 | Folder created successfully |
+| 400 | Missing required parameters |
 | 401 | Invalid token or expired session |
-| 403 | Create permission denied |
+| 403 | Create permission denied / personal folders disabled / read-only or foreign parent |
+| 422 | Invalid parameters, numeric title, duplicate title, or complexity below parent |
 | 500 | Server error |
 
 **Example:**
@@ -927,6 +980,133 @@ curl -X POST "https://your-teampass.com/api/index.php/folder/create" \
     "icon_selected": "fa-folder-open",
     "access_rights": "W"
   }'
+```
+
+**Example (private folder):**
+```bash
+curl -X POST "https://your-teampass.com/api/index.php/folder/create" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "title": "My private folder", "private": true }'
+```
+
+---
+
+### Update a folder {#folder-update}
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/update` |
+| **Method** | PUT |
+| **URL** | `<Teampass URL>/api/index.php/folder/update` |
+| **Content-Type** | `application/json` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+Partial update: only `id` is required; any field you omit keeps its current value. Only `PUT` is accepted (other methods return `405`).
+
+**Request Body (JSON):**
+```json
+{
+  "id": 57,
+  "title": "Renamed folder",
+  "parent_id": 12,
+  "complexity": 38
+}
+```
+
+**Body Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `id` | integer | ✅ | Folder ID to update |
+| `title` | string | ❌ | New folder name |
+| `parent_id` | integer | ❌ | New parent ID (move). Cross-domain personal ↔ shared moves are rejected. |
+| `complexity` | integer | ❌ | New complexity level |
+| `duration` | integer | ❌ | Expiration delay in minutes |
+| `create_auth_without` | integer | ❌ | Allow creation even if complexity insufficient (0/1) |
+| `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
+| `icon` | string | ❌ | FontAwesome icon code (closed state) |
+| `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
+
+> `access_rights` cannot be changed here — folder rights are a roles-management concern. Personal **root** folders cannot be renamed or moved. At least one updatable field must be provided.
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "Folder updated",
+  "id": 57
+}
+```
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Folder updated successfully |
+| 400 | Missing `id` or nothing to update |
+| 401 | Invalid token or expired session |
+| 403 | Update permission denied / read-only folder / personal root rename or move |
+| 404 | Folder not found |
+| 405 | Method not allowed (use PUT) |
+| 422 | Numeric title, duplicate title, circular/descendant move, cross-domain move, or complexity below parent |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X PUT "https://your-teampass.com/api/index.php/folder/update" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "id": 57, "title": "Renamed folder" }'
+```
+
+---
+
+### Delete a folder {#folder-delete}
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/delete` |
+| **Method** | DELETE |
+| **URL** | `<Teampass URL>/api/index.php/folder/delete?id=57` |
+| **Headers** | `Authorization: Bearer <token>` |
+
+Soft-deletes the folder **and all its descendants** into the recycle bin (restorable from **Utilities → Recycled bin**); every contained item is soft-deleted too. Only `DELETE` is accepted (other methods return `405`).
+
+**Parameters:**
+
+| Field | Type | Required | Description |
+| ----- | ---- | -------- | ----------- |
+| `id` | integer | ✅ | Folder ID to delete (query string `?id=N` or JSON body). `0` (root) is rejected. |
+
+**Response (success):**
+```json
+{
+  "error": false,
+  "message": "Folder deleted",
+  "deleted_folders": [57, 58, 61],
+  "deleted_items_count": 12
+}
+```
+
+`deleted_folders` lists the folder plus every descendant that was removed.
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | Folder deleted successfully |
+| 400 | Missing or invalid `id` (including `0`) |
+| 401 | Invalid token or expired session |
+| 403 | Delete permission denied / read-only folder / personal root |
+| 404 | Folder not found |
+| 405 | Method not allowed (use DELETE) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X DELETE "https://your-teampass.com/api/index.php/folder/delete?id=57" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 
 ---
