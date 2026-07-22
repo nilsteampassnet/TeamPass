@@ -556,7 +556,7 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
 | `icon` | string | ❌ | FontAwesome icon code |
-| `totp` | string | ❌ | Base32 TOTP secret or `otpauth://totp` provisioning URI |
+| `totp` | string | ❌ | Base32 TOTP secret or `otpauth://totp` provisioning URI. Spaces and hyphens are separators and are stripped, so the secret can be sent exactly as the service displays it |
 | `totp_algorithm` | string | ❌ | Algorithm for a bare secret: `sha1` (default), `sha256`, or `sha512`; ignored when supplied by a URI |
 | `totp_digits` | integer | ❌ | Code length for a bare secret: 6 (default) or 8 |
 | `totp_period` | integer | ❌ | Period for a bare secret: 30 seconds by default, from 1 to 86400 |
@@ -639,7 +639,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
 | `icon` | string | ❌ | New FontAwesome icon code |
 | `folder_id` | integer | ❌ | Move to new folder |
-| `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP |
+| `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP. Spaces and hyphens are stripped from the secret. Omit the field to change only the profile: the stored secret is reused |
 | `totp_algorithm` | string | ❌ | TOTP algorithm: `sha1`, `sha256`, or `sha512` |
 | `totp_digits` | integer | ❌ | TOTP code length: 6 or 8 |
 | `totp_period` | integer | ❌ | TOTP period in seconds, from 1 to 86400 |

@@ -92,15 +92,20 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
   /**
    * Apply the RFC 6238 profile carried by an otpauth provisioning URI.
    *
+   * Only fills the visible controls so the user sees what will be stored.
    * The server remains authoritative and performs the same parsing and
    * validation before storing the normalized secret and profile.
+   *
+   * @returns {void}
    */
   function applyItemTotpProvisioningUri() {
-    const value = $('#form-item-otpSecret').val().trim()
-    const maxPeriod = Number($('#form-item-otpPeriod').attr('max'))
+    const value = String($('#form-item-otpSecret').val() || '').trim()
     if (!value.toLowerCase().startsWith('otpauth://')) {
       return
     }
+
+    // 0 means the field carries no upper bound: only the server then decides.
+    const maxPeriod = Number($('#form-item-otpPeriod').attr('max')) || 0
 
     try {
       const uri = new URL(value)
@@ -119,14 +124,11 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
       if (['6', '8'].includes(digits)) {
         $('#form-item-otpDigits').val(digits)
       }
-      if (/^\d+$/.test(period) && numericPeriod >= 1 && numericPeriod <= maxPeriod) {
+      if ((/^\d+$/).test(period) && numericPeriod >= 1 && (maxPeriod === 0 || numericPeriod <= maxPeriod)) {
         $('#form-item-otpPeriod').val(period)
       }
-    } catch (error) {
-      if (error instanceof Error) {
-        return
-      }
-      throw error
+    } catch (uriError) {
+      // A malformed URI is left untouched: the server rejects it with a clear message.
     }
   }
 
@@ -2935,9 +2937,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
                 $('#form-item-otp').iCheck('uncheck');
-                $('#form-item-otpAlgorithm').val('sha1');
-                $('#form-item-otpDigits').val('6');
-                $('#form-item-otpPeriod').val('30');
+                $('#form-item-otpAlgorithm').val('sha1')
+                $('#form-item-otpDigits').val('6')
+                $('#form-item-otpPeriod').val('30')
 
                 // Move back fields
                 $('.fields-to-move')
@@ -3907,7 +3909,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
 
         // Validate form
-        applyItemTotpProvisioningUri();
+        applyItemTotpProvisioningUri()
         var form = $('#form-item');
         if (form[0].checkValidity() === false) {
             form.addClass('was-validated');
@@ -4131,7 +4133,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     'otp_is_enabled': $('#form-item-otp').is(':checked') ? 1 : 0,
                     'otp_phone_number': purifyRes.arrFields['otpPhoneNumber'] !== '' ? purifyRes.arrFields['otpPhoneNumber'] : '',
                     'otp_secret': purifyRes.arrFields['otpSecret'] !== '' ? purifyRes.arrFields['otpSecret'] : '',
-                    'otp_algorithm': purifyRes.arrFields['otpAlgorithm'] !== '' ? purifyRes.arrFields['otpAlgorithm'] : 'sha1',
+                    'otp_algorithm': purifyRes.arrFields['otpAlgorithm'] || 'sha1',
                     'otp_digits': parseInt(purifyRes.arrFields['otpDigits'], 10) || 6,
                     'otp_period': parseInt(purifyRes.arrFields['otpPeriod'], 10) || 30,
                 };
@@ -7349,9 +7351,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
                 $('#form-item-otpPhoneNumber').val(data.otp_phone_number);
                 $('#form-item-otpSecret').val(data.otp_secret);
-                $('#form-item-otpAlgorithm').val(data.otp_algorithm || 'sha1');
-                $('#form-item-otpDigits').val(String(data.otp_digits || 6));
-                $('#form-item-otpPeriod').val(data.otp_period || 30);
+                $('#form-item-otpAlgorithm').val(data.otp_algorithm || 'sha1')
+                $('#form-item-otpDigits').val(String(data.otp_digits || '6'))
+                $('#form-item-otpPeriod').val(String(data.otp_period || '30'))
 
                 // Delete inputs related files uploaded but not confirmed
                 var data = {

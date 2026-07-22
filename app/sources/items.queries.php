@@ -2072,6 +2072,8 @@ switch ($inputData['type']) {
                     );
                 }
                 if ($currentsecret !== $post_otp_secret) {
+                    // Only record that the secret changed: the previous value is a live
+                    // credential, and the history renderer prints this payload as-is.
                     logItems(
                         $SETTINGS,
                         (int) $inputData['itemId'],
@@ -2079,7 +2081,7 @@ switch ($inputData['type']) {
                         $session->get('user-id'),
                         'at_modification',
                         $session->get('user-login'),
-                        'at_otp_secret:'.$currentsecret
+                        'at_otp_secret:updated'
                     );
                 }
             } elseif ($otpExists === false && empty($post_otp_secret) === false) {

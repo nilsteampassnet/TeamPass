@@ -69,6 +69,95 @@ final class ItemTotpConfigurationTest extends TestCase
         self::assertSame(30, $configuration['period']);
     }
 
+    /**
+     * @return iterable<string, array{string}>
+     */
+    public static function separatedSecrets(): iterable
+    {
+        yield 'spaced groups' => ['JBSW Y3DP EHPK 3PXP'];
+        yield 'hyphenated groups' => ['JBSWY3DP-EHPK-3PXP'];
+        yield 'lowercase spaced groups' => ['jbsw y3dp ehpk 3pxp'];
+        yield 'padded and spaced' => ['JBSW Y3DP EHPK 3PXP===='];
+    }
+
+    /**
+     * Services display the secret in readable groups. Those separators carry no
+     * meaning and must not make an otherwise valid secret unusable.
+     */
+    #[DataProvider('separatedSecrets')]
+    public function testDisplaySeparatorsAreStrippedFromTheSecret(string $secret): void
+    {
+        $configuration = normalizeItemTotpConfiguration($secret);
+
+        self::assertSame('JBSWY3DPEHPK3PXP', $configuration['secret']);
+    }
+
+    /**
+     * A separated secret must generate exactly the same codes as its compact form,
+     * so an item stored before the normalization keeps working untouched.
+     */
+    public function testSeparatedSecretGeneratesTheSameCodeAsTheCompactForm(): void
+    {
+        $compact = createItemTotp('JBSWY3DPEHPK3PXP');
+        $spaced = createItemTotp('JBSW Y3DP EHPK 3PXP');
+
+        self::assertSame($compact->at(1111111111), $spaced->at(1111111111));
+    }
+
+    /**
+     * Stripping separators must not turn an invalid secret into a valid one.
+     */
+    public function testSeparatorStrippingDoesNotRescueInvalidSecrets(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        normalizeItemTotpConfiguration('NOT-BASE32!');
+    }
+
+    public function testNormalizeItemTotpSecretIsIdempotent(): void
+    {
+        $once = normalizeItemTotpSecret('jbsw y3dp-ehpk 3pxp====');
+
+        self::assertSame('JBSWY3DPEHPK3PXP', $once);
+        self::assertSame($once, normalizeItemTotpSecret($once));
+    }
+
+    /**
+     * The read path skips provisioning URI parsing, but it must keep rejecting a
+     * stored profile that could silently produce wrong codes.
+     */
+    public function testCreateItemTotpRejectsAnUnsupportedStoredProfile(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        createItemTotp('JBSWY3DPEHPK3PXP', 'md5', 6, 30);
+    }
+
+    /**
+     * The read path no longer forces a throw-away decoding, so an unusable stored
+     * secret must still surface when the code is actually generated.
+     */
+    public function testCreateItemTotpSurfacesAnUnusableStoredSecretOnGeneration(): void
+    {
+        $totp = createItemTotp('NOTBASE32!');
+
+        $this->expectException(Throwable::class);
+
+        $totp->now();
+    }
+
+    public function testValidateItemTotpProfileReturnsTheNormalizedProfile(): void
+    {
+        self::assertSame(
+            [
+                'algorithm' => 'sha512',
+                'digits' => 8,
+                'period' => 60,
+            ],
+            validateItemTotpProfile(' SHA512 ', 8, 60)
+        );
+    }
+
     public function testProvisioningUriSuppliesTheCompleteProfile(): void
     {
         $configuration = normalizeItemTotpConfiguration(
@@ -144,6 +233,20 @@ final class ItemTotpConfigurationTest extends TestCase
             self::assertStringContainsString($defaultDefinition, $installer);
             self::assertStringContainsString($defaultDefinition, $upgrade);
         }
+    }
+
+    /**
+     * The separator tolerance is user-visible behaviour: keep it documented.
+     */
+    public function testSecretSeparatorToleranceIsDocumented(): void
+    {
+        $featureDoc = file_get_contents(__DIR__ . '/../../docs/features/items.md');
+        $apiDoc = file_get_contents(__DIR__ . '/../../docs/api/api-basic.md');
+
+        self::assertIsString($featureDoc);
+        self::assertIsString($apiDoc);
+        self::assertStringContainsString('Spaces and hyphens are separators only', $featureDoc);
+        self::assertStringContainsString('Spaces and hyphens are stripped', $apiDoc);
     }
 
     public function testItemPageKeepsTotpPeriodLimitOutsideGeneratedJavascript(): void

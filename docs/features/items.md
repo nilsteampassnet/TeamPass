@@ -274,6 +274,10 @@ When viewing an item that has OTP configured, the current code is shown and refr
 
 The secret alone does not contain the algorithm. Bare secrets therefore default to the historical Teampass profile: SHA-1, 6 digits, and 30 seconds. Existing item OTP records keep this profile automatically after upgrade.
 
+> **Note on the secret format** — services usually display the secret in readable groups, such as `JBSW Y3DP EHPK 3PXP` or `JBSWY3DP-EHPK-3PXP`. Spaces and hyphens are separators only: Teampass removes them, uppercases the value and drops any `=` padding before storing it. You can therefore paste the secret exactly as shown, with or without its groups. Any other character outside the Base32 alphabet is rejected with an explicit error, and nothing is saved.
+
+The **Show OTP** toggle drives the display: an item whose secret is filled in but whose toggle is off stores the configuration without showing any code.
+
 All users with access to the item will then see the same rotating code.
 
 ---
