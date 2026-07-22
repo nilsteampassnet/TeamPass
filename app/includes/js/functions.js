@@ -546,16 +546,20 @@ function browserSession(action, name, data)
                 data
             );
         } else {
-            // Ensure all entries exist
-            $(data).each(function(value, key) {
-                store.update(
-                    name,
-                    function(bSession)
-                    {
-                        bSession.key = value;
-                    }
-                )
-            });
+            // Store already exists: only add the entries it does not have yet.
+            // Existing values are never overwritten, so a page needing an
+            // up-to-date value must refresh it explicitly with store.update().
+            store.update(
+                name,
+                function(bSession)
+                {
+                    Object.keys(data).forEach(function(key) {
+                        if (bSession[key] === undefined) {
+                            bSession[key] = data[key];
+                        }
+                    });
+                }
+            );
         }
     }
 }
