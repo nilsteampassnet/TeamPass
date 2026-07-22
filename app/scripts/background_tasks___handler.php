@@ -1360,7 +1360,8 @@ class BackgroundTasksHandler {
 
             foreach ($tempFiles as $fileEntry) {
                 $entryId = intval($fileEntry['increment_id']);
-                $timestamp = intval($fileEntry['intitule']);
+                // intitule holds "<timestamp>_<uploader id>_<random>"; legacy rows hold the bare timestamp.
+                $timestamp = tempFileUploadTimestamp(strval($fileEntry['intitule']));
                 $fileName = strval($fileEntry['valeur']);
 
                 // Validate timestamp format
