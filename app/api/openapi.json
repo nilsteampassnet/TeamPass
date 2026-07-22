@@ -439,6 +439,26 @@
                                         },
                                         "item_id": {
                                             "type": "integer"
+                                        },
+                                        "algorithm": {
+                                            "type": "string",
+                                            "enum": [
+                                                "sha1",
+                                                "sha256",
+                                                "sha512"
+                                            ]
+                                        },
+                                        "digits": {
+                                            "type": "integer",
+                                            "enum": [
+                                                6,
+                                                8
+                                            ]
+                                        },
+                                        "period": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 86400
                                         }
                                     }
                                 }
@@ -1092,6 +1112,26 @@
                             "null"
                         ]
                     },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ]
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ]
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400
+                    },
                     "favicon_url": {
                         "type": [
                             "string",
@@ -1209,7 +1249,31 @@
                         "type": "string"
                     },
                     "totp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base32 secret or otpauth://totp provisioning URI"
+                    },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ],
+                        "default": "sha1"
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ],
+                        "default": 6
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400,
+                        "default": 30
                     },
                     "fields": {
                         "type": "array",
@@ -1267,7 +1331,28 @@
                         "type": "integer"
                     },
                     "totp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base32 secret, otpauth://totp provisioning URI, or an empty string to remove TOTP"
+                    },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ]
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ]
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400
                     },
                     "fields": {
                         "type": "array",
@@ -1529,21 +1614,6 @@
                             "properties": {
                                 "token": {
                                     "type": "string"
-                                },
-                                "teampass_version": {
-                                    "type": "string",
-                                    "description": "Full server version, e.g. '3.2.1.0'",
-                                    "examples": [
-                                        "3.2.1.0"
-                                    ]
-                                },
-                                "teampass_version_major": {
-                                    "type": "string",
-                                    "description": "Major version part (TP_VERSION), e.g. '3.2.1'"
-                                },
-                                "teampass_version_minor": {
-                                    "type": "string",
-                                    "description": "Minor version part (TP_VERSION_MINOR), e.g. '0'"
                                 }
                             }
                         }
@@ -1563,21 +1633,8 @@
                                 "extension_key": {
                                     "type": "string"
                                 },
-                                "extension_url": {
-                                    "type": "string",
-                                    "description": "Instance URL (cpassman_url)"
-                                },
-                                "teampass_version": {
-                                    "type": "string",
-                                    "description": "Full server version, e.g. '3.2.1.0'"
-                                },
-                                "teampass_version_major": {
-                                    "type": "string",
-                                    "description": "Major version part (TP_VERSION)"
-                                },
-                                "teampass_version_minor": {
-                                    "type": "string",
-                                    "description": "Minor version part (TP_VERSION_MINOR)"
+                                "cpassman_url": {
+                                    "type": "string"
                                 }
                             }
                         }

@@ -83,6 +83,9 @@ class ItemModel
                 i.viewed_no, i.fa_icon, i.inactif, i.perso, i.favicon_url, i.anyone_can_modify,
                 t.title as folder_label,
                 io.secret as otp_secret,
+                io.algorithm as otp_algorithm,
+                io.digits as otp_digits,
+                io.period as otp_period,
                 (SELECT GROUP_CONCAT(tg.tag SEPARATOR ', ') 
                  FROM " . prefixTable('tags') . " AS tg 
                  WHERE tg.item_id = i.id) as tags
@@ -178,6 +181,15 @@ class ItemModel
                     'folder_label' => $row['folder_label'],
                     'path' => empty($path) === true ? '' : $path,
                     'totp' => $row['otp_secret'],
+                    'totp_algorithm' => empty($row['otp_algorithm']) === false
+                        ? (string) $row['otp_algorithm']
+                        : ITEM_TOTP_DEFAULT_ALGORITHM,
+                    'totp_digits' => empty($row['otp_digits']) === false
+                        ? (int) $row['otp_digits']
+                        : ITEM_TOTP_DEFAULT_DIGITS,
+                    'totp_period' => empty($row['otp_period']) === false
+                        ? (int) $row['otp_period']
+                        : ITEM_TOTP_DEFAULT_PERIOD,
                     'favicon_url' => $row['favicon_url'],
                     'tags' => $row['tags'],
                     'anyone_can_modify' => $row['anyone_can_modify'],
@@ -252,6 +264,19 @@ class ItemModel
             // Step 1: Prepare data and sanitize inputs
             $data = $this->prepareData($arrItemParams);
             $data = $this->validateData($data); // Step 2: Sanitize the data
+
+            if (empty($data['totp']) === false) {
+                $otpConfiguration = normalizeItemTotpConfiguration(
+                    $data['totp'],
+                    $data['totpAlgorithm'],
+                    $data['totpDigits'],
+                    $data['totpPeriod']
+                );
+                $data['totp'] = $otpConfiguration['secret'];
+                $data['totpAlgorithm'] = $otpConfiguration['algorithm'];
+                $data['totpDigits'] = $otpConfiguration['digits'];
+                $data['totpPeriod'] = $otpConfiguration['period'];
+            }
 
             // Realign the values extracted above on the sanitized ones: they feed the duplicate
             // check, the tags and the WebSocket event, which must all see what is actually stored.
@@ -381,6 +406,9 @@ class ItemModel
             // Constrain the icon to safe Font Awesome class characters (letters, digits, space, underscore, hyphen)
             'icon' => (string) preg_replace('/[^a-zA-Z0-9 _-]/', '', (string) ($arrItemParams['icon'] ?? '')),
             'totp' => (string) ($arrItemParams['totp'] ?? ''),
+            'totpAlgorithm' => (string) ($arrItemParams['totp_algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+            'totpDigits' => (int) ($arrItemParams['totp_digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+            'totpPeriod' => (int) ($arrItemParams['totp_period'] ?? ITEM_TOTP_DEFAULT_PERIOD),
             'favicon_url' => '',
         ];
     }
@@ -629,6 +657,9 @@ class ItemModel
                 array(
                     'item_id' => $newItemId,
                     'secret' => $encryptedSecret['string'],
+                    'algorithm' => $data['totpAlgorithm'],
+                    'digits' => $data['totpDigits'],
+                    'period' => $data['totpPeriod'],
                     'phone_number' => '',
                     'timestamp' => time(),
                     'enabled' => 1,
@@ -1222,6 +1253,10 @@ class ItemModel
             $updateData = [];
             $passwordKey = null;
             $newPassword = null;
+            $hasTotpUpdate = array_key_exists('totp', $params)
+                || array_key_exists('totp_algorithm', $params)
+                || array_key_exists('totp_digits', $params)
+                || array_key_exists('totp_period', $params);
 
             // Handle folder_id change
             if (isset($params['folder_id'])) {
@@ -1321,9 +1356,47 @@ class ItemModel
                 $updateData['pw_len'] = strlen($newPassword);
                 $updateData['complexity_level'] = $complexityLevel;
             }
+
+            $otpConfiguration = null;
+            $currentOtp = [];
+            $currentOtpExists = false;
+            if ($hasTotpUpdate === true && !(array_key_exists('totp', $params) && empty($params['totp']))) {
+                $currentOtp = DB::queryFirstRow(
+                    'SELECT secret, algorithm, digits, period, enabled, phone_number
+                    FROM ' . prefixTable('items_otp') . '
+                    WHERE item_id = %i',
+                    $itemId
+                );
+                $currentOtpExists = DB::count() > 0;
+                if (isset($params['totp']) && empty($params['totp']) === false) {
+                    $totpInput = (string) $params['totp'];
+                } elseif ($currentOtpExists === true) {
+                    $decryptedSecret = cryption(
+                        (string) $currentOtp['secret'],
+                        '',
+                        'decrypt'
+                    );
+                    $totpInput = (string) ($decryptedSecret['string'] ?? '');
+                } else {
+                    throw new InvalidArgumentException('A TOTP secret is required before its profile can be configured.');
+                }
+
+                $otpConfiguration = normalizeItemTotpConfiguration(
+                    $totpInput,
+                    (string) ($params['totp_algorithm']
+                        ?? $currentOtp['algorithm']
+                        ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+                    (int) ($params['totp_digits']
+                        ?? $currentOtp['digits']
+                        ?? ITEM_TOTP_DEFAULT_DIGITS),
+                    (int) ($params['totp_period']
+                        ?? $currentOtp['period']
+                        ?? ITEM_TOTP_DEFAULT_PERIOD)
+                );
+            }
             
             // Update the item
-            if (!empty($updateData) || (isset($params['totp']) === true && empty($params['totp']) === false)) {
+            if (!empty($updateData) || $hasTotpUpdate === true) {
                 $updateData['updated_at'] = time();
 
                 DB::update(
@@ -1333,10 +1406,11 @@ class ItemModel
                     $itemId
                 );
 
-                // Handle TOTP update
-                if (isset($params['totp']) === true && empty($params['totp']) === false) {
+                // Handle TOTP update. Profile-only updates reuse the encrypted
+                // secret already attached to the item.
+                if ($otpConfiguration !== null) {
                     $encryptedSecret = cryption(
-                        $params['totp'],
+                        $otpConfiguration['secret'],
                         '',
                         'encrypt'
                     );
@@ -1346,16 +1420,20 @@ class ItemModel
                         [
                             'item_id' => $itemId,
                             'secret' => $encryptedSecret['string'],
-                            'phone_number' => '',
+                            'algorithm' => $otpConfiguration['algorithm'],
+                            'digits' => $otpConfiguration['digits'],
+                            'period' => $otpConfiguration['period'],
+                            'phone_number' => $currentOtpExists === true
+                                ? (string) $currentOtp['phone_number']
+                                : '',
                             'timestamp' => time(),
-                            'enabled' => 1,
+                            'enabled' => $currentOtpExists === true
+                                ? (int) $currentOtp['enabled']
+                                : 1,
                         ]
                     );
                 }
-            } else {
-                // Check if an entry exists for TOTP in items_otp table
-                // IF yes delete it
-                if (isset($params['totp']) === true && empty($params['totp']) === true) {
+                if (array_key_exists('totp', $params) && empty($params['totp'])) {
                     DB::delete(
                         prefixTable('items_otp'),
                         'item_id = %i',
