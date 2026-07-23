@@ -24,10 +24,13 @@
    - [List Tags](#list-tags)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
+   - [List folders with access rights](#writable-folders)
    - [Create a folder](#create-folder)
+   - [Update a folder](#folder-update)
+   - [Delete a folder](#folder-delete)
 5. [Error Handling](#error-handling)
 6. [Best Practices](#best-practices)
-7. [Complete Workflow Example](#example-workflow)
+7. [Command-line client](#cli)
 
 ---
 
@@ -799,22 +802,24 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | **Parameters** | None |
 | **Headers** | `Authorization: Bearer <token>` |
 
-**Response (success):**
+| **Query parameters** | `limit`, `offset` (optional, applied to the root-level entries) |
+
+**Response (success):** a nested tree. Each node carries its own children in `childrens`.
+
 ```json
 [
   {
     "id": 1,
     "title": "Production",
-    "parent_id": 0,
-    "nlevel": 0,
-    "personal_folder": 0
-  },
-  {
-    "id": 2,
-    "title": "Servers",
-    "parent_id": 1,
-    "nlevel": 1,
-    "personal_folder": 0
+    "isVisible": true,
+    "childrens": [
+      {
+        "id": 2,
+        "title": "Servers",
+        "isVisible": true,
+        "childrens": []
+      }
+    ]
   }
 ]
 ```
@@ -825,15 +830,14 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | ----- | ---- | ----------- |
 | `id` | integer | Unique folder ID |
 | `title` | string | Folder name |
-| `parent_id` | integer | Parent folder ID (0 for root) |
-| `nlevel` | integer | Depth level in tree |
-| `personal_folder` | integer | Personal folder (0/1) |
+| `isVisible` | boolean | `false` when the folder is only returned to carry accessible children |
+| `childrens` | array | Child nodes, same structure |
 
 **Response Codes:**
 
 | Code | Description |
 | ---- | ----------- |
-| 200 | List returned successfully |
+| 200 | List returned successfully (empty list when no accessible folder) |
 | 401 | Invalid or expired token |
 | 403 | Access denied |
 
@@ -841,6 +845,97 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 ```bash
 curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+> 💡 Need the access rights on each folder, or a flat list that is easier to iterate?
+> Use [`folder/writableFolders`](#writable-folders) instead.
+
+---
+
+### List folders with access rights {#writable-folders}
+
+> 📋 Returns every folder accessible to the authenticated user as a **flat list in tree order**, with the read-only flag on each entry
+
+The name is historical: the endpoint returns **all** accessible folders, not only the writable
+ones — check `is_readonly` on each entry.
+
+Rows are sorted by `position` (the folder tree's own order, siblings included), so
+`parent_id` + `level` + `position` are enough to rebuild the exact hierarchy in a single call.
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/writableFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/folder/writableFolders` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+[
+  {
+    "id": 12,
+    "label": "jdoe",
+    "level": 1,
+    "parent_id": 0,
+    "first_position": 1,
+    "position": 23,
+    "is_readonly": 0
+  },
+  {
+    "id": 1,
+    "label": "Production",
+    "level": 1,
+    "parent_id": 0,
+    "first_position": 0,
+    "position": 41,
+    "is_readonly": 0
+  },
+  {
+    "id": 2,
+    "label": "Servers",
+    "level": 2,
+    "parent_id": 1,
+    "first_position": 0,
+    "position": 42,
+    "is_readonly": 1
+  }
+]
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Unique folder ID |
+| `label` | string | Folder name (the user's login for their personal root folder) |
+| `level` | integer | Depth level in the tree |
+| `parent_id` | integer | Parent folder ID (0 for root) |
+| `first_position` | integer | `1` for the user's personal root folder, to be listed first |
+| `position` | integer | Tree position; the list is already sorted on it |
+| `is_readonly` | integer | `1` = read access only, `0` = the user can write |
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List returned successfully (empty list when no accessible folder) |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Print `id`, depth, name and access on one line per folder, already in tree order:
+```bash
+curl -s -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  | jq -r '.[] | [.id, .level, .label, (if .is_readonly == 1 then "read-only" else "write" end)] | @tsv'
 ```
 
 ---
@@ -1158,3 +1253,53 @@ All API endpoints may return the following standard HTTP error codes:
 3. **Permissions**
    - Verify the account has necessary permissions
    - Test with different access right levels
+
+---
+
+## Command-line client {#cli}
+
+Teampass ships a small Bash client, `scripts/teampass-cli.sh`, that wraps the JWT
+authentication and the most common endpoints. It requires `curl` and `jq`.
+
+**Configuration** — environment variables, or `~/.config/teampass/config`:
+
+```bash
+export TEAMPASS_URL="https://your-teampass.com"
+export TEAMPASS_LOGIN="jdoe"
+
+# password mode
+export TEAMPASS_PASSWORD="..."
+export TEAMPASS_APIKEY="..."
+
+# ...or token mode (Personal Access Token, see /authorizeToken)
+export TEAMPASS_TOKEN="..."
+```
+
+**Commands:**
+
+```bash
+./scripts/teampass-cli.sh folders --tree          # folder tree with access rights
+./scripts/teampass-cli.sh read 25                 # read an item
+./scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+./scripts/teampass-cli.sh update 25 label "Updated Server"
+./scripts/teampass-cli.sh search "server"         # by label
+./scripts/teampass-cli.sh search "192.168." --by-desc
+./scripts/teampass-cli.sh search "https://app" --by-url
+```
+
+`folders --tree` renders the hierarchy directly, because
+[`folder/writableFolders`](#writable-folders) already returns the folders in tree order:
+
+```
+jdoe [12]
+Production [1]
+  Servers [2] (read-only)
+    Databases [3] (read-only)
+```
+
+**Notes:**
+- The JWT is requested **once per invocation** and kept in memory — never written to disk.
+  Each authentication opens a server-side API session, so a script must not re-authenticate
+  on every request.
+- A `429` answer is retried once, honouring the `Retry-After` header.
+- The configuration file holds credentials in clear text: keep it at `chmod 600`.

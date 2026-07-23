@@ -319,8 +319,56 @@ class FolderEndpointsRegressionTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // folder/writableFolders — tree ordering
+    // -------------------------------------------------------------------------
+
+    public function testWritableFoldersIsOrderedByTreePosition(): void
+    {
+        // The flat list must stay in MPTT pre-order so a client can rebuild the
+        // hierarchy — sibling order included — from a single call.
+        $controller = $this->readSource('/app/api/Controller/Api/FolderController.php');
+
+        self::assertStringContainsString(
+            'ORDER BY nt.nleft ASC',
+            $controller,
+            'writableFolders must return the folders in tree order (nleft), not alphabetically'
+        );
+        self::assertStringContainsString(
+            "'position' => (int) \$row['nleft']",
+            $controller,
+            'writableFolders must expose the tree position so clients can re-sort'
+        );
+    }
+
+    public function testWritableFoldersKeepsPersonalFolderLabelMapping(): void
+    {
+        // A personal root folder is stored with the user id as title; the API
+        // must keep exposing the login instead.
+        $controller = $this->readSource('/app/api/Controller/Api/FolderController.php');
+
+        self::assertStringContainsString(
+            "'label' => \$row['title'] === \$userId ? \$username : \$row['title']",
+            $controller,
+            'writableFolders must map the personal root folder title to the user login'
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // OpenAPI contract
     // -------------------------------------------------------------------------
+
+    public function testOpenApiDocumentsWritableFolderPosition(): void
+    {
+        $spec = json_decode($this->readSource('/app/api/openapi.json'), true);
+        self::assertIsArray($spec);
+
+        $props = $spec['components']['schemas']['WritableFolder']['properties'] ?? [];
+        self::assertArrayHasKey(
+            'position',
+            $props,
+            'WritableFolder must document the tree position field'
+        );
+    }
 
     public function testOpenApiDocumentsNewPaths(): void
     {

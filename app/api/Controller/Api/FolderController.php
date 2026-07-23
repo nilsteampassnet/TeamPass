@@ -197,8 +197,13 @@ class FolderController extends BaseController
     //end createFolderAction()
 
     /**
-     * Get list of writable folders
+     * Get list of accessible folders, in tree order.
      *
+     * Rows are ordered by nleft (MPTT pre-order), which is the canonical order
+     * of the folder tree in the web UI. Combined with parent_id / level, a client
+     * can rebuild the exact hierarchy — including sibling order — in one call.
+     *
+     * @param array $userData User data from JWT token
      * @return void
      */
     public function writableFoldersAction(array $userData)
@@ -219,11 +224,10 @@ class FolderController extends BaseController
 
                 if (empty($userFolders) === false) {
                     $rows = DB::query(
-                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id
+                        'SELECT nt.id AS folder_id, nt.title, nt.nlevel, nt.parent_id, nt.nleft
                         FROM ' . prefixTable('nested_tree') . ' AS nt
                         WHERE nt.id IN %li
-                        GROUP BY nt.id, nt.title, nt.nlevel, nt.parent_id
-                        ORDER BY nt.nlevel ASC, nt.title ASC',
+                        ORDER BY nt.nleft ASC',
                         $userFolders
                     );
 
@@ -235,6 +239,8 @@ class FolderController extends BaseController
                             'level' => (int) $row['nlevel'],
                             'parent_id' => (int) $row['parent_id'],
                             'first_position' => $row['title'] === $userId ? 1 : 0,
+                            // MPTT left bound: lets a client re-sort the list back into tree order
+                            'position' => (int) $row['nleft'],
                             'is_readonly' => $folderAccessModel->isFolderReadOnlyForUser($folderId, (int) $userData['id']) ? 1 : 0,
                         ];
                     }

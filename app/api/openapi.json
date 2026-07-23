@@ -720,8 +720,8 @@
         "/folder/writableFolders": {
             "get": {
                 "operationId": "folderWritableFolders",
-                "summary": "List accessible folders with read-only flag",
-                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry.",
+                "summary": "List accessible folders with read-only flag, in tree order",
+                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry. Rows are ordered by 'position' (MPTT pre-order), so parent_id + level + position rebuild the exact folder hierarchy, sibling order included.",
                 "responses": {
                     "200": {
                         "description": "Flat folder list",
@@ -1543,6 +1543,10 @@
                     },
                     "first_position": {
                         "type": "integer"
+                    },
+                    "position": {
+                        "type": "integer",
+                        "description": "MPTT left bound. The list is already sorted on it; use it to restore tree order after a client-side re-sort."
                     },
                     "is_readonly": {
                         "type": "integer"

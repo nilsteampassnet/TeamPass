@@ -264,14 +264,17 @@ List all folders accessible to the authenticated user.
 
 ### `GET /api/folder/writableFolders`
 
-List all folders accessible to the user with label, level, and read-only flag.
+List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, is_readonly }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, is_readonly }`.
 
 - `is_readonly: 1` — user has read access only (R-type role on this folder)
 - `is_readonly: 0` — user can write
+- `position` — the folder's `nested_tree.nleft`; rows are sorted `ORDER BY nleft ASC` (MPTT pre-order), so `parent_id` + `level` + `position` rebuild the exact hierarchy **including sibling order**. Before 3.2.2 the ordering was `nlevel ASC, title ASC` (alphabetical, sibling order lost).
 
-**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry.
+**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry. This is the endpoint to point API clients at when they need "the whole folder tree in one call" — `listFolders` returns a nested tree but carries no access rights.
+
+**Known cost:** `is_readonly` is resolved per folder by `FolderAccessModel::isFolderReadOnlyForUser()` (up to 3 queries per folder). A batch resolver is a pending optimization.
 
 **Permissions:** `allowed_to_read`.
 
