@@ -6,19 +6,19 @@ declare(strict_types=1);
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- * 
+ *
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- * 
+ *
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
@@ -125,6 +125,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <label><?php echo $lang->get('export_format_type'); ?></label>
                         <select class="form-control select2" style="width:100%;" id="export-format">
                             <option value="csv"><?php echo $lang->get('csv'); ?></option>
+                            <option value="xml"><?php echo $lang->get('export_format_keepass_xml'); ?></option>
                             <?php
                             if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
                                 echo '<option value="html">'.strtoupper($lang->get('html')).'</option>';

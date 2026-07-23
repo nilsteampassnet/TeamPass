@@ -6,19 +6,19 @@ declare(strict_types=1);
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- * 
+ *
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- * 
+ *
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
@@ -92,7 +92,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         language: '<?php echo $session->get('user-language_code'); ?>'
     });
 
-    // Select2 with buttons selectall        
+    // Select2 with buttons selectall
     $.fn.select2.amd.define('select2/selectAllAdapter', [
         'select2/utils',
         'select2/dropdown',
@@ -157,7 +157,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // On type selection
     $('#export-format').on("change", function(e) {
         $('#download-export-file').attr('onclick', "").addClass('hidden');
-        if ($(this).val() === 'pdf' || $(this).val() === 'html') {
+        if ($(this).val() === 'pdf' || $(this).val() === 'html') {
             $('#pwd').removeClass('hidden');
             $('#export-password').val('');
         } else {
@@ -234,7 +234,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $("#export-folders :selected").each(function(i, selected) {
             ids.push($(selected).val());
         });
-        
+
         // No selection of folders done
         if (ids.length === 0) {
             $('#export-progress').find('span').html('<i class="fas fa-exclamation-triangle text-danger mr-2 fa-lg"></i><?php echo $lang->get('error_no_selected_folder'); ?>');
@@ -295,11 +295,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($('#export-format').val() === 'html') {
             // Offline mode: build a single self-contained, password-encrypted HTML file
             generateOfflineFile(ids);
-        } else if ($('#export-format').val() === 'csv') {
+        } else if ($('#export-format').val() === 'csv' || $('#export-format').val() === 'xml') {
             // Export to CSV
             $.post(
                 "sources/export.queries.php", {
-                    type: 'export_to_csv_format',
+                    type: 'export_to_' + $('#export-format').val() + '_format',
                     ids: (JSON.stringify(ids))
                 },
                 function(data) {
@@ -309,6 +309,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         .html('');
 
 
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+
+                    if (data.error === true) {
+                        toastr.remove();
+                        toastr.error(
+                            data.message || '',
+                            '<?php echo $lang->get('error'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        return;
+                    }
+
                     toastr.remove();
                     toastr.success(
                         '<?php echo $lang->get('done'); ?>',
@@ -316,12 +331,15 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             timeOut: 1000
                         }
                     );
-                    
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                    
-                    // download VSC file
-                    download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
+
+                    // download file
+                    if (data.xml_content) {
+                        var byteCharacters = atob(data.xml_content);
+                        var byteArray = Uint8Array.from(byteCharacters, c => c.charCodeAt(0));
+                        download(new Blob([byteArray]), $('#export-filename').val() + ".xml", "text/xml");
+                    } else if (data.csv_content) {
+                        download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");
+                    }
                 }
             );
         }
