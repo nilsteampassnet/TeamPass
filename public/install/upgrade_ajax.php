@@ -432,7 +432,7 @@ if (isset($post_type)) {
             $checks[] = [
                 'id'     => 'upg-chk-app-safe',
                 'status' => $appWritable ? 'warning' : 'ok',
-                'fix'    => $appWritable ? 'chmod 0755 app' : '',
+                'fix'    => $appWritable ? 'chown root:www-data app && chmod g-w,o-w app' : '',
             ];
 
             // /public/ must NOT be writable by the web server (security: protect webroot)
@@ -440,7 +440,7 @@ if (isset($post_type)) {
             $checks[] = [
                 'id'     => 'upg-chk-public-safe',
                 'status' => $publicWritable ? 'warning' : 'ok',
-                'fix'    => $publicWritable ? 'chmod 0755 public' : '',
+                'fix'    => $publicWritable ? 'chown root:www-data public && chmod g-w,o-w public' : '',
             ];
 
             // ── PHP extensions ────────────────────────────────────────────
