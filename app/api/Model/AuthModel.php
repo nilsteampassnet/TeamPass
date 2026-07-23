@@ -238,7 +238,7 @@ class AuthModel
      * @param string              $privateKeyClear Cleartext RSA private key
      * @param string              $loginForJwt     Login to embed in the JWT username claim
      * @param array<string,mixed> $SETTINGS        Application settings
-     * @return array{token:string}|array{error:string,info:string}
+     * @return array{token:string,teampass_version:string,teampass_version_major:string,teampass_version_minor:string}|array{error:string,info:string}
      */
     private function issueJwtForUser(array $userInfo, string $privateKeyClear, string $loginForJwt, array $SETTINGS): array
     {
@@ -334,7 +334,7 @@ class AuthModel
         }
 
         // create JWT (session_aes_key is stored server-side, not in the token)
-        return $this->createUserJWT(
+        $jwt = $this->createUserJWT(
             $jti,
             $issuedAt,
             $expiresAt,
@@ -359,6 +359,16 @@ class AuthModel
             (int) ($SETTINGS['pwd_maximum_length'] ?? 60),
             (int) ($SETTINGS['maintenance_mode'] ?? 0),
         );
+
+        // Expose the server version to API clients (the browser extension forwards it
+        // to the licence server). Returned in the response body rather than as a JWT
+        // claim: the token stays a pure credential, and an instance upgraded during the
+        // life of a token reports its new version at the next authentication.
+        return array_merge($jwt, [
+            'teampass_version' => TP_VERSION . '.' . TP_VERSION_MINOR,
+            'teampass_version_major' => TP_VERSION,
+            'teampass_version_minor' => TP_VERSION_MINOR,
+        ]);
     }
     //end issueJwtForUser
 
@@ -502,7 +512,7 @@ class AuthModel
      * @param integer $api_token_duration
      * @param integer $pwd_maximum_length
      * @param integer $maintenance_mode
-     * @return array
+     * @return array{token: string}
      */
     private function createUserJWT(
         string $jti,

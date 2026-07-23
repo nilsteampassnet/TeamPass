@@ -379,10 +379,42 @@ if ((int) $session_user_admin === 1) {
                                         </div>
                                         <div class="row">
                                             <div class="d-inline p-2 col-4">
-                                                <?php echo $lang->get('otp_secret'); ?>
+                                                <?php echo $lang->get('otp_secret_or_uri'); ?>
                                             </div>
                                             <div class="d-inline p-2 col-8">
                                                 <input type="text" class="form-control form-item-control purify" data-field-name="otpSecret" id="form-item-otpSecret" data-change-ongoing="">
+                                                <small class="form-text text-muted"><?php echo $lang->get('otp_uri_help'); ?></small>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="d-inline p-2 col-4">
+                                                <?php echo $lang->get('otp_algorithm'); ?>
+                                            </div>
+                                            <div class="d-inline p-2 col-4">
+                                                <select class="form-control form-item-control purify" data-field-name="otpAlgorithm" id="form-item-otpAlgorithm" data-change-ongoing="">
+                                                    <option value="sha1">SHA-1</option>
+                                                    <option value="sha256">SHA-256</option>
+                                                    <option value="sha512">SHA-512</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="d-inline p-2 col-4">
+                                                <?php echo $lang->get('otp_digits'); ?>
+                                            </div>
+                                            <div class="d-inline p-2 col-4">
+                                                <select class="form-control form-item-control purify" data-field-name="otpDigits" id="form-item-otpDigits" data-change-ongoing="">
+                                                    <option value="6">6</option>
+                                                    <option value="8">8</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="d-inline p-2 col-4">
+                                                <?php echo $lang->get('otp_period'); ?>
+                                            </div>
+                                            <div class="d-inline p-2 col-4">
+                                                <input type="number" min="1" max="<?php echo ITEM_TOTP_MAX_PERIOD; ?>" class="form-control form-item-control purify" data-field-name="otpPeriod" id="form-item-otpPeriod" value="30" data-change-ongoing="">
                                             </div>
                                         </div>
                                         <div class="row">

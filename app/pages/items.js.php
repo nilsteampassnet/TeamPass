@@ -89,6 +89,51 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
 <script type="text/javascript">
     window.TeamPassCurrentUserId = <?php echo (int) $session->get('user-id'); ?>;
 
+  /**
+   * Apply the RFC 6238 profile carried by an otpauth provisioning URI.
+   *
+   * Only fills the visible controls so the user sees what will be stored.
+   * The server remains authoritative and performs the same parsing and
+   * validation before storing the normalized secret and profile.
+   *
+   * @returns {void}
+   */
+  function applyItemTotpProvisioningUri() {
+    const value = String($('#form-item-otpSecret').val() || '').trim()
+    if (!value.toLowerCase().startsWith('otpauth://')) {
+      return
+    }
+
+    // 0 means the field carries no upper bound: only the server then decides.
+    const maxPeriod = Number($('#form-item-otpPeriod').attr('max')) || 0
+
+    try {
+      const uri = new URL(value)
+      if (uri.protocol.toLowerCase() !== 'otpauth:' || uri.hostname.toLowerCase() !== 'totp') {
+        return
+      }
+
+      const algorithm = (uri.searchParams.get('algorithm') || 'sha1').toLowerCase()
+      const digits = uri.searchParams.get('digits') || '6'
+      const period = uri.searchParams.get('period') || '30'
+      const numericPeriod = Number(period)
+
+      if (['sha1', 'sha256', 'sha512'].includes(algorithm)) {
+        $('#form-item-otpAlgorithm').val(algorithm)
+      }
+      if (['6', '8'].includes(digits)) {
+        $('#form-item-otpDigits').val(digits)
+      }
+      if ((/^\d+$/).test(period) && numericPeriod >= 1 && (maxPeriod === 0 || numericPeriod <= maxPeriod)) {
+        $('#form-item-otpPeriod').val(period)
+      }
+    } catch (uriError) {
+      // A malformed URI is left untouched: the server rejects it with a clear message.
+    }
+  }
+
+  $(document).on('change', '#form-item-otpSecret', applyItemTotpProvisioningUri)
+
     // BIP-39 wordlist for the passphrase generator (language depends on the user's profile).
     const TP_BIP39_WORDLIST = <?php echo json_encode($bip39Wordlist, JSON_UNESCAPED_UNICODE); ?>;
     const TP_NOTIFICATION_ENGAGED = <?php echo json_encode($lang->get('notification_engaged'), JSON_UNESCAPED_UNICODE); ?>;
@@ -360,15 +405,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         'teampassApplication', {
             lastItemSeen: false,
             itemsListFolderId: false,
-            highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-            highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
+            highlightSelected: parseInt(<?php echo (int) ($SETTINGS['highlight_selected'] ?? 0); ?>),
+            highlightFavorites: parseInt(<?php echo (int) ($SETTINGS['highlight_favorites'] ?? 0); ?>),
             hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
             hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
         }
     );
-    // browserSession('init') skips keys when the store already exists (initialized by load.js.php),
-    // so force-inject HIBP settings via store.update to guarantee they are always present.
+    // browserSession('init') only creates the keys missing from an existing store
+    // (teampassApplication is already initialized by load.js.php), it never refreshes
+    // a value that is already there. Admin settings must therefore be re-applied
+    // explicitly, before the folder tree and the first item list are rendered.
     store.update('teampassApplication', function(app) {
+        app.highlightSelected = parseInt(<?php echo (int) ($SETTINGS['highlight_selected'] ?? 0); ?>)
+        app.highlightFavorites = parseInt(<?php echo (int) ($SETTINGS['highlight_favorites'] ?? 0); ?>)
         app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
         app.hibpIntervalDays = parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
     })
@@ -573,16 +622,19 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         // Store current view
         savePreviousView();
 
-        // Store the folder to open
-        store.set(
-            'teampassApplication', {
-                selectedFolder: parseInt(queryDict['group']),
-                itemsListFolderId: parseInt(queryDict['group']),
-                selectedItem: parseInt(queryDict['id']),
-                highlightSelected: parseInt(<?php echo $SETTINGS['highlight_selected']; ?>),
-                highlightFavorites: parseInt(<?php echo $SETTINGS['highlight_favorites']; ?>),
-                hibpEnabled: parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>),
-                hibpIntervalDays: parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
+        // Store the folder to open.
+        // Merge into the existing store instead of replacing it: store.set() would
+        // drop every other teampassApplication entry (foldersList, itemsList, ...).
+        store.update(
+            'teampassApplication',
+            function(app) {
+                app.selectedFolder = parseInt(queryDict['group'])
+                app.itemsListFolderId = parseInt(queryDict['group'])
+                app.selectedItem = parseInt(queryDict['id'])
+                app.highlightSelected = parseInt(<?php echo (int) ($SETTINGS['highlight_selected'] ?? 0); ?>)
+                app.highlightFavorites = parseInt(<?php echo (int) ($SETTINGS['highlight_favorites'] ?? 0); ?>)
+                app.hibpEnabled = parseInt(<?php echo isset($SETTINGS['hibp_enabled']) ? (int) $SETTINGS['hibp_enabled'] : 0; ?>)
+                app.hibpIntervalDays = parseInt(<?php echo isset($SETTINGS['hibp_check_interval_days']) ? (int) $SETTINGS['hibp_check_interval_days'] : 7; ?>)
             }
         );
         store.update(
@@ -1604,8 +1656,12 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     store.get('teampassApplication').selectedFolder
                 );
 
-                if (!isNaN(currentFolder) && store.get('teampassApplication').foldersList !== undefined) {
-                    displaySubfolders(store.get('teampassApplication').foldersList, currentFolder);
+                // foldersList is seeded as an empty array by load.js.php, so an empty
+                // list means "not loaded yet", not "this folder has no subfolder".
+                const cachedFolders = store.get('teampassApplication').foldersList;
+
+                if (!isNaN(currentFolder) && cachedFolders !== undefined && cachedFolders.length > 0) {
+                    displaySubfolders(cachedFolders, currentFolder);
                 }
             }
 
@@ -2892,6 +2948,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 $('#card-item-attachments, #card-item-history').html('');
                 $('#card-item-attachments-badge').html('<?php echo $lang->get('none'); ?>');
                 $('#form-item-otp').iCheck('uncheck');
+                $('#form-item-otpAlgorithm').val('sha1')
+                $('#form-item-otpDigits').val('6')
+                $('#form-item-otpPeriod').val('30')
 
                 // Move back fields
                 $('.fields-to-move')
@@ -3861,6 +3920,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
         }
 
         // Validate form
+        applyItemTotpProvisioningUri()
         var form = $('#form-item');
         if (form[0].checkValidity() === false) {
             form.addClass('was-validated');
@@ -4084,6 +4144,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                     'otp_is_enabled': $('#form-item-otp').is(':checked') ? 1 : 0,
                     'otp_phone_number': purifyRes.arrFields['otpPhoneNumber'] !== '' ? purifyRes.arrFields['otpPhoneNumber'] : '',
                     'otp_secret': purifyRes.arrFields['otpSecret'] !== '' ? purifyRes.arrFields['otpSecret'] : '',
+                    'otp_algorithm': purifyRes.arrFields['otpAlgorithm'] || 'sha1',
+                    'otp_digits': parseInt(purifyRes.arrFields['otpDigits'], 10) || 6,
+                    'otp_period': parseInt(purifyRes.arrFields['otpPeriod'], 10) || 30,
                 };
                 if (debugJavascript === true) {
                     console.log('SAVING DATA');
@@ -4715,7 +4778,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                             store.get('teampassApplication').itemsListFolderId ||
                             store.get('teampassApplication').selectedFolder
                         )
-                        if (cachedFolders !== undefined && !isNaN(currentFolder)) {
+                        if (cachedFolders !== undefined && cachedFolders.length > 0 && !isNaN(currentFolder)) {
                             displaySubfolders(cachedFolders, currentFolder)
                         }
                     }
@@ -5110,18 +5173,21 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             // folder.parent_id in the store is encoded as integer by PHP JSON, so strict === would
             // fail on a string, causing an empty subfolder list after item save.
             const groupeIdInt = parseInt(groupe_id);
-            if (store.get('teampassApplication').foldersList === undefined) {
+            // foldersList is seeded as an empty array by load.js.php, so an empty list
+            // means "not loaded yet", not "this folder has no subfolder".
+            const cachedFoldersList = store.get('teampassApplication').foldersList;
+            if (cachedFoldersList === undefined || cachedFoldersList.length === 0) {
                 // foldersList not yet available: internalRefreshVisibleFolders() is still running.
                 // displaySubfolders() will be called from its AJAX callback once the data arrives.
                 // This timeout is a last-resort fallback only (e.g. very slow network).
                 setTimeout(() => {
                     const fl = store.get('teampassApplication').foldersList
-                    if (fl !== undefined) {
+                    if (fl !== undefined && fl.length > 0) {
                         displaySubfolders(fl, groupeIdInt)
                     }
                 }, 3000);
             } else {
-                displaySubfolders(store.get('teampassApplication').foldersList, groupeIdInt);
+                displaySubfolders(cachedFoldersList, groupeIdInt);
             }
         }
 
@@ -5472,7 +5538,7 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
             value.anyone_can_modify = parseInt(value.anyone_can_modify);
             value.canMove = parseInt(value.canMove);
             value.expired = parseInt(value.expired);
-            value.is_favorite = parseInt(value.is_favorite);
+            value.is_favourited = parseInt(value.is_favourited ?? value.is_favorite ?? 0);
             value.is_result_of_search = parseInt(value.is_result_of_search);
             value.item_id = parseInt(value.item_id);
             value.is_corrupted = parseInt(value.is_corrupted || 0);
@@ -7299,6 +7365,9 @@ $bip39Wordlist = loadBip39Wordlist($session->get('user-language') ?? 'english');
                 }
                 $('#form-item-otpPhoneNumber').val(data.otp_phone_number);
                 $('#form-item-otpSecret').val(data.otp_secret);
+                $('#form-item-otpAlgorithm').val(data.otp_algorithm || 'sha1')
+                $('#form-item-otpDigits').val(String(data.otp_digits || '6'))
+                $('#form-item-otpPeriod').val(String(data.otp_period || '30'))
 
                 // Delete inputs related files uploaded but not confirmed
                 var data = {

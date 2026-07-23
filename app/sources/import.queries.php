@@ -84,6 +84,14 @@ if (
     exit;
 }
 
+// The import page enforces the feature toggle, but the handler is reachable on its
+// own: re-check it here so disabling import really closes every entry point.
+if ((int) $session->get('user-admin') !== 1 && (int) ($SETTINGS['allow_import'] ?? 0) !== 1) {
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
@@ -149,25 +157,21 @@ switch ($inputData['type']) {
         $tree = $tree->getDescendants();
 
         // Init post variable
-        $post_operation_id = $inputData['file'];
+        $post_operation_id = (int) $inputData['file'];
 
-        // Get filename from database
-        $data = DB::queryFirstRow(
-            'SELECT valeur
-            FROM '.prefixTable('misc').'
-            WHERE increment_id = %i AND type = "temp_file"',
-            $post_operation_id
-        );
-
-        // Delete operation id
-        DB::delete(
-            prefixTable('misc'),
-            "increment_id = %i AND type = 'temp_file'",
-            $post_operation_id
-        );
+        // Claim the uploaded file. The operation id is a guessable auto-increment
+        // value, so only its uploader may consume it.
+        $uploadedFileName = tempFileClaimForUser($post_operation_id, (int) $session->get('user-id'));
+        if ($uploadedFileName === null) {
+            echo prepareExchangedData(
+                array('error' => true, 'message' => $lang->get('cannot_open_file')),
+                'encode'
+            );
+            break;
+        }
 
         // Initialisation
-        $file = $SETTINGS['path_to_files_folder'] . '/' . $data['valeur'];
+        $file = $SETTINGS['path_to_files_folder'] . '/' . $uploadedFileName;
         $importation_possible = true;
         $valuesToImport = [];
         $items_number = 0;
@@ -443,22 +447,10 @@ switch ($inputData['type']) {
             break;
         }
 
-        // Get filename from database
-        $dataFile = DB::queryFirstRow(
-            'SELECT valeur
-            FROM ' . prefixTable('misc') . '
-            WHERE increment_id = %i AND type = "temp_file"',
-            $post_operation_id
-        );
-
-        // Delete operation id
-        DB::delete(
-            prefixTable('misc'),
-            'increment_id = %i AND type = "temp_file"',
-            $post_operation_id
-        );
-
-        if (empty($dataFile)) {
+        // Claim the uploaded file. The operation id is a guessable auto-increment
+        // value, so only its uploader may consume it.
+        $uploadedFileName = tempFileClaimForUser($post_operation_id, (int) $session->get('user-id'));
+        if ($uploadedFileName === null) {
             echo prepareExchangedData(
                 array('error' => true, 'message' => $lang->get('cannot_open_file')),
                 'encode'
@@ -466,7 +458,7 @@ switch ($inputData['type']) {
             break;
         }
 
-        $file = $SETTINGS['path_to_files_folder'] . '/' . $dataFile['valeur'];
+        $file = $SETTINGS['path_to_files_folder'] . '/' . $uploadedFileName;
         if (!file_exists($file) || !is_readable($file)) {
             echo prepareExchangedData(
                 array('error' => true, 'message' => $lang->get('cannot_open_file')),
@@ -659,11 +651,39 @@ switch ($inputData['type']) {
             'decode'
         );
 
+        $csvOperationId = (int) ($dataReceived['csvOperationId'] ?? 0);
+        $targetFolderId = (int) ($dataReceived['folderId'] ?? 0);
+
+        // The staged rows belong to whoever uploaded and parsed the source file.
+        if (importOperationIsOwnedBy($csvOperationId, (int) $session->get('user-id')) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('import_error_no_rights'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // The destination folder is chosen by the client, so it must be one the user
+        // may actually write into.
+        if (importUserCanWriteInFolder($targetFolderId) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
         // Is this a personal folder?
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+        $personalFolder = in_array($targetFolderId, array_map('intval', (array) $session->get('user-personal_folders')), true) ? 1 : 0;
 
         // Track follow-up: folder creation phase
-        importTrackingSet((int) ($dataReceived['csvOperationId'] ?? 0), array('status' => 'creating_folders'));
+        importTrackingSet($csvOperationId, array('status' => 'creating_folders'));
 
         // Get all folders from objects in DB
         $itemsPath = DB::query(
@@ -671,14 +691,21 @@ switch ($inputData['type']) {
             FROM '.prefixTable('items_importations').'
             WHERE operation_id = %i
             LIMIT %i, %i',
-            $dataReceived['csvOperationId'],
+            $csvOperationId,
             $dataReceived['offset'],
             $dataReceived['limit']
         );
 
 
-        // Save matches "path -> ID" to prevent against multiple insertions
-        $folderIdMap = $dataReceived['folderIdMap'] ?? [];
+        // Save matches "path -> ID" to prevent against multiple insertions.
+        // The map is echoed back by the client between batches, so every id it carries
+        // must be re-checked: an injected id would otherwise become a parent folder.
+        $folderIdMap = [];
+        foreach ((array) ($dataReceived['folderIdMap'] ?? []) as $mappedPath => $mappedFolderId) {
+            if (importUserCanWriteInFolder((int) $mappedFolderId) === true) {
+                $folderIdMap[$mappedPath] = (int) $mappedFolderId;
+            }
+        }
 
         require_once 'folders.class.php';
         $folderManager = new FolderManager($lang);
@@ -740,7 +767,7 @@ switch ($inputData['type']) {
 
             $parts = preg_split('/[\/\\\\]+/', (string) $path, -1, PREG_SPLIT_NO_EMPTY) ?: []; // Décomposer le chemin en sous-dossiers (supporte / et \\)
             $currentPath = "";
-            $parentId = $dataReceived['folderId']; // Strating with provided folder
+            $parentId = $targetFolderId; // Strating with provided folder
 
             foreach ($parts as $part) {
                 $currentPath = trim($currentPath . "/" . $part, "/");
@@ -758,6 +785,19 @@ switch ($inputData['type']) {
                     $currentFolder, // Searching only by name
                     $parentId // Ensure we search the correct parent
                 );
+
+                // Reusing an existing folder must not grant more than creating one:
+                // a subfolder of an allowed parent can carry restrictive permissions.
+                if ($existingId && importUserCanWriteInFolder((int) $existingId) === false) {
+                    $folderCreationError[] = [
+                        'path'       => $currentPath,
+                        'folderName' => $currentFolder,
+                        'parentId'   => (int) $parentId,
+                        'message'    => $lang->get('error_folder_not_allowed_for_this_user'),
+                        'importId'   => $importId,
+                    ];
+                    break;
+                }
 
                 if ($existingId) {
                     if ((int) $personalFolder === 0) {
@@ -800,8 +840,10 @@ switch ($inputData['type']) {
                     if ((int) ($creationStatus['error'] ?? true) === 0) {
                         // Success — unchanged
                         $newFolderId = $creationStatus['newId'];
-                        if ((int) $session->get('user-admin') === 0 && $newFolderId !== 0) {
-                            SessionManager::addRemoveFromSessionArray('user-accessible_folders', [$newFolderId], 'add');
+                        // Registered for every profile, admins included: the id travels back
+                        // through folderIdMap and must pass the write check on the next batch.
+                        if ((int) $newFolderId !== 0) {
+                            SessionManager::addRemoveFromSessionArray('user-accessible_folders', [(int) $newFolderId], 'add');
                         }
                         $folderIdMap[$currentPath] = $newFolderId;
                         if ((int) $personalFolder === 0) {
@@ -816,7 +858,7 @@ switch ($inputData['type']) {
                             $parentId
                         );
 
-                        if (!empty($existing['id'])) {
+                        if (!empty($existing['id']) && importUserCanWriteInFolder((int) $existing['id']) === true) {
                             $newFolderId = (int) $existing['id'];
                             if ((int) $personalFolder === 0) {
                                 $ensureFolderPermissions((int) $newFolderId, (int) $parentId, (string) ($dataReceived['folderAccessRight'] ?? ''));
@@ -917,27 +959,37 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        //Get some info about personal folder
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+        $csvOperationId = (int) ($dataReceived['csvOperationId'] ?? 0);
+        $targetFolderId = (int) ($dataReceived['folderId'] ?? 0);
 
-        // Prepare some variables
-        $targetFolderId = $dataReceived['folderId'];
-        $targetFolderName = DB::queryFirstField(
-            'SELECT title
-            FROM '.prefixTable('nested_tree').'
-            WHERE id = %i',
-            $targetFolderId
-        );
-        $personalFolder = in_array($dataReceived['folderId'], $session->get('user-personal_folders')) ? 1 : 0;
+        // The staged rows belong to whoever uploaded and parsed the source file.
+        if (importOperationIsOwnedBy($csvOperationId, (int) $session->get('user-id')) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('import_error_no_rights'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
-        // Prepare some variables
-        $targetFolderId = $dataReceived['folderId'];
-        $targetFolderName = DB::queryFirstField(
-            'SELECT title
-            FROM '.prefixTable('nested_tree').'
-            WHERE id = %i',
-            $targetFolderId
-        );
+        // The destination folder is chosen by the client, so it must be one the user
+        // may actually write into.
+        if (importUserCanWriteInFolder($targetFolderId) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Personal folders of the caller — the personal flag is resolved per item below,
+        // from the folder each row is actually written to.
+        $userPersonalFolders = array_map('intval', (array) $session->get('user-personal_folders'));
 
         // Get all folders from objects in DB
         if ($dataReceived['foldersNumber'] > 0) {
@@ -947,7 +999,7 @@ switch ($inputData['type']) {
                 LEFT JOIN '.prefixTable('nested_tree').' AS nt ON ii.folder_id = nt.id
                 WHERE ii.operation_id = %i
                 LIMIT %i, %i',
-                $dataReceived['csvOperationId'],
+                $csvOperationId,
                 $dataReceived['offset'],
                 $dataReceived['limit']
             );
@@ -957,7 +1009,7 @@ switch ($inputData['type']) {
                 FROM '.prefixTable('items_importations').' AS ii
                 WHERE ii.operation_id = %i
                 LIMIT %i, %i',
-                $dataReceived['csvOperationId'],
+                $csvOperationId,
                 $dataReceived['offset'],
                 $dataReceived['limit']
             );
@@ -969,9 +1021,26 @@ switch ($inputData['type']) {
         
         // Loop on items
         foreach ($items as $item) {
-            if (is_null($item['folder_id']) && is_null($targetFolderId)) {
+            if (is_null($item['folder_id']) && $targetFolderId === 0) {
                 continue; // Skip if folder_id is null
             }
+
+            // Resolve the destination of THIS row and authorize it. The staged folder_id
+            // is written by the folder phase, so it is re-checked here: this is the sink
+            // that actually creates the item.
+            $itemFolderId = is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'];
+            if (importUserCanWriteInFolder($itemFolderId) === false) {
+                $failedItems[] = [
+                    'increment_id' => $item['increment_id'],
+                    'error' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ];
+                continue;
+            }
+
+            // The personal flag drives sharekey distribution, so derive it from the folder
+            // actually written to, not from the folder the client asked for.
+            $itemIsPersonal = in_array($itemFolderId, $userPersonalFolders, true) ? 1 : 0;
+
             try {
                 $importId = $item['increment_id']; // Entry ID in items_importations
 
@@ -999,10 +1068,11 @@ switch ($inputData['type']) {
                         'pw' => $itemPassword,
                         'pw_iv' => $itemPasswordIv,
                         'url' => empty($item['url']) === true ? '' : substr($item['url'], 0, 500),
-                        'id_tree' => is_null($item['folder_id']) === true ? $targetFolderId : (int) $item['folder_id'],
+                        'id_tree' => $itemFolderId,
                         'login' => empty($item['login']) === true ? '' : substr($item['login'], 0, 200),
                         'anyone_can_modify' => $dataReceived['editAll'],
                         'encryption_type' => 'teampass_aes',
+                        'perso' => $itemIsPersonal,
                         'item_key' => uniqidReal(50),
                         'created_at' => time(),
                     )
@@ -1011,24 +1081,24 @@ switch ($inputData['type']) {
 
                 // Create new task for the new item
                 // If it is not a personnal one
-                if ((int) $personalFolder === 0) {
+                if ($itemIsPersonal === 0) {
                     if ($dataReceived['keysGenerationWithTasksHandler'] === 'tasksHandler') {
                         // Create task for the new item
                         storeTask(
                             'new_item',
                             $session->get('user-id'),
                             0,
-                            (int) $item['folder_id'],
+                            $itemFolderId,
                             (int) $newId,
                             $cryptedStuff['objectKey'],
                         );
                     } else {
                         // Create sharekeys for current user
-                        // This branch is the public one ($personalFolder === 0): pass the personal
+                        // This branch is the public one ($itemIsPersonal === 0): pass the personal
                         // flag, not the folder id (storeUsersShareKey now honours this parameter).
                         storeUsersShareKey(
                             'sharekeys_items',
-                            (int) $personalFolder,
+                            $itemIsPersonal,
                             (int) $newId,
                             $cryptedStuff['objectKey'],
                             false
@@ -1038,7 +1108,7 @@ switch ($inputData['type']) {
                     // Create sharekeys for current user
                     storeUsersShareKey(
                         'sharekeys_items',
-                        (int) $personalFolder,
+                        $itemIsPersonal,
                         (int) $newId,
                         $cryptedStuff['objectKey'],
                         true
@@ -1097,11 +1167,11 @@ switch ($inputData['type']) {
 
         // Track follow-up: items import phase (imported = cumulative, failed = this batch)
         importTrackingSet(
-            (int) ($dataReceived['csvOperationId'] ?? 0),
+            $csvOperationId,
             array('status' => 'importing_items', 'imported_items' => (int) $insertedItems)
         );
         importTrackingIncrement(
-            (int) ($dataReceived['csvOperationId'] ?? 0),
+            $csvOperationId,
             'failed_items',
             count($failedItems)
         );
@@ -1135,11 +1205,24 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        $csvOperationId = filter_var($receivedParameters['csvOperationId'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $csvOperationId = (int) filter_var($receivedParameters['csvOperationId'], FILTER_SANITIZE_NUMBER_INT);
+
+        // Finalization discards the staged rows, so only the owner may trigger it —
+        // otherwise anyone could destroy another user's pending import.
+        if (importOperationIsOwnedBy($csvOperationId, (int) $session->get('user-id')) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('import_error_no_rights'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // Track follow-up: import completed
         importTrackingSet(
-            (int) $csvOperationId,
+            $csvOperationId,
             array('status' => 'completed', 'finished_at' => time())
         );
 
@@ -1186,36 +1269,52 @@ switch ($inputData['type']) {
             $inputData['data'],
             'decode'
         );
-        $post_operation_id = filter_var($receivedParameters['file'], FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $destinationFolderId = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
+        $post_operation_id = (int) filter_var($receivedParameters['file'], FILTER_SANITIZE_NUMBER_INT);
+        $destinationFolderId = (int) filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
 
-        // Get filename from database
-        $data = DB::queryFirstRow(
-            'SELECT valeur
-            FROM '.prefixTable('misc').'
-            WHERE increment_id = %i AND type = "temp_file"',
-            $post_operation_id
-        );
-
-        // Delete operation id
-        DB::delete(
-            prefixTable('misc'),
-            'increment_id = %i AND type = "temp_file"',
-            $post_operation_id
-        );
-
-        // do some initializations
-        $file = $data['valeur'];
-
-        //read xml file
-        if (file_exists($SETTINGS['path_to_files_folder'].'/'.$file)) {
-            $xml = simplexml_load_file(
-                $SETTINGS['path_to_files_folder'].'/'.$file
+        // The parsed tree is returned to the caller, so the destination folder must be
+        // one the user may actually write into before anything is decoded.
+        if (importUserCanWriteInFolder($destinationFolderId) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
             );
+            break;
+        }
+
+        // Claim the uploaded file. The operation id is a guessable auto-increment
+        // value, so only its uploader may consume it — otherwise the parsed contents
+        // of another user's KeePass export would be returned here.
+        $file = tempFileClaimForUser($post_operation_id, (int) $session->get('user-id'));
+        if ($file === null) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('cannot_open_file'),
+                ),
+                'encode'
+            );
+            break;
+        }
+
+        // Read xml file
+        $keepassFilePath = $SETTINGS['path_to_files_folder'] . '/' . $file;
+        if (file_exists($keepassFilePath) === false || is_readable($keepassFilePath) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('cannot_open_file'),
+                ),
+                'encode'
+            );
+            break;
         }
 
         // Convert XML to associative array
-        $xmlfile = file_get_contents($SETTINGS['path_to_files_folder'].'/'.$file);
+        $xmlfile = file_get_contents($keepassFilePath);
         $new = simplexml_load_string($xmlfile);
         $con = json_encode($new);
         $newArr = json_decode($con, true);
@@ -1406,13 +1505,26 @@ switch ($inputData['type']) {
             'decode'
         );
 
-        $destinationFolderId = filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
+        $destinationFolderId = (int) filter_var($receivedParameters['folder-id'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['editAll'] = filter_var($receivedParameters['edit-all'], FILTER_SANITIZE_NUMBER_INT);
         $inputData['editRole'] = filter_var($receivedParameters['edit-role'], FILTER_SANITIZE_NUMBER_INT);
         $post_folders = filter_var_array(
             $receivedParameters['folders'],
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
+
+        // createFolder() writes straight into the tree without any rights check, so the
+        // destination chosen by the client is authorized here.
+        if (importUserCanWriteInFolder($destinationFolderId) === false) {
+            echo prepareExchangedData(
+                array(
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to_access_this_folder'),
+                ),
+                'encode'
+            );
+            break;
+        }
 
         // get destination folder informations
         $destinationFolderInfos = getFolderComplexity((int) $destinationFolderId,);
@@ -1493,16 +1605,32 @@ switch ($inputData['type']) {
             FILTER_SANITIZE_FULL_SPECIAL_CHARS
         );
         $returnedItems = array();
+        $refusedFolders = 0;
+        $userPersonalFolders = array_map('intval', (array) $session->get('user-personal_folders'));
 
         // Start transaction for better performance
         DB::startTransaction();
 
         // Import all items
         foreach($post_items as $item) {
+            // The folder map is supplied by the client, so the destination it resolves to
+            // is authorized before anything is written.
+            $folderId = isset($post_folders[$item['parentFolderId']]['id'])
+                ? (int) $post_folders[$item['parentFolderId']]['id']
+                : 0;
+            if (importUserCanWriteInFolder($folderId) === false) {
+                $refusedFolders++;
+                continue;
+            }
+
+            // Derive the personal flag from the folder itself: it drives sharekey
+            // distribution and must never come from the client.
+            $itemIsPersonal = in_array($folderId, $userPersonalFolders, true) ? 1 : 0;
+
             // get info about this folder
             $destinationFolderMore = DB::queryFirstRow(
                 'SELECT title FROM '.prefixTable('nested_tree').' WHERE id = %i',
-                (int) $post_folders[$item['parentFolderId']]['id']
+                $folderId
             );
 
             // Handle case where pw is empty
@@ -1520,7 +1648,6 @@ switch ($inputData['type']) {
                 $cryptedStuff['meta'] = '';
             }
             $post_password = $cryptedStuff['encrypted'];
-            $folderId = isset($post_folders[$item['parentFolderId']]['id']) ? (int)$post_folders[$item['parentFolderId']]['id'] : 0;
 
             //ADD item
             DB::insert(
@@ -1537,7 +1664,7 @@ switch ($inputData['type']) {
                     'encryption_type' => 'teampass_aes',
                     'inactif' => 0,
                     'restricted_to' => '',
-                    'perso' => $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
+                    'perso' => $itemIsPersonal,
                     'item_key' => uniqidReal(50),
                     'created_at' => time(),
                 )
@@ -1547,7 +1674,7 @@ switch ($inputData['type']) {
             // Create sharekeys for users
             storeUsersShareKey(
                 'sharekeys_items',
-                $post_folders[$item['parentFolderId']]['isPF'] === true ? 1 : 0,
+                $itemIsPersonal,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
             );
@@ -1557,7 +1684,7 @@ switch ($inputData['type']) {
                 'new_item',
                 $session->get('user-id'),
                 0,
-                (int) $folderId,
+                $folderId,
                 (int) $newId,
                 $cryptedStuff['objectKey'],
             );
@@ -1603,8 +1730,10 @@ switch ($inputData['type']) {
         echo prepareExchangedData(
             array(
                 'error' => false,
-                'message' => '',
+                // Refused destinations are surfaced instead of being silently dropped.
+                'message' => $refusedFolders > 0 ? $lang->get('error_not_allowed_to_access_this_folder') : '',
                 'items' => $returnedItems,
+                'refusedItems' => $refusedFolders,
             ),
             'encode'
         );
@@ -1800,6 +1929,95 @@ function createFolder($folderTitle, $parentId, $folderLevel, $startPathLevel, $l
     }
 
     return $existingId;
+}
+
+/**
+ * Tell whether a staged import operation belongs to the given user.
+ *
+ * Rows staged in items_importations are keyed by a guessable auto-increment
+ * operation id, so every handler acting on them must confirm ownership first
+ * (GHSA-cgcj-f9rx-c8r4). The tracking record written when the source file is
+ * parsed is the authoritative owner of the operation; the check fails closed,
+ * an operation without a tracking record being treated as unknown.
+ *
+ * @param int $operationId The import operation id.
+ * @param int $userId      The user requesting the operation.
+ *
+ * @return bool True when the operation belongs to this user.
+ */
+function importOperationIsOwnedBy(int $operationId, int $userId): bool
+{
+    if ($operationId <= 0 || $userId <= 0) {
+        return false;
+    }
+
+    $tracking = DB::queryFirstRow(
+        'SELECT user_id
+        FROM ' . prefixTable('import_tracking') . '
+        WHERE operation_id = %i
+        ORDER BY id DESC
+        LIMIT 1',
+        $operationId
+    );
+
+    return empty($tracking) === false && (int) $tracking['user_id'] === $userId;
+}
+
+/**
+ * Tell whether the current user may create folders or items inside a folder.
+ *
+ * Import sinks used to trust the destination folder id sent by the client, which
+ * let any user allowed to import write into folders they cannot access, including
+ * another user's personal folder (GHSA-cgcj-f9rx-c8r4). This mirrors the checks
+ * the standard item creation flow performs in items.queries.php.
+ *
+ * @param int $folderId Destination folder id.
+ *
+ * @return bool True when the user may write into this folder.
+ */
+function importUserCanWriteInFolder(int $folderId): bool
+{
+    $session = SessionManager::getSession();
+
+    if ($folderId <= 0) {
+        return false;
+    }
+
+    // A folder the user cannot see, or may only read, is never a valid destination.
+    $accessibleFolders = array_map('intval', (array) $session->get('user-accessible_folders'));
+    $readOnlyFolders = array_map('intval', (array) $session->get('user-read_only_folders'));
+    if (in_array($folderId, $accessibleFolders, true) === false
+        || in_array($folderId, $readOnlyFolders, true) === true
+    ) {
+        return false;
+    }
+
+    $folder = DB::queryFirstRow(
+        'SELECT personal_folder
+        FROM ' . prefixTable('nested_tree') . '
+        WHERE id = %i',
+        $folderId
+    );
+    if (empty($folder) === true) {
+        return false;
+    }
+
+    // A personal folder only ever accepts writes from its own owner.
+    $personalFolders = array_map('intval', (array) $session->get('user-personal_folders'));
+    if ((int) $folder['personal_folder'] === 1
+        && in_array($folderId, $personalFolders, true) === false
+    ) {
+        return false;
+    }
+
+    // A read-only user is limited to their own personal folders.
+    if ((int) $session->get('user-read_only') === 1
+        && in_array($folderId, $personalFolders, true) === false
+    ) {
+        return false;
+    }
+
+    return true;
 }
 
 /**

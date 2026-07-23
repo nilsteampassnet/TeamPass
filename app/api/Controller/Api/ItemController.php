@@ -298,6 +298,9 @@ class ItemController extends BaseController
                             'id' => (int) $userData['id'],
                             'username' => (string) $userData['username'],
                             'totp' => (string) ($arrQueryStringParams['totp'] ?? ''),
+                            'totp_algorithm' => (string) ($arrQueryStringParams['totp_algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+                            'totp_digits' => (int) ($arrQueryStringParams['totp_digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+                            'totp_period' => (int) ($arrQueryStringParams['totp_period'] ?? ITEM_TOTP_DEFAULT_PERIOD),
                             'fields' => $this->normalizeFields($arrQueryStringParams['fields'] ?? []),
                         ];
 
@@ -644,7 +647,9 @@ class ItemController extends BaseController
                     } else {
                         // Load OTP data
                         $otpData = DB::queryFirstRow(
-                            'SELECT secret, enabled FROM ' . prefixTable('items_otp') . ' WHERE item_id = %i',
+                            'SELECT secret, enabled, algorithm, digits, period
+                            FROM ' . prefixTable('items_otp') . '
+                            WHERE item_id = %i',
                             $itemId
                         );
 
@@ -665,17 +670,25 @@ class ItemController extends BaseController
                             if (isset($decryptedSecret['string']) && !empty($decryptedSecret['string'])) {
                                 // Generate OTP code using OTPHP library
                                 try {
-                                    $otp = \OTPHP\TOTP::createFromSecret($decryptedSecret['string']);
+                                    $otp = createItemTotp(
+                                        $decryptedSecret['string'],
+                                        (string) ($otpData['algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+                                        (int) ($otpData['digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+                                        (int) ($otpData['period'] ?? ITEM_TOTP_DEFAULT_PERIOD)
+                                    );
                                     $otpCode = $otp->now();
                                     $otpExpiresIn = $otp->expiresIn();
 
                                     $responseData = json_encode([
                                         'otp_code' => $otpCode,
                                         'expires_in' => $otpExpiresIn,
-                                        'item_id' => $itemId
+                                        'item_id' => $itemId,
+                                        'algorithm' => $otp->getDigest(),
+                                        'digits' => $otp->getDigits(),
+                                        'period' => $otp->getPeriod(),
                                     ]);
                                     $this->markApiFunctionalActivity($userData);
-                                } catch (\RuntimeException $e) {
+                                } catch (\Throwable $e) {
                                     $strErrorDesc = 'Failed to generate OTP code: ' . $e->getMessage();
                                     $strErrorHeader = 'HTTP/1.1 500 Internal Server Error';
                                 }
@@ -822,7 +835,23 @@ class ItemController extends BaseController
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
-                                    $updateableFields = ['label', 'password', 'description', 'login', 'email', 'url', 'tags', 'anyone_can_modify', 'icon', 'folder_id', 'totp', 'fields'];
+                                    $updateableFields = [
+                                        'label',
+                                        'password',
+                                        'description',
+                                        'login',
+                                        'email',
+                                        'url',
+                                        'tags',
+                                        'anyone_can_modify',
+                                        'icon',
+                                        'folder_id',
+                                        'totp',
+                                        'totp_algorithm',
+                                        'totp_digits',
+                                        'totp_period',
+                                        'fields',
+                                    ];
                                     $hasUpdateField = false;
                                     foreach ($updateableFields as $field) {
                                         if (isset($arrQueryStringParams[$field])) {
@@ -832,7 +861,7 @@ class ItemController extends BaseController
                                     }
 
                                     if (!$hasUpdateField) {
-                                        $strErrorDesc = 'At least one field to update must be provided (label, password, description, login, email, url, tags, anyone_can_modify, icon, folder_id, totp, fields)';
+                                        $strErrorDesc = 'At least one supported field to update must be provided.';
                                         $strErrorHeader = 'HTTP/1.1 400 Bad Request';
                                     } else {
                                         // Normalize custom fields payload (accepts JSON array or JSON-encoded string)

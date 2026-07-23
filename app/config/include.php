@@ -27,12 +27,16 @@
  */
 
 define('TP_VERSION', '3.2.2');
-define("UPGRADE_MIN_DATE", "1783587926");
+define("UPGRADE_MIN_DATE", "1784796353");
 define('TP_VERSION_MINOR', '0');
 define('TP_TOOL_NAME', 'Teampass');
 define('TP_ONE_DAY_SECONDS', 86400);
 define('TP_ONE_WEEK_SECONDS', 604800);
 define('TP_ONE_MONTH_SECONDS', 2592000);
+define('ITEM_TOTP_DEFAULT_ALGORITHM', 'sha1');
+define('ITEM_TOTP_DEFAULT_DIGITS', 6);
+define('ITEM_TOTP_DEFAULT_PERIOD', 30);
+define('ITEM_TOTP_MAX_PERIOD', TP_ONE_DAY_SECONDS);
 define('TP_IMAGE_FILE_EXT', array('jpg', 'gif', 'png', 'jpeg', 'tiff', 'bmp'));
 define('TP_OFFICE_FILE_EXT', array('xls', 'xlsx', 'docx', 'doc', 'csv', 'ppt', 'pptx'));
 define('TP_ADMIN_FULL_RIGHT', false);

@@ -38,7 +38,6 @@ use TeampassClasses\Language\Language;
 use EZimuel\PHPSecureSession;
 use TeampassClasses\PerformChecks\PerformChecks;
 use TeampassClasses\ConfigManager\ConfigManager;
-use OTPHP\TOTP;
 use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 
@@ -994,7 +993,42 @@ switch ($inputData['type']) {
         $post_fa_icon = isset($dataReceived['fa_icon']) === true ? filter_var(($dataReceived['fa_icon']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
         $post_otp_is_enabled = (int) filter_var($dataReceived['otp_is_enabled'], FILTER_SANITIZE_NUMBER_INT);
         $post_otp_phone_number = (int) filter_var($dataReceived['otp_phone_number'], FILTER_SANITIZE_NUMBER_INT);
-        $post_otp_secret = isset($dataReceived['otp_secret']) === true ? filter_var(($dataReceived['otp_secret']), FILTER_SANITIZE_FULL_SPECIAL_CHARS) : '';
+        $post_otp_secret = isset($dataReceived['otp_secret']) === true && is_string($dataReceived['otp_secret'])
+            ? trim($dataReceived['otp_secret'])
+            : '';
+        $post_otp_algorithm = isset($dataReceived['otp_algorithm']) === true
+            ? strtolower(trim((string) $dataReceived['otp_algorithm']))
+            : ITEM_TOTP_DEFAULT_ALGORITHM;
+        $post_otp_digits = isset($dataReceived['otp_digits']) === true
+            ? (int) filter_var($dataReceived['otp_digits'], FILTER_SANITIZE_NUMBER_INT)
+            : ITEM_TOTP_DEFAULT_DIGITS;
+        $post_otp_period = isset($dataReceived['otp_period']) === true
+            ? (int) filter_var($dataReceived['otp_period'], FILTER_SANITIZE_NUMBER_INT)
+            : ITEM_TOTP_DEFAULT_PERIOD;
+
+        if ($post_otp_secret !== '') {
+            try {
+                $otpConfiguration = normalizeItemTotpConfiguration(
+                    $post_otp_secret,
+                    $post_otp_algorithm,
+                    $post_otp_digits,
+                    $post_otp_period
+                );
+                $post_otp_secret = $otpConfiguration['secret'];
+                $post_otp_algorithm = $otpConfiguration['algorithm'];
+                $post_otp_digits = $otpConfiguration['digits'];
+                $post_otp_period = $otpConfiguration['period'];
+            } catch (InvalidArgumentException $exception) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_otp_secret'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+        }
 
         //-> DO A SET OF CHECKS
         // Perform a check in case of Read-Only user creating an item in his PF
@@ -1942,14 +1976,15 @@ switch ($inputData['type']) {
             // Manage OTP status
             // Get current status
             $otpStatus = DB::queryFirstRow(
-                'SELECT enabled as otp_is_enabled, phone_number, secret
+                'SELECT enabled AS otp_is_enabled, phone_number, secret, algorithm, digits, period
                 FROM ' . prefixTable('items_otp') . '
                 WHERE item_id = %i',
                 $inputData['itemId']
             );
+            $otpExists = DB::count() > 0;
 
             // If previous OTP secret is not empty, decrypt it
-            if (DB::count() > 0 && $otpStatus['secret'] !== '') {
+            if ($otpExists === true && $otpStatus['secret'] !== '') {
                 // Get current secret
                 $currentsecret = cryption(
                     $otpStatus['secret'],
@@ -1959,6 +1994,15 @@ switch ($inputData['type']) {
             } else {
                 $currentsecret='';
             }
+            $currentAlgorithm = $otpExists === true
+                ? (string) ($otpStatus['algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM)
+                : ITEM_TOTP_DEFAULT_ALGORITHM;
+            $currentDigits = $otpExists === true
+                ? (int) ($otpStatus['digits'] ?? ITEM_TOTP_DEFAULT_DIGITS)
+                : ITEM_TOTP_DEFAULT_DIGITS;
+            $currentPeriod = $otpExists === true
+                ? (int) ($otpStatus['period'] ?? ITEM_TOTP_DEFAULT_PERIOD)
+                : ITEM_TOTP_DEFAULT_PERIOD;
 
             // If OTP secret provided then encrypt it
             if (empty($post_otp_secret) === false) {
@@ -1971,11 +2015,14 @@ switch ($inputData['type']) {
            }
 
             // Check if status or secret or phone number has changed
-            if (DB::count() > 0
+            if ($otpExists === true
                 && (
                     (intval($otpStatus['otp_is_enabled']) !== (int) $post_otp_is_enabled)
                     || ($otpStatus['phone_number'] !== $post_otp_phone_number)
                     || ($currentsecret !== $post_otp_secret)
+                    || ($currentAlgorithm !== $post_otp_algorithm)
+                    || ($currentDigits !== $post_otp_digits)
+                    || ($currentPeriod !== $post_otp_period)
                 )
                 && isset($encryptedSecret['string']) === true
             ) {
@@ -1985,6 +2032,9 @@ switch ($inputData['type']) {
                     array(
                         'enabled' => (int) $post_otp_is_enabled,
                         'secret' => $encryptedSecret['string'],
+                        'algorithm' => $post_otp_algorithm,
+                        'digits' => $post_otp_digits,
+                        'period' => $post_otp_period,
                         'phone_number' => $post_otp_phone_number,
                         'timestamp' => time(),
                     ),
@@ -2022,6 +2072,8 @@ switch ($inputData['type']) {
                     );
                 }
                 if ($currentsecret !== $post_otp_secret) {
+                    // Only record that the secret changed: the previous value is a live
+                    // credential, and the history renderer prints this payload as-is.
                     logItems(
                         $SETTINGS,
                         (int) $inputData['itemId'],
@@ -2029,10 +2081,10 @@ switch ($inputData['type']) {
                         $session->get('user-id'),
                         'at_modification',
                         $session->get('user-login'),
-                        'at_otp_secret:'.$currentsecret
+                        'at_otp_secret:updated'
                     );
                 }
-            } elseif (DB::count() === 0 && empty($post_otp_secret) === false) {
+            } elseif ($otpExists === false && empty($post_otp_secret) === false) {
                 // Create the entry in items_otp table
                 // OTP doesn't exist then create it
                 
@@ -2042,9 +2094,12 @@ switch ($inputData['type']) {
                     array(
                         'item_id' => $inputData['itemId'],
                         'secret' => $encryptedSecret['string'],
+                        'algorithm' => $post_otp_algorithm,
+                        'digits' => $post_otp_digits,
+                        'period' => $post_otp_period,
                         'phone_number' => $post_otp_phone_number,
                         'timestamp' => time(),
-                        'enabled' => 1,
+                        'enabled' => (int) $post_otp_is_enabled,
                     )
                 );
             }
@@ -3626,6 +3681,9 @@ switch ($inputData['type']) {
             'otp_for_item_enabled' => 0,
             'otp_phone_number' => '',
             'otp_secret' => '',
+            'otp_algorithm' => ITEM_TOTP_DEFAULT_ALGORITHM,
+            'otp_digits' => ITEM_TOTP_DEFAULT_DIGITS,
+            'otp_period' => ITEM_TOTP_DEFAULT_PERIOD,
             'users_list' => [],
             'roles_list' => [],
             'has_change_proposal' => 0,
@@ -3635,7 +3693,9 @@ switch ($inputData['type']) {
 
         // Load item data
         $dataItem = DB::queryFirstRow(
-            'SELECT i.*, n.title AS folder_title, o.enabled AS otp_for_item_enabled, o.phone_number AS otp_phone_number, o.secret AS otp_secret
+            'SELECT i.*, n.title AS folder_title, o.enabled AS otp_for_item_enabled,
+                o.phone_number AS otp_phone_number, o.secret AS otp_secret,
+                o.algorithm AS otp_algorithm, o.digits AS otp_digits, o.period AS otp_period
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (i.id_tree = n.id)
             LEFT JOIN ' . prefixTable('items_otp') . ' AS o ON (o.item_id = i.id)
@@ -3729,6 +3789,15 @@ switch ($inputData['type']) {
             // get OTP enabled for item
             $returnArray['otp_for_item_enabled'] = intval($dataItem['otp_for_item_enabled']);
             $returnArray['otp_phone_number'] = strval($dataItem['otp_phone_number']);
+            $returnArray['otp_algorithm'] = empty($dataItem['otp_algorithm']) === false
+                ? (string) $dataItem['otp_algorithm']
+                : ITEM_TOTP_DEFAULT_ALGORITHM;
+            $returnArray['otp_digits'] = empty($dataItem['otp_digits']) === false
+                ? (int) $dataItem['otp_digits']
+                : ITEM_TOTP_DEFAULT_DIGITS;
+            $returnArray['otp_period'] = empty($dataItem['otp_period']) === false
+                ? (int) $dataItem['otp_period']
+                : ITEM_TOTP_DEFAULT_PERIOD;
             if (empty($dataItem['otp_secret']) === false) {
                 $secret = cryption(
                     $dataItem['otp_secret'],
@@ -4106,8 +4175,9 @@ switch ($inputData['type']) {
         }
 
         // Load item data
+        $secret = '';
         $dataItem = DB::queryFirstRow(
-            'SELECT secret, enabled
+            'SELECT secret, enabled, algorithm, digits, period
             FROM ' . prefixTable('items_otp') . '
             WHERE item_id = %i',
             $inputData['id']
@@ -4125,10 +4195,15 @@ switch ($inputData['type']) {
         // Generate OTP code
         if (empty($secret) === false) {
             try {
-                $otp = TOTP::createFromSecret($secret);
+                $otp = createItemTotp(
+                    $secret,
+                    (string) ($dataItem['algorithm'] ?? ITEM_TOTP_DEFAULT_ALGORITHM),
+                    (int) ($dataItem['digits'] ?? ITEM_TOTP_DEFAULT_DIGITS),
+                    (int) ($dataItem['period'] ?? ITEM_TOTP_DEFAULT_PERIOD)
+                );
                 $otpCode = $otp->now();
                 $otpExpiresIn = $otp->expiresIn();
-            } catch (RuntimeException $e) {
+            } catch (Throwable $e) {
                 $error = true;
                 $otpCode = '';
                 $otpExpiresIn = '';
@@ -4146,7 +4221,7 @@ switch ($inputData['type']) {
                 'message' => isset($message) === true ? $message : '',
                 'otp_code' => $otpCode,
                 'otp_expires_in' => $otpExpiresIn,
-                'otp_enabled' => $dataItem['enabled'],
+                'otp_enabled' => (int) ($dataItem['enabled'] ?? 0),
             ),
             'encode'
         );

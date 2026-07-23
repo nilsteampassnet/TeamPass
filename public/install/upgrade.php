@@ -429,8 +429,8 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                     <div>
                                         <code>app/</code> <span class="badge badge-warning">must not be writable</span>
                                         <span id="upg-chk-app-safe" style="min-width:20px" class="ml-2"></span>
-                                        <div class="text-muted small">Application source code — must not be writable by the web server to prevent code tampering.</div>
-                                        <div id="upg-chk-app-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 app</code></div>
+                                        <div class="text-muted small">Application source code — must not be writable by the web server to prevent code tampering. Own it with a non-web-server account so PHP has read-only access (<code>0755</code> alone does not help if the web server owns the folder).</div>
+                                        <div id="upg-chk-app-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown root:www-data app &amp;&amp; chmod g-w,o-w app</code></div>
                                     </div>
                                 </div>
                             </li>
@@ -439,8 +439,8 @@ if (!isset($_GET['step']) && !isset($post_step)) {
                                     <div>
                                         <code>public/</code> <span class="badge badge-warning">must not be writable</span>
                                         <span id="upg-chk-public-safe" style="min-width:20px" class="ml-2"></span>
-                                        <div class="text-muted small">Webroot — must not be globally writable to prevent unauthorized file uploads into the web-accessible directory.</div>
-                                        <div id="upg-chk-public-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chmod 0755 public</code></div>
+                                        <div class="text-muted small">Webroot — must not be writable by the web server to prevent unauthorized file uploads into the web-accessible directory. Own it with a non-web-server account so PHP has read-only access (<code>0755</code> alone does not help if the web server owns the folder).</div>
+                                        <div id="upg-chk-public-safe-hint" class="text-warning small d-none mt-1"><i class="fas fa-wrench"></i>Fix: <code>chown root:www-data public &amp;&amp; chmod g-w,o-w public</code></div>
                                     </div>
                                 </div>
                             </li>
