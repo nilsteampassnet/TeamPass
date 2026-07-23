@@ -63,8 +63,15 @@ Credentials must be in the body — query string is rejected (400).
 
 **Response 200:**
 ```json
-{ "token": "<jwt>" }
+{
+  "token": "<jwt>",
+  "teampass_version": "3.2.1.0",
+  "teampass_version_major": "3.2.1",
+  "teampass_version_minor": "0"
+}
 ```
+
+**Server version** — `teampass_version` is `TP_VERSION . '.' . TP_VERSION_MINOR`; the two parts are also returned separately so a client needs no parsing. Added by `AuthModel::issueJwtForUser()`, so **both** `/authorize` and `/authorizeToken` return it. It is deliberately **not** a JWT claim: the token stays a pure credential, and an instance upgraded during a token's lifetime reports its new version at the next authentication instead of at token expiry. The same three keys are also served by `GET|POST /api/misc/refreshExtensionSettings` for clients that need to refresh the value without re-authenticating.
 
 **Error responses:**
 
@@ -92,7 +99,7 @@ OAuth2 users have no usable cleartext password (their stored `pw` is a hash of t
 ```
 Credentials must be in the body — query string is rejected (400). The token must match `^[a-f0-9]{64}$`.
 
-**Response 200:** identical shape to `/api/authorize` — `{ "token": "<jwt>" }`. The returned JWT is used exactly the same way (`Authorization: Bearer <jwt>`).
+**Response 200:** identical shape to `/api/authorize` — `{ "token": "<jwt>" }` plus the `teampass_version*` keys. The returned JWT is used exactly the same way (`Authorization: Bearer <jwt>`).
 
 **Error responses:**
 
@@ -257,14 +264,17 @@ List all folders accessible to the authenticated user.
 
 ### `GET /api/folder/writableFolders`
 
-List all folders accessible to the user with label, level, and read-only flag.
+List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, is_readonly }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, is_readonly }`.
 
 - `is_readonly: 1` — user has read access only (R-type role on this folder)
 - `is_readonly: 0` — user can write
+- `position` — the folder's `nested_tree.nleft`; rows are sorted `ORDER BY nleft ASC` (MPTT pre-order), so `parent_id` + `level` + `position` rebuild the exact hierarchy **including sibling order**. Before 3.2.2 the ordering was `nlevel ASC, title ASC` (alphabetical, sibling order lost).
 
-**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry.
+**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry. This is the endpoint to point API clients at when they need "the whole folder tree in one call" — `listFolders` returns a nested tree but carries no access rights.
+
+**Known cost:** `is_readonly` is resolved per folder by `FolderAccessModel::isFolderReadOnlyForUser()` (up to 3 queries per folder). A batch resolver is a pending optimization.
 
 **Permissions:** `allowed_to_read`.
 
@@ -341,7 +351,9 @@ List users. **Admin only** (`is_admin = 1` in JWT).
 
 Returns browser extension connection settings.
 
-**Response:** `{ extension_fqdn, extension_key, cpassman_url }`.
+**Response:** `{ extension_fqdn, extension_key, extension_url, teampass_version, teampass_version_major, teampass_version_minor }`.
+
+The key is `extension_url` (value = `cpassman_url`) — the doc previously named it `cpassman_url`, which never matched the code. The `teampass_version*` keys are the same ones returned by `/authorize`, so a long-lived client can refresh the server version without re-authenticating.
 
 **Permissions:** any valid JWT.
 

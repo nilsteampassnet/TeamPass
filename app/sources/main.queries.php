@@ -102,7 +102,7 @@ if (
     && $checkUserAccess->userAccessPage('home') === false
 ) {
     $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
-    include __DIR__.'/../error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit();
 } elseif (($session->has('user-id') && null !== $session->get('user-id')
         && $session->get('key') !== null)
@@ -113,7 +113,7 @@ if (
     mainQuery($SETTINGS);
 } else {
     $session->set('system-error_code', ERR_NOT_ALLOWED); //not allowed page
-    include __DIR__.'/../error.php';
+    include TEAMPASS_ROOT . '/public/error.php';
     exit();
 }
 

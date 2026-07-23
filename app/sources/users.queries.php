@@ -2853,7 +2853,7 @@ if (null !== $post_type) {
                 // Custom LDAP Options
                 'options' => [
                     // See: http://php.net/ldap_set_option
-                    LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
+                    LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
                 ]
             ];
             //prepare connection
@@ -3501,10 +3501,33 @@ if (null !== $post_type) {
             }
 
             // Création d'une instance du contrôleur
-            $OAuth2 = new OAuth2Controller($SETTINGS);
+            // The constructor throws on an invalid OAuth2 configuration (e.g. multi-tenant),
+            // and getAllUsers() reports provider/Graph failures in its envelope. Both must be
+            // surfaced to the admin instead of being iterated as if they were a user list.
+            try {
+                $OAuth2 = new OAuth2Controller($SETTINGS);
+                $oauth2Answer = $OAuth2->getAllUsers();
+            } catch (Exception $e) {
+                $oauth2Answer = [
+                    'error' => true,
+                    'message' => 'Error while getting users: ' . $e->getMessage(),
+                    'users' => [],
+                ];
+            }
 
-            // Traitement de la réponse de callback Azure
-            $usersList = $OAuth2->getAllUsers();            
+            if ($oauth2Answer['error'] === true) {
+                error_log('TEAMPASS OAuth2 - user sync failed: ' . $oauth2Answer['message']);
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $oauth2Answer['message'],
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
+            $usersList = $oauth2Answer['users'];
 
             // Get all groups in Teampass
             $teampassRoles = array();
@@ -3557,7 +3580,7 @@ if (null !== $post_type) {
                 }
 
                 // Is user in Teampass ?
-                $userLogin = nameFromEmail($oAuthUser['userPrincipalName']);
+                $userLogin = nameFromEmail($oAuthUser['userPrincipalName'] ?? null);
                 if (false !== $userLogin) {
                     // Get his ID and auth type
                     $userInfo = DB::queryFirstRow(
@@ -5211,7 +5234,7 @@ function getLdapStatusForUserIds(array $userIds, array $SETTINGS): array
         'timeout'          => 5,
         'follow_referrals' => false,
         'options' => [
-            LDAP_OPT_X_TLS_REQUIRE_CERT => isset($SETTINGS['ldap_tls_certificate_check']) === false ? 'LDAP_OPT_X_TLS_NEVER' : $SETTINGS['ldap_tls_certificate_check'],
+            LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
         ]
     ];
 

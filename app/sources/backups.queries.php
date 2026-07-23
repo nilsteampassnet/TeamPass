@@ -827,8 +827,9 @@ function tpCheckRestoreCompatibility(array $SETTINGS, string $serverScope = '', 
     if ($operationId > 0) {
         // Uploaded restore file (temp_file in misc)
         $data = DB::queryFirstRow(
-            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE increment_id = %i LIMIT 1',
-            $operationId
+            'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE increment_id = %i AND type = %s LIMIT 1',
+            $operationId,
+            'temp_file'
         );
         $val = isset($data['valeur']) ? (string) $data['valeur'] : '';
         if ($val === '') {

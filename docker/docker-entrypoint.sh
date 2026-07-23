@@ -284,9 +284,11 @@ auto_upgrade() {
     # The upgrade script bootstraps through loadClasses('DB'), which reads the
     # connection parameters (and decrypts the DB password) from settings.php,
     # so no --db-* arguments / environment variables are needed here.
-    php "$UPGRADE_SCRIPT"
-
-    if [ $? -eq 0 ]; then
+    # Run the upgrade guarded by "if": this neutralises "set -e" for this command
+    # so a failing upgrade script no longer aborts the entrypoint and crashes the
+    # container (issue #5299). The install directory is kept below so the upgrade
+    # can still be finished through the web wizard (/install/upgrade.php).
+    if php "$UPGRADE_SCRIPT"; then
         echo -e "${GREEN}✅ Database upgrade to ${IMAGE_VERSION} completed${NC}"
     else
         echo -e "${YELLOW}⚠️  Database upgrade script returned an error — check logs${NC}"

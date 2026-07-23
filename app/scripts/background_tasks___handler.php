@@ -954,13 +954,14 @@ class BackgroundTasksHandler {
         // Build command
         // Prefer the resolved CLI binary (handles FPM/override); fall back to PHP_BINARY.
         $phpBinary = function_exists('getPHPBinary') ? getPHPBinary() : PHP_BINARY;
+        // The task payload is NOT passed on the command line: the worker reads it from
+        // the database using the task id. See background_tasks___worker.php for details.
         $cmd = sprintf(
-            '%s %s %d %s %s',
+            '%s %s %d %s',
             escapeshellarg($phpBinary),
             escapeshellarg(__DIR__ . '/background_tasks___worker.php'),
             (int) $task['increment_id'],
-            escapeshellarg((string) $task['process_type']),
-            escapeshellarg((string) $task['arguments'])
+            escapeshellarg((string) $task['process_type'])
         );
 
         $process = Process::fromShellCommandline($cmd);
@@ -1359,7 +1360,8 @@ class BackgroundTasksHandler {
 
             foreach ($tempFiles as $fileEntry) {
                 $entryId = intval($fileEntry['increment_id']);
-                $timestamp = intval($fileEntry['intitule']);
+                // intitule holds "<timestamp>_<uploader id>_<random>"; legacy rows hold the bare timestamp.
+                $timestamp = tempFileUploadTimestamp(strval($fileEntry['intitule']));
                 $fileName = strval($fileEntry['valeur']);
 
                 // Validate timestamp format

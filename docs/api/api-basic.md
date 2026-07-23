@@ -24,10 +24,13 @@
    - [List Tags](#list-tags)
 4. [Folders Endpoints](#folders-endpoints)
    - [List accessible folders](#list-folders)
+   - [List folders with access rights](#writable-folders)
    - [Create a folder](#create-folder)
+   - [Update a folder](#folder-update)
+   - [Delete a folder](#folder-delete)
 5. [Error Handling](#error-handling)
 6. [Best Practices](#best-practices)
-7. [Complete Workflow Example](#example-workflow)
+7. [Command-line client](#cli)
 
 ---
 
@@ -477,7 +480,10 @@ curl -X GET "https://your-teampass.com/api/index.php/item/findByUrl?url=https://
 {
   "otp_code": "123456",
   "expires_in": 25,
-  "item_id": 123
+  "item_id": 123,
+  "algorithm": "sha512",
+  "digits": 6,
+  "period": 30
 }
 ```
 
@@ -485,9 +491,12 @@ curl -X GET "https://your-teampass.com/api/index.php/item/findByUrl?url=https://
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| `otp_code` | string | 6-digit TOTP code |
+| `otp_code` | string | Current 6- or 8-digit TOTP code |
 | `expires_in` | integer | Seconds until code expires |
 | `item_id` | integer | Item ID |
+| `algorithm` | string | HMAC algorithm: `sha1`, `sha256`, or `sha512` |
+| `digits` | integer | Code length: 6 or 8 |
+| `period` | integer | Rotation period in seconds |
 
 **Response Codes:**
 
@@ -531,7 +540,8 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
   "url": "https://example.com",
   "tags": "api,test,production",
   "anyone_can_modify": 0,
-  "icon": "fa-solid fa-key"
+  "icon": "fa-solid fa-key",
+  "totp": "otpauth://totp/Example:user?secret=BASE32SECRET&algorithm=SHA512&digits=6&period=30"
 }
 ```
 
@@ -549,6 +559,10 @@ curl -X GET "https://your-teampass.com/api/index.php/item/getOtp?id=123" \
 | `tags` | string | ❌ | Tags separated by spaces or commas. Each tag is lowercased and capped at 30 characters. |
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1, default: 0) |
 | `icon` | string | ❌ | FontAwesome icon code |
+| `totp` | string | ❌ | Base32 TOTP secret or `otpauth://totp` provisioning URI. Spaces and hyphens are separators and are stripped, so the secret can be sent exactly as the service displays it |
+| `totp_algorithm` | string | ❌ | Algorithm for a bare secret: `sha1` (default), `sha256`, or `sha512`; ignored when supplied by a URI |
+| `totp_digits` | integer | ❌ | Code length for a bare secret: 6 (default) or 8 |
+| `totp_period` | integer | ❌ | Period for a bare secret: 30 seconds by default, from 1 to 86400 |
 | `fields` | array | ❌ | Custom fields: array of `{ "id": <field_id>, "value": "<text>" }`. Only fields tied to the item's folder are stored; empty values are ignored. Requires the *item extra fields* feature to be enabled. |
 
 **Response (success):**
@@ -628,7 +642,10 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | `anyone_can_modify` | integer | ❌ | Anyone can modify (0/1) |
 | `icon` | string | ❌ | New FontAwesome icon code |
 | `folder_id` | integer | ❌ | Move to new folder |
-| `totp` | string | ❌ | TOTP/OTP secret |
+| `totp` | string | ❌ | Base32 TOTP secret, `otpauth://totp` URI, or an empty string to remove TOTP. Spaces and hyphens are stripped from the secret. Omit the field to change only the profile: the stored secret is reused |
+| `totp_algorithm` | string | ❌ | TOTP algorithm: `sha1`, `sha256`, or `sha512` |
+| `totp_digits` | integer | ❌ | TOTP code length: 6 or 8 |
+| `totp_period` | integer | ❌ | TOTP period in seconds, from 1 to 86400 |
 | `fields` | array | ❌ | Custom fields to set: array of `{ "id": <field_id>, "value": "<text>" }`. A field is created if absent and updated when its value changes; empty values are ignored. Requires the *item extra fields* feature. |
 
 > ⚠️ **Important**: At least one field to update must be provided in addition to the ID.
@@ -785,22 +802,24 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | **Parameters** | None |
 | **Headers** | `Authorization: Bearer <token>` |
 
-**Response (success):**
+| **Query parameters** | `limit`, `offset` (optional, applied to the root-level entries) |
+
+**Response (success):** a nested tree. Each node carries its own children in `childrens`.
+
 ```json
 [
   {
     "id": 1,
     "title": "Production",
-    "parent_id": 0,
-    "nlevel": 0,
-    "personal_folder": 0
-  },
-  {
-    "id": 2,
-    "title": "Servers",
-    "parent_id": 1,
-    "nlevel": 1,
-    "personal_folder": 0
+    "isVisible": true,
+    "childrens": [
+      {
+        "id": 2,
+        "title": "Servers",
+        "isVisible": true,
+        "childrens": []
+      }
+    ]
   }
 ]
 ```
@@ -811,15 +830,14 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | ----- | ---- | ----------- |
 | `id` | integer | Unique folder ID |
 | `title` | string | Folder name |
-| `parent_id` | integer | Parent folder ID (0 for root) |
-| `nlevel` | integer | Depth level in tree |
-| `personal_folder` | integer | Personal folder (0/1) |
+| `isVisible` | boolean | `false` when the folder is only returned to carry accessible children |
+| `childrens` | array | Child nodes, same structure |
 
 **Response Codes:**
 
 | Code | Description |
 | ---- | ----------- |
-| 200 | List returned successfully |
+| 200 | List returned successfully (empty list when no accessible folder) |
 | 401 | Invalid or expired token |
 | 403 | Access denied |
 
@@ -827,6 +845,97 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 ```bash
 curl -X GET "https://your-teampass.com/api/index.php/folder/listFolders" \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+> 💡 Need the access rights on each folder, or a flat list that is easier to iterate?
+> Use [`folder/writableFolders`](#writable-folders) instead.
+
+---
+
+### List folders with access rights {#writable-folders}
+
+> 📋 Returns every folder accessible to the authenticated user as a **flat list in tree order**, with the read-only flag on each entry
+
+The name is historical: the endpoint returns **all** accessible folders, not only the writable
+ones — check `is_readonly` on each entry.
+
+Rows are sorted by `position` (the folder tree's own order, siblings included), so
+`parent_id` + `level` + `position` are enough to rebuild the exact hierarchy in a single call.
+
+| Info | Description |
+| ---- | ----------- |
+| **Endpoint** | `folder/writableFolders` |
+| **Method** | GET |
+| **URL** | `<Teampass URL>/api/index.php/folder/writableFolders` |
+| **Parameters** | None |
+| **Headers** | `Authorization: Bearer <token>` |
+
+**Response (success):**
+```json
+[
+  {
+    "id": 12,
+    "label": "jdoe",
+    "level": 1,
+    "parent_id": 0,
+    "first_position": 1,
+    "position": 23,
+    "is_readonly": 0
+  },
+  {
+    "id": 1,
+    "label": "Production",
+    "level": 1,
+    "parent_id": 0,
+    "first_position": 0,
+    "position": 41,
+    "is_readonly": 0
+  },
+  {
+    "id": 2,
+    "label": "Servers",
+    "level": 2,
+    "parent_id": 1,
+    "first_position": 0,
+    "position": 42,
+    "is_readonly": 1
+  }
+]
+```
+
+**Response Fields:**
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `id` | integer | Unique folder ID |
+| `label` | string | Folder name (the user's login for their personal root folder) |
+| `level` | integer | Depth level in the tree |
+| `parent_id` | integer | Parent folder ID (0 for root) |
+| `first_position` | integer | `1` for the user's personal root folder, to be listed first |
+| `position` | integer | Tree position; the list is already sorted on it |
+| `is_readonly` | integer | `1` = read access only, `0` = the user can write |
+
+**Response Codes:**
+
+| Code | Description |
+| ---- | ----------- |
+| 200 | List returned successfully (empty list when no accessible folder) |
+| 401 | Invalid or expired token |
+| 403 | Access denied |
+| 405 | HTTP method not supported (must be GET) |
+| 500 | Server error |
+
+**Example:**
+```bash
+curl -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+Print `id`, depth, name and access on one line per folder, already in tree order:
+```bash
+curl -s -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  | jq -r '.[] | [.id, .level, .label, (if .is_readonly == 1 then "read-only" else "write" end)] | @tsv'
 ```
 
 ---
@@ -1144,3 +1253,53 @@ All API endpoints may return the following standard HTTP error codes:
 3. **Permissions**
    - Verify the account has necessary permissions
    - Test with different access right levels
+
+---
+
+## Command-line client {#cli}
+
+Teampass ships a small Bash client, `scripts/teampass-cli.sh`, that wraps the JWT
+authentication and the most common endpoints. It requires `curl` and `jq`.
+
+**Configuration** — environment variables, or `~/.config/teampass/config`:
+
+```bash
+export TEAMPASS_URL="https://your-teampass.com"
+export TEAMPASS_LOGIN="jdoe"
+
+# password mode
+export TEAMPASS_PASSWORD="..."
+export TEAMPASS_APIKEY="..."
+
+# ...or token mode (Personal Access Token, see /authorizeToken)
+export TEAMPASS_TOKEN="..."
+```
+
+**Commands:**
+
+```bash
+./scripts/teampass-cli.sh folders --tree          # folder tree with access rights
+./scripts/teampass-cli.sh read 25                 # read an item
+./scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+./scripts/teampass-cli.sh update 25 label "Updated Server"
+./scripts/teampass-cli.sh search "server"         # by label
+./scripts/teampass-cli.sh search "192.168." --by-desc
+./scripts/teampass-cli.sh search "https://app" --by-url
+```
+
+`folders --tree` renders the hierarchy directly, because
+[`folder/writableFolders`](#writable-folders) already returns the folders in tree order:
+
+```
+jdoe [12]
+Production [1]
+  Servers [2] (read-only)
+    Databases [3] (read-only)
+```
+
+**Notes:**
+- The JWT is requested **once per invocation** and kept in memory — never written to disk.
+  Each authentication opens a server-side API session, so a script must not re-authenticate
+  on every request.
+- A `429` answer is retried once, honouring the `Retry-After` header.
+- The configuration file holds credentials in clear text: keep it at `chmod 600`.

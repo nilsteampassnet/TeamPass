@@ -439,6 +439,26 @@
                                         },
                                         "item_id": {
                                             "type": "integer"
+                                        },
+                                        "algorithm": {
+                                            "type": "string",
+                                            "enum": [
+                                                "sha1",
+                                                "sha256",
+                                                "sha512"
+                                            ]
+                                        },
+                                        "digits": {
+                                            "type": "integer",
+                                            "enum": [
+                                                6,
+                                                8
+                                            ]
+                                        },
+                                        "period": {
+                                            "type": "integer",
+                                            "minimum": 1,
+                                            "maximum": 86400
                                         }
                                     }
                                 }
@@ -700,8 +720,8 @@
         "/folder/writableFolders": {
             "get": {
                 "operationId": "folderWritableFolders",
-                "summary": "List accessible folders with read-only flag",
-                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry.",
+                "summary": "List accessible folders with read-only flag, in tree order",
+                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry. Rows are ordered by 'position' (MPTT pre-order), so parent_id + level + position rebuild the exact folder hierarchy, sibling order included.",
                 "responses": {
                     "200": {
                         "description": "Flat folder list",
@@ -1092,6 +1112,26 @@
                             "null"
                         ]
                     },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ]
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ]
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400
+                    },
                     "favicon_url": {
                         "type": [
                             "string",
@@ -1209,7 +1249,31 @@
                         "type": "string"
                     },
                     "totp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base32 secret or otpauth://totp provisioning URI"
+                    },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ],
+                        "default": "sha1"
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ],
+                        "default": 6
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400,
+                        "default": 30
                     },
                     "fields": {
                         "type": "array",
@@ -1267,7 +1331,28 @@
                         "type": "integer"
                     },
                     "totp": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "Base32 secret, otpauth://totp provisioning URI, or an empty string to remove TOTP"
+                    },
+                    "totp_algorithm": {
+                        "type": "string",
+                        "enum": [
+                            "sha1",
+                            "sha256",
+                            "sha512"
+                        ]
+                    },
+                    "totp_digits": {
+                        "type": "integer",
+                        "enum": [
+                            6,
+                            8
+                        ]
+                    },
+                    "totp_period": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 86400
                     },
                     "fields": {
                         "type": "array",
@@ -1458,6 +1543,10 @@
                     },
                     "first_position": {
                         "type": "integer"
+                    },
+                    "position": {
+                        "type": "integer",
+                        "description": "MPTT left bound. The list is already sorted on it; use it to restore tree order after a client-side re-sort."
                     },
                     "is_readonly": {
                         "type": "integer"

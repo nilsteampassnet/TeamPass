@@ -51,6 +51,8 @@ use TeampassClasses\EmailService\EmailService;
 use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
 
+require_once __DIR__ . '/otp.functions.php';
+
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
 
@@ -5776,6 +5778,39 @@ function filterString(string $field)
 }
 
 /**
+ * Convert the stored LDAP TLS certificate check setting to its integer constant.
+ *
+ * The admin form (pages/ldap.php) stores the constant name as a string, e.g.
+ * 'LDAP_OPT_X_TLS_NEVER', while ldap_set_option() requires the matching integer
+ * value for LDAP_OPT_X_TLS_REQUIRE_CERT. Passing the raw string raises a
+ * TypeError on PHP 8.
+ *
+ * @param array $SETTINGS Teampass settings
+ *
+ * @return int One of the LDAP_OPT_X_TLS_* values
+ */
+function tpLdapTlsRequireCertValue(array $SETTINGS): int
+{
+    $allowedValues = [
+        'LDAP_OPT_X_TLS_NEVER'  => LDAP_OPT_X_TLS_NEVER,
+        'LDAP_OPT_X_TLS_HARD'   => LDAP_OPT_X_TLS_HARD,
+        'LDAP_OPT_X_TLS_DEMAND' => LDAP_OPT_X_TLS_DEMAND,
+        'LDAP_OPT_X_TLS_ALLOW'  => LDAP_OPT_X_TLS_ALLOW,
+        'LDAP_OPT_X_TLS_TRY'    => LDAP_OPT_X_TLS_TRY,
+    ];
+
+    $value = $SETTINGS['ldap_tls_certificate_check'] ?? '';
+
+    // Older installations may already store the integer value
+    if (is_int($value) === true || (is_string($value) === true && ctype_digit($value) === true)) {
+        $intValue = (int) $value;
+        return in_array($intValue, $allowedValues, true) === true ? $intValue : LDAP_OPT_X_TLS_HARD;
+    }
+
+    return $allowedValues[(string) $value] ?? LDAP_OPT_X_TLS_HARD;
+}
+
+/**
  * CHeck if provided credentials are allowed on server
  *
  * @param string $login    User Login
@@ -5805,7 +5840,7 @@ function ldapCheckUserPassword(string $login, string $password, array $SETTINGS)
         // Custom LDAP Options
         'options' => [
             // See: http://php.net/ldap_set_option
-            LDAP_OPT_X_TLS_REQUIRE_CERT => (isset($SETTINGS['ldap_tls_certificate_check']) ? $SETTINGS['ldap_tls_certificate_check'] : LDAP_OPT_X_TLS_HARD),
+            LDAP_OPT_X_TLS_REQUIRE_CERT => tpLdapTlsRequireCertValue($SETTINGS),
         ],
     ];
     
@@ -10398,4 +10433,95 @@ function callerMayManageUser(int $targetUserId): bool
     }
 
     return true;
+}
+
+/**
+ * Build the `intitule` value binding a temporary uploaded file to its uploader.
+ *
+ * The upload timestamp stays first so the cleanup background task can still read
+ * it, the uploader id follows so consumers can enforce ownership, and a random
+ * suffix guarantees uniqueness against the UNIQUE(type, intitule) key of the misc
+ * table when several uploads happen within the same second.
+ *
+ * @param int $userId Id of the uploading user.
+ *
+ * @return string Value to store in misc.intitule.
+ */
+function tempFileBuildOwnerTag(int $userId): string
+{
+    return time() . '_' . $userId . '_' . bin2hex(random_bytes(4));
+}
+
+/**
+ * Extract the uploader id encoded in a temporary file `intitule` value.
+ *
+ * @param string $intitule Raw value read from misc.intitule.
+ *
+ * @return int Uploader id, or 0 when the record carries none (row created before
+ *             the ownership binding existed).
+ */
+function tempFileOwnerId(string $intitule): int
+{
+    $parts = explode('_', $intitule);
+
+    return isset($parts[1]) === true && ctype_digit($parts[1]) === true ? (int) $parts[1] : 0;
+}
+
+/**
+ * Extract the upload timestamp encoded in a temporary file `intitule` value.
+ * Also handles legacy records holding the bare timestamp.
+ *
+ * @param string $intitule Raw value read from misc.intitule.
+ *
+ * @return int Upload timestamp, or 0 when it cannot be read.
+ */
+function tempFileUploadTimestamp(string $intitule): int
+{
+    $parts = explode('_', $intitule);
+
+    return ctype_digit($parts[0]) === true ? (int) $parts[0] : 0;
+}
+
+/**
+ * Claim a temporary uploaded file: return its stored file name and consume the
+ * record, but only when that record belongs to the requesting user.
+ *
+ * The operation id handed to the client is a global auto-increment value another
+ * user can guess, so it is an identifier and never a capability: ownership must
+ * be established before the file is read or deleted (GHSA-cgcj-f9rx-c8r4).
+ *
+ * @param int $operationId Operation id returned by the upload handler.
+ * @param int $userId      Id of the user requesting the file.
+ *
+ * @return string|null Stored file name, or null when unknown or not owned.
+ */
+function tempFileClaimForUser(int $operationId, int $userId): ?string
+{
+    if ($operationId <= 0 || $userId <= 0) {
+        return null;
+    }
+
+    $record = DB::queryFirstRow(
+        'SELECT intitule, valeur
+        FROM ' . prefixTable('misc') . '
+        WHERE increment_id = %i AND type = %s',
+        $operationId,
+        'temp_file'
+    );
+
+    if (empty($record) === true
+        || tempFileOwnerId((string) $record['intitule']) !== $userId
+    ) {
+        return null;
+    }
+
+    // Ownership is established: the record is single-use, consume it now.
+    DB::delete(
+        prefixTable('misc'),
+        'increment_id = %i AND type = %s',
+        $operationId,
+        'temp_file'
+    );
+
+    return (string) $record['valeur'];
 }

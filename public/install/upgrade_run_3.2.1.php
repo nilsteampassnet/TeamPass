@@ -497,6 +497,27 @@ if (empty($onboardingColumnExists[0])) {
     mysqli_query($db_link, "UPDATE `" . $pre . "users` SET `onboarding_completed` = 1");
 }
 
+// RFC 6238 TOTP profiles. Defaults preserve every pre-existing item as
+// SHA-1, 6 digits and a 30-second period without rewriting its secret.
+$totpColumns = [
+    'algorithm' => "VARCHAR(6) NOT NULL DEFAULT 'sha1' AFTER `secret`",
+    'digits' => 'TINYINT(3) UNSIGNED NOT NULL DEFAULT 6 AFTER `algorithm`',
+    'period' => 'MEDIUMINT(8) UNSIGNED NOT NULL DEFAULT 30 AFTER `digits`',
+];
+foreach ($totpColumns as $columnName => $columnDefinition) {
+    $res = addColumnIfNotExist(
+        $pre . 'items_otp',
+        $columnName,
+        $columnDefinition
+    );
+    if ($res === false) {
+        echo '[{"finish":"1", "msg":"", "error":"Error adding items_otp.'
+            . $columnName . ': ' . addslashes(mysqli_error($db_link)) . '"}]';
+        mysqli_close($db_link);
+        exit();
+    }
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
