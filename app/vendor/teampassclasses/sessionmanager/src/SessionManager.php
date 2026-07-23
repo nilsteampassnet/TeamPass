@@ -41,6 +41,17 @@ class SessionManager
     public static function getSession()
     {
         if (null === self::$session) {
+            // In CLI context (upgrade scripts, background tasks, migration, scheduler)
+            // there is no HTTP request: starting a real PHP session is meaningless and
+            // fragile. A session_start()/headers_sent() failure throws an uncaught
+            // exception that aborts the whole script (issue #5299 — Docker migration
+            // exits with code 255). Use an in-memory storage so $session->get()/set()
+            // keep working without touching session files, cookies or headers.
+            if (PHP_SAPI === 'cli') {
+                self::$session = new Session(new \Symfony\Component\HttpFoundation\Session\Storage\MockArraySessionStorage());
+                return self::$session;
+            }
+
             // Load the encryption key
             $key = Key::loadFromAsciiSafeString(file_get_contents(TEAMPASS_SECRETS . "/" . SECUREFILE));
 
