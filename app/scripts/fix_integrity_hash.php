@@ -18,8 +18,8 @@ declare(strict_types=1);
 // Change to root directory
 chdir(__DIR__ . '/..');
 
-require_once __DIR__ . '/../includes/config/settings.php';
-require_once __DIR__ . '/../includes/config/include.php';
+require_once __DIR__ . '/../config/settings.php';
+require_once __DIR__ . '/../config/include.php';
 require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../sources/main.functions.php';
 
