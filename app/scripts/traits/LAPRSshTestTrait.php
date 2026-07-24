@@ -97,11 +97,11 @@ trait LAPRSshTestTrait
         $fingerprint = isset($connect['fingerprint']) ? (string) $connect['fingerprint'] : '';
         $service->disconnect();
 
-        // D5: can this endpoint actually rotate? root, or non-root with passwordless sudo.
-        $isRoot = (bool) ($collected['os_info']['is_root'] ?? false);
-        $hasSudo = (bool) ($collected['capabilities']['has_sudo'] ?? false);
-        $hasChpasswd = (bool) ($collected['capabilities']['has_chpasswd'] ?? false);
-        $canRotate = $hasChpasswd && ($isRoot || $hasSudo);
+        // D5: can this endpoint actually rotate? Trust the faithful probe run by
+        // testAndCollect() — it executes the real (no-op) chpasswd command over
+        // the exact path a rotation would take, so this is accurate even when
+        // sudo is scoped to chpasswd or /usr/sbin is missing from a non-root PATH.
+        $canRotate = (bool) ($collected['capabilities']['can_rotate'] ?? false);
 
         $result = [
             'success' => true,

@@ -2711,7 +2711,7 @@ return array(
     'lapr_capabilities' => 'Capabilities',
     'lapr_status' => 'Status',
     'lapr_last_check' => 'Last check',
-    'lapr_endpoint_cannot_rotate' => 'The SSH account cannot change passwords on this endpoint (not root and no passwordless sudo). Rotations would fail — enrollment refused.',
+    'lapr_endpoint_cannot_rotate' => 'The SSH account cannot change passwords on this endpoint: it is not root and cannot run chpasswd through passwordless sudo (sudo -n chpasswd). Rotations would fail — enrollment refused.',
     'lapr_rate_limited' => 'Too many attempts. Please retry later.',
     'lapr_hostname_not_allowed' => 'This hostname is not in the LAPR allowlist.',
     'lapr_credential_stored_note' => 'The SSH credential is stored as a TeamPass item encrypted with the standard sharekey model.',

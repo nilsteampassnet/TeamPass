@@ -200,8 +200,26 @@ class LAPRSshService
 
         $hasChpasswd = $this->commandExists('chpasswd');
         $hasPasswd = $this->commandExists('passwd');
-        // sudo -n: non-interactive — exit 0 only when sudo is usable without a password prompt
-        $hasSudo = $this->exec('sudo -n true 2>/dev/null')['exit_code'] === 0;
+
+        // D5 — faithful rotation-capability probe. Mirror exactly what a rotation
+        // runs (LAPRRotationTrait): `chpasswd` as root, `sudo -n chpasswd`
+        // otherwise. Feed empty stdin — chpasswd with no input is a no-op, so
+        // nothing on the endpoint is changed — and read the exit code, so the
+        // enrollment decision reflects the real rotation path.
+        //
+        // This is deliberately stricter and more accurate than the former
+        // `sudo -n true`: a sudoers rule scoped to chpasswd only (NOPASSWD:
+        // /usr/sbin/chpasswd) would fail `sudo -n true` yet rotate fine. It also
+        // sidesteps `command -v chpasswd` misreporting when /usr/sbin is absent
+        // from a non-root PATH — sudo resolves chpasswd through secure_path.
+        // sudo -n never prompts (fails immediately if a password is required),
+        // so the probe cannot hang.
+        $rotateCommand = $isRoot ? 'chpasswd' : 'sudo -n chpasswd';
+        $canRotate = trim($this->exec($rotateCommand . ' < /dev/null >/dev/null 2>&1; echo $?')['output']) === '0';
+
+        // has_sudo now specifically means "chpasswd is reachable via passwordless
+        // sudo" — the exact signal LAPRRotationTrait uses to prefix the command.
+        $hasSudo = $isRoot === false && $canRotate;
 
         return [
             'os_info' => [
@@ -214,6 +232,7 @@ class LAPRSshService
                 'has_chpasswd' => $hasChpasswd,
                 'has_passwd' => $hasPasswd,
                 'has_sudo' => $hasSudo,
+                'can_rotate' => $canRotate,
             ],
         ];
     }
