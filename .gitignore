@@ -4,6 +4,8 @@
 .idea
 *.sh
 *.sh.save
+# Ship the API command-line client despite the global *.sh rule
+!/app/scripts/teampass-cli.sh
 nbproject
 nbproject/private
 node_modules

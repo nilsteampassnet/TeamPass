@@ -1284,7 +1284,7 @@ All API endpoints may return the following standard HTTP error codes:
 
 ## Command-line client {#cli}
 
-Teampass ships a small Bash client, `scripts/teampass-cli.sh`, that wraps the JWT
+Teampass ships a small Bash client, `app/scripts/teampass-cli.sh`, that wraps the JWT
 authentication and the most common endpoints. It requires `curl` and `jq`.
 
 **Configuration** — environment variables, or `~/.config/teampass/config`:
@@ -1304,13 +1304,13 @@ export TEAMPASS_TOKEN="..."
 **Commands:**
 
 ```bash
-./scripts/teampass-cli.sh folders --tree          # folder tree with access rights
-./scripts/teampass-cli.sh read 25                 # read an item
-./scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
-./scripts/teampass-cli.sh update 25 label "Updated Server"
-./scripts/teampass-cli.sh search "server"         # by label
-./scripts/teampass-cli.sh search "192.168." --by-desc
-./scripts/teampass-cli.sh search "https://app" --by-url
+./app/scripts/teampass-cli.sh folders --tree          # folder tree with access rights
+./app/scripts/teampass-cli.sh read 25                 # read an item
+./app/scripts/teampass-cli.sh create 5 "My Server" "admin" "S3cr3t!" "Root credentials"
+./app/scripts/teampass-cli.sh update 25 label "Updated Server"
+./app/scripts/teampass-cli.sh search "server"         # by label
+./app/scripts/teampass-cli.sh search "192.168." --by-desc
+./app/scripts/teampass-cli.sh search "https://app" --by-url
 ```
 
 `folders --tree` renders the hierarchy directly, because
