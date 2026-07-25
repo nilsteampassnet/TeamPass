@@ -33,6 +33,22 @@ class FolderEndpointsRegressionTest extends TestCase
         return $content;
     }
 
+    /**
+     * Return the source of a method, from its signature to the next one.
+     * Enough to assert statement ordering inside a single method.
+     */
+    private function extractMethodBody(string $source, string $signature): string
+    {
+        $start = strpos($source, $signature);
+        self::assertIsInt($start, "Method '$signature' not found");
+
+        $next = strpos($source, 'function ', $start + strlen($signature));
+
+        return $next === false
+            ? substr($source, $start)
+            : substr($source, $start, $next - $start);
+    }
+
     // -------------------------------------------------------------------------
     // folder/create — C1..C4 fixes
     // -------------------------------------------------------------------------
@@ -384,5 +400,200 @@ class FolderEndpointsRegressionTest extends TestCase
         // create keeps the private property
         $createProps = $spec['components']['schemas']['FolderCreateBody']['properties'] ?? [];
         self::assertArrayHasKey('private', $createProps, 'FolderCreateBody must document the private property');
+    }
+
+    // -------------------------------------------------------------------------
+    // Web ↔ API rights parity
+    // -------------------------------------------------------------------------
+
+    /**
+     * The API must resolve multiple role types with the SAME implementation as the
+     * web (evaluateFolderAccesLevel), not a hasReadOnly/hasWrite heuristic which
+     * made R + W writable — the opposite of the documented least-permissive rule.
+     */
+    public function testAccessLevelResolutionReusesTheSharedEvaluator(): void
+    {
+        $model = $this->readSource('/app/api/Model/FolderAccessModel.php');
+
+        self::assertStringContainsString(
+            'evaluateFolderAccesLevel(',
+            $model,
+            'FolderAccessModel must fold role types through the shared web resolver'
+        );
+        self::assertStringNotContainsString(
+            '$hasReadOnly && !$hasWrite',
+            $model,
+            'the write-wins heuristic must not come back'
+        );
+        self::assertStringContainsString(
+            "getFolderAccessLevelForUser(\$folderId, \$userId)['type'] === 'R'",
+            $model,
+            'is_readonly must mean "resolved type is R"'
+        );
+    }
+
+    /**
+     * AD/LDAP-sourced roles must count everywhere: filtering on source = "manual"
+     * both hid folders and made a role-granted R folder look unrestricted.
+     */
+    public function testRoleLookupsDoNotFilterOnManualSource(): void
+    {
+        foreach ([
+            '/app/api/Model/FolderAccessModel.php',
+            '/app/api/Model/AuthModel.php',
+        ] as $file) {
+            self::assertStringNotContainsString(
+                'source = "manual"',
+                $this->readSource($file),
+                $file . ' must take AD-sourced roles into account'
+            );
+        }
+
+        // The cache rebuild path must select both sources
+        $router = $this->readSource('/app/api/index.php');
+        self::assertStringContainsString(
+            'AS roles_from_ad_groups',
+            $router,
+            'the folders cache rebuild must load AD roles'
+        );
+    }
+
+    /**
+     * ND / NE / NDNE are writable but restricted: item update and delete must be
+     * gated on the granular rights, not on the read-only boolean.
+     */
+    public function testItemWritesUseGranularFolderRights(): void
+    {
+        $controller = $this->readSource('/app/api/Controller/Api/ItemController.php');
+
+        self::assertStringContainsString(
+            'canEditInFolder(',
+            $controller,
+            'item update must be blocked on NE / NDNE folders'
+        );
+        self::assertStringContainsString(
+            'canDeleteInFolder(',
+            $controller,
+            'item delete must be blocked on ND / NDNE folders'
+        );
+    }
+
+    /**
+     * An administrator has access to every shared folder, and a folder listed in
+     * users_groups_forbidden must be removed from the list whatever granted it.
+     */
+    public function testFoldersListHandlesAdminAndForbiddenFolders(): void
+    {
+        $authModel = $this->readSource('/app/api/Model/AuthModel.php');
+
+        self::assertStringContainsString(
+            "groupes_interdits",
+            $authModel,
+            'buildUserFoldersList must subtract the explicitly denied folders'
+        );
+        self::assertStringContainsString(
+            'personal_folder = %i',
+            $authModel,
+            'the admin branch must load every shared folder'
+        );
+
+        $router = $this->readSource('/app/api/index.php');
+        foreach (['u.admin', 'AS groupes_interdits'] as $needle) {
+            self::assertStringContainsString(
+                $needle,
+                $router,
+                'the folders cache rebuild must resolve like the /authorize path'
+            );
+        }
+    }
+
+    /**
+     * Folder create/update must be atomic: a folder row without its complexity or
+     * its roles_values entries is silently unusable.
+     */
+    public function testFolderWritesAreTransactional(): void
+    {
+        $manager = $this->readSource('/app/sources/folders.class.php');
+
+        // createFolder + updateFolder + deleteFolders + refreshCacheForUsersWithSimilarRoles
+        self::assertSame(
+            4,
+            substr_count($manager, 'DB::startTransaction();'),
+            'createFolder, updateFolder and deleteFolders must each be transactional'
+        );
+
+        // refreshCacheForUsersWithSimilarRoles opens its OWN transaction: MySQL commits
+        // implicitly on a nested BEGIN, so it must run strictly after the commit.
+        $createBody = $this->extractMethodBody($manager, 'private function createFolder');
+        $commitPos = strpos($createBody, 'DB::commit();');
+        $refreshPos = strpos($createBody, 'refreshCacheForUsersWithSimilarRoles(');
+        self::assertIsInt($commitPos);
+        self::assertIsInt($refreshPos);
+        self::assertLessThan(
+            $refreshPos,
+            $commitPos,
+            'the cache refresh must not run inside the create transaction (nested BEGIN)'
+        );
+
+        // Same for the tree rebuild, which locks the whole nested_tree table
+        $rebuildPos = strpos($createBody, 'rebuildFolderTree(');
+        self::assertIsInt($rebuildPos);
+        self::assertLessThan(
+            $rebuildPos,
+            $commitPos,
+            'the tree rebuild must run after the commit'
+        );
+
+        self::assertStringContainsString(
+            "return ['error' => true, 'newId' => null, 'db_error' => true];",
+            $manager,
+            'a rolled-back create must be reported as an infrastructure failure, not a validation error'
+        );
+
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+        self::assertStringContainsString(
+            "(\$creationStatus['db_error'] ?? false) === true",
+            $model,
+            'a db_error must map to 500, never to the 422/403 validation branches'
+        );
+    }
+
+    /**
+     * The documented private-folder example sends no access_rights; the model must
+     * default to W instead of failing the enum check.
+     */
+    public function testCreateDefaultsAccessRightsToWrite(): void
+    {
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+
+        self::assertStringContainsString(
+            "empty(\$inputData['access_rights']) === true ? 'W' : \$inputData['access_rights']",
+            $model,
+            'an omitted access_rights must fall back to W'
+        );
+    }
+
+    public function testOpenApiPrivateFolderRequirementsAreConditional(): void
+    {
+        $spec = json_decode($this->readSource('/app/api/openapi.json'), true);
+        self::assertIsArray($spec);
+
+        $schema = $spec['components']['schemas']['FolderCreateBody'];
+
+        self::assertSame(
+            ['title'],
+            $schema['required'],
+            'only title is unconditionally required — parent_id/complexity depend on private'
+        );
+        self::assertArrayHasKey(
+            'allOf',
+            $schema,
+            'the parent_id/complexity requirement must be expressed conditionally'
+        );
+        self::assertSame(
+            ['parent_id', 'complexity'],
+            $schema['allOf'][0]['else']['required'],
+            'a shared folder still requires parent_id and complexity'
+        );
     }
 }

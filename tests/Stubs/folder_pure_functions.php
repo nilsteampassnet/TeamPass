@@ -257,3 +257,127 @@ function folderDeleteShouldSkipNode(int $parentId, int $personalFolder): bool
     }
     return $parentId < 0;
 }
+
+/**
+ * Least-permissive-wins resolution of several role types on the same folder.
+ *
+ * Verbatim replica of evaluateFolderAccesLevel() in app/sources/main.functions.php,
+ * the single implementation shared by the web (getRoleBasedAccess) and the API
+ * (FolderAccessModel::getFolderAccessLevelForUser).
+ *
+ * Priority: R > NDNE > {ND, NE} > W. Special case: ND + NE combine into NDNE.
+ */
+function folderEvaluateAccessLevel(string $newVal, string $existingVal): string
+{
+    $levels = [
+        'W'    => 10,
+        'ND'   => 20,
+        'NE'   => 20,
+        'NDNE' => 30,
+        'R'    => 40,
+    ];
+
+    if (($newVal === 'ND' && $existingVal === 'NE')
+        || ($newVal === 'NE' && $existingVal === 'ND')
+    ) {
+        return 'NDNE';
+    }
+
+    $currentPoints = empty($existingVal) ? 0 : ($levels[$existingVal] ?? 0);
+    $newPoints     = empty($newVal)      ? 0 : ($levels[$newVal] ?? 0);
+
+    return $currentPoints >= $newPoints ? $existingVal : $newVal;
+}
+
+/**
+ * Fold a set of role types into the effective access level for a folder.
+ *
+ * @param array<int, string> $accessTypes Role types defined on the folder
+ */
+function folderResolveAccessType(array $accessTypes): string
+{
+    $resolved = '';
+    foreach ($accessTypes as $type) {
+        $resolved = folderEvaluateAccessLevel((string) $type, $resolved);
+    }
+    return $resolved === '' ? 'W' : $resolved;
+}
+
+/**
+ * Map a resolved access type to the granular create/edit/delete rights.
+ *
+ * Mirrors the switch in FolderAccessModel::getFolderAccessLevelForUser() and
+ * getRoleBasedAccess() in app/sources/items.queries.php.
+ *
+ * @return array{type: string, create: bool, edit: bool, delete: bool}
+ */
+function folderAccessFlagsFromType(string $type): array
+{
+    switch ($type) {
+        case 'ND':   return ['type' => 'ND',   'create' => true,  'edit' => true,  'delete' => false];
+        case 'NE':   return ['type' => 'NE',   'create' => true,  'edit' => false, 'delete' => true];
+        case 'NDNE': return ['type' => 'NDNE', 'create' => true,  'edit' => false, 'delete' => false];
+        case 'R':    return ['type' => 'R',    'create' => false, 'edit' => false, 'delete' => false];
+        default:     return ['type' => 'W',    'create' => true,  'edit' => true,  'delete' => true];
+    }
+}
+
+/**
+ * Build the API-visible folders list.
+ *
+ * Replica of AuthModel::buildUserFoldersList() minus the DB access:
+ *   - an administrator sees every shared folder and is exempt from the deny list;
+ *   - roles of both sources (manual + AD) contribute;
+ *   - an explicitly forbidden folder wins over every grant.
+ *
+ * @param array<int> $directGrants     users_groups (groupes_visibles)
+ * @param array<int> $roleFolders      folders reachable through the user's roles
+ * @param array<int> $personalFolders  the user's own personal tree
+ * @param array<int> $forbiddenFolders users_groups_forbidden (groupes_interdits)
+ * @param array<int> $allSharedFolders every non-personal folder (admin case)
+ * @return array<int>
+ */
+function folderBuildAccessibleList(
+    bool $isAdmin,
+    array $directGrants,
+    array $roleFolders,
+    array $personalFolders,
+    array $forbiddenFolders,
+    array $allSharedFolders
+): array {
+    $accessible = $isAdmin === true
+        ? array_merge($directGrants, $allSharedFolders, $personalFolders)
+        : array_merge($directGrants, $roleFolders, $personalFolders);
+
+    $accessible = array_values(array_unique(array_filter(array_map('intval', $accessible))));
+
+    // Administrators are exempt: identAdmin() resets the deny list
+    if ($isAdmin === false && empty($forbiddenFolders) === false) {
+        $accessible = array_values(array_diff($accessible, array_map('intval', $forbiddenFolders)));
+    }
+
+    return $accessible;
+}
+
+/**
+ * Effective access_rights for folder creation.
+ *
+ * The controller always forwards the key (empty string when omitted), so the
+ * model cannot rely on isset() — an empty value falls back to 'W', like the web
+ * add_folder handler.
+ */
+function folderEffectiveAccessRights(string $accessRights): string
+{
+    return empty($accessRights) === true ? 'W' : $accessRights;
+}
+
+/**
+ * Is the folder title acceptable?
+ *
+ * Rejects empty and whitespace-only names (which collapse to '' after trim and
+ * are not caught by the is_numeric guard).
+ */
+function folderIsValidTitle(string $title): bool
+{
+    return trim($title) !== '';
+}

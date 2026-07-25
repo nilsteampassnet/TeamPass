@@ -266,15 +266,16 @@ List all folders accessible to the authenticated user.
 
 List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, position, is_readonly }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, is_readonly, access_type, can_create, can_edit, can_delete }`.
 
-- `is_readonly: 1` — user has read access only (R-type role on this folder)
-- `is_readonly: 0` — user can write
+- `access_type` — effective level resolved least-permissive-wins across every role: `W` | `ND` | `NE` | `NDNE` | `R`
+- `is_readonly: 1` ⟺ `access_type === 'R'` (no create, no edit, no delete)
+- `can_create` / `can_edit` / `can_delete` — granular rights. **`is_readonly: 0` does not mean full write**: `ND` blocks delete, `NE` blocks edit, `NDNE` blocks both. Clients must read the granular flags or they will hit surprise `403`s on update/delete.
 - `position` — the folder's `nested_tree.nleft`; rows are sorted `ORDER BY nleft ASC` (MPTT pre-order), so `parent_id` + `level` + `position` rebuild the exact hierarchy **including sibling order**. Before 3.2.2 the ordering was `nlevel ASC, title ASC` (alphabetical, sibling order lost).
 
-**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. Check `is_readonly` on each entry. This is the endpoint to point API clients at when they need "the whole folder tree in one call" — `listFolders` returns a nested tree but carries no access rights.
+**Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. This is the endpoint to point API clients at when they need "the whole folder tree in one call" — `listFolders` returns a nested tree but carries no access rights.
 
-**Known cost:** `is_readonly` is resolved per folder by `FolderAccessModel::isFolderReadOnlyForUser()` (up to 3 queries per folder). A batch resolver is a pending optimization.
+**Known cost:** the access level is resolved per folder by `FolderAccessModel::getFolderAccessLevelForUser()` (up to 3 queries per folder, one resolution feeding all four flags). A batch resolver is a pending optimization.
 
 **Permissions:** `allowed_to_read`.
 
@@ -400,7 +401,10 @@ On HTTPS: `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
 2. **User private key** never leaves the server unencrypted. The JWT carries only `key_tempo` (a reference). The server-side `session_aes_key` in `teampass_api` is required to decrypt the private key on each request.
 3. **Sharekey decryption** uses `decryptUserObjectKeyWithMigration()` — transparently upgrades phpseclib v1 (SHA-1) sharekeys to v3 (SHA-256) on access.
 4. **Bruteforce** thresholds: `nb_bad_authentication` (default 10), `nb_bad_authentication_by_ip` (default 30), `bruteforce_lock_duration` (default 10 min). Configure in TeamPass admin settings.
-5. **Read-only folders**: enforced in create/update/delete item operations and folder create. An item move to a read-only target folder is also blocked.
+5. **Folder rights parity with the web** (see `docs/features/rights.md`): `FolderAccessModel::getFolderAccessLevelForUser()` is the single API resolver. It folds every role type on the folder through `evaluateFolderAccesLevel()` — the same function the web uses in `getRoleBasedAccess()` — so the **least permissive wins** (`R` > `NDNE` > `NE` = `ND` > `W`). A direct per-user grant (`users_groups`) always yields `W` and overrides a role restriction, exactly like `identUser()`. Roles of **both** sources count (manual + AD/LDAP): filtering on `source = "manual"` used to hide folders *and* make a role-granted `R` folder look unrestricted.
+   - `isFolderReadOnlyForUser()` ⟺ resolved type is `R`. It gates operations that only need *create* semantics: item create, folder create/update/delete, and the target folder of a move.
+   - `canEditInFolder()` / `canDeleteInFolder()` gate `PUT /item/update` and `DELETE /item/delete` — `ND`/`NE`/`NDNE` are writable but restricted, which the read-only boolean alone cannot express.
+   - **`AuthModel::buildUserFoldersList()` is a visibility list only**, never a rights list. It mirrors `identifyUserRights()`: an administrator gets every shared folder (`identAdmin()`) and is exempt from the deny list; for everyone else `users_groups_forbidden` (`groupes_interdits`) is subtracted **last** — a denial beats every grant. The cache-rebuild query in `api/index.php` must select `admin`, `groupes_interdits` and `roles_from_ad_groups` so it resolves identically to the `/authorize` path.
 6. **Logging**: successful logins logged as `user_connection` with `tp_src=api`. Failed auth logged as `failed_auth` with `tp_src=api`. Visible in Admin > Logs.
 7. **Input sanitization**: body and query-string params are trimmed only — no HTML encoding — so passwords containing `<>&"'` are stored correctly. SQL injection is prevented by MeekroDB placeholders throughout.
 8. **Personal Access Tokens (OAuth2)**: `teampass_api_tokens` stores only `sha256(token)` + the private key wrapped under `HKDF-SHA256(token, salt)` (AES-256-GCM). The raw token is never persisted, so a DB dump alone cannot decrypt. The token is 256-bit (bypassing the weak 64-bit `hashUserId(oid)` derivation), revocable per device, optionally time-limited (`expires_at`), and gated by `oauth2_api_enabled`. Generation requires the cleartext private key to be present in the web session — the security gate on issuance. Audit: `extension_token_generated` / `extension_token_revoked` (`user_mngt`), failed token auth as `failed_auth` (`tp_src=api`).

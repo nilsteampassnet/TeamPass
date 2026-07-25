@@ -830,8 +830,9 @@ class ItemController extends BaseController
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
-                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
-                                    $strErrorDesc = 'Access denied: folder is read-only';
+                                } elseif ($folderAccessModel->canEditInFolder((int) $itemInfo['id_tree'], (int) $userData['id']) === false) {
+                                    // Blocks R (read-only) as well as NE / NDNE (no edit)
+                                    $strErrorDesc = 'Access denied: you are not allowed to edit items in this folder';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // Validate at least one field to update is provided
@@ -975,8 +976,9 @@ class ItemController extends BaseController
                                 if (!$hasAccess) {
                                     $strErrorDesc = 'Access denied to this item';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
-                                } elseif ($folderAccessModel->isFolderReadOnlyForUser((int) $itemInfo['id_tree'], (int) $userData['id'])) {
-                                    $strErrorDesc = 'Access denied: folder is read-only';
+                                } elseif ($folderAccessModel->canDeleteInFolder((int) $itemInfo['id_tree'], (int) $userData['id']) === false) {
+                                    // Blocks R (read-only) as well as ND / NDNE (no delete)
+                                    $strErrorDesc = 'Access denied: you are not allowed to delete items in this folder';
                                     $strErrorHeader = 'HTTP/1.1 403 Forbidden';
                                 } else {
                                     // delete the item

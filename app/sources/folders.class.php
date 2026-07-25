@@ -117,7 +117,7 @@ class FolderManager
      *
      * @param array $params  Folder update parameters (see above)
      * @param array $options Reserved for future toggles (unused today)
-     * @return array{error: bool, id?: int, title?: string, parent_id?: int, message?: string}
+     * @return array{error: bool, id?: int, title?: string, parent_id?: int, message?: string, db_error?: bool}
      */
     public function updateFolder(array $params, array $options = []): array
     {
@@ -160,21 +160,34 @@ class FolderManager
             $folderParameters['fa_icon_selected'] = empty($params['icon_selected']) === true ? TP_DEFAULT_ICON_SELECTED : (string) $params['icon_selected'];
         }
 
-        DB::update(
-            prefixTable('nested_tree'),
-            $folderParameters,
-            'id = %i',
-            $folderId
-        );
+        // Atomic business writes — a folder moved without its complexity updated, or
+        // renamed without its categories, would leave an inconsistent state.
+        // Tree rebuild and cache refresh run AFTER the commit (see createFolder()).
+        DB::startTransaction();
+        try {
+            DB::update(
+                prefixTable('nested_tree'),
+                $folderParameters,
+                'id = %i',
+                $folderId
+            );
 
-        // Complexity upsert (only when provided) — reuse the INSERT...ON DUPLICATE
-        // KEY UPDATE helper so a personal folder without a misc/complex row is handled.
-        if (array_key_exists('complexity', $params) && $params['complexity'] !== null) {
-            $this->addComplexity((string) $folderId, (int) $params['complexity']);
+            // Complexity upsert (only when provided) — reuse the INSERT...ON DUPLICATE
+            // KEY UPDATE helper so a personal folder without a misc/complex row is handled.
+            if (array_key_exists('complexity', $params) && $params['complexity'] !== null) {
+                $this->addComplexity((string) $folderId, (int) $params['complexity']);
+            }
+
+            // Ensure categories are set for this folder
+            handleFoldersCategories([$folderId]);
+
+            DB::commit();
+        } catch (Throwable $e) {
+            DB::rollback();
+            // Raw exception text is logged, never returned to the client
+            error_log('TeamPass Error - updateFolder - ' . $e->getMessage());
+            return ['error' => true, 'db_error' => true];
         }
-
-        // Ensure categories are set for this folder
-        handleFoldersCategories([$folderId]);
 
         // Rebuild the nested tree — never touch nleft/nright/nlevel manually
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
@@ -530,20 +543,38 @@ class FolderManager
         $user_roles = $params['user_roles'] ?? '';    
 
         if ($this->canCreateFolder($isPersonal, $user_is_admin, $user_is_manager, $user_can_manage_all_users, $user_can_create_root_folder)) {
-            $newId = $this->insertFolder($params, $parentFolderData);
-            $this->addComplexity($newId, $complexity);
-            if (isset($options['setFolderCategories']) && $options['setFolderCategories'] === true) {
-                $this->setFolderCategories($newId);
+            // All business writes are atomic: a folder row without its complexity or its
+            // roles_values entries would be silently unusable. Tree rebuild and cache
+            // refresh run AFTER the commit — same pattern as deleteFolders().
+            DB::startTransaction();
+            try {
+                $newId = $this->insertFolder($params, $parentFolderData);
+                $this->addComplexity($newId, $complexity);
+                if (isset($options['setFolderCategories']) && $options['setFolderCategories'] === true) {
+                    $this->setFolderCategories($newId);
+                }
+                if (isset($options['manageFolderPermissions']) && $options['manageFolderPermissions'] === true) {
+                    $this->manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin);
+                }
+                if (isset($options['copyCustomFieldsCategories']) && $options['copyCustomFieldsCategories'] === true) {
+                    $this->copyCustomFieldsCategories($parent_id, $newId);
+                }
+                DB::commit();
+            } catch (Throwable $e) {
+                DB::rollback();
+                // db_error distinguishes an infrastructure failure (→ 500) from a
+                // business validation failure carrying a user-facing 'message' (→ 422).
+                // The raw exception text is logged, never returned to the client.
+                error_log('TeamPass Error - createFolder - ' . $e->getMessage());
+                return ['error' => true, 'newId' => null, 'db_error' => true];
             }
+
+            // Post-commit: heavy / non-transactional work (tree rebuild locks the whole
+            // nested_tree table, cache refresh queues background tasks in its own
+            // transaction — neither may run inside the transaction above).
             $this->updateTimestamp((int) $newId);
             if (isset($options['rebuildFolderTree']) && $options['rebuildFolderTree'] === true) {
                 $this->rebuildFolderTree($user_is_admin, $title, $parent_id, $isPersonal, $user_id, $newId);
-            }
-            if (isset($options['manageFolderPermissions']) && $options['manageFolderPermissions'] === true) {
-                $this->manageFolderPermissions($parent_id, $newId, $user_roles, $access_rights, $user_is_admin);
-            }
-            if (isset($options['copyCustomFieldsCategories']) && $options['copyCustomFieldsCategories'] === true) {
-                $this->copyCustomFieldsCategories($parent_id, $newId);
             }
             if (isset($options['refreshCacheForUsersWithSimilarRoles']) && $options['refreshCacheForUsersWithSimilarRoles'] === true) {
                 $this->refreshCacheForUsersWithSimilarRoles($user_roles);

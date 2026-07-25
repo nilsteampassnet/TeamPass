@@ -666,7 +666,7 @@ curl -X POST "https://your-teampass.com/api/index.php/item/create" \
 | 200 | Item updated successfully |
 | 400 | Missing ID or no fields to update |
 | 401 | Invalid session or user keys not found |
-| 403 | Update permission denied or access denied |
+| 403 | Update permission denied or access denied — including a folder granted as `R`, `NE` or `NDNE` (check `can_edit` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 422 | HTTP method not supported |
 | 500 | Server error |
@@ -738,7 +738,7 @@ curl -X PUT "https://your-teampass.com/api/index.php/item/update" \
 | ---- | ----------- |
 | 200 | Item deleted successfully |
 | 400 | Missing ID or inconsistent data |
-| 403 | Delete permission denied or access denied |
+| 403 | Delete permission denied or access denied — including a folder granted as `R`, `ND` or `NDNE` (check `can_delete` on [`folder/writableFolders`](#writable-folders)) |
 | 404 | Item not found |
 | 422 | HTTP method not supported (must be DELETE) |
 | 500 | Server error |
@@ -880,7 +880,11 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 1,
     "position": 23,
-    "is_readonly": 0
+    "is_readonly": 0,
+    "access_type": "W",
+    "can_create": 1,
+    "can_edit": 1,
+    "can_delete": 1
   },
   {
     "id": 1,
@@ -889,7 +893,11 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 0,
     "position": 41,
-    "is_readonly": 0
+    "is_readonly": 0,
+    "access_type": "ND",
+    "can_create": 1,
+    "can_edit": 1,
+    "can_delete": 0
   },
   {
     "id": 2,
@@ -898,7 +906,11 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 1,
     "first_position": 0,
     "position": 42,
-    "is_readonly": 1
+    "is_readonly": 1,
+    "access_type": "R",
+    "can_create": 0,
+    "can_edit": 0,
+    "can_delete": 0
   }
 ]
 ```
@@ -913,7 +925,19 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `parent_id` | integer | Parent folder ID (0 for root) |
 | `first_position` | integer | `1` for the user's personal root folder, to be listed first |
 | `position` | integer | Tree position; the list is already sorted on it |
-| `is_readonly` | integer | `1` = read access only, `0` = the user can write |
+| `is_readonly` | integer | `1` = read access only (`access_type` is `R`), `0` = the user can write |
+| `access_type` | string | Effective access level: `W`, `ND`, `NE`, `NDNE` or `R` |
+| `can_create` | integer | `1` when the user may create items in this folder |
+| `can_edit` | integer | `1` when the user may edit existing items (`0` for `NE`, `NDNE`, `R`) |
+| `can_delete` | integer | `1` when the user may delete items (`0` for `ND`, `NDNE`, `R`) |
+
+> ⚠️ `is_readonly: 0` does **not** mean full write access. A folder granted as `ND`, `NE` or
+> `NDNE` is writable but restricts deletion and/or edition — rely on `can_edit` / `can_delete`
+> rather than on `is_readonly` alone, otherwise a legitimate call will come back as `403`.
+>
+> When several roles grant different levels on the same folder, the **least permissive wins**
+> (`R` > `NDNE` > `NE` = `ND` > `W`), exactly like the web interface. See
+> [Rights management](../features/rights.md).
 
 **Response Codes:**
 
@@ -980,9 +1004,11 @@ curl -s -X GET "https://your-teampass.com/api/index.php/folder/writableFolders" 
 | `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
-| `access_rights` | string | ❌ | Access type: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit) |
+| `access_rights` | string | ❌ | Access type granted to your roles on the new folder: R (Read), W (Write), ND (No deletion), NE (No edit), NDNE (No deletion and No edit). **Defaults to `W`** when omitted. |
 
 > ¹ `parent_id` and `complexity` are required for a **shared** folder. When `private` is `true` (personal folder), both are optional — `parent_id` defaults to your personal root and the complexity ceiling does not apply. The `personal_folder` flag is always derived server-side; it is never accepted from the client.
+>
+> A `title` made only of whitespace is rejected with `422`.
 
 **Possible values for `complexity`:**
 
@@ -1081,14 +1107,14 @@ Partial update: only `id` is required; any field you omit keeps its current valu
 | `id` | integer | ✅ | Folder ID to update |
 | `title` | string | ❌ | New folder name |
 | `parent_id` | integer | ❌ | New parent ID (move). Cross-domain personal ↔ shared moves are rejected. |
-| `complexity` | integer | ❌ | New complexity level |
+| `complexity` | integer | ❌ | New complexity level. Must be one of 0, 20, 38, 48, 60 — any other value is rejected with `422`. |
 | `duration` | integer | ❌ | Expiration delay in minutes |
 | `create_auth_without` | integer | ❌ | Allow creation even if complexity insufficient (0/1) |
 | `edit_auth_without` | integer | ❌ | Allow update even if complexity insufficient (0/1) |
 | `icon` | string | ❌ | FontAwesome icon code (closed state) |
 | `icon_selected` | string | ❌ | FontAwesome icon code (open/selected state) |
 
-> `access_rights` cannot be changed here — folder rights are a roles-management concern. Personal **root** folders cannot be renamed or moved. At least one updatable field must be provided.
+> `access_rights` cannot be changed here — folder rights are a roles-management concern. Personal **root** folders cannot be renamed or moved. At least one updatable field must be provided. An empty or whitespace-only `title` is rejected with `422`.
 
 **Response (success):**
 ```json
@@ -1109,7 +1135,7 @@ Partial update: only `id` is required; any field you omit keeps its current valu
 | 403 | Update permission denied / read-only folder / personal root rename or move |
 | 404 | Folder not found |
 | 405 | Method not allowed (use PUT) |
-| 422 | Numeric title, duplicate title, circular/descendant move, cross-domain move, or complexity below parent |
+| 422 | Empty or numeric title, duplicate title, invalid complexity level, circular/descendant move, cross-domain move, or complexity below parent |
 | 500 | Server error |
 
 **Example:**

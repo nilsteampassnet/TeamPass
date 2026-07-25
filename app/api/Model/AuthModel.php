@@ -300,6 +300,14 @@ class AuthModel
         $ret = $this->buildUserFoldersList($userInfo);
         $this->storeFoldersCache((int) $userInfo['id'], $ret['folders']);
 
+        // Roles carried by the token: manual + AD/LDAP, exactly like the web session
+        // (identify.php appends roles_from_ad_groups to fonction_id before storing
+        // user-roles). Used downstream for folder permissions and cache refresh.
+        $userRolesForJwt = implode(';', array_unique(array_filter(array_merge(
+            explode(';', (string) ($userInfo['fonction_id'] ?? '')),
+            explode(';', (string) ($userInfo['roles_from_ad_groups'] ?? ''))
+        ))));
+
         // Log user (API / browser extension).
         // Prevent duplicate entries when the client retries within a very short window.
         loadClasses('DB');
@@ -349,7 +357,7 @@ class AuthModel
             (int) $userInfo['gestionnaire'],
             (int) $userInfo['can_create_root_folder'],
             (int) $userInfo['can_manage_all_users'],
-            (string) $userInfo['fonction_id'],
+            $userRolesForJwt,
             (string) $userInfo['api_allowed_folders'],
             (int) $userInfo['api_allowed_to_create'],
             (int) $userInfo['api_allowed_to_read'],
@@ -587,48 +595,66 @@ class AuthModel
 
 
     /**
-     * Permit to build the list of folders the user can access
+     * Permit to build the list of folders the user can access.
      *
-     * @param array $userInfo
-     * @return array
+     * Parity with the web session build (identifyUserRights() in main.functions.php):
+     *  - an administrator sees every shared folder (identAdmin()), plus their own
+     *    personal tree, and is not subject to the per-user forbidden list;
+     *  - roles of BOTH sources are merged (manual + AD/LDAP groups), like core.php does;
+     *  - folders explicitly denied to the user (users_groups_forbidden) are subtracted
+     *    last — a denial has absolute priority over any grant (identUserGetPFList()).
+     *
+     * Note: this list is a visibility list only. Whether a visible folder is writable is
+     * resolved per folder by FolderAccessModel::getFolderAccessLevelForUser().
+     *
+     * @param array $userInfo Row exposing at least: id, groupes_visibles, fonction_id,
+     *                        and optionally admin, roles_from_ad_groups, groupes_interdits
+     * @return array{folders: array<int>}
      */
     public function buildUserFoldersList(array $userInfo): array
     {
         //Build tree
         $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
 
-        // Start by adding the manually added folders
-        $allowedFolders = array_map('intval', explode(";", $userInfo['groupes_visibles']));
-        $readOnlyFolders = [];
+        $userId = (int) $userInfo['id'];
+        $isAdmin = (int) ($userInfo['admin'] ?? 0) === 1;
+
+        // Start by adding the manually added folders (direct per-user grants)
+        $allowedFolders = array_map('intval', explode(";", (string) ($userInfo['groupes_visibles'] ?? '')));
         $allowedFoldersByRoles = [];
         $personalFolders = [];
 
-        $userFunctionId = explode(";", $userInfo['fonction_id']);
-        $hasRoles = $userInfo['fonction_id'] !== '';
-
-        // Get folders from the roles
-        if ($hasRoles) {
+        if ($isAdmin === true) {
+            // Administrator: every shared folder is accessible (mirrors identAdmin())
             $rows = DB::query(
-                'SELECT *
-                FROM ' . prefixTable('roles_values') . '
-                WHERE role_id IN %li  AND type IN ("W", "ND", "NE", "NDNE", "R")',
-                $userFunctionId
+                'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
+                0
             );
             foreach ($rows as $record) {
-                if ($record['type'] === 'R') {
-                    array_push($readOnlyFolders, $record['folder_id']);
-                } elseif (in_array($record['folder_id'], $allowedFolders) === false) {
-                    array_push($allowedFoldersByRoles, $record['folder_id']);
-                }
+                array_push($allowedFolders, (int) $record['id']);
             }
-            $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
-            $readOnlyFolders = array_unique($readOnlyFolders);
-            // Clean arrays
-            foreach ($allowedFoldersByRoles as $value) {
-                $key = array_search($value, $readOnlyFolders);
-                if ($key !== false) {
-                    unset($readOnlyFolders[$key]);
+        } else {
+            // Merge roles from both sources — the web session does the same (core.php)
+            $userFunctionId = array_filter(array_map(
+                'intval',
+                array_merge(
+                    explode(";", (string) ($userInfo['fonction_id'] ?? '')),
+                    explode(";", (string) ($userInfo['roles_from_ad_groups'] ?? ''))
+                )
+            ));
+
+            // Get folders from the roles
+            if (empty($userFunctionId) === false) {
+                $rows = DB::query(
+                    'SELECT DISTINCT folder_id
+                    FROM ' . prefixTable('roles_values') . '
+                    WHERE role_id IN %li  AND type IN ("W", "ND", "NE", "NDNE", "R")',
+                    array_values($userFunctionId)
+                );
+                foreach ($rows as $record) {
+                    array_push($allowedFoldersByRoles, (int) $record['folder_id']);
                 }
+                $allowedFoldersByRoles = array_unique($allowedFoldersByRoles);
             }
         }
 
@@ -637,14 +663,36 @@ class AuthModel
             'SELECT id
             FROM ' . prefixTable('nested_tree') . '
             WHERE title = %i AND personal_folder = 1',
-            $userInfo['id']
+            $userId
         );
         if (empty($rows['id']) === false) {
-            array_push($personalFolders, $rows['id']);
+            array_push($personalFolders, (int) $rows['id']);
             // get all descendants
             $ids = $tree->getDescendants($rows['id'], false, false, true);
             foreach ($ids as $id) {
-                array_push($personalFolders, $id);
+                array_push($personalFolders, (int) $id);
+            }
+        }
+
+        $accessibleFolders = array_values(array_unique(
+            array_filter(
+                array_merge(
+                    $allowedFolders,
+                    $allowedFoldersByRoles,
+                    $personalFolders
+                )
+            )
+        ));
+
+        // A folder explicitly denied to the user wins over every grant. Administrators
+        // are exempt: identAdmin() resets user-no_access_folders to an empty list.
+        if ($isAdmin === false) {
+            $forbiddenFolders = array_filter(array_map(
+                'intval',
+                explode(";", (string) ($userInfo['groupes_interdits'] ?? ''))
+            ));
+            if (empty($forbiddenFolders) === false) {
+                $accessibleFolders = array_values(array_diff($accessibleFolders, $forbiddenFolders));
             }
         }
 
@@ -652,19 +700,7 @@ class AuthModel
 
         // All accessible folders
         return [
-            'folders' => $folderAccessModel->filterFoldersForUser(
-                array_values(array_unique(
-                    array_filter(
-                        array_merge(
-                            $allowedFolders,
-                            $allowedFoldersByRoles,
-                            $readOnlyFolders,
-                            $personalFolders
-                        )
-                    )
-                )),
-                (int) $userInfo['id']
-            ),
+            'folders' => $folderAccessModel->filterFoldersForUser($accessibleFolders, $userId),
         ];
     }
     //end buildUserFoldersList
