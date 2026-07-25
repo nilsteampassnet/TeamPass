@@ -66,6 +66,23 @@ $checkUserAccess = new PerformChecks(
     ]
 );
 
+// Global authorization gate for EVERY action in this file (GHSA-66q9-mxf2-xqw6).
+// Historically folders.queries.php had no session gate: on a cookie-less request
+// $session->get('key') is null and a missing POST 'key' is also null, so the per-case
+// "$post_key !== key" guards compared null !== null and failed open. Require a real
+// authenticated session and enforce DB-driven session validity (admin "kick").
+// Note: userAccessPage('folders') is intentionally NOT used here — it is manager/admin
+// only, while normal users legitimately manage their personal folders through this backend.
+if (
+    (int) ($session->get('user-id') ?? 0) <= 0
+    || empty($session->get('key')) === true
+    || $checkUserAccess->checkSession() === false
+) {
+    $session->set('system-error_code', ERR_NOT_ALLOWED);
+    include TEAMPASS_ROOT . '/public/error.php';
+    exit;
+}
+
 // Define Timezone
 date_default_timezone_set($SETTINGS['timezone'] ?? 'UTC');
 
@@ -400,7 +417,27 @@ if (null !== $post_type) {
                 WHERE id = %i',
                 $inputData['id']
             );
-            
+
+            // Authorization: the caller must have access to the folder being edited.
+            // Without this, any folder id could be renamed/re-parented (IDOR — GHSA-66q9-mxf2-xqw6).
+            if (
+                (int) $session->get('user-admin') !== 1
+                && in_array(
+                    (int) $inputData['id'],
+                    array_map('intval', (array) $session->get('user-accessible_folders')),
+                    true
+                ) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
+            }
+
             // Check if duplicate folder names are allowed (rename case)
             if (
                 isset($SETTINGS['duplicate_folder']) === true
@@ -441,6 +478,29 @@ if (null !== $post_type) {
                 $inputData['parentId'] = (int) $dataFolder['parent_id'];
                 $inputData['title'] = (string) $dataFolder['title'];
                 $parentChanged = false;
+            }
+
+            // Authorization: when moving the folder, the caller must have access to the target
+            // parent (parentId 0 = root is gated by the "user allowed" check below). Prevents
+            // re-parenting into an arbitrary or another user's folder (GHSA-66q9-mxf2-xqw6).
+            if (
+                $parentChanged === true
+                && (int) $inputData['parentId'] !== 0
+                && (int) $session->get('user-admin') !== 1
+                && in_array(
+                    (int) $inputData['parentId'],
+                    array_map('intval', (array) $session->get('user-accessible_folders')),
+                    true
+                ) === false
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             //check if parent folder is personal
@@ -495,6 +555,24 @@ if (null !== $post_type) {
                         break;
                     }
                 }
+            }
+
+            // Authorization: reject cross-domain moves (shared ↔ personal). Converting a shared
+            // folder to personal would steal it into the caller's personal space and hide it
+            // org-wide (GHSA-66q9-mxf2-xqw6). Admins may still perform maintenance moves.
+            if (
+                $parentChanged === true
+                && (int) $session->get('user-admin') !== 1
+                && (int) $dataFolder['personal_folder'] !== (int) $isPersonal
+            ) {
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('error_not_allowed_to'),
+                    ),
+                    'encode'
+                );
+                break;
             }
 
             // Check if user is allowed
