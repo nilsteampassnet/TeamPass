@@ -6,19 +6,19 @@ namespace TeampassClasses\LdapExtra;
  * Teampass - a collaborative passwords manager.
  * ---
  * This file is part of the TeamPass project.
- * 
+ *
  * TeamPass is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by
  * the Free Software Foundation, version 3 of the License.
- * 
+ *
  * TeamPass is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <https://www.gnu.org/licenses/>.
- * 
+ *
  * Certain components of this file may be under different licenses. For
  * details, see the `licenses` directory or individual file headers.
  * ---
@@ -29,12 +29,12 @@ namespace TeampassClasses\LdapExtra;
  * @see       https://www.teampass.net
  */
 
-use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
+use LdapRecord\Models\ActiveDirectory\Group as BaseGroup;
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\ActiveDirectory\User;
 
-class ActiveDirectoryExtra extends BaseGroup 
+class ActiveDirectoryExtra extends BaseGroup
 {
     public function getADGroups(Connection $connection, array $settings): array
     {
@@ -77,16 +77,26 @@ class ActiveDirectoryExtra extends BaseGroup
                     if ($guidAttr === 'objectguid') {
                         try {
                             $bin = $group[$guidAttr][0];
-                            $adGroupId = strtolower(vsprintf(
-                                '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x',
-                                array_values(unpack('C16', $bin))
-                            ));
+
+                            $adGroupId = strtolower(
+                                (new \LdapRecord\Models\Attributes\Guid($bin))->getValue()
+                            );
                         } catch (\Throwable $e) {
-                            // If conversion fails, assign a unique fallback
-                            $adGroupId = 'invalid_guid_' . uniqid();
+                            error_log('TEAMPASS LDAP: invalid group objectGUID for group ' . ($group['cn'][0] ?? 'Unknown') . ': ' . $e->getMessage());
+
+                            // Fallback to old behavior to avoid breaking GUI
+                            try {
+                                $bin = $group[$guidAttr][0];
+                                $adGroupId = strtolower(vsprintf(
+                                    '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x',
+                                    array_values(unpack('C16', $bin))
+                                ));
+                            } catch (\Throwable $fallbackException) {
+                                $adGroupId = 'invalid_guid_' . md5($group['cn'][0] ?? uniqid('', true));
+                            }
                         }
                     } else {
-                        // Otherwise treat attribute as plain string (e.g. gidNumber)
+                        // Otherwise treat attribute as plain string, for example gidNumber
                         $adGroupId = strtolower((string) $group[$guidAttr][0]);
                     }
                 } else {
@@ -159,54 +169,82 @@ class ActiveDirectoryExtra extends BaseGroup
         return $members;
     }
 
-    function getUserADGroups(string $userDN, Connection $connection, array $SETTINGS): array
+    function getUserADGroups(?string $userDN, Connection $connection, array $SETTINGS): array
     {
         // init
         $groupsArr = [];
 
+        if (empty($userDN)) {
+            error_log('TEAMPASS LDAP: getUserADGroups called with empty userDN');
+
+            return [
+                'error' => false,
+                'message' => 'Empty user DN.',
+                'userGroups' => [],
+            ];
+        }
+
         try {
             Container::addConnection($connection);
+
             // get id attribute
-            if (isset($SETTINGS['ldap_guid_attibute']) ===true && empty($SETTINGS['ldap_guid_attibute']) === false) {
-                $idAttribute = $SETTINGS['ldap_guid_attibute'];
+            if (isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false) {
+                $idAttribute = strtolower($SETTINGS['ldap_guid_attibute']);
             } else {
                 $idAttribute = 'objectguid';
             }
 
-            // Get user groups from AD
-            $user = User::find($userDN);
-            $groups = $user->groups()->paginate();
+            /*
+             * Active Directory nested groups support.
+             *
+             * LDAP_MATCHING_RULE_IN_CHAIN:
+             * 1.2.840.113556.1.4.1941
+             *
+             * This returns all groups where the user is a member,
+             * including indirect membership through nested groups.
+             */
+            $escapedUserDN = ldap_escape($userDN, '', LDAP_ESCAPE_FILTER);
+
+            $query = $connection->query();
+
+            $query->select(['cn', $idAttribute]);
+
+            $query->rawFilter(
+                '(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=' . $escapedUserDN . '))'
+            );
+
+            $groups = $query->paginate();
+
             foreach ($groups as $group) {
                 if (!isset($group[$idAttribute][0])) {
                     continue;
                 }
+
                 if ($idAttribute === 'objectguid') {
                     try {
                         $bin = $group[$idAttribute][0];
-                        // Use ldaprecord's Guid class which correctly handles
-                        // Windows mixed-endian byte order for objectGUID.
-                        // Direct byte-sequential unpacking produces a byte-swapped
-                        // UUID for the first three segments, which never matches
-                        // the UUID shown in the Azure AD / AD portal.
+
                         $adGroupId = strtolower(
                             (new \LdapRecord\Models\Attributes\Guid($bin))->getValue()
                         );
                     } catch (\Throwable $e) {
+                        error_log('TEAMPASS LDAP: invalid nested group objectGUID for group ' . ($group['cn'][0] ?? 'Unknown') . ': ' . $e->getMessage());
                         continue;
                     }
                 } else {
                     $adGroupId = strtolower((string) $group[$idAttribute][0]);
                 }
+
                 $groupsArr[] = $adGroupId;
             }
-        } catch (\LdapRecord\Auth\BindException $e) {
-            // Do nothing
+        } catch (\Throwable $e) {
+            error_log('TEAMPASS LDAP: getUserADGroups nested groups error: ' . $e->getMessage());
         }
 
         return [
             'error' => false,
             'message' => '',
-            'userGroups' => $groupsArr,
+            'userGroups' => array_values(array_unique($groupsArr)),
         ];
     }
 
@@ -244,16 +282,19 @@ class ActiveDirectoryExtra extends BaseGroup
         if (trim($groupDn) === '') {
             return true;
         }
+
         $memberOf = $userEntry['memberof'] ?? [];
         if (empty($memberOf)) {
             error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
             return false;
         }
+
         foreach ($memberOf as $key => $dn) {
             if ($key !== 'count' && strcasecmp((string) $dn, $groupDn) === 0) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -276,8 +317,35 @@ class ActiveDirectoryExtra extends BaseGroup
         if (trim($groupDn) === '') {
             return true;
         }
+
         try {
-            // scope=base search on the group DN — works even if outside the users base DN
+            /*
+             * Active Directory nested group support.
+             *
+             * LDAP_MATCHING_RULE_IN_CHAIN:
+             * 1.2.840.113556.1.4.1941
+             *
+             * This checks whether $userDn is a direct or indirect member
+             * of the group identified by $groupDn.
+             */
+            if (trim($userDn) !== '') {
+                $escapedUserDn = ldap_escape($userDn, '', LDAP_ESCAPE_FILTER);
+
+                $nestedGroupEntry = $connection->query()
+                    ->select(['cn'])
+                    ->setDn($groupDn)
+                    ->read()
+                    ->rawFilter('(member:1.2.840.113556.1.4.1941:=' . $escapedUserDn . ')')
+                    ->first();
+
+                if ($nestedGroupEntry !== null) {
+                    return true;
+                }
+            }
+
+            /*
+             * Fallback for direct membership and non-AD LDAP directories.
+             */
             $groupEntry = $connection->query()
                 ->select(['member', 'uniquemember', 'memberuid'])
                 ->setDn($groupDn)
@@ -290,7 +358,7 @@ class ActiveDirectoryExtra extends BaseGroup
                 return false;
             }
 
-            // Check member (AD standard) — DN comparison, case-insensitive
+            // Check member, AD standard — DN comparison, case-insensitive
             if (isset($groupEntry['member'])) {
                 foreach ($groupEntry['member'] as $key => $member) {
                     if ($key !== 'count' && strcasecmp((string) $member, $userDn) === 0) {
@@ -299,7 +367,7 @@ class ActiveDirectoryExtra extends BaseGroup
                 }
             }
 
-            // Check uniquemember (groupOfUniqueNames) — DN comparison
+            // Check uniquemember — DN comparison
             if (isset($groupEntry['uniquemember'])) {
                 foreach ($groupEntry['uniquemember'] as $key => $member) {
                     if ($key !== 'count' && strcasecmp((string) $member, $userDn) === 0) {
@@ -308,7 +376,7 @@ class ActiveDirectoryExtra extends BaseGroup
                 }
             }
 
-            // Check memberuid (posixGroup) — UID comparison
+            // Check memberuid — UID comparison
             if (isset($groupEntry['memberuid']) && $userUid !== '') {
                 foreach ($groupEntry['memberuid'] as $key => $member) {
                     if ($key !== 'count' && strcasecmp((string) $member, $userUid) === 0) {
