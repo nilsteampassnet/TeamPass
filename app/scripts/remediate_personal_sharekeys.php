@@ -250,8 +250,16 @@ function deleteForeignSharekeys(int $itemId, array $excluded): bool
 // ─────────────────────────────────────────────────────────────
 // Main loop
 // ─────────────────────────────────────────────────────────────
+// Candidates = items flagged personal OR stored in a personal folder. The items.perso column
+// alone is not enough: items created while the client sent folder_is_personal = 0 are stored with
+// perso = 0 in a personal folder (the flag is only repaired later, on folder listing). The owner
+// is resolved from the absolute tree root anyway, so a folder-based candidate is just as safe.
 $personalItems = DB::query(
-    'SELECT id, id_tree FROM ' . prefixTable('items') . ' WHERE perso = 1 ORDER BY id ASC'
+    'SELECT i.id, i.id_tree
+    FROM ' . prefixTable('items') . ' AS i
+    INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
+    WHERE i.perso = 1 OR n.personal_folder = 1
+    ORDER BY i.id ASC'
 );
 
 $stats = [

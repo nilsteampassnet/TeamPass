@@ -652,6 +652,81 @@ function identUserGetPFList(
     ];
 }
 
+/**
+ * List the personal folders that do NOT belong to the given user.
+ *
+ * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
+ * redistributing keys from TP_USER (user creation, password change, key regeneration) must
+ * therefore exclude the other users' personal trees explicitly: the historical "the owner has no
+ * sharekey on a foreign personal item" assumption no longer holds, and without this list the
+ * target user inherits a valid sharekey on everybody's personal items.
+ *
+ * The ownership test is folder based (root of the personal tree titled with the user id), which is
+ * the same signal as identUserGetPFList(); the items.perso column is not used as it is known to be
+ * unreliable on items created before the folder flag was repaired.
+ *
+ * @param int $userId User whose own personal tree must stay in scope.
+ *
+ * @return int[] Folder ids belonging to another user's personal tree (empty when there is none).
+ */
+function getForeignPersonalFolderIds(int $userId): array
+{
+    loadClasses('DB');
+
+    $allPersonalFolders = DB::queryFirstColumn(
+        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
+        1
+    );
+    if (count($allPersonalFolders) === 0) {
+        return [];
+    }
+
+    // Keep the user's own personal tree (root + descendants).
+    $ownFolders = [];
+    $ownRootId = DB::queryFirstField(
+        'SELECT id FROM ' . prefixTable('nested_tree') . '
+        WHERE personal_folder = %i AND title = %s',
+        1,
+        (string) $userId
+    );
+    if (empty($ownRootId) === false) {
+        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+        $ownFolders = $tree->getDescendants((int) $ownRootId, true, false, true);
+    }
+
+    return array_values(
+        array_diff(
+            array_map('intval', $allPersonalFolders),
+            array_map('intval', $ownFolders)
+        )
+    );
+}
+
+/**
+ * Build the SQL condition keeping a security-posture query inside the items a user may legitimately
+ * see, whatever sharekeys he holds.
+ *
+ * The posture queries (dashboard, nudges, score) are scoped by sharekey only, which makes them the
+ * place where a stray sharekey becomes visible. This fragment adds the folder-level guard so
+ * another user's personal item can never surface there. Runs both in a web session and in the CLI
+ * background worker, so it derives everything from the database (no session).
+ *
+ * @param int    $userId    User the query is run for.
+ * @param string $itemAlias SQL alias of the items table in the caller's query.
+ *
+ * @return string SQL fragment starting with ' AND ', or an empty string when nothing to exclude.
+ */
+function personalScopeSqlForUser(int $userId, string $itemAlias = 'i'): string
+{
+    $foreignPersonalFolders = getForeignPersonalFolderIds($userId);
+    if (count($foreignPersonalFolders) === 0) {
+        return '';
+    }
+
+    // Values are folder ids cast to int - safe to embed.
+    return ' AND ' . $itemAlias . '.id_tree NOT IN (' . implode(',', $foreignPersonalFolders) . ')';
+}
+
 
 /**
  * Update the CACHE table.
@@ -1170,7 +1245,7 @@ function securityNudgeComputeCounts(int $userId): array
         INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
         $logJoinSql . '
         LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL';
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL' . personalScopeSqlForUser($userId);
 
     $agg = DB::queryFirstRow(
         'SELECT
@@ -1426,7 +1501,7 @@ function securityScoreCompute(int $userId): array
         'SELECT COUNT(*)
         FROM ' . prefixTable('items') . ' AS i
         INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL',
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL' . personalScopeSqlForUser($userId),
         $userId
     );
 

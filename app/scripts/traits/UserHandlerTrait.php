@@ -202,12 +202,17 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        // Personal items of the OTHER users must never be re-keyed for this account: the
+        // redistribution owner is TP_USER, which holds a recovery sharekey on every personal
+        // item, so the "owner has no sharekey" test below is not a sufficient guard.
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
         // Start transaction for better performance
         DB::startTransaction();
 
         // Loop on items
         $rows = DB::query(
-            'SELECT id, pw, perso
+            'SELECT id, pw, perso, id_tree
             FROM ' . prefixTable('items') . '
             ORDER BY id ASC
             LIMIT %i, %i',
@@ -217,6 +222,11 @@ trait UserHandlerTrait {
 
         $skippedObjects = [];
         foreach ($rows as $record) {
+            // Item stored in another user's personal folder
+            if (in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true) {
+                continue;
+            }
+
             // Get itemKey from current user
             $itemShareKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
@@ -285,19 +295,31 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        // Password history of the OTHER users' personal items must stay out of scope (see step 20).
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
         // Start transaction for better performance
         DB::startTransaction();
 
         // Loop on logs
+        // LEFT JOIN so a log whose item no longer exists keeps being processed as before.
         $rows = DB::query(
-            'SELECT increment_id
-            FROM ' . prefixTable('log_items') . '
-            WHERE raison LIKE "at_pw :%" AND encryption_type = "teampass_aes"
-            ORDER BY increment_id ASC
+            'SELECT l.increment_id, i.id_tree
+            FROM ' . prefixTable('log_items') . ' AS l
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = l.id_item)
+            WHERE l.raison LIKE "at_pw :%" AND l.encryption_type = "teampass_aes"
+            ORDER BY l.increment_id ASC
             LIMIT ' . $taskData['index'] . ', ' . $taskData['nb']
         );
         $skippedObjects = 0;
         foreach ($rows as $record) {
+            // Log entry of an item stored in another user's personal folder
+            if ($record['id_tree'] !== null
+                && in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true
+            ) {
+                continue;
+            }
+
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key
@@ -355,21 +377,33 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        // Custom fields of the OTHER users' personal items must stay out of scope (see step 20).
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
         // Start transaction for better performance
         DB::startTransaction();
 
         // Loop on fields
+        // LEFT JOIN so a field whose item no longer exists keeps being processed as before.
         $rows = DB::query(
-            'SELECT id
-            FROM ' . prefixTable('categories_items') . '
-            WHERE encryption_type = "teampass_aes"
-            ORDER BY id ASC
+            'SELECT c.id, i.id_tree
+            FROM ' . prefixTable('categories_items') . ' AS c
+            LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = c.item_id)
+            WHERE c.encryption_type = "teampass_aes"
+            ORDER BY c.id ASC
             LIMIT %i, %i',
             $taskData['index'],
             $taskData['nb']
         );
         $skippedObjects = 0;
         foreach ($rows as $record) {
+            // Field of an item stored in another user's personal folder
+            if ($record['id_tree'] !== null
+                && in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true
+            ) {
+                continue;
+            }
+
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key
@@ -427,12 +461,15 @@ trait UserHandlerTrait {
             $arguments['new_user_private_key'] ?? ''
         );
 
+        // Suggestions targeting the OTHER users' personal folders must stay out of scope (see step 20).
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
         // Start transaction for better performance
         DB::startTransaction();
 
         // Loop on suggestions
         $rows = DB::query(
-            'SELECT id
+            'SELECT id, folder_id
             FROM ' . prefixTable('suggestion') . '
             ORDER BY id ASC
             LIMIT %i, %i',
@@ -441,6 +478,11 @@ trait UserHandlerTrait {
         );
         $skippedObjects = 0;
         foreach ($rows as $record) {
+            // Suggestion targeting another user's personal folder
+            if (in_array((int) $record['folder_id'], $foreignPersonalFolders, true) === true) {
+                continue;
+            }
+
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key
@@ -501,9 +543,12 @@ trait UserHandlerTrait {
         // Start transaction for better performance
         DB::startTransaction();
 
+        // Attachments of the OTHER users' personal items must stay out of scope (see step 20).
+        $foreignPersonalFolders = getForeignPersonalFolderIds((int) $arguments['new_user_id']);
+
         // Loop on files
         $rows = DB::query(
-            'SELECT f.id AS id, i.perso AS perso
+            'SELECT f.id AS id, i.perso AS perso, i.id_tree AS id_tree
             FROM ' . prefixTable('files') . ' AS f
             INNER JOIN ' . prefixTable('items') . ' AS i ON i.id = f.id_item
             WHERE f.status = "' . TP_ENCRYPTION_NAME . '"
@@ -513,6 +558,11 @@ trait UserHandlerTrait {
         ); //aes_encryption
         $skippedObjects = 0;
         foreach ($rows as $record) {
+            // File attached to an item stored in another user's personal folder
+            if (in_array((int) $record['id_tree'], $foreignPersonalFolders, true) === true) {
+                continue;
+            }
+
             // Get itemKey from current user
             $currentUserKey = DB::queryFirstRow(
                 'SELECT share_key, increment_id
