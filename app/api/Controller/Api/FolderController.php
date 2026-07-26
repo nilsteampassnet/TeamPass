@@ -231,6 +231,9 @@ class FolderController extends BaseController
                         $userFolders
                     );
 
+                    // Complexity levels in one query, folder id => level
+                    $complexityLevels = FolderModel::getComplexityLevels($userFolders);
+
                     foreach ($rows as $row) {
                         $folderId = (int) $row['folder_id'];
                         // Single resolution per folder — is_readonly and the granular
@@ -244,6 +247,9 @@ class FolderController extends BaseController
                             'first_position' => $row['title'] === $userId ? 1 : 0,
                             // MPTT left bound: lets a client re-sort the list back into tree order
                             'position' => (int) $row['nleft'],
+                            // Minimum password strength required in this folder
+                            // (0 | 20 | 38 | 48 | 60), 0 when no rule is set
+                            'complexity' => $complexityLevels[$folderId] ?? 0,
                             'is_readonly' => $access['type'] === 'R' ? 1 : 0,
                             // Granular rights: ND/NE/NDNE are writable but restrict edit
                             // and/or delete, which is_readonly alone cannot express

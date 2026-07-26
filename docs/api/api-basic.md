@@ -812,11 +812,13 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
     "id": 1,
     "title": "Production",
     "isVisible": true,
+    "complexity": 38,
     "childrens": [
       {
         "id": 2,
         "title": "Servers",
         "isVisible": true,
+        "complexity": 48,
         "childrens": []
       }
     ]
@@ -831,7 +833,20 @@ curl -X GET "https://your-teampass.com/api/index.php/item/allTags" \
 | `id` | integer | Unique folder ID |
 | `title` | string | Folder name |
 | `isVisible` | boolean | `false` when the folder is only returned to carry accessible children |
+| `complexity` | integer | Minimum password strength required in this folder (see table below) |
 | `childrens` | array | Child nodes, same structure |
+
+**Complexity levels:**
+
+| Value | Level |
+| ----- | ----- |
+| `0` | Weak |
+| `20` | Medium |
+| `38` | Strong |
+| `48` | Very strong |
+| `60` | Heavy |
+
+`0` is also returned when the folder carries no complexity rule (for example a personal root folder).
 
 **Response Codes:**
 
@@ -880,6 +895,7 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 1,
     "position": 23,
+    "complexity": 0,
     "is_readonly": 0,
     "access_type": "W",
     "can_create": 1,
@@ -893,6 +909,7 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 0,
     "first_position": 0,
     "position": 41,
+    "complexity": 38,
     "is_readonly": 0,
     "access_type": "ND",
     "can_create": 1,
@@ -906,6 +923,7 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
     "parent_id": 1,
     "first_position": 0,
     "position": 42,
+    "complexity": 48,
     "is_readonly": 1,
     "access_type": "R",
     "can_create": 0,
@@ -925,6 +943,7 @@ Rows are sorted by `position` (the folder tree's own order, siblings included), 
 | `parent_id` | integer | Parent folder ID (0 for root) |
 | `first_position` | integer | `1` for the user's personal root folder, to be listed first |
 | `position` | integer | Tree position; the list is already sorted on it |
+| `complexity` | integer | Minimum password strength required in this folder: `0` Weak, `20` Medium, `38` Strong, `48` Very strong, `60` Heavy (`0` also when no rule is set) |
 | `is_readonly` | integer | `1` = read access only (`access_type` is `R`), `0` = the user can write |
 | `access_type` | string | Effective access level: `W`, `ND`, `NE`, `NDNE` or `R` |
 | `can_create` | integer | `1` when the user may create items in this folder |

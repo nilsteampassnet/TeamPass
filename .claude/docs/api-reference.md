@@ -256,7 +256,9 @@ List all folders accessible to the authenticated user.
 
 **Params:** optional `limit`/`offset` — applied to the **root-level** entries of the hierarchical tree; `X-Total-Count` is the number of root entries.
 
-**Response:** array of folder objects with hierarchy info (`{ id, title, isVisible, childrens[] }`). No accessible folder → `200` + `[]`.
+**Response:** array of folder objects with hierarchy info (`{ id, title, isVisible, complexity, childrens[] }`). No accessible folder → `200` + `[]`.
+
+**`complexity`** — minimum password strength required in the folder (`0` | `20` | `38` | `48` | `60`, the `TP_PW_STRENGTH_*` scale). Read from `misc` (`type='complex'`, `intitule=<folder id>`) via a LEFT JOIN; `0` when the folder has no row (personal roots).
 
 **Permissions:** `allowed_to_read`.
 
@@ -266,8 +268,9 @@ List all folders accessible to the authenticated user.
 
 List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, position, is_readonly, access_type, can_create, can_edit, can_delete }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, complexity, is_readonly, access_type, can_create, can_edit, can_delete }`.
 
+- `complexity` — minimum password strength required in the folder (`0` | `20` | `38` | `48` | `60`, the `TP_PW_STRENGTH_*` scale). LEFT JOIN on `misc` (`type='complex'`, `intitule=<folder id>`); `0` when no row exists (personal roots). Same field as in `listFolders`.
 - `access_type` — effective level resolved least-permissive-wins across every role: `W` | `ND` | `NE` | `NDNE` | `R`
 - `is_readonly: 1` ⟺ `access_type === 'R'` (no create, no edit, no delete)
 - `can_create` / `can_edit` / `can_delete` — granular rights. **`is_readonly: 0` does not mean full write**: `ND` blocks delete, `NE` blocks edit, `NDNE` blocks both. Clients must read the granular flags or they will hit surprise `403`s on update/delete.

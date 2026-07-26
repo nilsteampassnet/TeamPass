@@ -1546,6 +1546,17 @@
                     "isVisible": {
                         "type": "boolean"
                     },
+                    "complexity": {
+                        "type": "integer",
+                        "description": "Minimum password strength required for items in this folder. 0 when no rule is set.",
+                        "enum": [
+                            0,
+                            20,
+                            38,
+                            48,
+                            60
+                        ]
+                    },
                     "childrens": {
                         "type": "array",
                         "items": {
@@ -1575,6 +1586,17 @@
                     "position": {
                         "type": "integer",
                         "description": "MPTT left bound. The list is already sorted on it; use it to restore tree order after a client-side re-sort."
+                    },
+                    "complexity": {
+                        "type": "integer",
+                        "description": "Minimum password strength required for items in this folder. 0 when no rule is set.",
+                        "enum": [
+                            0,
+                            20,
+                            38,
+                            48,
+                            60
+                        ]
                     },
                     "is_readonly": {
                         "type": "integer",

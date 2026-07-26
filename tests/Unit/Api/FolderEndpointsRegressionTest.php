@@ -370,8 +370,64 @@ class FolderEndpointsRegressionTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Folder complexity exposure (listFolders + writableFolders)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Both folder listings must expose the folder complexity level so a client
+     * can generate a compliant password before calling item/create.
+     *
+     * The level is read through the shared FolderModel::getComplexityLevels()
+     * prefetch: a folder carrying no rule (personal root) has no misc row and
+     * must still be returned, with 0.
+     */
+    public function testFolderListingsExposeComplexity(): void
+    {
+        $controller = $this->readSource('/app/api/Controller/Api/FolderController.php');
+        $writable = $this->extractMethodBody($controller, 'public function writableFoldersAction(array $userData)');
+
+        self::assertStringContainsString(
+            'FolderModel::getComplexityLevels($userFolders)',
+            $writable,
+            'writableFolders must resolve the complexity levels through the shared prefetch'
+        );
+        self::assertStringContainsString(
+            "'complexity' => \$complexityLevels[\$folderId] ?? 0",
+            $writable,
+            'writableFolders must expose the folder complexity level, defaulting to 0'
+        );
+
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+        self::assertSame(
+            2,
+            substr_count($model, "'complexity' => \$complexityLevels["),
+            'listFolders must expose the complexity on both root nodes and children'
+        );
+        self::assertStringContainsString(
+            'public static function getComplexityLevels(?array $foldersId = null): array',
+            $model,
+            'the complexity prefetch must stay shared between both folder listings'
+        );
+    }
+
+    // -------------------------------------------------------------------------
     // OpenAPI contract
     // -------------------------------------------------------------------------
+
+    public function testOpenApiDocumentsFolderComplexity(): void
+    {
+        $spec = json_decode($this->readSource('/app/api/openapi.json'), true);
+        self::assertIsArray($spec);
+
+        foreach (['WritableFolder', 'FolderNode'] as $schema) {
+            $props = $spec['components']['schemas'][$schema]['properties'] ?? [];
+            self::assertArrayHasKey(
+                'complexity',
+                $props,
+                $schema . ' must document the folder complexity level'
+            );
+        }
+    }
 
     public function testOpenApiDocumentsWritableFolderPosition(): void
     {
