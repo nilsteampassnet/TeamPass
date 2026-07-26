@@ -681,6 +681,9 @@ class DatabaseInstaller
             // A fresh install already stores AD group identifiers in the canonical byte
             // order: the one-shot conversion of upgrade_run_3.2.1.php must never run here.
             array('admin', 'ldap_group_guid_byteorder_fixed', '1'),
+            // A fresh install cannot hold the foreign sharekeys on personal items that the
+            // remediation of upgrade_run_3.2.1.php cleans: mark it as already done.
+            array('admin', 'personal_sharekeys_remediated', '1'),
             array('admin', 'sending_emails_job_frequency', '2'),
             array('admin', 'user_keys_job_frequency', '1'),
             array('admin', 'items_statistics_job_frequency', '5'),
