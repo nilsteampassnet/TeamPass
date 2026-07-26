@@ -191,6 +191,14 @@ class OpenLdapExtra extends BaseGroup
 
         } catch (\Throwable $e) {
             error_log('TEAMPASS Error - OpenLDAP getUserADGroups: ' . $e->getMessage());
+
+            // Reported as an error so the caller can tell a failed lookup apart from a user
+            // genuinely belonging to no group, and keep the roles already granted.
+            return [
+                'error' => true,
+                'message' => 'Unable to read LDAP group membership.',
+                'userGroups' => [],
+            ];
         }
 
         return [
