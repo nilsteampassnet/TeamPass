@@ -535,23 +535,26 @@ function installPurgeUnnecessaryKeysForUser(int $user_id, string $pre)
             'DELETE FROM ' . $pre . 'sharekeys_items
             WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
         );
-        // Files keys
+        // Files keys — object_id references files.id, never the item id
         mysqli_query(
             $db_link,
             'DELETE FROM ' . $pre . 'sharekeys_files
-            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+            WHERE object_id IN (SELECT id FROM ' . $pre . 'files WHERE id_item IN ('.$pfItemsList.'))
+            AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
         );
-        // Fields keys
+        // Fields keys — object_id references categories_items.id, never the item id
         mysqli_query(
             $db_link,
             'DELETE FROM ' . $pre . 'sharekeys_fields
-            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+            WHERE object_id IN (SELECT id FROM ' . $pre . 'categories_items WHERE item_id IN ('.$pfItemsList.'))
+            AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
         );
-        // Logs keys
+        // Logs keys — object_id references log_items.increment_id, never the item id
         mysqli_query(
             $db_link,
             'DELETE FROM ' . $pre . 'sharekeys_logs
-            WHERE object_id IN ('.$pfItemsList.') AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
+            WHERE object_id IN (SELECT increment_id FROM ' . $pre . 'log_items WHERE id_item IN ('.$pfItemsList.'))
+            AND user_id NOT IN ('.TP_USER_ID.', '.$user_id.')'
         );
     }
 

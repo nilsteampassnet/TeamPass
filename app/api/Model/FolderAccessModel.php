@@ -222,17 +222,22 @@ class FolderAccessModel
     }
 
     /**
-     * Returns true when the given folder is read-only for the user.
+     * Resolve the effective access level of a user on a folder.
      *
-     * Replicates the read-only detection logic from AuthModel::buildUserFoldersList():
-     * a folder is read-only when the user has R-type access via at least one role
-     * and no write-type access (W/ND/NE/NDNE) via any role, and no direct folder grant.
+     * Mirrors the web resolution exactly (getRoleBasedAccess() in items.queries.php):
+     * every role type defined on the folder is folded through evaluateFolderAccesLevel(),
+     * so the LEAST permissive type wins (R > NDNE > {ND, NE} > W) as documented in
+     * docs/features/rights.md. Roles of both sources (manual and AD/LDAP) are taken into
+     * account, like the web session does.
      *
-     * @param int $folderId
-     * @param int $userId
-     * @return bool
+     * A direct per-user grant (users_groups) always yields full write access and overrides
+     * a role-based restriction — same priority as identUser() in main.functions.php.
+     *
+     * @param int $folderId Folder to evaluate
+     * @param int $userId   User to evaluate
+     * @return array{type: string, create: bool, edit: bool, delete: bool}
      */
-    public function isFolderReadOnlyForUser(int $folderId, int $userId): bool
+    public function getFolderAccessLevelForUser(int $folderId, int $userId): array
     {
         // Direct folder grants (groupes_visibles) are always writable
         $directGrant = DB::queryFirstField(
@@ -241,39 +246,88 @@ class FolderAccessModel
             $folderId
         );
         if ((int) $directGrant > 0) {
-            return false;
+            return ['type' => 'W', 'create' => true, 'edit' => true, 'delete' => true];
         }
 
-        // Get user's role IDs (manual source only, matching buildUserFoldersList logic)
+        // Get user's role IDs — both manual and AD/LDAP sourced, matching core.php
         $roleRows = DB::query(
-            'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i AND source = "manual"',
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i',
             $userId
         );
         $roleIds = array_map(static fn($r) => (int) $r['role_id'], $roleRows);
 
-        if (empty($roleIds)) {
-            return false;
+        // No role at all: nothing restricts the folder here. Visibility is decided
+        // upstream by folders_list; treat it as full write (previous behaviour).
+        if (empty($roleIds) === true) {
+            return ['type' => 'W', 'create' => true, 'edit' => true, 'delete' => true];
         }
 
         // Fetch access types for this folder from user's roles
         $accessRows = DB::query(
-            'SELECT type FROM ' . prefixTable('roles_values') .
+            'SELECT DISTINCT type FROM ' . prefixTable('roles_values') .
             ' WHERE role_id IN %li AND folder_id = %i AND type IN ("W", "ND", "NE", "NDNE", "R")',
             $roleIds,
             $folderId
         );
 
-        $hasWrite = false;
-        $hasReadOnly = false;
-        foreach ($accessRows as $row) {
-            if ($row['type'] === 'R') {
-                $hasReadOnly = true;
-            } else {
-                $hasWrite = true;
-            }
+        if (empty($accessRows) === true) {
+            // No role defines this folder: same reasoning as above
+            return ['type' => 'W', 'create' => true, 'edit' => true, 'delete' => true];
         }
 
-        return $hasReadOnly && !$hasWrite;
+        // Least permissive wins — shared implementation with the web
+        $resolvedType = '';
+        foreach ($accessRows as $row) {
+            $resolvedType = evaluateFolderAccesLevel((string) $row['type'], $resolvedType);
+        }
+
+        switch ($resolvedType) {
+            case 'ND':   return ['type' => 'ND',   'create' => true,  'edit' => true,  'delete' => false];
+            case 'NE':   return ['type' => 'NE',   'create' => true,  'edit' => false, 'delete' => true];
+            case 'NDNE': return ['type' => 'NDNE', 'create' => true,  'edit' => false, 'delete' => false];
+            case 'R':    return ['type' => 'R',    'create' => false, 'edit' => false, 'delete' => false];
+            default:     return ['type' => 'W',    'create' => true,  'edit' => true,  'delete' => true];
+        }
+    }
+
+    /**
+     * Returns true when the given folder is read-only for the user.
+     *
+     * Read-only means the resolved access level is R: no item may be created, edited
+     * or deleted. ND/NE/NDNE are NOT read-only — they allow creation with a restriction
+     * on edit and/or delete, which callers must check via getFolderAccessLevelForUser().
+     *
+     * @param int $folderId
+     * @param int $userId
+     * @return bool
+     */
+    public function isFolderReadOnlyForUser(int $folderId, int $userId): bool
+    {
+        return $this->getFolderAccessLevelForUser($folderId, $userId)['type'] === 'R';
+    }
+
+    /**
+     * Returns true when the user may edit existing items in the folder (blocks NE/NDNE/R).
+     *
+     * @param int $folderId
+     * @param int $userId
+     * @return bool
+     */
+    public function canEditInFolder(int $folderId, int $userId): bool
+    {
+        return $this->getFolderAccessLevelForUser($folderId, $userId)['edit'];
+    }
+
+    /**
+     * Returns true when the user may delete items in the folder (blocks ND/NDNE/R).
+     *
+     * @param int $folderId
+     * @param int $userId
+     * @return bool
+     */
+    public function canDeleteInFolder(int $folderId, int $userId): bool
+    {
+        return $this->getFolderAccessLevelForUser($folderId, $userId)['delete'];
     }
 
     /**

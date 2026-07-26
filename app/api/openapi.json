@@ -1373,9 +1373,27 @@
             "FolderCreateBody": {
                 "type": "object",
                 "required": [
-                    "title",
-                    "parent_id",
-                    "complexity"
+                    "title"
+                ],
+                "allOf": [
+                    {
+                        "if": {
+                            "properties": {
+                                "private": {
+                                    "const": true
+                                }
+                            },
+                            "required": [
+                                "private"
+                            ]
+                        },
+                        "else": {
+                            "required": [
+                                "parent_id",
+                                "complexity"
+                            ]
+                        }
+                    }
                 ],
                 "properties": {
                     "title": {
@@ -1410,6 +1428,8 @@
                     },
                     "access_rights": {
                         "type": "string",
+                        "default": "W",
+                        "description": "Access level granted to the caller's roles on the new folder. Defaults to W when omitted.",
                         "enum": [
                             "R",
                             "W",
@@ -1438,7 +1458,15 @@
                         "description": "New parent id (move). Cross-domain personal ↔ shared moves are rejected (422)."
                     },
                     "complexity": {
-                        "type": "integer"
+                        "type": "integer",
+                        "description": "Password complexity level. Must be one of the TeamPass levels; any other value is rejected with 422.",
+                        "enum": [
+                            0,
+                            20,
+                            38,
+                            48,
+                            60
+                        ]
                     },
                     "duration": {
                         "type": "integer"
@@ -1518,6 +1546,17 @@
                     "isVisible": {
                         "type": "boolean"
                     },
+                    "complexity": {
+                        "type": "integer",
+                        "description": "Minimum password strength required for items in this folder. 0 when no rule is set.",
+                        "enum": [
+                            0,
+                            20,
+                            38,
+                            48,
+                            60
+                        ]
+                    },
                     "childrens": {
                         "type": "array",
                         "items": {
@@ -1548,8 +1587,43 @@
                         "type": "integer",
                         "description": "MPTT left bound. The list is already sorted on it; use it to restore tree order after a client-side re-sort."
                     },
+                    "complexity": {
+                        "type": "integer",
+                        "description": "Minimum password strength required for items in this folder. 0 when no rule is set.",
+                        "enum": [
+                            0,
+                            20,
+                            38,
+                            48,
+                            60
+                        ]
+                    },
                     "is_readonly": {
-                        "type": "integer"
+                        "type": "integer",
+                        "description": "1 when the resolved access type is R. ND/NE/NDNE are NOT read-only — check can_edit / can_delete."
+                    },
+                    "access_type": {
+                        "type": "string",
+                        "description": "Effective access level, least-permissive-wins across all the user's roles (R > NDNE > NE = ND > W).",
+                        "enum": [
+                            "R",
+                            "W",
+                            "NE",
+                            "ND",
+                            "NDNE"
+                        ]
+                    },
+                    "can_create": {
+                        "type": "integer",
+                        "description": "1 when the user may create items in this folder (false only for R)."
+                    },
+                    "can_edit": {
+                        "type": "integer",
+                        "description": "1 when the user may edit existing items (false for NE, NDNE and R)."
+                    },
+                    "can_delete": {
+                        "type": "integer",
+                        "description": "1 when the user may delete items (false for ND, NDNE and R)."
                     }
                 }
             },

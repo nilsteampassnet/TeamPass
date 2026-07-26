@@ -58,6 +58,15 @@ Teampass follows the **principle of least privilege**: each path is granted only
 
 The upgrade wizard raises a warning (non-blocking) when these directories are writable — it indicates a configuration weakness that should be corrected.
 
+> :information_source: **Why `0755` alone does not clear this warning.** `0755` grants the *owner*
+> full `rwx`. If the owner **is** the web server user (`www-data`), the web server can still write,
+> so the check (`is_writable()`) keeps flagging the path even at `0755`. To clear it, the code must
+> not be **owned** by the web server: either use the hardened split-owner model (own the code with a
+> separate account, web server in the group with read-only — see [Ownership](#ownership)), or, if
+> you keep a single owner, drop owner-write from the directory node
+> (`chown root:www-data app && chmod g-w,o-w app`) and restore it before the next upgrade. The
+> warning is non-blocking — the upgrade proceeds either way.
+
 | Directory | Recommended perms | Rationale |
 |-----------|------------------|-----------|
 | `app/` | `0755` dir / `0644` files | Application source code — writable only by the deployment user, not the web server |
@@ -121,9 +130,24 @@ The Defuse encryption master key must be stored **outside the webroot** (`public
 
 ## Ownership
 
-All files and directories must be owned by the user that runs the web server (PHP-FPM) process.
+Two ownership models are supported — choose one **before** running the quick-setup commands.
 
-| Server stack | Typical user | Typical group |
+**Simple model — everything owned by the web server user** (`www-data:www-data`)
+The easiest setup: every path is owned by the account that runs PHP (see the table below). It works,
+but because the web server *is* the owner, `app/` and `public/` stay writable by it even at `0755`,
+so the upgrade wizard shows a **non-blocking** "should not be writable" warning for those two paths
+(see [Must NOT be writable by the web server](#must-not-be-writable-by-the-web-server)).
+
+**Hardened model — code owned by a separate account** (recommended)
+Own the application code with a dedicated non-login account and give the web server only group
+*read* access, so a compromised PHP process cannot rewrite its own code. This is the model the
+"must NOT be writable" checks expect, and it clears the warning. See
+[Advanced: separate owner from web server user](#advanced-separate-owner-from-web-server-user) below.
+
+The table below lists the web server user/group per stack — used directly in the simple model, and
+as the **group** in the hardened model.
+
+| Server stack | Web server user | Web server group |
 |-------------|-------------|---------------|
 | Apache + mod_php | `www-data` | `www-data` |
 | Apache + PHP-FPM | `www-data` | `www-data` |
