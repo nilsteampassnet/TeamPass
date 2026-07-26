@@ -1839,10 +1839,14 @@ function authenticateThroughAD(string $username, array $userInfo, string $passwo
                 : (string) ($userADInfos['dn'] ?? '');
 
             if ($groupMode === 'user') {
-                // User-centric: check the user's own memberOf attribute (AD-native, no extra query)
+                // User-centric: check the user's own memberOf attribute (AD-native, no extra
+                // query). The DN and the connection let the handler resolve nested membership
+                // when the attribute alone would deny access.
                 $isMember = $ldapHandler['handler']->isUserInAllowedGroupByMemberOf(
                     $allowedGroupDn,
-                    $userADInfos
+                    $userADInfos,
+                    $userDnForCheck,
+                    $ldapHandler['connection']
                 );
             } else {
                 // Group-centric (default): scope=base read on the group entry — works outside base DN

@@ -234,6 +234,139 @@ class LdapAllowedLoginGroupTest extends TestCase
     }
 
     /**
+     * User-centric mode: a DN present in memberOf grants access with no directory query at all.
+     * The unreachable connection proves the nested probe is not attempted on that path — the
+     * "no additional query" property of the mode is preserved for direct members.
+     */
+    public function testMemberOfGrantsAccessWithoutAnyQuery(): void
+    {
+        $userEntry = [
+            'memberof' => [self::GROUP_DN, 'count' => 1],
+            'count' => 1,
+        ];
+
+        $this->assertTrue(
+            (new ActiveDirectoryExtra())->isUserInAllowedGroupByMemberOf(
+                self::GROUP_DN,
+                $userEntry,
+                self::USER_DN,
+                $this->unreachableConnection()
+            )
+        );
+    }
+
+    /**
+     * memberOf comparison stays case-insensitive.
+     */
+    public function testMemberOfMatchIsCaseInsensitive(): void
+    {
+        $userEntry = [
+            'memberof' => ['CN=XA_Passman,OU=Group,OU=Rgy_Res,O=Desy,C=DE', 'count' => 1],
+            'count' => 1,
+        ];
+
+        $this->assertTrue(
+            (new ActiveDirectoryExtra())->isUserInAllowedGroupByMemberOf(self::GROUP_DN, $userEntry)
+        );
+    }
+
+    /**
+     * User-centric mode without a usable connection keeps the historical behaviour: the
+     * attribute alone decides, and a user absent from it is denied.
+     */
+    public function testMemberOfWithoutConnectionStaysAttributeOnly(): void
+    {
+        $userEntry = [
+            'memberof' => ['cn=other,ou=group,ou=rgy_res,o=desy,c=de', 'count' => 1],
+            'count' => 1,
+        ];
+
+        $this->assertFalse(
+            (new ActiveDirectoryExtra())->isUserInAllowedGroupByMemberOf(
+                self::GROUP_DN,
+                $userEntry,
+                self::USER_DN,
+                null
+            )
+        );
+    }
+
+    /**
+     * When the nested resolution cannot run, access is denied — never fail open.
+     */
+    public function testUnresolvableNestedMemberOfDeniesAccess(): void
+    {
+        $userEntry = [
+            'memberof' => ['cn=other,ou=group,ou=rgy_res,o=desy,c=de', 'count' => 1],
+            'count' => 1,
+        ];
+
+        $this->assertFalse(
+            (new ActiveDirectoryExtra())->isUserInAllowedGroupByMemberOf(
+                self::GROUP_DN,
+                $userEntry,
+                self::USER_DN,
+                $this->unreachableConnection()
+            )
+        );
+    }
+
+    /**
+     * An empty group DN means no restriction, whatever the user entry carries.
+     */
+    public function testEmptyGroupDnMeansNoRestrictionInUserMode(): void
+    {
+        foreach ([new ActiveDirectoryExtra(), new OpenLdapExtra()] as $handler) {
+            $this->assertTrue(
+                $handler->isUserInAllowedGroupByMemberOf('', [], self::USER_DN, $this->unreachableConnection()),
+                get_class($handler) . ' must not restrict when the group DN is empty'
+            );
+        }
+    }
+
+    /**
+     * Both handlers must accept the same four arguments, since identify.php passes the same
+     * call to whichever handler the ldap_type resolves to.
+     */
+    public function testBothHandlersShareTheMemberOfSignature(): void
+    {
+        foreach ([ActiveDirectoryExtra::class, OpenLdapExtra::class] as $className) {
+            $parameters = (new ReflectionMethod($className, 'isUserInAllowedGroupByMemberOf'))->getParameters();
+            $names = array_map(static fn (ReflectionParameter $p): string => $p->getName(), $parameters);
+
+            $this->assertSame(
+                ['groupDn', 'userEntry', 'userDn', 'connection'],
+                $names,
+                $className . ' must keep the shared memberOf signature'
+            );
+            $this->assertTrue($parameters[2]->isOptional(), 'userDn must stay optional');
+            $this->assertTrue($parameters[3]->isOptional(), 'connection must stay optional');
+        }
+    }
+
+    /**
+     * The user-side nested probe must use the reverse filter — the matching rule applied to
+     * memberOf on the user entry, not to member on the group entry.
+     */
+    public function testUserSideNestedProbeUsesTheReverseFilter(): void
+    {
+        $source = (string) file_get_contents(
+            (string) (new ReflectionClass(ActiveDirectoryExtra::class))->getFileName()
+        );
+
+        $this->assertStringContainsString(
+            'memberof:1.2.840.113556.1.4.1941:=',
+            $source,
+            'User-centric mode must resolve nested groups through memberOf'
+        );
+        $this->assertStringContainsString(
+            'member:1.2.840.113556.1.4.1941:=',
+            $source,
+            'Group-centric mode must keep resolving nested groups through member'
+        );
+    }
+
+    /**
      * The nested probe must own its try/catch, so a directory rejecting the extended matching
      * rule falls back to the direct checks instead of failing the whole membership test.
      */

@@ -308,26 +308,91 @@ class ActiveDirectoryExtra extends BaseGroup
      * This is the user-centric alternative to isUserInAllowedGroup() and works best with
      * Active Directory where users carry a memberOf attribute populated by the server.
      *
+     * Active Directory populates memberOf with DIRECT membership only. When the attribute does
+     * not carry the group and a connection is available, the directory is asked for the
+     * transitive answer before access is denied, so both modes resolve nested groups alike.
+     *
      * @param string $groupDn Full distinguished name of the required group
      * @param array $userEntry LDAP user entry array that must contain the 'memberof' key
-     * @return bool True if the user's memberof list contains $groupDn, or if $groupDn is empty
+     * @param string $userDn Distinguished name of the authenticating user, required to resolve
+     *                       nested membership; membership stays direct-only when empty
+     * @param Connection|null $connection Active LdapRecord connection, null to skip the nested
+     *                                    resolution entirely and keep the attribute-only check
+     * @return bool True if the user belongs to the group, directly or through a nested group,
+     *              or if $groupDn is empty
      */
-    public function isUserInAllowedGroupByMemberOf(string $groupDn, array $userEntry): bool
-    {
+    public function isUserInAllowedGroupByMemberOf(
+        string $groupDn,
+        array $userEntry,
+        string $userDn = '',
+        ?Connection $connection = null
+    ): bool {
         if (trim($groupDn) === '') {
             return true;
         }
+
         $memberOf = $userEntry['memberof'] ?? [];
-        if (empty($memberOf)) {
-            error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
-            return false;
-        }
         foreach ($memberOf as $key => $dn) {
             if ($key !== 'count' && strcasecmp((string) $dn, $groupDn) === 0) {
                 return true;
             }
         }
+
+        // Direct membership not found: ask for the transitive one. Reached only on the path that
+        // would otherwise deny access, so a direct member never pays for the extra query and the
+        // "no additional query" property of the user-centric mode is preserved.
+        if ($connection !== null
+            && $this->isNestedMemberByMemberOf($groupDn, $userDn, $connection) === true
+        ) {
+            return true;
+        }
+
+        if (empty($memberOf)) {
+            error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
+        }
+
         return false;
+    }
+
+    /**
+     * Check indirect (nested) membership from the user side of the relation.
+     *
+     * Mirror of isNestedMemberOfGroup(): a scope=base read on the USER entry filtered with
+     * LDAP_MATCHING_RULE_IN_CHAIN (1.2.840.113556.1.4.1941) on memberOf, which Active Directory
+     * evaluates transitively. Used by the user-centric mode, where the group entry is not read.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param string $userDn Distinguished name of the authenticating user
+     * @param Connection $connection Active LdapRecord connection
+     * @return bool True if the user belongs to the group through one or more nested groups
+     */
+    private function isNestedMemberByMemberOf(string $groupDn, string $userDn, Connection $connection): bool
+    {
+        if (trim($userDn) === '') {
+            return false;
+        }
+
+        try {
+            $userEntry = $connection->query()
+                ->select(['cn'])
+                ->setDn($userDn)
+                ->read()
+                ->rawFilter(
+                    '(memberof:1.2.840.113556.1.4.1941:='
+                    . ldap_escape($groupDn, '', LDAP_ESCAPE_FILTER) . ')'
+                )
+                ->first();
+
+            return $userEntry !== null;
+        } catch (\Throwable $e) {
+            // Directory without support for the extended matching rule: the memberOf attribute
+            // has already been scanned by the caller, so this is not an error.
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS LDAP: nested memberOf check unavailable: ' . $e->getMessage());
+            }
+
+            return false;
+        }
     }
 
     /**

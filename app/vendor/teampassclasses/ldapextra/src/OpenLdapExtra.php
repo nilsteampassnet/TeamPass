@@ -282,12 +282,24 @@ class OpenLdapExtra extends BaseGroup
      * This is the user-centric alternative to isUserInAllowedGroup(). On OpenLDAP this attribute
      * is only present when the memberof overlay is enabled; otherwise use group-centric mode instead.
      *
+     * Unlike Active Directory, OpenLDAP offers no transitive matching rule, so nested groups
+     * cannot be resolved from the user side. $userDn and $connection are accepted to keep the
+     * signature aligned with ActiveDirectoryExtra — the caller passes the same arguments to both
+     * handlers — but membership stays direct-only here. Nested OpenLDAP groups require the
+     * group-centric mode combined with a directory that flattens membership.
+     *
      * @param string $groupDn Full distinguished name of the required group
      * @param array $userEntry LDAP user entry array that must contain the 'memberof' key
+     * @param string $userDn Distinguished name of the authenticating user, unused on OpenLDAP
+     * @param Connection|null $connection Active LdapRecord connection, unused on OpenLDAP
      * @return bool True if the user's memberof list contains $groupDn, or if $groupDn is empty
      */
-    public function isUserInAllowedGroupByMemberOf(string $groupDn, array $userEntry): bool
-    {
+    public function isUserInAllowedGroupByMemberOf(
+        string $groupDn,
+        array $userEntry,
+        string $userDn = '',
+        ?Connection $connection = null
+    ): bool {
         if (trim($groupDn) === '') {
             return true;
         }
