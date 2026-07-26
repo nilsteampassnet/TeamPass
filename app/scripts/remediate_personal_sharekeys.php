@@ -27,6 +27,9 @@
  * It is a bulk generalisation of EnsurePersonalItemHasOnlyKeysForOwner() (sources/main.functions.php),
  * but, unlike the lazy cleanup, it also processes personal items owned by an admin (decision 2026-06-15).
  *
+ * This file is only the CLI front-end: the engine lives in personal_sharekeys_remediation.php and is
+ * shared with the automatic run performed at upgrade (public/install/upgrade_run_3.2.1.php).
+ *
  * Owner resolution (conservative, no deletion on doubt):
  *   - folder owner = numeric title of the personal root folder (personal_folder = 1) above the item;
  *   - cross-checked with log_items.at_creation.id_user;
@@ -57,8 +60,9 @@ if (php_sapi_name() !== 'cli') {
 // Bootstraps config, constants (TP_USER_ID, ...), DB and helpers (prefixTable, loadClasses, ...)
 require_once __DIR__ . '/../sources/main.functions.php';
 
-// Pure, unit-tested decision logic shared with tests/Unit/PersonalSharekeysLogicTest.php
-require_once __DIR__ . '/personal_sharekeys_logic.php';
+// Remediation engine (shared with the automatic run at upgrade), which itself pulls in the pure,
+// unit-tested decision logic of personal_sharekeys_logic.php.
+require_once __DIR__ . '/personal_sharekeys_remediation.php';
 
 loadClasses('DB');
 
@@ -95,238 +99,13 @@ echo $execute
     ? "EXECUTE mode: foreign sharekeys WILL be deleted. Make sure you have a DB backup.\n\n"
     : "DRY-RUN mode (default): no change will be made. Use --execute to apply.\n\n";
 
-// System users that must always keep a sharekey on a personal item (recovery / internal accounts).
-$systemUsers = [(int) TP_USER_ID, (int) API_USER_ID, (int) OTV_USER_ID, (int) SSH_USER_ID];
-
-/**
- * Resolve the owner of a personal item from its folder hierarchy.
- *
- * Walks up the nested tree to the absolute root (parent_id = 0) of the item's tree. The personal
- * tree root carries the owner user id as its title and personal_folder = 1. Intermediate
- * sub-folders may carry an inconsistent personal_folder flag (e.g. after a copy), so the decision
- * relies on the absolute root, not on intermediate flags. Returns null when the owner cannot be
- * resolved safely (broken hierarchy, non-personal root, non-numeric or system title).
- *
- * @param int   $folderId      Item id_tree.
- * @param int[] $systemUserIds System user ids that can never be an item owner.
- *
- * @return int|null Owner user id, or null when unresolved.
- */
-function resolvePersonalFolderOwner(int $folderId, array $systemUserIds): ?int
-{
-    $guard = 0;
-    $currentId = $folderId;
-    $rootNode = null;
-
-    while ($currentId > 0 && $guard < 200) {
-        $node = DB::queryFirstRow(
-            'SELECT id, parent_id, personal_folder, title
-             FROM ' . prefixTable('nested_tree') . '
-             WHERE id = %i',
-            $currentId
-        );
-        if ($node === null) {
-            // Broken hierarchy: do not guess.
-            return null;
-        }
-        $rootNode = $node;
-        $currentId = (int) $node['parent_id'];
-        ++$guard;
+// Run the shared engine, streaming its per-item report to the console.
+$stats = remediatePersonalSharekeys(
+    $execute,
+    static function (string $line): void {
+        echo $line . "\n";
     }
-
-    // Delegate the DB-free decision (root flag + numeric/non-system title) to the shared,
-    // unit-tested logic.
-    $ownerId = personalRootOwnerId($rootNode, $systemUserIds);
-    if ($ownerId === null) {
-        return null;
-    }
-
-    // The owner must be a real existing user.
-    $exists = DB::queryFirstField(
-        'SELECT id FROM ' . prefixTable('users') . ' WHERE id = %i',
-        $ownerId
-    );
-
-    return $exists === null ? null : $ownerId;
-}
-
-/**
- * Count the foreign sharekeys that would be removed for a personal item.
- *
- * @param int      $itemId   Item id.
- * @param string[] $excluded User ids that must keep their sharekey (owner + system users).
- *
- * @return array{items:int,fields:int,files:int,logs:int,total:int}
- */
-function countForeignSharekeys(int $itemId, array $excluded): array
-{
-    $items = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_items') . '
-         WHERE object_id = %i AND user_id NOT IN %ls',
-        $itemId,
-        $excluded
-    );
-    $files = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_files') . '
-         WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i)
-         AND user_id NOT IN %ls',
-        $itemId,
-        $excluded
-    );
-    $fields = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_fields') . '
-         WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i)
-         AND user_id NOT IN %ls',
-        $itemId,
-        $excluded
-    );
-    $logs = (int) DB::queryFirstField(
-        'SELECT COUNT(*) FROM ' . prefixTable('sharekeys_logs') . '
-         WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i)
-         AND user_id NOT IN %ls',
-        $itemId,
-        $excluded
-    );
-
-    return [
-        'items'  => $items,
-        'fields' => $fields,
-        'files'  => $files,
-        'logs'   => $logs,
-        'total'  => $items + $fields + $files + $logs,
-    ];
-}
-
-/**
- * Delete the foreign sharekeys for a personal item (transactional).
- *
- * @param int      $itemId   Item id.
- * @param string[] $excluded User ids that must keep their sharekey (owner + system users).
- *
- * @return bool True on success, false on rollback.
- */
-function deleteForeignSharekeys(int $itemId, array $excluded): bool
-{
-    try {
-        DB::startTransaction();
-
-        DB::delete(
-            prefixTable('sharekeys_items'),
-            'object_id = %i AND user_id NOT IN %ls',
-            $itemId,
-            $excluded
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_files') . '
-             WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item = %i)
-             AND user_id NOT IN %ls',
-            $itemId,
-            $excluded
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_fields') . '
-             WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id = %i)
-             AND user_id NOT IN %ls',
-            $itemId,
-            $excluded
-        );
-        DB::query(
-            'DELETE FROM ' . prefixTable('sharekeys_logs') . '
-             WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item = %i)
-             AND user_id NOT IN %ls',
-            $itemId,
-            $excluded
-        );
-
-        DB::commit();
-        return true;
-    } catch (Throwable $e) {
-        DB::rollback();
-        echo '    ERROR: rollback for item ' . $itemId . ' — ' . $e->getMessage() . "\n";
-        return false;
-    }
-}
-
-// ─────────────────────────────────────────────────────────────
-// Main loop
-// ─────────────────────────────────────────────────────────────
-// Candidates = items flagged personal OR stored in a personal folder. The items.perso column
-// alone is not enough: items created while the client sent folder_is_personal = 0 are stored with
-// perso = 0 in a personal folder (the flag is only repaired later, on folder listing). The owner
-// is resolved from the absolute tree root anyway, so a folder-based candidate is just as safe.
-$personalItems = DB::query(
-    'SELECT i.id, i.id_tree
-    FROM ' . prefixTable('items') . ' AS i
-    INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)
-    WHERE i.perso = 1 OR n.personal_folder = 1
-    ORDER BY i.id ASC'
 );
-
-$stats = [
-    'total'               => count($personalItems),
-    'items_with_foreign'  => 0,
-    'cleaned'             => 0,
-    'already_clean'       => 0,
-    'skipped_unresolved'  => 0,
-    'skipped_conflict'    => 0,
-    'foreign_found'       => 0,
-    'foreign_deleted'     => 0,
-];
-
-echo '[i] ' . $stats['total'] . " personal item(s) to analyse.\n\n";
-
-foreach ($personalItems as $item) {
-    $itemId = (int) $item['id'];
-
-    // 1. Resolve the folder owner.
-    $folderOwner = resolvePersonalFolderOwner((int) $item['id_tree'], $systemUsers);
-    if ($folderOwner === null) {
-        ++$stats['skipped_unresolved'];
-        echo "[SKIP] item {$itemId}: owner could not be resolved from the folder hierarchy.\n";
-        continue;
-    }
-
-    // 2. Cross-check with the at_creation log.
-    $creator = DB::queryFirstField(
-        'SELECT id_user FROM ' . prefixTable('log_items') . '
-         WHERE id_item = %i AND action = %s
-         ORDER BY date ASC LIMIT 1',
-        $itemId,
-        'at_creation'
-    );
-    if (personalOwnerConflictsWithCreator($folderOwner, $creator) === true) {
-        ++$stats['skipped_conflict'];
-        echo "[SKIP] item {$itemId}: folder owner ({$folderOwner}) disagrees with at_creation user ("
-            . (int) $creator . ") — left untouched.\n";
-        continue;
-    }
-
-    // 3. Compute the foreign sharekeys.
-    $excluded = array_map('strval', personalSharekeyKeepList($folderOwner, $systemUsers));
-    $counts = countForeignSharekeys($itemId, $excluded);
-
-    if ($counts['total'] === 0) {
-        ++$stats['already_clean'];
-        continue;
-    }
-
-    ++$stats['items_with_foreign'];
-    $stats['foreign_found'] += $counts['total'];
-    echo "[FIX]  item {$itemId} (owner {$folderOwner}): {$counts['total']} foreign sharekey(s)"
-        . " [items={$counts['items']}, fields={$counts['fields']}, files={$counts['files']}, logs={$counts['logs']}]";
-
-    if ($execute === true) {
-        if (deleteForeignSharekeys($itemId, $excluded) === true) {
-            ++$stats['cleaned'];
-            $stats['foreign_deleted'] += $counts['total'];
-            echo " — deleted.\n";
-        } else {
-            echo " — FAILED.\n";
-        }
-    } else {
-        echo " — would delete (dry-run).\n";
-    }
-}
 
 // ─────────────────────────────────────────────────────────────
 // Summary

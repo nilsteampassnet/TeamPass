@@ -50,6 +50,7 @@ require_once TEAMPASS_ROOT . '/app/config/include.php';
 require_once TEAMPASS_ROOT . '/app/config/settings.php';
 require_once 'tp.functions.php';
 require_once 'libs/aesctr.php';
+require_once TEAMPASS_ROOT . '/app/scripts/ldap_group_guid_logic.php';
 
 // DataBase
 // Test DB connexion
@@ -518,6 +519,113 @@ foreach ($totpColumns as $columnName => $columnDefinition) {
     }
 }
 
+// Realign the AD group identifiers stored by the admin mapping.
+//
+// Until now getADGroups() built the objectGUID string by unpacking its 16 bytes in wire
+// order, while getUserADGroups() used LdapRecord's Guid class, which applies the Windows
+// mixed-endian byte order of the first three fields. The two never matched, so every row
+// of ldap_groups_roles written from the admin screen was compared at login against a
+// different string and no AD group could be mapped to a role.
+//
+// Both sides now produce the canonical GUID, so the stored values have to be converted
+// once. The conversion is its own inverse, hence the one-shot marker below: running it
+// twice would put the rows back into the broken format.
+$guidMigrationDone = mysqli_fetch_array(mysqli_query(
+    $db_link,
+    "SELECT `valeur` FROM `" . $pre . "misc`
+     WHERE `type` = 'admin' AND `intitule` = 'ldap_group_guid_byteorder_fixed'"
+));
+
+if (empty($guidMigrationDone[0]) === true) {
+    // Only Active Directory installs using objectGUID are concerned. OpenLDAP identifiers
+    // (gidNumber, entryUUID) are plain strings that were never byte-swapped.
+    $ldapTypeRow = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT `valeur` FROM `" . $pre . "misc`
+         WHERE `type` = 'admin' AND `intitule` = 'ldap_type'"
+    ));
+    $guidAttributeRow = mysqli_fetch_array(mysqli_query(
+        $db_link,
+        "SELECT `valeur` FROM `" . $pre . "misc`
+         WHERE `type` = 'admin' AND `intitule` = 'ldap_guid_attibute'"
+    ));
+
+    $ldapType = (string) ($ldapTypeRow[0] ?? '');
+    $guidAttribute = strtolower(trim((string) ($guidAttributeRow[0] ?? '')));
+
+    if ($ldapType === 'ActiveDirectory'
+        && ($guidAttribute === '' || $guidAttribute === 'objectguid')
+    ) {
+        $mappingRows = mysqli_query(
+            $db_link,
+            "SELECT `increment_id`, `ldap_group_id` FROM `" . $pre . "ldap_groups_roles`"
+        );
+
+        if ($mappingRows !== false) {
+            while ($mappingRow = mysqli_fetch_assoc($mappingRows)) {
+                $storedGuid = (string) $mappingRow['ldap_group_id'];
+
+                // Leave anything that is not a canonical GUID untouched (invalid_guid_*,
+                // missing_*, numeric gidNumber values inherited from an older setup).
+                if (ldapIsCanonicalGuidFormat($storedGuid) === false) {
+                    continue;
+                }
+
+                mysqli_query(
+                    $db_link,
+                    "UPDATE `" . $pre . "ldap_groups_roles`
+                     SET `ldap_group_id` = '"
+                     . mysqli_real_escape_string($db_link, ldapLegacyGuidToCanonical($storedGuid)) . "'
+                     WHERE `increment_id` = " . (int) $mappingRow['increment_id']
+                );
+            }
+        }
+    }
+
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+         VALUES ('admin', 'ldap_group_guid_byteorder_fixed', '1')
+         ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
+    );
+}
+
+// Remove the sharekeys wrongly held by users who do not own a personal item.
+//
+// Two defects put them in the database: personal items shared with every user at creation before
+// 3.2.1.0 (SEC-8), and, in 3.2.1.0/3.2.1.1, user key generation redistributing TP_USER's recovery
+// sharekeys — which cover every personal item since the SEC-8 fix — to each user being (re)keyed.
+// Both are fixed in the code; this pass cleans what is already stored so no admin action is needed.
+//
+// The engine is the one behind app/scripts/remediate_personal_sharekeys.php: it never deletes
+// anything for an item whose owner is ambiguous. It uses MeekroDB (loaded above), not $db_link.
+$remediationDone = DB::queryFirstField(
+    'SELECT valeur FROM ' . prefixTable('misc') . ' WHERE type = %s AND intitule = %s',
+    'admin',
+    'personal_sharekeys_remediated'
+);
+if ((int) $remediationDone !== 1) {
+    require_once TEAMPASS_ROOT . '/app/scripts/personal_sharekeys_remediation.php';
+
+    $remediationStats = remediatePersonalSharekeys(true);
+
+    error_log(
+        'TEAMPASS Upgrade 3.2.1 - personal sharekeys remediation: '
+        . $remediationStats['total'] . ' personal item(s) analysed, '
+        . $remediationStats['cleaned'] . ' cleaned, '
+        . $remediationStats['foreign_deleted'] . ' foreign sharekey(s) deleted, '
+        . ($remediationStats['skipped_unresolved'] + $remediationStats['skipped_conflict'])
+        . ' skipped (ambiguous owner).'
+    );
+
+    mysqli_query(
+        $db_link,
+        "INSERT INTO `" . $pre . "misc` (`type`, `intitule`, `valeur`)
+         VALUES ('admin', 'personal_sharekeys_remediated', '1')
+         ON DUPLICATE KEY UPDATE `valeur` = VALUES(`valeur`)"
+    );
+}
+
 // Save upgrade timestamp (upsert: always update if exists)
 mysqli_query(
     $db_link,
@@ -533,3 +641,7 @@ echo '[{"finish":"1" , "next":"", "error":""}]';
 
 
 //---< FUNCTIONS
+
+// ldapIsCanonicalGuidFormat() and ldapLegacyGuidToCanonical() live in the DB-free module
+// app/scripts/ldap_group_guid_logic.php so they can be unit-tested in isolation
+// (tests/Unit/LdapGroupGuidLogicTest.php).

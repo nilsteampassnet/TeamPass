@@ -20,7 +20,7 @@
  *
  * These functions have NO DB / session / filesystem dependency, so they can be unit-tested in
  * isolation. They are included by both:
- *   - public/install/upgrade_run_3.2.2.php    (one-shot migration of ldap_groups_roles)
+ *   - public/install/upgrade_run_3.2.1.php    (one-shot migration of ldap_groups_roles)
  *   - tests/Unit/LdapGroupGuidLogicTest.php   (unit tests)
  *
  * Context: until 3.2.2, ActiveDirectoryExtra::getADGroups() serialised the 16 objectGUID bytes

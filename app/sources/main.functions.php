@@ -653,6 +653,29 @@ function identUserGetPFList(
 }
 
 /**
+ * List every personal folder of the instance (all owners, roots and sub-folders).
+ *
+ * Folder-level counterpart of the items.perso flag, which is unreliable: an item created while the
+ * client sent folder_is_personal = 0 is stored with perso = 0 in a personal folder, and the flag is
+ * only repaired later, on folder listing. Any process that must leave personal objects alone has to
+ * filter on this list rather than on items.perso.
+ *
+ * @return int[] Folder ids flagged personal (empty when the feature was never used).
+ */
+function getAllPersonalFolderIds(): array
+{
+    loadClasses('DB');
+
+    return array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
+            1
+        )
+    );
+}
+
+/**
  * List the personal folders that do NOT belong to the given user.
  *
  * Since the SEC-8 fix, TP_USER holds a recovery sharekey on every personal object. Any process
@@ -671,12 +694,7 @@ function identUserGetPFList(
  */
 function getForeignPersonalFolderIds(int $userId): array
 {
-    loadClasses('DB');
-
-    $allPersonalFolders = DB::queryFirstColumn(
-        'SELECT id FROM ' . prefixTable('nested_tree') . ' WHERE personal_folder = %i',
-        1
-    );
+    $allPersonalFolders = getAllPersonalFolderIds();
     if (count($allPersonalFolders) === 0) {
         return [];
     }
@@ -7568,24 +7586,27 @@ function purgeUnnecessaryKeysForUser(int $user_id=0)
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Files keys
-        DB::delete(
-            prefixTable('sharekeys_files'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Files keys — object_id references files.id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_files') . '
+            WHERE object_id IN (SELECT id FROM ' . prefixTable('files') . ' WHERE id_item IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Fields keys
-        DB::delete(
-            prefixTable('sharekeys_fields'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Fields keys — object_id references categories_items.id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_fields') . '
+            WHERE object_id IN (SELECT id FROM ' . prefixTable('categories_items') . ' WHERE item_id IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );
-        // Logs keys
-        DB::delete(
-            prefixTable('sharekeys_logs'),
-            'object_id IN %li AND user_id NOT IN %ls',
+        // Logs keys — object_id references log_items.increment_id, never the item id
+        DB::query(
+            'DELETE FROM ' . prefixTable('sharekeys_logs') . '
+            WHERE object_id IN (SELECT increment_id FROM ' . prefixTable('log_items') . ' WHERE id_item IN %li)
+            AND user_id NOT IN %ls',
             $personalItems,
             [$user_id, TP_USER_ID, API_USER_ID, OTV_USER_ID, SSH_USER_ID]
         );

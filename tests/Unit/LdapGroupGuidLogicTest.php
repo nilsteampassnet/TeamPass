@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../../app/scripts/ldap_group_guid_logic.php';
 
 /**
- * Regression tests for the AD group objectGUID byte-order migration (upgrade_run_3.2.2.php).
+ * Regression tests for the AD group objectGUID byte-order migration (upgrade_run_3.2.1.php).
  *
  * Until 3.2.2, ActiveDirectoryExtra::getADGroups() serialised the 16 objectGUID bytes in wire
  * order while getUserADGroups() used LdapRecord's Guid class (Windows mixed-endian). The admin
@@ -95,7 +95,7 @@ class LdapGroupGuidLogicTest extends TestCase
 
     /**
      * The conversion is its own inverse: running the migration twice restores the broken value.
-     * This is precisely why upgrade_run_3.2.2.php is guarded by a one-shot marker and why
+     * This is precisely why upgrade_run_3.2.1.php is guarded by a one-shot marker and why
      * run.step5.php seeds that marker on fresh installs.
      */
     public function testConversionIsItsOwnInverse(): void
