@@ -485,7 +485,7 @@ return array(
     'settings_ldap_allowed_login_group_dn' => 'Restrict login to LDAP group (DN)',
     'settings_ldap_allowed_login_group_dn_tip' => 'Full DN of the LDAP group whose members are allowed to log in. Leave empty for no restriction. The group can be outside the users base DN. Example: cn=teampass,ou=any,ou=any1,o=any2,c=any3',
     'settings_ldap_allowed_login_group_mode' => 'Group membership check mode',
-    'settings_ldap_allowed_login_group_mode_tip' => 'How to verify that a user belongs to the allowed group. "Group-centric" reads the group entry directly and works even if the group is outside the users base DN (recommended for OpenLDAP / groupOfUniqueNames). "User memberOf" reads the user\'s memberOf attribute (Active Directory only).',
+    'settings_ldap_allowed_login_group_mode_tip' => 'How to verify that a user belongs to the allowed group. "Group-centric" reads the group entry directly and works even if the group is outside the users base DN (recommended for OpenLDAP / groupOfUniqueNames). "User memberOf" reads the user\'s memberOf attribute (Active Directory only) and costs no additional query. On Active Directory both modes resolve nested groups, so the choice is only a matter of performance.',
     'settings_ldap_allowed_login_group_mode_group' => 'Group-centric (read group members)',
     'settings_ldap_allowed_login_group_mode_user' => 'User memberOf (Active Directory)',
     'ldap_not_in_allowed_group' => 'Access denied: your account is not in the required LDAP group.',
