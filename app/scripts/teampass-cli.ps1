@@ -202,7 +202,6 @@ function Invoke-ApiCall {
                 Headers = $headers
             }
 
-            # Impostiamo ContentType e Body SOLO se c'è un payload (POST/PUT)
             if (-not [string]::IsNullOrEmpty($Payload)) {
                 $params["ContentType"] = "application/json"
                 $params["Body"]        = $Payload
