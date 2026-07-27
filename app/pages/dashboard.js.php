@@ -104,6 +104,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         },
         flags: {
             flag_weak: { label: <?php echo json_encode($lang->get('security_dashboard_weak'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
+            flag_unassessed: { label: <?php echo json_encode($lang->get('security_dashboard_unassessed'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-secondary' },
             flag_reused: { label: <?php echo json_encode($lang->get('security_dashboard_reused'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
             flag_breached: { label: <?php echo json_encode($lang->get('security_dashboard_breached'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-danger' },
             flag_overdue: { label: <?php echo json_encode($lang->get('security_dashboard_overdue'), JSON_UNESCAPED_UNICODE); ?>, cls: 'badge-warning' },
@@ -142,7 +143,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             scored += '<li>' + esc(label) + ' <span class="text-muted">(×' + (parseInt(w[k], 10) || 0) + ')</span></li>';
         });
         let notCounted = '';
-        ['no_expiry', 'overshared'].forEach(function (k) {
+        ['unassessed', 'no_expiry', 'overshared'].forEach(function (k) {
             const meta = TP_DASH.flags['flag_' + k];
             notCounted += '<li>' + esc(meta ? meta.label : k) + '</li>';
         });
