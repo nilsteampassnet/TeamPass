@@ -2631,6 +2631,7 @@ return array(
     'security_dashboard_scanned_users' => 'Users scanned',
     'security_dashboard_admin_zk_note' => 'Aggregated counts only. Per-user reused/unreadable figures come from each user\'s own scan; no password is ever read across users.',
     'security_dashboard_weak' => 'Weak',
+    'security_dashboard_unassessed' => 'Not assessed',
     'security_dashboard_reused' => 'Reused',
     'security_dashboard_breached' => 'Breached',
     'security_dashboard_overdue' => 'Overdue',
