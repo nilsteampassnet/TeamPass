@@ -2565,6 +2565,7 @@ return array(
     'security_dashboard_scanned_users' => 'Utilisateurs analysés',
     'security_dashboard_admin_zk_note' => 'Compteurs agrégés uniquement. Les chiffres de réutilisation/illisibilité par utilisateur proviennent de l’analyse de chaque utilisateur ; aucun mot de passe n’est lu entre utilisateurs.',
     'security_dashboard_weak' => 'Faible',
+    'security_dashboard_unassessed' => 'Non évalué',
     'security_dashboard_reused' => 'Réutilisé',
     'security_dashboard_breached' => 'Compromis',
     'security_dashboard_overdue' => 'Expiré',
