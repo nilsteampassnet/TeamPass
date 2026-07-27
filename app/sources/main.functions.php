@@ -721,13 +721,11 @@ function getForeignPersonalFolderIds(int $userId): array
 }
 
 /**
- * Build the SQL condition keeping a security-posture query inside the items a user may legitimately
- * see, whatever sharekeys he holds.
+ * Build the legacy personal-folder SQL guard used by security-posture queries.
  *
- * The posture queries (dashboard, nudges, score) are scoped by sharekey only, which makes them the
- * place where a stray sharekey becomes visible. This fragment adds the folder-level guard so
- * another user's personal item can never surface there. Runs both in a web session and in the CLI
- * background worker, so it derives everything from the database (no session).
+ * This helper only excludes another user's personal folders. It does not check shared-folder
+ * grants, explicit denials, or item restrictions and must therefore not be used as an
+ * authorization decision. Use securityPostureItemAccessSql() for posture access checks.
  *
  * @param int    $userId    User the query is run for.
  * @param string $itemAlias SQL alias of the items table in the caller's query.
@@ -743,6 +741,124 @@ function personalScopeSqlForUser(int $userId, string $itemAlias = 'i'): string
 
     // Values are folder ids cast to int - safe to embed.
     return ' AND ' . $itemAlias . '.id_tree NOT IN (' . implode(',', $foreignPersonalFolders) . ')';
+}
+
+/**
+ * Build the SQL predicate limiting Security Posture data to items the user may read.
+ *
+ * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
+ * authorization grant. This predicate mirrors TeamPass read visibility from database state so it
+ * can be reused both in web requests and CLI workers where no user session is available:
+ * direct folder grants or readable role grants, explicit folder denials, the user's personal
+ * folder tree, and per-item user/role restrictions.
+ *
+ * The caller must already join the items table with the alias supplied in $itemAlias.
+ *
+ * @param int    $userId    User whose read access is evaluated.
+ * @param string $itemAlias SQL alias of the items table in the caller's query.
+ *
+ * @return string Parenthesized SQL predicate without a leading AND.
+ */
+function securityPostureItemAccessSql(int $userId, string $itemAlias = 'i'): string
+{
+    if ($userId <= 0 || preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $itemAlias) !== 1) {
+        return '(1 = 0)';
+    }
+
+    $userId = (int) $userId;
+
+    // Values interpolated below are a validated SQL alias and an integer user id.
+    return '(
+        (
+            (
+                EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('users') . ' AS posture_personal_user
+                    WHERE posture_personal_user.id = ' . $userId . '
+                        AND posture_personal_user.personal_folder = 1
+                )
+                AND EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('misc') . ' AS posture_personal_setting
+                    WHERE posture_personal_setting.type = \'admin\'
+                        AND posture_personal_setting.intitule = \'enable_pf_feature\'
+                        AND posture_personal_setting.valeur = \'1\'
+                )
+                AND EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('nested_tree') . ' AS posture_item_folder
+                    INNER JOIN ' . prefixTable('nested_tree') . ' AS posture_own_root
+                        ON posture_own_root.personal_folder = 1
+                        AND posture_own_root.parent_id = 0
+                        AND posture_own_root.title = \'' . $userId . '\'
+                        AND posture_item_folder.nleft >= posture_own_root.nleft
+                        AND posture_item_folder.nright <= posture_own_root.nright
+                    WHERE posture_item_folder.id = ' . $itemAlias . '.id_tree
+                )
+            )
+            OR (
+                ' . $itemAlias . '.perso = 0
+                AND EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('nested_tree') . ' AS posture_shared_folder
+                    WHERE posture_shared_folder.id = ' . $itemAlias . '.id_tree
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('nested_tree') . ' AS posture_item_folder
+                    INNER JOIN ' . prefixTable('nested_tree') . ' AS posture_personal_anchor
+                        ON posture_personal_anchor.personal_folder = 1
+                        AND posture_personal_anchor.parent_id = 0
+                        AND posture_item_folder.nleft >= posture_personal_anchor.nleft
+                        AND posture_item_folder.nright <= posture_personal_anchor.nright
+                    WHERE posture_item_folder.id = ' . $itemAlias . '.id_tree
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('users_groups_forbidden') . ' AS posture_forbidden
+                    WHERE posture_forbidden.user_id = ' . $userId . '
+                        AND posture_forbidden.group_id = ' . $itemAlias . '.id_tree
+                )
+                AND (
+                    EXISTS (
+                        SELECT 1
+                        FROM ' . prefixTable('users_groups') . ' AS posture_direct_grant
+                        WHERE posture_direct_grant.user_id = ' . $userId . '
+                            AND posture_direct_grant.group_id = ' . $itemAlias . '.id_tree
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                        FROM ' . prefixTable('users_roles') . ' AS posture_user_role
+                        INNER JOIN ' . prefixTable('roles_values') . ' AS posture_role_grant
+                            ON posture_role_grant.role_id = posture_user_role.role_id
+                            AND posture_role_grant.folder_id = ' . $itemAlias . '.id_tree
+                            AND posture_role_grant.type IN (\'W\', \'ND\', \'NE\', \'NDNE\', \'R\')
+                        WHERE posture_user_role.user_id = ' . $userId . '
+                    )
+                )
+            )
+        )
+        AND (
+            (
+                COALESCE(' . $itemAlias . '.restricted_to, \'\') = \'\'
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM ' . prefixTable('restriction_to_roles') . ' AS posture_any_restricted_role
+                    WHERE posture_any_restricted_role.item_id = ' . $itemAlias . '.id
+                )
+            )
+            OR CONCAT(\';\', COALESCE(' . $itemAlias . '.restricted_to, \'\'), \';\')
+                LIKE \'%;' . $userId . ';%\'
+            OR EXISTS (
+                SELECT 1
+                FROM ' . prefixTable('restriction_to_roles') . ' AS posture_restricted_role
+                INNER JOIN ' . prefixTable('users_roles') . ' AS posture_restricted_user_role
+                    ON posture_restricted_user_role.role_id = posture_restricted_role.role_id
+                    AND posture_restricted_user_role.user_id = ' . $userId . '
+                WHERE posture_restricted_role.item_id = ' . $itemAlias . '.id
+            )
+        )
+    )';
 }
 
 
@@ -1235,6 +1351,7 @@ function securityNudgeComputeCounts(int $userId): array
 {
     $nowTs = time();
     $weakThreshold = TP_PW_STRENGTH_3;
+    $accessScopeSql = securityPostureItemAccessSql($userId);
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
     $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
@@ -1263,7 +1380,8 @@ function securityNudgeComputeCounts(int $userId): array
         INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
         $logJoinSql . '
         LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL' . personalScopeSqlForUser($userId);
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql;
 
     $agg = DB::queryFirstRow(
         'SELECT
@@ -1293,7 +1411,15 @@ function securityNudgeComputeCounts(int $userId): array
     }
 
     $lastScan = (int) DB::queryFirstField(
-        'SELECT COALESCE(MAX(last_scan_at), 0) FROM ' . prefixTable('item_health') . ' WHERE user_id = %i',
+        'SELECT COALESCE(MAX(ih.last_scan_at), 0)
+        FROM ' . prefixTable('item_health') . ' AS ih
+        INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
+        INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk
+            ON (sk.object_id = i.id AND sk.user_id = ih.user_id)
+        WHERE ih.user_id = %i
+            AND i.inactif = 0
+            AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql,
         $userId
     );
 
@@ -1311,11 +1437,11 @@ function securityNudgeComputeCounts(int $userId): array
 /**
  * Re-derive the per-user `reused` flags in item_health from the stored reuse buckets.
  *
- * Resets flag_reused for the user, then sets it back to 1 for every item whose
- * reuse_group has more than one member. Shared by the dashboard deep scan
- * (`dashboard.queries.php` `finalize_scan`) and the save-time incremental refresh
- * (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused"
- * and never drift.
+ * Prunes rows for stale or currently unauthorized items, resets flag_reused for the user, then
+ * sets it back to 1 for every item whose reuse_group has more than one member. Shared by the
+ * dashboard deep scan (`dashboard.queries.php` `finalize_scan`) and the save-time incremental
+ * refresh (`refreshItemHealthAfterSave`) so both use one canonical definition of "reused" and
+ * never drift.
  *
  * @param int $userId User whose reuse flags are recomputed.
  *
@@ -1323,6 +1449,27 @@ function securityNudgeComputeCounts(int $userId): array
  */
 function finalizeUserReuseFlags(int $userId): void
 {
+    $accessScopeSql = securityPostureItemAccessSql($userId);
+
+    // Remove stale or unauthorized rows before deriving reuse groups. Otherwise an inaccessible
+    // item could make an accessible item appear reused until a later scan.
+    DB::query(
+        'DELETE ih
+        FROM ' . prefixTable('item_health') . ' AS ih
+        LEFT JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
+        LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sk
+            ON (sk.object_id = ih.item_id AND sk.user_id = ih.user_id)
+        WHERE ih.user_id = %i
+            AND (
+                i.id IS NULL
+                OR sk.increment_id IS NULL
+                OR i.inactif <> 0
+                OR i.deleted_at IS NOT NULL
+                OR NOT ' . $accessScopeSql . '
+            )',
+        $userId
+    );
+
     // Reset, then flag every item whose bucket has more than one member.
     DB::query(
         'UPDATE ' . prefixTable('item_health') . ' SET flag_reused = 0 WHERE user_id = %i',
@@ -1513,13 +1660,15 @@ function securityScoreCompute(int $userId): array
     $maxWeight = 10;
 
     $counts = securityNudgeComputeCounts($userId);
+    $accessScopeSql = securityPostureItemAccessSql($userId);
 
     // Total credentials the user can read — the score denominator.
     $totalItems = (int) DB::queryFirstField(
         'SELECT COUNT(*)
         FROM ' . prefixTable('items') . ' AS i
         INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
-        WHERE i.inactif = 0 AND i.deleted_at IS NULL' . personalScopeSqlForUser($userId),
+        WHERE i.inactif = 0 AND i.deleted_at IS NULL
+            AND ' . $accessScopeSql,
         $userId
     );
 
