@@ -177,6 +177,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                     <?php
                     $cards = [
                         ['key' => 'weak', 'icon' => 'fa-thermometer-empty', 'color' => 'bg-warning'],
+                        ['key' => 'unassessed', 'icon' => 'fa-circle-question', 'color' => 'bg-secondary'],
                         ['key' => 'reused', 'icon' => 'fa-clone', 'color' => 'bg-warning'],
                         ['key' => 'breached', 'icon' => 'fa-triangle-exclamation', 'color' => 'bg-danger'],
                         ['key' => 'overdue', 'icon' => 'fa-clock-rotate-left', 'color' => 'bg-warning'],
