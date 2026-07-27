@@ -271,15 +271,20 @@ if (isset($uri[0]) && ($uri[0] === 'authorize' || $uri[0] === 'authorizeToken'))
             } else {
                 // Rebuild: recompute from DB and refresh cache_tree.folders
                 // groupes_visibles was migrated from teampass_users to teampass_users_groups in v3.1.5
+                // admin / roles_from_ad_groups / groupes_interdits are required so the rebuild
+                // resolves exactly like the /authorize path (getUserCompleteData) and the web.
                 $userRow = DB::queryFirstRow(
-                    'SELECT u.id,
+                    'SELECT u.id, u.admin,
                     GROUP_CONCAT(DISTINCT ug.group_id ORDER BY ug.group_id SEPARATOR ";") AS groupes_visibles,
-                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id
+                    GROUP_CONCAT(DISTINCT ugf.group_id ORDER BY ugf.group_id SEPARATOR ";") AS groupes_interdits,
+                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "manual" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS fonction_id,
+                    GROUP_CONCAT(DISTINCT CASE WHEN ur.source = "ad" THEN ur.role_id END ORDER BY ur.role_id SEPARATOR ";") AS roles_from_ad_groups
                     FROM ' . prefixTable('users') . ' AS u
                     LEFT JOIN ' . prefixTable('users_groups') . ' AS ug ON (u.id = ug.user_id)
+                    LEFT JOIN ' . prefixTable('users_groups_forbidden') . ' AS ugf ON (u.id = ugf.user_id)
                     LEFT JOIN ' . prefixTable('users_roles') . ' AS ur ON (u.id = ur.user_id)
                     WHERE u.id = %i
-                    GROUP BY u.id',
+                    GROUP BY u.id, u.admin',
                     $userId
                 );
                 if ($userRow !== null) {

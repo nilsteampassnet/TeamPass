@@ -52,11 +52,13 @@ class ActiveDirectoryExtra extends BaseGroup
 
         $query = $connection->query();
 
-        // Determine which GUID attribute is used
+        // Determine which GUID attribute is used.
+        // The default must stay aligned with getUserADGroups(), otherwise the identifiers
+        // stored by the admin mapping never match the ones resolved at login time.
         $guidAttr = strtolower(
             (isset($settings['ldap_guid_attibute']) && !empty($settings['ldap_guid_attibute']))
                 ? $settings['ldap_guid_attibute']
-                : 'gidnumber'
+                : 'objectguid'
         );
 
         // Always select CN, the chosen GUID attribute, and member attributes for group membership mapping
@@ -77,23 +79,19 @@ class ActiveDirectoryExtra extends BaseGroup
                     if ($guidAttr === 'objectguid') {
                         try {
                             $bin = $group[$guidAttr][0];
-
+                            // Use ldaprecord's Guid class which correctly handles
+                            // Windows mixed-endian byte order for objectGUID.
+                            // Direct byte-sequential unpacking produces a byte-swapped
+                            // UUID for the first three segments, which never matches
+                            // the UUID shown in the Azure AD / AD portal, nor the one
+                            // getUserADGroups() resolves at login time.
                             $adGroupId = strtolower(
                                 (new \LdapRecord\Models\Attributes\Guid($bin))->getValue()
                             );
                         } catch (\Throwable $e) {
-                            error_log('TEAMPASS LDAP: invalid group objectGUID for group ' . ($group['cn'][0] ?? 'Unknown') . ': ' . $e->getMessage());
-
-                            // Fallback to old behavior to avoid breaking GUI
-                            try {
-                                $bin = $group[$guidAttr][0];
-                                $adGroupId = strtolower(vsprintf(
-                                    '%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x',
-                                    array_values(unpack('C16', $bin))
-                                ));
-                            } catch (\Throwable $fallbackException) {
-                                $adGroupId = 'invalid_guid_' . md5($group['cn'][0] ?? uniqid('', true));
-                            }
+                            // Deterministic fallback: keeps the same id across scans so a group
+                            // with an unreadable GUID does not show up as a new entry every time.
+                            $adGroupId = 'invalid_guid_' . md5((string) ($group['cn'][0] ?? ''));
                         }
                     } else {
                         // Otherwise treat attribute as plain string, for example gidNumber
@@ -169,83 +167,120 @@ class ActiveDirectoryExtra extends BaseGroup
         return $members;
     }
 
-    function getUserADGroups(?string $userDN, Connection $connection, array $SETTINGS): array
+    /**
+     * Get the Active Directory groups a user belongs to, nested memberships included.
+     *
+     * The returned identifiers use the very same format as getADGroups(), which is what
+     * teampass_ldap_groups_roles.ldap_group_id stores: both sides must stay aligned or no
+     * AD group can ever be mapped to a Teampass role.
+     *
+     * @param string|null $userDN Distinguished name of the authenticated user
+     * @param Connection $connection Active LdapRecord connection
+     * @param array $SETTINGS Teampass settings
+     * @return array{error: bool, message: string, userGroups: array<int, string>} On error
+     *         the group list is empty and 'error' is true, so the caller can tell a failed
+     *         lookup apart from a user genuinely belonging to no group
+     */
+    public function getUserADGroups(?string $userDN, Connection $connection, array $SETTINGS): array
     {
         // init
         $groupsArr = [];
 
-        if (empty($userDN)) {
-            error_log('TEAMPASS LDAP: getUserADGroups called with empty userDN');
-
+        if ($userDN === null || trim($userDN) === '') {
             return [
-                'error' => false,
-                'message' => 'Empty user DN.',
+                'error' => true,
+                'message' => 'No user DN available to resolve AD group membership.',
                 'userGroups' => [],
             ];
+        }
+
+        // get id attribute — lowercased because LdapRecord returns lowercased attribute keys
+        if (isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false) {
+            $idAttribute = strtolower($SETTINGS['ldap_guid_attibute']);
+        } else {
+            $idAttribute = 'objectguid';
         }
 
         try {
             Container::addConnection($connection);
 
-            // get id attribute
-            if (isset($SETTINGS['ldap_guid_attibute']) === true && empty($SETTINGS['ldap_guid_attibute']) === false) {
-                $idAttribute = strtolower($SETTINGS['ldap_guid_attibute']);
-            } else {
-                $idAttribute = 'objectguid';
-            }
-
-            /*
-             * Active Directory nested groups support.
-             *
-             * LDAP_MATCHING_RULE_IN_CHAIN:
-             * 1.2.840.113556.1.4.1941
-             *
-             * This returns all groups where the user is a member,
-             * including indirect membership through nested groups.
-             */
             $escapedUserDN = ldap_escape($userDN, '', LDAP_ESCAPE_FILTER);
 
-            $query = $connection->query();
-
-            $query->select(['cn', $idAttribute]);
-
-            $query->rawFilter(
-                '(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=' . $escapedUserDN . '))'
-            );
-
-            $groups = $query->paginate();
-
-            foreach ($groups as $group) {
-                if (!isset($group[$idAttribute][0])) {
-                    continue;
-                }
-
-                if ($idAttribute === 'objectguid') {
-                    try {
-                        $bin = $group[$idAttribute][0];
-
-                        $adGroupId = strtolower(
-                            (new \LdapRecord\Models\Attributes\Guid($bin))->getValue()
-                        );
-                    } catch (\Throwable $e) {
-                        error_log('TEAMPASS LDAP: invalid nested group objectGUID for group ' . ($group['cn'][0] ?? 'Unknown') . ': ' . $e->getMessage());
-                        continue;
-                    }
-                } else {
-                    $adGroupId = strtolower((string) $group[$idAttribute][0]);
-                }
-
-                $groupsArr[] = $adGroupId;
+            try {
+                // LDAP_MATCHING_RULE_IN_CHAIN (1.2.840.113556.1.4.1941) returns every group
+                // the user belongs to, including indirect membership through nested groups.
+                $groups = $this->queryGroupsByFilter(
+                    $connection,
+                    $idAttribute,
+                    '(&(objectClass=group)(member:1.2.840.113556.1.4.1941:=' . $escapedUserDN . '))'
+                );
+            } catch (\Throwable $e) {
+                // A directory that does not implement the extended matching rule rejects the
+                // filter. Fall back to direct membership only rather than losing every group.
+                $groups = $this->queryGroupsByFilter(
+                    $connection,
+                    $idAttribute,
+                    '(&(objectClass=group)(member=' . $escapedUserDN . '))'
+                );
             }
         } catch (\Throwable $e) {
-            error_log('TEAMPASS LDAP: getUserADGroups nested groups error: ' . $e->getMessage());
+            error_log('TEAMPASS LDAP: unable to read AD group membership: ' . $e->getMessage());
+
+            return [
+                'error' => true,
+                'message' => 'Unable to read AD group membership.',
+                'userGroups' => [],
+            ];
+        }
+
+        foreach ($groups as $group) {
+            if (!isset($group[$idAttribute][0])) {
+                continue;
+            }
+            if ($idAttribute === 'objectguid') {
+                try {
+                    $bin = $group[$idAttribute][0];
+                    // Same conversion as getADGroups(): ldaprecord's Guid class handles the
+                    // Windows mixed-endian byte order of objectGUID.
+                    $adGroupId = strtolower(
+                        (new \LdapRecord\Models\Attributes\Guid($bin))->getValue()
+                    );
+                } catch (\Throwable $e) {
+                    if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                        error_log('TEAMPASS LDAP: unreadable objectGUID for group '
+                            . ($group['cn'][0] ?? 'Unknown') . ': ' . $e->getMessage());
+                    }
+                    continue;
+                }
+            } else {
+                $adGroupId = strtolower((string) $group[$idAttribute][0]);
+            }
+            $groupsArr[] = $adGroupId;
         }
 
         return [
             'error' => false,
             'message' => '',
+            // Nested expansion can return the same group through several paths
             'userGroups' => array_values(array_unique($groupsArr)),
         ];
+    }
+
+    /**
+     * Run a raw LDAP filter against the group tree and return the matching entries.
+     *
+     * @param Connection $connection Active LdapRecord connection
+     * @param string $idAttribute Group identifier attribute to select
+     * @param string $filter Raw LDAP filter, already escaped by the caller
+     * @return iterable<array> Matching group entries
+     */
+    private function queryGroupsByFilter(Connection $connection, string $idAttribute, string $filter): iterable
+    {
+        $query = $connection->query();
+        $query->select(['cn', $idAttribute]);
+        $query->rawFilter($filter);
+
+        return $query->paginate();
     }
 
     /**
@@ -273,29 +308,91 @@ class ActiveDirectoryExtra extends BaseGroup
      * This is the user-centric alternative to isUserInAllowedGroup() and works best with
      * Active Directory where users carry a memberOf attribute populated by the server.
      *
+     * Active Directory populates memberOf with DIRECT membership only. When the attribute does
+     * not carry the group and a connection is available, the directory is asked for the
+     * transitive answer before access is denied, so both modes resolve nested groups alike.
+     *
      * @param string $groupDn Full distinguished name of the required group
      * @param array $userEntry LDAP user entry array that must contain the 'memberof' key
-     * @return bool True if the user's memberof list contains $groupDn, or if $groupDn is empty
+     * @param string $userDn Distinguished name of the authenticating user, required to resolve
+     *                       nested membership; membership stays direct-only when empty
+     * @param Connection|null $connection Active LdapRecord connection, null to skip the nested
+     *                                    resolution entirely and keep the attribute-only check
+     * @return bool True if the user belongs to the group, directly or through a nested group,
+     *              or if $groupDn is empty
      */
-    public function isUserInAllowedGroupByMemberOf(string $groupDn, array $userEntry): bool
-    {
+    public function isUserInAllowedGroupByMemberOf(
+        string $groupDn,
+        array $userEntry,
+        string $userDn = '',
+        ?Connection $connection = null
+    ): bool {
         if (trim($groupDn) === '') {
             return true;
         }
 
         $memberOf = $userEntry['memberof'] ?? [];
-        if (empty($memberOf)) {
-            error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
-            return false;
-        }
-
         foreach ($memberOf as $key => $dn) {
             if ($key !== 'count' && strcasecmp((string) $dn, $groupDn) === 0) {
                 return true;
             }
         }
 
+        // Direct membership not found: ask for the transitive one. Reached only on the path that
+        // would otherwise deny access, so a direct member never pays for the extra query and the
+        // "no additional query" property of the user-centric mode is preserved.
+        if ($connection !== null
+            && $this->isNestedMemberByMemberOf($groupDn, $userDn, $connection) === true
+        ) {
+            return true;
+        }
+
+        if (empty($memberOf)) {
+            error_log('TEAMPASS LDAP: isUserInAllowedGroupByMemberOf — user has no memberof attribute; consider using group-centric mode instead.');
+        }
+
         return false;
+    }
+
+    /**
+     * Check indirect (nested) membership from the user side of the relation.
+     *
+     * Mirror of isNestedMemberOfGroup(): a scope=base read on the USER entry filtered with
+     * LDAP_MATCHING_RULE_IN_CHAIN (1.2.840.113556.1.4.1941) on memberOf, which Active Directory
+     * evaluates transitively. Used by the user-centric mode, where the group entry is not read.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param string $userDn Distinguished name of the authenticating user
+     * @param Connection $connection Active LdapRecord connection
+     * @return bool True if the user belongs to the group through one or more nested groups
+     */
+    private function isNestedMemberByMemberOf(string $groupDn, string $userDn, Connection $connection): bool
+    {
+        if (trim($userDn) === '') {
+            return false;
+        }
+
+        try {
+            $userEntry = $connection->query()
+                ->select(['cn'])
+                ->setDn($userDn)
+                ->read()
+                ->rawFilter(
+                    '(memberof:1.2.840.113556.1.4.1941:='
+                    . ldap_escape($groupDn, '', LDAP_ESCAPE_FILTER) . ')'
+                )
+                ->first();
+
+            return $userEntry !== null;
+        } catch (\Throwable $e) {
+            // Directory without support for the extended matching rule: the memberOf attribute
+            // has already been scanned by the caller, so this is not an error.
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS LDAP: nested memberOf check unavailable: ' . $e->getMessage());
+            }
+
+            return false;
+        }
     }
 
     /**
@@ -385,9 +482,53 @@ class ActiveDirectoryExtra extends BaseGroup
                 }
             }
 
-            return false;
+            // Not a direct member: last resort, look for an indirect membership through
+            // nested groups. Kept last on purpose — the extended matching rule is an
+            // unindexed transitive search, so a direct member never pays for it.
+            return $this->isNestedMemberOfGroup($groupDn, $userDn, $connection);
         } catch (\Throwable $e) {
             error_log('TEAMPASS LDAP: isUserInAllowedGroup error: ' . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check whether a user is an indirect member of an Active Directory group, that is a
+     * member of a group which is itself a member of $groupDn, at any depth.
+     *
+     * Relies on the Active Directory extended matching rule LDAP_MATCHING_RULE_IN_CHAIN
+     * (1.2.840.113556.1.4.1941), evaluated with a scope=base read on the group entry.
+     *
+     * @param string $groupDn Full distinguished name of the required group
+     * @param string $userDn Distinguished name of the authenticating user
+     * @param Connection $connection Active LdapRecord connection
+     * @return bool True if the user belongs to the group through one or more nested groups
+     */
+    private function isNestedMemberOfGroup(string $groupDn, string $userDn, Connection $connection): bool
+    {
+        if (trim($userDn) === '') {
+            return false;
+        }
+
+        try {
+            $nestedGroupEntry = $connection->query()
+                ->select(['cn'])
+                ->setDn($groupDn)
+                ->read()
+                ->rawFilter(
+                    '(member:1.2.840.113556.1.4.1941:='
+                    . ldap_escape($userDn, '', LDAP_ESCAPE_FILTER) . ')'
+                )
+                ->first();
+
+            return $nestedGroupEntry !== null;
+        } catch (\Throwable $e) {
+            // Directory without support for the extended matching rule. Direct membership
+            // has already been checked by the caller, so this is not an error.
+            if (defined('LOG_TO_SERVER') && LOG_TO_SERVER === true) {
+                error_log('TEAMPASS LDAP: nested group check unavailable: ' . $e->getMessage());
+            }
+
             return false;
         }
     }

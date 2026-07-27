@@ -231,8 +231,14 @@ class FolderController extends BaseController
                         $userFolders
                     );
 
+                    // Complexity levels in one query, folder id => level
+                    $complexityLevels = FolderModel::getComplexityLevels($userFolders);
+
                     foreach ($rows as $row) {
                         $folderId = (int) $row['folder_id'];
+                        // Single resolution per folder — is_readonly and the granular
+                        // flags below all derive from it (no extra query).
+                        $access = $folderAccessModel->getFolderAccessLevelForUser($folderId, (int) $userData['id']);
                         $writableFolders[] = [
                             'id' => $folderId,
                             'label' => $row['title'] === $userId ? $username : $row['title'],
@@ -241,7 +247,16 @@ class FolderController extends BaseController
                             'first_position' => $row['title'] === $userId ? 1 : 0,
                             // MPTT left bound: lets a client re-sort the list back into tree order
                             'position' => (int) $row['nleft'],
-                            'is_readonly' => $folderAccessModel->isFolderReadOnlyForUser($folderId, (int) $userData['id']) ? 1 : 0,
+                            // Minimum password strength required in this folder
+                            // (0 | 20 | 38 | 48 | 60), 0 when no rule is set
+                            'complexity' => $complexityLevels[$folderId] ?? 0,
+                            'is_readonly' => $access['type'] === 'R' ? 1 : 0,
+                            // Granular rights: ND/NE/NDNE are writable but restrict edit
+                            // and/or delete, which is_readonly alone cannot express
+                            'access_type' => $access['type'],
+                            'can_create' => $access['create'] ? 1 : 0,
+                            'can_edit' => $access['edit'] ? 1 : 0,
+                            'can_delete' => $access['delete'] ? 1 : 0,
                         ];
                     }
                 }
