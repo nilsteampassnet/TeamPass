@@ -122,7 +122,7 @@ $lang = new Language($session->get('user-language') ?? 'english');
                 var fixLink = 'index.php?page=items&group=' + folderId + '&id=' + itemId + '&action=edit'
                 var $fix = $('<a>')
                     .attr('href', fixLink)
-                    .addClass('btn btn-sm btn-light ml-1')
+                    .addClass('btn btn-sm btn-light text-dark ml-1')
                     .html('<i class="fa-solid fa-wrench mr-1"></i>' + L.fix)
                 $banner.find('.tp-nudge-actions').append($fix)
             }
