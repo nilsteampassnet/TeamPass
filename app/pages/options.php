@@ -704,6 +704,18 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="security dashboard posture weak password minimum length">
+                            <div class='col-10'>
+                                <?php echo $lang->get('settings_security_dashboard_min_password_length'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('settings_security_dashboard_min_password_length_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <input type='number' class='form-control form-control-sm' id='security_dashboard_min_password_length' value='<?php echo htmlspecialchars($SETTINGS['security_dashboard_min_password_length'] ?? '12'); ?>'>
+                            </div>
+                        </div>
+
                         <div class='row mb-2 option' data-keywords="security nudges proactive breach alert badge">
                             <div class='col-10'>
                                 <?php echo $lang->get('settings_security_nudges'); ?>

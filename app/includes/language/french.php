@@ -2579,6 +2579,8 @@ return array(
     'settings_security_dashboard_tip' => 'Activer le tableau de bord de posture de sécurité par utilisateur et la vue d’ensemble pour les administrateurs.',
     'settings_security_dashboard_overshared' => 'Seuil de partage large (utilisateurs)',
     'settings_security_dashboard_overshared_tip' => 'Un élément partagé avec plus d’utilisateurs que ce seuil est signalé comme largement partagé sur le tableau de bord.',
+    'settings_security_dashboard_min_password_length' => 'Longueur minimale du mot de passe (caractères)',
+    'settings_security_dashboard_min_password_length_tip' => 'Un mot de passe plus court que ce seuil est signalé comme faible sur la fiche de l’élément, la liste, la posture de sécurité et le rapport de conformité. Laisser vide ou à 0 pour utiliser la valeur par défaut de 12.',
     'security_nudges_banner_title' => 'Des mots de passe nécessitent votre attention',
     'security_nudges_banner_one' => '1 de vos mots de passe nécessite votre attention',
     'security_nudges_banner_many' => '%d de vos mots de passe nécessitent votre attention',

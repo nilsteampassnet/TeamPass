@@ -2646,6 +2646,8 @@ return array(
     'settings_security_dashboard_tip' => 'Enable the per-user Security posture dashboard and the organisation-wide admin view.',
     'settings_security_dashboard_overshared' => 'Widely-shared threshold (users)',
     'settings_security_dashboard_overshared_tip' => 'An item shared with more users than this is flagged as widely shared on the dashboard.',
+    'settings_security_dashboard_min_password_length' => 'Minimum password length (characters)',
+    'settings_security_dashboard_min_password_length_tip' => 'A password shorter than this is reported as weak on the item card, the item list, Security Posture and the compliance report. Leave empty or set to 0 to use the default of 12.',
     // Proactive Health Nudges (F8)
     'security_nudges_banner_title' => 'Some passwords need your attention',
     'security_nudges_banner_one' => '1 of your passwords needs attention',

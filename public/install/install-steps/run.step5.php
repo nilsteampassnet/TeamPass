@@ -522,6 +522,7 @@ class DatabaseInstaller
             array('admin', 'pw_life_duration', '0'),
             array('admin', 'security_dashboard_enabled', '0'),
             array('admin', 'security_dashboard_overshared_threshold', '10'),
+            array('admin', 'security_dashboard_min_password_length', '12'),
             array('admin', 'security_nudges_enabled', '0'),
             array('admin', 'security_nudges_email_enabled', '0'),
             array('admin', 'security_nudges_email_frequency_days', '7'),
