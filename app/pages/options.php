@@ -490,6 +490,20 @@ $zones = timezone_list();
                             </div>
                         </div>
 
+                        <div class='row mb-2 option' data-keywords="log user login security anti bruteforce active lockout unlock ip account">
+                            <div class='col-10'>
+                                <?php echo $lang->get('authentication_lockout_manage'); ?>
+                                <small class='form-text text-muted'>
+                                    <?php echo $lang->get('authentication_lockout_manage_tip'); ?>
+                                </small>
+                            </div>
+                            <div class='col-2'>
+                                <a class='btn btn-sm btn-outline-info btn-block' href='./index.php?page=utilities.logs#authentication-lockouts'>
+                                    <i class='fa-solid fa-arrow-up-right-from-square mr-1'></i><?php echo $lang->get('open'); ?>
+                                </a>
+                            </div>
+                        </div>
+
                         <div class='row settings-subgroup mt-2 mb-2'>
                             <div class='col-12'>
                                 <h6 class='text-info text-uppercase font-weight-bold mb-2 pb-2 border-bottom'><i class="fa-solid fa-clock-rotate-left mr-2"></i><?php echo $lang->get('settings_group_security_password'); ?></h6>
