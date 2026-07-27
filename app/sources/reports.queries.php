@@ -219,7 +219,7 @@ switch ($post_type) {
     /*
      * POSTURE SUMMARY — aggregated health flags (metadata only, no item name)
      *
-     * Metadata-derived flags (weak, breached, overshared, overdue, no_expiry)
+     * Metadata-derived flags (weak, unassessed, breached, overshared, overdue, no_expiry)
      * are recomputed LIVE here so the report is always current — no dependency
      * on when the last deep scan ran. Only reused/orphaned genuinely require
      * the deep scan (a decryption context the report handler does not have),
@@ -227,7 +227,7 @@ switch ($post_type) {
      */
     case 'report_posture_summary':
         $nowTs = time();
-        $weakThreshold = (int) TP_PW_STRENGTH_3;
+        $passwordHealthSql = securityPasswordHealthSql();
         $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
         if ($oversharedThreshold <= 0) {
             $oversharedThreshold = 10;
@@ -240,8 +240,8 @@ switch ($post_type) {
         $live = DB::queryFirstRow(
             'SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN i.complexity_level <> \'\' AND CAST(i.complexity_level AS SIGNED) >= 0
-                    AND CAST(i.complexity_level AS SIGNED) < ' . $weakThreshold . ' THEN 1 ELSE 0 END) AS weak,
+                SUM(' . $passwordHealthSql['weak'] . ') AS weak,
+                SUM(' . $passwordHealthSql['unassessed'] . ') AS unassessed,
                 SUM(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END) AS breached,
                 SUM(CASE WHEN COALESCE(sc.share_count, 0) > ' . $oversharedThreshold . ' THEN 1 ELSE 0 END) AS overshared,
                 SUM(CASE WHEN n.renewal_period <= 0 THEN 1 ELSE 0 END) AS no_expiry,
@@ -279,6 +279,7 @@ switch ($post_type) {
         $summary = reportsPostureSummary(
             [
                 'weak' => (int) ($live['weak'] ?? 0),
+                'unassessed' => (int) ($live['unassessed'] ?? 0),
                 'breached' => (int) ($live['breached'] ?? 0),
                 'overshared' => (int) ($live['overshared'] ?? 0),
                 'overdue' => (int) ($live['overdue'] ?? 0),
