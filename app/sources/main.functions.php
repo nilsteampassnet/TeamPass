@@ -744,6 +744,88 @@ function personalScopeSqlForUser(int $userId, string $itemAlias = 'i'): string
 }
 
 /**
+ * Classify password health from the metadata stored with an item.
+ *
+ * A non-empty ciphertext with a zero stored length is treated as unassessed because this is the
+ * legacy metadata pattern for passwords whose length was never backfilled. Empty passwords stored
+ * without ciphertext remain a distinct, non-weak state.
+ *
+ * @param int|string|null $complexityLevel  Stored zxcvbn-derived complexity level.
+ * @param int|null        $passwordLength   Stored password length.
+ * @param bool            $hasStoredPassword Whether the item contains password ciphertext.
+ *
+ * @return string One of: empty, unassessed, weak, healthy.
+ */
+function securityPasswordHealthStatus(
+    int|string|null $complexityLevel,
+    ?int $passwordLength,
+    bool $hasStoredPassword
+): string
+{
+    if (
+        $complexityLevel === null
+        || $complexityLevel === ''
+        || is_numeric($complexityLevel) === false
+        || (int) $complexityLevel < 0
+        || $passwordLength === null
+        || $passwordLength < 0
+        || ($hasStoredPassword === true && $passwordLength === 0)
+    ) {
+        return 'unassessed';
+    }
+
+    if ($passwordLength === 0) {
+        return 'empty';
+    }
+
+    if (
+        (int) $complexityLevel < TP_PW_STRENGTH_3
+        || $passwordLength < TP_SECURITY_PASSWORD_MIN_LENGTH
+    ) {
+        return 'weak';
+    }
+
+    return 'healthy';
+}
+
+/**
+ * Build canonical SQL expressions for password-health metadata.
+ *
+ * @param string $itemAlias SQL alias of the items table in the caller's query.
+ *
+ * @return array{weak:string,unassessed:string} CASE expressions returning zero or one.
+ */
+function securityPasswordHealthSql(string $itemAlias = 'i'): array
+{
+    if (preg_match('/^[A-Za-z_][A-Za-z0-9_]*$/', $itemAlias) !== 1) {
+        return [
+            'weak' => '(CASE WHEN 1 = 0 THEN 1 ELSE 0 END)',
+            'unassessed' => '(CASE WHEN 1 = 1 THEN 1 ELSE 0 END)',
+        ];
+    }
+
+    $assessedSql = '('
+        . $itemAlias . '.complexity_level IS NOT NULL'
+        . ' AND ' . $itemAlias . '.complexity_level <> \'\''
+        . ' AND ' . $itemAlias . '.complexity_level REGEXP \'^-?[0-9]+$\''
+        . ' AND CAST(' . $itemAlias . '.complexity_level AS SIGNED) >= 0'
+        . ' AND ' . $itemAlias . '.pw_len IS NOT NULL'
+        . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) >= 0'
+        . ' AND NOT (CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0'
+        . ' AND COALESCE(' . $itemAlias . '.pw, \'\') <> \'\')'
+        . ')';
+
+    return [
+        'weak' => '(CASE WHEN ' . $assessedSql
+            . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) > 0'
+            . ' AND (CAST(' . $itemAlias . '.complexity_level AS SIGNED) < ' . (int) TP_PW_STRENGTH_3
+            . ' OR CAST(' . $itemAlias . '.pw_len AS SIGNED) < ' . (int) TP_SECURITY_PASSWORD_MIN_LENGTH
+            . ') THEN 1 ELSE 0 END)',
+        'unassessed' => '(CASE WHEN NOT ' . $assessedSql . ' THEN 1 ELSE 0 END)',
+    ];
+}
+
+/**
  * Build the SQL predicate limiting Security Posture data to items the user may read.
  *
  * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
@@ -1345,17 +1427,18 @@ function prepareSendingEmail(
  *
  * @param int $userId User to compute the posture for.
  *
- * @return array{weak:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{weak:int,unassessed:int,overdue:int,breached:int,reused:int,total_flagged:int,last_scan:int,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityNudgeComputeCounts(int $userId): array
 {
     $nowTs = time();
-    $weakThreshold = TP_PW_STRENGTH_3;
     $accessScopeSql = securityPostureItemAccessSql($userId);
+    $passwordHealthSql = securityPasswordHealthSql();
 
     // Metadata-only flag expressions (identical semantics to the dashboard).
     $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
-    $flagWeakSql = "(CASE WHEN i.complexity_level <> '' AND CAST(i.complexity_level AS SIGNED) >= 0 AND CAST(i.complexity_level AS SIGNED) < " . (int) $weakThreshold . " THEN 1 ELSE 0 END)";
+    $flagWeakSql = $passwordHealthSql['weak'];
+    $flagUnassessedSql = $passwordHealthSql['unassessed'];
     $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
     $flagBreachedSql = '(CASE WHEN i.hibp_status = 2 THEN 1 ELSE 0 END)';
 
@@ -1372,6 +1455,7 @@ function securityNudgeComputeCounts(int $userId): array
     $innerSql =
         'SELECT i.id, i.id_tree,
             ' . $flagWeakSql . ' AS flag_weak,
+            ' . $flagUnassessedSql . ' AS flag_unassessed,
             ' . $flagOverdueSql . ' AS flag_overdue,
             ' . $flagBreachedSql . ' AS flag_breached,
             COALESCE(ih.flag_reused, 0) AS flag_reused
@@ -1386,6 +1470,7 @@ function securityNudgeComputeCounts(int $userId): array
     $agg = DB::queryFirstRow(
         'SELECT
             COALESCE(SUM(t.flag_weak), 0) AS weak,
+            COALESCE(SUM(t.flag_unassessed), 0) AS unassessed,
             COALESCE(SUM(t.flag_overdue), 0) AS overdue,
             COALESCE(SUM(t.flag_breached), 0) AS breached,
             COALESCE(SUM(t.flag_reused), 0) AS reused,
@@ -1425,6 +1510,7 @@ function securityNudgeComputeCounts(int $userId): array
 
     return [
         'weak' => (int) ($agg['weak'] ?? 0),
+        'unassessed' => (int) ($agg['unassessed'] ?? 0),
         'overdue' => (int) ($agg['overdue'] ?? 0),
         'breached' => (int) ($agg['breached'] ?? 0),
         'reused' => (int) ($agg['reused'] ?? 0),
@@ -1525,7 +1611,6 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     }
 
     $nowTs = time();
-    $weakThreshold = TP_PW_STRENGTH_3;
     $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
     if ($oversharedThreshold <= 0) {
         $oversharedThreshold = 10;
@@ -1583,7 +1668,12 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
     }
 
     $cl = (string) $row['complexity_level'];
-    $flagWeak = ($cl !== '' && (int) $cl >= 0 && (int) $cl < $weakThreshold) ? 1 : 0;
+    $passwordHealthStatus = securityPasswordHealthStatus(
+        $cl,
+        strlen($plaintextPassword),
+        $plaintextPassword !== ''
+    );
+    $flagWeak = $passwordHealthStatus === 'weak' ? 1 : 0;
     $renewal = (int) $row['renewal_period'];
     $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
     $base = (int) $row['last_relevant_date'];
@@ -1651,7 +1741,7 @@ function refreshItemHealthAfterSave(int $itemId, int $userId, string $plaintextP
  *
  * @param int $userId User to score.
  *
- * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
+ * @return array{score:int,band:string,total_items:int,scanned:bool,last_scan:int,delta:int|null,delta_at:int,counts:array{breached:int,reused:int,weak:int,unassessed:int,overdue:int,total:int},weights:array{breached:int,reused:int,weak:int,overdue:int},top3:array<int,array{key:string,count:int}>,worst_item:array{id:int,folder_id:int}|null}
  */
 function securityScoreCompute(int $userId): array
 {
@@ -1705,6 +1795,8 @@ function securityScoreCompute(int $userId): array
         ['key' => 'reused', 'count' => (int) $counts['reused'], 'w' => $weights['reused'] * (int) $counts['reused']],
         ['key' => 'weak', 'count' => (int) $counts['weak'], 'w' => $weights['weak'] * (int) $counts['weak']],
         ['key' => 'overdue', 'count' => (int) $counts['overdue'], 'w' => $weights['overdue'] * (int) $counts['overdue']],
+        // Unknown metadata is surfaced for remediation but does not reduce the score.
+        ['key' => 'unassessed', 'count' => (int) $counts['unassessed'], 'w' => 0],
     ];
     usort($contrib, static function (array $a, array $b): int {
         return $b['w'] <=> $a['w'];
@@ -1738,6 +1830,7 @@ function securityScoreCompute(int $userId): array
             'breached' => (int) $counts['breached'],
             'reused' => (int) $counts['reused'],
             'weak' => (int) $counts['weak'],
+            'unassessed' => (int) $counts['unassessed'],
             'overdue' => (int) $counts['overdue'],
             'total' => (int) $counts['total_flagged'],
         ],
