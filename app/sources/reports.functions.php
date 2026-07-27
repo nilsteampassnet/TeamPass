@@ -127,7 +127,7 @@ function reportsPeriodBounds(?string $start, ?string $end, int $now): array
  * preserving zero-knowledge between users in the admin view.
  *
  * The report separates two families of flags:
- *  - **live** flags (weak, breached, overshared, overdue, no_expiry) are
+ *  - **live** flags (weak, unassessed, breached, overshared, overdue, no_expiry) are
  *    recomputed from item metadata at report time — always current, no scan
  *    needed. Their percentage base is the whole live population.
  *  - **scan** flags (reused, orphaned) can only come from the deep health
