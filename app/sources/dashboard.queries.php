@@ -120,12 +120,11 @@ $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold
 if ($oversharedThreshold <= 0) {
     $oversharedThreshold = 10;
 }
-// "Weak" = password strength strictly below "medium".
-$weakThreshold = TP_PW_STRENGTH_3;
-
 // Reusable SQL fragments — all metadata-only (no decryption, no plaintext).
 $lastRelevantSql = 'COALESCE(NULLIF(l.last_relevant_date, 0), NULLIF(CAST(i.created_at AS UNSIGNED), 0), 0)';
-$flagWeakSql = "(CASE WHEN i.complexity_level <> '' AND CAST(i.complexity_level AS SIGNED) >= 0 AND CAST(i.complexity_level AS SIGNED) < " . (int) $weakThreshold . " THEN 1 ELSE 0 END)";
+$passwordHealthSql = securityPasswordHealthSql();
+$flagWeakSql = $passwordHealthSql['weak'];
+$flagUnassessedSql = $passwordHealthSql['unassessed'];
 $flagNoExpirySql = '(CASE WHEN n.renewal_period <= 0 THEN 1 ELSE 0 END)';
 $flagOverdueSql = '(CASE WHEN n.renewal_period > 0 AND ' . $lastRelevantSql . ' > 0 AND (' . $lastRelevantSql . ' + n.renewal_period * ' . TP_ONE_DAY_SECONDS . ') <= ' . (int) $nowTs . ' THEN 1 ELSE 0 END)';
 $flagOversharedSql = '(CASE WHEN COALESCE(sc.share_count, 0) > ' . (int) $oversharedThreshold . ' THEN 1 ELSE 0 END)';
@@ -157,7 +156,8 @@ switch ($post_type) {
 
         // Flag whitelist -> derived-table column. Filters the list to one issue type.
         $flagColumns = [
-            'weak' => 't.flag_weak', 'reused' => 't.flag_reused', 'breached' => 't.flag_breached',
+            'weak' => 't.flag_weak', 'unassessed' => 't.flag_unassessed',
+            'reused' => 't.flag_reused', 'breached' => 't.flag_breached',
             'overdue' => 't.flag_overdue', 'no_expiry' => 't.flag_no_expiry',
             'overshared' => 't.flag_overshared', 'orphaned' => 't.flag_orphaned',
         ];
@@ -169,6 +169,7 @@ switch ($post_type) {
         $flaggedInnerSql =
             'SELECT i.id, i.label, i.id_tree,
                 ' . $flagWeakSql . ' AS flag_weak,
+                ' . $flagUnassessedSql . ' AS flag_unassessed,
                 ' . $flagNoExpirySql . ' AS flag_no_expiry,
                 ' . $flagOverdueSql . ' AS flag_overdue,
                 ' . $flagOversharedSql . ' AS flag_overshared,
@@ -182,7 +183,7 @@ switch ($post_type) {
             LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
             WHERE i.inactif = 0 AND i.deleted_at IS NULL
                 AND ' . $accessScopeSql;
-        $flagSumSql = '(t.flag_weak + t.flag_no_expiry + t.flag_overdue + t.flag_overshared + t.flag_breached + t.flag_reused + t.flag_orphaned)';
+        $flagSumSql = '(t.flag_weak + t.flag_unassessed + t.flag_no_expiry + t.flag_overdue + t.flag_overshared + t.flag_breached + t.flag_reused + t.flag_orphaned)';
 
         // Paging window for the flagged-items list (incremental "load more").
         $listLimit = ($post_limit > 0 && $post_limit <= 200) ? $post_limit : 50;
@@ -192,7 +193,7 @@ switch ($post_type) {
         $rows = DB::query(
             'SELECT t.* FROM (' . $flaggedInnerSql . $folderClauseSql . ') AS t
             WHERE ' . $flagSumSql . ' > 0' . $flagFilterSql . '
-            ORDER BY (t.flag_breached + t.flag_reused) DESC, t.flag_weak DESC, t.id DESC
+            ORDER BY (t.flag_breached + t.flag_reused) DESC, t.flag_weak DESC, t.flag_unassessed DESC, t.id DESC
             LIMIT %i OFFSET %i',
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId, $listLimit, $listOffset
         );
@@ -219,6 +220,7 @@ switch ($post_type) {
                 'label' => (string) $r['label'],
                 'path' => implode(' › ', $path),
                 'flag_weak' => (int) $r['flag_weak'],
+                'flag_unassessed' => (int) $r['flag_unassessed'],
                 'flag_no_expiry' => (int) $r['flag_no_expiry'],
                 'flag_overdue' => (int) $r['flag_overdue'],
                 'flag_overshared' => (int) $r['flag_overshared'],
@@ -245,6 +247,7 @@ switch ($post_type) {
                 'SELECT
                     COUNT(*) AS total,
                     SUM(' . $flagWeakSql . ') AS weak,
+                    SUM(' . $flagUnassessedSql . ') AS unassessed,
                     SUM(' . $flagNoExpirySql . ') AS no_expiry,
                     SUM(' . $flagOverdueSql . ') AS overdue,
                     SUM(' . $flagOversharedSql . ') AS overshared,
@@ -302,6 +305,7 @@ switch ($post_type) {
             $response['counts'] = [
                 'total' => (int) ($summary['total'] ?? 0),
                 'weak' => (int) ($summary['weak'] ?? 0),
+                'unassessed' => (int) ($summary['unassessed'] ?? 0),
                 'no_expiry' => (int) ($summary['no_expiry'] ?? 0),
                 'overdue' => (int) ($summary['overdue'] ?? 0),
                 'overshared' => (int) ($summary['overshared'] ?? 0),
@@ -343,6 +347,7 @@ switch ($post_type) {
         // collide in the stored reuse bucket (no cross-user correlation).
         $reuseSalt = (string) @file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE);
         $reuseSalt = $reuseSalt . '|item-health|' . $userId;
+        $zxcvbn = new \ZxcvbnPhp\Zxcvbn();
 
         $total = (int) DB::queryFirstField(
             'SELECT COUNT(*)
@@ -354,7 +359,7 @@ switch ($post_type) {
         );
 
         $rows = DB::query(
-            'SELECT i.id, i.pw, i.pw_iv, i.complexity_level, i.created_at, i.hibp_status,
+            'SELECT i.id, i.pw, i.pw_iv, i.pw_len, i.complexity_level, i.created_at, i.hibp_status,
                 n.renewal_period,
                 ' . $lastRelevantSql . ' AS last_relevant_date,
                 COALESCE(sc.share_count, 0) AS share_count,
@@ -378,9 +383,7 @@ switch ($post_type) {
         foreach ($rows as $r) {
             $itemId = (int) $r['id'];
 
-            // Metadata flags (no decryption needed).
-            $cl = (string) $r['complexity_level'];
-            $flagWeak = ($cl !== '' && (int) $cl >= 0 && (int) $cl < $weakThreshold) ? 1 : 0;
+            // Metadata flags not related to password strength.
             $renewal = (int) $r['renewal_period'];
             $flagNoExpiry = ($renewal <= 0) ? 1 : 0;
             $base = (int) $r['last_relevant_date'];
@@ -409,7 +412,31 @@ switch ($post_type) {
                 }
             }
 
+            $complexityLevel = $r['complexity_level'];
+            $passwordLength = $r['pw_len'] === null ? null : (int) $r['pw_len'];
             if ($plaintext !== '') {
+                $actualPasswordLength = strlen($plaintext);
+                $metadataUpdates = [];
+                $passwordLengthChanged = $passwordLength !== $actualPasswordLength;
+                if ($passwordLengthChanged === true) {
+                    $passwordLength = $actualPasswordLength;
+                    $metadataUpdates['pw_len'] = $actualPasswordLength;
+                }
+                if (
+                    $passwordLengthChanged === true
+                    || $complexityLevel === null
+                    || $complexityLevel === ''
+                    || is_numeric($complexityLevel) === false
+                    || (int) $complexityLevel < 0
+                ) {
+                    $passwordStrength = $zxcvbn->passwordStrength($plaintext);
+                    $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
+                    $metadataUpdates['complexity_level'] = $complexityLevel;
+                }
+                if (count($metadataUpdates) > 0) {
+                    DB::update(prefixTable('items'), $metadataUpdates, 'id = %i', $itemId);
+                }
+
                 $reuseGroup = substr(hash_hmac('sha256', $plaintext, $reuseSalt), 0, 32);
 
                 if ($post_include_hibp === 1) {
@@ -430,6 +457,12 @@ switch ($post_type) {
                     }
                 }
             }
+            $passwordHealthStatus = securityPasswordHealthStatus(
+                is_int($complexityLevel) || is_string($complexityLevel) ? $complexityLevel : null,
+                $passwordLength,
+                (string) $r['pw'] !== ''
+            );
+            $flagWeak = $passwordHealthStatus === 'weak' ? 1 : 0;
 
             // Persist per-user flags. flag_reused is left untouched here (finalised later).
             DB::query(
@@ -568,7 +601,7 @@ switch ($post_type) {
      * CASE
      * F8 — per-item health flags for the items-list badge. Complements (never
      * duplicates) the item-card HIBP badge by marking at-risk rows at a glance.
-     * Input: item_ids (CSV). Output: { item_id: {breached,weak,reused,overdue} }
+     * Input: item_ids (CSV). Output: { item_id: {breached,weak,unassessed,reused,overdue} }
      * for flagged items only. Metadata-only, scoped to the user's own entitlement.
      */
     case 'get_folder_flags':
@@ -599,6 +632,7 @@ switch ($post_type) {
         $flagRows = DB::query(
             'SELECT i.id,
                 ' . $flagWeakSql . ' AS flag_weak,
+                ' . $flagUnassessedSql . ' AS flag_unassessed,
                 ' . $flagOverdueSql . ' AS flag_overdue,
                 ' . $flagBreachedSql . ' AS flag_breached,
                 COALESCE(ih.flag_reused, 0) AS flag_reused
@@ -616,13 +650,15 @@ switch ($post_type) {
         $flags = [];
         foreach ($flagRows as $fr) {
             $w = (int) $fr['flag_weak'];
+            $u = (int) $fr['flag_unassessed'];
             $o = (int) $fr['flag_overdue'];
             $b = (int) $fr['flag_breached'];
             $re = (int) $fr['flag_reused'];
-            if ($w + $o + $b + $re > 0) {
+            if ($w + $u + $o + $b + $re > 0) {
                 $flags[(string) (int) $fr['id']] = [
                     'breached' => $b,
                     'weak' => $w,
+                    'unassessed' => $u,
                     'reused' => $re,
                     'overdue' => $o,
                 ];
