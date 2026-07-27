@@ -111,10 +111,9 @@ $post_include_hibp = (int) $request->request->filter('include_hibp', 0, FILTER_S
 $userId = (int) $session->get('user-id');
 $nowTs = time();
 
-// Folder-level guard. Every query below is scoped by sharekey, which makes this page the place
-// where a stray sharekey would become visible: a personal item of another user must never be
-// listed here even if the current account happens to hold a key for it.
-$personalScopeSql = personalScopeSqlForUser($userId);
+// A sharekey is cryptographic material, not an authorization grant. Every posture query below
+// also applies the user's current folder grants, denials, personal tree and item restrictions.
+$accessScopeSql = securityPostureItemAccessSql($userId);
 
 // Over-shared threshold (number of users above which an item is considered widely shared).
 $oversharedThreshold = (int) ($SETTINGS['security_dashboard_overshared_threshold'] ?? 10);
@@ -181,7 +180,8 @@ switch ($post_type) {
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
             $logJoinSql . $shareCountJoinSql . '
             LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL' . $personalScopeSql;
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL
+                AND ' . $accessScopeSql;
         $flagSumSql = '(t.flag_weak + t.flag_no_expiry + t.flag_overdue + t.flag_overshared + t.flag_breached + t.flag_reused + t.flag_orphaned)';
 
         // Paging window for the flagged-items list (incremental "load more").
@@ -253,7 +253,8 @@ switch ($post_type) {
                 INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
                 INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
                 $logJoinSql . $shareCountJoinSql . '
-                WHERE i.inactif = 0 AND i.deleted_at IS NULL' . $personalScopeSql,
+                WHERE i.inactif = 0 AND i.deleted_at IS NULL
+                    AND ' . $accessScopeSql,
                 $userId,
                 'at_creation',
                 'at_modification',
@@ -263,11 +264,17 @@ switch ($post_type) {
             // Reused/orphaned and last-scan come from the persisted per-user table.
             $healthAgg = DB::queryFirstRow(
                 'SELECT
-                    COALESCE(SUM(flag_reused), 0) AS reused,
-                    COALESCE(SUM(flag_orphaned), 0) AS orphaned,
-                    COALESCE(MAX(last_scan_at), 0) AS last_scan
-                FROM ' . prefixTable('item_health') . '
-                WHERE user_id = %i',
+                    COALESCE(SUM(ih.flag_reused), 0) AS reused,
+                    COALESCE(SUM(ih.flag_orphaned), 0) AS orphaned,
+                    COALESCE(MAX(ih.last_scan_at), 0) AS last_scan
+                FROM ' . prefixTable('item_health') . ' AS ih
+                INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
+                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk
+                    ON (sk.object_id = i.id AND sk.user_id = ih.user_id)
+                WHERE ih.user_id = %i
+                    AND i.inactif = 0
+                    AND i.deleted_at IS NULL
+                    AND ' . $accessScopeSql,
                 $userId
             );
 
@@ -341,7 +348,8 @@ switch ($post_type) {
             'SELECT COUNT(*)
             FROM ' . prefixTable('items') . ' AS i
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL' . $personalScopeSql,
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL
+                AND ' . $accessScopeSql,
             $userId
         );
 
@@ -355,7 +363,8 @@ switch ($post_type) {
             INNER JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = i.id AND sk.user_id = %i)
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
             $logJoinSql . $shareCountJoinSql . '
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL' . $personalScopeSql . '
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL
+                AND ' . $accessScopeSql . '
             ORDER BY i.id ASC
             LIMIT %i OFFSET %i',
             $userId,
@@ -470,7 +479,7 @@ switch ($post_type) {
 
     /*
      * CASE
-     * Finalise the scan: compute reuse flags from the buckets, prune stale rows.
+     * Finalise the scan: prune stale rows and compute reuse flags from the buckets.
      */
     case 'finalize_scan':
         if ($post_key !== $session->get('key')) {
@@ -478,30 +487,8 @@ switch ($post_type) {
             break;
         }
 
-        // Reset, then flag every item whose bucket has more than one member
-        // (canonical logic shared with the save-time refresh).
+        // The canonical finalizer first prunes inaccessible/stale rows, then recomputes reuse.
         finalizeUserReuseFlags($userId);
-
-        // Hygiene: drop rows for items the user can no longer access.
-        DB::query(
-            'DELETE ih FROM ' . prefixTable('item_health') . ' AS ih
-            LEFT JOIN ' . prefixTable('sharekeys_items') . ' AS sk ON (sk.object_id = ih.item_id AND sk.user_id = ih.user_id)
-            WHERE ih.user_id = %i AND sk.increment_id IS NULL',
-            $userId
-        );
-
-        // Hygiene: drop rows that fell out of the folder scope (stray sharekey on another
-        // user's personal item), so the persisted counts converge with the live queries.
-        $foreignPersonalFolders = getForeignPersonalFolderIds($userId);
-        if (count($foreignPersonalFolders) > 0) {
-            DB::query(
-                'DELETE ih FROM ' . prefixTable('item_health') . ' AS ih
-                INNER JOIN ' . prefixTable('items') . ' AS i ON (i.id = ih.item_id)
-                WHERE ih.user_id = %i AND i.id_tree IN %li',
-                $userId,
-                $foreignPersonalFolders
-            );
-        }
 
         // F10: freeze the score snapshot so the dashboard can show "+N since last scan".
         // Computed after the reuse flags are finalised, so `reused` is accurate.
@@ -620,7 +607,9 @@ switch ($post_type) {
             INNER JOIN ' . prefixTable('nested_tree') . ' AS n ON (n.id = i.id_tree)' .
             $logJoinSql . '
             LEFT JOIN ' . prefixTable('item_health') . ' AS ih ON (ih.item_id = i.id AND ih.user_id = %i)
-            WHERE i.inactif = 0 AND i.deleted_at IS NULL' . $personalScopeSql . ' AND i.id IN %li',
+            WHERE i.inactif = 0 AND i.deleted_at IS NULL
+                AND ' . $accessScopeSql . '
+                AND i.id IN %li',
             $userId, 'at_creation', 'at_modification', 'at_pw%', $userId, $itemIds
         );
 
