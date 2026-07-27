@@ -3243,16 +3243,21 @@ switch ($inputData['type']) {
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $pwLength = strlen($passwordForMetrics);
             $arrData['pw_length'] = $pwLength;
-            // Per-item health marker (replaces the old binary pw_is_secure shield): the same
-            // posture signals used by the Security Posture Dashboard (F1), surfaced on the card.
-            // - weak: complexity below "medium" (TP_PW_STRENGTH_3) OR length < 12 (card-only,
-            //   uses the decrypted value available here — the dashboard has no plaintext).
-            // - reused: from the per-user scan (item_health), only when the dashboard is enabled.
+            // Use the same metadata classification as the list and Security Posture. Unknown
+            // legacy values remain "unassessed" until a deep scan or background backfill repairs
+            // them; they must not be reported as weak solely because -1 is below the threshold.
             // breached is intentionally excluded — the HIBP badge already shows it on the card.
-            if ($pwLength === 0) {
-                $arrData['pw_health'] = null; // empty password → no marker
+            $storedPasswordLength = $dataItem['pw_len'] === null ? null : (int) $dataItem['pw_len'];
+            $passwordHealthStatus = securityPasswordHealthStatus(
+                is_int($dataItem['complexity_level']) || is_string($dataItem['complexity_level'])
+                    ? $dataItem['complexity_level']
+                    : null,
+                $storedPasswordLength,
+                (string) $dataItem['pw'] !== ''
+            );
+            if ($passwordHealthStatus === 'empty') {
+                $arrData['pw_health'] = null;
             } else {
-                $flagWeak = (intval($dataItem['complexity_level']) < TP_PW_STRENGTH_3 || $pwLength < 12) ? 1 : 0;
                 $flagReused = 0;
                 if ((int) ($SETTINGS['security_dashboard_enabled'] ?? 0) === 1) {
                     $flagReused = (int) DB::queryFirstField(
@@ -3262,7 +3267,11 @@ switch ($inputData['type']) {
                         (int) $inputData['id']
                     );
                 }
-                $arrData['pw_health'] = ['weak' => $flagWeak, 'reused' => $flagReused];
+                $arrData['pw_health'] = [
+                    'weak' => $passwordHealthStatus === 'weak' ? 1 : 0,
+                    'unassessed' => $passwordHealthStatus === 'unassessed' ? 1 : 0,
+                    'reused' => $flagReused,
+                ];
             }
 
             // HIBP cached status (no API call here — async check is triggered by the JS)
@@ -8371,11 +8380,16 @@ switch ($inputData['type']) {
                 break;
             }
 
-            // Load item and verify user has access via sharekey
+            // A sharekey is required for decryption but is not an authorization grant. Apply the
+            // same current folder and item restrictions as Security Posture before decrypting.
+            $hibpAccessScopeSql = securityPostureItemAccessSql((int) $session->get('user-id'));
             $hibpItem = DB::queryFirstRow(
-                'SELECT pw, pw_iv, hibp_status, hibp_checked_at
-                FROM ' . prefixTable('items') . '
-                WHERE id = %i',
+                'SELECT i.pw, i.pw_iv, i.hibp_status, i.hibp_checked_at
+                FROM ' . prefixTable('items') . ' AS i
+                WHERE i.id = %i
+                    AND i.inactif = 0
+                    AND i.deleted_at IS NULL
+                    AND ' . $hibpAccessScopeSql,
                 $hibpItemId
             );
             if ($hibpItem === null) {
