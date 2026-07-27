@@ -2951,5 +2951,8 @@ return array(
     'lapr_permissions_intro' => 'Grant non-admin users the right to manage LAPR endpoints, accounts and policies. Folder access rules still apply.',
     'lapr_can_manage' => 'Can manage LAPR',
     'lapr_ssh_credential_folder_warning' => 'Store SSH credential items in a tightly restricted folder: anyone with read access to that folder gets the endpoint credential.',
+    'settings_security_dashboard_min_password_length' => 'Minimum password length (characters)',
+    'settings_security_dashboard_min_password_length_tip' => 'A password shorter than this is reported as weak on the item card, the item list, Security Posture and the compliance report. Leave empty or set to 0 to use the default of 12.',
+    'security_dashboard_unassessed' => 'Not assessed',
 
 );

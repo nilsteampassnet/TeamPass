@@ -2565,7 +2565,6 @@ return array(
     'security_dashboard_scanned_users' => 'Utilisateurs analysés',
     'security_dashboard_admin_zk_note' => 'Compteurs agrégés uniquement. Les chiffres de réutilisation/illisibilité par utilisateur proviennent de l’analyse de chaque utilisateur ; aucun mot de passe n’est lu entre utilisateurs.',
     'security_dashboard_weak' => 'Faible',
-    'security_dashboard_unassessed' => 'Non évalué',
     'security_dashboard_reused' => 'Réutilisé',
     'security_dashboard_breached' => 'Compromis',
     'security_dashboard_overdue' => 'Expiré',
@@ -2579,8 +2578,6 @@ return array(
     'settings_security_dashboard_tip' => 'Activer le tableau de bord de posture de sécurité par utilisateur et la vue d’ensemble pour les administrateurs.',
     'settings_security_dashboard_overshared' => 'Seuil de partage large (utilisateurs)',
     'settings_security_dashboard_overshared_tip' => 'Un élément partagé avec plus d’utilisateurs que ce seuil est signalé comme largement partagé sur le tableau de bord.',
-    'settings_security_dashboard_min_password_length' => 'Longueur minimale du mot de passe (caractères)',
-    'settings_security_dashboard_min_password_length_tip' => 'Un mot de passe plus court que ce seuil est signalé comme faible sur la fiche de l’élément, la liste, la posture de sécurité et le rapport de conformité. Laisser vide ou à 0 pour utiliser la valeur par défaut de 12.',
     'security_nudges_banner_title' => 'Des mots de passe nécessitent votre attention',
     'security_nudges_banner_one' => '1 de vos mots de passe nécessite votre attention',
     'security_nudges_banner_many' => '%d de vos mots de passe nécessitent votre attention',
@@ -2954,5 +2951,8 @@ return array(
     'lapr_permissions_intro' => 'Accorder à des utilisateurs non-admin le droit de gérer les serveurs, comptes et politiques LAPR. Les règles d’accès aux dossiers s’appliquent toujours.',
     'lapr_can_manage' => 'Peut gérer LAPR',
     'lapr_ssh_credential_folder_warning' => 'Stockez les éléments d’identifiants SSH dans un dossier strictement restreint : quiconque a accès en lecture à ce dossier obtient l’identifiant du serveur.',
+    'settings_security_dashboard_min_password_length' => 'Longueur minimale du mot de passe (caractères)',
+    'settings_security_dashboard_min_password_length_tip' => 'Un mot de passe plus court que ce seuil est signalé comme faible sur la fiche de l’élément, la liste, la posture de sécurité et le rapport de conformité. Laisser vide ou à 0 pour utiliser la valeur par défaut de 12.',
+    'security_dashboard_unassessed' => 'Non évalué',
 
 );
