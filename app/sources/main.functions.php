@@ -52,6 +52,7 @@ use TeampassClasses\EmailService\EmailSettings;
 use TeampassClasses\CryptoManager\CryptoManager;
 
 require_once __DIR__ . '/otp.functions.php';
+require_once __DIR__ . '/security_posture_logic.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -699,59 +700,77 @@ function getForeignPersonalFolderIds(int $userId): array
         return [];
     }
 
-    // Keep the user's own personal tree (root + descendants).
-    $ownFolders = [];
+    return array_values(
+        array_diff(
+            array_map('intval', $allPersonalFolders),
+            getOwnPersonalFolderIds($userId)
+        )
+    );
+}
+
+/**
+ * List the personal folders belonging to the given user (root + descendants).
+ *
+ * The ownership test is folder based (root of the personal tree titled with the user id), the same
+ * signal as identUserGetPFList(); items.perso is not used as it is known to be unreliable.
+ *
+ * @param int $userId Owner of the personal tree.
+ *
+ * @return int[] Folder ids of the user's own personal tree (empty when there is none).
+ */
+function getOwnPersonalFolderIds(int $userId): array
+{
+    loadClasses('DB');
+
     $ownRootId = DB::queryFirstField(
         'SELECT id FROM ' . prefixTable('nested_tree') . '
         WHERE personal_folder = %i AND title = %s',
         1,
         (string) $userId
     );
-    if (empty($ownRootId) === false) {
-        $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
-        $ownFolders = $tree->getDescendants((int) $ownRootId, true, false, true);
+    if (empty($ownRootId) === true) {
+        return [];
     }
 
-    return array_values(
-        array_diff(
-            array_map('intval', $allPersonalFolders),
-            array_map('intval', $ownFolders)
-        )
-    );
+    $tree = new NestedTree(prefixTable('nested_tree'), 'id', 'parent_id', 'title');
+
+    return array_map('intval', $tree->getDescendants((int) $ownRootId, true, false, true));
 }
 
 /**
- * Build the legacy personal-folder SQL guard used by security-posture queries.
+ * Resolve the minimum password length used by the password-health classification.
  *
- * This helper only excludes another user's personal folders. It does not check shared-folder
- * grants, explicit denials, or item restrictions and must therefore not be used as an
- * authorization decision. Use securityPostureItemAccessSql() for posture access checks.
+ * Admin setting `security_dashboard_min_password_length` (Options > Security posture), falling back
+ * to TP_SECURITY_PASSWORD_MIN_LENGTH when the row is absent — which is the case on every instance
+ * upgraded from a release that did not ship the setting. No upgrade script is therefore required:
+ * save_option_change() upserts the row the first time an administrator changes the value.
  *
- * @param int    $userId    User the query is run for.
- * @param string $itemAlias SQL alias of the items table in the caller's query.
- *
- * @return string SQL fragment starting with ' AND ', or an empty string when nothing to exclude.
+ * @return int Minimum length in characters (always >= 1).
  */
-function personalScopeSqlForUser(int $userId, string $itemAlias = 'i'): string
+function securityPostureMinPasswordLength(): int
 {
-    $foreignPersonalFolders = getForeignPersonalFolderIds($userId);
-    if (count($foreignPersonalFolders) === 0) {
-        return '';
+    static $minLength = null;
+    if ($minLength !== null) {
+        return $minLength;
     }
 
-    // Values are folder ids cast to int - safe to embed.
-    return ' AND ' . $itemAlias . '.id_tree NOT IN (' . implode(',', $foreignPersonalFolders) . ')';
+    $configManager = new ConfigManager();
+    $settings = $configManager->getAllSettings();
+    $configured = (int) ($settings['security_dashboard_min_password_length'] ?? 0);
+
+    $minLength = $configured > 0 ? $configured : (int) TP_SECURITY_PASSWORD_MIN_LENGTH;
+
+    return $minLength;
 }
 
 /**
  * Classify password health from the metadata stored with an item.
  *
- * A non-empty ciphertext with a zero stored length is treated as unassessed because this is the
- * legacy metadata pattern for passwords whose length was never backfilled. Empty passwords stored
- * without ciphertext remain a distinct, non-weak state.
+ * Thin adapter over securityPasswordHealthClassify() (security_posture_logic.php) which holds the
+ * DB-free truth table; this wrapper only injects the two configured thresholds.
  *
- * @param int|string|null $complexityLevel  Stored zxcvbn-derived complexity level.
- * @param int|null        $passwordLength   Stored password length.
+ * @param int|string|null $complexityLevel   Stored zxcvbn-derived complexity level.
+ * @param int|null        $passwordLength    Stored (or live) password length.
  * @param bool            $hasStoredPassword Whether the item contains password ciphertext.
  *
  * @return string One of: empty, unassessed, weak, healthy.
@@ -762,30 +781,13 @@ function securityPasswordHealthStatus(
     bool $hasStoredPassword
 ): string
 {
-    if (
-        $complexityLevel === null
-        || $complexityLevel === ''
-        || is_numeric($complexityLevel) === false
-        || (int) $complexityLevel < 0
-        || $passwordLength === null
-        || $passwordLength < 0
-        || ($hasStoredPassword === true && $passwordLength === 0)
-    ) {
-        return 'unassessed';
-    }
-
-    if ($passwordLength === 0) {
-        return 'empty';
-    }
-
-    if (
-        (int) $complexityLevel < TP_PW_STRENGTH_3
-        || $passwordLength < TP_SECURITY_PASSWORD_MIN_LENGTH
-    ) {
-        return 'weak';
-    }
-
-    return 'healthy';
+    return securityPasswordHealthClassify(
+        $complexityLevel,
+        $passwordLength,
+        $hasStoredPassword,
+        (int) TP_PW_STRENGTH_3,
+        securityPostureMinPasswordLength()
+    );
 }
 
 /**
@@ -804,35 +806,160 @@ function securityPasswordHealthSql(string $itemAlias = 'i'): array
         ];
     }
 
-    $assessedSql = '('
-        . $itemAlias . '.complexity_level IS NOT NULL'
+    // Mirrors securityPasswordHealthClassify() state by state, in the same order.
+    $emptySql = '(COALESCE(' . $itemAlias . '.pw, \'\') = \'\''
+        . ' AND (' . $itemAlias . '.pw_len IS NULL OR CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0))';
+
+    $assessedSql = '(NOT ' . $emptySql
+        . ' AND ' . $itemAlias . '.complexity_level IS NOT NULL'
         . ' AND ' . $itemAlias . '.complexity_level <> \'\''
         . ' AND ' . $itemAlias . '.complexity_level REGEXP \'^-?[0-9]+$\''
         . ' AND CAST(' . $itemAlias . '.complexity_level AS SIGNED) >= 0'
         . ' AND ' . $itemAlias . '.pw_len IS NOT NULL'
-        . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) >= 0'
-        . ' AND NOT (CAST(' . $itemAlias . '.pw_len AS SIGNED) = 0'
-        . ' AND COALESCE(' . $itemAlias . '.pw, \'\') <> \'\')'
+        . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) > 0'
         . ')';
 
     return [
         'weak' => '(CASE WHEN ' . $assessedSql
-            . ' AND CAST(' . $itemAlias . '.pw_len AS SIGNED) > 0'
             . ' AND (CAST(' . $itemAlias . '.complexity_level AS SIGNED) < ' . (int) TP_PW_STRENGTH_3
-            . ' OR CAST(' . $itemAlias . '.pw_len AS SIGNED) < ' . (int) TP_SECURITY_PASSWORD_MIN_LENGTH
+            . ' OR CAST(' . $itemAlias . '.pw_len AS SIGNED) < ' . securityPostureMinPasswordLength()
             . ') THEN 1 ELSE 0 END)',
-        'unassessed' => '(CASE WHEN NOT ' . $assessedSql . ' THEN 1 ELSE 0 END)',
+        // An empty password is a known state, not a finding: excluded from both flags.
+        'unassessed' => '(CASE WHEN NOT ' . $emptySql . ' AND NOT ' . $assessedSql . ' THEN 1 ELSE 0 END)',
     ];
+}
+
+/**
+ * Resolve the role ids held by a user.
+ *
+ * Both manual and AD/LDAP sourced roles count, exactly like identUser(): filtering on the source
+ * would hide folders granted through a directory group.
+ *
+ * @param int $userId User whose roles are read.
+ *
+ * @return int[] Role ids, empty when the user holds none.
+ */
+function securityPostureUserRoleIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $cache[$userId] = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT role_id FROM ' . prefixTable('users_roles') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    return $cache[$userId];
+}
+
+/**
+ * Resolve the folders whose items Security Posture may report for a user.
+ *
+ * Reads the grant/denial sets from the database — no session — so it works identically in a web
+ * request and in a CLI background worker, then delegates every decision to the DB-free
+ * securityPostureResolveAuthorizedFolders() (security_posture_logic.php).
+ *
+ * Memoized per user: get_score alone resolves this three times per page load.
+ *
+ * @param int $userId User whose read scope is resolved.
+ *
+ * @return int[] Readable folder ids, unique and sorted ascending.
+ */
+function securityPostureAuthorizedFolderIds(int $userId): array
+{
+    static $cache = [];
+    if (array_key_exists($userId, $cache) === true) {
+        return $cache[$userId];
+    }
+
+    loadClasses('DB');
+
+    $directGrantFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+    $deniedFolders = array_map(
+        'intval',
+        DB::queryFirstColumn(
+            'SELECT group_id FROM ' . prefixTable('users_groups_forbidden') . ' WHERE user_id = %i',
+            $userId
+        )
+    );
+
+    // Readable role types, identical to identUserGetFoldersFromRoles().
+    $roleGrantFolders = [];
+    $userRoleIds = securityPostureUserRoleIds($userId);
+    if (count($userRoleIds) > 0) {
+        $roleGrantFolders = array_map(
+            'intval',
+            DB::queryFirstColumn(
+                'SELECT folder_id FROM ' . prefixTable('roles_values') . '
+                WHERE role_id IN %li AND type IN %ls',
+                $userRoleIds,
+                ['W', 'ND', 'NE', 'NDNE', 'R']
+            )
+        );
+    }
+
+    // Personal tree: only when the feature is enabled globally AND for this user, as in
+    // identUserGetPFList().
+    $ownPersonalFolders = [];
+    $configManager = new ConfigManager();
+    $postureSettings = $configManager->getAllSettings();
+    if ((int) ($postureSettings['enable_pf_feature'] ?? 0) === 1) {
+        $userPersonalFolderEnabled = (int) DB::queryFirstField(
+            'SELECT personal_folder FROM ' . prefixTable('users') . ' WHERE id = %i',
+            $userId
+        );
+        if ($userPersonalFolderEnabled === 1) {
+            $ownPersonalFolders = getOwnPersonalFolderIds($userId);
+        }
+    }
+
+    $cache[$userId] = securityPostureResolveAuthorizedFolders(
+        $directGrantFolders,
+        $roleGrantFolders,
+        $deniedFolders,
+        $ownPersonalFolders,
+        getAllPersonalFolderIds()
+    );
+
+    return $cache[$userId];
 }
 
 /**
  * Build the SQL predicate limiting Security Posture data to items the user may read.
  *
  * A sharekey proves that the user can cryptographically unwrap an item key, but it is not an
- * authorization grant. This predicate mirrors TeamPass read visibility from database state so it
- * can be reused both in web requests and CLI workers where no user session is available:
- * direct folder grants or readable role grants, explicit folder denials, the user's personal
- * folder tree, and per-item user/role restrictions.
+ * authorization grant: keys survive role changes and are distributed more broadly than the set of
+ * users currently allowed to browse a folder. This predicate adds the missing authorization half.
+ *
+ * Shape: the readable folders are resolved once in PHP and embedded as an `id_tree IN (...)` set,
+ * so the only correlated work left per row is the item's own restriction check against the small,
+ * item_id-indexed restriction_to_roles table. An earlier form used six correlated EXISTS
+ * (including two nested_tree self-joins) evaluated for every scanned row; this one runs on hot
+ * paths — get_score fires on every page load, get_folder_flags on every folder open, and the
+ * item_health prune on every password save.
+ *
+ * Two deliberate exclusions, both narrower than the item browser and both fail-closed:
+ *  - **administrators**: identAdmin() grants folder browsing, but show_details_item returns
+ *    show_details = 0 for every non-personal item, so an administrator never reads item content.
+ *    Listing those items here would disclose labels and folder paths they cannot open. They
+ *    resolve to their own personal tree only; their organisation-wide view is the admin-only
+ *    compliance report, which is global by design.
+ *  - **the manager_edit derogation** on per-item restrictions: Security Posture reports the
+ *    credentials a user holds in their own right, not the ones reachable through a management
+ *    override.
  *
  * The caller must already join the items table with the alias supplied in $itemAlias.
  *
@@ -847,100 +974,33 @@ function securityPostureItemAccessSql(int $userId, string $itemAlias = 'i'): str
         return '(1 = 0)';
     }
 
-    $userId = (int) $userId;
+    $authorizedFolders = securityPostureAuthorizedFolderIds($userId);
+    if (count($authorizedFolders) === 0) {
+        return '(1 = 0)';
+    }
 
-    // Values interpolated below are a validated SQL alias and an integer user id.
-    return '(
-        (
-            (
-                EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('users') . ' AS posture_personal_user
-                    WHERE posture_personal_user.id = ' . $userId . '
-                        AND posture_personal_user.personal_folder = 1
-                )
-                AND EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('misc') . ' AS posture_personal_setting
-                    WHERE posture_personal_setting.type = \'admin\'
-                        AND posture_personal_setting.intitule = \'enable_pf_feature\'
-                        AND posture_personal_setting.valeur = \'1\'
-                )
-                AND EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('nested_tree') . ' AS posture_item_folder
-                    INNER JOIN ' . prefixTable('nested_tree') . ' AS posture_own_root
-                        ON posture_own_root.personal_folder = 1
-                        AND posture_own_root.parent_id = 0
-                        AND posture_own_root.title = \'' . $userId . '\'
-                        AND posture_item_folder.nleft >= posture_own_root.nleft
-                        AND posture_item_folder.nright <= posture_own_root.nright
-                    WHERE posture_item_folder.id = ' . $itemAlias . '.id_tree
-                )
-            )
-            OR (
-                ' . $itemAlias . '.perso = 0
-                AND EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('nested_tree') . ' AS posture_shared_folder
-                    WHERE posture_shared_folder.id = ' . $itemAlias . '.id_tree
-                )
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('nested_tree') . ' AS posture_item_folder
-                    INNER JOIN ' . prefixTable('nested_tree') . ' AS posture_personal_anchor
-                        ON posture_personal_anchor.personal_folder = 1
-                        AND posture_personal_anchor.parent_id = 0
-                        AND posture_item_folder.nleft >= posture_personal_anchor.nleft
-                        AND posture_item_folder.nright <= posture_personal_anchor.nright
-                    WHERE posture_item_folder.id = ' . $itemAlias . '.id_tree
-                )
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('users_groups_forbidden') . ' AS posture_forbidden
-                    WHERE posture_forbidden.user_id = ' . $userId . '
-                        AND posture_forbidden.group_id = ' . $itemAlias . '.id_tree
-                )
-                AND (
-                    EXISTS (
-                        SELECT 1
-                        FROM ' . prefixTable('users_groups') . ' AS posture_direct_grant
-                        WHERE posture_direct_grant.user_id = ' . $userId . '
-                            AND posture_direct_grant.group_id = ' . $itemAlias . '.id_tree
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                        FROM ' . prefixTable('users_roles') . ' AS posture_user_role
-                        INNER JOIN ' . prefixTable('roles_values') . ' AS posture_role_grant
-                            ON posture_role_grant.role_id = posture_user_role.role_id
-                            AND posture_role_grant.folder_id = ' . $itemAlias . '.id_tree
-                            AND posture_role_grant.type IN (\'W\', \'ND\', \'NE\', \'NDNE\', \'R\')
-                        WHERE posture_user_role.user_id = ' . $userId . '
-                    )
-                )
-            )
-        )
-        AND (
-            (
-                COALESCE(' . $itemAlias . '.restricted_to, \'\') = \'\'
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM ' . prefixTable('restriction_to_roles') . ' AS posture_any_restricted_role
-                    WHERE posture_any_restricted_role.item_id = ' . $itemAlias . '.id
-                )
-            )
-            OR CONCAT(\';\', COALESCE(' . $itemAlias . '.restricted_to, \'\'), \';\')
-                LIKE \'%;' . $userId . ';%\'
-            OR EXISTS (
-                SELECT 1
-                FROM ' . prefixTable('restriction_to_roles') . ' AS posture_restricted_role
-                INNER JOIN ' . prefixTable('users_roles') . ' AS posture_restricted_user_role
-                    ON posture_restricted_user_role.role_id = posture_restricted_role.role_id
-                    AND posture_restricted_user_role.user_id = ' . $userId . '
-                WHERE posture_restricted_role.item_id = ' . $itemAlias . '.id
-            )
-        )
-    )';
+    $restrictionTable = prefixTable('restriction_to_roles');
+    $userRoleIds = securityPostureUserRoleIds($userId);
+
+    $roleRestrictionClause = '';
+    if (count($userRoleIds) > 0) {
+        $roleRestrictionClause = ' OR EXISTS (SELECT 1 FROM ' . $restrictionTable
+            . ' AS posture_restricted_role'
+            . ' WHERE posture_restricted_role.item_id = ' . $itemAlias . '.id'
+            . ' AND posture_restricted_role.role_id IN (' . implode(',', $userRoleIds) . '))';
+    }
+
+    // Everything interpolated below is an int-cast id or the validated table alias. The LIKE
+    // pattern carries no MeekroDB placeholder ('%;' and ';%' are not in its parameter map).
+    return '(' . $itemAlias . '.id_tree IN (' . implode(',', $authorizedFolders) . ')'
+        . ' AND ('
+        . '(COALESCE(' . $itemAlias . '.restricted_to, \'\') = \'\''
+        . ' AND NOT EXISTS (SELECT 1 FROM ' . $restrictionTable . ' AS posture_any_restricted_role'
+        . ' WHERE posture_any_restricted_role.item_id = ' . $itemAlias . '.id))'
+        . ' OR CONCAT(\';\', COALESCE(' . $itemAlias . '.restricted_to, \'\'), \';\')'
+        . ' LIKE \'%;' . $userId . ';%\''
+        . $roleRestrictionClause
+        . '))';
 }
 
 
