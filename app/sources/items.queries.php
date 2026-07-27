@@ -3243,16 +3243,46 @@ switch ($inputData['type']) {
             $arrData['label'] = $dataItem['label'] === '' ? '' : $dataItem['label'];
             $pwLength = strlen($passwordForMetrics);
             $arrData['pw_length'] = $pwLength;
-            // Use the same metadata classification as the list and Security Posture. Unknown
-            // legacy values remain "unassessed" until a deep scan or background backfill repairs
-            // them; they must not be reported as weak solely because -1 is below the threshold.
+            // Same classification as the list and Security Posture, but the card is the only health
+            // surface that already holds the decrypted password: assess from the live value and
+            // repair the stored metadata when it diverges, instead of reporting "unassessed" on
+            // data it can assess for free. The repair makes the three views converge and is
+            // self-limiting — once written, the item is no longer legacy.
             // breached is intentionally excluded — the HIBP badge already shows it on the card.
             $storedPasswordLength = $dataItem['pw_len'] === null ? null : (int) $dataItem['pw_len'];
+            $complexityLevel = is_int($dataItem['complexity_level']) || is_string($dataItem['complexity_level'])
+                ? $dataItem['complexity_level']
+                : null;
+            $assessedPasswordLength = $storedPasswordLength;
+
+            if ($pwLength > 0) {
+                $metadataUpdates = [];
+                $passwordLengthChanged = $storedPasswordLength !== $pwLength;
+                if ($passwordLengthChanged === true) {
+                    $metadataUpdates['pw_len'] = $pwLength;
+                }
+                if (
+                    $passwordLengthChanged === true
+                    || $complexityLevel === null
+                    || $complexityLevel === ''
+                    || is_numeric($complexityLevel) === false
+                    || (int) $complexityLevel < 0
+                ) {
+                    $_zxcvbnCard = new \ZxcvbnPhp\Zxcvbn();
+                    $complexityLevel = convertPasswordStrength(
+                        (int) $_zxcvbnCard->passwordStrength($passwordForMetrics)['score']
+                    );
+                    $metadataUpdates['complexity_level'] = $complexityLevel;
+                }
+                if (count($metadataUpdates) > 0) {
+                    DB::update(prefixTable('items'), $metadataUpdates, 'id = %i', (int) $inputData['id']);
+                }
+                $assessedPasswordLength = $pwLength;
+            }
+
             $passwordHealthStatus = securityPasswordHealthStatus(
-                is_int($dataItem['complexity_level']) || is_string($dataItem['complexity_level'])
-                    ? $dataItem['complexity_level']
-                    : null,
-                $storedPasswordLength,
+                $complexityLevel,
+                $assessedPasswordLength,
                 (string) $dataItem['pw'] !== ''
             );
             if ($passwordHealthStatus === 'empty') {
