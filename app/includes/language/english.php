@@ -2825,4 +2825,7 @@ return array(
     'mass_operation_partially_denied' => '#nb# item(s) skipped due to insufficient permissions',
     'error_hibp_check_failed' => 'Password breach check could not be completed (service unreachable)',
     'error_no_access_to_item' => 'You are not allowed to access this item',
-    );
+    'error_password_strength_evaluation' => 'Password strength could not be evaluated. The password must be valid UTF-8 text.',
+    'security_dashboard_scan_done_skipped' => 'Scan complete. #count# password(s) could not be assessed and were skipped.',
+    'security_dashboard_scan_failed' => 'The scan could not be completed. Please try again or check the server logs.',
+);
