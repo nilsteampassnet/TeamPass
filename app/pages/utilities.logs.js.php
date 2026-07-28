@@ -91,6 +91,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     var oTableErrors;
     var oTableKb;
     let oTableAuthenticationLockouts = null;
+    let authenticationLockoutTimersStarted = false;
 
     var kbEnabled = <?php echo isset($SETTINGS['enable_kb']) === true && (int) $SETTINGS['enable_kb'] === 1 ? 'true' : 'false'; ?>;
     const authenticationLockoutAdmin = <?php echo (int) ($session->get('user-admin') ?? 0) === 1 ? 'true' : 'false'; ?>;
@@ -403,6 +404,28 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     }
 
     /**
+     * Start the countdown and auto-refresh timers, once and only for an administrator.
+     *
+     * @return {void}
+     */
+    function startAuthenticationLockoutTimers() {
+        if (authenticationLockoutTimersStarted === true) {
+            return;
+        }
+        authenticationLockoutTimersStarted = true;
+
+        window.setInterval(updateAuthenticationLockoutCountdowns, 1000);
+        window.setInterval(function() {
+            if (
+                oTableAuthenticationLockouts !== null
+                && $('#authentication-lockouts').hasClass('active')
+            ) {
+                oTableAuthenticationLockouts.ajax.reload(null, false);
+            }
+        }, 30000);
+    }
+
+    /**
      * Initialize or refresh the active authentication lockouts table.
      *
      * @return {void}
@@ -420,6 +443,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         oTableAuthenticationLockouts = $('#table-authentication-lockouts').DataTable({
             'paging': true,
             'sPaginationType': 'listbox',
+            'lengthMenu': [10, 25, 50, 100],
             'searching': true,
             'order': [
                 [6, 'asc']
@@ -522,6 +546,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 updateAuthenticationLockoutCountdowns();
             }
         });
+
+        startAuthenticationLockoutTimers();
     }
 
     /**
@@ -1115,6 +1141,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         try {
                             data = prepareExchangedData(response, 'decode', '<?php echo $session->get('key'); ?>');
                         } catch (error) {
+                            data = null;
+                        }
+
+                        // A decode failure may return a falsy value instead of throwing, so the
+                        // success path requires an explicit 'error: false' from the server.
+                        if (!data || typeof data !== 'object') {
                             data = {
                                 error: true,
                                 message: authenticationLockoutMessages.serverError
@@ -1123,7 +1155,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                         if (data.error !== false) {
                             $actionButton.prop('disabled', false);
-                            toastr.error(data.message, authenticationLockoutMessages.caution, {
+                            toastr.error(data.message || authenticationLockoutMessages.serverError, authenticationLockoutMessages.caution, {
                                 timeOut: 5000,
                                 progressBar: true
                             });
@@ -1231,16 +1263,6 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             }
         );
     });
-
-    window.setInterval(updateAuthenticationLockoutCountdowns, 1000);
-    window.setInterval(function() {
-        if (
-            oTableAuthenticationLockouts !== null
-            && $('#authentication-lockouts').hasClass('active')
-        ) {
-            oTableAuthenticationLockouts.ajax.reload(null, false);
-        }
-    }, 30000);
 
     $(document).ready(function() {
         // Check if there's a hash in URL

@@ -1303,10 +1303,33 @@ switch ($post_type) {
             && mb_strlen($value, 'UTF-8') <= 500
             && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1;
 
+        // An IP scope normally carries a real address, but getClientIpServer() falls back to the
+        // literal 'UNKNOWN' when no header yields a valid IP, and that value does get locked.
+        // Such a row would otherwise be listed and never removable, so a target failing the IP
+        // check is still accepted when it exactly matches a stored lockout - which is the real
+        // precondition of the deletion anyway.
+        $knownTarget = false;
+        if (
+            $validSource === true
+            && $validValue === true
+            && $source === 'remote_ip'
+            && filter_var($value, FILTER_VALIDATE_IP) === false
+        ) {
+            $knownTarget = (int) DB::queryFirstField(
+                'SELECT COUNT(*) FROM ' . prefixTable('auth_failures') . ' WHERE source = %s AND value = %s',
+                $source,
+                $value
+            ) > 0;
+        }
+
         if (
             $validSource === false
             || $validValue === false
-            || ($source === 'remote_ip' && filter_var($value, FILTER_VALIDATE_IP) === false)
+            || (
+                $source === 'remote_ip'
+                && filter_var($value, FILTER_VALIDATE_IP) === false
+                && $knownTarget === false
+            )
         ) {
             echo prepareExchangedData(
                 [

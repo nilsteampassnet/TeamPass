@@ -691,6 +691,11 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         MAX(u.login) AS login,
         MAX(u.name) AS name,
         MAX(u.lastname) AS lastname,
+        COALESCE(
+            NULLIF(TRIM(CONCAT(COALESCE(MAX(u.name), \'\'), \' \', COALESCE(MAX(u.lastname), \'\'))), \'\'),
+            MAX(u.login),
+            \'\'
+        ) AS user_display,
         COUNT(DISTINCT af.id) AS failure_count,
         MIN(af.date) AS first_failure,
         MAX(af.date) AS last_failure,
@@ -726,10 +731,12 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         ...$lockoutQueryParams
     );
 
+    // Order columns match the client column indexes. Column 2 sorts on the very expression the
+    // cell displays, so the visible order is never at odds with the sorted one.
     $lockoutOrderColumns = [
         'source',
         'value',
-        'login',
+        'user_display',
         'failure_count',
         'first_failure',
         'last_failure',
@@ -737,25 +744,23 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     ];
     $requestedOrderColumn = (int) ($params['order'][0]['column'] ?? 6);
     $lockoutOrderColumn = $lockoutOrderColumns[$requestedOrderColumn] ?? 'unlock_at';
-    $lockoutLimit = $sLimitLength > 0 ? min($sLimitLength, 100) : 10;
+    // Upper bound kept in sync with the client 'lengthMenu' so a page never returns fewer rows
+    // than the paginator announces.
+    $lockoutMaxPageLength = 100;
+    $lockoutLimit = $sLimitLength > 0 ? min($sLimitLength, $lockoutMaxPageLength) : 10;
     $lockoutRows = DB::query(
         $lockoutFilteredSql . ' ORDER BY ' . $lockoutOrderColumn . ' ' . $orderDirection . ' LIMIT %i, %i',
         ...array_merge($lockoutQueryParams, [$sLimitStart, $lockoutLimit])
     );
 
+    $dateTimeFormat = ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s');
     $lockoutData = [];
     foreach ($lockoutRows as $lockoutRow) {
         $source = (string) ($lockoutRow['source'] ?? '');
+        // Built by the query so the ordering applied above matches what the cell shows.
         $userDisplay = '';
         if ($source === 'login') {
-            $userDisplay = trim(
-                (string) ($lockoutRow['name'] ?? '')
-                . ' '
-                . (string) ($lockoutRow['lastname'] ?? '')
-            );
-            if ($userDisplay === '') {
-                $userDisplay = trim((string) ($lockoutRow['login'] ?? ''));
-            }
+            $userDisplay = trim((string) ($lockoutRow['user_display'] ?? ''));
             if ($userDisplay === '') {
                 $userDisplay = $lang->get('authentication_lockout_unknown_user');
             }
@@ -764,7 +769,6 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $firstFailureTimestamp = strtotime((string) ($lockoutRow['first_failure'] ?? ''));
         $lastFailureTimestamp = strtotime((string) ($lockoutRow['last_failure'] ?? ''));
         $unlockTimestamp = strtotime((string) ($lockoutRow['unlock_at'] ?? ''));
-        $dateTimeFormat = ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s');
 
         $lockoutData[] = [
             'source' => $source,
@@ -858,8 +862,23 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     foreach ($rows as $record) {
         $failedLoginLabel = (string) ($record['label'] ?? '');
         $failedLoginField = stripslashes((string) ($record['field_1'] ?? ''));
-        $isApiFailure = strpos($failedLoginField, 'tp_src=api') !== false;
-        $failedLoginUser = trim(str_replace([' | tp_src=api', 'tp_src=api'], '', $failedLoginField), " |\t\n\r\0\x0B");
+        // The channel is derived from the label, which only the API writes. The 'tp_src=api'
+        // marker alone cannot be trusted: on the web path field_1 is the submitted login, so
+        // anyone could forge an "API" row by typing that string in the login form.
+        $isApiFailure = in_array(
+            $failedLoginLabel,
+            ['api_invalid_credentials', 'api_invalid_apikey', 'api_invalid_token', 'api_token_decrypt_failed'],
+            true
+        );
+        if ($isApiFailure === false && $failedLoginLabel === 'bruteforce_account_locked') {
+            // Shared by both channels: the marker is the only available discriminator.
+            $isApiFailure = strpos($failedLoginField, 'tp_src=api') !== false;
+        }
+        // Only strip the internal marker from a confirmed API row, so a forged login stays
+        // visible exactly as it was submitted.
+        $failedLoginUser = $isApiFailure === true
+            ? trim(str_replace([' | tp_src=api', 'tp_src=api'], '', $failedLoginField), " |\t\n\r\0\x0B")
+            : $failedLoginField;
         $failedLoginUser = htmlspecialchars($failedLoginUser, ENT_QUOTES);
         $failedLoginIp = htmlspecialchars(stripslashes((string) ($record['who'] ?? '')), ENT_QUOTES);
         $failedLoginChannel = $isApiFailure === true

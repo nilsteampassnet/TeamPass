@@ -4232,7 +4232,21 @@ if (null !== $post_type) {
                 'login',
                 $login
             );
-            
+            $deletedCount = DB::affectedRows();
+
+            // Same audit event and format as the Logs page unlock action, so the administrator
+            // trail is complete whichever screen was used.
+            if ($deletedCount > 0) {
+                logEvents(
+                    $SETTINGS,
+                    'admin_action',
+                    'authentication_lockout_removed',
+                    (string) ($session->get('user-id') ?? ''),
+                    (string) ($session->get('user-login') ?? ''),
+                    'source=login; value=' . $login . '; deleted=' . $deletedCount
+                );
+            }
+
             break;
         
         case "list_deleted_users":
