@@ -442,6 +442,23 @@ class FolderEndpointsRegressionTest extends TestCase
         );
     }
 
+    public function testFolderManagementCapabilitiesReuseTheMutationGate(): void
+    {
+        $controller = $this->readSource('/app/api/Controller/Api/FolderController.php');
+        $model = $this->readSource('/app/api/Model/FolderModel.php');
+
+        self::assertStringContainsString(
+            'getFolderManagementCapabilities(',
+            $controller,
+            'writableFolders must use the authoritative capability evaluator'
+        );
+        self::assertSame(
+            3,
+            substr_count($model, 'hasFolderManagementPrivilege('),
+            'create, update and delete must all reuse the same global management gate'
+        );
+    }
+
     public function testOpenApiDocumentsNewPaths(): void
     {
         $spec = json_decode($this->readSource('/app/api/openapi.json'), true);
