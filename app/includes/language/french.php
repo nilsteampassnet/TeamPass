@@ -2954,5 +2954,7 @@ return array(
     'settings_security_dashboard_min_password_length' => 'Longueur minimale du mot de passe (caractères)',
     'settings_security_dashboard_min_password_length_tip' => 'Un mot de passe plus court que ce seuil est signalé comme faible sur la fiche de l’élément, la liste, la posture de sécurité et le rapport de conformité. Laisser vide ou à 0 pour utiliser la valeur par défaut de 12.',
     'security_dashboard_unassessed' => 'Non évalué',
-
+    'error_password_strength_evaluation' => 'La robustesse du mot de passe n’a pas pu être évaluée. Le mot de passe doit être un texte UTF-8 valide.',
+    'security_dashboard_scan_done_skipped' => 'Analyse terminée. #count# mot(s) de passe n’ont pas pu être évalués et ont été ignorés.',
+    'security_dashboard_scan_failed' => 'L’analyse n’a pas pu être terminée. Réessayez ou consultez les journaux du serveur.',
 );
