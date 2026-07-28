@@ -348,6 +348,7 @@ switch ($post_type) {
         $reuseSalt = (string) @file_get_contents(TEAMPASS_SECRETS . '/' . SECUREFILE);
         $reuseSalt = $reuseSalt . '|item-health|' . $userId;
         $zxcvbn = new \ZxcvbnPhp\Zxcvbn();
+        $skippedAssessments = 0;
 
         $total = (int) DB::queryFirstField(
             'SELECT COUNT(*)
@@ -429,9 +430,22 @@ switch ($post_type) {
                     || is_numeric($complexityLevel) === false
                     || (int) $complexityLevel < 0
                 ) {
-                    $passwordStrength = $zxcvbn->passwordStrength($plaintext);
-                    $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
-                    $metadataUpdates['complexity_level'] = $complexityLevel;
+                    $passwordStrength = evaluatePasswordStrengthSafely(
+                        $plaintext,
+                        [$zxcvbn, 'passwordStrength']
+                    );
+                    if ($passwordStrength['success'] === true) {
+                        $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
+                        $metadataUpdates['complexity_level'] = $complexityLevel;
+                    } else {
+                        // Keep the exact credential and its unassessed complexity metadata.
+                        // One malformed legacy item must never abort the remaining scan.
+                        $skippedAssessments++;
+                        error_log(
+                            'Security posture skipped password-strength assessment for item '
+                            . $itemId . ': ' . $passwordStrength['reason']
+                        );
+                    }
                 }
                 if (count($metadataUpdates) > 0) {
                     DB::update(prefixTable('items'), $metadataUpdates, 'id = %i', $itemId);
@@ -505,6 +519,7 @@ switch ($post_type) {
                 'next_offset' => $nextOffset,
                 'total' => $total,
                 'done' => $done,
+                'skipped_count' => $skippedAssessments,
             ],
             'encode'
         );
