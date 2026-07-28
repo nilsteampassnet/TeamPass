@@ -1229,7 +1229,6 @@ if (null !== $post_type) {
                 // only see the roles they personally hold.
                 if (
                     (int) $session->get('user-admin') === 1
-                    || (int) $session->get('user-manager') === 1
                     || (int) $session->get('user-can_manage_all_users') === 1
                 ) {
                     $rows = DB::query(
