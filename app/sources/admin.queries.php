@@ -1263,6 +1263,92 @@ switch ($post_type) {
         );
         break;
 
+    case 'authentication_lockout_remove':
+        if ($post_key !== $session->get('key')) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('key_is_not_correct'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        if ((int) ($session->get('user-admin') ?? 0) !== 1) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('error_not_allowed_to'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        $dataReceived = prepareExchangedData($post_data, 'decode');
+        if (is_array($dataReceived) === false) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('authentication_lockout_invalid_target'),
+                ],
+                'encode'
+            );
+            break;
+        }
+        $source = trim((string) ($dataReceived['source'] ?? ''));
+        $value = trim((string) ($dataReceived['value'] ?? ''));
+        $validSource = in_array($source, ['login', 'remote_ip'], true);
+        $validValue = $value !== ''
+            && mb_strlen($value, 'UTF-8') <= 500
+            && preg_match('/[\x00-\x1F\x7F]/', $value) !== 1;
+
+        if (
+            $validSource === false
+            || $validValue === false
+            || ($source === 'remote_ip' && filter_var($value, FILTER_VALIDATE_IP) === false)
+        ) {
+            echo prepareExchangedData(
+                [
+                    'error' => true,
+                    'message' => $lang->get('authentication_lockout_invalid_target'),
+                ],
+                'encode'
+            );
+            break;
+        }
+
+        DB::delete(
+            prefixTable('auth_failures'),
+            'source = %s AND value = %s',
+            $source,
+            $value
+        );
+        $deletedCount = DB::affectedRows();
+
+        if ($deletedCount > 0) {
+            logEvents(
+                $SETTINGS,
+                'admin_action',
+                'authentication_lockout_removed',
+                (string) ($session->get('user-id') ?? ''),
+                (string) ($session->get('user-login') ?? ''),
+                'source=' . $source . '; value=' . $value . '; deleted=' . $deletedCount
+            );
+        }
+
+        echo prepareExchangedData(
+            [
+                'error' => false,
+                'message' => $deletedCount > 0
+                    ? $lang->get('authentication_lockout_removed_success')
+                    : $lang->get('authentication_lockout_not_found'),
+                'deleted_count' => $deletedCount,
+            ],
+            'encode'
+        );
+        break;
+
     case 'save_option_change':
         // Check KEY and rights
         if ($post_key !== $session->get('key')) {
