@@ -1,11 +1,232 @@
-/* Prevent Chart.js doughnut charts from growing when canvases are rendered inside tabs */
-.tp-ops-doughnut-wrap {
-    position: relative;
-    height: 220px;
-    max-height: 220px;
+.tp-ops-toolbar {
+    gap: 0.35rem;
 }
-.tp-ops-doughnut-wrap canvas {
+
+.tp-ops-period-filter select,
+#tp-users-ranking-metric {
+    min-width: 165px;
+}
+
+#tp-operational-stats-card .card-tools {
+    max-width: 100%;
+}
+
+#tp-operational-stats-card .nav-tabs .nav-link {
+    color: #495057;
+    font-weight: 600;
+}
+
+#tp-operational-stats-card .nav-tabs .nav-link.active {
+    color: #17a2b8;
+}
+
+.tp-ops-info-box {
+    min-height: 92px;
+    box-shadow: none;
+    border: 1px solid #e4e7ec;
+}
+
+.tp-ops-info-box .info-box-content {
+    min-width: 0;
+}
+
+.tp-ops-info-box .info-box-number,
+.tp-ops-small-box h3 {
+    white-space: normal;
+    word-break: break-word;
+}
+
+#tp-overview-health-card.tp-ops-health-good .info-box-icon {
+    background-color: #28a745 !important;
+}
+
+#tp-overview-health-card.tp-ops-health-warning .info-box-icon {
+    background-color: #ffc107 !important;
+}
+
+#tp-overview-health-card.tp-ops-health-critical .info-box-icon {
+    background-color: #dc3545 !important;
+}
+
+.tp-ops-priority-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 0.85rem 1rem;
+    border-left: 4px solid transparent;
+}
+
+.tp-ops-priority-item i {
+    margin-top: 2px;
+}
+
+.tp-ops-priority-item strong,
+.tp-ops-priority-item span {
+    display: block;
+}
+
+.tp-ops-priority-item span {
+    color: #6c757d;
+    font-size: 0.82rem;
+    line-height: 1.3;
+    margin-top: 2px;
+}
+
+.tp-ops-priority-danger {
+    border-left-color: #dc3545;
+}
+
+.tp-ops-priority-danger i {
+    color: #dc3545;
+}
+
+.tp-ops-priority-warning {
+    border-left-color: #ffc107;
+}
+
+.tp-ops-priority-warning i {
+    color: #d39e00;
+}
+
+.tp-ops-priority-info {
+    border-left-color: #17a2b8;
+}
+
+.tp-ops-priority-info i {
+    color: #17a2b8;
+}
+
+.tp-ops-priority-ok {
+    border-left-color: #28a745;
+}
+
+.tp-ops-priority-ok i {
+    color: #28a745;
+}
+
+.tp-ops-status-table th,
+.tp-ops-status-table td {
+    vertical-align: middle;
+    padding: 0.7rem 1rem;
+}
+
+.tp-ops-status-table th {
+    width: 28%;
+    color: #495057;
+    font-weight: 600;
+}
+
+.tp-ops-chart {
+    position: relative;
+    width: 100%;
+}
+
+.tp-ops-chart canvas {
     width: 100% !important;
-    height: 220px !important;
-    max-height: 220px;
+    height: 100% !important;
+}
+
+.tp-ops-small-box {
+    min-height: 112px;
+}
+
+.tp-ops-small-box .inner {
+    min-height: 112px;
+}
+
+.tp-ops-small-box p {
+    min-height: 2.2em;
+}
+
+.tp-ops-small-box small {
+    color: inherit;
+    font-weight: 400;
+    opacity: 0.86;
+}
+
+.tp-security-small-box p {
+    min-height: 2.8em;
+}
+
+.tp-ops-activity-kpi {
+    border-top: 1px solid #edf0f3;
+    padding-top: 0.75rem;
+}
+
+.tp-ops-activity-kpi dt {
+    color: #6c757d;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tp-ops-activity-kpi dd {
+    color: #212529;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin-bottom: 0;
+}
+
+.tp-ops-activity-kpi small {
+    display: block;
+    color: #6c757d;
+    font-size: 0.75rem;
+    font-weight: 400;
+    margin-top: 3px;
+}
+
+.tp-users-ranking-table th:first-child,
+.tp-users-ranking-table td:first-child {
+    width: 54px;
+}
+
+.tp-users-ranking-login {
+    color: #6c757d;
+    display: block;
+    font-weight: 400;
+}
+
+.tp-users-ranking-position {
+    font-size: 0.85rem;
+    min-width: 28px;
+    padding: 0.35rem 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+    #tp-operational-stats-card .card-tools {
+        float: none;
+        clear: both;
+        padding-top: 0.5rem;
+    }
+
+    .tp-ops-toolbar {
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .tp-ops-toolbar {
+        align-items: flex-start;
+        display: block;
+    }
+
+    .tp-ops-period-filter {
+        margin-bottom: 0.5rem !important;
+    }
+
+    .tp-ops-toolbar .form-check,
+    .tp-ops-toolbar .btn {
+        margin-top: 0.35rem;
+    }
+
+    .tp-ops-status-table th,
+    .tp-ops-status-table td {
+        display: block;
+        width: 100%;
+        text-align: left !important;
+    }
+
+    .tp-ops-status-table td {
+        padding-top: 0;
+    }
 }
