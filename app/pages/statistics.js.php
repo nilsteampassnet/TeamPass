@@ -78,30 +78,33 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
 
 <script type='text/javascript'>
-    // Operational statistics dashboard (V2)
+    // Operational statistics dashboard
     initOperationalStatistics();
 
 
-    // Re-render charts when switching inner tabs (Chart.js needs visible canvases)
-    $('#tp-ops-tabs a[data-toggle="tab"]').on('shown.bs.tab', function() {
-        tpOpsRerenderFromCache()
-    })
+    // Re-render charts when a tab becomes visible (Chart.js needs visible canvases)
+    $(document).on('shown.bs.tab', '#tp-ops-tabs a[data-toggle="tab"]', function() {
+        tpOpsRerenderFromCache();
+    });
 
 
     // ----------------------------------------------------------------------------------
-    // Operational statistics (3 tabs: Users / Roles / Items)
+    // Operational statistics
     // ----------------------------------------------------------------------------------
 
     var tpOpsCharts = {
         usersActivity: null,
         rolesTop: null,
-        itemsPersonal: null,
-        itemsComplexity: null
+        itemsPasswordCompliance: null,
+        itemsCreatedSource: null,
+        itemsCreatedComplexity: null,
+        itemsHibp: null,
+        itemsComplexity: null,
+        usersRanking: null
     };
 
     // Cache last payload to allow instant re-render when tabs become visible (Chart.js needs visible canvases)
     var tpOpsLastData = null;
-    var tpOpsLastParams = null;
 
     function tpOpsPalette() {
         return {
@@ -120,6 +123,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         };
     }
 
+    function tpOpsPercent(value, total) {
+        return total > 0 ? Math.round((value / total) * 100) : 0;
+    }
+
     function tpOpsRerenderFromCache() {
         if (tpOpsLastData) {
             // Re-render without network call, useful when switching tabs (canvas becomes visible)
@@ -128,9 +135,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             try {
                 if (tpOpsCharts.usersActivity) { tpOpsCharts.usersActivity.resize(); }
                 if (tpOpsCharts.rolesTop) { tpOpsCharts.rolesTop.resize(); }
-                if (tpOpsCharts.itemsPersonal) { tpOpsCharts.itemsPersonal.resize(); }
                 if (tpOpsCharts.itemsPasswordCompliance) { tpOpsCharts.itemsPasswordCompliance.resize(); }
+                if (tpOpsCharts.itemsCreatedSource) { tpOpsCharts.itemsCreatedSource.resize(); }
+                if (tpOpsCharts.itemsCreatedComplexity) { tpOpsCharts.itemsCreatedComplexity.resize(); }
+                if (tpOpsCharts.itemsHibp) { tpOpsCharts.itemsHibp.resize(); }
                 if (tpOpsCharts.itemsComplexity) { tpOpsCharts.itemsComplexity.resize(); }
+                if (tpOpsCharts.usersRanking) { tpOpsCharts.usersRanking.resize(); }
             } catch (e) {}
         }
     }
@@ -157,17 +167,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $(document).on('change', '#tp-ops-period', function() {
             loadOperationalStatistics();
         });
+        $(document).on('change', '#tp-users-ranking-metric', function() {
+            if (tpOpsLastData) {
+                renderUserRanking(tpOpsLastData);
+            }
+        });
 
         // Some instances use iCheck (ifChanged), others rely on native change
         $(document).on('change ifChanged', '#tp-ops-include-personal, #tp-ops-include-api', function() {
             loadOperationalStatistics();
         });
 
-        // Ensure Chart.js is available and load first view (only if the operational tab is visible/active)
+        // Ensure Chart.js is available and load the dashboard
         ensureChartJs(function() {
-            if ($('#tp-stats-main-ops').hasClass('active') || $('#tp-stats-main-ops').hasClass('show') || $('#tp-stats-main-ops').length === 0) {
-                tpOpsEnsureLoadedOrRerender();
-            }
+            tpOpsEnsureLoadedOrRerender();
         });
     }
 
@@ -193,22 +206,18 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
     function loadOperationalStatistics() {
         var payload = {
-            period: $('#tp-ops-period').val(),
+            period: $('#tp-ops-period').val() || '30d',
             include_personal: $('#tp-ops-include-personal').is(':checked') ? 1 : 0,
             include_api: $('#tp-ops-include-api').is(':checked') ? 1 : 0,
-            top_users_limit: 15,
             top_roles_limit: 15,
             top_items_limit: 20
         };
 
-        tpOpsLastParams = payload;
-
         // UI loading state
         $('#tp-ops-refresh').prop('disabled', true);
         $('#tp-ops-refresh i').addClass('fa-spin');
-        $('#tp-users-top-body').html("<tr><td colspan='9' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
-        $('#tp-roles-top-body').html("<tr><td colspan='7' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
-        $('#tp-items-topcopied-body').html("<tr><td colspan='6' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
+        $('#tp-roles-top-body').html("<tr><td colspan='5' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
+        $('#tp-users-ranking-body').html("<tr><td colspan='3' class='text-center text-muted'><i class='fas fa-circle-notch fa-spin'></i></td></tr>");
 
         $.post(
             "sources/admin.queries.php",
@@ -243,7 +252,12 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 $('#tp-ops-refresh').prop('disabled', false);
                 $('#tp-ops-refresh i').removeClass('fa-spin');
             }
-        );
+        ).fail(function() {
+            toastr.remove();
+            toastr.error("<?php echo addslashes($lang->get('ops_stats_load_error')); ?>");
+            $('#tp-ops-refresh').prop('disabled', false);
+            $('#tp-ops-refresh i').removeClass('fa-spin');
+        });
     }
 
     function renderOperationalStatistics(data) {
@@ -256,76 +270,57 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         $('#tp-kpi-users-active').text(active);
         $('#tp-kpi-users-inactive').text(inactive);
         $('#tp-kpi-users-disabled').text(disabled);
+        $('#tp-overview-users-enabled').text(totalEnabled);
+        $('#tp-overview-users-disabled').text(disabled + " <?php echo addslashes($lang->get('ops_kpi_users_disabled')); ?>");
 
         $('#tp-kpi-users-active-ratio').text(totalEnabled > 0 ? Math.round((active / totalEnabled) * 100) + "% <?php echo addslashes($lang->get('ops_users_ratio_active')); ?>" : "");
         $('#tp-kpi-users-inactive-ratio').text(totalEnabled > 0 ? Math.round((inactive / totalEnabled) * 100) + "% <?php echo addslashes($lang->get('ops_users_ratio_inactive')); ?>" : "");
 
-        $('#tp-kpi-connections-web').text((data.users.connections && data.users.connections.web) ? data.users.connections.web : 0);
-        $('#tp-kpi-connections-api').text((data.users.connections && data.users.connections.api) ? data.users.connections.api : 0);
-
-        $('#tp-kpi-views-total').text((data.users.actions && data.users.actions.views) ? data.users.actions.views : 0);
-        $('#tp-kpi-copies-total').text((data.users.actions && data.users.actions.copies) ? data.users.actions.copies : 0);
-        $('#tp-kpi-pwshown-total').text((data.users.actions && data.users.actions.pw_shown) ? data.users.actions.pw_shown : 0);
-        $('#tp-kpi-created-total').text((data.users.actions && data.users.actions.created) ? data.users.actions.created : 0);
-        $('#tp-kpi-modified-total').text((data.users.actions && data.users.actions.modified) ? data.users.actions.modified : 0);
+        var actions = data.users && data.users.actions ? data.users.actions : {};
+        $('#tp-kpi-views-total').text(actions.views ? actions.views : 0);
+        $('#tp-kpi-copies-total').text(actions.copies ? actions.copies : 0);
+        $('#tp-kpi-pwshown-total').text(actions.pw_shown ? actions.pw_shown : 0);
+        $('#tp-kpi-created-total').text(actions.created ? actions.created : 0);
+        $('#tp-kpi-created-sources').text(
+            (actions.created_web || 0) + " <?php echo addslashes($lang->get('ops_source_web')); ?> / " +
+            (actions.created_api || 0) + " <?php echo addslashes($lang->get('ops_source_api')); ?> / " +
+            (actions.created_import || 0) + " <?php echo addslashes($lang->get('ops_source_import')); ?>"
+        );
+        $('#tp-kpi-modified-total').text(actions.modified ? actions.modified : 0);
 
         // Users chart
         if (typeof Chart !== 'undefined') {
             if (tpOpsCharts.usersActivity) {
                 tpOpsCharts.usersActivity.destroy();
             }
-            var ctxU = document.getElementById('tp-users-activity-chart').getContext('2d');
-            var pal = tpOpsPalette();
-            tpOpsCharts.usersActivity = new Chart(ctxU, {
-                type: 'line',
-                data: {
-                    labels: (data.users.series && data.users.series.labels) ? data.users.series.labels : [],
-                    datasets: [
-                        { label: '<?php echo addslashes($lang->get('ops_metric_views')); ?>', data: (data.users.series && data.users.series.views) ? data.users.series.views : [], borderColor: pal.blue, backgroundColor: pal.blueFill, tension: 0.3, pointRadius: 1.5, fill: false },
-                        { label: '<?php echo addslashes($lang->get('ops_kpi_copies_total')); ?>', data: (data.users.series && data.users.series.copies) ? data.users.series.copies : [], borderColor: pal.orange, backgroundColor: pal.orangeFill, tension: 0.3, pointRadius: 1.5, fill: false },
-                        { label: '<?php echo addslashes($lang->get('ops_metric_pw_shown')); ?>', data: (data.users.series && data.users.series.pw_shown) ? data.users.series.pw_shown : [], borderColor: pal.purple, backgroundColor: pal.purpleFill, tension: 0.3, pointRadius: 1.5, fill: false }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true } },
-                    scales: {
-                        x: { ticks: { maxRotation: 0, autoSkip: true } },
-                        y: { beginAtZero: true }
+            var ctxUEl = document.getElementById('tp-users-activity-chart');
+            if (ctxUEl) {
+                var ctxU = ctxUEl.getContext('2d');
+                var pal = tpOpsPalette();
+                tpOpsCharts.usersActivity = new Chart(ctxU, {
+                    type: 'line',
+                    data: {
+                        labels: (data.users.series && data.users.series.labels) ? data.users.series.labels : [],
+                        datasets: [
+                            { label: '<?php echo addslashes($lang->get('ops_metric_views')); ?>', data: (data.users.series && data.users.series.views) ? data.users.series.views : [], borderColor: pal.blue, backgroundColor: pal.blueFill, lineTension: 0.3, pointRadius: 1.5, fill: false },
+                            { label: '<?php echo addslashes($lang->get('ops_kpi_copies_total')); ?>', data: (data.users.series && data.users.series.copies) ? data.users.series.copies : [], borderColor: pal.orange, backgroundColor: pal.orangeFill, lineTension: 0.3, pointRadius: 1.5, fill: false },
+                            { label: '<?php echo addslashes($lang->get('ops_metric_pw_shown')); ?>', data: (data.users.series && data.users.series.pw_shown) ? data.users.series.pw_shown : [], borderColor: pal.purple, backgroundColor: pal.purpleFill, lineTension: 0.3, pointRadius: 1.5, fill: false },
+                            { label: '<?php echo addslashes($lang->get('ops_metric_created')); ?>', data: (data.users.series && data.users.series.created) ? data.users.series.created : [], borderColor: pal.green, backgroundColor: pal.greenFill, lineTension: 0.3, pointRadius: 1.5, fill: false }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { display: true },
+                        scales: {
+                            xAxes: [{ ticks: { maxRotation: 0, autoSkip: true } }],
+                            yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }]
+                        }
                     }
-                }
-            });
+                });
+            }
         }
-
-        // Top users table
-        var urows = "";
-        if (data.users.top && data.users.top.length > 0) {
-            $.each(data.users.top, function(_, r) {
-                var full = (r.login ? r.login : '') + (r.name || r.lastname ? " (" + (r.name ? r.name : '') + " " + (r.lastname ? r.lastname : '') + ")" : "");
-                var last = r.last_activity ? fmtTs(r.last_activity) : "-";
-                var apiPct = "-";
-                if (r.views && r.api_views) {
-                    apiPct = Math.round((parseInt(r.api_views, 10) / Math.max(1, parseInt(r.views, 10))) * 100) + "%";
-                } else if (r.views) {
-                    apiPct = "0%";
-                }
-                urows += "<tr>" +
-                    "<td>" + escapeHtml(full) + "</td>" +
-                    "<td class='text-center'>" + (r.score !== undefined ? r.score : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.views !== undefined ? r.views : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.copies !== undefined ? r.copies : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.pw_shown !== undefined ? r.pw_shown : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.items_unique !== undefined ? r.items_unique : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.folders_unique !== undefined ? r.folders_unique : '-') + "</td>" +
-                    "<td class='text-center'>" + last + "</td>" +
-                    "<td class='text-center'>" + apiPct + "</td>" +
-                    "</tr>";
-            });
-        } else {
-            urows = "<tr><td colspan='9' class='text-center text-muted'><?php echo addslashes($lang->get('ops_no_data')); ?></td></tr>";
-        }
-        $('#tp-users-top-body').html(urows);
+        renderUserRanking(data);
 
         // ---------------- ROLES KPIs
         $('#tp-kpi-roles-total').text(data.roles.total !== undefined ? data.roles.total : 0);
@@ -351,12 +346,10 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     "<td class='text-center'>" + (r.views !== undefined ? r.views : '-') + "</td>" +
                     "<td class='text-center'>" + (r.copies !== undefined ? r.copies : '-') + "</td>" +
                     "<td class='text-center'>" + (r.items_unique !== undefined ? r.items_unique : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.items_accessible !== undefined ? r.items_accessible : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.last_activity ? fmtTs(r.last_activity) : '-') + "</td>" +
                     "</tr>";
             });
         } else {
-            rrows = "<tr><td colspan='7' class='text-center text-muted'><?php echo addslashes($lang->get('ops_no_data')); ?></td></tr>";
+            rrows = "<tr><td colspan='5' class='text-center text-muted'><?php echo addslashes($lang->get('ops_no_data')); ?></td></tr>";
         }
         $('#tp-roles-top-body').html(rrows);
 
@@ -364,84 +357,199 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             if (tpOpsCharts.rolesTop) {
                 tpOpsCharts.rolesTop.destroy();
             }
-            var ctxR = document.getElementById('tp-roles-top-chart').getContext('2d');
-            tpOpsCharts.rolesTop = new Chart(ctxR, {
-                type: 'bar',
-                data: {
-                    labels: rlabels,
-                    datasets: [
-                        { label: '<?php echo addslashes($lang->get('ops_metric_views')); ?>', data: rviews, backgroundColor: tpOpsPalette().blueFill, borderColor: tpOpsPalette().blue, borderWidth: 1 },
-                        { label: '<?php echo addslashes($lang->get('ops_kpi_copies_total')); ?>', data: rcopies, backgroundColor: tpOpsPalette().orangeFill, borderColor: tpOpsPalette().orange, borderWidth: 1 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: true } },
-                    scales: {
-                        x: { ticks: { autoSkip: true, maxRotation: 0 } },
-                        y: { beginAtZero: true }
+            var ctxREl = document.getElementById('tp-roles-top-chart');
+            if (ctxREl) {
+                var ctxR = ctxREl.getContext('2d');
+                tpOpsCharts.rolesTop = new Chart(ctxR, {
+                    type: 'bar',
+                    data: {
+                        labels: rlabels,
+                        datasets: [
+                            { label: '<?php echo addslashes($lang->get('ops_metric_views')); ?>', data: rviews, backgroundColor: tpOpsPalette().blueFill, borderColor: tpOpsPalette().blue, borderWidth: 1 },
+                            { label: '<?php echo addslashes($lang->get('ops_kpi_copies_total')); ?>', data: rcopies, backgroundColor: tpOpsPalette().orangeFill, borderColor: tpOpsPalette().orange, borderWidth: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { display: true },
+                        scales: {
+                            xAxes: [{ ticks: { autoSkip: true, maxRotation: 0 } }],
+                            yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }]
+                        }
                     }
-                }
-            });
+                });
+            }
         }
 
         // ---------------- ITEMS KPIs
         var inv = data.items && data.items.inventory ? data.items.inventory : {};
+        var created = data.items && data.items.created ? data.items.created : {};
+        var hibp = data.items && data.items.hibp ? data.items.hibp : {};
+        var pwSec = data.items && data.items.password_security ? data.items.password_security : null;
+        renderOperationalSummary(data, {
+            totalEnabled: totalEnabled,
+            active: active,
+            inactive: inactive,
+            disabled: disabled,
+            actions: actions,
+            inventory: inv,
+            created: created,
+            hibp: hibp,
+            passwordSecurity: pwSec
+        });
+
         $('#tp-kpi-items-total').text(inv.total_active !== undefined ? inv.total_active : 0);
         $('#tp-kpi-items-personal').text(inv.personal_active !== undefined ? inv.personal_active : 0);
         $('#tp-kpi-items-shared').text(inv.shared_active !== undefined ? inv.shared_active : 0);
+        $('#tp-overview-items-detail').text((inv.shared_active || 0) + " <?php echo addslashes($lang->get('ops_kpi_items_shared')); ?> / " + (inv.personal_active || 0) + " <?php echo addslashes($lang->get('ops_kpi_items_personal')); ?>");
         $('#tp-kpi-items-complexity-avg').text(inv.avg_complexity !== null && inv.avg_complexity !== undefined ? inv.avg_complexity : "-");
         $('#tp-kpi-items-pwlen-avg').text(inv.avg_pw_len !== null && inv.avg_pw_len !== undefined ? inv.avg_pw_len : "-");
-        var pwSec = data.items && data.items.password_security ? data.items.password_security : null;
         if (pwSec && pwSec.secure_score !== undefined && pwSec.secure_score !== null) {
             $('#tp-kpi-items-secure-score').text(pwSec.secure_score + "/100");
+            $('#tp-sec-kpi-policy-score').text(pwSec.secure_score + "/100");
             var assessed = parseInt(pwSec.assessed_total || 0, 10);
             var compliant = parseInt(pwSec.compliant || 0, 10);
+            var nonCompliant = parseInt(pwSec.non_compliant || 0, 10);
+            var unknownPolicy = parseInt(pwSec.unknown || 0, 10);
+            $('#tp-sec-kpi-policy-detail').text(nonCompliant + " <?php echo addslashes($lang->get('ops_label_non_compliant')); ?> / " + unknownPolicy + " <?php echo addslashes($lang->get('ops_label_unknown')); ?>");
             if (assessed > 0) {
                 var ratio = Math.round((compliant / assessed) * 100);
-                $('#tp-kpi-items-secure-details').text(ratio + "% <?php echo addslashes($lang->get('ops_label_compliant')); ?> (" + compliant + "/" + assessed + ")");
+                var details = ratio + "% <?php echo addslashes($lang->get('ops_label_compliant')); ?> (" + compliant + "/" + assessed + ")";
+                $('#tp-kpi-items-secure-details').text(details);
             } else {
                 $('#tp-kpi-items-secure-details').text("");
             }
         } else {
             $('#tp-kpi-items-secure-score').text("-");
             $('#tp-kpi-items-secure-details').text("");
+            $('#tp-sec-kpi-policy-score').text("-");
+            $('#tp-sec-kpi-policy-detail').text("-");
         }
         $('#tp-kpi-items-stale-90').text(inv.stale_90 !== undefined ? inv.stale_90 : 0);
+        $('#tp-kpi-items-created-total').text(created.total !== undefined ? created.total : 0);
+        var createdSourceTotal = parseInt(created.web || 0, 10)
+            + parseInt(created.api || 0, 10)
+            + parseInt(created.imported || 0, 10);
+        $('#tp-kpi-items-created-source').text(
+            (created.web || 0) + " <?php echo addslashes($lang->get('ops_source_web')); ?> (" + tpOpsPercent(parseInt(created.web || 0, 10), createdSourceTotal) + "%) / " +
+            (created.api || 0) + " <?php echo addslashes($lang->get('ops_source_api')); ?> (" + tpOpsPercent(parseInt(created.api || 0, 10), createdSourceTotal) + "%) / " +
+            (created.imported || 0) + " <?php echo addslashes($lang->get('ops_source_import')); ?> (" + tpOpsPercent(parseInt(created.imported || 0, 10), createdSourceTotal) + "%)"
+        );
+        $('#tp-kpi-items-created-weak').text(created.weak_complexity !== undefined ? created.weak_complexity : 0);
+        $('#tp-kpi-items-created-unknown').text((created.unknown_complexity || 0) + " <?php echo addslashes($lang->get('ops_label_unknown')); ?>");
+        var createdHibp = created.hibp ? created.hibp : {};
+        $('#tp-kpi-items-created-hibp').text((createdHibp.pwned || 0) + " <?php echo addslashes($lang->get('ops_created_hibp_pwned')); ?>");
+        $('#tp-kpi-items-hibp-pwned').text(hibp.pwned !== undefined ? hibp.pwned : 0);
+        $('#tp-kpi-items-hibp-occurrences').text((hibp.pwned_occurrences || 0) + " <?php echo addslashes($lang->get('ops_hibp_occurrences')); ?>");
+        $('#tp-kpi-items-hibp-coverage').text(hibp.coverage_pct !== undefined ? hibp.coverage_pct + "%" : "-");
+        $('#tp-kpi-items-hibp-unknown').text((hibp.unknown || 0) + " <?php echo addslashes($lang->get('ops_hibp_unknown')); ?> / " + (hibp.stale || 0) + " <?php echo addslashes($lang->get('ops_hibp_stale')); ?>");
+        $('#tp-sec-kpi-hibp-pwned').text(hibp.pwned !== undefined ? hibp.pwned : 0);
+        $('#tp-sec-kpi-hibp-occurrences').text((hibp.pwned_occurrences || 0) + " <?php echo addslashes($lang->get('ops_hibp_occurrences')); ?>");
+        $('#tp-sec-kpi-hibp-coverage').text(hibp.coverage_pct !== undefined ? hibp.coverage_pct + "%" : "-");
+        $('#tp-sec-kpi-hibp-coverage-detail').text((hibp.unknown || 0) + " <?php echo addslashes($lang->get('ops_hibp_unknown')); ?> / " + (hibp.stale || 0) + " <?php echo addslashes($lang->get('ops_hibp_stale')); ?>");
 
         if (inv.unknown_complexity !== undefined && inv.total_active !== undefined && parseInt(inv.total_active, 10) > 0) {
             var ratioUnknown = Math.round((parseInt(inv.unknown_complexity, 10) / Math.max(1, parseInt(inv.total_active, 10))) * 100);
             $('#tp-kpi-items-complexity-unknown').text(inv.unknown_complexity + " <?php echo addslashes($lang->get('ops_unknown')); ?> (" + ratioUnknown + "%)");
+            $('#tp-sec-kpi-complexity-unknown').text(inv.unknown_complexity);
+            $('#tp-sec-kpi-complexity-detail').text(ratioUnknown + "% - <?php echo addslashes($lang->get('ops_kpi_avg_complexity')); ?> " + (inv.avg_complexity !== null && inv.avg_complexity !== undefined ? inv.avg_complexity : "-"));
         } else {
             $('#tp-kpi-items-complexity-unknown').text("");
+            $('#tp-sec-kpi-complexity-unknown').text("-");
+            $('#tp-sec-kpi-complexity-detail').text("-");
         }
 
         // Items charts
         if (typeof Chart !== 'undefined') {
-            // Perso vs shared
-            if (tpOpsCharts.itemsPersonal) {
-                tpOpsCharts.itemsPersonal.destroy();
+            // Created items by source
+            if (tpOpsCharts.itemsCreatedSource) {
+                tpOpsCharts.itemsCreatedSource.destroy();
             }
-            var ctxIP = document.getElementById('tp-items-personal-chart').getContext('2d');
-            tpOpsCharts.itemsPersonal = new Chart(ctxIP, {
-                type: 'doughnut',
-                data: {
-                    labels: ['<?php echo addslashes($lang->get('personal')); ?>', '<?php echo addslashes($lang->get('shared')); ?>'],
-                    datasets: [
-                        {
-                            backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().blueFill],
-                            borderColor: [tpOpsPalette().green, tpOpsPalette().blue],
-                            borderWidth: 1,
-                            data: [
-                                inv.personal_active !== undefined ? inv.personal_active : 0,
-                                inv.shared_active !== undefined ? inv.shared_active : 0
-                            ]
-                        }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+            var sourceValues = [
+                parseInt(created.web || 0, 10),
+                parseInt(created.api || 0, 10),
+                parseInt(created.imported || 0, 10)
+            ];
+            var sourceTotal = sourceValues.reduce(function(total, value) {
+                return total + value;
+            }, 0);
+            var sourceNames = [
+                '<?php echo addslashes($lang->get('ops_source_web')); ?>',
+                '<?php echo addslashes($lang->get('ops_source_api')); ?>',
+                '<?php echo addslashes($lang->get('ops_source_import')); ?>'
+            ];
+            var sourceLabels = sourceNames.map(function(label, index) {
+                return label + ' — ' + sourceValues[index] + ' (' + tpOpsPercent(sourceValues[index], sourceTotal) + '%)';
             });
+            var ctxCreatedSourceEl = document.getElementById('tp-items-created-source-chart');
+            if (ctxCreatedSourceEl) {
+                tpOpsCharts.itemsCreatedSource = new Chart(ctxCreatedSourceEl.getContext('2d'), {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: sourceLabels,
+                        datasets: [
+                            {
+                                label: '<?php echo addslashes($lang->get('ops_kpi_created_period')); ?>',
+                                data: sourceValues,
+                                backgroundColor: [
+                                    tpOpsPalette().greenFill,
+                                    tpOpsPalette().blueFill,
+                                    tpOpsPalette().purpleFill
+                                ],
+                                borderColor: [
+                                    tpOpsPalette().green,
+                                    tpOpsPalette().blue,
+                                    tpOpsPalette().purple
+                                ],
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { display: false },
+                        tooltips: {
+                            callbacks: {
+                                label: function(tooltipItem, chartData) {
+                                    var dataset = chartData.datasets[tooltipItem.datasetIndex];
+                                    var value = parseInt(dataset.data[tooltipItem.index] || 0, 10);
+                                    return value + ' (' + tpOpsPercent(value, sourceTotal) + '%)';
+                                }
+                            }
+                        },
+                        scales: {
+                            xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+                            yAxes: [{ gridLines: { display: false } }]
+                        }
+                    }
+                });
+            }
+
+            // Created items: current complexity distribution
+            if (tpOpsCharts.itemsCreatedComplexity) {
+                tpOpsCharts.itemsCreatedComplexity.destroy();
+            }
+            var createdComp = data.items && data.items.created_complexity ? data.items.created_complexity : {labels:[], counts:[]};
+            var ctxCreatedCompEl = document.getElementById('tp-items-created-complexity-chart');
+            if (ctxCreatedCompEl) {
+                tpOpsCharts.itemsCreatedComplexity = new Chart(ctxCreatedCompEl.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: createdComp.labels ? createdComp.labels : [],
+                        datasets: [
+                            { label: '<?php echo addslashes($lang->get('items')); ?>', data: createdComp.counts ? createdComp.counts : [], backgroundColor: tpOpsPalette().orangeFill, borderColor: tpOpsPalette().orange, borderWidth: 1 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { display: false },
+                        scales: { yAxes: [{ ticks: { beginAtZero: true, precision: 0 } }] }
+                    }
+                });
+            }
 
             // Password compliance
             if (tpOpsCharts.itemsPasswordCompliance) {
@@ -484,22 +592,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: true },
-                            tooltip: {
-                                callbacks: {
-                                    label: function(context) {
-                                        var label = context.label || '';
-                                        var value = context.parsed || 0;
-                                        var total = 0;
-                                        if (context.dataset && Array.isArray(context.dataset.data)) {
-                                            for (var i = 0; i < context.dataset.data.length; i++) {
-                                                total += parseInt(context.dataset.data[i] || 0, 10);
-                                            }
+                        legend: { display: true },
+                        tooltips: {
+                            callbacks: {
+                                label: function(tooltipItem, chartData) {
+                                    var label = chartData.labels[tooltipItem.index] || '';
+                                    var dataset = chartData.datasets[tooltipItem.datasetIndex];
+                                    var value = parseInt(dataset.data[tooltipItem.index] || 0, 10);
+                                    var total = 0;
+                                    if (Array.isArray(dataset.data)) {
+                                        for (var i = 0; i < dataset.data.length; i++) {
+                                            total += parseInt(dataset.data[i] || 0, 10);
                                         }
-                                        var pct = total > 0 ? Math.round((value / total) * 100) : 0;
-                                        return label + ': ' + value + ' (' + pct + '%)';
                                     }
+                                    return label + ' — ' + tpOpsPercent(value, total) + '%';
                                 }
                             }
                         }
@@ -508,12 +614,55 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
                 // Policy hint
                 if (pwSecChart && pwSecChart.policy) {
-                    var tpl = "<?php echo addslashes($lang->get('ops_items_password_policy')); ?>";
+                    var policyText = "<?php echo addslashes($lang->get('ops_items_password_policy')); ?>";
                     $('#tp-items-password-policy').text(
-                        tpl.replace('{min_len}', pwSecChart.policy.min_len).replace('{min_complexity}', pwSecChart.policy.min_complexity)
+                        policyText
+                            .replace('{min_len}', pwSecChart.policy.min_len)
+                            .replace('{min_complexity}', pwSecChart.policy.min_complexity)
                     );
                 } else {
                     $('#tp-items-password-policy').text('');
+                }
+            }
+
+            // HIBP status
+            if (tpOpsCharts.itemsHibp) {
+                tpOpsCharts.itemsHibp.destroy();
+            }
+            var hibpChart = data.items && data.items.hibp ? data.items.hibp : null;
+            var ctxHibpEl = document.getElementById('tp-items-hibp-chart');
+            if (ctxHibpEl) {
+                var hibpSafe = hibpChart && hibpChart.safe !== undefined ? parseInt(hibpChart.safe, 10) : 0;
+                var hibpPwned = hibpChart && hibpChart.pwned !== undefined ? parseInt(hibpChart.pwned, 10) : 0;
+                var hibpUnknown = hibpChart && hibpChart.unknown !== undefined ? parseInt(hibpChart.unknown, 10) : 0;
+                if (isNaN(hibpSafe)) hibpSafe = 0;
+                if (isNaN(hibpPwned)) hibpPwned = 0;
+                if (isNaN(hibpUnknown)) hibpUnknown = 0;
+
+                tpOpsCharts.itemsHibp = new Chart(ctxHibpEl.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: [
+                            '<?php echo addslashes($lang->get('ops_hibp_safe')); ?>' + ' (' + hibpSafe + ')',
+                            '<?php echo addslashes($lang->get('ops_hibp_pwned')); ?>' + ' (' + hibpPwned + ')',
+                            '<?php echo addslashes($lang->get('ops_hibp_unknown')); ?>' + ' (' + hibpUnknown + ')'
+                        ],
+                        datasets: [
+                            {
+                                backgroundColor: [tpOpsPalette().greenFill, tpOpsPalette().redFill, tpOpsPalette().grayFill],
+                                borderColor: [tpOpsPalette().green, tpOpsPalette().red, tpOpsPalette().gray],
+                                borderWidth: 1,
+                                data: [hibpSafe, hibpPwned, hibpUnknown]
+                            }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, legend: { display: true } }
+                });
+
+                if (hibpChart && parseInt(hibpChart.enabled || 0, 10) === 1) {
+                    $('#tp-items-hibp-note').text((hibpChart.stale || 0) + " <?php echo addslashes($lang->get('ops_hibp_stale')); ?> - " + "<?php echo addslashes($lang->get('ops_hibp_interval')); ?>".replace('{days}', hibpChart.interval_days || 0));
+                } else {
+                    $('#tp-items-hibp-note').text("<?php echo addslashes($lang->get('ops_hibp_disabled')); ?>");
                 }
             }
 
@@ -522,41 +671,311 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 tpOpsCharts.itemsComplexity.destroy();
             }
             var comp = data.items && data.items.complexity ? data.items.complexity : {labels:[], counts:[]};
-            var ctxIC = document.getElementById('tp-items-complexity-chart').getContext('2d');
-            tpOpsCharts.itemsComplexity = new Chart(ctxIC, {
-                type: 'bar',
-                data: {
-                    labels: comp.labels ? comp.labels : [],
-                    datasets: [
-                        { label: '<?php echo addslashes($lang->get('items')); ?>', data: comp.counts ? comp.counts : [], backgroundColor: tpOpsPalette().purpleFill, borderColor: tpOpsPalette().purple, borderWidth: 1 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } }
-                }
-            });
+            var ctxICEl = document.getElementById('tp-items-complexity-chart');
+            if (ctxICEl) {
+                var complexityCounts = (comp.counts || []).map(function(value) {
+                    return parseInt(value || 0, 10);
+                });
+                var complexityTotal = complexityCounts.reduce(function(total, value) {
+                    return total + value;
+                }, 0);
+                var complexityLabels = (comp.labels || []).map(function(label, index) {
+                    var count = complexityCounts[index] || 0;
+                    return label + ' — ' + count + ' (' + tpOpsPercent(count, complexityTotal) + '%)';
+                });
+                var strengthColors = [
+                    { background: 'rgba(220, 53, 69, 0.22)', border: 'rgba(220, 53, 69, 1)' },
+                    { background: 'rgba(255, 159, 64, 0.24)', border: 'rgba(255, 159, 64, 1)' },
+                    { background: 'rgba(255, 193, 7, 0.25)', border: 'rgba(214, 158, 0, 1)' },
+                    { background: 'rgba(40, 167, 69, 0.20)', border: 'rgba(40, 167, 69, 1)' },
+                    { background: 'rgba(25, 135, 84, 0.28)', border: 'rgba(25, 135, 84, 1)' }
+                ];
+                var strengthValues = [
+                    parseInt('<?php echo (int) TP_PW_STRENGTH_1; ?>', 10),
+                    parseInt('<?php echo (int) TP_PW_STRENGTH_2; ?>', 10),
+                    parseInt('<?php echo (int) TP_PW_STRENGTH_3; ?>', 10),
+                    parseInt('<?php echo (int) TP_PW_STRENGTH_4; ?>', 10),
+                    parseInt('<?php echo (int) TP_PW_STRENGTH_5; ?>', 10)
+                ];
+                var complexityBackgrounds = [];
+                var complexityBorders = [];
+                (comp.values || []).forEach(function(value) {
+                    var numericValue = parseInt(value, 10);
+                    if (numericValue < 0) {
+                        complexityBackgrounds.push(tpOpsPalette().grayFill);
+                        complexityBorders.push(tpOpsPalette().gray);
+                        return;
+                    }
+
+                    var strengthIndex = strengthValues.indexOf(numericValue);
+                    if (strengthIndex < 0) {
+                        strengthIndex = 0;
+                        for (var index = 0; index < strengthValues.length; index++) {
+                            if (numericValue >= strengthValues[index]) {
+                                strengthIndex = index;
+                            }
+                        }
+                    }
+                    var color = strengthColors[Math.min(strengthIndex, strengthColors.length - 1)];
+                    complexityBackgrounds.push(color.background);
+                    complexityBorders.push(color.border);
+                });
+
+                tpOpsCharts.itemsComplexity = new Chart(ctxICEl.getContext('2d'), {
+                    type: 'horizontalBar',
+                    data: {
+                        labels: complexityLabels,
+                        datasets: [
+                            {
+                                label: '<?php echo addslashes($lang->get('items')); ?>',
+                                data: complexityCounts,
+                                backgroundColor: complexityBackgrounds,
+                                borderColor: complexityBorders,
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        legend: { display: false },
+                        tooltips: {
+                            callbacks: {
+                                label: function(tooltipItem, chartData) {
+                                    var dataset = chartData.datasets[tooltipItem.datasetIndex];
+                                    var value = parseInt(dataset.data[tooltipItem.index] || 0, 10);
+                                    return value + ' (' + tpOpsPercent(value, complexityTotal) + '%)';
+                                }
+                            }
+                        },
+                        scales: {
+                            xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+                            yAxes: [{ gridLines: { display: false } }]
+                        }
+                    }
+                });
+            }
         }
 
-        // Top copied items table
-        var itrows = "";
-        if (data.items.top_copied && data.items.top_copied.length > 0) {
-            $.each(data.items.top_copied, function(_, r) {
-                itrows += "<tr>" +
-                    "<td>" + escapeHtml(r.label ? r.label : ("item#" + r.id)) + "</td>" +
-                    "<td>" + escapeHtml(r.folder_title ? r.folder_title : "-") + "</td>" +
-                    "<td class='text-center'>" + (parseInt(r.perso || 0, 10) === 1 ? "<?php echo addslashes($lang->get('yes')); ?>" : "<?php echo addslashes($lang->get('no')); ?>") + "</td>" +
-                    "<td class='text-center'>" + (r.copies !== undefined ? r.copies : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.users_unique !== undefined ? r.users_unique : '-') + "</td>" +
-                    "<td class='text-center'>" + (r.last_activity ? fmtTs(r.last_activity) : '-') + "</td>" +
+    }
+
+    function renderUserRanking(data) {
+        var metric = $('#tp-users-ranking-metric').val() || 'overall';
+        var metricConfig = {
+            overall: {
+                field: 'activity_total',
+                label: '<?php echo addslashes($lang->get('ops_users_ranking_overall')); ?>'
+            },
+            views: {
+                field: 'views',
+                label: '<?php echo addslashes($lang->get('ops_metric_views')); ?>'
+            },
+            created: {
+                field: 'created',
+                label: '<?php echo addslashes($lang->get('ops_metric_created')); ?>'
+            },
+            modified: {
+                field: 'modified',
+                label: '<?php echo addslashes($lang->get('ops_metric_modified')); ?>'
+            },
+            password_actions: {
+                field: 'password_actions',
+                label: '<?php echo addslashes($lang->get('ops_users_ranking_password_actions')); ?>'
+            }
+        };
+        var config = metricConfig[metric] || metricConfig.overall;
+        var rankings = data.users && data.users.rankings ? data.users.rankings : {};
+        var rows = rankings[metric] || [];
+        var chartLabels = [];
+        var chartValues = [];
+        var tableRows = '';
+
+        $('#tp-users-ranking-value-label').text(config.label);
+
+        if (rows.length === 0) {
+            tableRows = "<tr><td colspan='3' class='text-center text-muted'><?php echo addslashes($lang->get('ops_no_data')); ?></td></tr>";
+        } else {
+            $.each(rows.slice(0, 5), function(index, user) {
+                var fullName = $.trim(((user.name || '') + ' ' + (user.lastname || '')));
+                var login = user.login || ('user#' + user.id);
+                var displayName = fullName || login;
+                var chartLabel = fullName && fullName !== login
+                    ? fullName + ' (' + login + ')'
+                    : login;
+                var value = parseInt(user[config.field] || 0, 10);
+                var loginDetail = fullName && fullName !== login
+                    ? "<small class='tp-users-ranking-login'>" + escapeHtml(login) + "</small>"
+                    : '';
+
+                chartLabels.push(chartLabel);
+                chartValues.push(value);
+                tableRows += "<tr>" +
+                    "<td class='text-center'><span class='badge badge-light tp-users-ranking-position'>" + (index + 1) + "</span></td>" +
+                    "<td><strong>" + escapeHtml(displayName) + "</strong>" + loginDetail + "</td>" +
+                    "<td class='text-right font-weight-bold'>" + value + "</td>" +
                     "</tr>";
             });
-        } else {
-            itrows = "<tr><td colspan='6' class='text-center text-muted'><?php echo addslashes($lang->get('ops_no_data')); ?></td></tr>";
         }
-        $('#tp-items-topcopied-body').html(itrows);
+        $('#tp-users-ranking-body').html(tableRows);
+
+        if (tpOpsCharts.usersRanking) {
+            tpOpsCharts.usersRanking.destroy();
+            tpOpsCharts.usersRanking = null;
+        }
+        var rankingChart = document.getElementById('tp-users-ranking-chart');
+        if (typeof Chart === 'undefined' || !rankingChart || chartValues.length === 0) {
+            return;
+        }
+
+        tpOpsCharts.usersRanking = new Chart(rankingChart.getContext('2d'), {
+            type: 'horizontalBar',
+            data: {
+                labels: chartLabels,
+                datasets: [
+                    {
+                        label: config.label,
+                        data: chartValues,
+                        backgroundColor: tpOpsPalette().blueFill,
+                        borderColor: tpOpsPalette().blue,
+                        borderWidth: 1,
+                        maxBarThickness: 34
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                legend: { display: false },
+                tooltips: {
+                    callbacks: {
+                        label: function(tooltipItem, chartData) {
+                            var dataset = chartData.datasets[tooltipItem.datasetIndex];
+                            return config.label + ': ' + parseInt(dataset.data[tooltipItem.index] || 0, 10);
+                        }
+                    }
+                },
+                scales: {
+                    xAxes: [{ ticks: { beginAtZero: true, precision: 0 } }],
+                    yAxes: [{ gridLines: { display: false } }]
+                }
+            }
+        });
+    }
+
+    function renderOperationalSummary(data, summary) {
+        var actions = summary.actions || {};
+        var inv = summary.inventory || {};
+        var created = summary.created || {};
+        var hibp = summary.hibp || {};
+        var pwSec = summary.passwordSecurity || {};
+
+        var totalEnabled = parseInt(summary.totalEnabled || 0, 10);
+        var active = parseInt(summary.active || 0, 10);
+        var inactive = parseInt(summary.inactive || 0, 10);
+        var pwned = parseInt(hibp.pwned || 0, 10);
+        var hibpUnknown = parseInt(hibp.unknown || 0, 10);
+        var unknownComplexity = parseInt(inv.unknown_complexity || 0, 10);
+        var weakCreated = parseInt(created.weak_complexity || 0, 10);
+        var secureScore = pwSec && pwSec.secure_score !== undefined && pwSec.secure_score !== null ? parseInt(pwSec.secure_score, 10) : null;
+
+        if (isNaN(pwned)) pwned = 0;
+        if (isNaN(hibpUnknown)) hibpUnknown = 0;
+        if (isNaN(unknownComplexity)) unknownComplexity = 0;
+        if (isNaN(weakCreated)) weakCreated = 0;
+        if (secureScore !== null && isNaN(secureScore)) secureScore = null;
+
+        var health = 'good';
+        var healthText = "<?php echo addslashes($lang->get('ops_health_good')); ?>";
+        if (pwned > 0 || (secureScore !== null && secureScore < 70)) {
+            health = 'critical';
+            healthText = "<?php echo addslashes($lang->get('ops_health_critical')); ?>";
+        } else if (weakCreated > 0 || unknownComplexity > 0 || hibpUnknown > 0) {
+            health = 'warning';
+            healthText = "<?php echo addslashes($lang->get('ops_health_warning')); ?>";
+        }
+
+        $('#tp-overview-health-card')
+            .removeClass('tp-ops-health-good tp-ops-health-warning tp-ops-health-critical')
+            .addClass('tp-ops-health-' + health);
+        $('#tp-overview-health').text(healthText);
+
+        var healthDetail = secureScore !== null
+            ? secureScore + "/100 <?php echo addslashes($lang->get('ops_kpi_items_secure_score')); ?>"
+            : "<?php echo addslashes($lang->get('ops_health_no_score')); ?>";
+        if (pwned > 0) {
+            healthDetail += " - " + pwned + " <?php echo addslashes($lang->get('ops_hibp_pwned')); ?>";
+        }
+        $('#tp-overview-health-detail').text(healthDetail);
+
+        var apiViews = parseInt(actions.api_views || 0, 10);
+        var views = parseInt(actions.views || 0, 10);
+        var apiShare = views > 0 ? Math.round((apiViews / Math.max(1, views)) * 100) : 0;
+        $('#tp-overview-api-share').text(apiShare + "%");
+        $('#tp-overview-api-detail').text(apiViews + " / " + views + " <?php echo addslashes($lang->get('ops_metric_views_short')); ?>");
+
+        var priorities = [];
+        if (pwned > 0) {
+            priorities.push({
+                level: 'danger',
+                icon: 'fas fa-exclamation-circle',
+                title: tpOpsText("<?php echo addslashes($lang->get('ops_priority_pwned')); ?>", {count: pwned}),
+                detail: "<?php echo addslashes($lang->get('ops_priority_action_passwords')); ?>"
+            });
+        }
+        if (weakCreated > 0) {
+            priorities.push({
+                level: 'warning',
+                icon: 'fas fa-unlock-alt',
+                title: tpOpsText("<?php echo addslashes($lang->get('ops_priority_weak_created')); ?>", {count: weakCreated}),
+                detail: "<?php echo addslashes($lang->get('ops_priority_action_quality')); ?>"
+            });
+        }
+        if (unknownComplexity > 0) {
+            priorities.push({
+                level: 'warning',
+                icon: 'fas fa-question-circle',
+                title: tpOpsText("<?php echo addslashes($lang->get('ops_priority_unknown_complexity')); ?>", {count: unknownComplexity}),
+                detail: "<?php echo addslashes($lang->get('ops_priority_action_quality')); ?>"
+            });
+        }
+        if (hibpUnknown > 0) {
+            priorities.push({
+                level: 'info',
+                icon: 'fas fa-user-secret',
+                title: tpOpsText("<?php echo addslashes($lang->get('ops_priority_hibp_unknown')); ?>", {count: hibpUnknown}),
+                detail: "<?php echo addslashes($lang->get('ops_priority_action_coverage')); ?>"
+            });
+        }
+        if (inactive > 0) {
+            priorities.push({
+                level: 'info',
+                icon: 'fas fa-user-clock',
+                title: tpOpsText("<?php echo addslashes($lang->get('ops_priority_inactive_users')); ?>", {count: inactive}),
+                detail: "<?php echo addslashes($lang->get('ops_priority_action_usage')); ?>"
+            });
+        }
+        var rows = "";
+        if (priorities.length === 0) {
+            rows = "<div class='tp-ops-priority-item tp-ops-priority-ok'>" +
+                "<i class='fas fa-check-circle'></i>" +
+                "<div><strong><?php echo addslashes($lang->get('ops_priority_ok')); ?></strong>" +
+                "<span><?php echo addslashes($lang->get('ops_priority_ok_detail')); ?></span></div>" +
+                "</div>";
+        } else {
+            $.each(priorities.slice(0, 5), function(_, p) {
+                rows += "<div class='tp-ops-priority-item tp-ops-priority-" + p.level + "'>" +
+                    "<i class='" + p.icon + "'></i>" +
+                    "<div><strong>" + escapeHtml(p.title) + "</strong><span>" + escapeHtml(p.detail) + "</span></div>" +
+                    "</div>";
+            });
+        }
+        $('#tp-ops-priority-list').html(rows);
+    }
+
+    function tpOpsText(template, values) {
+        return String(template).replace(/\{([a-zA-Z0-9_]+)\}/g, function(_, key) {
+            return values[key] !== undefined ? values[key] : '';
+        });
     }
 
     function fmtTs(ts) {
