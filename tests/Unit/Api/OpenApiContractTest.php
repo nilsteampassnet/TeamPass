@@ -202,6 +202,89 @@ class OpenApiContractTest extends TestCase
         self::assertStringContainsString('$intSuccessStatus = 201;', $folderController);
     }
 
+    public function testServerVersionFieldsMatchRuntimeResponses(): void
+    {
+        $spec = $this->getSpec();
+        $responses = $spec['components']['responses'];
+        $versionFields = [
+            'teampass_version',
+            'teampass_version_major',
+            'teampass_version_minor',
+        ];
+        $runtimeSources = [
+            (string) file_get_contents(__DIR__ . '/../../../app/api/Model/AuthModel.php'),
+            (string) file_get_contents(__DIR__ . '/../../../app/api/Model/MiscModel.php'),
+        ];
+
+        foreach (['JwtToken', 'ExtensionSettings'] as $responseName) {
+            $schema = $responses[$responseName]['content']['application/json']['schema'];
+            $properties = $schema['properties'] ?? [];
+            $required = $schema['required'] ?? [];
+
+            foreach ($versionFields as $field) {
+                self::assertArrayHasKey($field, $properties, "$responseName must document $field");
+                self::assertSame('string', $properties[$field]['type'] ?? null);
+                self::assertContains($field, $required, "$responseName must require $field");
+                self::assertNotEmpty($properties[$field]['description'] ?? '');
+            }
+        }
+        foreach ($runtimeSources as $runtimeSource) {
+            foreach ($versionFields as $field) {
+                self::assertStringContainsString(
+                    "'$field' =>",
+                    $runtimeSource,
+                    "Runtime response must keep $field while OpenAPI requires it"
+                );
+            }
+        }
+
+        $jwtRequired = $responses['JwtToken']['content']['application/json']['schema']['required'];
+        self::assertContains('token', $jwtRequired);
+
+        $extensionSchema = $responses['ExtensionSettings']['content']['application/json']['schema'];
+        self::assertArrayHasKey('extension_url', $extensionSchema['properties']);
+        self::assertArrayNotHasKey('cpassman_url', $extensionSchema['properties']);
+        self::assertContains('extension_url', $extensionSchema['required']);
+    }
+
+    public function testWritableFolderSeparatesItemRightsFromFolderManagementCapabilities(): void
+    {
+        $spec = $this->getSpec();
+        $schema = $spec['components']['schemas']['WritableFolder'];
+        $properties = $schema['properties'] ?? [];
+        $required = $schema['required'] ?? [];
+
+        foreach (['can_create', 'can_edit', 'can_delete'] as $field) {
+            self::assertArrayHasKey($field, $properties);
+            self::assertStringContainsString('Item right:', $properties[$field]['description'] ?? '');
+            self::assertSame([0, 1], $properties[$field]['enum'] ?? null);
+        }
+
+        foreach ([
+            'is_personal',
+            'is_personal_root',
+            'can_create_subfolder',
+            'can_rename_folder',
+            'can_move_folder',
+            'can_delete_folder',
+        ] as $field) {
+            self::assertArrayHasKey($field, $properties, "WritableFolder must document $field");
+            self::assertSame('integer', $properties[$field]['type'] ?? null);
+            self::assertSame([0, 1], $properties[$field]['enum'] ?? null);
+            self::assertContains($field, $required, "WritableFolder must require $field");
+            self::assertNotEmpty($properties[$field]['description'] ?? '');
+        }
+
+        self::assertStringContainsString(
+            'source only',
+            $properties['can_move_folder']['description']
+        );
+        self::assertStringContainsString(
+            'performs the final validation',
+            $properties['can_delete_folder']['description']
+        );
+    }
+
     public function testNoCustomReasonPhrasesLeft(): void
     {
         // REST-1/REST-4 guard: the legacy non-standard status lines must not come back
