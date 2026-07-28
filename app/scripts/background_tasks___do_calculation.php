@@ -170,19 +170,31 @@ foreach ($items as $item) {
 
 
     $passwordLength = strlen($password);
+    $metadataUpdates = [
+        'pw_len' => $passwordLength,
+    ];
     if ($passwordLength > 0 && $passwordLength <= $SETTINGS['pwd_maximum_length']) {
-        $passwordStrength = $zxcvbn->passwordStrength($password);
-        $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+        $passwordStrength = evaluatePasswordStrengthSafely(
+            $password,
+            [$zxcvbn, 'passwordStrength']
+        );
+        if ($passwordStrength['success'] === true) {
+            $metadataUpdates['complexity_level'] = convertPasswordStrength((int) $passwordStrength['score']);
+        } else {
+            // Preserve the exact password and leave its complexity unassessed.
+            // The background batch must continue with the remaining items.
+            error_log(
+                'Background password-strength calculation skipped item '
+                . (int) $item['itemId'] . ': ' . $passwordStrength['reason']
+            );
+        }
     } else {
-        $passwordStrengthScore = 0;
+        $metadataUpdates['complexity_level'] = 0;
     }
-    
+
     DB::update(
         prefixTable('items'),
-        array(
-            'pw_len' => $passwordLength,
-            'complexity_level' => $passwordStrengthScore,
-        ),
+        $metadataUpdates,
         'id = %i',
         $item['itemId']
     );
