@@ -349,6 +349,7 @@ switch ($post_type) {
         $reuseSalt = $reuseSalt . '|item-health|' . $userId;
         $zxcvbn = new \ZxcvbnPhp\Zxcvbn();
         $skippedAssessments = 0;
+        $unassessableItems = [];
 
         $total = (int) DB::queryFirstField(
             'SELECT COUNT(*)
@@ -438,13 +439,14 @@ switch ($post_type) {
                         $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
                         $metadataUpdates['complexity_level'] = $complexityLevel;
                     } else {
-                        // Keep the exact credential and its unassessed complexity metadata.
-                        // One malformed legacy item must never abort the remaining scan.
+                        // Keep the exact credential and record that its complexity cannot be
+                        // assessed. One malformed legacy item must never abort the remaining scan.
+                        // The sentinel reads as "unassessed" downstream and, when the password
+                        // changed, replaces a now stale complexity that would misreport the item.
+                        $complexityLevel = TP_PW_COMPLEXITY_UNASSESSABLE;
+                        $metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;
                         $skippedAssessments++;
-                        error_log(
-                            'Security posture skipped password-strength assessment for item '
-                            . $itemId . ': ' . $passwordStrength['reason']
-                        );
+                        $unassessableItems[] = $itemId . ' (' . $passwordStrength['reason'] . ')';
                     }
                 }
                 if (count($metadataUpdates) > 0) {
@@ -506,6 +508,15 @@ switch ($post_type) {
 
             // Drop the plaintext as soon as possible.
             $plaintext = '';
+        }
+
+        // One aggregated line per chunk instead of one per item.
+        if (count($unassessableItems) > 0) {
+            error_log(
+                'TEAMPASS - security posture scan: ' . count($unassessableItems)
+                . ' password(s) could not be assessed and were flagged as unassessable - items: '
+                . implode(', ', $unassessableItems)
+            );
         }
 
         $processed = count($rows);

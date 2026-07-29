@@ -3293,10 +3293,14 @@ switch ($inputData['type']) {
                         $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
                         $metadataUpdates['complexity_level'] = $complexityLevel;
                     } else {
-                        // Existing malformed credentials remain usable but unassessed.
+                        // Existing malformed credentials remain usable but unassessed. The
+                        // sentinel keeps that state consistent with the posture scan and the
+                        // background calculation, which both stop reprocessing the item.
+                        $complexityLevel = TP_PW_COMPLEXITY_UNASSESSABLE;
+                        $metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;
                         error_log(
-                            'Item card skipped password-strength assessment for item '
-                            . (int) $inputData['id'] . ': ' . $passwordStrength['reason']
+                            'TEAMPASS - item card: password strength could not be assessed for item '
+                            . (int) $inputData['id'] . ' (' . $passwordStrength['reason'] . ')'
                         );
                     }
                 }

@@ -139,6 +139,7 @@ $items = DB::query(
     0,
     -1
 );
+$unassessableItems = [];
 foreach ($items as $item) {
     // Get item key
     $itemKey = DB::queryFirstRow(
@@ -181,12 +182,12 @@ foreach ($items as $item) {
         if ($passwordStrength['success'] === true) {
             $metadataUpdates['complexity_level'] = convertPasswordStrength((int) $passwordStrength['score']);
         } else {
-            // Preserve the exact password and leave its complexity unassessed.
-            // The background batch must continue with the remaining items.
-            error_log(
-                'Background password-strength calculation skipped item '
-                . (int) $item['itemId'] . ': ' . $passwordStrength['reason']
-            );
+            // Preserve the exact password and flag the complexity as unassessable. The sentinel
+            // still reads as "unassessed" everywhere, but it takes the item out of this batch's
+            // selection: leaving the column unset would make the same rows be decrypted and
+            // re-evaluated on every run, and would stall the batch past 100 such items.
+            $metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;
+            $unassessableItems[] = (int) $item['itemId'] . ' (' . $passwordStrength['reason'] . ')';
         }
     } else {
         $metadataUpdates['complexity_level'] = 0;
@@ -197,6 +198,15 @@ foreach ($items as $item) {
         $metadataUpdates,
         'id = %i',
         $item['itemId']
+    );
+}
+
+// One aggregated line per run instead of one per item: the affected set is stable over time.
+if (count($unassessableItems) > 0) {
+    error_log(
+        'TEAMPASS - do_calculation: ' . count($unassessableItems)
+        . ' password(s) could not be assessed and were flagged as unassessable - items: '
+        . implode(', ', $unassessableItems)
     );
 }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use PHPUnit\Framework\TestCase;
 
 require_once __DIR__ . '/../../app/sources/password_strength.functions.php';
+require_once __DIR__ . '/../../app/sources/security_posture_logic.php';
 
 /**
  * Regression coverage for malformed legacy password bytes passed to zxcvbn-php.
@@ -102,6 +103,90 @@ class PasswordStrengthSafetyTest extends TestCase
             self::assertStringContainsString('evaluatePasswordStrengthSafely(', $source, $caller);
             self::assertStringNotContainsString('->passwordStrength(', $source, $caller);
         }
+    }
+
+    /**
+     * Repo-wide guard: a new server-side caller must not reach zxcvbn directly.
+     *
+     * The list above only pins the four known call sites; this sweep is what keeps a future
+     * file from reintroducing the fatal error. Instantiating Zxcvbn is allowed — callers may
+     * build the object once and hand it over as the adapter's evaluator — but only the adapter
+     * may actually invoke passwordStrength(), because that is the call that must be guarded.
+     */
+    public function testNoServerSideFileCallsZxcvbnOutsideTheSafeAdapter(): void
+    {
+        $root = dirname(__DIR__, 2);
+        $adapter = $root . '/app/sources/password_strength.functions.php';
+        $offenders = [];
+
+        $iterator = new RecursiveIteratorIterator(
+            new RecursiveCallbackFilterIterator(
+                new RecursiveDirectoryIterator($root . '/app', FilesystemIterator::SKIP_DOTS),
+                static function (SplFileInfo $current): bool {
+                    // Third-party code owns its own call sites.
+                    return $current->getFilename() !== 'vendor';
+                }
+            )
+        );
+
+        foreach ($iterator as $file) {
+            if ($file->isFile() === false || $file->getExtension() !== 'php') {
+                continue;
+            }
+
+            $path = (string) $file->getRealPath();
+            if ($path === $adapter) {
+                continue;
+            }
+
+            if (str_contains((string) file_get_contents($path), '->passwordStrength(') === true) {
+                $offenders[] = str_replace($root . '/', '', $path);
+            }
+        }
+
+        self::assertSame(
+            [],
+            $offenders,
+            'These files must call evaluatePasswordStrengthSafely() instead of zxcvbn directly.'
+        );
+    }
+
+    /**
+     * An unassessable password must be marked, not left unset.
+     *
+     * Leaving complexity_level at NULL/-1/'' keeps the item inside the background calculation
+     * work queue for ever: the same rows get decrypted and re-evaluated on every run, and past
+     * 100 such items the LIMIT 0,100 window is saturated and no other item is ever processed.
+     */
+    public function testUnassessablePasswordsAreMarkedWithTheSentinel(): void
+    {
+        $root = dirname(__DIR__, 2);
+
+        self::assertStringContainsString(
+            "define('TP_PW_COMPLEXITY_UNASSESSABLE', -2);",
+            (string) file_get_contents($root . '/app/config/include.php')
+        );
+
+        $writers = [
+            $root . '/app/scripts/background_tasks___do_calculation.php',
+            $root . '/app/sources/dashboard.queries.php',
+            $root . '/app/sources/items.queries.php',
+        ];
+
+        foreach ($writers as $writer) {
+            self::assertStringContainsString(
+                "\$metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;",
+                (string) file_get_contents($writer),
+                $writer
+            );
+        }
+
+        // The sentinel must still read as "unassessed" everywhere, so the item is never
+        // presented as healthy or weak on the strength of metadata that could not be computed.
+        self::assertSame(
+            'unassessed',
+            securityPasswordHealthClassify(-2, 24, true, (int) 38, 12)
+        );
     }
 
     public function testSecurityPostureReportsSkippedItemsAndHandlesHttpFailure(): void

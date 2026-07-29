@@ -69,7 +69,9 @@ class PasswordHealthConsistencyTest extends TestCase
         $items = $this->source('app/sources/items.queries.php');
         $start = strpos($items, "\$arrData['pw_length'] = \$pwLength;");
         self::assertIsInt($start);
-        $cardSource = substr($items, $start, 2500);
+        // Window sized to cover the whole metadata-repair block, which grew when the
+        // unassessable-password branch was added. It only enforces locality, not a byte budget.
+        $cardSource = substr($items, $start, 3000);
 
         // The card is the only health surface holding the decrypted password: it must classify
         // from the live value and repair the stored metadata, not report "unassessed" on data it

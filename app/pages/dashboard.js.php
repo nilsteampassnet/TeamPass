@@ -121,16 +121,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         payload.key = TP_DASH.key;
         return $.post('sources/dashboard.queries.php', payload)
             .done(function (data) {
+                let decoded;
+                // Only the decoding is guarded: an exception raised by the callback itself is a
+                // rendering bug and must keep surfacing instead of being reported as a transport
+                // failure.
                 try {
-                    data = prepareExchangedData(data, 'decode', TP_DASH.key);
-                    callback(data);
+                    decoded = prepareExchangedData(data, 'decode', TP_DASH.key);
                 } catch (error) {
                     if (typeof errorCallback === 'function') {
                         errorCallback();
-                    } else {
-                        throw error;
+                        return;
                     }
+                    throw error;
                 }
+                callback(decoded);
             })
             .fail(function () {
                 if (typeof errorCallback === 'function') {
@@ -397,7 +401,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     function dashboardScanChunk(offset, includeHibp) {
         dashboardPost({ type: 'deep_scan_chunk', offset: offset, limit: TP_DASH.chunk, include_hibp: includeHibp }, function (data) {
             if (!data || data.error === true) {
-                dashboardScanFinish(false);
+                dashboardScanFinish(false, data ? data.message : '');
                 return;
             }
             dashboardScanSkipped += parseInt(data.skipped_count, 10) || 0;
@@ -405,7 +409,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             $('#dashboard-progress-bar').css('width', pct + '%').text(pct + '%');
             if (data.done === true) {
                 dashboardPost({ type: 'finalize_scan' }, function (finalData) {
-                    dashboardScanFinish(Boolean(finalData) && finalData.error !== true);
+                    if (!finalData || finalData.error === true) {
+                        dashboardScanFinish(false, finalData ? finalData.message : '');
+                        return;
+                    }
+                    dashboardScanFinish(true);
                 }, function () {
                     dashboardScanFinish(false);
                 });
@@ -417,7 +425,9 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         });
     }
 
-    function dashboardScanFinish(success) {
+    // `message` is the server-side reason when the backend answered with an explicit error;
+    // it is preferred over the generic wording so the user knows what to fix.
+    function dashboardScanFinish(success, message) {
         const btn = $('#dashboard-scan-btn');
         btn.prop('disabled', false).html('<i class="fa-solid fa-magnifying-glass-chart mr-1"></i>' + TP_DASH.strings.scanButton);
         $('#dashboard-progress-wrap').hide();
@@ -427,7 +437,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             } else if (success === true) {
                 toastr.success(TP_DASH.strings.done);
             } else {
-                toastr.error(TP_DASH.strings.scanFailed);
+                toastr.error(typeof message === 'string' && message !== '' ? message : TP_DASH.strings.scanFailed);
             }
         }
         dashboardLoadSummary();
