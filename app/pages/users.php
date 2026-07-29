@@ -99,12 +99,15 @@ if ((int) ($SETTINGS['leaver_risk_enabled'] ?? 0) === 1) {
 // PREPARE LIST OF OPTIONS
 $optionsManagedBy = '';
 $optionsRoles = '';
-$userRoles = explode(';', $session->get('user-roles'));
 // If administrator then all roles are shown
 // else only the Roles the users is associated to.
 if ((int) $session->get('user-admin') === 1) {
     $optionsManagedBy .= '<option value="0">' . $lang->get('administrators_only') . '</option>';
 }
+
+// Roles the caller may assign to the new user. Shared definition, so this form, the user
+// edit form and the write paths cannot drift apart.
+$grantableRoleIds = callerGrantableRoleIds();
 
 $rows = DB::query(
     'SELECT id, title, creator_id
@@ -115,11 +118,7 @@ foreach ($rows as $record) {
     if ((int) $session->get('user-admin') === 1 || in_array($record['id'], $session->get('user-roles_array')) === true) {
         $optionsManagedBy .= '<option value="' . strval($record['id']) . '">' . $lang->get('managers_of') . ' ' . addslashes(strval($record['title'])) . '</option>';
     }
-    if (
-        (int) $session->get('user-admin') === 1
-        || (((int) $session->get('user-manager') === 1 || (int) $session->get('user-can_manage_all_users') === 1)
-            && (in_array($record['id'], $userRoles) === true) || intval($record['creator_id']) === intval($session->get('user-id')))
-    ) {
+    if (in_array((int) $record['id'], $grantableRoleIds, true) === true) {
         $optionsRoles .= '<option value="' . strval($record['id']) . '">' . addslashes(strval($record['title'])) . '</option>';
     }
 }

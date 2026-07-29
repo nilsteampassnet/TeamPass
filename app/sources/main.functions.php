@@ -55,6 +55,7 @@ require_once __DIR__ . '/otp.functions.php';
 require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
 require_once __DIR__ . '/password_strength.functions.php';
+require_once __DIR__ . '/roles_scope.functions.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
@@ -10833,6 +10834,70 @@ function callerMayManageUser(int $targetUserId): bool
     }
 
     return true;
+}
+
+/**
+ * Returns the ids of the roles the caller is entitled to grant or revoke.
+ *
+ * An administrator may act on every role. Anyone else is limited to the roles they hold
+ * and to the roles they created, which is the scope already enforced on the
+ * 'add_one_role_to_user' action and offered by the new user form. This function is the
+ * single definition of that scope: the role dropdowns and the write paths must both derive
+ * from it, otherwise a list narrower than the write guard silently drops roles on save.
+ *
+ * @return array<int> Role ids the caller may grant, empty when none.
+ */
+function callerGrantableRoleIds(): array
+{
+    $session = SessionManager::getSession();
+
+    if ((int) $session->get('user-admin') === 1) {
+        return array_map(
+            'intval',
+            array_column(DB::query('SELECT id FROM ' . prefixTable('roles_title')), 'id')
+        );
+    }
+
+    // user-roles_array may hold empty strings, and %li renders an empty array as "()",
+    // which is a SQL syntax error. Fall back to the created roles only in that case.
+    $callerRoles = array_filter((array) $session->get('user-roles_array'));
+    $rows = count($callerRoles) === 0
+        ? DB::query(
+            'SELECT id FROM ' . prefixTable('roles_title') . '
+            WHERE creator_id = %i',
+            (int) $session->get('user-id')
+        )
+        : DB::query(
+            'SELECT id FROM ' . prefixTable('roles_title') . '
+            WHERE id IN %li OR creator_id = %i',
+            $callerRoles,
+            (int) $session->get('user-id')
+        );
+
+    return array_map('intval', array_column($rows, 'id'));
+}
+
+/**
+ * Merges a submitted role set with the roles the caller is not entitled to touch.
+ *
+ * The user edit form replaces the whole manual role set while a manager only ever sees a
+ * subset of it, so the submission alone cannot be taken as the final state: applying it
+ * as-is would silently revoke every role outside the caller's scope. Roles within that
+ * scope are taken from the submission, all the others are preserved exactly as stored.
+ * Roles coming from AD are not concerned, they live under another source.
+ *
+ * @param int   $targetUserId     Id of the user whose roles are being saved.
+ * @param array $submittedRoleIds Role ids coming from the form.
+ *
+ * @return array<int> Role ids to persist as manual roles.
+ */
+function reconcileManualUserRoles(int $targetUserId, array $submittedRoleIds): array
+{
+    return mergeGrantableRoleSets(
+        getUserRoles($targetUserId, 'manual'),
+        $submittedRoleIds,
+        callerGrantableRoleIds()
+    );
 }
 
 /**
