@@ -1129,6 +1129,7 @@ switch ($inputData['type']) {
                 }
 
                 // Insert new item in table LOGS_ITEMS
+                // The at_import reason marks the creation source, exactly like the KeePass path.
                 DB::insert(
                     prefixTable('log_items'),
                     array(
@@ -1136,6 +1137,7 @@ switch ($inputData['type']) {
                         'date' => time(),
                         'id_user' => $session->get('user-id'),
                         'action' => 'at_creation',
+                        'raison' => 'at_import',
                     )
                 );
 

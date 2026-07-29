@@ -295,11 +295,11 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         } else if ($('#export-format').val() === 'html') {
             // Offline mode: build a single self-contained, password-encrypted HTML file
             generateOfflineFile(ids);
-        } else if ($('#export-format').val() === 'csv') {
-            // Export to CSV
+        } else if ($('#export-format').val() === 'csv' || $('#export-format').val() === 'xml') {
+            // Export to CSV or to KeePass 2.x XML
             $.post(
                 "sources/export.queries.php", {
-                    type: 'export_to_csv_format',
+                    type: 'export_to_' + $('#export-format').val() + '_format',
                     ids: (JSON.stringify(ids))
                 },
                 function(data) {
@@ -308,6 +308,21 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                         .find('span')
                         .html('');
 
+                    //decrypt data
+                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
+
+                    // Server side reported a failure
+                    if (data.error === true) {
+                        toastr.remove();
+                        toastr.error(
+                            data.message || '',
+                            '<?php echo $lang->get('error'); ?>', {
+                                timeOut: 5000,
+                                progressBar: true
+                            }
+                        );
+                        return;
+                    }
 
                     toastr.remove();
                     toastr.success(
@@ -316,12 +331,16 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                             timeOut: 1000
                         }
                     );
-                    
-                    //decrypt data
-                    data = decodeQueryReturn(data, '<?php echo $session->get('key'); ?>');
-                    
-                    // download VSC file
-                    download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");//decodeURI(data[0].content)
+
+                    // download file
+                    if (data.xml_content) {
+                        // XML is base64 encoded to keep the UTF-8 bytes intact
+                        const byteCharacters = atob(data.xml_content);
+                        const byteArray = Uint8Array.from(byteCharacters, c => c.charCodeAt(0));
+                        download(new Blob([byteArray]), $('#export-filename').val() + ".xml", "text/xml");
+                    } else {
+                        download(new Blob([data.csv_content]), $('#export-filename').val() + ".csv", "text/csv");
+                    }
                 }
             );
         }

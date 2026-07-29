@@ -720,8 +720,8 @@
         "/folder/writableFolders": {
             "get": {
                 "operationId": "folderWritableFolders",
-                "summary": "List accessible folders with read-only flag, in tree order",
-                "description": "Historical name — returns ALL accessible folders; check 'is_readonly' on each entry. Rows are ordered by 'position' (MPTT pre-order), so parent_id + level + position rebuild the exact folder hierarchy, sibling order included.",
+                "summary": "List accessible folders with item and folder-management capabilities",
+                "description": "Historical name — returns ALL accessible folders. access_type, is_readonly, can_create, can_edit and can_delete describe operations on items contained in the folder. The can_*_folder fields describe folder-management UI capabilities and never replace the authoritative checks performed by POST /folder/create, PUT /folder/update and DELETE /folder/delete. Rows are ordered by 'position' (MPTT pre-order), so parent_id + level + position rebuild the exact folder hierarchy, sibling order included.",
                 "responses": {
                     "200": {
                         "description": "Flat folder list",
@@ -1567,6 +1567,26 @@
             },
             "WritableFolder": {
                 "type": "object",
+                "required": [
+                    "id",
+                    "label",
+                    "level",
+                    "parent_id",
+                    "first_position",
+                    "position",
+                    "complexity",
+                    "is_readonly",
+                    "access_type",
+                    "can_create",
+                    "can_edit",
+                    "can_delete",
+                    "is_personal",
+                    "is_personal_root",
+                    "can_create_subfolder",
+                    "can_rename_folder",
+                    "can_move_folder",
+                    "can_delete_folder"
+                ],
                 "properties": {
                     "id": {
                         "type": "integer"
@@ -1600,11 +1620,15 @@
                     },
                     "is_readonly": {
                         "type": "integer",
-                        "description": "1 when the resolved access type is R. ND/NE/NDNE are NOT read-only — check can_edit / can_delete."
+                        "description": "1 when the resolved item access type is R. ND/NE/NDNE are NOT read-only — check can_edit and can_delete.",
+                        "enum": [
+                            0,
+                            1
+                        ]
                     },
                     "access_type": {
                         "type": "string",
-                        "description": "Effective access level, least-permissive-wins across all the user's roles (R > NDNE > NE = ND > W).",
+                        "description": "Effective access level for items contained in this folder, least-permissive-wins across all the user's roles (R > NDNE > NE = ND > W).",
                         "enum": [
                             "R",
                             "W",
@@ -1615,15 +1639,75 @@
                     },
                     "can_create": {
                         "type": "integer",
-                        "description": "1 when the user may create items in this folder (false only for R)."
+                        "description": "Item right: 1 when the user may create an item in this folder (false only for R). This does not authorize creating a subfolder.",
+                        "enum": [
+                            0,
+                            1
+                        ]
                     },
                     "can_edit": {
                         "type": "integer",
-                        "description": "1 when the user may edit existing items (false for NE, NDNE and R)."
+                        "description": "Item right: 1 when the user may edit existing items in this folder (false for NE, NDNE and R). This does not authorize renaming or moving the folder.",
+                        "enum": [
+                            0,
+                            1
+                        ]
                     },
                     "can_delete": {
                         "type": "integer",
-                        "description": "1 when the user may delete items (false for ND, NDNE and R)."
+                        "description": "Item right: 1 when the user may delete items in this folder (false for ND, NDNE and R). This does not authorize deleting the folder.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "is_personal": {
+                        "type": "integer",
+                        "description": "1 when the folder is part of a personal folder tree; 0 for the shared domain. This endpoint only ever lists the caller's own personal folders, so in practice 1 means 'mine'.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "is_personal_root": {
+                        "type": "integer",
+                        "description": "1 for the protected root of the personal folder domain. A personal root cannot be renamed, moved or deleted.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "can_create_subfolder": {
+                        "type": "integer",
+                        "description": "Folder-management hint: 1 when POST /folder/create may use this folder as its parent according to the current access, read-only state, API create permission and global folder-management rules. The create route performs the final validation.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "can_rename_folder": {
+                        "type": "integer",
+                        "description": "Folder-management hint: 1 when the source folder is eligible for rename according to the current access, read-only state, API update permission, global folder-management rules and personal-root protection. PUT /folder/update performs the final validation.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "can_move_folder": {
+                        "type": "integer",
+                        "description": "Folder-management hint for the source only: 1 when the source folder is eligible to move. PUT /folder/update separately validates the chosen destination, including access, read-only state, cycles, personal/shared domain boundaries and root permission.",
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "can_delete_folder": {
+                        "type": "integer",
+                        "description": "Folder-management hint: 1 when the source folder is eligible for deletion according to the current access, read-only state, API delete permission, global folder-management rules and personal-root protection. DELETE /folder/delete performs the final validation.",
+                        "enum": [
+                            0,
+                            1
+                        ]
                     }
                 }
             },
@@ -1689,9 +1773,33 @@
                     "application/json": {
                         "schema": {
                             "type": "object",
+                            "required": [
+                                "token",
+                                "teampass_version",
+                                "teampass_version_major",
+                                "teampass_version_minor"
+                            ],
                             "properties": {
                                 "token": {
                                     "type": "string"
+                                },
+                                "teampass_version": {
+                                    "type": "string",
+                                    "description": "Complete TeamPass server release version returned in the response body, outside the JWT.",
+                                    "pattern": "^\\d+\\.\\d+\\.\\d+\\.\\d+$",
+                                    "example": "3.2.1.2"
+                                },
+                                "teampass_version_major": {
+                                    "type": "string",
+                                    "description": "Base TeamPass server version (major.minor.patch) returned in the response body.",
+                                    "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                                    "example": "3.2.1"
+                                },
+                                "teampass_version_minor": {
+                                    "type": "string",
+                                    "description": "Final TeamPass release revision component returned in the response body.",
+                                    "pattern": "^\\d+$",
+                                    "example": "2"
                                 }
                             }
                         }
@@ -1704,6 +1812,14 @@
                     "application/json": {
                         "schema": {
                             "type": "object",
+                            "required": [
+                                "extension_fqdn",
+                                "extension_key",
+                                "extension_url",
+                                "teampass_version",
+                                "teampass_version_major",
+                                "teampass_version_minor"
+                            ],
                             "properties": {
                                 "extension_fqdn": {
                                     "type": "string"
@@ -1711,8 +1827,26 @@
                                 "extension_key": {
                                     "type": "string"
                                 },
-                                "cpassman_url": {
+                                "extension_url": {
                                     "type": "string"
+                                },
+                                "teampass_version": {
+                                    "type": "string",
+                                    "description": "Complete TeamPass server release version, refreshed independently of authentication.",
+                                    "pattern": "^\\d+\\.\\d+\\.\\d+\\.\\d+$",
+                                    "example": "3.2.1.2"
+                                },
+                                "teampass_version_major": {
+                                    "type": "string",
+                                    "description": "Base TeamPass server version (major.minor.patch).",
+                                    "pattern": "^\\d+\\.\\d+\\.\\d+$",
+                                    "example": "3.2.1"
+                                },
+                                "teampass_version_minor": {
+                                    "type": "string",
+                                    "description": "Final TeamPass release revision component.",
+                                    "pattern": "^\\d+$",
+                                    "example": "2"
                                 }
                             }
                         }

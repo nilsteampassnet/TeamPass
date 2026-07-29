@@ -322,6 +322,31 @@ class FolderModel
             return $this->apiError(422, 'Invalid parameters');
         }
 
+        // Global folder-management gate, applied as a fail-fast pre-check.
+        //
+        // FolderManager::canCreateFolder() (sources/folders.class.php) remains the
+        // authoritative backstop and evaluates the same rule — the block below is a
+        // deliberate mirror, kept for two reasons: it avoids loading folders.class.php
+        // for a caller that will be rejected anyway, and it returns 403 BEFORE the
+        // business validations (numeric title, duplicate, complexity ceiling), so an
+        // unauthorized caller learns nothing about the parent folder.
+        // Keep both in sync; the rejection maps to the same 403 either way.
+        $configManager = new ConfigManager();
+        $settings = $configManager->getAllSettings();
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: [
+                'is_admin' => $is_admin,
+                'is_manager' => $is_manager,
+                'user_can_create_root_folder' => $user_can_create_root_folder,
+                'user_can_manage_all_users' => $user_can_manage_all_users,
+            ],
+            isPersonal: $isPersonal === 1,
+            enableUserCanCreateFolders: isset($settings['enable_user_can_create_folders']) === true
+                && (int) $settings['enable_user_can_create_folders'] === 1
+        ) === false) {
+            return $this->apiError(403, 'Access denied: insufficient permissions to create a folder');
+        }
+
         // Create folder
         require_once API_ROOT_PATH . '/../sources/folders.class.php';
         $lang = new Language();
@@ -454,8 +479,7 @@ class FolderModel
 
         // Personal root protection — cannot be renamed or moved
         $isPersonalRoot = (int) $folder['parent_id'] === 0
-            && (int) $folder['personal_folder'] === 1
-            && (string) $folder['title'] === (string) $userId;
+            && (int) $folder['personal_folder'] === 1;
         if ($isPersonalRoot === true && ($titleChanged === true || $parentChanged === true)) {
             return $this->apiError(403, 'A personal root folder cannot be renamed or moved');
         }
@@ -556,14 +580,12 @@ class FolderModel
         }
 
         // Global permission gate
-        if (!(
-            $isPersonal === 1
-            || (int) ($userData['is_admin'] ?? 0) === 1
-            || (int) ($userData['is_manager'] ?? 0) === 1
-            || (int) ($userData['user_can_manage_all_users'] ?? 0) === 1
-            || (isset($SETTINGS['enable_user_can_create_folders']) === true && (int) $SETTINGS['enable_user_can_create_folders'] === 1)
-            || (int) ($userData['user_can_create_root_folder'] ?? 0) === 1
-        )) {
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: $userData,
+            isPersonal: $isPersonal === 1,
+            enableUserCanCreateFolders: isset($SETTINGS['enable_user_can_create_folders']) === true
+                && (int) $SETTINGS['enable_user_can_create_folders'] === 1
+        ) === false) {
             return $this->apiError(403, 'Access denied: insufficient permissions to update this folder');
         }
 
@@ -653,14 +675,12 @@ class FolderModel
         $isPersonal = (int) $folder['personal_folder'] === 1;
 
         // Global permission gate — same expression as the web delete handler
-        if (!(
-            $isPersonal === true
-            || (int) ($userData['is_admin'] ?? 0) === 1
-            || (int) ($userData['is_manager'] ?? 0) === 1
-            || (int) ($userData['user_can_manage_all_users'] ?? 0) === 1
-            || (isset($SETTINGS['enable_user_can_create_folders']) === true && (int) $SETTINGS['enable_user_can_create_folders'] === 1)
-            || (int) ($userData['user_can_create_root_folder'] ?? 0) === 1
-        )) {
+        if ($folderAccessModel->hasFolderManagementPrivilege(
+            userData: $userData,
+            isPersonal: $isPersonal,
+            enableUserCanCreateFolders: isset($SETTINGS['enable_user_can_create_folders']) === true
+                && (int) $SETTINGS['enable_user_can_create_folders'] === 1
+        ) === false) {
             return $this->apiError(403, 'Access denied: insufficient permissions to delete this folder');
         }
 

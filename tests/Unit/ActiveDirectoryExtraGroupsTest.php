@@ -18,6 +18,10 @@ use TeampassClasses\LdapExtra\ActiveDirectoryExtra;
  *  2. A failed membership lookup must be reported as an error. Returning an empty group list
  *     with error=false made identify.php call removeUserRolesBySource() and silently strip
  *     every AD-derived role of the user who was logging in.
+ *  3. The Active Directory primary group must be resolved on its own. 3.2.1.2 replaced the
+ *     LdapRecord relation, which merges it, by a raw filter on the group `member` attribute,
+ *     where AD never records primary membership — mapping Domain Users to a role stopped
+ *     working and every AD role was removed at each login (issue #5313).
  */
 class ActiveDirectoryExtraGroupsTest extends TestCase
 {
@@ -180,5 +184,64 @@ class ActiveDirectoryExtraGroupsTest extends TestCase
             'Active Directory has no gidNumber attribute: the default must be objectguid '
             . 'in getADGroups() as well as in getUserADGroups()'
         );
+    }
+
+    /**
+     * Issue #5313: the group lookup must not rely on the `member` attribute alone. Active
+     * Directory records primary membership only in the user's primaryGroupID, so a filter on
+     * `member` — with or without LDAP_MATCHING_RULE_IN_CHAIN — never returns Domain Users.
+     */
+    public function testPrimaryGroupIsResolvedInGroupMembershipLookup(): void
+    {
+        $source = $this->classSource();
+
+        $this->assertMatchesRegularExpression(
+            '/function getPrimaryGroupIdentifier\s*\(/',
+            $source,
+            'getUserADGroups() must resolve the primary group separately, or Domain Users '
+            . 'is missing from every login'
+        );
+        $this->assertStringContainsString(
+            '$this->getPrimaryGroupIdentifier(',
+            $source,
+            'The primary group resolution must actually be called by getUserADGroups()'
+        );
+        $this->assertStringContainsString(
+            'primaryGroup()',
+            $source,
+            "The RID arithmetic must be delegated to LdapRecord's HasOnePrimaryGroup relation"
+        );
+    }
+
+    /**
+     * The same blind spot would lock the whole domain out when login is restricted to the
+     * default primary group, in both membership check modes.
+     */
+    public function testPrimaryGroupIsResolvedInAllowedLoginGroupChecks(): void
+    {
+        $source = $this->classSource();
+
+        $this->assertSame(
+            2,
+            substr_count($source, '$this->isPrimaryGroupMember('),
+            'isUserInAllowedGroup() and isUserInAllowedGroupByMemberOf() must both accept the '
+            . 'primary group, otherwise restricting login to Domain Users denies everyone'
+        );
+    }
+
+    /**
+     * An unresolvable primary group is a partial answer, never a failed lookup: the groups
+     * already read from the `member` attribute must survive it.
+     */
+    public function testUnresolvablePrimaryGroupDoesNotBreakTheContract(): void
+    {
+        $result = (new ActiveDirectoryExtra())->getUserADGroups(
+            'cn=jdoe,ou=users,dc=example,dc=com',
+            $this->unreachableConnection(),
+            ['ldap_guid_attibute' => 'cn']
+        );
+
+        $this->assertArrayHasKey('userGroups', $result);
+        $this->assertIsArray($result['userGroups']);
     }
 }

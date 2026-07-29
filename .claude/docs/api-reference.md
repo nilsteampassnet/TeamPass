@@ -268,17 +268,29 @@ List all folders accessible to the authenticated user.
 
 List all folders accessible to the user with label, level, and read-only flag, **as a flat list in tree order**.
 
-**Response:** array of `{ id, label, level, parent_id, first_position, position, complexity, is_readonly, access_type, can_create, can_edit, can_delete }`.
+**Response:** array of `{ id, label, level, parent_id, first_position, position, complexity, is_readonly, access_type, can_create, can_edit, can_delete, is_personal, is_personal_root, can_create_subfolder, can_rename_folder, can_move_folder, can_delete_folder }`.
 
 - `complexity` — minimum password strength required in the folder (`0` | `20` | `38` | `48` | `60`, the `TP_PW_STRENGTH_*` scale). LEFT JOIN on `misc` (`type='complex'`, `intitule=<folder id>`); `0` when no row exists (personal roots). Same field as in `listFolders`.
 - `access_type` — effective level resolved least-permissive-wins across every role: `W` | `ND` | `NE` | `NDNE` | `R`
 - `is_readonly: 1` ⟺ `access_type === 'R'` (no create, no edit, no delete)
-- `can_create` / `can_edit` / `can_delete` — granular rights. **`is_readonly: 0` does not mean full write**: `ND` blocks delete, `NE` blocks edit, `NDNE` blocks both. Clients must read the granular flags or they will hit surprise `403`s on update/delete.
+- `can_create` / `can_edit` / `can_delete` — **item rights** on the folder's contents. **`is_readonly: 0` does not mean full write**: `ND` blocks delete, `NE` blocks edit, `NDNE` blocks both. Clients must read the granular flags or they will hit surprise `403`s on update/delete.
 - `position` — the folder's `nested_tree.nleft`; rows are sorted `ORDER BY nleft ASC` (MPTT pre-order), so `parent_id` + `level` + `position` rebuild the exact hierarchy **including sibling order**. Before 3.2.2 the ordering was `nlevel ASC, title ASC` (alphabetical, sibling order lost).
+
+**Folder-management capabilities** (added 3.2.2) — a second family, about the **folder itself**, not its items. `can_delete: 0` + `can_delete_folder: 1` on an `ND` folder is the canonical illustration of why the two must not be conflated.
+
+- `is_personal` — `nested_tree.personal_folder`. Only the caller's own personal tree is ever listed (`AuthModel::buildUserFoldersList()` adds personal folders by `title = <user id>`; admins get `personal_folder = 0` only), so `1` means "mine" in practice.
+- `is_personal_root` — `is_personal && parent_id === 0`. Never renamable / movable / deletable.
+- `can_create_subfolder` / `can_rename_folder` / `can_move_folder` / `can_delete_folder` — computed by `FolderAccessModel::getFolderManagementCapabilities()` from: effective access + `!is_readonly` + the global folder-management gate (`hasFolderManagementPrivilege()`) + `!is_personal_root` (except create) + the matching API CRUD claim (`allowed_to_create` / `allowed_to_update` / `allowed_to_delete`).
+
+**Rule: these four flags are UI hints, never an authorization decision.** `FolderModel::createFolder()/updateFolder()/deleteFolder()` re-run every check on mutation. In particular `can_move_folder` describes the **source only** — `updateFolder()` separately validates the destination (access, read-only, self/descendant cycle, personal ↔ shared boundary, root permission), so a `1` can still end in `403`/`422`.
+
+**Global folder-management gate** — `FolderAccessModel::hasFolderManagementPrivilege($userData, $isPersonal, $enableUserCanCreateFolders)`: true when the folder is personal **or** the user is admin / manager / `user_can_manage_all_users` / `user_can_create_root_folder`, **or** the `enable_user_can_create_folders` setting is on. Reused by the three mutation adapters *and* by the capability evaluator, so the hint cannot drift from the route. `FolderManager::canCreateFolder()` (`sources/folders.class.php`) evaluates the same rule and stays the authoritative backstop on create — the adapter's copy is a documented fail-fast mirror. **The `$isPersonal` argument short-circuits the whole gate**, so callers must first establish the folder really belongs to the caller (`canUseFolder()` → `isFolderInsideAllowedPersonalRoot()`).
 
 **Note:** the name is historical — the endpoint returns all accessible folders, not only writable ones. This is the endpoint to point API clients at when they need "the whole folder tree in one call" — `listFolders` returns a nested tree but carries no access rights.
 
-**Known cost:** the access level is resolved per folder by `FolderAccessModel::getFolderAccessLevelForUser()` (up to 3 queries per folder, one resolution feeding all four flags). A batch resolver is a pending optimization.
+**Known cost:** the access level is resolved per folder by `FolderAccessModel::getFolderAccessLevelForUser()` (up to 3 queries per folder, one resolution feeding all four item flags). The management capabilities add **no** query — they are pure computation over that resolution plus the JWT claims, and `getAllSettings()` is called once outside the loop. A batch resolver is a pending optimization.
+
+**Known limitation:** `user_can_create_root_folder` and `user_can_manage_all_users` are **not** refreshed per request by `api/index.php` (unlike `is_admin`, `is_manager` and the four CRUD claims) — they stay frozen in the JWT until it expires. Both the hints and the mutation routes read the same stale claim, so they never disagree; revoking those two rights simply takes effect at the next authentication.
 
 **Permissions:** `allowed_to_read`.
 

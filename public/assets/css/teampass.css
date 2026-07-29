@@ -109,6 +109,21 @@
     flex: 1;
 }
 
+/* Keep password-health shields readable on highlighted favorite rows. */
+.list-item-row.bg-yellow .tp-item-health-marker.text-warning,
+.list-item-row.bg-yellow .tp-item-health-marker.text-secondary {
+    color: #343a40 !important;
+}
+
+/* Selected rows use a black cell background, so restore light semantic colours there. */
+.list-item-row.bg-yellow .list-item-description.bg-black .tp-item-health-marker.text-warning {
+    color: #ffc107 !important;
+}
+
+.list-item-row.bg-yellow .list-item-description.bg-black .tp-item-health-marker.text-secondary {
+    color: #adb5bd !important;
+}
+
 .list-item-actions {
     position: absolute;
     top: 8px;

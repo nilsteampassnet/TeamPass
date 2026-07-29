@@ -115,7 +115,7 @@ foreach ($ret as $folder) {
 
 // Get user key
 $userKey = DB::queryFirstRow(
-    'SELECT u.pw, pk.private_key
+    'SELECT u.pw, u.public_key, pk.private_key
     FROM '.prefixTable('users').' AS u
     LEFT JOIN '.prefixTable('user_private_keys').' AS pk ON (u.id = pk.user_id AND pk.is_current = 1)
     WHERE u.id = %i',
@@ -131,15 +131,19 @@ $items = DB::query(
     FROM '.prefixTable('items').' AS i
     WHERE i.pw != ""
     AND i.perso = 0
-    AND ((i.pw_len = %i OR i.pw_len IS NULL) OR (i.complexity_level = %i OR i.complexity_level IS NULL))
+    AND (
+        (i.pw_len = %i OR i.pw_len IS NULL)
+        OR (i.complexity_level = %i OR i.complexity_level IS NULL OR i.complexity_level = "")
+    )
     LIMIT 0, 100',
     0,
     -1
 );
+$unassessableItems = [];
 foreach ($items as $item) {
     // Get item key
     $itemKey = DB::queryFirstRow(
-        'SELECT share_key
+        'SELECT share_key, increment_id
         FROM ' . prefixTable('sharekeys_items') . '
         WHERE user_id = %i AND object_id = %i',
         TP_USER_ID,
@@ -147,16 +151,19 @@ foreach ($items as $item) {
     );
 
     // if no key, continue
-    if ($itemKey['share_key'] === null) {
+    if (is_array($itemKey) === false || empty($itemKey['share_key']) === true) {
         continue;
     }
 
     // decrypt password
     $password = teampassDecryptPasswordValue(
         $item['pw'],
-        decryptUserObjectKey(
+        decryptUserObjectKeyWithMigration(
             $itemKey['share_key'],
             $userPrivateKey,
+            (string) $userKey['public_key'],
+            (int) $itemKey['increment_id'],
+            'sharekeys_items'
         ),
         (int) ($item['pw_len'] ?? 0),
         (string) ($item['pw_iv'] ?? '')
@@ -164,21 +171,42 @@ foreach ($items as $item) {
 
 
     $passwordLength = strlen($password);
+    $metadataUpdates = [
+        'pw_len' => $passwordLength,
+    ];
     if ($passwordLength > 0 && $passwordLength <= $SETTINGS['pwd_maximum_length']) {
-        $passwordStrength = $zxcvbn->passwordStrength($password);
-        $passwordStrengthScore = convertPasswordStrength($passwordStrength['score']);
+        $passwordStrength = evaluatePasswordStrengthSafely(
+            $password,
+            [$zxcvbn, 'passwordStrength']
+        );
+        if ($passwordStrength['success'] === true) {
+            $metadataUpdates['complexity_level'] = convertPasswordStrength((int) $passwordStrength['score']);
+        } else {
+            // Preserve the exact password and flag the complexity as unassessable. The sentinel
+            // still reads as "unassessed" everywhere, but it takes the item out of this batch's
+            // selection: leaving the column unset would make the same rows be decrypted and
+            // re-evaluated on every run, and would stall the batch past 100 such items.
+            $metadataUpdates['complexity_level'] = TP_PW_COMPLEXITY_UNASSESSABLE;
+            $unassessableItems[] = (int) $item['itemId'] . ' (' . $passwordStrength['reason'] . ')';
+        }
     } else {
-        $passwordStrengthScore = 0;
+        $metadataUpdates['complexity_level'] = 0;
     }
-    
+
     DB::update(
         prefixTable('items'),
-        array(
-            'pw_len' => $passwordLength,
-            'complexity_level' => $passwordStrengthScore,
-        ),
+        $metadataUpdates,
         'id = %i',
         $item['itemId']
+    );
+}
+
+// One aggregated line per run instead of one per item: the affected set is stable over time.
+if (count($unassessableItems) > 0) {
+    error_log(
+        'TEAMPASS - do_calculation: ' . count($unassessableItems)
+        . ' password(s) could not be assessed and were flagged as unassessable - items: '
+        . implode(', ', $unassessableItems)
     );
 }
 

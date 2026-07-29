@@ -119,6 +119,260 @@ $post_data = filter_input(INPUT_POST, 'data', FILTER_SANITIZE_FULL_SPECIAL_CHARS
 //Manage type of action asked
 if (null !== $post_type) {
     switch ($post_type) {
+            //CASE export in KeePass 2.x XML format
+        case 'export_to_xml_format':
+            try {
+                // Build the list of folders the user is really allowed to export.
+                // A folder selected twice must not produce duplicated entries nor duplicated logs.
+                $validIds = array();
+                $decodedIds = json_decode(html_entity_decode((string) $post_ids), true);
+                if (is_array($decodedIds) === true) {
+                    $forbiddenFolders = (array) $session->get('user-forbiden_personal_folders');
+                    $accessibleFolders = (array) $session->get('user-accessible_folders');
+                    foreach ($decodedIds as $selectedId) {
+                        if (is_scalar($selectedId) === true
+                            && in_array($selectedId, $forbiddenFolders) === false
+                            && in_array($selectedId, $accessibleFolders) === true
+                        ) {
+                            $validIds[] = (int) $selectedId;
+                        }
+                    }
+                    $validIds = array_values(array_unique($validIds));
+                }
+
+                $dom = new DOMDocument('1.0', 'utf-8');
+                $dom->formatOutput = true;
+
+                // Helper functions for KeePass standard
+                $generateUuid = static function () {
+                    return base64_encode(random_bytes(16));
+                };
+
+                // DOMDocument::createElement() does not escape its value, so it has to be done
+                // here. ENT_SUBSTITUTE first repairs invalid UTF-8 sequences, then the control
+                // characters forbidden by XML 1.0 are removed: a single one of them would make
+                // the whole document unparsable by KeePass.
+                $xmlValue = static function ($value) {
+                    $escaped = htmlspecialchars((string) $value, ENT_XML1 | ENT_SUBSTITUTE, 'UTF-8');
+                    $cleaned = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/u', '', $escaped);
+
+                    return $cleaned === null ? '' : $cleaned;
+                };
+
+                $now = gmdate('Y-m-d\TH:i:s\Z');
+                $buildTimes = static function (DOMDocument $document) use ($now) {
+                    $times = $document->createElement('Times');
+                    $times->appendChild($document->createElement('CreationTime', $now));
+                    $times->appendChild($document->createElement('LastModificationTime', $now));
+                    $times->appendChild($document->createElement('LastAccessTime', $now));
+                    $times->appendChild($document->createElement('ExpiryTime', $now));
+                    $times->appendChild($document->createElement('Expires', 'False'));
+                    $times->appendChild($document->createElement('UsageCount', '0'));
+                    $times->appendChild($document->createElement('LocationChanged', $now));
+
+                    return $times;
+                };
+
+                // Add a KeePass String field to an Entry
+                $addString = static function (DOMDocument $document, DOMElement $entry, string $key, string $value, bool $protect = false) {
+                    $string = $document->createElement('String');
+                    $string->appendChild($document->createElement('Key', $key));
+                    $valueNode = $document->createElement('Value', $value);
+                    if ($protect === true) {
+                        $valueNode->setAttribute('ProtectInMemory', 'True');
+                    }
+                    $string->appendChild($valueNode);
+                    $entry->appendChild($string);
+                };
+
+                $keepassFile = $dom->createElement('KeePassFile');
+                $dom->appendChild($keepassFile);
+
+                $meta = $dom->createElement('Meta');
+                $meta->appendChild($dom->createElement('Generator', 'TeamPass Export'));
+                $keepassFile->appendChild($meta);
+
+                $root = $dom->createElement('Root');
+                $keepassFile->appendChild($root);
+
+                // Main Group (Database)
+                $mainGroup = $dom->createElement('Group');
+                $mainGroup->appendChild($dom->createElement('UUID', $generateUuid()));
+                $mainGroup->appendChild($dom->createElement('Name', 'TeamPass Export'));
+                $mainGroup->appendChild($dom->createElement('IconID', '49'));
+                $mainGroup->appendChild($buildTimes($dom));
+                $mainGroup->appendChild($dom->createElement('IsExpanded', 'True'));
+                $root->appendChild($mainGroup);
+
+                if (count($validIds) > 0) {
+                    // Load in one query the folders to export
+                    $folders = array();
+                    foreach (DB::query(
+                        'SELECT id, parent_id, title
+                        FROM ' . prefixTable('nested_tree') . '
+                        WHERE id IN %li',
+                        $validIds
+                    ) as $folderRow) {
+                        $folders[(int) $folderRow['id']] = $folderRow;
+                    }
+
+                    // Build one Group per exported folder
+                    $groupNodes = array();
+                    foreach ($validIds as $folderId) {
+                        if (isset($folders[$folderId]) === false) {
+                            continue;
+                        }
+
+                        $groupNode = $dom->createElement('Group');
+                        $groupNode->appendChild($dom->createElement('UUID', $generateUuid()));
+                        $groupNode->appendChild($dom->createElement('Name', $xmlValue($folders[$folderId]['title'])));
+                        $groupNode->appendChild($dom->createElement('IconID', '48'));
+                        $groupNode->appendChild($buildTimes($dom));
+                        $groupNode->appendChild($dom->createElement('IsExpanded', 'True'));
+
+                        $groupNodes[$folderId] = array(
+                            'node' => $groupNode,
+                            'parent_id' => (int) $folders[$folderId]['parent_id'],
+                        );
+                    }
+
+                    // Nest each group under its parent when the parent is exported too
+                    foreach ($groupNodes as $groupData) {
+                        if (isset($groupNodes[$groupData['parent_id']]) === true) {
+                            $groupNodes[$groupData['parent_id']]['node']->appendChild($groupData['node']);
+                        } else {
+                            $mainGroup->appendChild($groupData['node']);
+                        }
+                    }
+
+                    foreach ($validIds as $folderId) {
+                        if (isset($groupNodes[$folderId]) === false) {
+                            continue;
+                        }
+                        $targetGroup = $groupNodes[$folderId]['node'];
+
+                        $rows = DB::query(
+                            'SELECT i.id, i.id_tree, i.restricted_to, i.label, i.description, i.login, i.email, i.url
+                            FROM ' . prefixTable('items') . ' AS i
+                            WHERE i.inactif = %i AND i.id_tree = %i
+                            ORDER BY i.label ASC',
+                            0,
+                            $folderId
+                        );
+                        if (count($rows) === 0) {
+                            continue;
+                        }
+
+                        // Load in one query the tags of every item of this folder
+                        $itemsTags = array();
+                        foreach (DB::query(
+                            'SELECT item_id, tag
+                            FROM ' . prefixTable('tags') . '
+                            WHERE item_id IN %li',
+                            array_column($rows, 'id')
+                        ) as $rowTag) {
+                            if (empty($rowTag['tag']) === false) {
+                                $itemsTags[(int) $rowTag['item_id']][] = $rowTag['tag'];
+                            }
+                        }
+
+                        foreach ($rows as $record) {
+                            // Item-level restriction check
+                            if (
+                                !(
+                                    in_array((int) $record['id_tree'], (array) $session->get('user-personal_visible_folders')) === true
+                                    || (
+                                        in_array((int) $record['id_tree'], (array) $session->get('user-accessible_folders')) === true
+                                        && (
+                                            empty($record['restricted_to']) === true
+                                            || in_array((string) $session->get('user-id'), explode(';', (string) $record['restricted_to'])) === true
+                                        )
+                                    )
+                                )
+                            ) {
+                                continue;
+                            }
+
+                            // Decrypt the password through the user's sharekey (migration-aware)
+                            $dataItem = DB::queryFirstRow(
+                                'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS increment_id
+                                FROM ' . prefixTable('items') . ' AS i
+                                INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
+                                WHERE s.user_id = %i AND i.id = %i',
+                                $session->get('user-id'),
+                                $record['id']
+                            );
+
+                            $pw = '';
+                            if (DB::count() > 0 && empty($dataItem['pw']) === false) {
+                                $pw = teampassDecryptPasswordValue(
+                                    $dataItem['pw'],
+                                    decryptUserObjectKeyWithMigration(
+                                        $dataItem['share_key'],
+                                        $session->get('user-private_key'),
+                                        $session->get('user-public_key'),
+                                        (int) $dataItem['increment_id'],
+                                        'sharekeys_items'
+                                    ),
+                                    (int) ($dataItem['pw_len'] ?? 0),
+                                    (string) ($dataItem['pw_iv'] ?? '')
+                                );
+                            }
+
+                            $entry = $dom->createElement('Entry');
+                            $entry->appendChild($dom->createElement('UUID', $generateUuid()));
+                            $entry->appendChild($dom->createElement('IconID', '0'));
+                            if (isset($itemsTags[(int) $record['id']]) === true) {
+                                $entry->appendChild($dom->createElement('Tags', $xmlValue(implode(';', $itemsTags[(int) $record['id']]))));
+                            }
+                            $entry->appendChild($buildTimes($dom));
+
+                            $addString($dom, $entry, 'Title', $xmlValue(html_entity_decode((string) ($record['label'] ?? ''), ENT_QUOTES, 'UTF-8')));
+                            $addString($dom, $entry, 'UserName', $xmlValue(html_entity_decode((string) ($record['login'] ?? ''), ENT_QUOTES, 'UTF-8')));
+                            $addString($dom, $entry, 'Password', $xmlValue($pw), true);
+                            $addString($dom, $entry, 'URL', $xmlValue(htmlspecialchars_decode((string) ($record['url'] ?? ''))));
+                            $addString($dom, $entry, 'Notes', $xmlValue(html_entity_decode((string) ($record['description'] ?? ''), ENT_QUOTES, 'UTF-8')));
+                            if (empty($record['email']) === false && $record['email'] !== 'none') {
+                                $addString($dom, $entry, 'E-mail', $xmlValue(html_entity_decode((string) $record['email'], ENT_QUOTES, 'UTF-8')));
+                            }
+
+                            $targetGroup->appendChild($entry);
+
+                            // log
+                            logItems(
+                                $SETTINGS,
+                                (int) $record['id'],
+                                (string) $record['label'],
+                                (int) $session->get('user-id'),
+                                'at_export',
+                                $session->get('user-login'),
+                                'xml'
+                            );
+                        }
+                    }
+                }
+
+                // deepcode ignore XSS: Data is encrypted before being sent to the client
+                echo prepareExchangedData(
+                    array(
+                        'error' => false,
+                        // base64 keeps the UTF-8 bytes intact up to the browser
+                        'xml_content' => base64_encode((string) $dom->saveXML()),
+                    ),
+                    'encode'
+                );
+            } catch (\Throwable $e) {
+                error_log('[TeamPass XML Export FATAL] ' . $e->getMessage());
+                echo prepareExchangedData(
+                    array(
+                        'error' => true,
+                        'message' => $lang->get('an_error_occurred'),
+                    ),
+                    'encode'
+                );
+            }
+            break;
+
             //CASE export in CSV format
         case 'export_to_csv_format':
             //Init
@@ -759,7 +1013,7 @@ if (null !== $post_type) {
 
                     // Decrypt the password through the user's sharekey (migration-aware)
                     $dataItem = DB::queryFirstRow(
-                        'SELECT i.pw AS pw, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id
+                        'SELECT i.pw AS pw, i.pw_iv AS pw_iv, i.pw_len AS pw_len, s.share_key AS share_key, s.increment_id AS sharekey_id
                         FROM ' . prefixTable('items') . ' AS i
                         INNER JOIN ' . prefixTable('sharekeys_items') . ' AS s ON (s.object_id = i.id)
                         WHERE s.user_id = %i AND i.id = %i',
@@ -778,7 +1032,8 @@ if (null !== $post_type) {
                                 (int) $dataItem['sharekey_id'],
                                 'sharekeys_items'
                             ),
-                            (int) ($dataItem['pw_len'] ?? 0)
+                            (int) ($dataItem['pw_len'] ?? 0),
+                            (string) ($dataItem['pw_iv'] ?? '')
                         );
                     }
 

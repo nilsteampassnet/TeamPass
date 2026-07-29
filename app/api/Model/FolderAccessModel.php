@@ -198,6 +198,89 @@ class FolderAccessModel
     }
 
     /**
+     * Returns true when the user passes the global folder-management gate.
+     *
+     * This mirrors the gate used by FolderManager and the API create/update/delete
+     * adapters. Folder-specific access, read-only state, personal-root protection
+     * and per-operation API permissions are evaluated separately.
+     *
+     * ⚠ $isPersonal short-circuits the whole gate: a user always manages his own
+     * personal tree. Callers MUST therefore have established that the folder really
+     * belongs to the caller — canUseFolder() / isFolderInsideAllowedPersonalRoot()
+     * do it on the mutation routes. Passing a foreign personal folder here would
+     * wrongly grant the privilege.
+     *
+     * @param array $userData JWT user data
+     * @param bool $isPersonal Whether the folder/target belongs to the caller's personal domain
+     * @param bool $enableUserCanCreateFolders Current enable_user_can_create_folders setting
+     * @return bool
+     */
+    public function hasFolderManagementPrivilege(
+        array $userData,
+        bool $isPersonal,
+        bool $enableUserCanCreateFolders
+    ): bool
+    {
+        return $isPersonal === true
+            || (int) ($userData['is_admin'] ?? 0) === 1
+            || (int) ($userData['is_manager'] ?? 0) === 1
+            || (int) ($userData['user_can_manage_all_users'] ?? 0) === 1
+            || $enableUserCanCreateFolders === true
+            || (int) ($userData['user_can_create_root_folder'] ?? 0) === 1;
+    }
+
+    /**
+     * Build the folder-management capabilities advertised to API clients.
+     *
+     * These flags describe source-folder eligibility only. In particular,
+     * can_move_folder does not validate a future destination; updateFolder()
+     * remains responsible for destination access, read-only, cycle, domain and
+     * root checks when the mutation is attempted.
+     *
+     * @param array $userData JWT user data, including current API CRUD permissions
+     * @param bool $isPersonal Whether the folder belongs to the personal domain
+     * @param bool $isPersonalRoot Whether the folder is a protected personal root
+     * @param bool $isReadOnly Whether the effective folder access type is R
+     * @param bool $hasEffectiveAccess Whether the source folder is effectively accessible
+     * @param bool $enableUserCanCreateFolders Current enable_user_can_create_folders setting
+     * @return array{
+     *     can_create_subfolder: bool,
+     *     can_rename_folder: bool,
+     *     can_move_folder: bool,
+     *     can_delete_folder: bool
+     * }
+     */
+    public function getFolderManagementCapabilities(
+        array $userData,
+        bool $isPersonal,
+        bool $isPersonalRoot,
+        bool $isReadOnly,
+        bool $hasEffectiveAccess,
+        bool $enableUserCanCreateFolders
+    ): array
+    {
+        $canManage = $hasEffectiveAccess === true
+            && $isReadOnly === false
+            && $this->hasFolderManagementPrivilege(
+                $userData,
+                $isPersonal,
+                $enableUserCanCreateFolders
+            );
+        $canMutateSource = $canManage === true && $isPersonalRoot === false;
+
+        return [
+            'can_create_subfolder' => $canManage === true
+                && (int) ($userData['allowed_to_create'] ?? 0) === 1,
+            'can_rename_folder' => $canMutateSource === true
+                && (int) ($userData['allowed_to_update'] ?? 0) === 1,
+            'can_move_folder' => $canMutateSource === true
+                && (int) ($userData['allowed_to_update'] ?? 0) === 1,
+            'can_delete_folder' => $canMutateSource === true
+                && (int) ($userData['allowed_to_delete'] ?? 0) === 1,
+        ];
+    }
+
+    /**
      * Returns true when the user can read the given item (folder access or restricted-items list).
      *
      * @param array $userData JWT user data (id, folders_list, restricted_items_list)

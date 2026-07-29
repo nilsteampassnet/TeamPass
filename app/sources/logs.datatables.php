@@ -545,12 +545,16 @@ if (isset($params['action']) && $params['action'] === 'connections') {
             $cell = $lang->get('user_keys_downloaded');
         } elseif ($record['label'] === 'at_2fa_google_code_send_by_email') {
             $cell = $lang->get('mfa_code_send_by_email');
+        } elseif ($record['label'] === 'authentication_lockout_removed') {
+            $cell = $lang->get('authentication_lockout_removed');
         } else {
             $cell = (string) $record['label'];
         }
         $sOutput_item .= tpDatatableJsonCell($cell).' ';
         //col4
-        if (empty($record['field_1']) === false) {
+        if ($record['label'] === 'authentication_lockout_removed') {
+            $sOutput_item .= ', '.tpDatatableJsonCell((string) ($record['field_1'] ?? '')).' ';
+        } elseif (empty($record['field_1']) === false) {
             // get user name
             $info = DB::queryFirstRow(
                 'SELECT u.login as login, u.name AS name, u.lastname AS lastname
@@ -662,6 +666,132 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         $sOutput = substr_replace($sOutput, '', -2);
     }
     $sOutput .= '] }';
+/* ACTIVE AUTHENTICATION LOCKOUTS */
+} elseif (isset($params['action']) && $params['action'] === 'authentication_lockouts') {
+    if ((int) ($session->get('user-admin') ?? 0) !== 1) {
+        http_response_code(403);
+        echo (string) json_encode(
+            [
+                'draw' => (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
+                'error' => $lang->get('error_not_allowed_to'),
+            ],
+            JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+        );
+        exit;
+    }
+
+    $now = date('Y-m-d H:i:s', time());
+    $lockoutBaseSql = 'SELECT
+        af.source,
+        af.value,
+        MAX(u.id) AS user_id,
+        MAX(u.login) AS login,
+        MAX(u.name) AS name,
+        MAX(u.lastname) AS lastname,
+        COALESCE(
+            NULLIF(TRIM(CONCAT(COALESCE(MAX(u.name), \'\'), \' \', COALESCE(MAX(u.lastname), \'\'))), \'\'),
+            MAX(u.login),
+            \'\'
+        ) AS user_display,
+        COUNT(DISTINCT af.id) AS failure_count,
+        MIN(af.date) AS first_failure,
+        MAX(af.date) AS last_failure,
+        MAX(af.unlock_at) AS unlock_at
+        FROM ' . prefixTable('auth_failures') . ' AS af
+        LEFT JOIN ' . prefixTable('users') . ' AS u
+            ON (af.source = %s AND u.login = af.value AND u.deleted_at IS NULL)
+        GROUP BY af.source, af.value
+        HAVING MAX(af.unlock_at) > %s';
+    $lockoutBaseParams = ['login', $now];
+
+    $totalRecords = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM (' . $lockoutBaseSql . ') AS all_active_lockouts',
+        ...$lockoutBaseParams
+    );
+
+    $lockoutFilteredSql = 'SELECT * FROM (' . $lockoutBaseSql . ') AS active_lockouts';
+    $lockoutQueryParams = $lockoutBaseParams;
+    if ($searchValue !== '') {
+        $lockoutFilteredSql .= ' WHERE source LIKE %ss
+            OR value LIKE %ss
+            OR login LIKE %ss
+            OR name LIKE %ss
+            OR lastname LIKE %ss';
+        $lockoutQueryParams = array_merge(
+            $lockoutQueryParams,
+            [$searchValue, $searchValue, $searchValue, $searchValue, $searchValue]
+        );
+    }
+
+    $filteredRecords = (int) DB::queryFirstField(
+        'SELECT COUNT(*) FROM (' . $lockoutFilteredSql . ') AS filtered_active_lockouts',
+        ...$lockoutQueryParams
+    );
+
+    // Order columns match the client column indexes. Column 2 sorts on the very expression the
+    // cell displays, so the visible order is never at odds with the sorted one.
+    $lockoutOrderColumns = [
+        'source',
+        'value',
+        'user_display',
+        'failure_count',
+        'first_failure',
+        'last_failure',
+        'unlock_at',
+    ];
+    $requestedOrderColumn = (int) ($params['order'][0]['column'] ?? 6);
+    $lockoutOrderColumn = $lockoutOrderColumns[$requestedOrderColumn] ?? 'unlock_at';
+    // Upper bound kept in sync with the client 'lengthMenu' so a page never returns fewer rows
+    // than the paginator announces.
+    $lockoutMaxPageLength = 100;
+    $lockoutLimit = $sLimitLength > 0 ? min($sLimitLength, $lockoutMaxPageLength) : 10;
+    $lockoutRows = DB::query(
+        $lockoutFilteredSql . ' ORDER BY ' . $lockoutOrderColumn . ' ' . $orderDirection . ' LIMIT %i, %i',
+        ...array_merge($lockoutQueryParams, [$sLimitStart, $lockoutLimit])
+    );
+
+    $dateTimeFormat = ($SETTINGS['date_format'] ?? 'Y-m-d') . ' ' . ($SETTINGS['time_format'] ?? 'H:i:s');
+    $lockoutData = [];
+    foreach ($lockoutRows as $lockoutRow) {
+        $source = (string) ($lockoutRow['source'] ?? '');
+        // Built by the query so the ordering applied above matches what the cell shows.
+        $userDisplay = '';
+        if ($source === 'login') {
+            $userDisplay = trim((string) ($lockoutRow['user_display'] ?? ''));
+            if ($userDisplay === '') {
+                $userDisplay = $lang->get('authentication_lockout_unknown_user');
+            }
+        }
+
+        $firstFailureTimestamp = strtotime((string) ($lockoutRow['first_failure'] ?? ''));
+        $lastFailureTimestamp = strtotime((string) ($lockoutRow['last_failure'] ?? ''));
+        $unlockTimestamp = strtotime((string) ($lockoutRow['unlock_at'] ?? ''));
+
+        $lockoutData[] = [
+            'source' => $source,
+            'value' => (string) ($lockoutRow['value'] ?? ''),
+            'user_display' => $userDisplay,
+            'failure_count' => (int) ($lockoutRow['failure_count'] ?? 0),
+            'first_failure' => $firstFailureTimestamp === false ? '' : date($dateTimeFormat, $firstFailureTimestamp),
+            'last_failure' => $lastFailureTimestamp === false ? '' : date($dateTimeFormat, $lastFailureTimestamp),
+            'unlock_at' => $unlockTimestamp === false ? '' : date($dateTimeFormat, $unlockTimestamp),
+            'unlock_at_timestamp' => $unlockTimestamp === false ? 0 : $unlockTimestamp,
+        ];
+    }
+
+    echo (string) json_encode(
+        [
+            'draw' => (int) $request->query->filter('draw', FILTER_SANITIZE_NUMBER_INT),
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $filteredRecords,
+            'data' => $lockoutData,
+        ],
+        JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE
+    );
+    exit;
 /* FAILED AUTHENTICATION */
 } elseif (isset($params['action']) && $params['action'] === 'failed_auth') {
     //Columns name
@@ -682,7 +812,20 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         }
     }
     $sWhere->add('l.type = %s', 'failed_auth');
-    $sWhere->add('l.label IN %ls', ['password_is_not_correct', 'user_not_exists', 'wrong_mfa_code', 'bad_duo_mfa', 'bruteforce_account_locked']);
+    $sWhere->add(
+        'l.label IN %ls',
+        [
+            'password_is_not_correct',
+            'user_not_exists',
+            'wrong_mfa_code',
+            'bad_duo_mfa',
+            'bruteforce_account_locked',
+            'api_invalid_credentials',
+            'api_invalid_apikey',
+            'api_invalid_token',
+            'api_token_decrypt_failed',
+        ]
+    );
 
     // Get the total number of records
     $iTotal = DB::queryFirstField(
@@ -718,8 +861,29 @@ if (isset($params['action']) && $params['action'] === 'connections') {
     }
     foreach ($rows as $record) {
         $failedLoginLabel = (string) ($record['label'] ?? '');
-        $failedLoginUser = htmlspecialchars(stripslashes((string) ($record['field_1'] ?? '')), ENT_QUOTES);
+        $failedLoginField = stripslashes((string) ($record['field_1'] ?? ''));
+        // The channel is derived from the label, which only the API writes. The 'tp_src=api'
+        // marker alone cannot be trusted: on the web path field_1 is the submitted login, so
+        // anyone could forge an "API" row by typing that string in the login form.
+        $isApiFailure = in_array(
+            $failedLoginLabel,
+            ['api_invalid_credentials', 'api_invalid_apikey', 'api_invalid_token', 'api_token_decrypt_failed'],
+            true
+        );
+        if ($isApiFailure === false && $failedLoginLabel === 'bruteforce_account_locked') {
+            // Shared by both channels: the marker is the only available discriminator.
+            $isApiFailure = strpos($failedLoginField, 'tp_src=api') !== false;
+        }
+        // Only strip the internal marker from a confirmed API row, so a forged login stays
+        // visible exactly as it was submitted.
+        $failedLoginUser = $isApiFailure === true
+            ? trim(str_replace([' | tp_src=api', 'tp_src=api'], '', $failedLoginField), " |\t\n\r\0\x0B")
+            : $failedLoginField;
+        $failedLoginUser = htmlspecialchars($failedLoginUser, ENT_QUOTES);
         $failedLoginIp = htmlspecialchars(stripslashes((string) ($record['who'] ?? '')), ENT_QUOTES);
+        $failedLoginChannel = $isApiFailure === true
+            ? $lang->get('authentication_channel_api')
+            : $lang->get('authentication_channel_web_unknown');
         $blacklistAction = '';
 
         if ((int) ($session->get('user-admin') ?? 0) === 1 && teampassNormalizeIpv4Rule((string) ($record['who'] ?? '')) !== null) {
@@ -740,6 +904,8 @@ if (isset($params['action']) && $params['action'] === 'connections') {
         // col4
         $sOutput .= json_encode($failedLoginIp, JSON_UNESCAPED_UNICODE) . ', ';
         // col5
+        $sOutput .= json_encode($failedLoginChannel, JSON_UNESCAPED_UNICODE) . ', ';
+        // col6
         $sOutput .= json_encode($blacklistAction, JSON_UNESCAPED_UNICODE);
         //Finish the line
         $sOutput .= '],';
