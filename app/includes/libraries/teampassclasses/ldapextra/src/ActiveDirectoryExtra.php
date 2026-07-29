@@ -29,7 +29,7 @@ namespace TeampassClasses\LdapExtra;
  * @see       https://www.teampass.net
  */
 
-use LdapRecord\Models\ActiveDirectory\Group as BaseGroup ;
+use LdapRecord\Models\ActiveDirectory\Group as BaseGroup;
 use LdapRecord\Connection;
 use LdapRecord\Container;
 use LdapRecord\Models\ActiveDirectory\User;

@@ -3046,5 +3046,6 @@ wyszukiwanie elementów grupy ustawień',
     'error_password_strength_evaluation' => 'Password strength could not be evaluated. The password must be valid UTF-8 text.',
     'security_dashboard_scan_done_skipped' => 'Scan complete. #count# password(s) could not be assessed and were skipped.',
     'security_dashboard_scan_failed' => 'The scan could not be completed. Please try again or check the server logs.',
+    'export_format_keepass_xml' => 'KeePass 2.x XML',
 
 );

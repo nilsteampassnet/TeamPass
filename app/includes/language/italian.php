@@ -130,7 +130,6 @@ return array(
     'exporting_items' => 'Esportazione elementi',
     'select_folders_to_export' => 'Seleziona le cartelle da esportare',
     'export_format_type' => 'Seleziona il tipo di formato di esportazione',
-    'export_format_keepass_xml' => 'KeePass 2.x XML',
     'export_items' => 'Esporta elementi',
     'loading_item' => 'Caricamento elemento',
     'otv_message' => 'Puoi condividere questo elemento con qualcuno senza un account Teampass. Visualizzazione Una Tantum consente al tuo ospite di accedere ai campi di base di questo elemento solo una volta senza essere autenticato in Teampass. Tieni presente che questo collegamento è valido per un periodo di ##otv_expiration_period## giorni. Copia e condividi il link sottostante.',
@@ -3048,5 +3047,6 @@ Server IPv4
     'error_password_strength_evaluation' => 'Password strength could not be evaluated. The password must be valid UTF-8 text.',
     'security_dashboard_scan_done_skipped' => 'Scan complete. #count# password(s) could not be assessed and were skipped.',
     'security_dashboard_scan_failed' => 'The scan could not be completed. Please try again or check the server logs.',
+    'export_format_keepass_xml' => 'KeePass 2.x XML',
 
 );
