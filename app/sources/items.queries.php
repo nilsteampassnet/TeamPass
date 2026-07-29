@@ -261,8 +261,18 @@ switch ($inputData['type']) {
                 isset($dataReceived['pw_is_b64']) && (int) $dataReceived['pw_is_b64'] === 1
             );
             // Compute complexity server-side from plaintext — single source of truth with the API path
-            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
-            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+            $passwordStrength = evaluatePasswordStrengthSafely($post_password);
+            if ($passwordStrength['success'] === false) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_password_strength_evaluation'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $post_complexity_level = convertPasswordStrength((int) $passwordStrength['score']);
             $post_tags = htmlspecialchars($dataReceived['tags']);
             $post_template_id = filter_var($dataReceived['template_id'], FILTER_SANITIZE_NUMBER_INT);
             $post_url = filter_var(htmlspecialchars_decode($dataReceived['url']), FILTER_SANITIZE_URL);
@@ -949,8 +959,18 @@ switch ($inputData['type']) {
         // Compute complexity server-side from plaintext — single source of truth with the API path
         // When password is unchanged (empty), fall back to the client-sent value for the folder minimum check
         if (empty($post_password) === false) {
-            $_zxcvbn = new \ZxcvbnPhp\Zxcvbn();
-            $post_complexity_level = convertPasswordStrength($_zxcvbn->passwordStrength($post_password)['score']);
+            $passwordStrength = evaluatePasswordStrengthSafely($post_password);
+            if ($passwordStrength['success'] === false) {
+                echo (string) prepareExchangedData(
+                    [
+                        'error' => true,
+                        'message' => $lang->get('error_password_strength_evaluation'),
+                    ],
+                    'encode'
+                );
+                break;
+            }
+            $post_complexity_level = convertPasswordStrength((int) $passwordStrength['score']);
         } else {
             $post_complexity_level = (int) filter_var($dataReceived['complexity_level'], FILTER_SANITIZE_NUMBER_INT);
         }
@@ -3268,11 +3288,17 @@ switch ($inputData['type']) {
                     || is_numeric($complexityLevel) === false
                     || (int) $complexityLevel < 0
                 ) {
-                    $_zxcvbnCard = new \ZxcvbnPhp\Zxcvbn();
-                    $complexityLevel = convertPasswordStrength(
-                        (int) $_zxcvbnCard->passwordStrength($passwordForMetrics)['score']
-                    );
-                    $metadataUpdates['complexity_level'] = $complexityLevel;
+                    $passwordStrength = evaluatePasswordStrengthSafely($passwordForMetrics);
+                    if ($passwordStrength['success'] === true) {
+                        $complexityLevel = convertPasswordStrength((int) $passwordStrength['score']);
+                        $metadataUpdates['complexity_level'] = $complexityLevel;
+                    } else {
+                        // Existing malformed credentials remain usable but unassessed.
+                        error_log(
+                            'Item card skipped password-strength assessment for item '
+                            . (int) $inputData['id'] . ': ' . $passwordStrength['reason']
+                        );
+                    }
                 }
                 if (count($metadataUpdates) > 0) {
                     DB::update(prefixTable('items'), $metadataUpdates, 'id = %i', (int) $inputData['id']);

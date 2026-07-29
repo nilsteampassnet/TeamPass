@@ -89,6 +89,8 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
             scanning: <?php echo json_encode($lang->get('security_dashboard_scanning'), JSON_UNESCAPED_UNICODE); ?>,
             scanButton: <?php echo json_encode($lang->get('security_dashboard_scan_button'), JSON_UNESCAPED_UNICODE); ?>,
             done: <?php echo json_encode($lang->get('security_dashboard_scan_done'), JSON_UNESCAPED_UNICODE); ?>,
+            doneSkipped: <?php echo json_encode($lang->get('security_dashboard_scan_done_skipped'), JSON_UNESCAPED_UNICODE); ?>,
+            scanFailed: <?php echo json_encode($lang->get('security_dashboard_scan_failed'), JSON_UNESCAPED_UNICODE); ?>,
             fix: <?php echo json_encode($lang->get('security_nudges_fix_worst'), JSON_UNESCAPED_UNICODE); ?>,
             allGood: <?php echo json_encode($lang->get('security_score_all_good'), JSON_UNESCAPED_UNICODE); ?>,
             scoreHint: <?php echo json_encode($lang->get('security_score_scan_hint'), JSON_UNESCAPED_UNICODE); ?>,
@@ -115,12 +117,26 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     };
 
     // Post helper using the standard encrypted client-server exchange.
-    function dashboardPost(payload, callback) {
+    function dashboardPost(payload, callback, errorCallback) {
         payload.key = TP_DASH.key;
-        $.post('sources/dashboard.queries.php', payload, function (data) {
-            data = prepareExchangedData(data, 'decode', TP_DASH.key);
-            callback(data);
-        });
+        return $.post('sources/dashboard.queries.php', payload)
+            .done(function (data) {
+                try {
+                    data = prepareExchangedData(data, 'decode', TP_DASH.key);
+                    callback(data);
+                } catch (error) {
+                    if (typeof errorCallback === 'function') {
+                        errorCallback();
+                    } else {
+                        throw error;
+                    }
+                }
+            })
+            .fail(function () {
+                if (typeof errorCallback === 'function') {
+                    errorCallback();
+                }
+            });
     }
 
     // F10: score band -> presentation (label + gauge colour, kept in sync with the CSS).
@@ -300,6 +316,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
     // Incremental list paging state ("load more").
     let dashboardListShown = 0;
     let dashboardListTotal = 0;
+    let dashboardScanSkipped = 0;
 
     function dashboardBuildFolders(folders) {
         const sel = $('#dashboard-folder-filter');
@@ -383,15 +400,20 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
                 dashboardScanFinish(false);
                 return;
             }
+            dashboardScanSkipped += parseInt(data.skipped_count, 10) || 0;
             const pct = data.total > 0 ? Math.min(100, Math.round((data.next_offset / data.total) * 100)) : 100;
             $('#dashboard-progress-bar').css('width', pct + '%').text(pct + '%');
             if (data.done === true) {
-                dashboardPost({ type: 'finalize_scan' }, function () {
-                    dashboardScanFinish(true);
+                dashboardPost({ type: 'finalize_scan' }, function (finalData) {
+                    dashboardScanFinish(Boolean(finalData) && finalData.error !== true);
+                }, function () {
+                    dashboardScanFinish(false);
                 });
             } else {
                 dashboardScanChunk(data.next_offset, includeHibp);
             }
+        }, function () {
+            dashboardScanFinish(false);
         });
     }
 
@@ -399,8 +421,14 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
         const btn = $('#dashboard-scan-btn');
         btn.prop('disabled', false).html('<i class="fa-solid fa-magnifying-glass-chart mr-1"></i>' + TP_DASH.strings.scanButton);
         $('#dashboard-progress-wrap').hide();
-        if (success === true && typeof toastr !== 'undefined') {
-            toastr.success(TP_DASH.strings.done);
+        if (typeof toastr !== 'undefined') {
+            if (success === true && dashboardScanSkipped > 0) {
+                toastr.warning(TP_DASH.strings.doneSkipped.replace('#count#', String(dashboardScanSkipped)));
+            } else if (success === true) {
+                toastr.success(TP_DASH.strings.done);
+            } else {
+                toastr.error(TP_DASH.strings.scanFailed);
+            }
         }
         dashboardLoadSummary();
         dashboardLoadScore();
@@ -414,6 +442,7 @@ if ($checkUserAccess->checkSession() === false || $checkUserAccess->userAccessPa
 
         $('#dashboard-scan-btn').on('click', function () {
             const includeHibp = $('#dashboard-include-hibp').is(':checked') ? 1 : 0;
+            dashboardScanSkipped = 0;
             $(this).prop('disabled', true).html('<i class="fa-solid fa-spinner fa-spin mr-1"></i>' + TP_DASH.strings.scanning);
             $('#dashboard-progress-bar').css('width', '0%').text('0%');
             $('#dashboard-progress-wrap').show();

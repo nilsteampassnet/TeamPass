@@ -54,6 +54,7 @@ use TeampassClasses\CryptoManager\CryptoManager;
 require_once __DIR__ . '/otp.functions.php';
 require_once __DIR__ . '/security_posture_logic.php';
 require_once __DIR__ . '/operational_statistics_logic.php';
+require_once __DIR__ . '/password_strength.functions.php';
 
 header('Content-type: text/html; charset=utf-8');
 header('Cache-Control: no-cache, must-revalidate');
