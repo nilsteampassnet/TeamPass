@@ -125,6 +125,7 @@ header('Cache-Control: no-cache, no-store, must-revalidate');
                         <label><?php echo $lang->get('export_format_type'); ?></label>
                         <select class="form-control select2" style="width:100%;" id="export-format">
                             <option value="csv"><?php echo $lang->get('csv'); ?></option>
+                            <option value="xml"><?php echo $lang->get('export_format_keepass_xml'); ?></option>
                             <?php
                             if (isset($SETTINGS['settings_offline_mode']) === true && (int) $SETTINGS['settings_offline_mode'] === 1) {
                                 echo '<option value="html">'.strtoupper($lang->get('html')).'</option>';

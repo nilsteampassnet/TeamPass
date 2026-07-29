@@ -677,6 +677,7 @@ return array(
     'exporting_items' => 'Exporting items',
     'select_folders_to_export' => 'Select folders to export',
     'export_format_type' => 'Select the export format type',
+    'export_format_keepass_xml' => 'KeePass 2.x XML',
     'export_items' => 'Export items',
     'loading_item' => 'Loading item',
     'otv_message' => 'You can share this item with someone without a Teampass account. One-Time-View permits your guest to access basic fields of this item only once without being authenticated in Teampass. Please notice that this link is valid until one of following settings is reached. Copy and share the link below.',
