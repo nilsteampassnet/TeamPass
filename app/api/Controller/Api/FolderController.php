@@ -246,13 +246,17 @@ class FolderController extends BaseController
                         $access = $folderAccessModel->getFolderAccessLevelForUser($folderId, (int) $userData['id']);
                         $isPersonal = (int) $row['personal_folder'] === 1;
                         $isPersonalRoot = $isPersonal === true && (int) $row['parent_id'] === 0;
+                        // Named arguments: the evaluator takes five booleans in a row,
+                        // which is unreadable — and dangerous to reorder — positionally.
+                        // hasEffectiveAccess is always true here: the loop only iterates
+                        // over folders already present in the user's accessible list.
                         $managementCapabilities = $folderAccessModel->getFolderManagementCapabilities(
-                            $userData,
-                            $isPersonal,
-                            $isPersonalRoot,
-                            $access['type'] === 'R',
-                            true,
-                            $enableUserCanCreateFolders
+                            userData: $userData,
+                            isPersonal: $isPersonal,
+                            isPersonalRoot: $isPersonalRoot,
+                            isReadOnly: $access['type'] === 'R',
+                            hasEffectiveAccess: true,
+                            enableUserCanCreateFolders: $enableUserCanCreateFolders
                         );
                         $writableFolders[] = [
                             'id' => $folderId,

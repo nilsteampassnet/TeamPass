@@ -1663,7 +1663,7 @@
                     },
                     "is_personal": {
                         "type": "integer",
-                        "description": "1 when the folder belongs to the current user's personal folder domain; 0 for the shared domain.",
+                        "description": "1 when the folder is part of a personal folder tree; 0 for the shared domain. This endpoint only ever lists the caller's own personal folders, so in practice 1 means 'mine'.",
                         "enum": [
                             0,
                             1

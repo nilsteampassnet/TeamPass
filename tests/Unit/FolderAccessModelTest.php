@@ -90,12 +90,12 @@ class FolderAccessModelTest extends TestCase
         self::assertSame(
             $this->allManagementCapabilities(false),
             $model->getFolderManagementCapabilities(
-                $this->userData(),
-                false,
-                false,
-                false,
-                true,
-                false
+                userData: $this->userData(),
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
     }
@@ -113,12 +113,12 @@ class FolderAccessModelTest extends TestCase
             self::assertSame(
                 $this->allManagementCapabilities(true),
                 $model->getFolderManagementCapabilities(
-                    $this->userData($privilege),
-                    false,
-                    false,
-                    false,
-                    true,
-                    false
+                    userData: $this->userData($privilege),
+                    isPersonal: false,
+                    isPersonalRoot: false,
+                    isReadOnly: false,
+                    hasEffectiveAccess: true,
+                    enableUserCanCreateFolders: false
                 ),
                 $label
             );
@@ -132,12 +132,12 @@ class FolderAccessModelTest extends TestCase
         self::assertSame(
             $this->allManagementCapabilities(true),
             $model->getFolderManagementCapabilities(
-                $this->userData(),
-                false,
-                false,
-                false,
-                true,
-                true
+                userData: $this->userData(),
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: true
             )
         );
     }
@@ -149,12 +149,12 @@ class FolderAccessModelTest extends TestCase
         self::assertSame(
             $this->allManagementCapabilities(true),
             $model->getFolderManagementCapabilities(
-                $this->userData(),
-                true,
-                false,
-                false,
-                true,
-                false
+                userData: $this->userData(),
+                isPersonal: true,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
     }
@@ -171,12 +171,12 @@ class FolderAccessModelTest extends TestCase
                 'can_delete_folder' => false,
             ],
             $model->getFolderManagementCapabilities(
-                $this->userData(),
-                true,
-                true,
-                false,
-                true,
-                false
+                userData: $this->userData(),
+                isPersonal: true,
+                isPersonalRoot: true,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
     }
@@ -186,13 +186,29 @@ class FolderAccessModelTest extends TestCase
         $model = new FolderAccessModel();
         $admin = $this->userData(['is_admin' => 1]);
 
+        // Read-only folder: nothing can be managed, even by an administrator.
         self::assertSame(
             $this->allManagementCapabilities(false),
-            $model->getFolderManagementCapabilities($admin, false, false, true, true, false)
+            $model->getFolderManagementCapabilities(
+                userData: $admin,
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: true,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
+            )
         );
+        // Folder not effectively accessible: same outcome.
         self::assertSame(
             $this->allManagementCapabilities(false),
-            $model->getFolderManagementCapabilities($admin, false, false, false, false, false)
+            $model->getFolderManagementCapabilities(
+                userData: $admin,
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: false,
+                enableUserCanCreateFolders: false
+            )
         );
     }
 
@@ -208,12 +224,12 @@ class FolderAccessModelTest extends TestCase
                 'can_delete_folder' => true,
             ],
             $model->getFolderManagementCapabilities(
-                $this->userData(['is_admin' => 1, 'allowed_to_create' => 0]),
-                false,
-                false,
-                false,
-                true,
-                false
+                userData: $this->userData(['is_admin' => 1, 'allowed_to_create' => 0]),
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
         self::assertSame(
@@ -224,12 +240,12 @@ class FolderAccessModelTest extends TestCase
                 'can_delete_folder' => true,
             ],
             $model->getFolderManagementCapabilities(
-                $this->userData(['is_admin' => 1, 'allowed_to_update' => 0]),
-                false,
-                false,
-                false,
-                true,
-                false
+                userData: $this->userData(['is_admin' => 1, 'allowed_to_update' => 0]),
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
         self::assertSame(
@@ -240,12 +256,12 @@ class FolderAccessModelTest extends TestCase
                 'can_delete_folder' => false,
             ],
             $model->getFolderManagementCapabilities(
-                $this->userData(['is_admin' => 1, 'allowed_to_delete' => 0]),
-                false,
-                false,
-                false,
-                true,
-                false
+                userData: $this->userData(['is_admin' => 1, 'allowed_to_delete' => 0]),
+                isPersonal: false,
+                isPersonalRoot: false,
+                isReadOnly: false,
+                hasEffectiveAccess: true,
+                enableUserCanCreateFolders: false
             )
         );
     }

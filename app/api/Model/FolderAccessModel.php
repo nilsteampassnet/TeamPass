@@ -204,8 +204,14 @@ class FolderAccessModel
      * adapters. Folder-specific access, read-only state, personal-root protection
      * and per-operation API permissions are evaluated separately.
      *
+     * ⚠ $isPersonal short-circuits the whole gate: a user always manages his own
+     * personal tree. Callers MUST therefore have established that the folder really
+     * belongs to the caller — canUseFolder() / isFolderInsideAllowedPersonalRoot()
+     * do it on the mutation routes. Passing a foreign personal folder here would
+     * wrongly grant the privilege.
+     *
      * @param array $userData JWT user data
-     * @param bool $isPersonal Whether the folder/target belongs to the personal domain
+     * @param bool $isPersonal Whether the folder/target belongs to the caller's personal domain
      * @param bool $enableUserCanCreateFolders Current enable_user_can_create_folders setting
      * @return bool
      */
