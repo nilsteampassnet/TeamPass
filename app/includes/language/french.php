@@ -3044,4 +3044,5 @@ return array(
     'error_password_strength_evaluation' => 'La robustesse du mot de passe n’a pas pu être évaluée. Le mot de passe doit être un texte UTF-8 valide.',
     'security_dashboard_scan_done_skipped' => 'Analyse terminée. #count# mot(s) de passe n’ont pas pu être évalués et ont été ignorés.',
     'security_dashboard_scan_failed' => 'L’analyse n’a pas pu être terminée. Réessayez ou consultez les journaux du serveur.',
+
 );
